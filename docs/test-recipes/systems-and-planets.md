@@ -376,10 +376,16 @@ resource deposits and the depletion row (no planet in the fixture has any), and 
 entries' click — the game opens `PopulationModalWindow` there, and the entries are declared
 read-only per the approved design.
 
-**The planet constructible panel has no fixture either.** `PlanetConstructiblePanel` is opened
-only by the card's Terraform and Reduce Anomaly buttons
-(`PlanetLabelsWindow_SystemOrbital.OnTerraformPlanet` :255-265, `OnReduceAnomaly` :285-295), and
-neither button is ever drawn without a Behemoth in the system. What IS testable offline:
+**The planet constructible panel has no fixture either.** Corrected 2026-08-29: it has THREE
+hosts, not one, and three openers, not two — the card's Build Infrastructure button opens it as
+well, on the system-management page, on the orbital page and on the EMPIRE page's own cards panel
+(`StarSystemPlanetCardsPanel.OnClickBuildInfrastructure` :278-288). None of them is reachable in a
+fixture, but for different reasons: the ORBITAL window's Terraform and Reduce Anomaly buttons
+(`PlanetLabelsWindow_SystemOrbital.OnTerraformPlanet` :255-265, `OnReduceAnomaly` :285-295) are
+never drawn without a Behemoth in the system, while Build Infrastructure is drawn everywhere and
+always DISABLED, because no save has an available planet improvement. Forcing the button and
+reading the (empty) panel on both the management and the empire routes is in
+`empire-screens.md`, "The specialization list from a planet card". What IS testable offline:
 `screen.planet-constructibles` registers (`/gui/graph?screen=…` answers "not active"), and its
 predicate reads false at the galaxy overview, at the orbital zoom step with the cards drawn, and
 on the management page. Opening it from `/eval` is not worth it: `ShowConstructiblePanel` is

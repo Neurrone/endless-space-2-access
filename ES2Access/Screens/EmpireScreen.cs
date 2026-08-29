@@ -84,6 +84,12 @@ namespace ES2Access.Screens
         private readonly List<Cell> _cells = new List<Cell>();
         private readonly List<PlanetCard> _cards = new List<PlanetCard>();
 
+        /// <summary>Which panel a table cell has slid out under the table, and the system it was opened
+        /// for, as of the last frame this page was asked (see <see cref="WatchDetails"/>). Instance
+        /// state, so it is reload-safe.</summary>
+        private Detail _detail;
+        private string _detailSystem;
+
         public EmpireScreen()
         {
             _table = new TableSheet(Keys, SystemOf);
@@ -165,16 +171,22 @@ namespace ES2Access.Screens
         public override void OnPush()
         {
             _hud.Baseline();
+            // Start the watch from what is on the screen now, so coming back to a page that still has
+            // a panel out never announces an opening nobody just made.
+            _detail = DrawnDetail(out _detailSystem);
         }
 
         public override void OnPop()
         {
             _hud.Forget();
+            _detail = Detail.None;
+            _detailSystem = null;
         }
 
         public override void OnUpdate()
         {
             _hud.Update();
+            WatchDetails();
         }
 
         public override void Build(GraphBuilder builder)
@@ -712,6 +724,138 @@ namespace ES2Access.Screens
         }
 
         // ---- the panels a cell slides out ----
+
+        /// <summary>What the table has under it - the three things a cell can slide out, as the player
+        /// meets them. The construction cell shows the game's constructibles and queue panels side by
+        /// side, which is one thing to press a cell for and so one member here.</summary>
+        private enum Detail
+        {
+            None,
+            Planets,
+            Construction,
+            Hangar,
+        }
+
+        /// <summary>
+        /// A panel arriving under the table, or going away, is announced - the same reason the fleet
+        /// panel announces itself: the page does not change, so a whole Tab stop's worth of content
+        /// appears and disappears under the player with nothing to hear but Tab taking longer to come
+        /// round. Queued rather than interrupting: the player pressed the cell, and cutting off the
+        /// cell's own readout would take away the answer they asked for.
+        ///
+        /// A SWAP - another cell, or the same cell on another row - says only the new opening. The
+        /// panels change over in one frame (<c>StarSystemsManagementPanel.OnLineSelection</c> :285-311
+        /// hides all of them and shows the one the clicked cell stands for), so there is no closed state
+        /// in between to report, and "closed, open" would say twice over what one sentence already says.
+        /// </summary>
+        private void WatchDetails()
+        {
+            try
+            {
+                string system;
+                Detail now = DrawnDetail(out system);
+                if (now == _detail && system == _detailSystem)
+                {
+                    return;
+                }
+
+                Detail was = _detail;
+                _detail = now;
+                _detailSystem = system;
+                Voice.Say(
+                    now == Detail.None
+                        ? ModStrings.Get(ClosedPhrase(was))
+                        : ModStrings.Format(OpenedPhrase(now), system),
+                    false
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("empire: watching the panel under the table threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Which panel the game has under the table, and the system it is showing.
+        ///
+        /// Asked of <c>Shown</c> rather than of the drawn flag the graph build uses: a panel on its way
+        /// out stays Visible for the length of its fade while its replacement is already up, so a swap
+        /// read off Visible would announce the panel the player just left before announcing the one they
+        /// asked for. <c>Shown</c> goes false the frame Hide is called (<c>GuiPanel.OnBeginHide</c> sets
+        /// Hiding), which is the frame the swap happens on.
+        ///
+        /// The system is the table's own selected row, which is where the game itself reads it from when
+        /// it binds any of these panels (<c>ShowStarSystemPlanetCardsPanelWithActions</c> and its three
+        /// siblings, :342-378) - and the hangar panel, unlike the other two, keeps no system of its own
+        /// to ask.
+        /// </summary>
+        private Detail DrawnDetail(out string system)
+        {
+            system = null;
+            global::EmpireScreen window = Window();
+            StarSystemsManagementPanel panel =
+                window == null ? null : window.StarSystemsManagementPanel;
+            if (panel == null || !panel.Shown)
+            {
+                return Detail.None;
+            }
+
+            Detail detail = Detail.None;
+            StarSystemPlanetCardsPanel cards = panel.StarSystemPlanetCardsPanel;
+            StarSystemConstructiblePanel constructibles =
+                Child<StarSystemConstructiblePanel>(panel.ConstructiblePanelContainer);
+            StarSystemQueuePanel queue = Child<StarSystemQueuePanel>(panel.QueuePanelContainer);
+            StarSystemHangarPanel hangar = Child<StarSystemHangarPanel>(panel.HangarPanelContainer);
+            // Which of the three is up - the game shows exactly one at a time.
+            if (cards != null && cards.Shown)
+            {
+                detail = Detail.Planets;
+            }
+            else if (
+                (constructibles != null && constructibles.Shown)
+                || (queue != null && queue.Shown)
+            )
+            {
+                detail = Detail.Construction;
+            }
+            else if (hangar != null && hangar.Shown)
+            {
+                detail = Detail.Hangar;
+            }
+
+            if (detail != Detail.None)
+            {
+                system = SystemName(panel.GuiTable == null ? null : panel.GuiTable.SelectedLine);
+            }
+
+            return detail;
+        }
+
+        private static string OpenedPhrase(Detail detail)
+        {
+            switch (detail)
+            {
+                case Detail.Construction:
+                    return ModStrings.EmpireConstructionPanelOpened;
+                case Detail.Hangar:
+                    return ModStrings.EmpireHangarPanelOpened;
+                default:
+                    return ModStrings.EmpirePlanetsPanelOpened;
+            }
+        }
+
+        private static string ClosedPhrase(Detail detail)
+        {
+            switch (detail)
+            {
+                case Detail.Construction:
+                    return ModStrings.EmpireConstructionPanelClosed;
+                case Detail.Hangar:
+                    return ModStrings.EmpireHangarPanelClosed;
+                default:
+                    return ModStrings.EmpirePlanetsPanelClosed;
+            }
+        }
 
         /// <summary>Whichever of the four panels the last cell click opened, in the order they are
         /// drawn. Only one kind is ever up: the game hides all of them before showing the one the

@@ -1326,6 +1326,20 @@ namespace ES2Access.Core.Speech
         /// so this is a different sentence from a move between two planets of one system.</summary>
         public const string EmpirePopulationSent = "empire.population-sent";
 
+        /// <summary>The panel a systems-table cell slides out under the table, arriving and leaving.
+        /// Nothing else would say so: the page does not change, and a whole tab stop's worth of content
+        /// appears and disappears under the player with no sound but Tab taking longer to come round -
+        /// the same reason the fleet panel announces itself. Each phrase names the panel with the word
+        /// the player will then hear as the region they are walking, and the system whose row was
+        /// clicked. The construction cell opens the game's constructibles and queue panels side by side
+        /// and they are ONE thing to the player, so they share one phrase.</summary>
+        public const string EmpirePlanetsPanelOpened = "empire.planets-panel-opened";
+        public const string EmpirePlanetsPanelClosed = "empire.planets-panel-closed";
+        public const string EmpireConstructionPanelOpened = "empire.construction-panel-opened";
+        public const string EmpireConstructionPanelClosed = "empire.construction-panel-closed";
+        public const string EmpireHangarPanelOpened = "empire.hangar-panel-opened";
+        public const string EmpireHangarPanelClosed = "empire.hangar-panel-closed";
+
         // The economy screen. The screen's own name is the game's; the name here is the fallback for
         // the frames before the window has written its heading. The rest are for boxes the game draws
         // with no heading at all - the marketplace's four panels and its two tickers - and for the one
@@ -2246,6 +2260,12 @@ namespace ES2Access.Core.Speech
             { EmpireRelicSlotAssign, "Assign relics" },
             { EmpireRelicSlotRemove, "Remove relics" },
             { EmpirePopulationSent, "Sent {0} to {1} by spaceport" },
+            { EmpirePlanetsPanelOpened, "Planets panel open for {0}" },
+            { EmpirePlanetsPanelClosed, "Planets panel closed" },
+            { EmpireConstructionPanelOpened, "Construction panel open for {0}" },
+            { EmpireConstructionPanelClosed, "Construction panel closed" },
+            { EmpireHangarPanelOpened, "Hangar panel open for {0}" },
+            { EmpireHangarPanelClosed, "Hangar panel closed" },
             { ScreenSenate, "Senate" },
             { SenateGovernmentPanel, "Government" },
             { SenateElectionPanel, "Next election" },

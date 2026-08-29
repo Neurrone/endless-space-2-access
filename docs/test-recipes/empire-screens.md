@@ -213,6 +213,54 @@ except leaving the page. The tab switch and the panel instances are both probeab
 which takes the mod's focus (`screen: screen.tutorial`) and has to be re-minimized afterwards. The
 HUD button for it reads "This functionality is disabled during this part of the Tutorial" in that
 save, so the empire screen is fixture-blocked there for anything but a forced `ShowWindow`.
+**`[Beginner] test` (turn 21) is one of those saves** — measured 2026-08-29:
+`ControlBanner.ToggleScreen("EmpireScreen")` (which is what F1 does) leaves the stack unchanged and
+the HUD button reads "unavailable" with that same sentence. The two saves that DO open the page from
+the player's own gesture are **`[Beginner] access test`** (turn 32, FOUR colonized systems — Dusay,
+Primus, Ita, Sabel — the one to use for anything that needs a row swap) and **`unlocked`** (turn 1,
+one system, Xiu).
+
+**The panels a cell slides out, and their announcements.** The three openers and what each says
+(measured 2026-08-29 on `[Beginner] access test`, all through `POST /input`): the STATUS cell (col 1)
+and the POPULATION cell (col 2) both open the planet-cards panel — *"Planets panel open for ⟨system⟩"*;
+the CONSTRUCTION cell (col 11) opens the game's constructibles and queue panels together and is ONE
+announcement — *"Construction panel open for ⟨system⟩"*; the HANGAR cell (col 13) — *"Hangar panel open
+for ⟨system⟩"*. Walk the columns with `ui.right` from the row node (`ui.home` goes to the HEADER row,
+not to column 0, and Enter there sorts the table). The HERO cell is col 4, and Enter on it opens a
+modal — close it with `Gui.GuiService.HideWindow(Gui.GuiService.GetWindow<HeroSelectionModalWindow>(false))`,
+because `ui.back` does not.
+Swaps say only the NEW opening: stepping down the rows with the Status column held gives *"Planets
+panel open for Ita"*, *"… Primus"*, *"… Sabel"* one line each, and Construction → Hangar on one row gives
+just the hangar line. A status↔population swap on the SAME row is silent by design (one name covers
+both card modes). The **close** line needs a gesture that leaves the page standing: pressing the
+already-selected **Systems tab** re-shows the table panel, whose `GuiTable.BeginShow` nulls the
+selection and hides everything under it — *"Hangar panel closed"* / *"Construction panel closed"* /
+*"Planets panel closed"*. Leaving the page, and opening the hero modal, both pop the mod screen first,
+so neither says a close line; arriving says nothing either (the watch baselines on push).
+
+**The specialization list from a planet card** (`screen.planet-constructibles`, layer 20, over the
+empire page at 15). Route: population or status cell → Tab to `empire:detail/planets` → `ui.right` to
+expand a card → Enter on its "Click to select a specialization Improvement…" button. **No save has an
+ENABLED one**: `PlanetCard.RefreshBuildInfrastructureButton` draws the button only for a colonized
+planet of a Colony-state system and enables it only when
+`DepartmentOfIndustry.GetAvailableConstructibles(planet, PlanetImprovementDefinition, Discard)` is
+non-empty, and every planet in every save answers "No relevant or available construction is
+available" (Terraform needs `TerraformationGameplayUnlocked`; Reduce Anomaly needs a reduction the
+empire has researched — Primus I has the anomaly and not the tech). Force it with
+`card.BuildInfrastructureButton.Enable = true` and press through the mod's own `ui.activate`: the
+screen takes over and names itself *"Select a specialization"*. The list is then EMPTY — the panel's
+own refresh reads the same `Discard` query the button does — so this route proves the OWNER LOOKUP
+and the close path, never the rows.
+The negative control for the lookup, one eval, taken with the panel up:
+`PlanetLabelsWindow_SystemOrbital.ConstructiblePanel` and `PlanetLabelsWindow_SystemManagement.ConstructiblePanel`
+both read `Shown=false, Planet=null` while `EmpireScreen.StarSystemsManagementPanel.StarSystemPlanetCardsPanel.ConstructiblePanel`
+reads `Shown=true, Planet=Raia, Client=PlanetCardsPanel` — which is exactly what a two-owner lookup
+answers null on. Escape closes it through that Client and hands focus back to the empire page's own
+node; the panel watcher stays silent across the whole round trip (the cards panel never left).
+The same forced press on the system-management route is the regression check: its cards are
+`PlanetLabel_SystemManagement` (not `PlanetCard`), reached under
+`GetWindow<PlanetLabelsWindow_SystemManagement>()`, and the node is `system:planet/<id>/action/0` in
+the `…/actions` region — two `ui.regionNext` jumps from the population region, not `ui.end`.
 
 ## The economy page and the recipe modal
 
@@ -399,4 +447,11 @@ system management screen" (both openings pop a tutorial page — minimize first)
 - A relic-skill hero, a two-mastery starting skill and a natural skill point
   (**Hero inspection**).
 - The Academy is tutorial-gated on `[Beginner] test` (**Diplomacy, the academy pair**).
+- The whole EMPIRE page is tutorial-gated on `[Beginner] test`; use `[Beginner] access test`
+  or `unlocked` (**The empire page**).
+- The specialization list's ROWS: no save has an available planet improvement, terraformation
+  or anomaly reduction, so `screen.planet-constructibles` can only ever be opened onto an
+  EMPTY list — on the empire route and on the system-management route alike (**The empire
+  page**; the same blocker under **The planet constructible panel has no fixture either** in
+  `systems-and-planets.md`).
 - The absent-means-silent guard on a table's double click (**A table's double click**).

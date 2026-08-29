@@ -15,17 +15,23 @@ namespace ES2Access.Screens
     /// Without a screen here, a player who chose one of those entries from the card's menu would hear
     /// nothing at all and be sitting in front of a list they could not reach.
     ///
-    /// It is a PANEL, not a window, and there are TWO of it: the game gives one to each of the planet
-    /// label windows that draws build buttons - <c>PlanetLabelsWindow_SystemOrbital</c> (:11, shown at
-    /// :124-161) and <c>PlanetLabelsWindow_SystemManagement</c> (:12, shown at :155-171) - and moves it
-    /// every frame to stay under the card's button row. They are different objects, at most one of them
-    /// is up (each window hides its own on show and on hide, and the two windows are the two views of
-    /// one star system screen), so the screen answers with whichever is drawing a planet.
+    /// It is a PANEL, not a window, and there are THREE of it: the game gives one to each host that
+    /// draws planet cards with build buttons on them - <c>PlanetLabelsWindow_SystemOrbital</c> (:11,
+    /// shown at :124-161), <c>PlanetLabelsWindow_SystemManagement</c> (:12, shown at :155-171), and the
+    /// EMPIRE page's own cards panel (<c>EmpireScreen.StarSystemsManagementPanel</c> :28 →
+    /// <c>StarSystemPlanetCardsPanel.ConstructiblePanel</c> :15, opened by
+    /// <c>OnClickBuildInfrastructure</c> :278-288) - and moves it every frame to stay under the card's
+    /// button row. They are different objects, at most one of them is up (each host hides its own as it
+    /// shows and as it hides, the two label windows are the two views of one star system screen, and
+    /// the empire page's cards panel is hidden the moment another table row or cell is clicked), so the
+    /// screen answers with whichever is drawing a planet.
     ///
-    /// The two differ in what the panel is bound to, which is what a line can SAY:
-    /// - the management card binds the colonized planet (<c>BindPlanet(planet, mode)</c>) in all three
-    ///   modes, so a line carries the planet's own title and the game may REFUSE it, filling the item's
-    ///   failure list with the reason (<c>StarSystemConstructibleItem.RefreshContent</c> :169-194);
+    /// They differ in what the panel is bound to, which is what a line can SAY:
+    /// - the management card and the empire page's card both bind the colonized planet
+    ///   (<c>BindPlanet(planet, mode)</c>, <c>StarSystemPlanetCardsPanel.ShowConstructiblePanel</c>
+    ///   :255-271) in all three modes, so a line carries the planet's own title and the game may REFUSE
+    ///   it, filling the item's failure list with the reason
+    ///   (<c>StarSystemConstructibleItem.RefreshContent</c> :169-194);
     /// - the orbital card binds a Behemoth's fleet action (<c>BindPlanet(provider, planet, mode)</c>),
     ///   which forces every line enabled and makes the game draw the constructible's ALT title
     ///   (<c>RefreshConstructibleItem</c> :307-310 passes both flags together).
@@ -33,12 +39,13 @@ namespace ES2Access.Screens
     /// Escape is claimed. Nothing in the game closes this panel with a key - it is dismissed by
     /// clicking its button again, or it closes itself once an order has been placed - so Escape would
     /// otherwise sail past it into the pause menu while the panel stayed on screen. Closing goes
-    /// through the game's own route, the message every one of its close paths sends to the window that
-    /// owns it - the panel's own <c>Client</c>, which each window sets to itself as it loads, so one
-    /// route serves both.
+    /// through the game's own route, the message every one of its close paths sends to the host that
+    /// owns it - the panel's own <c>Client</c>, which each host sets to itself as it loads
+    /// (<c>StarSystemPlanetCardsPanel.Load</c> :49, and it handles <c>OnCloseConstructiblePanel</c>
+    /// itself at :314-316), so one route serves all three.
     ///
-    /// The management route is base-game reachable and is where this screen is tested. The ORBITAL
-    /// route still needs a Behemoth in the system with the matching fleet action available
+    /// The management and empire routes are base-game reachable and are where this screen is tested.
+    /// The ORBITAL route still needs a Behemoth in the system with the matching fleet action available
     /// (<c>PlanetLabel_SystemOrbital.RefreshTerraformationStatus</c> :785-856,
     /// <c>RefreshAnomalyReductionStatus</c> :940-1010, both of which return before making the button
     /// visible when no fleet offers the action), which no fixture has - so the alt-title and
@@ -55,10 +62,10 @@ namespace ES2Access.Screens
             get { return "screen.planet-constructibles"; }
         }
 
-        /// <summary>Above whichever page the card belongs to - the galaxy at the orbital step, the
-        /// system's management page, both at layer 10: the panel covers part of it and takes the
-        /// keyboard - and below the tutorial popup and everything else that can appear on top of both.
-        /// </summary>
+        /// <summary>Above whichever page the card belongs to - the galaxy at the orbital step and the
+        /// system's management page, both at layer 10, and the empire page at 15: the panel covers part
+        /// of it and takes the keyboard - and below the tutorial popup and everything else that can
+        /// appear on top of them.</summary>
         public override int Layer
         {
             get { return 20; }
@@ -293,15 +300,18 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Whichever of the two planet-label windows is holding a planet in its constructible panel.
+        /// Whichever of the three owners is holding a planet in its constructible panel.
         ///
-        /// Asked of both every time rather than remembered: the player moves between the system's
-        /// orbital view and its management view without this screen being involved, and each view
-        /// drives its OWN copy of the panel. Only one of them can be up - each window hides its copy
-        /// as it shows and as it hides (<c>PlanetLabelsWindow_SystemManagement.OnBeginShow</c> :105-110
-        /// and <c>OnBeginHide</c> :112-116, the same pair on the orbital window) - so the first one
-        /// still bound to a planet is the answer, and the shown one is preferred over one that is only
-        /// fading out with its planet still attached.
+        /// Asked of all three every time rather than remembered: the player moves between the system's
+        /// orbital view, its management view and the empire page's planet cards without this screen
+        /// being involved, and each of them drives its OWN copy of the panel. Only one of them can be
+        /// up - each planet-label window hides its copy as it shows and as it hides
+        /// (<c>PlanetLabelsWindow_SystemManagement.OnBeginShow</c> :105-110 and <c>OnBeginHide</c>
+        /// :112-116, the same pair on the orbital window), and the empire page's copy lives on a panel
+        /// the star system table hides whenever another row or cell is clicked
+        /// (<c>StarSystemsManagementPanel.OnLineSelection</c> :286-289) - so the first one still bound
+        /// to a planet is the answer, and the shown one is preferred over one that is only fading out
+        /// with its planet still attached.
         /// </summary>
         private static PlanetConstructiblePanel Panel()
         {
@@ -316,15 +326,25 @@ namespace ES2Access.Screens
                     Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemOrbital>(false);
                 PlanetLabelsWindow_SystemManagement management =
                     Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemManagement>(false);
+                global::EmpireScreen empire =
+                    Gui.GuiService.GetWindow<global::EmpireScreen>(false);
+                StarSystemsManagementPanel systems =
+                    empire == null ? null : empire.StarSystemsManagementPanel;
+                StarSystemPlanetCardsPanel cards =
+                    systems == null ? null : systems.StarSystemPlanetCardsPanel;
                 PlanetConstructiblePanel first = orbital == null ? null : orbital.ConstructiblePanel;
                 PlanetConstructiblePanel second =
                     management == null ? null : management.ConstructiblePanel;
+                PlanetConstructiblePanel third = cards == null ? null : cards.ConstructiblePanel;
                 return Showing(first)
                     ?? Showing(second)
+                    ?? Showing(third)
                     ?? Bound(first)
                     ?? Bound(second)
+                    ?? Bound(third)
                     ?? first
-                    ?? second;
+                    ?? second
+                    ?? third;
             }
             catch (Exception)
             {
