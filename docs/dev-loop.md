@@ -71,7 +71,9 @@ mutes voicing but `/speech` still captures.
   `text=1` types the body; arrows are `UpArrow`/`DownArrow`/…). The only route where a key is
   physically DOWN (the consumed-key latch, `anyKeyDown`, engine KeyDown delivery, "was Return
   still down when the focus left"). REFUSES (409, nothing sent) unless the foreground window is
-  the game's, re-checked every step; 400 for an unknown key name (the answer lists the vocabulary)
+  the game's, re-checked every step; 400 for an unknown key name (the answer lists the vocabulary).
+  Windows-only (Win32 SendInput): on macOS it refuses naming the platform — `POST /input` and
+  the `DevProbe.EndEdit`/`ArmCommit` levers are the substitutes there
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
   20–100 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 120 s
@@ -162,7 +164,7 @@ an image.
 **Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "[Beginner] test"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked PowerShell hits
-execution policy). First act in-game: minimize the tutorial popup (recipe in
+execution policy). On a Mac the twins are `./run-game.sh` / `./wait-game.sh`, same arguments. First act in-game: minimize the tutorial popup (recipe in
 `test-recipes/fixtures.md`) — expanded, it eats every injection as `unconsumed`.
 A `launcher-x64` orphaned into the *Services* session (session 0) never exits and cannot be killed;
 the launch guard skips other sessions, but if a launch still fails,

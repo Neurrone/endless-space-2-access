@@ -70,6 +70,11 @@ namespace ES2Access.Dev
         public static Result Send(string body, int holdMilliseconds, int gapMilliseconds)
         {
             Result result = new Result();
+            if (NotOnThisPlatform(result))
+            {
+                return result;
+            }
+
             List<Step> steps = new List<Step>();
             string parsed = Parse(body, steps);
             if (parsed != null)
@@ -123,6 +128,12 @@ namespace ES2Access.Dev
         /// them through its ordinary path.</summary>
         public static Result Type(string text, int gapMilliseconds)
         {
+            Result platform = new Result();
+            if (NotOnThisPlatform(platform))
+            {
+                return platform;
+            }
+
             Result result = new Result();
             if (string.IsNullOrEmpty(text))
             {
@@ -727,6 +738,21 @@ namespace ES2Access.Dev
             public uint Msg;
             public ushort ParamL;
             public ushort ParamH;
+        }
+
+        /// <summary>Real key events are posted with Win32's SendInput, so on macOS the route
+        /// answers a refusal instead of a DllNotFoundException from inside the sequence. POST
+        /// /input (the action route) works everywhere.</summary>
+        private static bool NotOnThisPlatform(Result result)
+        {
+            if (Application.platform != RuntimePlatform.OSXPlayer && Application.platform != RuntimePlatform.OSXEditor)
+            {
+                return false;
+            }
+
+            result.Error = "raw key events are not supported on macOS; POST /input runs the action instead";
+            result.Refused = true;
+            return true;
         }
 
         private delegate bool EnumWindowsProc(IntPtr window, IntPtr unused);
