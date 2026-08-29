@@ -23,6 +23,14 @@ gesture's (Alt+Enter is Unity's own fullscreen toggle, below every managed layer
 that move is that a game handler reading a physically held Alt no longer sees it: any such click
 must be WIRED, never left to the plain-click fall-back.
 
+**Ctrl and Alt in the mod's docs name its FIRST and SECOND chord modifiers, not two fixed keys.**
+On Windows they are Control and Alt; on macOS they are held as Option and Command (every
+`Ctrl+X` is `Option+X` there, every `Alt+X` is `Cmd+X`, letters unchanged), because Control+arrows
+belong to the macOS desktop and Control+Option is VoiceOver's own modifier. The one place the
+choice is made is `KeyboardBinding` (its doc comment carries the full reasoning; the conflict scan
+and the player-facing spelling are `macos/README.md`). The game's own Control bindings stay on real
+Control on both systems.
+
 **There is no reorder chord**: moving an item within its list is a drag like any other.
 
 **Usage hints are hand-picked, not a policy.** There is no runtime dedup, so each new hint is an

@@ -17,11 +17,12 @@ namespace ES2Access.UI.Input
     /// the mod claims is not just a collision; it can be the ONLY way to a game surface, and then the
     /// mod owes a replacement.
     ///
-    /// The replacement is the game's own binding, moved: Ctrl+Tab, which nothing in the game binds
+    /// The replacement is the game's own binding, moved: Ctrl+Tab - on a Mac Option+Tab, the same
+    /// chord in the mod's space (see <see cref="Chord"/>) - which nothing in the game binds
     /// (all 65 default bindings measured live - the modified ones are Ctrl+Mouse1, Ctrl+F5, Ctrl+F8,
     /// Ctrl+F, Ctrl+E, Ctrl+H, Ctrl+Shift+R, Ctrl+Shift+F3, Ctrl+Alt+V) and which no mod binding
     /// matches either (the mod's Tab bindings are exact-modifier - `KeyboardBinding` - so plain Tab
-    /// and Shift+Tab stay the mod's while Ctrl+Tab is nobody's). Going through the game's own option
+    /// and Shift+Tab stay the mod's while the chat chord is nobody's). Going through the game's own option
     /// property rather than a private list is what makes the change visible: Options > Key mappings
     /// reads the same property back (`Option.GetValue` is not cached for a key mapping - its
     /// attribute never sets Latent), so the row shows "Ctrl + Tab" and the player can re-bind it like
@@ -54,8 +55,20 @@ namespace ES2Access.UI.Input
     internal static class GameChatKey
     {
         /// <summary>Where chat goes. The game's own registry form, so the value round-trips through
-        /// <c>InputBinding.ToRegistryString</c> unchanged and can be compared as a string.</summary>
-        public const string Chord = "StartChatting:Ctrl+Tab,";
+        /// <c>InputBinding.ToRegistryString</c> unchanged and can be compared as a string. On a Mac
+        /// the registry's Alt is physical Option - the mod's first chord modifier there, the same
+        /// abstract chord as Ctrl+Tab on Windows - while the registry's Ctrl names REAL Control, a
+        /// key the mod's chords no longer hold on a Mac: real Control+Tab there would open chat AND
+        /// move the mod's cursor, because the mod's bare-Tab binding does not poll Control.</summary>
+        public static readonly string Chord = Core.Util.Platform.IsMacOS
+            ? "StartChatting:Alt+Tab,"
+            : "StartChatting:Ctrl+Tab,";
+
+        /// <summary>The chord this class wrote before it learned the Mac spelling. A Mac registry
+        /// still holding it is the mod's own earlier move, not the player's choice - and real
+        /// Control+Tab fires the mod's bare Tab there anyway - so it is moved on like a shipped
+        /// default. On Windows it IS <see cref="Chord"/> and this never matches.</summary>
+        private const string SupersededChord = "StartChatting:Ctrl+Tab,";
 
         /// <summary>How often the binding is re-checked once it has been settled once. Long enough to
         /// cost nothing, short enough that a reset in the options screen is repaired before the player
@@ -105,7 +118,7 @@ namespace ES2Access.UI.Input
                     return;
                 }
 
-                if (was != Chord && OnTheModsKeys(current))
+                if (was != Chord && (OnTheModsKeys(current) || was == SupersededChord))
                 {
                     options.InputBindingsStartChatting =
                         new Amplitude.Unity.Input.InputBinding(Chord);
@@ -113,7 +126,11 @@ namespace ES2Access.UI.Input
                     Log.Info(
                         "the game's chat key was "
                             + was
-                            + ", which the mod uses to navigate; moved it to Ctrl+Tab. The game's own "
+                            + ", which the mod uses to navigate; moved it to "
+                            + (Core.Util.Platform.IsMacOS
+                                ? "Option+Tab (the game's options draw it as Alt + Tab)"
+                                : "Ctrl+Tab")
+                            + ". The game's own "
                             + "Options / Key mappings shows it there and can change it, and the change "
                             + "is saved with the game's settings"
                     );
@@ -184,35 +201,30 @@ namespace ES2Access.UI.Input
 
         private static int HandBack(ModInput input, Amplitude.Unity.Input.KeyCombination combination)
         {
-            // A combination of several real keys has no counterpart in the mod's own bindings, so there
-            // is nothing to compare it against and nothing it could collide with.
-            if (Count(combination) != 1)
+            // Translated into the mod's own chord space (KeyChords.FromCombination), because the
+            // stand-down this hand-over feeds compares in that space (ModInput.LeavesToGame) and
+            // the game's mask does not speak it on a Mac: the mask's Alt bit is Option - the mod's
+            // first modifier - and a Command chord is a key code in the list with no mask at all.
+            KeyboardBinding chord = KeyChords.FromCombination(combination);
+            if (chord == null)
             {
                 return 0;
             }
 
-            Amplitude.Unity.Input.Input.KeyModifier modifiers = combination.Modifiers;
-            if (modifiers == Amplitude.Unity.Input.Input.KeyModifier.None)
+            if (!chord.Ctrl && !chord.Shift && !chord.Alt)
+            {
+                // Bare in the mod's space is one of the mod's own keys - a letter is its
+                // type-ahead search - whatever the game's form carried outside that space (a
+                // Mac's real Control chords land here, and the mod's bare binding fires on them).
+                return 0;
+            }
+
+            if (input.BindsChord(chord.Key, chord.Ctrl, chord.Shift, chord.Alt))
             {
                 return 0;
             }
 
-            bool ctrl =
-                (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Ctrl)
-                != Amplitude.Unity.Input.Input.KeyModifier.None;
-            bool shift =
-                (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Shift)
-                != Amplitude.Unity.Input.Input.KeyModifier.None;
-            bool alt =
-                (modifiers & Amplitude.Unity.Input.Input.KeyModifier.Alt)
-                != Amplitude.Unity.Input.Input.KeyModifier.None;
-            KeyCode key = combination.KeyCodes[0];
-            if (input.BindsChord(key, ctrl, shift, alt))
-            {
-                return 0;
-            }
-
-            input.LeaveToGame(key, ctrl, shift, alt);
+            input.LeaveToGame(chord.Key, chord.Ctrl, chord.Shift, chord.Alt);
             return 1;
         }
 
