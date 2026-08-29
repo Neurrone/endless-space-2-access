@@ -173,6 +173,23 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   containers; a group whose children are all primitives is ONE line. This models whole
   panels cheaply without per-widget work — and completely only where the panel's tooltips
   are content-backed ([tooltips.md](tooltips.md)).
+- **A gate is the game's own answer, asked at the promise's own strength.** Wherever the
+  mod decides whether to OFFER a gesture — a pickup, a drop, an action — ask the game's
+  own predicate or enumeration, never a hand-written summary of its rule: a summary
+  drifts the day the game's rule grows a branch (ES2Access refused population pickups in
+  one-colony systems because its summary counted destination planets and forgot the
+  spaceport the game's own target list included). Two refinements the same bug family
+  taught. First, **one question, one home**: two screens each summarizing "is there
+  anywhere to put this down?" WILL diverge — one shared helper both call makes divergence
+  impossible rather than unlikely. Second, **match the game's check to the mod's
+  promise**: the game's gesture-time check is only sufficient when it answers the same
+  question your indication makes. A mouse UI can afford a weaker check — it posts the
+  order and lets the server clamp a doomed transfer to nothing, a no-op the sighted
+  player shrugs off — but a spoken "drop target" is a promise that the drop will
+  *succeed*. Where the mod promises more than the game's UI does, extend the game's check
+  with the game's own outcome arithmetic (the very numbers the server-side handler
+  reads), never a mod-invented rule — and give the offering gate and the drop handler one
+  implementation, so what is advertised and what happens cannot disagree.
 
 ## 4. Verify with evidence, not claims
 

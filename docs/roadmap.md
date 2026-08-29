@@ -98,17 +98,35 @@ belong in the files above.
   live).
 - Space-battle balance sentence + plan chooser (2026-08-29: directional balance naming both
   fleets, the plan carousel as one closed combo row over a chooser child screen, nested
-  plan/ship/arena tooltip children): the SETUP popup is verified live; the other three users of `BalanceText` are
-  code-symmetry only and need a battle fought — the REPORT popup and the cinematic — or a
-  toggle nobody would flip in a live session: the ADVANCED-PLAY modal declares its balance
-  node only while `BattlePowerGauge` is drawn, and the game draws that gauge only under the
-  "Displays stats about military power" stats radio (measured 2026-08-28: with the default
-  trajectory-visuals radio selected the node is absent altogether). Unsighted with it:
+  plan/ship/arena tooltip children): the SETUP popup is verified live, and so is the
+  ADVANCED-PLAY modal since its stats band became a pager (2026-08-29: the military page's row
+  computes the sentence from the encounter groups, so it reads whatever page the window is
+  showing). The remaining two users of `BalanceText` are code-symmetry only and need a battle
+  fought — the REPORT popup and the cinematic. Unsighted with it:
   `battle.balance-all` (the wipe-out phrase, needs a side
   reduced to zero military power), the first-non-reinforcement-garrison rule on a side with
   reinforcements or merged fleets (the fixture has one garrison a side), a plan card the game
   draws `NoEffectsLabel` on, and a plan whose three flotilla ranges differ (only a 3x
   "Short Range" card's nested names were dumped).
+- Space-battle cinematic, the six lines this report cannot produce (2026-08-30 narration stage,
+  r50): the acts, the phases, the losses, the progress quarters, the outcome word and the whole
+  exchange of fire are verified on a watched re-run of the Sabel battle, but reinforcements arriving
+  mid-fight, a ship repairing, a battle effect, a medal, the two shield-absorption clauses and
+  citadel fire have never been heard — that report holds none of what feeds them (the measurements
+  are in `test-recipes/battles.md`, **Fixture-blocked**). Needs a battle with reinforcements, shields
+  that hold, a medal earned, and a defended system.
+- The repair line's own premise is unmeasured (same stage): it is written against a positive `Health`
+  delta on an `EncounterShipSection`, chosen because that is the level the stream writes hull at
+  (measured on the damage side) and because a module's health is part of its section's — but no
+  positive delta occurs on this fixture, so neither the level nor the per-ship summing has been seen
+  to be right. First battle with a repair, check the figure against the ship's own health bar.
+- Advanced-play fleet arrangement (2026-08-29 stage shipped the ship lock and the carry): a
+  successful CROSS-FLOTILLA move and the juggernaut SWAP are both unverified — the fixture has one
+  valid flotilla, so every drop it can reach is a refusal. Needs a 5+ CP fleet battle: the manual
+  lines are in `test-recipes/battles.md` (ADVANCED block). Two things ride on it — whether
+  `BattleGroupSetupPanel`'s roster lines redraw after a drop (only the 2D flotilla cards are proven
+  to), and whether the swap is worth advertising, since `DropAccepts` is the game's
+  `CanAddShipItem` and that branch succeeds where it says no, so the swap works and no row offers it.
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a
@@ -361,30 +379,24 @@ belong in the files above.
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
   — hoist the visibility-correct one and drop the others.
-- **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
-  `docs/audit-dlc-mechanics.md`; none of the four expansions has a depot in
-  this install, so every item below is code-verified at best — except where the `*_DLC*`
-  datatables alone are enough to bind a window, which is how the Behemoth modal got measured):
+- **Expansion surfaces — each needs its expansion's CONTENT to sight** (2026-08-12 audit,
+  `docs/audit-dlc-mechanics.md`). Whether a session can reach them is a property of the machine and
+  the save, never of this file: probe it live at the start of a stage
+  (`docs/test-recipes/fixtures.md`, "Which expansions this session can reach") and pick the work accordingly. Some of these are measurable without the
+  content at all, because the `*_DLC*` datatables bind a window on their own — which is how the
+  Behemoth modal got measured:
   - Behemoth family (Supremacy): the specialization modal is a MODEL now, not a floor (layer 29 —
-    the datatables load unowned, so the three specializations and the six named resources were
-    measurable here). What still waits for the DLC is only what needs a real Behemoth: a TAKEABLE
-    card, Confirm, and the toolbar route into the modal; then the rest of the family.
+    the datatables load whether or not the content is active, so the three specializations and the
+    six named resources were measurable). What still needs a real Behemoth: a TAKEABLE card,
+    Confirm, and the toolbar route into the modal; then the rest of the family.
   - Hacking subsystem (Penumbra): dashboard, processing-power/operations banner, traitors
     banner, program panel, operation route-building — one large stage, NOT to be written
-    blind; wait for the DLC.
+    blind; needs a save actually running a hacking operation.
   - Traitor victim-side actions (Reveal/Kill/Remove in the population side panel) +
     pirate-lair and destroyed-planet orbital labels — small, shares the fixture wait.
   - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
     star system page beside Outpost and Colony — two side panels of bare-icon controls +
     a growth gauge.
-- Spaceport population (batch G): the panel's rows, the pick-up and the drop through
-  `SpaceportSidePanel.ApplyDrop` are MODELLED, and no save can draw the panel at all
-  (ES2 facts: `IsAvailable()` wants a system improvement). The rows and the pick-up were proved
-  against a lent binding; the round trip — Space in the spaceport, Enter on a planet card, the
-  `OrderTransferSpaceportPopulation` it posts — waits for a save with a spaceport. The OTHER
-  direction is not built: the game also drops a PLANET's population INTO the panel
-  (`PlanetLabelsWindow_SystemManagement.StartDrag` :144-148 adds the panel as a target), which needs
-  the same fixture and an owner ruling on which node in the panel takes the drop.
 - Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
   widget, no label window; making it discoverable is real map-tree modelling.
 - Faction sightings needing another base-game save (code landed drawn-gated, unsighted):

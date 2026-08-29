@@ -84,6 +84,29 @@ stack once. The game menu closes through its own **Resume Game** node. EXCEPTION
 2026-08-25): `HideWindow` does NOT close `StarSystemScreen` (it stays `Shown=True`) — leave the
 management page with `Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(pos)` instead.
 
+## Which expansions this session can reach
+
+**Never written down, always probed** (owner ruling 2026-08-29): the answer is a property of the
+machine, and the owner works from several — a doc that records it is wrong somewhere. One `/eval`,
+at the start of any stage touching expansion content:
+
+```
+IDownloadableContentService svc = Amplitude.Unity.Framework.Services.GetService<IDownloadableContentService>();
+System.Collections.IEnumerator e = ((System.Collections.IEnumerable)svc).GetEnumerator();
+while (e.MoveNext()) { DownloadableContent d = (DownloadableContent)e.Current; /* d.Name, d.Accessibility */ }
+```
+
+`Accessibility` is a flag set: `Available` (7) is `Installed | Subscribed | Activated`, and anything
+less means the game will hide that content's surfaces. Cast through the NON-generic `IEnumerable` —
+the service is `IEnumerable<DownloadableContent>` and a `foreach` over it poisons the whole REPL
+session (`docs/dev-loop.md`, REPL gotchas). `IsShared(name)` is the per-DLC form when only one
+answer is wanted.
+
+**Availability is necessary, not sufficient.** Owning Penumbra does not make a Sanctuary appear:
+that needs a save whose player empire IS the Umbral Choir. Owning Supremacy does not draw a
+Behemoth. So a "can I sight this?" answer is always availability AND a fixture — and fixtures are
+the owner's (**Fixture-blocked**).
+
 ## Sighting a surface the fixture never draws
 
 Tier zero: read the prefab's fields off the
@@ -120,7 +143,8 @@ family's own recipe file.
 - The per-family lists are in the sibling files: `test-recipes/galaxy-map.md`,
   `test-recipes/fleets.md`, `test-recipes/scanner.md`, `test-recipes/systems-and-planets.md`,
   `test-recipes/empire-screens.md`, `test-recipes/modals-and-outgame.md`,
-  `test-recipes/notifications.md`, `test-recipes/inspect-and-influence.md`,
+  `test-recipes/notifications.md`, `test-recipes/battles.md`,
+  `test-recipes/inspect-and-influence.md`,
   and `test-recipes/mod-settings.md`, each under its own
   `## Fixture-blocked` heading.
 - No save shows an UNLOCKED End Turn, so the turn cluster's operable state stays

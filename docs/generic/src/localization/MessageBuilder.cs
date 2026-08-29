@@ -174,6 +174,25 @@ namespace ES2Access.Core.Speech
         }
 
         /// <summary>
+        /// The same multiplier, appended WHATEVER the count is - including one (owner ruling
+        /// 2026-08-29).
+        ///
+        /// <see cref="PushQuantity"/>'s silent singular is right for a readout, where "Titanium x 1"
+        /// is noise nobody asked for. It is wrong inside a DRAG, where the count is the whole point
+        /// of the sentence: a population marker hands over a different number depending on which one
+        /// it is, so "Dragging Imperials x 3" and a bare "Dragging Imperials" one row later read as
+        /// two different KINDS of answer rather than as three and one. Stating it every time makes
+        /// the rows comparable, which is what a player walking the ring is doing.
+        ///
+        /// Same template as <see cref="PushQuantity"/>, so a translation still says the multiplier
+        /// its own way and there is no second wording to keep in step.
+        /// </summary>
+        public MessageBuilder PushQuantityAlways(int count)
+        {
+            return Fragment(ModStrings.Format(ModStrings.Quantity, count));
+        }
+
+        /// <summary>
         /// Finalize and return the message, or null if nothing was appended. The builder is
         /// single-use after this.
         /// </summary>

@@ -1895,7 +1895,7 @@ namespace ES2Access.UI
                 {
                     // Back into the slot it came out of: the drag ends having moved nothing, which is
                     // what putting it down on its own row means everywhere else.
-                    return DropResult.Done(ModStrings.Get(ModStrings.CarryCancelled));
+                    return DropResult.Done(ModStrings.Get(ModStrings.DragCancelled));
                 }
 
                 GuiModule module = Carried(held);

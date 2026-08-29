@@ -75,7 +75,7 @@ namespace ES2Access.Core.Speech
             { "action.ui.activate.title", "Activate" },
             {
                 "action.ui.activate.description",
-                "Do what a click does here, and put down whatever is being carried."
+                "Do what a click does here, and put down whatever is being dragged."
             },
             { "action.ui.secondary.title", "Go back to the previous system" },
             {
@@ -85,7 +85,7 @@ namespace ES2Access.Core.Speech
             { "action.ui.back.title", "Back" },
             {
                 "action.ui.back.description",
-                "Close what is open, clear a search, or put down what is being carried."
+                "Close what is open, clear a search, or put down what is being dragged."
             },
             { "action.ui.alternate.title", "Activate with modifier" },
             {
@@ -109,10 +109,10 @@ namespace ES2Access.Core.Speech
                 "action.ui.coarseIncrease.description",
                 "Move a value up by about a tenth of its range."
             },
-            { "action.ui.carry.title", "Pick up or put back" },
+            { "action.ui.carry.title", "Drag or swap" },
             {
                 "action.ui.carry.description",
-                "Pick up what the cursor is on, swap it for another, or put it back where it came from."
+                "Start dragging what the cursor is on, or swap it for another. The back key cancels the drag."
             },
             { "action.ui.selectToggle.title", "Add to or remove from selection" },
             {
@@ -122,7 +122,7 @@ namespace ES2Access.Core.Speech
             { "action.ui.selectRange.title", "Select up to here" },
             {
                 "action.ui.selectRange.description",
-                "Take everything from the last one picked up to this one."
+                "Take everything from the last one selected to this one."
             },
 
             // Turning the page, and going straight somewhere.

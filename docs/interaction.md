@@ -99,7 +99,16 @@ other activation — the game's ALT-click (queue at the head) — **Backslash** 
 action bound as a second chord, never a wired variant, because the game runs one handler for both
 clicks and reads the physical modifier inside it (on the map: a free-movement-only route,
 `FleetOrders.RequestedFlags`), **Ctrl+Alt+Enter** the control's DOUBLE click (`OnDoubleClick`),
-**Space** pick up / swap / put back what is being dragged (`OnPickUp`),
+**Space** pick up / swap what is being dragged (`OnPickUp`) — **never a put-back**: pressed again on
+the control the thing came from it picks it up AGAIN, because a source can hand over different
+amounts of the same thing (a population marker carries itself and every marker of the same people
+after it) and a cancel there would throw the drag away instead of re-sizing it; the back key is the
+only cancel (owner ruling 2026-08-29). The pick-up says what is now held and BOTH ways out
+("Dragging Imperials x 3. Enter to drop, Escape to cancel."), with the chords rendered from the live
+action table like any hint, and **every draggable control ends its buffer with a derived hint** —
+"⟨carry⟩ to drag ⟨thing⟩." while nothing is held, "⟨activate⟩ to drop ⟨thing⟩." on a
+target that would take what is (`CarryState.HintLines`, composed by `NodeBuffer` after the
+hand-picked hints; no screen wires either) —
 **Enter** drop it where it will be taken (`DropKind` + `OnDrop`), **Ctrl+Enter** one item into or out
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here
 (`OnSelectRange`), **Delete** empty the control the cursor is on (`ui.clear` → `NodeVtable.OnClear`,
@@ -140,7 +149,12 @@ table and every cell of a row (its `DoubleClickButton`, the row selected first b
 handlers all read `GuiTable.SelectedLine`), so the empire page's systems table opens that system's
 management page, the military page shows the fleet on the map, and the two selection modals pick and
 close — no screen declares any of it. The tables whose client does nothing with the gesture stay
-silent, as the mouse does there. The save list's second click ACTS rather than shows — it loads the
+silent, as the mouse does there. **Off a table, one screen wires it by hand**: the advanced battle
+setup's ship rows, where the game's second click on the ship's chip in the 3D arena is what pins it
+to its flotilla, and the chip's SINGLE click does nothing at all (owner ruling 2026-08-29, reversing
+the same day's ruling that had put the pin on Enter). The row keeps Enter for the DROP - it is a
+target for a ship being carried - so the two gestures no longer collide, and the row's buffer names
+the chord (**Usage hints**, above), because nothing about a roster line suggests a double click. The save list's second click ACTS rather than shows — it loads the
 row (behind the same confirmation the Load button raises in game) or saves over it (behind
 `%LoadSaveConfirmOverwriteDescription`) — and it is carried like every other table's: the game's own
 confirmation is the guard on chord and mouse alike (owner ruling 2026-08-14). A selectable table row
@@ -236,8 +250,11 @@ research technology, a constructible and a colony curiosity ("queue it first"); 
 ship tile in the fleet lists ("add to the selection" / "select up to here"); a control carrying a
 LIVE `GuiButtonHint` ("show missing technology" — declared generically wherever `Cells.Add` or
 `CardActions.Emit` wires the jump, plus the troop list's own copy); the military page's fleet row
-("show and select fleet"), the empire page's systems row ("open system management screen") and the
-load list's row in LOAD mode only ("load"). A table's double-click hint is named by the SCREEN
+("show and select fleet"), the empire page's systems row ("open system management screen"), the
+load list's row in LOAD mode only ("load") and the advanced battle setup's ship rows ("lock or
+unlock this ship in its flotilla", naming the DOUBLE-CLICK chord — the one place in the mod where a
+hint names that gesture, because a roster line suggests nothing about it and the game says the same
+thing about its own chips on a button the player may never stand on). A table's double-click hint is named by the SCREEN
 (`TableSheet.DoubleClickHint`) and sits on the row's primary cell alone, though the gesture works
 from every cell of the row: what the second click does is a fact about the row, and repeating it
 down eight columns is eight sentences for one affordance.
@@ -546,6 +563,21 @@ screen that draws it (`docs/test-recipes/`).
 **Which key crosses a multi-region stop** (measured on the empire HUD band, 2026-08-24): Up/Down
 step between the stop's REGIONS (rows) and clamp at the last one; Right/Left walk within the row.
 Alt+Up/Down jump regions by name where the stop declares them.
+
+**A PANEL SET THE PLAYER READS IS ONE STOP, ONE REGION PER PANEL** (owner design 2026-08-29,
+`SystemManagementScreen.BuildSidePanels`). The star-system page's left edge draws four unlabelled
+information boxes — colony info, population, representatives, governor, and whatever an outpost or
+a ghost system draws instead — and they were four Tab stops, so Tab crossed the same edge four
+times to reach the panels below. They are now ONE stop ("System information", the mod's own word:
+naming it after any panel would say that panel's name twice, since it is also the first region),
+with each panel a region named as before, so Alt+Up/Down steps System → Population →
+Representatives → Governor and Up/Down still walks every row in the same order. The SPACEPORT keeps
+its own stop: it is a place to WORK — a ring to carry population out of — not a thing to read. The
+split is asked of the panel, not of a list, so an outpost's or a ghost's set merges without being
+modelled. **One consequence, accepted**: a panel that split ITSELF into regions loses that (the
+representatives panel's two captioned blocks), because a region is now one panel; the captions
+still name the blocks and are still rows, so only the region chord's stop inside that one panel
+went. Regions are flat within a stop — a tier that wants both needs the two-tier model, not this.
 
 **A block's caption names the block, never a row of its own — unless the caption carries a
 tooltip** (owner ruling 2026-08-22). The whole rule, and how to find the widget to ask, is the

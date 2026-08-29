@@ -24,26 +24,40 @@ fallback for a system with no colony panel drawn. Turning the page (Alt+Left/Rig
 own arrows beside the name) is the reason: it never leaves the screen, so without the system in the
 name the one fact the turn is FOR went unspoken.
 
-**Turning that page is ONE announcement and a seat in the new system's content.** The view level is
-re-entered with a new node, and the mod's gates ride that out: `IsActive` asks
-`LevelThroughTransitions` and latches on the page having planet cards drawn, the way the planet page
-does, so the screen does not leave and come back. The screen then notices its own system changing
-(`SystemManagementScreen.Turned`), says the new name once, waits 30 frames for the game to rebind the
-window — seating earlier reads a row belonging to the system just left — and seats the cursor on
-`InitialFocusStop` with a 60-frame retry budget for the cards binding. The latch must be gated on the
-cards being DRAWN and not merely on the window being shown: a page that becomes active while it can
-declare nothing gets its cursor seated on the first shared HUD control instead. Known rough edge:
-while the page is between systems it declares nothing, so the cursor migrates to a HUD stop for a
-moment and that migration is announced — one stray line between the screen name and the landing.
+**WHERE THE CURSOR LANDS, IN THREE CASES** (owner design 2026-08-29). A first entry — nothing
+remembered, which is also every entry after a `/reload`, since that wipes the navigator's per-screen
+state — lands on the **System information** stop, the page's own first stop: `DevProbe.Screen()`
+answers `system:colony/banner` and the announcement is "System information, System, System level N,
+button, … 1 of 15". Any LATER entry from the galaxy, and every **page turn**, put the cursor back
+where the player was instead, so `InitialFocusStop` is only the last fallback. Everything but a
+planet card comes back by key alone (`system:queue/header` means the same row of whatever system is
+up, so the navigator's own reconcile finds it); a planet card is asked for BY POSITION — the same
+card counting from the left, the same row of it — because its key carries the planet's GUID. The
+fallbacks, in order: the planets stop's first row, then System information.
 
-**The star-system page's name and its page turn.** Entering (the `OpenSystem` route above) announces
-"Dusay, System management" once and seats on `system:planet/…`. `POST /input ui.pageNext` then
-announces "Heka, System management" once and, about a second later, the new system's first planet
-row. Expect ONE stray line between the two — the cursor migrating to a HUD stop while the page
-declares nothing between systems. Check with `/speech?since=N` (exactly one screen-name line per
-turn) and `DevProbe.Screen()` (`node` under `system:`). The regression to watch for is the ENTRY
-landing on `hud:view-title/scan` instead: it means the screen went active before its planet cards
-were drawn, and the walk's next Enter then toggles scan mode and poisons every later dump.
+**Turning that page is ONE announcement and one landing.** The view level is re-entered with a new
+node and the mod's gates ride that out (`IsActive` asks `LevelThroughTransitions`), so the screen
+does not leave and come back. The screen notices its own system changing
+(`SystemManagementScreen.Turned`), says the new name once, waits 30 frames for the game to rebind the
+window, and then seats (`Restore`) with a 60-frame budget for the cards binding. Three things keep
+that to one landing, and all three are load-bearing: the page declares NOTHING until it is whole
+(`Whole` — cards drawn AND side panels drawn AND no turn in flight), the seat's own card is opened on
+the build that declares it (`OpenCardBeingSeated`), and `BetweenViews` holds every announcement until
+the seat lands or gives up. The old rough edge — a stray HUD line between the screen name and the
+landing — is gone as of 2026-08-29.
+
+**The star-system page's name and its page turn.** Entering (the `OpenSystem` route above, or Enter
+on the galaxy's `…/management` node) announces "Dusay, System management" once and then one landing
+line. `POST /input ui.pageNext` announces "Ita, System management" once and, about a second later,
+exactly one more line. Check with `/speech?since=N` (**two** lines per turn — the screen name and the
+landing; a third is the regression) and `DevProbe.Screen()`. Measured pairs, 2026-08-29: on card 0
+slot 2 of Ita, `ui.pagePrev` lands on `system:planet/541/population/2` ("Slot 2 of 8") — the same
+card, the same rank; on the rename button of Ita's card 0 (`/name/action/0`), a turn to Heka, whose
+card 0 draws no rename button, falls back to `system:planet/533`, the planets stop's first row; on
+slot 8 of an 8-slot world, a turn to a system whose card 0 has fewer slots falls back the same way.
+The regression to watch for is a landing on `hud:view-title/scan`: it means a render was declared
+while the page was half torn down, which is how the cursor used to be lost (see **Why the page
+declares nothing while it is in pieces**, `planets.md`).
 
 **Escape out of a view level** cannot be tested through `/input`: with no screen of ours
 focused the injector's action is dropped before the game sees it. What the key reaches is
@@ -64,6 +78,14 @@ never `foreach`ed). Queue two or three and the line becomes a drag source as wel
 reorder is exercised inside the same round trip; the research queue is the same shape
 (`DepartmentOfScience.ResearchQueue`, queued from the wheel's `research:suggested` stop in two key
 presses). Both were run against a LIVE owner session and restored exactly.
+**The colony panel's two banner clicks leave the page and come straight back.** `system:colony/banner`
+is the game's own banner button and opens the empire summary at its systems tab;
+`system:colony/level`, the badge in the banner's corner, opens the economy screen at its economy tab.
+Both are silent on activation — the arriving screen announces itself — so the oracle is the window's
+own `CurrentTabName` beside `DevProbe.Screen()` (measured 2026-08-29: `SystemsList` with the cursor
+on "Systems Management, table, Dusay", `Economy` with the cursor on "Trading Companies"). Neither
+screen answers `POST /input ui.back` — Escape there is the GAME's — so close them from `/eval` with
+`Gui.GuiService.HideWindow(...)` when the desktop cannot supply a real key press.
 **That round trip has a SPOKEN oracle since 2026-08-19**: Enter on "Interplanetary Transport
 Network" answers *"Queued Interplanetary Transport Network"* while `ConstructionQueue.Length` grows,
 and Enter on its queue line answers *"Cancelled …"* with the ABBREVIATED title the line draws
@@ -125,11 +147,23 @@ screen's bottom-left corner. The crop is also the only oracle for the ARC — th
 orange sector, and it must cover exactly the ranks the "Overpopulation" region holds.
 The **Locked** band needs a colony holding MORE units than its current maximum, which no save here
 produces; it is covered by `ES2Access.Tests/UI/PopulationSlotsTests.cs` instead.
-The **pick-up** on a filled slot needs a system with a SECOND colony of the player's (below,
-**Moving population between planets**) — with one colony every slot row is read-only, and since
-2026-08-26 the page's own Space claim is what a probe there reads: `Claims("Space")` is true on every
-node of this page and `ui.carry` answers `consumed` in SILENCE, so a read-only slot row is told from
-a pick-up row by the silence and by the row's own readout, never by the claim.
+The **pick-up** on a filled slot needs somewhere on the page to put the unit down, which since
+2026-08-29 is EITHER a second colony of the player's in the system OR a drawn spaceport panel (below,
+**Moving population between planets**) — a one-colony system with a port carries, and only a
+one-colony system with no port leaves every slot row read-only. The page's own Space claim is what a
+probe there reads: `Claims("Space")` is true on every node of this page and `ui.carry` answers
+`consumed` in SILENCE, so a read-only slot row is told from a pick-up row by the silence and by the
+row's own readout, never by the claim.
+**How much a slot picks up is its RANK**, and the walk is the only way to see it: within one
+affinity's contiguous run the first row carries the whole run and the last carries one, so a run of
+four reads "Space to drag Imperials x 4." / "x 3." / "x 2." / "x 1." down the rows, and the
+pick-up says the same figure ("Dragging Imperials x 4. Enter to drop, Escape to cancel."). Grep the
+buffers for `to drag` after expanding the card: the counts must descend inside each run and restart
+at the next affinity. **A population drag states its count even at ONE** ("Dragging Imperials x 1",
+owner ruling 2026-08-29) so the last row of a run reads like its neighbours rather than like a
+different kind of answer — a bare "Dragging Imperials" there is now a defect. That rule is the
+DRAG's and population's alone: an ordinary readout still drops the singular, and a module, a ship, a
+queue line or a tactic card must never read "x 1".
 An UNCOLONIZED card's ring is the same walk with a shorter answer: every row reads a plain "Empty
 slot" and takes its number from the region ("Empty slot, 3 of 6"), because there is only the one
 "Population" band and the rank and the position are the same figure — no dossiers and no pick-up
@@ -259,18 +293,51 @@ the political parties nested in its dossier (`Cells.Declare` gives a cell a subt
 supplies the parties). They were the row BELOW their population until then, because a side panel emits
 a flat list of cells and a cell could not open a subtree.
 
-**Moving population between planets** (management page). The drag is offered only where the system
-has a SECOND colony of the player's (`ColonizedStarSystem.PlanetsColonized.Count > 1`) — with one, the
-card's slot rows are declared read-only and there is no pick-up (measured live: with one colony a
-filled slot row picks nothing up — `ui.carry` on it is silent, and since 2026-08-26 it is `consumed`
-rather than `unconsumed` and `Claims("Space")` reads true, because the PAGE claims Space on every
-node of itself, `docs/interaction.md`), which is what both fixtures show
-(Dusay: `planetsColonized=1`, `GetSpaceportSidePanel()` not shown). What IS testable with one colony:
-push a drag by hand — `ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.CarryItem(pop, "Imperials",
-"population"), ES2Access.ModEntry.Navigator.Screen)` — and watch the card's readout grow "drop target",
-`/input ui.activate` on the card refuse in the mod's fallback words with the drag kept, `ui.carry`
-anywhere that is not a source answer silently with the drag kept, and `ui.back` answer
-"Cancelled drag".
+**Moving population about** (management page). The drag is offered where the GAME's own drag has a
+target: a second colony of the player's in the system, OR a drawn spaceport panel
+(`PopulationMoves.OnSystemPage`, mirroring `PlanetLabelsWindow_SystemManagement.StartDrag`). A
+one-colony system with no port declares every slot row read-only and there is no pick-up — `ui.carry`
+on it is silent, and since 2026-08-26 it is `consumed` rather than `unconsumed` with
+`Claims("Space")` true, because the PAGE claims Space on every node of itself
+(`docs/interaction.md`).
+
+**Who advertises, mid-drag, is the game's own answer** (`PopulationMoves.Accepts` fills `DragInfo`
+with `DragInProgress` FALSE, asks `CanAcceptPopulationDrop`, restores). The evidence pair is one
+`/gui/graph?buffers=1` taken while something is held: every slot row of the SOURCE planet carries
+neither "drop target" nor a drop hint (the game excludes `SourcePopulationOwner`), while another
+colony's slots carry both ("drop target" in the readout, "Enter to drop ⟨thing⟩." last in the
+buffer). Take the same dump with nothing held and the filled rows carry "draggable" and the pick-up
+hint instead — the two words are never both on one row. The card header carries none of it in any
+state.
+
+**THE DROP TARGETS ARE THE SLOTS, NEVER THE CARD** (owner ruling 2026-08-29). An EMPTY non-locked
+slot is the plain add, an OCCUPIED slot is the game's SWAP (the row's own affinity becomes
+`ReplacedPopulationAffinity`), a LOCKED slot takes nothing, and the card's group header carries no
+`DropKind` at all. The mouse does accept a drop anywhere on the card's rectangle; the keyboard does
+not, because a header that also swallowed drops made two rows out of one gesture. So the mid-carry
+dump must show the card header WITHOUT "drop target" and without a drop hint while its slots have
+both, and Enter on the header must still do the card's own click (it opens the planet overview page —
+which also ends the carry, since the player has left the page). A full planet then offers only its
+swaps and a planet with room offers its free places, which reaches every outcome the mouse reaches.
+Verify a swap by per-affinity count probes on both ends, never by speech alone:
+`Spaceport.GetPopulationCountByAffinity(...)` and `ColonizedPlanet.GetPopulationByAffinity(...).Count`
+before and after. A same-affinity swap is a legitimate net-zero — dropping Imperials onto a filled
+Imperials slot bounces one out and puts N back — so a probe that does not move is the RIGHT answer
+there, not a failed drop. A planet-to-planet swap needs a system with two colonies of the player's;
+where no fixture has one, that half is blocked and the port's swap (the bounce branch) is reachable.
+
+**What a successful drop SAYS is what really moved, not what was carried** — the spaceport clamps
+instead of refusing, so a carry of four onto a port with three free slots answers "Moved Imperials x
+3 to Spaceport" and the port probe reads 3. That mismatch is the check: carry a run longer than the
+free room and the spoken figure must equal the probed delta.
+
+Also testable with no second colony: push a drag by hand —
+`ES2Access.ModEntry.Carry.PickUp(new ES2Access.Core.UI.CarryItem(pop, "Imperials", "population",
+3), ES2Access.ModEntry.Navigator.Screen)` — and watch `/input ui.activate` on a card that refuses
+answer in the mod's fallback words with the drag kept, `ui.carry` anywhere that is not a source
+answer silently with the drag kept, and `ui.back` answer "Cancelled drag". **`ui.carry` on the
+control the thing came from is NOT a cancel** (2026-08-29): it re-picks and re-announces, so a
+put-back expectation in an old script now fails as a live drag.
 **Sighting ANOTHER empire's colony card**, which no save puts in a player system (an enemy outpost
 on a free world of one). Lend a card the foreign colony, all inside ONE `/eval` so no frame draws it
 and the card never `Refresh`es with somebody else's colony bound: take the card from
@@ -296,17 +363,112 @@ pick-up half stays fixture-blocked here for the same reason the drop is (one col
 **Sighting the spaceport side panel**, which no save draws (ES2 facts: `IsAvailable()` needs
 `MaxPopulation > 0`). Show it with `Gui.GuiService.GetWindow<SidePanelsWindow>(false).ShowSidePanel(p)`
 — `SidePanel.Show` itself throws with a message telling you so — and the side-panel sweep declares it
-at once ("Spaceport", the destination line and its button; the empty panel adds no rows, which is the
-empty-state proof). To make its population ROWS exist, lend it real data:
+at once. To make its population ROWS exist, lend it real data:
 `p.SpaceportPopulationEnumerator.Bind(colonizedPlanet, p.gameObject)` + `RefreshNow()` draws that
 planet's markers in the spaceport's slots, and `Bind(p.Spaceport, p.gameObject)` + `RefreshNow()` puts
-it back. That proves the rows, their words and the pick-up ("Dragging Imperials") — **never Enter on a
+it back. That proves the rows, their words and the pick-up — **never Enter on a
 planet card while the binding is lent**, because the drop would move real population. Do not press the
 destination button either: it opens `SystemSelectionModalWindow`.
+
+**Walking the spaceport panel** (where the save DRAWS one — `Spaceport.IsAvailable()`). The stop is
+called **"Spaceport"** (the mod's word carrying the game's title; without it the stop was named by the
+header icon's whole sentence), and its reading order is the panel's: the title line, then a row per
+drawn MARKER in slot order, then the destination line and its button. The markers are banded like a
+planet ring — filled and empty under the game's "Population" title, locked under its locked-slot title
+— and each row is pointed at its OWN marker, so its buffer is the sentence the panel wrote there
+("This slot is empty and can be used to transfer a population unit to another star system" /
+"This population is scheduled to leave the star system" / the locked one, which names the capacity the
+next system level buys). Only those three sentences are accepted; a marker the panel has not refreshed
+still holds the prefab's "This is changed by code", which reads as no tooltip at all.
+A filled row picks up at its rank and takes a swap; an empty row takes a plain add; a locked row is a
+readout with no drop. **Every one of those gates asks the CLAMP rather than a hand-written room
+test** (`PopulationMoves.IntoPort`), which is what stops a row advertising a move that would carry
+nobody: an empty row needs a free slot, and a swap row works on a FULL port only while the source
+planet has room to take the bounced unit — a full port plus a full source planet moves nothing and
+must therefore say nothing. The mirror of that on the planet side: a port-sourced drop onto a FULL
+planet is refused by the mod even though the game's own `CanWelcomeSomeOfPopulation` accepts it,
+because the spaceport's client never performs the swap that acceptance is predicated on. **There is no port-to-port move**: with a port-sourced unit held, no port row
+says "drop target" and Enter on one answers the mod's refusal with the drag kept and the counts
+unchanged (prove it with a count probe, not with silence). **A port-to-planet drop onto an OCCUPIED
+slot IGNORES the swap** — the spaceport's own client posts one order and never reads
+`ReplacedPopulationAffinity` — so the target affinity's count must be unchanged on both ends while the
+carried people arrive (measured 2026-08-29). A LOCKED port slot needs a port holding more than its
+maximum, which is not reachable by filling a port: the enumerator counts empties up to the maximum
+exactly, so a level-2 port of capacity three draws three markers and no locked one.
 **`PlanetPopulationEnumerator.CanAcceptPopulationDrop()` THROWS when no drag is in progress**
 (`DragInfo.TransitingPopulation` is null), so it can only be called with `PopulationEnumerator.DragInfo`
 filled in — and it is a static, read every frame by the enumerator's own refresh, so clear it in a
 `finally` or a marker the player is still looking at reads as already gone.
+
+**Sighting a card's SANCTUARY band** (no save has Penumbra; worked 2026-08-29 on `[Beginner] test`,
+Dusay). Take a card that HAS a colony, set `PlanetLabel`'s auto-property backing field
+`<GhostColonizedPlanet>k__BackingField` (reflection, `BindingFlags.Instance | NonPublic`) to that
+card's own `ColonizedPlanet` — a lend of real data, and one the player's own empire owns, so the
+band's own branch draws everything — then
+`GhostPopulationEnumeratorFocused.Bind(card.Planet, colony, card.Client)`, `.Show(true)`, and
+`card.RefreshNow()`. Expand the card and read the stop. The band declares "Your Sanctuary" (buffer:
+the captioned population fraction, then the five outputs, then the panel's own sentence), a
+`…/ghost/population/<band>` region of slot rows that carry and take drops through the SAME machinery
+as the world's ring, and the traitor button. Restore in one statement: `GhostPopulationEnumeratorFocused.Hide(true)`,
+`GhostFidsiGroup.Hide(true)`, `Bind(planet, null, client)`, put the backing field back to
+`card.Planet.GhostColonizedPlanet` (the real value, normally null), `RefreshNow()` — then confirm
+`GhostGroup.Visible` false on every card and grep the graph for `ghost` (must be 0 hits).
+**The ring is hover-gated**, so a probe that never puts the pointer in the band sees no slot rows at
+all; the mod's own focus does put it there (the band's title is what it aims at), which is why the
+rows appear once the cursor is on "Your Sanctuary" and not before. What the lend CANNOT prove is
+content — a real ghost's figures, its rival variant, and any refusal the traitor button would give.
+
+**Sighting the SANCTUARY LINKS panel** (`ShipsSpawnPointSidePanel`, same DLC block — its gate wants
+`Empire.HasGhostSystems`, but the prefab is base game). One `/eval`: take the drawn
+`ColonyInfoSidePanel`, lend its `ContainerPanel` to the spawn panel if that is null, `Bind` it the
+colony panel's own `ColonizedStarSystem`, `InternalShow()` (never `Show` — `SidePanel.Show` throws),
+`RefreshNow()`. Four rows read; to see the two CLEAR buttons as well, set their
+`AgeTransform.Visible = true` after the refresh and dump before the panel goes dirty again — six
+rows. Restore with `Visible = false` on both, `InternalHide()`, `Unbind()`, then diff the whole graph
+against a dump taken before the lend (only the focus marker and the clock should differ).
+
+**The bottom panels' expand button is NOT in the tree** (owner ruling 2026-08-29) — see
+`docs/planets.md`. Nothing to walk; what a run should check is that `DevProbe.Coverage()` counts it
+`inert` rather than listing it under `actionsUncovered`. Pressing the game's own button from `/eval`
+writes the PERSISTED `IGuiOptionsService.ExpandSystemPanels`, so a probe that presses it must press
+it again and confirm the option and the three `GuiFrameExpander` heights came back (177 collapsed,
+292 expanded on a 1920×1200 window).
+
+**The page OPENS those panels on arrival**, for whoever is watching the screen (owner request
+2026-08-29, `SystemManagementScreen.ExpandBottomPanels`): entering the page toggles the game's own
+expanders and sets the option, once, on the frame the page arrives. Silent, and it declares nothing.
+The test is visual and needs a leave-and-return, because it runs on ENTRY only: collapse with the
+game's own button from `/eval`, leave with
+`Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(node.GalaxyPosition)`, come back with
+`GalaxyViewLevels.OpenSystem(node)`, then check `ExpandSystemPanels` true and all three frame
+heights 292, and `crop-shot.ps1 -Rect 385,880,900,315` for the sighted half (collapsed shows two
+rows of constructibles, expanded four). Collapsing while the page is UP must stick — the entry
+latch has already fired — which is the second half of the check.
+
+**The four information side panels are ONE stop with four regions** (owner design 2026-08-29;
+`docs/interaction.md`). A colony page has 11 Tab stops, not 14. Walking them: Tab to
+`system:side` lands on the colony banner announcing "System information, System, System level 2, …";
+`ui.regionNext` three times steps Population → Representatives → Governor, each announcing its own
+name and landing on its first row, and a fourth is consumed silently at the last region;
+`ui.regionPrev` walks back the same way. Up/Down still walks every row of all four panels in drawn
+order — the seam is invisible to the arrows, and a dump diff against a pre-merge capture shows the
+node ids and row text unchanged, with only the stop/region lines moved and the new stop name added
+to the first row. The SPACEPORT is still its own stop after them, and its carry is unaffected
+(carry from a port slot with a planet card expanded: all eight planet-ring slots read "drop
+target").
+
+**The Tab order, top to bottom** (owner design 2026-08-29 — what the system IS comes before what is
+in it). Walking it with `FocusStop("hud:empire")` then eleven `ui.next`, the spoken order on a
+colony page is: Controls (the empire banners) → System management scan → **System information** →
+**Spaceport** → **Planets** → Constructibles → Construction queue → Hangar → Quest → Notifications →
+End Turn, and the twelfth wraps back to Controls. The stop keys in declaration order are
+`hud:empire`, `hud:view-title`, `system:side`, `system:side/SpaceportSidePanel`, `system:planets`,
+`system:constructibles`, `system:queue`, `system:hangar`, `hud:quest`, `hud:notifications`,
+`hud:turn` (`system:page`, the traitors-mode toggle, sits between `hud:view-title` and `system:side`
+on the rare page that draws it). The move that put the panels first was a pure reordering: a sorted
+diff of `/gui/graph?buffers=1` before and after holds no node id and no buffer line either side, only
+the cursor marker and the clock. Entry still does NOT land on the planets — see **WHERE THE CURSOR
+LANDS, IN THREE CASES** above.
 
 ## Working an outpost
 
@@ -426,3 +588,9 @@ save's own layout is part of the route.
   empire (**Orbital and planet cards**).
 - The population DROP: both fixtures have one colony in the system (**Moving population**).
 - A governor: no save has one (**The assigned-governor side panel**).
+- A card's Sanctuary band and the Sanctuary links panel: both need a player empire that HAS ghost
+  systems, i.e. the Umbral Choir, which is Penumbra content and a faction choice made at new-game
+  time — no save in this repo is one, so neither fixture can draw them whatever the session owns.
+  Their STRUCTURE is sighted by lending (**Moving population between planets**); their content — a
+  real ghost's figures and tooltips, the rival variant, the traitor button's two refusals, and
+  either destination picker's round trip — is untested.

@@ -98,6 +98,16 @@ namespace ES2Access.Core.UI.Graph
             // reach the content first, and a player who wants the gestures knows they are at the end.
             NodeHints.Lines(lines, node.Vtable);
 
+            // And the CARRY's own two hints, derived from the vtable rather than declared by any
+            // screen (<see cref="CarryState.HintLines"/>): what this control would hand over while
+            // nothing is held, and where what IS held can be put down. After the hand-picked hints
+            // because those are the sentence somebody chose for this one control, and these are the
+            // same two sentences every draggable surface in the mod gets for free.
+            if (GraphAnnouncer.Carry != null)
+            {
+                GraphAnnouncer.Carry.HintLines(lines, node.Vtable);
+            }
+
             return lines;
         }
 

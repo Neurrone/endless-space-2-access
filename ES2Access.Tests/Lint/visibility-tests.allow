@@ -420,9 +420,12 @@ ES2Access/Screens/SettingRows.cs | 1 | return AgeWidgets.Visible(widget) && widg
 ES2Access/Screens/SpaceBattleScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
 
 ES2Access/Screens/SystemManagementScreen.cs | 1 | && AgeWidgets.Visible(panel.ExperienceGauge.AgeTransform)
+ES2Access/Screens/SystemManagementScreen.cs | 1 | bool ghost = AgeWidgets.Visible(label.GhostGroup);
+ES2Access/Screens/SystemManagementScreen.cs | 1 | if (!AgeWidgets.Visible(label.GhostGroup))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (AgeWidgets.Paints(children[i]) && (skip == null || !skip(children[i])))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (AgeWidgets.Visible(label.ImprovementStatus))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (children[i] != null && AgeWidgets.Visible(children[i]))
+ES2Access/Screens/SystemManagementScreen.cs | 1 | if (count != null && AgeWidgets.Visible(count.AgeTransform))
 ES2Access/Screens/SystemManagementScreen.cs | 6 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (group == null || fidsi.FidsiProperties == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (improvements != null && AgeWidgets.Visible(improvements))
@@ -433,7 +436,6 @@ ES2Access/Screens/SystemManagementScreen.cs | 1 | if (line == null || !AgeWidget
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (list == null || group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (rename != null && AgeWidgets.Visible(AgeWidgets.Transform(rename)))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (resource == null || !AgeWidgets.Visible(widget))
-ES2Access/Screens/SystemManagementScreen.cs | 1 | if (slot == null || !slot.Visible)
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(banner.AgeTransform))
 ES2Access/Screens/SystemManagementScreen.cs | 6 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (widget == null || tooltip == null || !AgeWidgets.Visible(widget))

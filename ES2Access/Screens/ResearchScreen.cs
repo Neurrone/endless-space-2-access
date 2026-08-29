@@ -464,12 +464,12 @@ namespace ES2Access.Screens
                     // Dropped back where it started, which is what the game's own drag does with a
                     // line whose sibling index has not changed: no order, and the drag ended having
                     // moved nothing.
-                    return DropResult.Done(ModStrings.Get(ModStrings.CarryCancelled));
+                    return DropResult.Done(ModStrings.Get(ModStrings.DragCancelled));
                 }
 
                 MoveInQueue(construction, index);
                 return DropResult.Done(
-                    ModStrings.Format(ModStrings.CarryMovedToPosition, held.Name, index + 1)
+                    ModStrings.Format(ModStrings.DragMovedToPosition, held.Name, index + 1)
                 );
             }
             catch (Exception e)

@@ -108,6 +108,24 @@ through `Gui.GuiService`.
   from the model to beat the animation.
 - **A refusal's own wording is keyed by its flag**: `%Failure<flag>Description` — so the sentence
   a blocked control shows can be looked up from the flag alone, with no tooltip drawn.
+- **A drawn label may be an ELLIPSIS of itself, closed with a period rather than "…".** A label
+  carrying `AutoTruncate` has its `TranslatedText` chopped two characters at a time and a `.`
+  appended until it fits its box (`AgePrimitiveLabel.ComputeText_AutoTruncateIfNecessary`
+  :720-727 → `AgeUtils.TruncateString` :414-430), so "Xeno-Industrial Infrastructure" draws as
+  "Xeno-Industrial." and a reader that takes the drawn string speaks the column width. It is a
+  per-label flag, not a per-screen one: 1787 of this game's 7523 labels carry it and it fires on
+  whichever the layout squeezes (85 at once on the empire page, measured 2026-08-29 — queue
+  lines, constructible tiles, improvement rows, table cells). **Mod policy: a truncation is a
+  rendering artifact and is never spoken.** `AgeText.Label` detects it by MEASUREMENT — the drawn
+  string ends in the truncation character and is a strict prefix of the assigned one — and reads
+  the assigned text instead, so every reader in the mod is covered without a list of screens.
+- **The second kind of truncation cannot be detected that way, because the game truncates BEFORE
+  assigning.** `GetFullTitle(label, wordWrap)` composes a caption against the label's own width
+  (`GuiShipDesign` :766-781 and `GuiBattleShip` :395-415, both through
+  `AgeUtils.TruncateStringWithSuffix`; also `AdItem.Bind`, `EmpireBanner`, `PlanetLabel` :228),
+  so the whole name never reaches `Text` at all. There the reader has to ask the MODEL:
+  `GetFullTitle(null)` is the game's own untruncated answer — but `GuiBattleShip`'s overload
+  dereferences the label unless word wrap is passed, so it is asked as `GetFullTitle(null, true)`.
 
 ## Enumerating and activating controls
 

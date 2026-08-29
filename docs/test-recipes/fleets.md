@@ -239,8 +239,11 @@ claim;
 `ModEntry.Carry.IsCarrying`/`.Held.Name`/`.Held.Kind` is the
 state probe, a compatible row's readout grows "drop target" while something is held, `ui.carry`
 answers "Dragging …" on a source and SILENCE everywhere else — including on a drop target that is not
-also a source — with the drag kept, `ui.carry` back on the source it came from and `ui.back` both
-answer "Cancelled drag" (`claimsBack` reads true only until it does), and **`ui.activate` is the
+also a source — with the drag kept; **`ui.carry` back on the source it came from is NOT a cancel**
+(owner ruling 2026-08-29): it re-picks and re-announces "Dragging …", and `ui.back` alone answers
+"Cancelled drag" (`claimsBack` reads true only until it does). The pick-up line now names both ways
+out ("Dragging Explorer. Enter to drop, Escape to cancel.") and the row's buffer ends with the
+derived hint ("Space to drag …" / "Enter to drop …"). **`ui.activate` is the
 drop**: on a control that takes the cargo it announces the drop and the control's own click does NOT
 run, on any other control the click runs and the drag survives it (inject Enter on a harmless toggle
 to prove that half). Silence is proved with a `/speech?since=N` window, not with the `/input` reply.

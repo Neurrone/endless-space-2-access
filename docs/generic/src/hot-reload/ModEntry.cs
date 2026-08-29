@@ -309,6 +309,10 @@ namespace ES2Access
             // somewhere else this turn. Both feed the same notification pipeline.
             FleetArrivals.Install();
             ForeignFleetWatch.Install();
+            // A watched space battle is a stream of instructions being played back, and the exchange
+            // of fire lives only in that stream - the model has forgotten each shot by the next
+            // frame. The battle screen drains what this queues (see BattleStream).
+            BattleStream.Install();
             // And the game's own probe cancel, which hands the panel back to whichever fleet is
             // parked first at the slot rather than to the one that armed the mode.
             ProbeCancelSelection.Install();
@@ -917,6 +921,17 @@ namespace ES2Access
             NodeHints.Chord = (actionKey, bindingIndex) =>
                 ChordNames.Of(Input, actionKey, bindingIndex);
 
+            // The carry's own three gestures, named to Core so its pick-up announcement and its two
+            // derived hints spell whatever chords those actions are bound to now.
+            CarryState.PickUpAction = UiActions.Carry;
+            CarryState.DropAction = UiActions.Activate;
+            CarryState.CancelAction = UiActions.Back;
+
+            // And the game's own two drag noises, so the keyboard's carry sounds like the mouse's
+            // drag. Which cargo has a sound at all is CarrySounds' answer, not the carry's.
+            Carry.Started = CarrySounds.Started;
+            Carry.Ended = CarrySounds.Ended;
+
             GraphSheet.BlankText = () => ModStrings.Get(ModStrings.NavCellEmpty);
             GraphSheet.TableRoleText = () => ModStrings.Get(ModStrings.NavTable);
             GraphSheet.TextCellType = ControlTypes.Text;
@@ -1070,6 +1085,7 @@ namespace ES2Access
             // subscription and what it was remembering about the galaxy.
             Step("fleet arrivals", FleetArrivals.Remove);
             Step("foreign fleet watch", ForeignFleetWatch.Remove);
+            Step("battle replay stream", BattleStream.Remove);
             Step("probe cancel selection", ProbeCancelSelection.Remove);
             Step("influence ground watch", InfluenceGroundWatch.Remove);
 

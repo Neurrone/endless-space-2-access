@@ -486,22 +486,25 @@ namespace ES2Access.UI
         /// <summary>The control at <paramref name="widget"/>, if there is one to declare - a widget with
         /// no button on it contributes nothing. A widget the game is not drawing contributes nothing
         /// either: the gate's own question, asked HERE (<see cref="Kept"/>) rather than only at the
-        /// banding.</summary>
-        public static void AddControl(List<Cell> cells, AgeTransform widget, string key)
+        /// banding.
+        ///
+        /// Answers the cell it appended, or null where nothing was - for the caller that has more to
+        /// say about the control than a widget and a key carry, the way <see cref="Add"/> does. Ignoring
+        /// the answer is the normal case.</summary>
+        public static Cell AddControl(List<Cell> cells, AgeTransform widget, string key)
         {
             if (widget == null)
             {
-                return;
+                return null;
             }
 
             AgeControlButton button = AgeWidgets.Button(widget);
-            if (button != null)
-            {
-                Kept(
+            return button == null
+                ? null
+                : Kept(
                     cells,
                     Control(widget, button, AgeWidgets.Raw(widget), AgeWidgets.TextOf(widget), key)
                 );
-            }
         }
 
         /// <summary>The drawn readout at <paramref name="widget"/>, if it says anything - a band the
@@ -532,12 +535,15 @@ namespace ES2Access.UI
         /// appended, and nine callers reach back for <c>cells[cells.Count - 1]</c> to hang a card's
         /// dossiers on it. Those walks keep their own drawn test.
         /// </summary>
-        private static void Kept(List<Cell> cells, Cell cell)
+        private static Cell Kept(List<Cell> cells, Cell cell)
         {
-            if (NodeGate.StillDrawn(cell.Widget, cell.Id))
+            if (!NodeGate.StillDrawn(cell.Widget, cell.Id))
             {
-                cells.Add(cell);
+                return null;
             }
+
+            cells.Add(cell);
+            return cell;
         }
 
         /// <summary>

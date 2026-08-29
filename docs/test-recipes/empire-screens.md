@@ -215,6 +215,38 @@ except leaving the page. The tab switch and the panel instances are both probeab
 `SidePanels`' `PanelTitle` branch first got exercised here. `ui.end` does not move inside a
 `GraphSheet` row (it answers consumed and speaks nothing) — walk columns with `ui.right`.
 
+**The planets panel under the table** (Enter on a row's Population cell opens it; the stop is
+`empire:detail/planets`). Since 2026-08-29 a card's population is a row per SLOT in bands, exactly
+like the star system page's cards and off the same shared arithmetic
+(`PopulationMoves.Slots`/`Carried`) — it was a row per AFFINITY with the count said, which answered who
+lived there and nothing about how much room there was. The regression evidence is a pair of dumps:
+before, one row per affinity ("Imperials, x 4"); after, "Slot 1 of 8, Imperials" … "Empty slot 8 of 8"
+in "Population"/"Overpopulation" regions, with the drag hints counting down inside each run and
+stating the count even at one ("x 1"). The DROP targets are those slot rows and not the card — an
+empty non-locked slot takes the plain add, an occupied one the swap, and the card's group header
+carries no `DropKind`, so mid-carry it must show no "drop target" while its slots do.
+
+**Shipping population to another system** is the Population CELL of another system's row, and only
+rows the game would ship to advertise: not this system's own, not an Outpost (`State != Colony`),
+only while the source system's spaceport can create a ship, **and only while that spaceport has FREE
+ROOM** — the people board it before any ship leaves, so a FULL port ships nobody however much room
+the destination has. That last clause asks the same numbers the drop's clamp uses
+(`PopulationMoves.IntoPort`), which is the point: it was missing until 2026-08-29 and the owner met
+the divergence at once — every colony row said "drop target" and every Enter answered "cannot go
+there". **The regression check is one dump with a FULL source port: zero "drop target" and zero drop
+hints on the whole page.** Free one slot (drop a unit onto a planet) and the same dump must bring
+them back, with the ship then succeeding. Carry a run off a card, dump `/gui/graph?buffers=1`, and
+read which `...c2` cells carry "drop target" — that list IS the check.
+Note the press is still not gated by that word: `CarryActions.Activate` deliberately asks only
+"right kind of drop target" and lets the target's own refusal speak (`docs/interaction.md`), so
+Enter on a row that does NOT advertise still answers the mod's generic "⟨thing⟩ cannot go there"
+rather than falling through to the cell's own click. Prove a fixed gate by the ABSENCE of the word
+and the hint, never by pressing.
+The drop reports what will really board, not what was carried, because the order clamps against the
+source spaceport's free room: carrying four into a capacity-three port answers "Sent Imperials x 3 to
+Ita by spaceport" and the port probe reads 3. It also sets the spaceport's destination as the mouse
+does, so probe `Spaceport.CurrentDestination` before and after if the fixture's destination matters.
+
 **Opening the EMPIRE screen raises a tutorial page in a tutorial save** ("Snapshot Of An Empire"),
 which takes the mod's focus (`screen: screen.tutorial`) and has to be re-minimized afterwards. The
 HUD button for it reads "This functionality is disabled during this part of the Tutorial" in that
@@ -436,6 +468,20 @@ quadrant and a stage for "Ctrl+Shift+Enter to queue it first" on a technology (t
 `ShowWindow(GetWindow<MilitaryScreen>())` for "Ctrl+Alt+Enter to show and select fleet" (exactly
 one per row, on column 0); `ShowWindow(GetWindow<EmpireScreen>())` for "Ctrl+Alt+Enter to open
 system management screen" (both openings pop a tutorial page — minimize first).
+**The two CARRY hints are derived, not declared**, so they appear on every draggable surface with no
+per-screen wiring: the ship designer's module list reads "Space to drag ⟨module⟩." with
+nothing held, and its slots read "Enter to drop ⟨module⟩." while one is (measured 2026-08-29 —
+the cheapest live proof of the generalization, since it shares no code with the population rings).
+A construction or research queue LINE only shows the drag hint where the queue really offers a
+reorder (two or more lines), and a hangar ship row only where the hangar holds ships.
+**A queue line is named from the MODEL, never from what the line draws**, because the caption
+auto-truncates (`gui.md`, "A drawn label may be an ELLIPSIS of itself"). The evidence pair both
+queue stops answer, measured 2026-08-29 on `unlocked` turn 35 with Ita selected: the row, its drag
+and its hint all read *"Xeno-Industrial Infrastructure"* where the label draws "Xeno-Industrial." —
+`empire:detail/queue` (reached by clicking a system row's Construction cell) and `system:queue` on
+the system management page, which is the same reader (`SystemPanels.Queue`) from its second caller.
+Getting to that page from the empire table is TWO activations on the row: the first selects the
+system, and `ui.doubleClick` on a row already selected opens it.
 
 ## Fixture-blocked
 

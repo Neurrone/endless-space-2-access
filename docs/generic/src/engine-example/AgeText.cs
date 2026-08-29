@@ -127,7 +127,58 @@ namespace ES2Access.UI
             }
             catch (Exception) { }
 
-            return Clean(text);
+            return Ellipsized(raw, text) ? Clean(Localized(raw)) : Clean(text);
+        }
+
+        /// <summary>
+        /// Whether the drawn string is the engine's own ellipsis of the assigned one, in which case the
+        /// words the label MEANS are still in <c>Text</c> and <see cref="Label"/> reads those instead.
+        ///
+        /// A label carrying <c>AutoTruncate</c> has its <c>TranslatedText</c> chopped two characters at
+        /// a time and closed with a period until it fits the box
+        /// (<c>AgePrimitiveLabel.ComputeText_AutoTruncateIfNecessary</c> :720-727 calling
+        /// <c>AgeUtils.TruncateString</c> :414-430), so "Xeno-Industrial Infrastructure" is drawn
+        /// "Xeno-Industrial." and speaking that speaks the column width. 1787 of this game's labels
+        /// carry the flag and it fires on whichever of them the layout squeezes, so the test is a
+        /// MEASUREMENT of the string, not a list of screens: the drawn text must end in the truncation
+        /// character and be a strict prefix of the whole text. Where nothing was cut the drawn string
+        /// stays the reading, markup pass and all - this changes only what was already an artifact.
+        ///
+        /// It cannot see a truncation the game performed BEFORE assigning the label (a ship design's
+        /// title is composed against the label's width, <c>GuiShipDesign.GetFullTitle</c> :766-781);
+        /// that one has no untruncated text to find here and is answered at the reader that knows the
+        /// model, as <c>SystemPanels.QueueLineName</c> does.
+        /// </summary>
+        private static bool Ellipsized(string assigned, string drawn)
+        {
+            if (
+                string.IsNullOrEmpty(assigned)
+                || string.IsNullOrEmpty(drawn)
+                || drawn[drawn.Length - 1] != TruncationChar
+            )
+            {
+                return false;
+            }
+
+            string full = Localized(assigned);
+            return !string.IsNullOrEmpty(full)
+                && full.Length > drawn.Length
+                && full.StartsWith(drawn.Substring(0, drawn.Length - 1));
+        }
+
+        /// <summary>The character <c>AgeUtils.TruncateString</c> closes a clipped line with.</summary>
+        private const char TruncationChar = '.';
+
+        private static string Localized(string raw)
+        {
+            try
+            {
+                return Gui.IsLocalizationKey(raw) ? Gui.Localize(raw) : raw;
+            }
+            catch (Exception)
+            {
+                return raw;
+            }
         }
 
         /// <summary>What a <c>%key</c> translates to, but only when the translation carries an icon

@@ -92,7 +92,7 @@ The full contract of each is its own doc comment; this is the inventory.
 
 | Helper | One line | File |
 |---|---|---|
-| `DevProbe` | `Screen() Stack() State() Saves() Camera() Windows() Patches() Claims(keys?) TooltipDelay(s) Tooltip() UnknownIcons()` | `ES2Access/Dev/DevProbe.cs` |
+| `DevProbe` | `Screen() Stack() State() Saves() Camera() Windows() Patches() Claims(keys?) TooltipDelay(s) Tooltip() UnknownIcons() Sounds()` (the last: what the carry asked the game to PLAY, which nothing can hear over the wire) | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.Trace(tag)` | One LOG line per frame (stack, focused screen, cursor, declared node count, tutorial/window state) and always false, so `POST /wait` on it records a whole transition | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.RowTrace(tag)` | Per-frame recording of what the FOCUSED control would say — off the LAST BUILT render, so a rebuild-less change shows late | `ES2Access/Dev/DevProbe.cs` |
 | `DevProbe.TooltipTrace(tag)` / `TooltipPipe()` | The hover-to-tooltip pipeline in one line (`999` timer = the parked request); `TooltipTrace` logs per frame and is always false, `TooltipPipe` answers one poll | `ES2Access/Dev/DevProbe.cs` |

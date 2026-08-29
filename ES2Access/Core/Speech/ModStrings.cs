@@ -1041,23 +1041,36 @@ namespace ES2Access.Core.Speech
         // or putting the thing back where it came from - is one phrase and names nothing, because
         // nothing happened to name. A refusal normally speaks the GAME's reason instead; the one here
         // is the fallback for a check that refuses wordlessly.
-        public const string CarryCarrying = "carry.carrying";
-        public const string CarryDropped = "carry.dropped";
-        public const string CarryDropRefused = "carry.drop-refused";
-        public const string CarryCancelled = "carry.cancelled";
+        public const string DragStarted = "drag.started";
+
+        /// <summary>The same announcement where no chord can be spelled at all (a test, boot, a host
+        /// with no keyboard): what is held, and nothing promised about keys.</summary>
+        public const string DragStartedPlain = "drag.started-plain";
+
+        public const string DragDropped = "drag.dropped";
+        public const string DragDropRefused = "drag.drop-refused";
+        public const string DragCancelled = "drag.cancelled";
 
         /// <summary>What a queue line says when the thing that was carried lands on it: which item
         /// moved, and the position number the player will hear the line read back with.</summary>
-        public const string CarryMovedToPosition = "carry.moved-to-position";
+        public const string DragMovedToPosition = "drag.moved-to-position";
 
         /// <summary>What a control says while it would take the thing the player is holding.</summary>
-        public const string CarryDropTarget = "carry.drop-target";
+        public const string DragDropTarget = "drag.drop-target";
 
         /// <summary>What a control the player could pick something up from says while nothing is being
         /// carried - one of the few things the readout says a control HAS rather than what it is. Not
         /// said while something IS held: the useful fact about a control then is whether the thing can
         /// go there.</summary>
-        public const string CarryDraggable = "carry.draggable";
+        public const string DragDraggable = "drag.draggable";
+
+        /// <summary>The two DERIVED usage hints every draggable surface gets (<c>CarryState.HintLines</c>):
+        /// what this control would hand over, named in the source's own words with its quantity, and
+        /// where what is held can be put down. <c>{0}</c> is the chord, spelled by the same renderer the
+        /// declared hints use, and <c>{1}</c> the thing.</summary>
+        public const string DragHint = "drag.drag-hint";
+
+        public const string DragDropHint = "drag.drop-hint";
 
         // Putting something in a queue and taking it out again - the system's construction queue and
         // the empire's research queue, which are the same gesture on two screens and so the same
@@ -1164,13 +1177,30 @@ namespace ES2Access.Core.Speech
         /// (<c>%StarSystemSideInfoDescription</c> is the sentence on its header icon), so the word is
         /// the mod's, and it is "System" rather than "Colony" because the box is drawn for an outpost
         /// and a ghost system too (owner ruling 2026-08-22).</summary>
+        /// <summary>The one stop the left-edge information panels share. It has to be a word of its own
+        /// rather than any panel's: naming it after the colony panel would announce "System, System,
+        /// System level 2" on every Tab into it, because that panel is also the first REGION inside it.
+        /// The game titles the group nothing at all - it draws four unlabelled boxes down an edge - so
+        /// the phrase is the mod's.</summary>
+        public const string SystemSidePanels = "system.side-panels";
+
         public const string SystemColonyPanel = "system.colony-panel";
         public const string SystemPopulationPanel = "system.population-panel";
+
+        /// <summary>What the spaceport side panel is called - the game draws the word as the panel's
+        /// own title but writes no name the stop could be read off, so it is a mod string carrying the
+        /// game's word (owner-approved 2026-08-29).</summary>
+        public const string SystemSpaceportPanel = "system.spaceport-panel";
         public const string SystemRepresentativesPanel = "system.representatives-panel";
         public const string SystemOutpostPanel = "system.outpost-panel";
         public const string SystemGovernorPanel = "system.governor-panel";
         public const string SystemSanctuaryPopulationPanel = "system.sanctuary-population-panel";
         public const string SystemSanctuaryPanel = "system.sanctuary-panel";
+
+        /// <summary>The box that says where a ghost empire's ships and people appear. The game heads
+        /// both of its rows with its own words for the thing ("Sanctuary Link:") and writes no title
+        /// for the box, so the name carries that word, as the two panels above it do.</summary>
+        public const string SystemSanctuaryLinksPanel = "system.sanctuary-links-panel";
         public const string SystemConstructiblesPanel = "system.constructibles-panel";
         public const string SystemQueuePanel = "system.queue-panel";
         public const string SystemHangarPanel = "system.hangar-panel";
@@ -1441,8 +1471,18 @@ namespace ES2Access.Core.Speech
         public const string ScreenBattle = "screen.battle";
         public const string ScreenGroundBattle = "screen.ground-battle";
         public const string ScreenAdvancedBattleReport = "screen.battle-report-advanced";
+        /// <summary>The band of battle plans on the advanced setup, which Tab stops in on its own
+        /// (the plans are the decision that window exists for). The game draws the hand as cards and
+        /// gives the band no heading at all, so the word naming it is the mod's.</summary>
+        public const string BattleTactics = "battle.tactics";
+
         public const string BattleYourFleets = "battle.your-fleets";
         public const string BattleEnemyFleets = "battle.enemy-fleets";
+
+        /// <summary>The band of figures on the advanced setup - the four pages behind the wordless
+        /// switches, which Tab now stops in on its own. Named for the same reason the two sides are:
+        /// a stop the player lands in says what it is.</summary>
+        public const string BattleStats = "battle.stats";
         public const string BattleYourTroops = "battle.your-troops";
         public const string BattleEnemyTroops = "battle.enemy-troops";
         public const string BattleYourDamage = "battle.your-damage";
@@ -1480,6 +1520,34 @@ namespace ES2Access.Core.Speech
         public const string BattleYourFlotillasLost = "battle.your-flotillas-lost";
         public const string BattleEnemyFlotillaLost = "battle.enemy-flotilla-lost";
         public const string BattleEnemyFlotillasLost = "battle.enemy-flotillas-lost";
+
+        // The exchange of fire, which the game draws as tracer and explosion and writes down
+        // nowhere. Each is a whole sentence rather than a stem plus fragments, because the count
+        // and the damage kind sit inside the clause a translation has to inflect - and there is
+        // one per shape the tallies can take, so the composer chooses a form and never builds one.
+        public const string BattleFireEnergy = "battle.fire-energy";
+        public const string BattleFireEnergyMany = "battle.fire-energy-many";
+        public const string BattleFireProjectile = "battle.fire-projectile";
+        public const string BattleFireProjectileMany = "battle.fire-projectile-many";
+        public const string BattleFireMixed = "battle.fire-mixed";
+        public const string BattleFireMixedMany = "battle.fire-mixed-many";
+        public const string BattleFirePlain = "battle.fire-plain";
+        public const string BattleFirePlainMany = "battle.fire-plain-many";
+        public const string BattleFireAbsorbed = "battle.fire-absorbed";
+        public const string BattleFireAbsorbedMany = "battle.fire-absorbed-many";
+        public const string BattleFireMissed = "battle.fire-missed";
+        public const string BattleFireMissedMany = "battle.fire-missed-many";
+        public const string BattleFireMissedClause = "battle.fire-missed-clause";
+        public const string BattleFireMissedClauseMany = "battle.fire-missed-clause-many";
+        public const string BattleFireShieldClause = "battle.fire-shield-clause";
+
+        // What arrives, mends and is awarded mid-fight - each read off the one instruction in the
+        // replay stream that reports it.
+        public const string BattleReinforcements = "battle.reinforcements";
+        public const string BattleEnemyReinforcements = "battle.enemy-reinforcements";
+        public const string BattleRepaired = "battle.repaired";
+        public const string BattleEffectApplied = "battle.effect-applied";
+        public const string BattleMedalEarned = "battle.medal-earned";
         public const string GroundBattleRound = "ground-battle.round";
         public const string GroundBattleBombardment = "ground-battle.bombardment";
         public const string GroundBattleAssault = "ground-battle.assault";
@@ -1487,6 +1555,68 @@ namespace ES2Access.Core.Speech
         public const string GroundBattleYourTroopsLost = "ground-battle.your-troops-lost";
         public const string GroundBattleEnemyTroopLost = "ground-battle.enemy-troop-lost";
         public const string GroundBattleEnemyTroopsLost = "ground-battle.enemy-troops-lost";
+
+        /// <summary>The four pages of figures the advanced battle setup keeps behind four wordless
+        /// switches. The game has a description per switch and no title for any of them, so the page
+        /// names are the mod's - and the pages are the list the player walks, so these are what the
+        /// rows are called.</summary>
+        public const string BattleStatsTrajectories = "battle.stats-trajectories";
+        public const string BattleStatsMilitary = "battle.stats-military";
+        public const string BattleStatsDamage = "battle.stats-damage";
+        public const string BattleStatsRange = "battle.stats-range";
+
+        /// <summary>Where one flotilla will fight, for the trajectory page: the flotilla's number and
+        /// the range, the latter already in the game's own words for it. A complete phrase, so a
+        /// language that puts the range first can.</summary>
+        public const string BattleFlotillaRange = "battle.flotilla-range";
+
+        /// <summary>
+        /// How one of the two damage rings is split between the fleets. The window sizes these from
+        /// what each side's weapons of that type get THROUGH the other side's defences of that type,
+        /// which the phrase says out loud - the ring means something narrower than "damage", and a
+        /// listener told a bare percentage would read it as the wrong quantity.
+        ///
+        /// Both halves are always said, including a zero: an unopposed ring means nothing of the other
+        /// side's is getting through, which is a fact worth hearing rather than a half-sentence.
+        /// </summary>
+        public const string BattleEnergyDamageShare = "battle.energy-damage-share";
+        public const string BattleProjectileDamageShare = "battle.projectile-damage-share";
+
+        /// <summary>Which of the two damage rings is drawn thicker - the window's own comparison of how
+        /// much damage of each type there is, which neither ring's split says. Nothing is said for two
+        /// rings drawn alike.</summary>
+        public const string BattleEnergyBiggerThreat = "battle.energy-bigger-threat";
+        public const string BattleProjectileBiggerThreat = "battle.projectile-bigger-threat";
+
+        /// <summary>How one of the three range rings is split between the fleets - how well each side's
+        /// ships shoot at that range, averaged over the ships they are bringing.</summary>
+        public const string BattleShortRangeShare = "battle.short-range-share";
+        public const string BattleMediumRangeShare = "battle.medium-range-share";
+        public const string BattleLongRangeShare = "battle.long-range-share";
+
+        /// <summary>Which of the three range rings is drawn thickest - the range BOTH fleets are best
+        /// suited to, which is where the fight is likely to be decided.</summary>
+        public const string BattleShortRangeMatters = "battle.short-range-matters";
+        public const string BattleMediumRangeMatters = "battle.medium-range-matters";
+        public const string BattleLongRangeMatters = "battle.long-range-matters";
+
+        /// <summary>
+        /// Whether a ship is pinned to the flotilla it is in, which the advanced setup draws as a
+        /// white glow on a 24-pixel chip and writes down nowhere at all.
+        ///
+        /// A locked ship is exempt from the sorting presets: the three buttons that redistribute the
+        /// fleet leave it where the player put it. So the two words are a STATE the player sets and
+        /// re-reads, not a decoration - which is why they are a control's two state words rather than
+        /// one word that appears and vanishes. "Not locked" says the flotilla nothing, because a ship
+        /// that is not pinned has no flotilla it belongs to: the next preset may move it anywhere.
+        /// </summary>
+        public const string BattleShipLockedInFlotilla = "battle.ship-locked-in-flotilla";
+        public const string BattleShipNotLocked = "battle.ship-not-locked";
+
+        /// <summary>A ship carried from one flotilla to another and put down there, in the shape every
+        /// landed drop in the mod reports itself with (<c>fleets.ship-moved</c>,
+        /// <c>system.population-moved</c>) - what moved, and where it went.</summary>
+        public const string BattleShipMoved = "battle.ship-moved";
 
         // The sweep screens: the error and non-blocking dialogs, the target pickers, the
         // cutscenes, the cursor-mode watcher, the end-game pages and the main-menu
@@ -2167,13 +2297,16 @@ namespace ES2Access.Core.Speech
             { NavCellEmpty, "empty" },
             { SaveStarted, "Saving the game" },
             { SaveFinished, "Save finished" },
-            { CarryCarrying, "Dragging {0}" },
-            { CarryDropped, "Dropped {0}" },
-            { CarryDropRefused, "{0} cannot go there" },
-            { CarryCancelled, "Cancelled drag" },
-            { CarryMovedToPosition, "Moved {0} to position {1}" },
-            { CarryDropTarget, "drop target" },
-            { CarryDraggable, "draggable" },
+            { DragStarted, "Dragging {0}. {1} to drop, {2} to cancel." },
+            { DragStartedPlain, "Dragging {0}" },
+            { DragDropped, "Dropped {0}" },
+            { DragDropRefused, "{0} cannot go there" },
+            { DragCancelled, "Cancelled drag" },
+            { DragMovedToPosition, "Moved {0} to position {1}" },
+            { DragDropTarget, "drop target" },
+            { DragDraggable, "draggable" },
+            { DragHint, "{0} to drag {1}." },
+            { DragDropHint, "{0} to drop {1}." },
             { QueueQueued, "Queued {0}" },
             { QueueQueuedFirst, "Queued {0} as first item" },
             { QueueCancelled, "Cancelled {0}" },
@@ -2207,13 +2340,16 @@ namespace ES2Access.Core.Speech
             { PlanetNext, "Next planet" },
             { SystemHangarEmpty, "No ships in the hangar" },
             { SystemPlanetsPanel, "Planets" },
+            { SystemSidePanels, "System information" },
             { SystemColonyPanel, "System" },
             { SystemPopulationPanel, "Population" },
+            { SystemSpaceportPanel, "Spaceport" },
             { SystemRepresentativesPanel, "Representatives" },
             { SystemOutpostPanel, "Outpost" },
             { SystemGovernorPanel, "Governor" },
             { SystemSanctuaryPopulationPanel, "Sanctuary population" },
             { SystemSanctuaryPanel, "Sanctuary" },
+            { SystemSanctuaryLinksPanel, "Sanctuary links" },
             { SystemConstructiblesPanel, "Constructibles" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },
@@ -2329,8 +2465,10 @@ namespace ES2Access.Core.Speech
             { ScreenBattle, "Space battle" },
             { ScreenGroundBattle, "Ground battle" },
             { ScreenAdvancedBattleReport, "Advanced battle report" },
+            { BattleTactics, "Tactics" },
             { BattleYourFleets, "Your fleets" },
             { BattleEnemyFleets, "Enemy fleets" },
+            { BattleStats, "Stats" },
             { BattleYourTroops, "Your troops" },
             { BattleEnemyTroops, "Enemy troops" },
             { BattleYourDamage, "Damage you caused" },
@@ -2350,6 +2488,29 @@ namespace ES2Access.Core.Speech
             { BattleYourFlotillasLost, "{0} of your flotillas destroyed" },
             { BattleEnemyFlotillaLost, "Enemy {0} is destroyed" },
             { BattleEnemyFlotillasLost, "{0} enemy flotillas destroyed" },
+            { BattleFireEnergy, "{0} hit {1}: {2} energy damage" },
+            { BattleFireEnergyMany, "{0} hit {1} {2} times: {3} energy damage" },
+            { BattleFireProjectile, "{0} hit {1}: {2} projectile damage" },
+            { BattleFireProjectileMany, "{0} hit {1} {2} times: {3} projectile damage" },
+            { BattleFireMixed, "{0} hit {1}: {2} energy damage and {3} projectile damage" },
+            {
+                BattleFireMixedMany,
+                "{0} hit {1} {2} times: {3} energy damage and {4} projectile damage"
+            },
+            { BattleFirePlain, "{0} hit {1}: {2} damage" },
+            { BattleFirePlainMany, "{0} hit {1} {2} times: {3} damage" },
+            { BattleFireAbsorbed, "{0} hit {1}: fully absorbed by shields" },
+            { BattleFireAbsorbedMany, "{0} hit {1} {2} times: fully absorbed by shields" },
+            { BattleFireMissed, "{0} missed {1}" },
+            { BattleFireMissedMany, "{0} missed {1} {2} times" },
+            { BattleFireMissedClause, "missed" },
+            { BattleFireMissedClauseMany, "missed {0} times" },
+            { BattleFireShieldClause, "{0} absorbed by shields" },
+            { BattleReinforcements, "Reinforcements arrive: {0}" },
+            { BattleEnemyReinforcements, "Enemy reinforcements arrive: {0}" },
+            { BattleRepaired, "{0} repaired {1}" },
+            { BattleEffectApplied, "{0} applies {1} to {2}" },
+            { BattleMedalEarned, "{0} earned the {1} medal" },
             { GroundBattleRound, "Round {0}" },
             { GroundBattleBombardment, "Orbital bombardment" },
             { GroundBattleAssault, "Ground assault" },
@@ -2357,6 +2518,31 @@ namespace ES2Access.Core.Speech
             { GroundBattleYourTroopsLost, "{0} of your troops lost" },
             { GroundBattleEnemyTroopLost, "One enemy {0} is lost" },
             { GroundBattleEnemyTroopsLost, "{0} enemy troops lost" },
+            { BattleStatsTrajectories, "Trajectories" },
+            { BattleStatsMilitary, "Military power" },
+            { BattleStatsDamage, "Damage" },
+            { BattleStatsRange, "Range" },
+            { BattleFlotillaRange, "Flotilla {0} engages at {1}" },
+            {
+                BattleEnergyDamageShare,
+                "Of the energy damage that gets through defenses: {0}% is yours, {1}% is the enemy's"
+            },
+            {
+                BattleProjectileDamageShare,
+                "Of the projectile damage that gets through defenses: {0}% is yours, {1}% is the "
+                    + "enemy's"
+            },
+            { BattleEnergyBiggerThreat, "Energy is the bigger threat" },
+            { BattleProjectileBiggerThreat, "Projectile is the bigger threat" },
+            { BattleShortRangeShare, "Effectiveness at short range: {0}% yours, {1}% enemy's" },
+            { BattleMediumRangeShare, "Effectiveness at medium range: {0}% yours, {1}% enemy's" },
+            { BattleLongRangeShare, "Effectiveness at long range: {0}% yours, {1}% enemy's" },
+            { BattleShortRangeMatters, "Short range matters most" },
+            { BattleMediumRangeMatters, "Medium range matters most" },
+            { BattleLongRangeMatters, "Long range matters most" },
+            { BattleShipLockedInFlotilla, "locked in flotilla" },
+            { BattleShipNotLocked, "not locked" },
+            { BattleShipMoved, "Moved {0} to {1}" },
             { ScreenError, "Error" },
             { ScreenTargetSelection, "Choose a target" },
             { ScreenGroundTargetSelection, "Choose a system to invade" },

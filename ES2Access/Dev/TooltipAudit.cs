@@ -76,6 +76,20 @@ namespace ES2Access.Dev
     /// repeatedly on the hero card and on the ship-overview fact lines, where expanding cleared the
     /// finding and collapsing brought it straight back.
     ///
+    /// <b>A NODE WITH NO TOOLTIP AT ALL IS OUTSIDE EVERY BUCKET</b>, and that is the blind spot this
+    /// check answered <c>clean</c> through on 2026-08-29. All seven findings are about a node that
+    /// PROMISES or CARRIES tooltip words - <c>unaimed</c> included, which is "declares a tooltip's
+    /// words and aims at nothing". A node that declares no tooltip promises nothing, so nothing here
+    /// looks at it; yet it still has a pointer to move, and one that moves nowhere leaves the game
+    /// drawing whatever the player's real mouse is resting on. That is a live defect no bucket can
+    /// show, and it is why the star-system page read <c>clean</c> with a focused control speaking one
+    /// thing and the screen showing another's dossier. The mechanism is fixed at the source
+    /// (<c>PointerFocus.HoverTarget</c> now aims a tooltip-less control at its own widget), so the
+    /// shape should not recur - but the CHECK still cannot see it, and a run that says <c>clean</c>
+    /// is saying nothing about any tooltip-less node on the screen. Catching it needs the live probe,
+    /// not this audit: focus the node and read <c>DevProbe.Tooltip()</c>, which must answer the
+    /// control's own tooltip or none - never another control's.
+    ///
     /// Main-thread only, dev-only, and never on the player's path: nothing here speaks, focuses,
     /// moves the pointer or changes what the game is showing.
     /// </summary>

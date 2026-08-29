@@ -286,7 +286,10 @@ namespace ES2Access.UI
             // itself is AgeWidgets.Draws, shared with NodeSection.Indicates so that aiming and
             // declaring can never disagree about which tooltips are real.
             AgeTooltip tooltip = AgeWidgets.Draws(_showing.Tooltip) ? _showing.Tooltip : null;
-            AgeTransform hover = tooltip == null ? null : HoverTarget(_showing);
+            // Asked of the spot whether or not it has a tooltip: a control with none still takes the
+            // pointer, so that the game stops drawing what the mouse is resting on (see
+            // <see cref="HoverTarget"/>). Only the RE-ASK below is about a tooltip that is owed.
+            AgeTransform hover = HoverTarget(_showing);
             if (hover == null)
             {
                 _waitingFor = null;
@@ -304,6 +307,12 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("pointer: pointing the tooltip at the focused control threw: " + e);
+            }
+
+            if (tooltip == null)
+            {
+                _waitingFor = null;
+                return;
             }
 
             AskAgainIfStalled(tooltip);
@@ -375,9 +384,21 @@ namespace ES2Access.UI
             return gui == null ? 0f : gui.TooltipDisplayDelay;
         }
 
-        /// <summary>What the engine is told the pointer is over. Named by the caller for a widget that
-        /// is not a button; otherwise it is the widget the tooltip itself sits on, which is where a
-        /// button's own hover target is.</summary>
+        /// <summary>
+        /// What the engine is told the pointer is over. Named by the caller for a widget that is not a
+        /// button; otherwise it is the widget the tooltip itself sits on, which is where a button's own
+        /// hover target is.
+        ///
+        /// A control with NO tooltip still answers with its ANCHOR, and that is the whole of the
+        /// 2026-08-29 fix. The engine keeps <c>OverrolledTransform</c> pointed at whatever the player's
+        /// real mouse is resting on, so a focused control that asked for nothing left the game drawing
+        /// somebody else's dossier over a keyboard focus that had moved on - reproduced by asserting a
+        /// foreign overroll and stepping onto a tooltip-less node, where it survived every frame. There
+        /// is no "point at nothing": aiming at the node's own widget is what says the focus is HERE, and
+        /// the engine then hit-tests a control with nothing to say and draws nothing, which is the
+        /// truthful outcome. It also gives <see cref="Unpoint"/> the same widget to let go of, so the
+        /// assertion is released on the way out like any other.
+        /// </summary>
         private static AgeTransform HoverTarget(Spot spot)
         {
             try
@@ -387,7 +408,7 @@ namespace ES2Access.UI
                     return spot.Hover;
                 }
 
-                return spot.Tooltip == null ? null : spot.Tooltip.AgeTransform;
+                return spot.Tooltip != null ? spot.Tooltip.AgeTransform : spot.Anchor;
             }
             catch (Exception)
             {

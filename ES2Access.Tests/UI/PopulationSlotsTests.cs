@@ -150,5 +150,52 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal("1:Population:- 2:Population:-", Shape(Unsettled(units: 2, max: 4)));
         }
+
+        /// <summary>
+        /// AN EMPTY, NON-LOCKED SLOT EXISTS EXACTLY WHERE THE PLANET HAS ROOM - the load-bearing
+        /// claim behind those rows needing no room test of their own before they advertise a drop
+        /// (the screens' other drop gates ask the clamp; this one is answered by the row simply
+        /// being there). Asserted rather than assumed: it is the arithmetic, so it belongs here
+        /// rather than in a live probe no fixture can drive to a full planet anyway.
+        ///
+        /// A slot is empty and unlocked only below the maximum and at or past however many units are
+        /// held, so one existing means `units &lt; max`; and a colony at or over its maximum draws
+        /// only filled and locked slots, which take a swap and nothing respectively.
+        /// </summary>
+        [Theory]
+        [InlineData(0, 4)]
+        [InlineData(3, 4)]
+        [InlineData(4, 4)]
+        [InlineData(6, 4)]
+        public void AnEmptyUnlockedSlotExistsExactlyWhenThePlanetHasRoom(int units, int max)
+        {
+            List<PopulationSlots.Slot> slots = Build(units, max, max, arc: false);
+            bool anyEmpty = false;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (slots[i].Unit < 0 && slots[i].Kind != PopulationSlots.Band.Locked)
+                {
+                    anyEmpty = true;
+                }
+            }
+
+            Assert.Equal(units < max, anyEmpty);
+        }
+
+        /// <summary>And the same holds with the overpopulation arc drawn, where the free places are
+        /// split across two bands: the arc changes which REGION a free place is read in, never
+        /// whether it is free.</summary>
+        [Fact]
+        public void TheOverpopulationArcDoesNotChangeWhichSlotsAreFree()
+        {
+            Assert.Equal(
+                "1:Population:0 2:Overpopulation:- 3:Overpopulation:-",
+                Shape(Build(units: 1, max: 3, safe: 1))
+            );
+            Assert.Equal(
+                "1:Population:0 2:Overpopulation:1 3:Overpopulation:2",
+                Shape(Build(units: 3, max: 3, safe: 1))
+            );
+        }
     }
 }

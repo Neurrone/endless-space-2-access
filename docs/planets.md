@@ -216,6 +216,41 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   game's words. A marker's `Rank` is what the drag moves (markers of one affinity are ranked
   count…1 in draw order), and `GuiPopulation.Title` is the game's display name for the affinity
   (measured on Dusay: "Imperials", "Yuusho" for `AffinityTerrans`/`AffinityHisshos`).
+- **The spaceport CLAMPS and never refuses, so what a drop MOVES is not what it carried.**
+  `Spaceport.TransferPopulation` (:191) moves `min(count, MaxPopulation - PopulationCount)` into the
+  port and `min(count, planet.MaxPopulation - planet.PopulationCount)` out of it, and returns quietly
+  either way; the order processor
+  (`DepartmentOfTheInterior.TransferSpaceportPopulationProcessor`) just calls it. So a carry of four
+  onto a port with three free slots moves three and nothing anywhere says so — which is why the mod
+  computes the same clamp and reports the clamped figure (measured 2026-08-29: carried 4, spoken
+  "x 3", port probe 3). The empire page's shipment order runs through the same call, so it clamps
+  against the SOURCE system's port too.
+  Planet-to-planet has NO such clamp: `TransferPopulationFromPlanetToPlanet` (:7107) adds the whole
+  amount and swaps the surplus back out through `GetSwappablePopulationList`, so the full carry moves.
+- **The swap is carried differently by each client, and the spaceport's IGNORES it.**
+  `DragInfo.ReplacedPopulationAffinity` is set by hovering an occupied destination marker (:275).
+  Planet→planet passes it as the order's `PopulationToRemoveFirst`; planet→port takes the pair branch
+  (`-1` of the replaced affinity back onto the source planet, then `+N` of the carried one —
+  `PlanetLabelsWindow_SystemManagement.ApplyDrop` :38-44); **port→planet never reads the field at all**
+  (`SpaceportSidePanel.ApplyDrop` :70-80 posts one order), so a drop out of the port onto an occupied
+  slot is a plain add. Measured live 2026-08-29 on both: the port swap moved one of the replaced
+  affinity back to the planet and one of the carried affinity in, and the port→planet drop onto an
+  occupied slot left the target affinity untouched on both ends. The planet→planet swap with an
+  N-unit carry is still UNMEASURED — it needs a system with two colonies of the player's, which no
+  save here has.
+- **A port draws no LOCKED slot by filling it.** `BuildListOfGuiPopulations` counts empties up to
+  `populationMaxCount` exactly and `RetrievePopulationMarker` only locks an index at or past that
+  maximum, so a port of capacity three draws three markers whatever is in it. The locked branch in
+  `SpaceportSidePanel.Refresh` (:152-165, which localizes `%SpacePortLockedPopulationSlotDescription`
+  with the NEXT system level's `SpaceportCapacity`) is reachable only where the port already holds
+  more than its maximum. Empty markers also carry meaningless ranks (0, -1, -2 …), because the rank
+  countdown runs over the run of nulls — read `Rank` only off a marker with a `GuiPopulation`.
+- **A spaceport marker's tooltip is on the marker's TRANSFORM, not on `PopulationMarker.Tooltip`**
+  (`SpaceportSidePanel.Refresh` :166-186 writes `component.AgeTransform.AgeTooltip.Content`), and it is
+  always one of exactly three keys — `%SpacePortSelectedPopulationSlotDescription`,
+  `%SpacePortEmptyPopulationSlotDescription`, `%SpacePortLockedPopulationSlotDescription`. Anything
+  else is the prefab placeholder, so those three keys are the honest guard rather than a
+  string-compare against the placeholder itself.
 - **`StarSystemPlanetCardsPanel` is its own drop client** — the panel, not the page around it, takes
   both population moves: planet→planet, and the spaceport shipment, which the game routes through
   `GuiTableCellSystemPopulation`. So a second host wanting the same drag wires the panel, not the
@@ -226,11 +261,75 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   (`Spaceport.cs:179-182`) — `MaxPopulation` being the `SpaceportCapacity` simulation property, which
   starts at 0. Measured in `unlocked`: one colonized system (Xiu), `IsAvailable()` false, spaceport
   population 0, the panel bound but never shown. So the panel, its markers and both directions of its
-  drag are FIXTURE-BLOCKED in every save this repo has. Its markers are its enumerator's OWN children
+  drag are FIXTURE-BLOCKED in every save this repo has — a game played far enough to build the
+  improvement draws it, and both directions were measured there on 2026-08-29 (a level-2 port of
+  capacity three). Its markers are its enumerator's OWN children
   (`SpaceportPopulationEnumerator.PopMarkersContainer` IS that enumerator's transform, unlike a planet
   card's ring), so a walk that wants them intercepts the enumerator itself; and the panel is a child of
   `SidePanelsWindow/Viewport/SidePanelsTable`, so the shared side-panel sweep picks it up the moment the
   game draws it (proved by `SidePanelsWindow.ShowSidePanel` — `SidePanel.Show` itself throws).
+- **Collapsing the three bottom panels changes their HEIGHT and nothing else.** The
+  `PanelExpandButton` each of the three draws down its left edge runs one handler
+  (`StarSystemScreen.OnExpandCb` :736-745): it toggles every `GuiFrameExpander` under the window — so
+  one button resizes all three — and flips `IGuiOptionsService.ExpandSystemPanels`, which PERSISTS
+  across sessions. Measured 2026-08-29 on Dusay: the three frames go 177 ↔ 292 (the expander's own
+  `HeightMultiplier` 1.65) and the lists SCROLL rather than losing rows, so the accessible tree the
+  page declares is byte-identical in both states (node-id diff of the whole graph: empty), and the
+  button itself stays drawn and clickable while collapsed, at the panel's full height with the
+  panel's header icon sitting inside it. The button carries no text and no tooltip at all.
+  **It is therefore DELIBERATELY NOT DECLARED** (owner ruling 2026-08-29): a control whose whole
+  effect is how much a sighted player sees at once has nothing a keyboard player could perceive, so
+  it earns no node. The ruling is written into `CoverageAudit.DeliberatelyUnworked`, which counts it
+  `inert`, so a later coverage run reports the reason rather than raising it again as an unworked
+  control.
+- **The colony banner hides two different buttons.** `ColonyInfoSidePanel.SystemBanner` (48,159
+  327×96 on Dusay) is itself a button — `BackgroundGroup`, `OnSystemBannerClickCb` :915-928 — that
+  opens `EmpireScreen` at `TabName.SystemsList`, and the little level badge in its corner
+  (`LevelGroup`, 333,213 36×36, `OnSystemLevelClickSb` :930-943) opens `EconomyScreen` at
+  `TabName.Economy`. Neither carries a word or a tooltip: the banner's tooltip belongs to the LEVEL
+  (`guiElement.Description` for `<State>Level<N>`, :425-430), and the game's own title for that
+  element is `%ColonyLevel2Title` "Level 2 Modernization" while `%SystemLevelTitle` is its word for
+  the badge. `LevelGroup` is hidden outright on a ghost system (:425).
+- **`ShipsSpawnPointSidePanel` is Penumbra data on a base-game prefab.** The panel's own gate is
+  `ColonizedStarSystem.CanSpawnShipsElsewhere` (:836-857), which requires `Empire.HasGhostSystems` —
+  the Umbral Choir — plus `State == Colony` and not destroyed. The WIDGETS ship in the base game, so
+  the panel force-shows against any real colony; the DATA cannot exist without the DLC. Its two rows
+  are headed `%ShipsSpawnPointTitle` "[ship] Sanctuary Link:" and `%PopulationsSpawnPointTitle`, which
+  is where the game's word for the feature comes from. Each row is a caption, a destination button
+  opening `SystemSelectionModalWindow` (`Purpose = "ShipsSpawnPointDestination"`), and a CLEAR button
+  the panel shows only while a destination is set (`Refresh` :86-95, :110-119); the destination
+  buttons' tooltips carry the game's own failure sentences through `Gui.FormatFailureInfos`. Measured
+  2026-08-29 by lending it the fixture's own colony: six rows read, the two clear buttons named by
+  their own tooltips, and nothing was mangled but the STOP's name, which fell through to the header
+  icon's sentence until the screen got a branch for it.
+- **A planet card's Sanctuary band draws for a RIVAL's ghost too, and its ring is HOVER-ONLY.**
+  `PlanetLabel_SystemManagement.RefreshGhostStatus` (:1192-1250) shows `GhostGroup` whenever
+  `Planet.GhostColonizedPlanet` exists and the player's visibility on the ghost's system is ≥ 1 — no
+  ownership test — and then splits: the title is `%PlanetStatusGhostTitle` "Your Sanctuary" or
+  `%PlanetStatusGhostByTitle` "Rival Sanctuary", empire-tinted, with a tooltip that for a rival names
+  the leader and adds a how-to-destroy sentence chosen by whether the ghost sits on the player's own
+  system (:1200-1212); the population count `"N/Max[population]"` is written for both; and the
+  population ring, the outputs strip and the traitor button are the player's OWN ghost only
+  (:1216-1222, :1226-1249). What no reading of `RefreshGhostStatus` shows is that
+  `GhostPopulationEnumeratorFocused` and `GhostFidsiGroup` are also **hover-gated**: the card's focus
+  coroutine shows them while the cursor is inside the band's own rectangle and hides them on the way
+  out (:648-693, `isGhostOverrolled`), and unlike the world's ring there is no simple ring drawn
+  underneath. A rival's outputs strip is therefore never even refreshed, so its numbers are stale
+  prefab data and must not be read. The band is drawn BELOW the card (measured: card 216..936, band
+  1037..1190). The traitor button's three states carry `Gui.FormatFailure` sentences on
+  `%PlanetLabelCreateTraitorFromGhostDescription`, which is plain content with no title — asking it
+  for one answers nothing.
+- **The drag machinery is shared between a card's two rings.** `GetPopulationDragDropTargets` (:72)
+  yields a card when EITHER `PlanetPopulationEnumeratorFocused` or `GhostPopulationEnumeratorFocused`
+  accepts, and `ApplyDrop` (:18-32) then resolves the destination itself, as
+  `Planet.GetColonizedPlanet(PlayerEmpire)` — which prefers the normal colony and falls back to the
+  ghost (`Planet.cs` :952-967). So the game runs ONE order path for both rings and its own answer to
+  "which colony" is that fall-back; a mod mirroring it presses the same call rather than choosing.
+  One consequence: a ghost colony belongs to the GHOST's star system, not to the one on screen, so a
+  unit carried off the Sanctuary ring is in none of the page system's `PlanetsColonized` tables.
+  CONTENT UNVERIFIED: everything above about a Sanctuary was measured by lending a card a real colony
+  as its ghost (2026-08-29) and proves the STRUCTURE only — no save in this repo plays the Umbral Choir, so what a real
+  ghost's figures, tooltips and refusals say is untested.
   An occupied slot's tooltip is written by `SpaceportSidePanel.Refresh` :169-186; a slot the panel has
   not refreshed yet still carries the prefab's placeholder, the literal words "This is changed by code".
 - `ColonyInfoSidePanel.SecurityAndTroopsTooltip` (:60, filled :549-555) hangs on
@@ -358,6 +457,29 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
     "which column is the list sorted by".
   - `SystemSelectionModalWindow` binds `interactiveCells: false`, so its shipped table has no
     interactive cell at all.
+
+**Why the page declares nothing while it is in pieces** (measured 2026-08-29, per-frame
+`DevProbe.Trace`). The management page is built out of windows that bind INDEPENDENTLY, and neither
+leaving the page nor turning it takes them down together:
+
+- Leaving for the galaxy, the `SidePanelsWindow` and the three bottom panels go first, the planet
+  labels a frame or two later, and `GalaxyViewLevelCurrent` changes last — so for those frames the
+  page is still the mod's focused screen and still has something to declare. Traced: 118 declared
+  nodes, then 50 (cards only), then 31, then gone.
+- Turning the page, the `PlanetLabelsWindow_SystemManagement` swaps BEFORE
+  `StarSystemScreen.StarSystemNode` does, and the cards then stay undrawn for some fifty frames —
+  longer than the 30-frame settle the turn waits out.
+
+Both matter because a render declared in either window is a page whose planet keys have gone, and the
+navigator does what it always does with a cursor whose node no longer exists (`KeyGraph.Reconcile`:
+nearest survivor walking the previous order backward) — it re-seats onto a surviving HUD control and
+the screen then REMEMBERS that seat. That is the whole of the entry bug the owner reported: every
+entry landed on `hud:view-title/scan` because every exit had written it down. The cure is that an
+EMPTY render is a no-op (`KeyGraph.Rerender` answers false and never reconciles), so the page
+declares nothing at all until it is whole — cards drawn AND side panels drawn AND no turn in flight
+(`SystemManagementScreen.Whole`). Only planet keys can be lost this way; every other stop on the page
+is keyed system-independently and survives a swap untouched, which is why they need no seat of their
+own.
 
 ## Influence, colonizability and the scanner's kinds
 
