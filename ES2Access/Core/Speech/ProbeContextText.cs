@@ -8,9 +8,13 @@ namespace ES2Access.Core.Speech
     /// already known, then the stretches of fog the probe would fly through, and how far the map goes
     /// before it runs out.
     ///
-    /// The share comes FIRST and is one number, because a listener choosing between sixteen of these
-    /// cannot hold six ranges each in their head: "35 percent explored" is enough to skip a bearing or
-    /// to keep listening to it, and everything after it is why. It is always said - a flight line with
+    /// TWO deliveries, not one sentence. The bearing ANNOUNCES the heading and the share and stops
+    /// there (<see cref="Label(double, ProbeFootprint)"/>), because a player walks sixteen of these
+    /// with a key and "35 percent explored" is enough to skip a bearing or to stay on it; everything
+    /// that explains the number is a LINE of the same node's review buffer
+    /// (<see cref="Lines"/>), read at the player's own pace on the one bearing they stopped on. The
+    /// share leads there too, so the buffer opens on the figure the announcement just gave rather than
+    /// on a list of ranges with nothing to weigh them against. It is always said - a flight line with
     /// no fog on it at all can still be a corridor whose flanks are half dark, so "fully explored to
     /// the map edge" is not the same claim and must not silence this one
     /// (<see cref="ProbeFootprint"/>).
@@ -18,52 +22,65 @@ namespace ES2Access.Core.Speech
     /// A probe order cannot be recalled and cannot be aimed at anything but a direction, so the choice
     /// is made entirely on what each direction is worth - which a sighted player reads off the fog on
     /// the map in a second and a listener cannot be told at all unless it is said. Every range is
-    /// spoken; nothing is merged into "mostly unexplored" and nothing is dropped for being far away,
+    /// there; nothing is merged into "mostly unexplored" and nothing is dropped for being far away,
     /// because the player is choosing BETWEEN sixteen of these and a summary that hides where the fog
     /// starts hides the whole comparison.
     ///
-    /// The word for "unexplored" is said once, at the front, and the ranges follow it as a list. The
-    /// stretch that runs off the map is said as running to the map's edge rather than as a range,
-    /// because its far end is not a place the fog ends - it is where the galaxy does.
+    /// The word for "unexplored" is said once, at the front of its line, and the ranges follow it as a
+    /// list. The stretch that runs off the map is said as running to the map's edge rather than as a
+    /// range, because its far end is not a place the fog ends - it is where the galaxy does.
     ///
-    /// Then, and only then, what is unexplored ALONGSIDE the line: a clause of its own, named by the
-    /// compass word of the side it is on, so that a flight line the probe would find nothing on is
-    /// never announced as fog. Its ranges never fold into the map's edge - the main clause has already
-    /// said where the edge is, and saying it twice in one sentence is what makes the second one sound
-    /// like a different number. Two sides carrying the identical stretches are said once, as both.
+    /// Then what is unexplored ALONGSIDE the line: a line of its own per side, named by the compass
+    /// word of the side it is on, so that a flight line the probe would find nothing on is never
+    /// reported as fog. Its ranges never fold into the map's edge - the flight line has already said
+    /// where the edge is, and saying it twice makes the second one sound like a different number. Two
+    /// sides carrying the identical stretches are one line, naming both.
     ///
     /// Engine-free: it says a <see cref="ProbeCorridorReading"/> and knows nothing about how one was
     /// measured.
     /// </summary>
     public static class ProbeContextText
     {
-        /// <summary>The whole line for a heading, the bearing named with the sixteen-word compass
-        /// (<see cref="CompassDirections.KeyForBearing16"/>).</summary>
-        public static string Line(
-            double bearing,
-            ProbeCorridorReading reading,
-            ProbeFootprint footprint
-        )
+        /// <summary>What the bearing announces: the heading named with the sixteen-word compass
+        /// (<see cref="CompassDirections.KeyForBearing16"/>) and the share, and nothing else.</summary>
+        public static string Label(double bearing, ProbeFootprint footprint)
         {
-            return Line(
-                ModStrings.Get(CompassDirections.KeyForBearing16(bearing)),
-                reading,
-                footprint
-            );
+            return Label(ModStrings.Get(CompassDirections.KeyForBearing16(bearing)), footprint);
         }
 
         /// <summary>The same for a heading the caller has already named - the direction word opens the
-        /// sentence, so it is capitalized here rather than by whoever supplies it.</summary>
-        public static string Line(
-            string bearingWord,
-            ProbeCorridorReading reading,
-            ProbeFootprint footprint
-        )
+        /// announcement, so it is capitalized here rather than by whoever supplies it.</summary>
+        public static string Label(string bearingWord, ProbeFootprint footprint)
         {
             return ModStrings.Format(
                 ModStrings.GalaxyProbeContext,
                 Capitalized(bearingWord),
-                Context(reading, footprint)
+                Percent(footprint)
+            );
+        }
+
+        /// <summary>Everything down the heading, a clause per line, for the bearing's review buffer:
+        /// the share, then the flight line's own fog and the rim, then a line per side that has fog
+        /// beside the line. Never empty - the share and the flight line are always both said.</summary>
+        public static IList<string> Lines(
+            ProbeCorridorReading reading,
+            ProbeFootprint footprint
+        )
+        {
+            List<string> lines = new List<string>(4);
+            lines.Add(Percent(footprint));
+            lines.Add(FlightLine(reading));
+            Alongside(lines, reading);
+            return lines;
+        }
+
+        /// <summary>The share of what the launch would reveal that the empire already has - the one
+        /// figure the choice is made on, which is why both deliveries carry it.</summary>
+        public static string Percent(ProbeFootprint footprint)
+        {
+            return ModStrings.Format(
+                ModStrings.GalaxyProbeContextPercentExplored,
+                footprint.PercentExplored
             );
         }
 
@@ -81,22 +98,9 @@ namespace ES2Access.Core.Speech
             return first == word[0] ? word : first + word.Substring(1);
         }
 
-        /// <summary>What is down the heading, without naming the heading - for a surface that has
-        /// already said which way it is talking about. The share the launch would find already known
-        /// leads, and the template joins it to the detail, so a language that would rather end on the
-        /// summary than open with it can turn the sentence round.</summary>
-        public static string Context(ProbeCorridorReading reading, ProbeFootprint footprint)
-        {
-            return ModStrings.Format(
-                ModStrings.GalaxyProbeContextPercentExplored,
-                footprint.PercentExplored,
-                Line(reading) + Alongside(reading)
-            );
-        }
-
         /// <summary>What the probe would fly THROUGH - the flight line's own fog and the rim.
         /// </summary>
-        private static string Line(ProbeCorridorReading reading)
+        private static string FlightLine(ProbeCorridorReading reading)
         {
             if (reading.Spans.Count == 0)
             {
@@ -140,42 +144,47 @@ namespace ES2Access.Core.Speech
             return message.Build();
         }
 
-        /// <summary>What the probe would uncover in PASSING, as its own clause per side - or nothing
-        /// at all, which is most bearings. The two sides are the heading turned a quarter circle each
-        /// way; when they hold the same stretches they are one clause naming both, since hearing the
-        /// same six numbers twice tells the player nothing the word "both" does not.</summary>
-        private static string Alongside(ProbeCorridorReading reading)
+        /// <summary>What the probe would uncover in PASSING, a line per side - or nothing at all,
+        /// which is most bearings. The two sides are the heading turned a quarter circle each way;
+        /// when they hold the same stretches they are one line naming both, since hearing the same six
+        /// numbers twice tells the player nothing the word "both" does not.</summary>
+        private static void Alongside(List<string> lines, ProbeCorridorReading reading)
         {
             string clockwise = Ranges(reading.Clockwise);
             string counter = Ranges(reading.CounterClockwise);
             if (clockwise == null && counter == null)
             {
-                return string.Empty;
+                return;
             }
 
             if (clockwise == counter)
             {
-                return ModStrings.Format(
-                    ModStrings.GalaxyProbeContextAlongsideBoth,
-                    clockwise
+                lines.Add(
+                    ModStrings.Format(ModStrings.GalaxyProbeContextAlongsideBoth, clockwise)
                 );
+                return;
             }
 
-            return Side(reading.Bearing + 90.0, clockwise)
-                + Side(reading.Bearing - 90.0, counter);
+            Side(lines, reading.Bearing + 90.0, clockwise);
+            Side(lines, reading.Bearing - 90.0, counter);
         }
 
-        /// <summary>One side's clause, empty when that side has nothing unexplored beside the line.
-        /// </summary>
-        private static string Side(double bearing, string ranges)
+        /// <summary>One side's line, nothing at all when that side has nothing unexplored beside the
+        /// line.</summary>
+        private static void Side(List<string> lines, double bearing, string ranges)
         {
-            return ranges == null
-                ? string.Empty
-                : ModStrings.Format(
+            if (ranges == null)
+            {
+                return;
+            }
+
+            lines.Add(
+                ModStrings.Format(
                     ModStrings.GalaxyProbeContextAlongside,
                     ModStrings.Get(CompassDirections.KeyForBearing16(bearing)),
                     ranges
-                );
+                )
+            );
         }
 
         /// <summary>Plain ranges, in the same "{a}-{b}" the line's own stretches are said in and joined

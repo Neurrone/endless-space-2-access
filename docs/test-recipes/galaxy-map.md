@@ -295,9 +295,24 @@ as the session ends in `POST /quit` rather than a save. Then arm it exactly as t
 `Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>().ChangeCursor(typeof(ProbeLaunchingCursor), fleet)`
 — `FollowProbeArming` opens the group and lands on the first bearing by itself, so the arming call's
 own `speech` already carries a bearing line ("Launch probe, reach 30, group, expanded, 9 of 9, North:
-22 percent explored; unexplored 5 to the map edge at 120., button, 1 of 16"), and `ui.down` walks the
-other fifteen. Cancel with the game's own `((ProbeLaunchingCursor)Gui.GetCursor()).SwitchToGalaxyCursor()`
+22 percent explored., button, 1 of 16"), and `ui.down` walks the other fifteen. What a bearing
+ANNOUNCES is the heading and the share and nothing else (2026-08-30); the fog that explains the share
+is the same node's REVIEW BUFFER, a clause per line, so a bearing is read with `buffer.lineDown` or
+`GET /gui/graph?buffers=1` and never off `/speech` alone (North-northeast at Osulo, turn 22: "56
+percent explored" / "Unexplored 11-12, 13-26, 33-45, and 50 to the map edge at 130" / "Unexplored
+alongside to the east-southeast: 26-27 and 45-46" / "Unexplored alongside to the west-northwest:
+5-11, 12-13, and 45-50"). Cancel with the game's own
+`((ProbeLaunchingCursor)Gui.GetCursor()).SwitchToGalaxyCursor()`
 (`GuiManager.cs` :2107) — "Target selection ended", fleet panel back.
+
+**Reading the bearings without walking to them** (a session whose cursor must not be moved): the
+label and the buffer lines are both pure reads off the memo, so
+`ES2Access.UI.ProbeContext.Label(fleet, node, i)` and `.Lines(fleet, node, i)` answer the sixteen
+from `/eval` with the origin fleet off `CursorTargeting.ArmedProbe.ProbeOriginFleet` and the system
+found by walking `GameGalaxy.StarSystemNodes()` for `NodePosition == fleet.NodePosition` (bind the
+walk as non-generic `IEnumerable`/`IEnumerator` — the eval-lambda rule). Asking with a DIFFERENT
+system node measures that one instead (how the rim's "Fully explored to the map edge at 0" variant
+was sighted from Osulo's fleet against `Leo`), and costs one extra `Recomputes` on the way back.
 
 **Checking a bearing's spoken numbers by hand.** Every figure in a bearing line is reproducible from
 four live reads and no mod code: `GalaxyFrame.Edges()` (the rim), `GalaxyCoordinates.Origin()` (the
@@ -317,7 +332,7 @@ to such a tile, and no stretch inside the reach may exist where the share reads 
 (2026-08-29, `galaxy-map.md`); on a diagonal one tile is the outermost sample for two consecutive
 steps, so six steps of stretch off four dark tiles is right, not a doubling. Measured at Osulo, turn
 22, 45°: 7 dark tiles of 228, four of them at along 22.4/25.2/28.0/29.5 and perp 2.9, and the row
-spoke "unexplored alongside to the southeast: 22-24, 25-26, 28-31, and 52-69" — the last past the
+buffered "Unexplored alongside to the southeast: 22-24, 25-26, 28-31, and 52-69" — the last past the
 reach, where the stretches run on to the rim and the share does not follow.
 
 **Where to sight the frame half of that rule**: not at a middle-of-the-map system, whose corridors

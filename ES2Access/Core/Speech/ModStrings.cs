@@ -761,6 +761,12 @@ namespace ES2Access.Core.Speech
         /// and how far the map itself goes that way (<see cref="ProbeContextText"/>). The game draws
         /// the fog and the map's rim and says neither in words, so all of it is the mod's.
         ///
+        /// <see cref="GalaxyProbeContext"/> itself is only what the bearing ANNOUNCES - the heading and
+        /// the one number a listener chooses on - because sixteen of these are walked one after another
+        /// and the ranges that explain the number are a paragraph each. Every other template here is a
+        /// LINE of the review buffer, said whole and on its own, which is why each of them reads as a
+        /// complete clause rather than as something to glue.
+        ///
         /// The distances are whole units along the bearing, measured from the system the probe leaves.
         /// A range is two of them; the last stretch is the one that runs off the map, and it takes a
         /// template of its own because "46 to the map edge at 58" is one clause where the others are
@@ -775,19 +781,18 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeContextExplored = "galaxy.probe-context-explored";
 
         /// <summary>The share of everything a launch this way would reveal that the empire already has
-        /// (<see cref="ProbeFootprint"/>), and the rest of the bearing's sentence after it. One
-        /// template rather than two so that the join between the summary and the detail is the
-        /// translator's to place: {0} is the whole number of percent, {1} everything else the heading
-        /// has to say. It opens the sentence in English because a listener comparing sixteen headings
-        /// needs the one number before the ranges that explain it.</summary>
+        /// ({0}, the whole number of percent - <see cref="ProbeFootprint"/>). The one figure a listener
+        /// comparing sixteen headings chooses on, so it is said twice: once in the bearing's own
+        /// announcement (<see cref="GalaxyProbeContext"/>) and once as the first line of its buffer,
+        /// where the ranges that explain it follow.</summary>
         public const string GalaxyProbeContextPercentExplored =
             "galaxy.probe-context-percent-explored";
 
         /// <summary>What is unexplored BESIDE the flight line rather than on it - the map a probe
-        /// would uncover in passing without ever flying into it. It follows the heading's own clause
-        /// and names the side it is on, because "unexplored 2-40" and "unexplored alongside to the
-        /// southwest 2-40" send a probe to two different places. Both sides are said as one clause
-        /// when they hold the same stretches. The ranges take
+        /// would uncover in passing without ever flying into it. A buffer line per side, following the
+        /// flight line's own, and each names the side it is on, because "unexplored 2-40" and
+        /// "unexplored alongside to the southwest 2-40" send a probe to two different places. Both
+        /// sides are one line when they hold the same stretches. The ranges take
         /// <see cref="GalaxyProbeContextRange"/> like every other range and never fold into the map's
         /// edge: the clause before this one has already said where the edge is.</summary>
         public const string GalaxyProbeContextAlongside = "galaxy.probe-context-alongside";
@@ -2056,14 +2061,14 @@ namespace ES2Access.Core.Speech
             { GalaxyProbeHeadingMany, "Probe launched heading {0}, {1} probes remaining" },
             { GalaxyProbeLaunchReach, "Launch probe, reach {0}" },
             { GalaxyProbeContext, "{0}: {1}." },
-            { GalaxyProbeContextUnexplored, "unexplored {0}" },
+            { GalaxyProbeContextUnexplored, "Unexplored {0}" },
             { GalaxyProbeContextRange, "{0}-{1}" },
             { GalaxyProbeContextToEdge, "{0} to the map edge at {1}" },
             { GalaxyProbeContextEdge, "map edge at {0}" },
-            { GalaxyProbeContextExplored, "fully explored to the map edge at {0}" },
-            { GalaxyProbeContextPercentExplored, "{0} percent explored; {1}" },
-            { GalaxyProbeContextAlongside, "; unexplored alongside to the {0}: {1}" },
-            { GalaxyProbeContextAlongsideBoth, "; unexplored alongside to both sides: {0}" },
+            { GalaxyProbeContextExplored, "Fully explored to the map edge at {0}" },
+            { GalaxyProbeContextPercentExplored, "{0} percent explored" },
+            { GalaxyProbeContextAlongside, "Unexplored alongside to the {0}: {1}" },
+            { GalaxyProbeContextAlongsideBoth, "Unexplored alongside to both sides: {0}" },
             { GalaxyProbeAt, "at {0}" },
             { GalaxyProbeNear, "{0} of {1}" },
             { GalaxyProbeOutOne, "{0} of {1}, {2} turn out" },

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Map;
 using ES2Access.Core.Speech;
@@ -25,6 +26,9 @@ namespace ES2Access.UI
     /// couple of hundred tiles besides. The answer only changes when the fleet moves, the fog lifts,
     /// the probe's own reach or vision changes, or the player changes language, so those are the key
     /// and everything else is an array read. <see cref="Recomputes"/> is the counter that proves it.
+    /// The bearing's announcement and its buffer lines come off the SAME measurement and are memoized
+    /// together, because they are one reading said two ways and asking for either must never cost the
+    /// corridors twice.
     ///
     /// How far the map goes is cached harder still, and not here: <see cref="GalaxyFrame"/> measures it
     /// once per game, and a bearing ends where it leaves the FRAME the inspect cursor roams, so the rim
@@ -38,7 +42,8 @@ namespace ES2Access.UI
 
         private const double Step = 360.0 / Bearings;
 
-        private static readonly string[] _lines = new string[Bearings];
+        private static readonly string[] _labels = new string[Bearings];
+        private static readonly IList<string>[] _details = new IList<string>[Bearings];
         private static Fleet _fleet;
         private static StarSystemNode _node;
         private static int _revision = int.MinValue;
@@ -69,11 +74,20 @@ namespace ES2Access.UI
             return ModStrings.Format(ModStrings.GalaxyProbeLaunchReach, _reach);
         }
 
-        /// <summary>One bearing said as what is down it.</summary>
-        public static string Line(Fleet fleet, StarSystemNode node, int index)
+        /// <summary>What one bearing announces: the heading and the share, which is what a player
+        /// walking sixteen of them chooses on.</summary>
+        public static string Label(Fleet fleet, StarSystemNode node, int index)
         {
             Ensure(fleet, node);
-            return _lines[index];
+            return _labels[index];
+        }
+
+        /// <summary>The rest of what is down that bearing, a clause per line, for the review buffer of
+        /// the one bearing the player stopped on (<see cref="ProbeContextText.Lines"/>).</summary>
+        public static IList<string> Lines(Fleet fleet, StarSystemNode node, int index)
+        {
+            Ensure(fleet, node);
+            return _details[index];
         }
 
         /// <summary>
@@ -106,7 +120,7 @@ namespace ES2Access.UI
                     && halfWidth == _halfWidth
                     && reach == _reach
                     && language == _language
-                    && _lines[0] != null
+                    && _labels[0] != null
                 )
                 {
                     return;
@@ -152,19 +166,25 @@ namespace ES2Access.UI
             for (int i = 0; i < Bearings; i++)
             {
                 double bearing = Bearing(i);
-                _lines[i] = ProbeContextText.Line(
+                ProbeCorridorReading reading = ProbeCorridor.Read(
+                    edges,
+                    origin,
+                    anchor,
                     bearing,
-                    ProbeCorridor.Read(edges, origin, anchor, bearing, halfWidth, explored),
-                    ProbeFootprint.Read(
-                        edges,
-                        origin,
-                        anchor,
-                        bearing,
-                        _reach,
-                        halfWidth,
-                        explored
-                    )
+                    halfWidth,
+                    explored
                 );
+                ProbeFootprint footprint = ProbeFootprint.Read(
+                    edges,
+                    origin,
+                    anchor,
+                    bearing,
+                    _reach,
+                    halfWidth,
+                    explored
+                );
+                _labels[i] = ProbeContextText.Label(bearing, footprint);
+                _details[i] = ProbeContextText.Lines(reading, footprint);
             }
         }
 
@@ -191,7 +211,8 @@ namespace ES2Access.UI
         {
             for (int i = 0; i < Bearings; i++)
             {
-                _lines[i] = ModStrings.Get(CompassDirections.KeyForBearing16(Bearing(i)));
+                _labels[i] = ModStrings.Get(CompassDirections.KeyForBearing16(Bearing(i)));
+                _details[i] = null;
             }
         }
 

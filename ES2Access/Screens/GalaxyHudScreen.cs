@@ -8000,12 +8000,16 @@ namespace ES2Access.Screens
                     {
                         int index = i;
                         double bearing = ProbeContext.Bearing(i);
-                        // Synthetic: mod-authored, one bearing per direction the launch can take.
+                        // Synthetic: mod-authored, one bearing per direction the launch can take. What
+                        // it says is the heading and the share, because the player walks sixteen of
+                        // these; the fog that explains the share is the buffer's, a clause per line
+                        // (<see cref="ProbeContext.Lines"/>).
                         builder.AddItem(Nodes.Synthetic(
                             ControlId.Structural(place + "/launch/" + i),
                             GraphNodes.Button(
-                                () => ProbeContext.Line(fleet, node, index),
-                                () => CursorTargeting.ConfirmTowards(bearing)
+                                () => ProbeContext.Label(fleet, node, index),
+                                () => CursorTargeting.ConfirmTowards(bearing),
+                                details: () => ProbeContext.Lines(fleet, node, index)
                             )
                         ));
                     }
