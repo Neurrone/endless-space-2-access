@@ -110,16 +110,20 @@ namespace ES2Access.Core.Map
     /// hears is a number they can walk to and check tile by tile, and a sliver of fog narrower than a
     /// tile can never surface as a stretch of one.
     ///
-    /// A LINE sample is the tile nearest the point on the line. A FLANK sample is the OUTERMOST tile
-    /// the probe's vision circle still reaches at that step - the corridor's true edge - and never a
-    /// tile beyond it: the flank is not "the tile nearest the edge", which can round outwards and put
-    /// the sample up to half a tile's diagonal outside the vision radius, so that the clause reports
-    /// fog at map the probe would fly straight past. That is the rule the alongside stretches and
-    /// <see cref="ProbeFootprint"/>'s share are held to (2026-08-29, <c>docs/galaxy-map.md</c>): over
-    /// the stretch the probe can actually reach, a corridor the share calls fully explored has nothing
-    /// alongside it to report. Membership is <see cref="ProbeFootprint.InVision"/> itself, so the two
-    /// cannot disagree about a tile - measured here against the flight LINE rather than the
-    /// reach-capped segment, since the alongside stretches deliberately run on to the rim.
+    /// A LINE sample is the tile nearest the point on the line. A FLANK sample is a tile the probe's
+    /// launch would actually count as REVEALED - inside the vision circle at that step and inside the
+    /// frame the caller calls the edge of the map - and of those, the outermost, which is the
+    /// corridor's true edge. Two things it is deliberately not. Not "the tile nearest the vision
+    /// edge", which can round outwards and put the sample half a tile's diagonal past the radius; and
+    /// not a tile off the frame, which the share does not count either. Both are ways of reporting fog
+    /// at map a launch would never buy, and both were doing it: this is the rule the alongside
+    /// stretches and <see cref="ProbeFootprint"/>'s share are held to (2026-08-29,
+    /// <c>docs/galaxy-map.md</c>), so that over the stretch the probe can actually reach, a corridor
+    /// the share calls fully explored has nothing alongside it to report. Membership is
+    /// <see cref="ProbeFootprint.InVision"/> and the frame's own <see cref="ConvexHull.Contains"/> -
+    /// the share's two tests, not a second opinion on them - with the vision one measured against the
+    /// flight LINE rather than the reach-capped segment, since the alongside stretches deliberately
+    /// run on to the rim.
     ///
     /// Distances are whole units from the origin, counting outwards, ending at the rim of the map.
     /// Bearings are degrees clockwise from north, north being +north and east +east - the convention
@@ -148,6 +152,7 @@ namespace ES2Access.Core.Map
         {
             double radians = bearing * Math.PI / 180.0;
             return Read(
+                galaxy,
                 origin,
                 anchor,
                 bearing,
@@ -163,6 +168,11 @@ namespace ES2Access.Core.Map
         /// terms of that one whole number, so the rim a span is said to reach and the rim the sentence
         /// names can never disagree by a unit.
         ///
+        /// <paramref name="galaxy"/> is still wanted even though the rim is already known, because the
+        /// outline decides which tiles ALONGSIDE the flight the probe would reveal, and that is a
+        /// different question from how far down the flight the map goes. Null asks for no clipping at
+        /// all - a caller with no outline to speak of, which in the game is nobody.
+        ///
         /// <paramref name="anchor"/> is the lattice every sample is snapped to; only the fractional
         /// part of it matters, so any place on the same lattice - the empire's home, in the game -
         /// gives identical answers.
@@ -171,6 +181,7 @@ namespace ES2Access.Core.Map
         /// the galaxy has headings with nothing down them, and that is a true thing to say.
         /// </summary>
         public static ProbeCorridorReading Read(
+            ConvexHull galaxy,
             MapPoint origin,
             MapPoint anchor,
             double bearing,
@@ -208,6 +219,7 @@ namespace ES2Access.Core.Map
                     step,
                     !dark
                         && FlankDark(
+                            galaxy,
                             explored,
                             anchor,
                             east,
@@ -221,6 +233,7 @@ namespace ES2Access.Core.Map
                     step,
                     !dark
                         && FlankDark(
+                            galaxy,
                             explored,
                             anchor,
                             east,
@@ -263,24 +276,31 @@ namespace ES2Access.Core.Map
 
         /// <summary>
         /// Whether the map alongside the line at this step is dark, asked at the OUTERMOST tile the
-        /// probe's vision circle still reaches on that side: of the lattice tiles about where the edge
-        /// of the circle falls, the one furthest out that is still inside it
-        /// (<see cref="ProbeFootprint.InVision"/>, so a tile the share counts and a tile this speaks
-        /// about are the same tile), ties going to the tile nearest that edge point - which is what
-        /// makes a corridor whose sides run along the lattice sample the step's own tile and not a
-        /// neighbour's.
+        /// probe's launch would count as revealed on that side: inside the vision circle
+        /// (<see cref="ProbeFootprint.InVision"/>) and inside the frame - the share's own two tests,
+        /// so a tile the share counts and a tile this speaks about are the same tile. Ties go to the
+        /// tile nearest the place being looked at, which is what makes a corridor whose sides run
+        /// along the lattice sample the step's own tile and not a neighbour's.
         ///
         /// <paramref name="outEast"/>/<paramref name="outNorth"/> are the unit perpendicular pointing
         /// at the side being asked about, so the dot product below is the tile's distance out from the
         /// flight LINE - the line, not the reach-capped segment, because the alongside stretches run
         /// on to the rim.
         ///
-        /// The neighbourhood searched is the tiles a step from where the edge falls, widened once when
-        /// none of them is inside the circle; a corridor narrower than the gap between tiles can leave
-        /// nothing to sample at all, and a probe that would reveal nothing beside itself there has
-        /// nothing to report.
+        /// The search starts at the edge of the vision circle and walks IN along that perpendicular a
+        /// unit at a time, taking the tiles around each place it stops at and answering with the first
+        /// stop that has one it may speak about. Walking in rather than widening a box is what lets a
+        /// frame cutting deep across the corridor still be answered - the outermost tile on the map
+        /// may be most of the corridor's width inside the vision edge - while keeping every candidate
+        /// on the step's own perpendicular. A side with no map on it at all - the frame cutting across
+        /// the flight itself, which is every seaward flank of a rim system - walks in as far as the
+        /// line's own tile, and that tile is explored wherever this is asked at all (the clause is
+        /// only spoken where the line is light), so the side falls silent instead of inventing a
+        /// stretch. A corridor with nothing on it at all says nothing for the same reason: a probe
+        /// that would reveal nothing beside itself there has nothing to report.
         /// </summary>
         private static bool FlankDark(
+            ConvexHull galaxy,
             MapExplored explored,
             MapPoint anchor,
             double east,
@@ -290,35 +310,41 @@ namespace ES2Access.Core.Map
             double halfWidth
         )
         {
-            double edgeEast = east + outEast * halfWidth;
-            double edgeNorth = north + outNorth * halfWidth;
-            double centreEast =
-                anchor.X + Math.Round(edgeEast - anchor.X, MidpointRounding.AwayFromZero);
-            double centreNorth =
-                anchor.Y + Math.Round(edgeNorth - anchor.Y, MidpointRounding.AwayFromZero);
-
-            for (int spread = 1; spread <= 2; spread++)
+            for (double outAt = halfWidth; outAt > -1.0; outAt -= 1.0)
             {
+                double lookEast = east + outEast * outAt;
+                double lookNorth = north + outNorth * outAt;
+                double centreEast =
+                    anchor.X + Math.Round(lookEast - anchor.X, MidpointRounding.AwayFromZero);
+                double centreNorth =
+                    anchor.Y + Math.Round(lookNorth - anchor.Y, MidpointRounding.AwayFromZero);
+
                 bool found = false;
                 double outermost = 0;
                 double nearest = 0;
                 double sampleEast = 0;
                 double sampleNorth = 0;
-                for (int nudgeEast = -spread; nudgeEast <= spread; nudgeEast++)
+                for (int nudgeEast = -1; nudgeEast <= 1; nudgeEast++)
                 {
-                    for (int nudgeNorth = -spread; nudgeNorth <= spread; nudgeNorth++)
+                    for (int nudgeNorth = -1; nudgeNorth <= 1; nudgeNorth++)
                     {
                         double tileEast = centreEast + nudgeEast;
                         double tileNorth = centreNorth + nudgeNorth;
                         double outward =
                             (tileEast - east) * outEast + (tileNorth - north) * outNorth;
-                        if (!ProbeFootprint.InVision(outward * outward, halfWidth))
+                        if (
+                            !ProbeFootprint.InVision(outward * outward, halfWidth)
+                            || (
+                                galaxy != null
+                                && !galaxy.Contains(new MapPoint(tileEast, tileNorth))
+                            )
+                        )
                         {
                             continue;
                         }
 
-                        double offEast = tileEast - edgeEast;
-                        double offNorth = tileNorth - edgeNorth;
+                        double offEast = tileEast - lookEast;
+                        double offNorth = tileNorth - lookNorth;
                         double off = offEast * offEast + offNorth * offNorth;
                         if (
                             found

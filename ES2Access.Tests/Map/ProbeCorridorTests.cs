@@ -88,7 +88,7 @@ namespace ES2Access.Tests.Map
             MapExplored explored
         )
         {
-            return ProbeCorridor.Read(Home, Home, 0.0, edge, halfWidth, explored);
+            return ProbeCorridor.Read(Galaxy(), Home, Home, 0.0, edge, halfWidth, explored);
         }
 
         [Fact]
@@ -281,17 +281,86 @@ namespace ES2Access.Tests.Map
         }
 
         [Fact]
+        public void AFlankStopsAtTheEdgeOfTheMapAsWellAsTheEdgeOfTheCorridor()
+        {
+            // A galaxy whose frame ends two units east of the heading, with a corridor three and a
+            // half units wide: the probe's circle reaches the tile three units out, the map does not,
+            // and the share does not count it - so neither may the alongside clause. The sample steps
+            // in to the outermost tile that is on the map AND in the circle, which is the one at two.
+            ConvexHull narrow = ConvexHull.Build(
+                new[]
+                {
+                    new MapPoint(-100, -100),
+                    new MapPoint(2, -100),
+                    new MapPoint(2, 100),
+                    new MapPoint(-100, 100),
+                }
+            );
+
+            MapExplored offTheMap = delegate(double east, double north)
+            {
+                return !(Math.Round(east) == 3 && north >= 5 && north < 9);
+            };
+
+            Assert.Empty(
+                ProbeCorridor.Read(narrow, Home, Home, 0.0, 40, 3.5, offTheMap).Clockwise
+            );
+
+            // The same fog on a frame that holds it is heard, so the tile is skipped for being off
+            // the map, not for being out of reach of the search.
+            Assert.Equal(
+                "5-9",
+                Text(ProbeCorridor.Read(Galaxy(), Home, Home, 0.0, 40, 3.5, offTheMap).Clockwise)
+            );
+
+            // And the outermost tile that is on the map decides instead - it is not skipped along
+            // with the tile beyond it.
+            MapExplored atTheEdge = delegate(double east, double north)
+            {
+                return !(Math.Round(east) == 2 && north >= 5 && north < 9);
+            };
+
+            Assert.Equal(
+                "5-9",
+                Text(ProbeCorridor.Read(narrow, Home, Home, 0.0, 40, 3.5, atTheEdge).Clockwise)
+            );
+        }
+
+        [Fact]
         public void WithinTheProbesReachAFullyExploredShareLeavesNothingAlongsideToSay()
         {
             // The two halves of a bearing's sentence, over the stretch they share. The empire here has
             // explored exactly the probe's own footprint and nothing else, so the share reads 100
             // percent - and no alongside stretch may then begin inside the reach. Past the reach they
             // may, and do: the stretches deliberately run on to the rim (docs/galaxy-map.md).
+            Assert.NotEmpty(ShareAndStretchesAgree(Galaxy(), 22.5).Clockwise);
+
+            // And the same where the frame cuts along the corridor, taking the east flank off the map
+            // from the system outwards. Nothing off the map is explored here either, so any tile the
+            // clause samples that the share would not count comes back dark and breaks the fact.
+            ShareAndStretchesAgree(
+                ConvexHull.Build(
+                    new[]
+                    {
+                        new MapPoint(-100, -100),
+                        new MapPoint(2, -100),
+                        new MapPoint(2, 100),
+                        new MapPoint(-100, 100),
+                    }
+                ),
+                0.0
+            );
+        }
+
+        private static ProbeCorridorReading ShareAndStretchesAgree(
+            ConvexHull frame,
+            double bearing
+        )
+        {
             const double Reach = 30;
             const double HalfWidth = 3.5;
-            const double Bearing = 22.5;
 
-            double radians = Bearing * Math.PI / 180.0;
+            double radians = bearing * Math.PI / 180.0;
             MapPoint origin = new MapPoint(0.25, -0.5);
             MapPoint tip = new MapPoint(
                 origin.X + Math.Sin(radians) * Reach,
@@ -299,15 +368,16 @@ namespace ES2Access.Tests.Map
             );
             MapExplored explored = delegate(double east, double north)
             {
-                return new MapPoint(east, north).SquaredDistanceToSegment(origin, tip)
-                    <= HalfWidth * HalfWidth + 1e-9;
+                MapPoint tile = new MapPoint(east, north);
+                return tile.SquaredDistanceToSegment(origin, tip) <= HalfWidth * HalfWidth + 1e-9
+                    && frame.Contains(tile);
             };
 
             ProbeFootprint footprint = ProbeFootprint.Read(
-                Galaxy(),
+                frame,
                 origin,
                 origin,
-                Bearing,
+                bearing,
                 Reach,
                 HalfWidth,
                 explored
@@ -317,17 +387,17 @@ namespace ES2Access.Tests.Map
             Assert.True(footprint.Tiles > 100, "the footprint is a real corridor, not an empty one");
 
             ProbeCorridorReading reading = ProbeCorridor.Read(
-                Galaxy(),
+                frame,
                 origin,
                 origin,
-                Bearing,
+                bearing,
                 HalfWidth,
                 explored
             );
 
             NoneBefore(reading.Clockwise, (int)Reach);
             NoneBefore(reading.CounterClockwise, (int)Reach);
-            Assert.NotEmpty(reading.Clockwise);
+            return reading;
         }
 
         private static void NoneBefore(IList<UnexploredSpan> spans, int reach)
@@ -355,6 +425,7 @@ namespace ES2Access.Tests.Map
             };
 
             ProbeCorridorReading reading = ProbeCorridor.Read(
+                Galaxy(),
                 new MapPoint(0.25, -0.5),
                 anchor,
                 22.5,
@@ -400,6 +471,7 @@ namespace ES2Access.Tests.Map
                 };
 
                 ProbeCorridorReading reading = ProbeCorridor.Read(
+                    Galaxy(),
                     anchor,
                     anchor,
                     0.0,

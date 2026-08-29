@@ -358,18 +358,28 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   only the reach-capped flight (`ProbeFootprint`, reach = `Round(ProbeSpeed × ProbeBaseLifetime)` = 30
   on `[Beginner] test`, vision half-width `ProbeVisionRange` = 3.5). That scope difference is the
   owner's decision and is why "unexplored 49 to the map edge at 59" can sit beside "100 percent
-  explored". **The alongside stretches are cut to the tiles the share counts**: a flank sample is the
-  OUTERMOST lattice tile still inside the vision radius on that step's perpendicular, and membership is
-  `ProbeFootprint.InVision` itself, so the two halves of the sentence cannot disagree about a tile.
-  Within the probe's reach, then, a bearing the share calls fully explored has nothing alongside it to
-  report; past the reach it may still list fog under a 100-percent share, which is the scope difference
-  above and by design. What that replaced: one sample per side per step taken at exactly the vision
-  radius and then rounded to the lattice, which could push the sample half a tile's diagonal (~0.71)
-  PAST the radius while missing tiles inside it that no sample landed on. Measured on Dusay's southeast
-  bearing, where every tile within 3.5 of the flight is explored: the row said "100 percent explored;
-  fully explored to the map edge at 32" and then read out fifteen alongside stretches, every one of
-  them fog from the 3.5-4.25 ring the probe would fly straight past (52 dark tiles sit in that ring);
-  it now says the first half and stops.
+  explored". **The alongside stretches are cut to the tiles the share counts, at BOTH boundaries**: a
+  flank sample is the outermost lattice tile on that step's perpendicular that is inside the vision
+  radius AND inside the frame, membership being `ProbeFootprint.InVision` and the frame's own
+  `Contains` — the share's two tests, not a second opinion on them — so the two halves of the sentence
+  cannot disagree about a tile. Within the probe's reach, then, a bearing the share calls fully
+  explored has nothing alongside it to report; past the reach it may still list fog under a
+  100-percent share, which is the scope difference above and by design. What that replaced was one
+  sample per side per step taken at exactly the vision radius and then rounded to the lattice, which
+  fails both ways: the rounding could push the sample half a tile's diagonal (~0.71) PAST the radius,
+  and nothing tested the frame at all, so a rim system's seaward flank reported fog from off the map.
+  Measured on Dusay's southeast bearing, where every tile within 3.5 of the flight is explored: the row
+  said "100 percent explored; fully explored to the map edge at 32" and then read out fifteen alongside
+  stretches, every one of them fog from the 3.5-4.25 ring the probe would fly straight past (52 dark
+  tiles sit in that ring); it now says the first half and stops. The frame half is a rim-system effect
+  and small in the middle of the map — over all 86 systems of `[Beginner] test`, 159 of the 14234 flank
+  samples a bearing actually speaks from move when the frame is applied and 25 change the answer, every
+  one of them DROPPING fog, none adding it. What it sounds like, at Leo on the eastern rim: "North: 17
+  percent explored; unexplored 4 to the map edge at 55; unexplored alongside to the east: 2-4" — where
+  east of Leo is off the map — became the same line without the clause. **A flank with no map on it at
+  all falls silent** rather than reporting the nearest tile it can find: the inward walk ends at the
+  line's own tile, which is explored wherever the clause is spoken at all, since a flank is only
+  mentioned where the line is light.
 - **Arming a targeting mode from the fleet-actions stop closes the fleet panel and seats the
   cursor back in the acting fleet's system branch** — the last node if the branch is open,
   the system node if closed. That is reconciliation's doing, not a landing, and it only holds
