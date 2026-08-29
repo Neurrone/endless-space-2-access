@@ -44,7 +44,9 @@ Some fleet actions arm a targeting mode instead of acting at once — launching 
 
 While a mode is armed, the review buffer of any target you focus holds the game's requirement text for it, for example `Must be a Academy Owned System`.
 
-A probe launch also offers a `Launch towards` group with the eight compass bearings, for aiming into open space where no starlane goes. When the mode arms, focus moves straight to this group's first bearing (north), wherever you were reading — walk the bearings with `Up` and `Down`, `Enter` launches.
+A probe launch also offers a `Launch towards` group with sixteen compass bearings, for aiming into open space where no starlane goes. When the mode arms, focus moves straight to this group's first bearing (north), wherever you were reading — walk the bearings with `Up` and `Down`, `Enter` launches.
+
+Each bearing says what a launch that way is worth. First the share: of every tile the probe would light up — its flight out to its reach, widened by its vision to either side — how much is already explored (`35 percent explored`), so one number is enough to skip a bearing or keep listening. Then the detail: the unexplored stretches along the flight line, in map units out to the map edge, and any fog lying just beside the line (`unexplored alongside to the southwest`). The group announces the probe's reach once (`Launch probe, reach 30`), so a stretch beyond that number is one this probe will not get to — the stretches describe what is out there; the share describes what this launch would buy. A bearing with nothing left to find reads `fully explored to the map edge`.
 
 ## Moving Ships Between Fleets
 

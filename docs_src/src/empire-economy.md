@@ -6,7 +6,7 @@ The empire screen lists everything you own. Use `Tab` to cycle through:
 
 - **Tabs**: the views the screen offers
 - **Systems**: your systems as a table, one row each. Press `Up` from the first row to reach the column headings, where `Enter` sorts by that column
-- **Detail**: the planets, constructibles, construction queue and hangar of the system whose row you have expanded. These are the same panels as the star system page, so queueing, cancelling, buy-outs and queue reordering work identically
+- **Detail**: the planets, constructibles, construction queue and hangar of the system whose row you have expanded. These are the same panels as the star system page, so queueing, cancelling, buy-outs and queue reordering work identically. Opening one is announced — `Planets panel open for Dusay`, `Construction panel open`, `Hangar panel open` — and so is closing it, like the fleet panel on the map
 - **Victory**: the standing of each victory condition
 
 Press `Ctrl+Alt+Enter` (double click) on a system row to open that system's management page — the fastest route from a long list to the system you want to work on. An expanded detail row stays expanded until you leave the screen.

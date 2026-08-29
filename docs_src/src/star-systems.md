@@ -3,7 +3,7 @@
 There are 3 ways to open a system's management page:
 
 - Zoom in past the map's closest level (`Right` on the zoom slider). This opens the page for your own colonies; on anything else it just zooms in.
-- The "Open system" button under systems you own in the systems tree
+- The "Manage system" button under systems you own in the systems tree
 - Press `Ctrl+Alt+Enter` (double click) on the system's row in the empire screen's table.
 
 Press `Escape` to leave, or `Left` on the zoom slider to step back out.
