@@ -275,7 +275,10 @@ namespace ES2Access.Screens
             AgeTransform empty = Widget(panel.EmptyResearchQueueLabel);
             AddDrawnLine(builder, QueueTitle(Group(panel.EmptyResearchQueueLabel), empty), "research:queue-title", null);
 
-            if (empty != null)
+            // The empty-queue label is a wired prefab field, so it exists whether or not the game
+            // means it: which branch the panel is in is read off whether the label is DRAWN, the same
+            // way the game shows one or the other.
+            if (empty != null && AgeWidgets.Visible(empty))
             {
                 AddDrawnLine(builder, empty, "research:queue-empty", null);
                 return;

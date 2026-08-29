@@ -22,6 +22,12 @@ progress". "Survival Suits" and "Ubiquitous Surveillance" are the fixture's two 
 dots (195 Science each); "Military II" expands to four "Not available" dots, the ready-made research
 REFUSAL controls. Restore by cancelling what was added — `ResearchQueue.Length` back to 0, measured
 2026-08-19, no `POST /loadsave` needed.
+**The queue region must grow a row per queued technology** (`research:queue/<tech>`, "position 1,
+N turns remaining", after `research:queue-title`) the moment one is queued, and read
+`research:queue-empty` only while the game draws its empty-queue label. The label is a wired prefab
+field, so `empty != null` is always true — the branch is chosen by `AgeWidgets.Visible(empty)`
+(fixed 2026-08-29: the existence test made every queued technology unreadable while the empty
+wording still read fine, the wired-prefab branch-chooser class).
 **Cancelling a technology that has PROGRESS** (measured 2026-08-22, and it works on both routes):
 queue a cheap dot, `ui.endTurn` TWICE (this save has an idle system, so the first press only raises
 the game's own prompt), then reopen the wheel and press Enter either on the wheel dot or on
