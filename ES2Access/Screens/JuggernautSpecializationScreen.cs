@@ -16,7 +16,7 @@ namespace ES2Access.Screens
     /// for, on top of a page the engine has switched off underneath (<c>GuiModalWindow.OnBeginShow</c>
     /// disables every screen behind an exclusive modal).
     ///
-    /// Supremacy (DLC16) is not installed here, but the window does NOT need it to be read: its three
+    /// Supremacy (DLC16) content is not needed to READ this window: its three
     /// cards come out of the entity-action database, which loads every <c>*_DLC*</c> datatable whatever
     /// the empire owns (measured - <c>GuiSpecializations.Count == 3</c> with all four expansions
     /// unowned), and <c>Bind</c> takes any <c>Ship</c>. So the window was bound to a real ship and walked

@@ -78,25 +78,29 @@ Two brief expectations corrected by the data:
 
 ---
 
-## 2. Environment finding that reshapes priority: none of the four expansions is active here
+## 2. What a sighting needs, and how to find out
 
-- Steam manifest `steamapps/appmanifest_392110.acf` `InstalledDepots` = 392111/392113/392114/392117
-  (base app) + 527503 (app 527500 = EarlyAccessSubscriber). **No depot for 733140, 806780, 988440
-  or 1128540.** No other `appmanifest_*.acf` exists for those app ids.
-- Corroborated by the repo's own measured note: `ES2Access/Screens/ScanViewScreen.cs:46-47` —
-  "the game switches all three off outright for an installation without that content
-  (`ScanOverlayWindow.OnGameCreated`), **which is this one**".
-- Both fixtures (`docs/dev-loop.md:3-4`, `[Beginner] test` turn 4 and `[Midgame] quests fleets`
-  turn 3) are early-turn beginner saves; neither could show a Behemoth, a hacking operation, a
-  relic or an Academy request even with the DLC installed.
+**Which expansions a session can reach is a property of the machine and the save, and is never
+recorded here** (owner ruling 2026-08-29 — the owner works from several machines, so any written
+answer is wrong somewhere). Ask the game instead, in one line, at the start of any stage that
+touches these surfaces — the probe is in `docs/test-recipes/fixtures.md`, "Which expansions this session
+can reach", and `IsShared` is the per-DLC form below.
 
-**Consequence:** every gap below is *code-verifiable only*. `IsShared` returns false for all four
-expansions, so the game does not draw any of these surfaces — a live sighting is impossible until
-the owner buys and installs the expansion. Confirm in one line before any stage is planned:
+- The game itself switches surfaces off for a session without the content: `ScanOverlayWindow.OnGameCreated`
+  drops all three of the scan lenses, which is the shape to expect everywhere (`ES2Access/Screens/ScanViewScreen.cs:46-47`).
+- Content availability is necessary and not sufficient: **both fixtures** (`docs/dev-loop.md:3-4`,
+  `[Beginner] test` turn 4 and `[Midgame] quests fleets` turn 3) are early-turn beginner saves, so
+  neither could show a Behemoth, a hacking operation, a relic or an Academy request whatever the
+  session owns. A surface that needs game PROGRESS needs a fixture, and fixtures are the owner's.
+- Several gaps below are measurable regardless, because the `*_DLC*` datatables bind their windows
+  on their own (how the Behemoth specialization modal was modelled).
+
+Confirm in one line before any stage is planned:
 `Amplitude.Unity.Framework.Services.GetService<IDownloadableContentService>()` then `IsShared` on
 each of `DownloadableContent9/16/18/22.ReadOnlyName`.
 
-Nothing here is *broken* by that — see §8, the DLC-absence safety review.
+Nothing here is *broken* by a session that lacks the content — see §8, the DLC-absence safety
+review.
 
 ---
 
@@ -337,15 +341,15 @@ Also worth folding in: the `docs/roadmap.md:14-19` items that happen to be DLC o
 (bailiff totals footer, relics ×2 line classes, hacking parameters sub-choice + countdown gauge).
 All fixture-blocked for sighting; all cheap and low-risk to write.
 
-**Stage D — hacking (large; needs Penumbra installed to verify at all)**
+**Stage D — hacking (large; needs Penumbra content AND a save running an operation)**
 The whole subsystem in one place, because the pieces only make sense together:
 `ScanViewWindowHackingDashboard` (modes + program menus), `ScanViewWindowHackingBanner`
 (processing-power allocation, operation and trace lists), `ScanViewWindowTraitorsBanner`,
 `ScanNodeLabelHackingProgramPanel`, and a route-building gesture for `HackingOperationCursor`
 (start → waypoints → target). Also measure `ScanOverlayWindow.HandleInput`'s Escape claim
-(`:130-183`) against `ScanViewScreen`'s deliberate non-consumption. **Do not schedule before the
-owner installs Penumbra** — §2 shows the game hard-hides all three surfaces here, so a stage would
-be writing blind against prefab fields nobody can see.
+(`:130-183`) against `ScanViewScreen`'s deliberate non-consumption. **Do not schedule without probing first** (§2): a session
+without the content hard-hides all three surfaces, and a stage would be writing blind against
+prefab fields nobody can see.
 
 **Stage E — traitor system actions (small, but only inside a save with traitors)**
 Verify or add a `Special` case for `TraitorsGroup` / `SystemTraitorsActionItem` in
@@ -360,9 +364,8 @@ orbital card — three small label/panel reads that share a fixture requirement.
 - `docs/install.md`: record the DLC gate mechanism (three kinds of gate, §1), the
   `AcademyExpansion == "None"` second gate on the Academy home (`GameManager.cs:1106-1112`), and
   that "Behemoth" is `Juggernaut` in code.
-- `docs/test-recipes/modals-and-outgame.md`: record that **no expansion is installed in this
-  environment** (§2), so every DLC surface is fixture-blocked by ownership rather than by turn
-  count. (The Academy-bind hazard is already in `docs/test-recipes/empire-screens.md`.)
+- `docs/test-recipes/modals-and-outgame.md`: record that a DLC surface can be blocked by CONTENT
+  rather than by turn count (§2), and that which of the two applies is probed per session. (The Academy-bind hazard is already in `docs/test-recipes/empire-screens.md`.)
 
 **Not worth a stage:** Untold Tales, Lost Symphony, Harmonic Memories, Muck and Makers, Dark
 Matter, Renegade Fleets, Celestial Worlds, Community Challenge, Cravers Prime, Pathfinders and the

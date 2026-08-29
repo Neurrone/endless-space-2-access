@@ -246,12 +246,12 @@ line changed; no new design)**
 
 **Fixture prerequisites (check first — several stages are blocked on them)**
 
-- **Which faction DLCs this install owns is unknown from the decompile.** The gates are
-  `IDownloadableContentService.IsShared(DLCVaulters | DLCHisshos | DLCUC | DLCTemplars)`.
-  The mod's own `ScanViewScreen` doc comment says the test install lacks DLC18 (Umbral
-  Choir) — if that is still true, rows 50-59 are unreachable live and Stage C is
-  fixture-blocked. Ask the dev server's `/eval` for the four `IsShared` answers before
-  planning any DLC-faction stage.
+- **Which faction DLCs a session can reach is never written down** (owner ruling 2026-08-29 — it is
+  a property of the machine, and the owner works from several). The gates are
+  `IDownloadableContentService.IsShared(DLCVaulters | DLCHisshos | DLCUC | DLCTemplars)`; ask the
+  dev server's `/eval` for the four answers before planning any DLC-faction stage, and note that
+  content availability only makes the faction PICKABLE — rows 50-59 also need a save actually
+  playing it, which is a fixture and therefore the owner's.
 - Saves needed, one per stage: Lumeris (A1, and it also gives rows 32/34/35), Cravers with
   a few turns of depletion (A3), Nakalim with relics in stock **and** one assigned (B5),
   Umbral Choir with a ghost system and sleepers in a foreign colony (C), Vodyani with an

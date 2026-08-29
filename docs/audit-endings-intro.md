@@ -185,8 +185,8 @@ Two consequences to fix together:
    absent) and the honest reading is plain lines. Owner call; smallest fix is a per-screen override.
 
 Both are code-verifiable offline and confirmable live with zero fixture cost (the journal is
-reachable from the main menu, and this install has finished games only if the owner has any —
-otherwise the empty-case line the screen already handles is what shows).
+reachable from the main menu, and a session with no finished games shows the empty-case line the
+screen already handles).
 
 ### A6. Not endings (checked and excluded)
 

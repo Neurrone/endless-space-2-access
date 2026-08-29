@@ -361,30 +361,24 @@ belong in the files above.
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
   — hoist the visibility-correct one and drop the others.
-- **Expansion surfaces — UNSIGHTABLE here until the DLCs are installed** (2026-08-12 audit,
-  `docs/audit-dlc-mechanics.md`; none of the four expansions has a depot in
-  this install, so every item below is code-verified at best — except where the `*_DLC*`
-  datatables alone are enough to bind a window, which is how the Behemoth modal got measured):
+- **Expansion surfaces — each needs its expansion's CONTENT to sight** (2026-08-12 audit,
+  `docs/audit-dlc-mechanics.md`). Whether a session can reach them is a property of the machine and
+  the save, never of this file: probe it live at the start of a stage
+  (`docs/test-recipes/fixtures.md`, "Which expansions this session can reach") and pick the work accordingly. Some of these are measurable without the
+  content at all, because the `*_DLC*` datatables bind a window on their own — which is how the
+  Behemoth modal got measured:
   - Behemoth family (Supremacy): the specialization modal is a MODEL now, not a floor (layer 29 —
-    the datatables load unowned, so the three specializations and the six named resources were
-    measurable here). What still waits for the DLC is only what needs a real Behemoth: a TAKEABLE
-    card, Confirm, and the toolbar route into the modal; then the rest of the family.
+    the datatables load whether or not the content is active, so the three specializations and the
+    six named resources were measurable). What still needs a real Behemoth: a TAKEABLE card,
+    Confirm, and the toolbar route into the modal; then the rest of the family.
   - Hacking subsystem (Penumbra): dashboard, processing-power/operations banner, traitors
     banner, program panel, operation route-building — one large stage, NOT to be written
-    blind; wait for the DLC.
+    blind; needs a save actually running a hacking operation.
   - Traitor victim-side actions (Reveal/Kill/Remove in the population side panel) +
     pirate-lair and destroyed-planet orbital labels — small, shares the fixture wait.
   - Umbral Choir ghost-system page (Penumbra): the Ghost state is a THIRD mode of the
     star system page beside Outpost and Colony — two side panels of bare-icon controls +
     a growth gauge.
-- Spaceport population (batch G): the panel's rows, the pick-up and the drop through
-  `SpaceportSidePanel.ApplyDrop` are MODELLED, and no save can draw the panel at all
-  (ES2 facts: `IsAvailable()` wants a system improvement). The rows and the pick-up were proved
-  against a lent binding; the round trip — Space in the spaceport, Enter on a planet card, the
-  `OrderTransferSpaceportPopulation` it posts — waits for a save with a spaceport. The OTHER
-  direction is not built: the game also drops a PLANET's population INTO the panel
-  (`PlanetLabelsWindow_SystemManagement.StartDrag` :144-148 adds the panel as a target), which needs
-  the same fixture and an owner ruling on which node in the panel takes the drop.
 - Riftborn time bubble on the galaxy map: a `GalaxyEntity` with a disk renderer — no
   widget, no label window; making it discoverable is real map-tree modelling.
 - Faction sightings needing another base-game save (code landed drawn-gated, unsighted):

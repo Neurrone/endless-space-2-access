@@ -61,7 +61,7 @@ namespace ES2Access.Screens
     /// read by the same drawn-labels reading as any lens without a model of its own
     /// (<c>BattleScanViewWindow</c>, verified by class only; a manual test is handed over for it). The
     /// hacking dashboard and its banners are not modelled: the game switches all three off outright for
-    /// an installation without that content (<c>ScanOverlayWindow.OnGameCreated</c>), which is this one.
+    /// a session without that content (<c>ScanOverlayWindow.OnGameCreated</c>).
     ///
     /// <b>Why every drawn test in this file stays.</b> A lens row stands for a GAME ENTITY - a node, a
     /// planet, a lane, a hero - and not for the label the renderer happens to be drawing it with, so
