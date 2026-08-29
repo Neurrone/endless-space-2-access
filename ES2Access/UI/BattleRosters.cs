@@ -99,7 +99,7 @@ namespace ES2Access.UI
                 ControlType = ControlTypes.Text,
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => AgeText.Label(it.Title)),
+                    GraphNodes.LabelPart(() => ShipName(it)),
                     GraphNodes.ValuePart(() => Health(it), false),
                 },
                 // The outcome sentence is the game.s own, kept in a field the roster never draws, so
@@ -123,6 +123,30 @@ namespace ES2Access.UI
                 key,
                 dossiers
             );
+        }
+
+        /// <summary>
+        /// A ship's name in full, which the roster row does not draw for a design past its first
+        /// revision: the game composes the caption against the label's own width and clips the revision
+        /// number off it (<c>BattleShipItem.Refresh</c> :49 asking
+        /// <c>GuiBattleShip.GetFullTitle</c> :395-415, which truncates through
+        /// <c>AgeUtils.TruncateStringWithSuffix</c>), so the whole name is gone from the label's
+        /// <c>Text</c> before anything here could read it. Asking the same method for the WRAPPED
+        /// answer is the game's own untruncated one - and it must be asked with word wrap on, because
+        /// the unwrapped branch dereferences the label it was not given.
+        /// </summary>
+        private static string ShipName(BattleShipItem item)
+        {
+            try
+            {
+                GuiBattleShip ship = item.GuiBattleShip;
+                string full = ship == null ? null : ship.GetFullTitle(null, true);
+                return string.IsNullOrEmpty(full) ? AgeText.Label(item.Title) : AgeText.Clean(full);
+            }
+            catch (Exception)
+            {
+                return AgeText.Label(item.Title);
+            }
         }
 
         /// <summary>The role badge drawn beside a ship's name, where the game is drawing one - it hides

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 
@@ -18,18 +20,42 @@ namespace ES2Access.Core.UI
         /// carries are compared by.</summary>
         public readonly object Cargo;
 
-        /// <summary>What to call it, in the game's words, as they were when it was picked up.</summary>
+        /// <summary>
+        /// What to call it, in the game's words, as they were when it was picked up - and the ONE
+        /// place the drag's wording is decided, since every drag phrase (the pick-up announcement,
+        /// both derived hints, a drop's own report) says the thing by this name.
+        ///
+        /// A cargo measured in UNITS composes its count into this name and states it every time,
+        /// including one ("Imperials x 1"), because the rows of a population ring hand over different
+        /// numbers and the count is what tells them apart. Cargo that is a single thing - a module, a
+        /// ship, a queue line, a tactic card - names itself plainly. Which it is is the source's
+        /// answer, made here at pick-up: nothing downstream re-derives it, and no flag has to travel
+        /// with the carry.
+        /// </summary>
         public readonly string Name;
 
         /// <summary>Which sort of thing this is ("ship", "population"). A control takes cargo of one
         /// kind, so a ship cannot be dropped into a planet's population.</summary>
         public readonly string Kind;
 
-        public CarryItem(object cargo, string name, string kind)
+        /// <summary>
+        /// HOW MANY of the thing one press picked up, captured at pick-up like the name and for the
+        /// same reason.
+        ///
+        /// One is the answer for everything that is picked up whole - a ship, a queue line - and the
+        /// default, so a source that moves single things says nothing about it. Where the game's own
+        /// drag carries a variable amount (a population marker carries itself and every marker of the
+        /// same people after it round the ring), the source works out what THAT marker would carry and
+        /// says so here, and every drop the item reaches moves that many rather than one.
+        /// </summary>
+        public readonly int Quantity;
+
+        public CarryItem(object cargo, string name, string kind, int quantity = 1)
         {
             Cargo = cargo;
             Name = name;
             Kind = kind;
+            Quantity = quantity < 1 ? 1 : quantity;
         }
     }
 
@@ -85,6 +111,21 @@ namespace ES2Access.Core.UI
     /// </summary>
     public sealed class CarryState
     {
+        /// <summary>
+        /// Which ACTIONS the three carry gestures are, as the host's input manager knows them.
+        ///
+        /// Core cannot see the input manager, so a sentence naming a chord names an action and a
+        /// binding index and lets <see cref="NodeHints.Chord"/> spell it - the usage-hint contract,
+        /// reused here so a re-bound gesture re-words the pick-up announcement and both derived hints
+        /// with nothing to keep in step. The defaults are the shipped action keys; the host may set
+        /// them, and a test may point them anywhere.
+        /// </summary>
+        public static string PickUpAction = "ui.carry";
+
+        public static string DropAction = "ui.activate";
+
+        public static string CancelAction = "ui.back";
+
         /// <summary>What is being carried, or null.</summary>
         public CarryItem Held { get; private set; }
 
@@ -170,9 +211,78 @@ namespace ES2Access.Core.UI
             return new NodeAnnouncement(
                 () =>
                     Held == null && it.OnPickUp() != null
-                        ? ModStrings.Get(ModStrings.CarryDraggable)
+                        ? ModStrings.Get(ModStrings.DragDraggable)
                         : null
             );
+        }
+
+        /// <summary>
+        /// The two DERIVED usage hints, appended to every control's review buffer by
+        /// <see cref="NodeBuffer"/> after the hints a screen declared by hand.
+        ///
+        /// They are derived here, from the same two declarations everything else about the carry is
+        /// derived from, for the reason the "draggable" and "drop target" words are: which controls
+        /// can be picked up and which will take a drop is already written down in the vtable, so no
+        /// screen wires a sentence and EVERY screen with a drag has both - the fleet lists, the two
+        /// queues, the ship designer's slots, the population rings.
+        ///
+        /// The pick-up hint is gated exactly as <see cref="DraggablePart"/> is (nothing held, and the
+        /// control's own pure query really has something to give), and it names what would be picked
+        /// up in the query's own words, quantity included - which is the only place a player can learn
+        /// that this marker carries three people and the next one carries one. The drop hint is gated
+        /// on <see cref="Takes"/>, so it inherits the target's own
+        /// <see cref="NodeVtable.DropAccepts"/> and never promises a drop the game would refuse; it is
+        /// live, appearing and disappearing as the player picks things up.
+        ///
+        /// Never both: holding something silences the pick-up half, exactly as the readout's words do.
+        /// The chords are rendered through the injected <see cref="NodeHints.Chord"/>, so a re-bound
+        /// gesture re-words both, and with no renderer neither line exists at all.
+        /// </summary>
+        public void HintLines(List<string> into, NodeVtable vtable)
+        {
+            Func<string, int, string> render = NodeHints.Chord;
+            if (into == null || vtable == null || render == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (Held == null)
+                {
+                    if (vtable.OnPickUp == null)
+                    {
+                        return;
+                    }
+
+                    CarryItem offer = vtable.OnPickUp();
+                    string pickUp = offer == null ? null : render(PickUpAction, 0);
+                    if (!string.IsNullOrEmpty(pickUp))
+                    {
+                        into.Add(
+                            ModStrings.Format(ModStrings.DragHint, pickUp, offer.Name)
+                        );
+                    }
+
+                    return;
+                }
+
+                if (!Takes(vtable))
+                {
+                    return;
+                }
+
+                string drop = render(DropAction, 0);
+                if (!string.IsNullOrEmpty(drop))
+                {
+                    into.Add(ModStrings.Format(ModStrings.DragDropHint, drop, Held.Name));
+                }
+            }
+            catch (Exception)
+            {
+                // A hint is the least important thing in a buffer: a source query or an acceptance
+                // test that throws costs the player one sentence, never the content it was appended to.
+            }
         }
 
         /// <summary>
@@ -190,7 +300,7 @@ namespace ES2Access.Core.UI
 
             NodeVtable it = vtable;
             return new NodeAnnouncement(
-                () => Takes(it) ? ModStrings.Get(ModStrings.CarryDropTarget) : null,
+                () => Takes(it) ? ModStrings.Get(ModStrings.DragDropTarget) : null,
                 true
             );
         }
@@ -224,8 +334,16 @@ namespace ES2Access.Core.UI
     ///
     ///   nothing held, control offers something  -> pick it up
     ///   something held, control offers another  -> carry that one instead
-    ///   something held, control offers this one -> put it back down
+    ///   something held, control offers this one -> drag it again, and say so
     ///   something held, control offers neither  -> nothing, silently
+    ///
+    /// THERE IS NO PUT-BACK (owner ruling 2026-08-29). The key used to end the carry when it landed
+    /// back on the control the thing came from, which read as a cancel the player had not asked for:
+    /// once a source can hand over DIFFERENT amounts of the same thing - a population marker carries
+    /// itself and every marker after it - pressing the key again on the same slot is how a player asks
+    /// for that slot's amount, not how they give up. So every press on a source picks up, the same
+    /// slot included, and the re-pick simply re-announces what is now held. The back key is the one
+    /// cancel.
     ///
     /// The activation key (<see cref="Activate"/>) is the one that PUTS THEM DOWN: on a control that
     /// will take what is held it drops there, through the GAME's own check, and everywhere else it
@@ -293,6 +411,17 @@ namespace ES2Access.Core.UI
         /// live. That is deliberate: the player has to be able to walk a page and use it while
         /// holding something, and the destination is confirmed with the same key that confirms
         /// everything else.
+        ///
+        /// "Will take this cargo" is DELIBERATELY WEAKER here than the question the readout asks: the
+        /// right kind of drop target, without the screen's own <see cref="NodeVtable.DropAccepts"/>.
+        /// A control that will not take the cargo says nothing about being a target, and still
+        /// answers the key with the GAME's own reason for refusing - which is the useful half of a
+        /// locked battle-tactics slot ("This tactic is locked") and the reason a screen writes such a
+        /// test at all. The cost is that a target whose refusal has no words answers a press with the
+        /// mod's generic sentence, so a screen whose gate can say no owes its drop a reason or owes
+        /// its player a gate that cannot be reached by accident (the empire page's shipping row is
+        /// the second kind: its gate now asks the same numbers the clamp does, so nothing advertises
+        /// a ship that would carry nobody).
         /// </summary>
         public static CarryOutcome Activate(NodeVtable vtable, CarryState carry)
         {
@@ -317,7 +446,7 @@ namespace ES2Access.Core.UI
             }
 
             carry.Clear();
-            return new CarryOutcome(true, ModStrings.Get(ModStrings.CarryCancelled));
+            return new CarryOutcome(true, ModStrings.Get(ModStrings.DragCancelled));
         }
 
         private static CarryOutcome PickUp(NodeVtable vtable, CarryState carry, object owner)
@@ -332,16 +461,49 @@ namespace ES2Access.Core.UI
                 return new CarryOutcome(true, null);
             }
 
-            if (carry.IsCarrying && ReferenceEquals(carry.Held.Cargo, item.Cargo))
+            // No put-back branch: a press on the control the thing came from picks it up AGAIN (see the
+            // decision table above). Where the source hands over the same amount that is a harmless
+            // re-announce; where it hands over a different one - a population marker further round the
+            // ring - it is how the player asks for that amount.
+            carry.PickUp(item, owner);
+            return new CarryOutcome(true, Carrying(item));
+        }
+
+        /// <summary>
+        /// What a pick-up says: what is now held, and BOTH ways out of holding it (owner ruling
+        /// 2026-08-29).
+        ///
+        /// The carry is the one mode the mod puts a player into without a surface to look at, and the
+        /// gestures that end it are on two different keys - the drop is the activation key on a target,
+        /// the cancel is the back key anywhere. A player who has just picked something up is exactly
+        /// the player who needs both, so the announcement teaches them, every time, the override
+        /// re-pick included. The chords are spelled by the injected renderer rather than written into
+        /// the sentence, so re-binding either gesture re-words it; where there is no renderer at all
+        /// (a test, boot, a host with no keyboard) the sentence falls back to naming what is held,
+        /// which is the whole of what the mod knows then.
+        /// </summary>
+        private static string Carrying(CarryItem item)
+        {
+            Func<string, int, string> render = NodeHints.Chord;
+            string drop = null;
+            string cancel = null;
+            if (render != null)
             {
-                // Back onto the control it came from: the drag ends having moved nothing, which is
-                // what the back key does too - so it says the same thing.
-                carry.Clear();
-                return new CarryOutcome(true, ModStrings.Get(ModStrings.CarryCancelled));
+                try
+                {
+                    drop = render(CarryState.DropAction, 0);
+                    cancel = render(CarryState.CancelAction, 0);
+                }
+                catch (Exception)
+                {
+                    drop = null;
+                    cancel = null;
+                }
             }
 
-            carry.PickUp(item, owner);
-            return new CarryOutcome(true, ModStrings.Format(ModStrings.CarryCarrying, item.Name));
+            return string.IsNullOrEmpty(drop) || string.IsNullOrEmpty(cancel)
+                ? ModStrings.Format(ModStrings.DragStartedPlain, item.Name)
+                : ModStrings.Format(ModStrings.DragStarted, item.Name, drop, cancel);
         }
 
         private static CarryOutcome Drop(NodeVtable vtable, CarryState carry, CarryItem held)
@@ -353,7 +515,7 @@ namespace ES2Access.Core.UI
                 return new CarryOutcome(
                     true,
                     string.IsNullOrEmpty(refusal)
-                        ? ModStrings.Format(ModStrings.CarryDropRefused, held.Name)
+                        ? ModStrings.Format(ModStrings.DragDropRefused, held.Name)
                         : refusal
                 );
             }
@@ -362,7 +524,7 @@ namespace ES2Access.Core.UI
             return new CarryOutcome(
                 true,
                 string.IsNullOrEmpty(result.Message)
-                    ? ModStrings.Format(ModStrings.CarryDropped, held.Name)
+                    ? ModStrings.Format(ModStrings.DragDropped, held.Name)
                     : result.Message
             );
         }

@@ -917,6 +917,12 @@ namespace ES2Access
             NodeHints.Chord = (actionKey, bindingIndex) =>
                 ChordNames.Of(Input, actionKey, bindingIndex);
 
+            // The carry's own three gestures, named to Core so its pick-up announcement and its two
+            // derived hints spell whatever chords those actions are bound to now.
+            CarryState.PickUpAction = UiActions.Carry;
+            CarryState.DropAction = UiActions.Activate;
+            CarryState.CancelAction = UiActions.Back;
+
             GraphSheet.BlankText = () => ModStrings.Get(ModStrings.NavCellEmpty);
             GraphSheet.TableRoleText = () => ModStrings.Get(ModStrings.NavTable);
             GraphSheet.TextCellType = ControlTypes.Text;

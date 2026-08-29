@@ -54,6 +54,13 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class SystemManagementScreen : Screen
     {
+        /// <summary>The one stop the game's left-edge INFORMATION panels share (owner design
+        /// 2026-08-29): colony info, population, representatives, governor - and whatever an outpost or
+        /// a ghost system draws instead - are four things to read about one system rather than four
+        /// places to work, so Tab passes them once and Alt+Up/Down steps between them by name. The
+        /// spaceport is not among them: it is a work surface and keeps its own stop.</summary>
+        private const string SidePanelsStop = "system:side";
+
         private static readonly object PageStop = "system:page";
         private static readonly object PlanetStop = "system:planets";
         private static readonly object ConstructiblesStop = "system:constructibles";
@@ -143,11 +150,20 @@ namespace ES2Access.Screens
             return null;
         }
 
-        /// <summary>The planets, because they are what the player came here to look at and they are
-        /// the first thing Tab must reach - Tab does not wrap.</summary>
+        /// <summary>
+        /// WHERE THE CURSOR IS PUT, IN THREE CASES (owner design 2026-08-29). Only the first of them
+        /// is this property: a page the player has never stood on has nothing to put back, and the
+        /// first thing to say about a system is what the system IS, which is the left edge's
+        /// information panels - now one stop, and the first stop the page itself declares.
+        ///
+        /// The other two cases restore where the player WAS, and neither goes through here:
+        /// coming back from the galaxy, and turning the page to another system with Alt+Left/Right,
+        /// both put the cursor back on the control it was on (<see cref="Restore"/>). This property
+        /// is their last fallback, for a place the new system has no equivalent of at all.
+        /// </summary>
         public override object InitialFocusStop
         {
-            get { return PlanetStop; }
+            get { return SidePanelsStop; }
         }
 
         /// <summary>The page a modal is opened FROM, so closing the improvements list or the rename box
@@ -192,6 +208,19 @@ namespace ES2Access.Screens
         /// cycle - it announced the page twice and left the cursor wherever the old system's tree had
         /// put it. The latch is dropped by the level itself going away, so leaving the page for real
         /// still ends the screen.
+        ///
+        /// AN ICON-STRIP SCREEN ENDS THE PAGE THE WAY A MODAL DOES, and for the same reason. The
+        /// empire, economy and the rest are exclusive full-screen windows: showing one hides this
+        /// page's own window and its planet cards a frame or two BEFORE the mod pushes that screen
+        /// (measured 2026-08-29 by a per-frame trace of Enter on the colony banner). For those frames
+        /// the page was still the focused screen and still rebuilt - without its cards and without its
+        /// side panels - so the node the cursor stood on no longer existed, the navigator re-seated it
+        /// on the last surviving HUD control, and the state a return would restore was already that
+        /// wrong seat. The player saw it as "Escape from the economy screen puts me on the empire
+        /// banners". The condition is the GAME's own <c>IsAnyScreenVisible</c>, which it pairs with
+        /// <c>IsAnyModalVisible</c> itself (<c>GuiManager.CanToggleScanView</c>), so the answer comes
+        /// from the flag the game sets rather than from a window flag this page would have to debounce
+        /// - the page turn above drops <c>Shown</c> for a single frame and must NOT end the screen.
         /// </summary>
         public override bool IsActive()
         {
@@ -210,7 +239,12 @@ namespace ES2Access.Screens
                 }
 
                 GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
-                if (gui == null || gui.IsAnyModalVisible || gui.IsInLoadingWindow)
+                if (
+                    gui == null
+                    || gui.IsAnyModalVisible
+                    || gui.IsInLoadingWindow
+                    || gui.IsAnyScreenVisible
+                )
                 {
                     _arrived = false;
                     return false;
@@ -227,9 +261,13 @@ namespace ES2Access.Screens
                     StarSystemScreen window = Window();
                     if (window != null && window.Shown && window.StarSystemNode != null)
                     {
-                        Labels(_arriving);
-                        _arrived = _arriving.Count > 0;
+                        _arrived = Whole(_arriving, _arrivingPanels);
                         _arriving.Clear();
+                        _arrivingPanels.Clear();
+                        if (_arrived)
+                        {
+                            ExpandBottomPanels(window);
+                        }
                     }
                 }
 
@@ -242,14 +280,208 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// Open the three bottom panels on the way in, for whoever is looking at the screen (owner
+        /// request 2026-08-29). They are the constructibles, the queue and the hangar, and the game
+        /// remembers how the player last left them; collapsed, a sighted observer sees about half of
+        /// each list. Nothing here is for the keyboard - the button that does this is deliberately
+        /// undeclared and collapsing changes no accessible content at all
+        /// (<see cref="BuildBottomPanel"/>) - so this is silent, declares nothing and speaks nothing.
+        ///
+        /// Driven the way the game's own button drives it, both halves together: every
+        /// <c>GuiFrameExpander</c> under the window is toggled AND
+        /// <c>IGuiOptionsService.ExpandSystemPanels</c> is set, exactly as
+        /// <c>StarSystemScreen.OnExpandCb</c> :736-745 does, so the flag and the frames can never
+        /// disagree - a mismatch would make the player's own next press appear to do nothing.
+        ///
+        /// ON ENTRY ONLY. It runs on the frame the page arrives - once, because <see cref="_arrived"/>
+        /// latches immediately after - so a player who collapses the panels while the page is up keeps
+        /// them collapsed for as long as they stay. Leaving and coming back opens them again, which is
+        /// what "on entry" means. The option's persistence carries that choice out of the session, so a
+        /// player who never touches the panels simply always finds them open.
+        /// </summary>
+        private static void ExpandBottomPanels(StarSystemScreen window)
+        {
+            try
+            {
+                IGuiOptionsService options =
+                    Amplitude.Unity.Framework.Services.GetService<IGuiOptionsService>();
+                if (options == null || options.ExpandSystemPanels)
+                {
+                    return;
+                }
+
+                GuiFrameExpander[] expanders = window.GetComponentsInChildren<GuiFrameExpander>();
+                for (int i = 0; i < expanders.Length; i++)
+                {
+                    if (expanders[i] != null)
+                    {
+                        expanders[i].ToggleExpansion();
+                    }
+                }
+
+                options.ExpandSystemPanels = true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: opening the bottom panels on arrival threw: " + e);
+            }
+        }
+
         /// <summary>Whether the page has been seen bound and drawn since the view level was entered -
         /// see <see cref="IsActive"/>.</summary>
         private bool _arrived;
 
-        /// <summary>The arrival check's own scratch list, so asking whether the page has cards yet
-        /// cannot disturb a build that is holding <c>_planets</c>.</summary>
+        /// <summary>The arrival check's own scratch lists, so asking whether the page is whole yet
+        /// cannot disturb a build that is holding <c>_planets</c> and <c>_panels</c>.</summary>
         private readonly List<PlanetLabel_SystemManagement> _arriving =
             new List<PlanetLabel_SystemManagement>();
+
+        private readonly List<SidePanel> _arrivingPanels = new List<SidePanel>();
+
+        /// <summary>
+        /// THE PAGE AS THE PLAYER CAN USE IT: the planet cards drawn AND the left edge's panels drawn.
+        /// One question, asked by the arrival latch (<see cref="IsActive"/>) and again by every
+        /// <see cref="Build"/>, because arriving and leaving are the same half-drawn page seen from
+        /// two sides.
+        ///
+        /// WHY BUILD ASKS IT TOO (root cause of the entry landing bug, measured 2026-08-29). The page
+        /// is torn down in pieces on the way OUT: leaving for the galaxy, the game hid the side panels
+        /// and the three bottom panels a frame before it hid the cards, and the view level - which this
+        /// screen deliberately follows through transitions, so a page turn survives - was still this
+        /// one throughout. So for those frames the page was the focused screen and still declared
+        /// something: the shared HUD, and briefly the cards. The navigator did what it always does with
+        /// a cursor whose node has gone (<c>KeyGraph.Reconcile</c>, the nearest survivor walking the
+        /// previous order backward) and re-seated it on the last HUD control left - the view-title's
+        /// scan button - and THAT is what the screen then remembered. The next entry restored it
+        /// faithfully, so every entry landed on the scan button no matter where the player had been.
+        /// Traced frame by frame: cursor on <c>system:queue/header</c> at 118 nodes, on a planet card
+        /// at 50, on <c>hud:view-title/scan</c> at 31, then the screen gone.
+        ///
+        /// A page that declares NOTHING cannot lose the cursor: <c>KeyGraph.Rerender</c> answers false
+        /// for an empty render and returns before reconciling, so the remembered position is left
+        /// exactly as the player left it. Hence the gate is on the whole build rather than on the
+        /// cards alone, and the arrival latch asks the same question so that the page never becomes
+        /// active in a state the build would refuse to declare.
+        /// </summary>
+        private bool Whole(List<PlanetLabel_SystemManagement> cards, List<SidePanel> panels)
+        {
+            Labels(cards);
+            if (cards.Count == 0)
+            {
+                return false;
+            }
+
+            SidePanels.Drawn(panels);
+            if (panels.Count == 0)
+            {
+                return false;
+            }
+
+            // AND SHOWING THE SYSTEM THIS SCREEN HAS ADOPTED, with no page turn still in flight. Both
+            // are the same guard as above seen from the side: a page rebound to another system is as
+            // half-drawn as one still arriving, and declaring it hands the navigator a render in which
+            // the cursor's own node has gone. The adoption is <see cref="Turned"/>'s, made the frame
+            // the window's node changes; the settle is the frames the cards then take to catch up.
+            StarSystemScreen window = Window();
+            if (
+                _turnSettle > 0
+                || (_showing != null && window != null && !ReferenceEquals(window.StarSystemNode, _showing))
+            )
+            {
+                return false;
+            }
+
+            // AND A RESTORE STILL OWED KEEPS THE PAGE SHUT UNTIL IT HAS BEEN ASKED FOR. The two windows
+            // rebind independently and the CARDS go first: measured 2026-08-29, a page turn hid the
+            // planet labels a frame or more before <c>StarSystemScreen.StarSystemNode</c> changed - so
+            // neither check above had fired yet - and kept them hidden for some fifty frames afterwards.
+            // A render declared inside that window is a page without the card the cursor is on, which
+            // is the one thing that moves a cursor nobody touched. Only a planet key can be lost this
+            // way: every other stop here is keyed system-independently and comes through the swap
+            // untouched, which is why they need no seat of their own.
+            //
+            // It lifts the moment the seat has been ASKED FOR (<see cref="Restore"/>), because a
+            // landing needs a render to land in - and by then the request is already in flight, so the
+            // rebuild that follows resolves to the asked-for control rather than to a survivor.
+            //
+            // Bounded, because a card can also go for an honest reason (a world lost, a colony
+            // planted): the freeze buys the frames a turn needs and then gives up, so nothing can wedge
+            // the page shut.
+            if (_placeCard >= 0 && !_placeAsked && SwappedUnderCursor())
+            {
+                if (_swapGuard < SwapGuardFrames)
+                {
+                    _swapGuard++;
+                    return false;
+                }
+            }
+            else
+            {
+                _swapGuard = 0;
+            }
+
+            return true;
+        }
+
+        /// <summary>Whether the cursor is on a planet card the page has stopped drawing - the shape a
+        /// page turn has before anything else on the page has changed.</summary>
+        private bool SwappedUnderCursor()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || !ReferenceEquals(navigator.Screen, this))
+            {
+                return false;
+            }
+
+            ControlId key = navigator.FocusedKey;
+            string structural = key == null ? null : key.StructuralKey as string;
+            return structural != null
+                && structural.StartsWith(PlanetKeyPrefix)
+                && CardOf(structural) < 0;
+        }
+
+        /// <summary>Which drawn card a planet key belongs to, counting from the left, or -1 where no
+        /// card on the page is that planet's.</summary>
+        private int CardOf(string structural)
+        {
+            int cut = structural.IndexOf('/', PlanetKeyPrefix.Length);
+            string guid = cut < 0
+                ? structural.Substring(PlanetKeyPrefix.Length)
+                : structural.Substring(PlanetKeyPrefix.Length, cut - PlanetKeyPrefix.Length);
+            for (int i = 0; i < _planets.Count; i++)
+            {
+                Planet planet = _planets[i].Planet;
+                if (planet != null && planet.GUID.ToString() == guid)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int _swapGuard;
+
+        /// <summary>How long the page waits for the cards to come back before it declares one without
+        /// them. Measured 2026-08-29: a page turn hid the planet labels for some fifty frames, and the
+        /// settle window covers thirty of those.</summary>
+        private const int SwapGuardFrames = 90;
+
+        /// <summary>
+        /// A page turn is the textbook case: the game rebinds every panel on this page to another
+        /// system, and what the rows say changes under them for as long as that takes. So nothing is
+        /// announced until the cursor has been put back (<see cref="Restore"/>) - otherwise the player
+        /// hears whichever row the rebuild happened to leave the cursor on before hearing the row they
+        /// were actually standing on (measured 2026-08-29).
+        ///
+        /// The window is exactly the seat's: it closes the moment the seat lands or gives up, so an
+        /// ordinary move on a settled page is never held.
+        /// </summary>
+        public override bool BetweenViews
+        {
+            get { return _turnSettle > 0 || _turnSeats > 0; }
+        }
 
         /// <summary>Escape is the game's: from here it takes the camera back out to the galaxy, which
         /// is the same route the page's own close button takes.</summary>
@@ -294,8 +526,87 @@ namespace ES2Access.Screens
         public override void OnUpdate()
         {
             _hud.Update();
+            Remember();
             Turned();
         }
+
+        /// <summary>
+        /// Where the player is standing, written down every frame the page is WHOLE - and nowhere else,
+        /// so a cursor the teardown has moved is never what gets remembered (<see cref="Whole"/>).
+        ///
+        /// The navigator already remembers the KEY across a leave and a page turn
+        /// (<c>GraphState</c>, kept because <see cref="KeepStateOnPop"/> is true), and for every stop
+        /// on this page but one that key is system-independent - "system:queue/header" means the same
+        /// row of whatever system is up - so its own reconcile puts the cursor back with nothing added
+        /// here. THE PLANET CARDS ARE THE EXCEPTION: their keys carry the planet's GUID
+        /// (<c>system:planet/536/population/2</c>), which no other system has, so the key alone cannot
+        /// name "the same place" on the page the player turned to. What CAN is the card's POSITION
+        /// among the drawn cards plus everything below it in the key, and the position can only be
+        /// read while the old system's cards are still there - which is here.
+        /// </summary>
+        private void Remember()
+        {
+            // NOT WHILE A SEAT IS IN FLIGHT. Between the page turning and the cursor being put back,
+            // the cursor is wherever the rebuild left it and none of it is the player's doing - writing
+            // that down would throw away the very place the seat is on its way to restore (measured
+            // 2026-08-29: a turn taken from a planet slot forgot the slot and landed on the new
+            // system's governor).
+            if (_turnSettle > 0 || _turnSeats > 0)
+            {
+                return;
+            }
+
+            // The seat window is shut, so the next one starts having asked for nothing. Kept here
+            // rather than at the window's several endings, because this is the one place that runs
+            // exactly when there is no seat in flight.
+            _placeAsked = false;
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || !ReferenceEquals(navigator.Screen, this) || _planets.Count == 0)
+            {
+                return;
+            }
+
+            ControlId key = navigator.FocusedKey;
+            string structural = key == null ? null : key.StructuralKey as string;
+            if (structural == null)
+            {
+                return;
+            }
+
+            if (!structural.StartsWith(PlanetKeyPrefix))
+            {
+                _placeCard = -1;
+                _placeSuffix = null;
+                return;
+            }
+
+            // "system:planet/536/population/2" -> the card showing planet 536, and "/population/2".
+            // A key belonging to no card on the page is a cursor the swap has outrun, and what was
+            // written down is still true of where the player is standing, so it is KEPT - zeroing it
+            // here is what lost the slot on every turn (measured 2026-08-29).
+            int card = CardOf(structural);
+            if (card >= 0)
+            {
+                int cut = structural.IndexOf('/', PlanetKeyPrefix.Length);
+                _placeCard = card;
+                _placeSuffix = cut < 0 ? string.Empty : structural.Substring(cut);
+            }
+        }
+
+        private const string PlanetKeyPrefix = "system:planet/";
+
+        /// <summary>Which card the cursor was on, counting from the left as the page draws them, and
+        /// everything in its key below the planet's own GUID - the row of the card, or empty for the
+        /// card itself. -1 while the cursor is anywhere but a planet card, which is every place whose
+        /// key already means the same thing on the next system.</summary>
+        private int _placeCard = -1;
+
+        private string _placeSuffix;
+
+        /// <summary>Whether the landing this arrival or page turn wants has already been asked for, so
+        /// the retry window watches one request rather than re-arming it every frame.</summary>
+        private bool _placeAsked;
 
         /// <summary>The system the page was showing when it was last looked at - what a page turn is
         /// measured against (<see cref="Turned"/>).</summary>
@@ -323,18 +634,15 @@ namespace ES2Access.Screens
         private const int TurnSeatFrames = 60;
 
         /// <summary>
-        /// The page has been turned to another system: say which one, once, and put the cursor where a
-        /// fresh arrival puts it.
+        /// The page has been turned to another system: say which one, once, and put the cursor back
+        /// where the player had it (<see cref="Restore"/>).
         ///
         /// The screen itself never leaves - the view level is re-entered with a new node and the mod's
-        /// own gates now ride that out (<see cref="IsActive"/>) - so nothing else would speak, and the
-        /// cursor would sit on whichever node of the OLD system's tree the graph state remembered (a
-        /// figure in the colony panel, measured 2026-08-22). Both halves are exactly what the screen
-        /// manager does for a page the player arrives on: the name queued, and the landing on
-        /// <see cref="InitialFocusStop"/> announced when it lands.
+        /// own gates ride that out (<see cref="IsActive"/>) - so nothing else would speak.
         ///
         /// The first system seen is adopted silently: that is the arrival, and the screen manager has
-        /// already announced it.
+        /// already announced it. The arrival still opens the seat window, because a re-entry restores
+        /// a position too and the position may belong to a system the player is no longer looking at.
         /// </summary>
         private void Turned()
         {
@@ -344,11 +652,14 @@ namespace ES2Access.Screens
             {
                 bool arriving = _showing == null;
                 _showing = node;
+                // An arrival needs no settling - the page is whole before the screen is pushed at all -
+                // while a turn redraws the page under a screen that never left.
+                _turnSettle = arriving ? 0 : TurnSettleFrames;
+                _turnSeats = TurnSeatFrames;
+                _placeAsked = false;
                 if (!arriving)
                 {
                     Voice.Say(ScreenName, false);
-                    _turnSettle = TurnSettleFrames;
-                    _turnSeats = TurnSeatFrames;
                 }
             }
 
@@ -361,11 +672,111 @@ namespace ES2Access.Screens
             if (_turnSeats > 0)
             {
                 _turnSeats--;
-                GraphNavigator navigator = ModEntry.Navigator;
-                if (navigator != null && navigator.FocusStop(PlanetStop))
+                Restore();
+            }
+        }
+
+        /// <summary>
+        /// Put the cursor back where the player was, on the page they have just arrived on or turned to.
+        ///
+        /// Everything but a planet card is already back: its key means the same row of whatever system
+        /// is up and the navigator's own reconcile has found it (<see cref="Remember"/>). What is left
+        /// is the card the cursor was on, which is asked for BY POSITION - the same card counting from
+        /// the left, the same row of it - and asked for through the ordinary landing request, so a row
+        /// inside a collapsed card is reached by opening the card on the way, exactly as any other
+        /// programmatic landing is.
+        ///
+        /// The fallbacks are the owner's, in order: the planets' own first row where the new system has
+        /// no such card or no such row (an outpost with fewer worlds), and then
+        /// <see cref="InitialFocusStop"/>. They are spent only when the seat window has run out, so a
+        /// landing that is merely still travelling is never overtaken by its own fallback.
+        /// </summary>
+        private void Restore()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || !ReferenceEquals(navigator.Screen, this))
+            {
+                return;
+            }
+
+            // Nothing per-system to put back: every other key means the same control on this page as it
+            // did on the last one, and the navigator's own reconcile has already put the cursor there.
+            if (_placeCard < 0 || _placeSuffix == null)
+            {
+                _turnSeats = 0;
+                return;
+            }
+
+            // The cards are not drawn yet - the page both arrives and turns in pieces, and the planet
+            // labels are the last piece by some fifty frames. The seat window is what waits for them;
+            // giving up here would spend the fallback on a page that simply had not finished.
+            if (_planets.Count == 0)
+            {
+                if (_turnSeats == 0)
+                {
+                    Fallback(navigator);
+                }
+
+                return;
+            }
+
+            // Fewer worlds here than where the player came from: no amount of waiting will grow the
+            // system another card, so the fallback is taken at once.
+            if (_placeCard >= _planets.Count)
+            {
+                Fallback(navigator);
+                return;
+            }
+
+            Planet planet = _planets[_placeCard].Planet;
+            if (planet != null)
+            {
+                ControlId target = ControlId.Structural(
+                    PlanetKeyPrefix + planet.GUID + _placeSuffix
+                );
+                if (target.Equals(navigator.FocusedKey))
                 {
                     _turnSeats = 0;
+                    return;
                 }
+
+                if (!_placeAsked)
+                {
+                    _placeAsked = true;
+                    navigator.FocusNode(target);
+                    return;
+                }
+
+                // The card is open and the row the player was on is not in it - this system's world has
+                // fewer slots. Nothing further will produce it, so the fallback is taken on the first
+                // render that proves it rather than after the whole seat window has run out.
+                GraphRender render = navigator.Render;
+                ControlId card = ControlId.Structural(PlanetKeyPrefix + planet.GUID);
+                if (
+                    render != null
+                    && render.Nodes.ContainsKey(card)
+                    && !render.Nodes.ContainsKey(target)
+                )
+                {
+                    Fallback(navigator);
+                    return;
+                }
+            }
+
+            if (_turnSeats == 0)
+            {
+                Fallback(navigator);
+            }
+        }
+
+        /// <summary>The place the player was is not on this page: the planets' own first row, and the
+        /// page's own landing stop where even that is not there.</summary>
+        private void Fallback(GraphNavigator navigator)
+        {
+            _turnSeats = 0;
+            if (!navigator.FocusStop(PlanetStop))
+            {
+                navigator.FocusStop(InitialFocusStop);
             }
         }
 
@@ -377,13 +788,9 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // The page arrives in pieces: the game's window and the side panels are up a frame or two
-            // before the planet cards are drawn over them. Declaring the half that exists would seat
-            // the cursor on a side panel and leave it there, because a cursor that has been placed is
-            // never moved again - so nothing is declared until the cards are there, which is what
-            // "nothing here yet" is for. Every system has planets, so this always resolves.
-            Labels(_planets);
-            if (_planets.Count == 0)
+            // The page arrives in pieces and leaves in pieces, and a half-drawn page declares NOTHING
+            // AT ALL - see <see cref="Whole"/>, which owns the reasoning for both ends.
+            if (!Whole(_planets, _panels))
             {
                 return;
             }
@@ -397,12 +804,16 @@ namespace ES2Access.Screens
 
             BuildPage(builder, window);
 
+            // WHAT THE SYSTEM IS COMES BEFORE WHAT IS IN IT (owner design 2026-08-29): the left edge's
+            // information panels, then the spaceport, then the cards. Tab does not wrap, so declaration
+            // order is the order the player crosses the page in, and the panels that say whose system
+            // this is and how it is getting on used to sit behind every planet card.
+            BuildSidePanels(builder);
+
             builder.BeginStop(PlanetStop);
             builder.PushContext(ModStrings.Get(ModStrings.SystemPlanetsPanel));
             BuildPlanets(builder, window);
             builder.PopContext();
-
-            BuildSidePanels(builder);
 
             // The three panels along the bottom are the same prefabs the Empire summary slides out
             // under its systems table, and they are read by the shared reader (SystemPanels); what is
@@ -492,6 +903,16 @@ namespace ES2Access.Screens
             builder.PopContext();
         }
 
+        // THE PANEL EXPAND BUTTON IS DELIBERATELY NOT DECLARED (owner ruling 2026-08-29). Each of the
+        // three bottom panels draws a PanelExpandButton down its left edge and all three run one
+        // handler (StarSystemScreen.OnExpandCb :736-745): it toggles every GuiFrameExpander under the
+        // window and flips IGuiOptionsService.ExpandSystemPanels. What that DOES was measured
+        // (docs/planets.md): the three frames go 177 to 292 and back and the lists SCROLL rather than
+        // losing rows, so the accessible tree is byte-identical in both states. It changes how much a
+        // sighted player sees at once and nothing a keyboard player can perceive, so it earns no node.
+        // The coverage audit is told the same thing in one place, so a later run reports the reason
+        // instead of re-raising it (CoverageAudit.DeliberatelyUnworked).
+
         // ---- the planets ----
 
         /// <summary>
@@ -505,10 +926,13 @@ namespace ES2Access.Screens
             try
             {
                 // Picking a population unit up is only offered where there is somewhere to put it
-                // down, which on this page means a SECOND colony of the player's in the system - the
-                // system with one colony draws the markers and offers no carry, exactly as the hangar
-                // page draws ship tiles and offers none.
-                bool canCarry = Settlements(window) > 1;
+                // down, and what THIS page offers is the game's own target list: the other planet
+                // cards, and the spaceport panel whenever it is drawn
+                // (<see cref="PopulationMoves.OnSystemPage"/>). Asking only about a second colony -
+                // what this was until 2026-08-29 - made the carry silent on every marker of a
+                // one-colony system whose port the mouse could drag into.
+                bool canCarry = PopulationMoves.OnSystemPage(window);
+                OpenCardBeingSeated(builder);
                 for (int i = 0; i < _planets.Count; i++)
                 {
                     AddPlanet(builder, _planets[i], canCarry);
@@ -517,6 +941,41 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("system: reading the planet cards threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// A seat on its way INTO a card opens that card on the same build, so the row it is aimed at
+        /// exists in the very first render this page declares.
+        ///
+        /// Without it the landing is one frame late, and the frame it is late by is heard: the first
+        /// render is a page whose planet keys have all changed, the navigator reconciles the cursor
+        /// onto a survivor and the announcer reads that survivor out before the seat arrives (measured
+        /// 2026-08-29 - a turn said the new system's name, a colony-panel row, and only then the slot
+        /// the player was on). Opening the card here is what the landing's own ancestor walk would do a
+        /// frame later, done while the page is still being declared.
+        ///
+        /// Through the builder's persistent expansion set, which is the engine's own bookkeeping and
+        /// the documented way for a screen to flip it, so the card stays open exactly as one the player
+        /// opened by hand.
+        /// </summary>
+        private void OpenCardBeingSeated(GraphBuilder builder)
+        {
+            if (
+                _turnSeats <= 0
+                || _placeCard < 0
+                || _placeCard >= _planets.Count
+                || string.IsNullOrEmpty(_placeSuffix)
+                || builder.Expansion == null
+            )
+            {
+                return;
+            }
+
+            Planet planet = _planets[_placeCard].Planet;
+            if (planet != null)
+            {
+                builder.Expansion.Add(ControlId.Structural(PlanetKeyPrefix + planet.GUID));
             }
         }
 
@@ -533,10 +992,12 @@ namespace ES2Access.Screens
         /// Everything else the card offers is where the card draws it. The rename button beside the
         /// title and the colonize button under it are child nodes; the population the card draws as a
         /// ring of markers is a row per SLOT of that ring, in up to three bands
-        /// (<see cref="AddPopulationSlots"/>), and a unit is moved to another planet by CARRYING it
-        /// (Space to pick up, Enter on the other card to put down) rather than by a menu entry per unit
-        /// and destination, which is the same gesture a ship gets in the fleet panel and the same drag
-        /// the mouse has here.
+        /// (<see cref="AddPopulationSlots"/>), and people are moved by CARRYING them (the carry key on
+        /// a slot picks up what the game's own drag would take from that marker, the activation key on
+        /// another card or the spaceport puts them down) rather than by a menu entry per unit and
+        /// destination, which is the same gesture a ship gets in the fleet panel and the same drag the
+        /// mouse has here. The drop lives on the SLOTS and not on the card: an empty one is the plain
+        /// add, an occupied one the game's swap.
         /// </summary>
         private void AddPlanet(
             GraphBuilder builder,
@@ -576,14 +1037,14 @@ namespace ES2Access.Screens
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
             };
 
-            // A colony of the player's is where a carried population unit can be put down - the same
-            // set of cards the game's own drag offers as targets.
-            if (Settled(label) != null)
-            {
-                vtable.DropKind = PopulationKind;
-                vtable.OnDrop = item => DropPopulation(it, item);
-            }
-
+            // THE CARD ITSELF TAKES NO DROP (owner ruling 2026-08-29). The game's mouse accepts one
+            // anywhere on the card's rectangle, but a keyboard player is walking rows, and a card
+            // header that also swallowed drops made two rows out of one gesture: the header and the
+            // free slot under it both said "drop target" and did different things. So the drop lives
+            // on the SLOTS alone (<see cref="AddPopulationSlot"/>) - an empty one is the plain add,
+            // an occupied one the swap - which reaches every outcome the mouse reaches and says where
+            // the people are going. A full planet then offers only its swaps, and a planet with room
+            // offers its free places.
             AgeWidgets.PointAt(vtable, status ?? label.AgeTransform);
 
             string key = "system:planet/" + planet.GUID;
@@ -593,14 +1054,19 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> buttons = PlanetButtons(label);
             List<CardActions.CardAction> outpost = OutpostActions(label);
             List<Population> units = new List<Population>(4);
-            List<PopulationSlots.Slot> slots = PlanetSlots(label, units);
+            Ring ring = PlanetRing(label, key);
+            List<PopulationSlots.Slot> slots = RingSlots(ring, units);
             List<TooltipChildren.Dossier> dossiers = PlanetDossiers(label);
+            // Flow control: whether the card is a leaf or a group. A card whose ONLY content is a
+            // Sanctuary band would otherwise be declared as a leaf and the band never walked into.
+            bool ghost = AgeWidgets.Visible(label.GhostGroup);
             if (
                 rename.Count == 0
                 && buttons.Count == 0
                 && outpost.Count == 0
                 && slots.Count == 0
                 && dossiers.Count == 0
+                && !ghost
             )
             {
                 // Synthetic: the card stands for the PLANET, and the walk over the drawn planet
@@ -619,14 +1085,179 @@ namespace ES2Access.Screens
                 // region of their own, the dossiers the card draws no words for at all.
                 object outer = TooltipChildren.Actions(builder, key);
                 CardActions.Emit(builder, key + "/name", rename);
-                AddPopulationSlots(builder, key, label, units, slots, canCarry);
+                AddPopulationSlots(builder, ring, units, slots, canCarry);
                 CardActions.Emit(builder, key, buttons);
                 CardActions.Emit(builder, key + "/outpost", outpost);
+                AddGhost(builder, key, label, canCarry);
                 TooltipChildren.Emit(builder, key, dossiers, outer);
             }
 
             builder.EndGroup();
         }
+
+        /// <summary>
+        /// The SANCTUARY band the card grows along its bottom when a ghost colony is sitting on this
+        /// world (<c>PlanetLabel_SystemManagement.RefreshGhostStatus</c> :1192-1250), read in the order
+        /// the game draws it: the band's own title, then the Sanctuary's population ring, then the
+        /// button that turns one of its people into a sleeper.
+        ///
+        /// The band is drawn for a RIVAL's Sanctuary too - the group's only test is that the ghost
+        /// exists and that the player can see its system (:1194) - and what a rival's draws is the
+        /// title and the population figure alone: the game hides the ring, the outputs and the button
+        /// for anybody else's (:1217, :1229). So everything below is gated on its own drawn flag and a
+        /// rival's band simply reads shorter, with no ownership test written here.
+        ///
+        /// The title is the band's line and carries the figures the band draws no words for: the
+        /// population count, which the game writes as a bare "3/5" beside a symbol, and the five
+        /// outputs, which are the same strip of pips the card reads for the world itself
+        /// (<see cref="PlanetOutputs"/>). Its own tooltip is what the game says about the Sanctuary -
+        /// whose it is, and, for a rival's, how it could be got rid of.
+        ///
+        /// THE SANCTUARY'S RING IS HOVER-ONLY (measured 2026-08-29): the game shows
+        /// <c>GhostPopulationEnumeratorFocused</c> and the outputs strip while the pointer is inside
+        /// the band's own rectangle and hides them again on the way out (:648-693), and unlike the
+        /// world's ring there is no simple one drawn underneath. So the slots exist exactly while the
+        /// game draws them, which is the rule every other row here follows - and it works out, because
+        /// landing on the band's title is what puts the pointer inside the band
+        /// (<see cref="AgeWidgets.PointAt"/>), so the ring is there by the time the player steps down
+        /// into it, exactly as it is there for a mouse that has hovered the band.
+        ///
+        /// CONTENT IS UNVERIFIED (<c>docs/planets.md</c>): a Sanctuary needs a player empire that HAS
+        /// ghost systems - the Umbral Choir, a Penumbra faction chosen at new-game time - and no save
+        /// in this repo is one, so the band was measured by lending the card a colony and showing the
+        /// group. What that proves is the STRUCTURE - which widgets are declared, what the
+        /// reader makes of each - and never what a real ghost would say in them.
+        /// </summary>
+        private static void AddGhost(
+            GraphBuilder builder,
+            string key,
+            PlanetLabel_SystemManagement label,
+            bool canCarry
+        )
+        {
+            try
+            {
+                // Flow control: whether the band is walked at all. The group is a wired prefab field
+                // and so always there; what says a Sanctuary exists is the game drawing it.
+                if (!AgeWidgets.Visible(label.GhostGroup))
+                {
+                    return;
+                }
+
+                PlanetLabel_SystemManagement it = label;
+                AgeTransform title =
+                    label.GhostTitle == null ? null : label.GhostTitle.AgeTransform;
+                if (title != null)
+                {
+                    NodeVtable vtable = GraphNodes.Readout(
+                        () => AgeText.Label(it.GhostTitle),
+                        null,
+                        () => GhostDetails(it),
+                        AgeWidgets.Raw(title)
+                    );
+                    AgeWidgets.PointAt(vtable, title);
+                    builder.AddItem(
+                        Nodes.Drawn(ControlId.For(title, key + "/ghost"), vtable, title)
+                    );
+                }
+
+                Ring ring = GhostRing(label, key);
+                List<Population> units = new List<Population>(4);
+                List<PopulationSlots.Slot> slots = RingSlots(ring, units);
+                AddPopulationSlots(builder, ring, units, slots, canCarry);
+
+                // The one thing the band can DO, and a standard refusable card action: the game keeps
+                // it drawn and switched off with its reason written into its own tooltip by the game's
+                // own failure formatter (:1229-1249), so it is declared while drawn and offered while
+                // the game offers it, named by the sentence that explains it.
+                List<CardActions.CardAction> traitor = new List<CardActions.CardAction>(1);
+                CardActions.AddRefusable(
+                    traitor,
+                    label.TraitorButton,
+                    // Named by the SENTENCE its tooltip explains it with, not by a title: the game
+                    // hangs plain content there with no wrapper and no header line, so asking for a
+                    // title answered nothing and the row announced itself role-first ("button, Click
+                    // to consume one population..."). Measured on the lent band, 2026-08-29 - the
+                    // same treatment the card's own wordless buttons get.
+                    CardActions.NameFromTooltip(label.TraitorButton)
+                );
+                CardActions.Emit(builder, key + "/ghost", traitor);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading a planet card's Sanctuary band threw: " + e);
+            }
+        }
+
+        /// <summary>The figures the Sanctuary band draws with no words of its own: how many people live
+        /// there out of how many could, and the five outputs the ghost colony is making. The count the
+        /// game writes as "3/5" beside a symbol, so it is composed as the fraction it is with the
+        /// game's own word for the symbol; the outputs are read exactly as the card's own strip is
+        /// (<see cref="AddFidsi"/>).</summary>
+        private static IList<string> GhostDetails(PlanetLabel_SystemManagement label)
+        {
+            List<string> lines = new List<string>(6);
+            try
+            {
+                ColonizedPlanet ghost = label.GhostColonizedPlanet;
+                if (ghost == null)
+                {
+                    return lines;
+                }
+
+                AgePrimitiveLabel count = label.GhostPopulationCount;
+                // Content, and of a DIFFERENT widget than the node stands on: these are lines of the
+                // title's buffer, so the gate never sees them and nothing else would stop a rival's
+                // hidden figure being read out.
+                if (count != null && AgeWidgets.Visible(count.AgeTransform))
+                {
+                    AddLine(
+                        lines,
+                        ModStrings.Format(
+                            ModStrings.FractionUnit,
+                            ghost.PopulationCount,
+                            ghost.MaxPopulation,
+                            AgeText.Clean(PopulationIcon)
+                        )
+                    );
+                }
+
+                // The outputs strip is HOVER-ONLY: the game shows it while the pointer is inside the
+                // band and hides it again on the way out (:669-693), like the card's own detailed
+                // ring. So its own drawn flag is not the question - these are BUFFER lines, which is
+                // what hover-revealed content gets - and the question is whether the game ever
+                // COMPUTED them, which it does for a Sanctuary of the player's own and for nobody
+                // else (:1216-1222 refreshes the enumerator only there). A rival's strip keeps
+                // whatever it was last bound with, so reading it would be a made-up figure.
+                FidsiEnumerator fidsi = label.GhostFidsiEnumerator;
+                if (fidsi == null || fidsi.FidsiProperties == null || OwnGhost(label) == null)
+                {
+                    return lines;
+                }
+
+                Amplitude.Unity.Simulation.SimulationObject simulation = ghost.SimulationObject;
+                if (simulation == null)
+                {
+                    return lines;
+                }
+
+                IList<string> numbers = PlanetOutputs.Numbers(simulation, fidsi);
+                for (int i = 0; i < numbers.Count; i++)
+                {
+                    lines.Add(numbers[i]);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system: reading a Sanctuary's figures threw: " + e);
+            }
+
+            return lines;
+        }
+
+        /// <summary>The symbol the game ends its Sanctuary population count with, which is the only
+        /// word it writes for that figure.</summary>
+        private const string PopulationIcon = "[population]";
 
         /// <summary>
         /// The dossiers a planet card carries beyond the sentence on its status button: the planet's
@@ -1146,7 +1777,7 @@ namespace ES2Access.Screens
 
         /// <summary>What the carried thing IS here, so that a population unit cannot be dropped into a
         /// fleet and a ship cannot be dropped onto a planet.</summary>
-        public const string PopulationKind = "population";
+        public const string PopulationKind = PopulationMoves.Kind;
 
         /// <summary>The colony this card is for WHOEVER owns it - the same object the card binds its
         /// population ring to (<c>PlanetLabel.BindPlanet</c> takes it straight off
@@ -1176,26 +1807,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        /// <summary>How many colonies of the player's this system has - which is how many cards a
-        /// carried unit could be put down on.</summary>
-        private static int Settlements(StarSystemScreen window)
-        {
-            try
-            {
-                ColonizedStarSystem system = window == null ? null : window.ColonizedStarSystem;
-                if (system == null || system.Empire != Gui.PlayerEmpire)
-                {
-                    return 0;
-                }
-
-                return system.PlanetsColonized.Count;
-            }
-            catch (Exception)
-            {
-                return 0;
             }
         }
 
@@ -1238,79 +1849,88 @@ namespace ES2Access.Screens
         /// unit cannot be picked up and the card cannot be dropped on, both of which stay gated on
         /// <see cref="Settled"/>.
         /// </summary>
-        private static List<PopulationSlots.Slot> PlanetSlots(
-            PlanetLabel_SystemManagement label,
-            List<Population> units
-        )
+        private static List<PopulationSlots.Slot> RingSlots(Ring ring, List<Population> units)
         {
-            List<PopulationSlots.Slot> slots = new List<PopulationSlots.Slot>(8);
-            try
-            {
-                if (DrawnMarkers(label) == 0)
-                {
-                    return slots;
-                }
-
-                ColonizedPlanet colony = Colony(label);
-                if (colony == null)
-                {
-                    Planet unsettled = label.Planet;
-                    if (unsettled != null)
-                    {
-                        PopulationSlots.BuildUnsettled(
-                            unsettled.PopulationCount,
-                            unsettled.MaxPopulation,
-                            slots
-                        );
-                    }
-
-                    return slots;
-                }
-
-                foreach (KeyValuePair<StaticString, Population> entry in colony.PopulationsByAffinity)
-                {
-                    Population population = entry.Value;
-                    for (int i = 0; population != null && i < population.Count; i++)
-                    {
-                        units.Add(population);
-                    }
-                }
-
-                PopulationSlots.Build(
-                    units.Count,
-                    colony.MaxPopulation,
-                    colony.MaxPopulationUnderOverPopulation,
-                    OverpopulationDrawn(colony),
-                    slots
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: reading a planet's population slots threw: " + e);
-            }
-
-            return slots;
+            return PopulationMoves.Slots(
+                ring.Card == null ? null : ring.Card.Planet,
+                ring.Colony,
+                DrawnMarkers(ring),
+                units
+            );
         }
 
-        /// <summary>Whether the game would draw the overpopulation arc over this colony's ring, which
-        /// is what decides whether the slots past its comfortable maximum are a band of their own -
-        /// the four conditions <c>PlanetPopulationEnumeratorRadial.RefreshOverpopulation</c> puts on
-        /// the sector's visibility, asked here rather than re-derived, so a mode of play where the arc
-        /// means nothing (an empire that runs on honour, a system somebody else is exploiting) reads
-        /// as one plain band of slots exactly as it is drawn.</summary>
-        private static bool OverpopulationDrawn(ColonizedPlanet colony)
+        /// <summary>
+        /// WHICH population ring a row is being read from. A planet card draws up to two of them - the
+        /// world's own, and the Sanctuary's when a ghost colony is sitting on the same world
+        /// (<c>PlanetLabel_SystemManagement.RefreshGhostStatus</c> :1192-1250) - and the game runs both
+        /// through the SAME drag machinery: the same client, the same target list
+        /// (<c>PlanetLabelsWindow_SystemManagement.GetPopulationDragDropTargets</c> :72 asks both
+        /// enumerators), the same order. So the rows are built once and told which ring they are on.
+        ///
+        /// <see cref="Markers"/> is the enumerator the game is DRAWING (a card swaps between a simple
+        /// ring and a detailed one) and decides the slot geometry; <see cref="Target"/> is the one whose
+        /// own <c>CanAcceptPopulationDrop</c> answers a drop, which for a planet is always the focused
+        /// ring whichever is drawn. <see cref="Colony"/> is whose people fill it - possibly another
+        /// empire's, which reads and neither carries nor takes - and <see cref="Destination"/> is the
+        /// colony a drop would land on, null wherever the game moves nobody.
+        /// </summary>
+        private sealed class Ring
+        {
+            public PlanetLabel_SystemManagement Card;
+            public PlanetPopulationEnumerator Markers;
+            public PlanetPopulationEnumerator Target;
+            public ColonizedPlanet Colony;
+            public ColonizedPlanet Destination;
+            public string Key;
+            public string Scratch;
+        }
+
+        /// <summary>The card's own ring - the world's population, exactly as it read before the
+        /// Sanctuary band existed.</summary>
+        private static Ring PlanetRing(PlanetLabel_SystemManagement label, string key)
+        {
+            return new Ring
+            {
+                Card = label,
+                Markers = DrawnEnumerator(label),
+                Target = label == null ? null : label.PlanetPopulationEnumeratorFocused,
+                Colony = Colony(label),
+                Destination = Settled(label),
+                Key = key + "/population",
+                Scratch = string.Empty,
+            };
+        }
+
+        /// <summary>The Sanctuary's ring, which the game draws only for a ghost colony of the PLAYER's
+        /// (<c>RefreshGhostStatus</c> :1217 hides the whole group for anybody else's) and binds through
+        /// the card's own drag client (:375).</summary>
+        private static Ring GhostRing(PlanetLabel_SystemManagement label, string key)
+        {
+            ColonizedPlanet ghost = OwnGhost(label);
+            return new Ring
+            {
+                Card = label,
+                Markers = label == null ? null : label.GhostPopulationEnumeratorFocused,
+                Target = label == null ? null : label.GhostPopulationEnumeratorFocused,
+                Colony = ghost,
+                Destination = ghost,
+                Key = key + "/ghost/population",
+                Scratch = "ghost/",
+            };
+        }
+
+        /// <summary>The Sanctuary sitting on this world when it is the PLAYER's, or null - a rival's
+        /// Sanctuary draws its title and its population figure and nothing that can be worked.</summary>
+        private static ColonizedPlanet OwnGhost(PlanetLabel_SystemManagement label)
         {
             try
             {
-                ColonizedStarSystem system = colony.ColonizedStarSystem;
-                return system != null
-                    && system.State != StarSystemState.Lost
-                    && !(system is ExploitedStarSystem)
-                    && !colony.Empire.CanUseHonor;
+                ColonizedPlanet ghost = label == null ? null : label.GhostColonizedPlanet;
+                return ghost != null && ghost.Empire == Gui.PlayerEmpire ? ghost : null;
             }
             catch (Exception)
             {
-                return false;
+                return null;
             }
         }
 
@@ -1319,9 +1939,9 @@ namespace ES2Access.Screens
         /// pools them without unparenting), so the visible ones are the ring - and they are in slot
         /// order, because the enumerator sets each one's sibling index to its own slot and sorts.
         /// </summary>
-        private static int DrawnMarkers(PlanetLabel_SystemManagement label)
+        private static int DrawnMarkers(Ring ring)
         {
-            AgeTransform container = MarkerContainer(label);
+            AgeTransform container = MarkerContainer(ring);
             IList<AgeTransform> markers = container == null ? null : container.Children;
             int drawn = 0;
             for (int i = 0; markers != null && i < markers.Count; i++)
@@ -1339,9 +1959,9 @@ namespace ES2Access.Screens
         /// belongs on the screen. Null where the ring and the model disagree about how many slots
         /// there are - a frame in the middle of a refresh - and the dossier then falls back to the
         /// scratch carrier's own corner.</summary>
-        private static AgeTransform DrawnMarker(PlanetLabel_SystemManagement label, int index)
+        private static AgeTransform DrawnMarker(Ring ring, int index)
         {
-            AgeTransform container = MarkerContainer(label);
+            AgeTransform container = MarkerContainer(ring);
             IList<AgeTransform> markers = container == null ? null : container.Children;
             int seen = 0;
             for (int i = 0; markers != null && i < markers.Count; i++)
@@ -1363,20 +1983,29 @@ namespace ES2Access.Screens
             return null;
         }
 
-        /// <summary>Whichever of the card's two population rings the game is drawing.</summary>
-        private static AgeTransform MarkerContainer(PlanetLabel_SystemManagement label)
+        /// <summary>The markers of the ring the row is being read from, or null where the game is not
+        /// drawing that ring at all.</summary>
+        private static AgeTransform MarkerContainer(Ring ring)
+        {
+            PlanetPopulationEnumerator drawn = ring == null ? null : ring.Markers;
+            return drawn == null || !drawn.Shown ? null : drawn.PopMarkersContainer;
+        }
+
+        /// <summary>Whichever of the world's two rings the card is drawing - it keeps a simple one for
+        /// the ordinary view and a detailed one it swaps in under a mouse.</summary>
+        private static PlanetPopulationEnumerator DrawnEnumerator(
+            PlanetLabel_SystemManagement label
+        )
         {
             if (label == null)
             {
                 return null;
             }
 
-            PlanetPopulationEnumerator drawn =
-                label.PlanetPopulationEnumeratorSimple != null
+            return label.PlanetPopulationEnumeratorSimple != null
                 && label.PlanetPopulationEnumeratorSimple.Shown
-                    ? label.PlanetPopulationEnumeratorSimple
-                    : label.PlanetPopulationEnumeratorFocused;
-            return drawn == null || !drawn.Shown ? null : drawn.PopMarkersContainer;
+                ? label.PlanetPopulationEnumeratorSimple
+                : label.PlanetPopulationEnumeratorFocused;
         }
 
         /// <summary>
@@ -1393,14 +2022,20 @@ namespace ES2Access.Screens
         ///
         /// <paramref name="canCarry"/> is where a unit can be picked up, which is only where there is
         /// somewhere to put it down - and only on the player's OWN colony, because the game moves
-        /// nobody else's population. One press carries ONE unit - the smallest move the game's own
-        /// drag makes - and the affinity is captured then, because the row is rebuilt every frame and
-        /// those people may have left the planet by the time it is dropped.
+        /// nobody else's population. One press carries what the GAME's own drag would carry from that
+        /// marker: itself and every marker of the same people after it round the ring
+        /// (<see cref="PopulationMoves.Carried"/>), so the first Imperial of five carries five and the
+        /// last carries one. What is carried is captured then, because the row is rebuilt every frame
+        /// and those people may have left the planet by the time it is dropped.
+        ///
+        /// A FILLED slot is also a drop target, and dropping onto it is the game's SWAP: the affinity
+        /// standing there is named as the one to send back the other way, which is what the mouse sets
+        /// by hovering a marker mid-drag (<c>PopulationEnumerator</c> :275). A plain add is the CARD's
+        /// own drop, one level up.
         /// </summary>
         private static void AddPopulationSlots(
             GraphBuilder builder,
-            string keyPrefix,
-            PlanetLabel_SystemManagement label,
+            Ring ring,
             List<Population> units,
             List<PopulationSlots.Slot> slots,
             bool canCarry
@@ -1411,8 +2046,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            ColonizedPlanet colony = Colony(label);
-            bool carry = canCarry && Settled(label) != null;
+            string keyPrefix = ring.Key;
+            bool carry = canCarry && ring.Destination != null;
             object outer = builder.Region;
             int total = slots.Count;
             bool inBand = false;
@@ -1431,11 +2066,11 @@ namespace ES2Access.Screens
 
                         band = slot.Kind;
                         inBand = true;
-                        builder.SetRegion(keyPrefix + "/population/" + band);
+                        builder.SetRegion(keyPrefix + "/" + band);
                         builder.PushContext(BandName(band));
                     }
 
-                    AddPopulationSlot(builder, keyPrefix, label, units, slot, total, colony, carry);
+                    AddPopulationSlot(builder, ring, units, slot, total, carry);
                 }
             }
             finally
@@ -1468,17 +2103,17 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddPopulationSlot(
             GraphBuilder builder,
-            string keyPrefix,
-            PlanetLabel_SystemManagement label,
+            Ring ring,
             List<Population> units,
             PopulationSlots.Slot slot,
             int total,
-            ColonizedPlanet colony,
             bool canCarry
         )
         {
+            PlanetLabel_SystemManagement label = ring.Card;
+            ColonizedPlanet colony = ring.Colony;
             Population unit = slot.Unit >= 0 && slot.Unit < units.Count ? units[slot.Unit] : null;
-            string key = keyPrefix + "/population/" + slot.Rank;
+            string key = ring.Key + "/" + slot.Rank;
             int rank = slot.Rank;
             int outOf = total;
             bool empty = unit == null && slot.Kind != PopulationSlots.Band.Locked;
@@ -1488,7 +2123,7 @@ namespace ES2Access.Screens
             // 6, 1 of 6". A COLONIZED card keeps the numbered phrase: there the ring is split into
             // bands, so a row's position within its band is not its rank round the ring.
             bool vacant = colony == null && empty;
-            AgeTooltip carrier = SlotCarrier(label, colony, slot, unit);
+            AgeTooltip carrier = SlotCarrier(ring, slot, unit);
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
@@ -1517,14 +2152,32 @@ namespace ES2Access.Screens
                 AgeWidgets.PointAt(vtable, carrier.AgeTransform);
             }
 
-            if (canCarry && colony != null && unit != null)
+            // EVERY slot of the player's own ring that is not LOCKED takes a drop, and which KIND of
+            // drop it is is who is standing in it: an occupied slot is the game's swap (the affinity
+            // there is the one sent back the other way), an empty one is the plain add the card
+            // itself takes. The empty rows are not a nicety - a player carrying somebody walks the
+            // ring looking for a free place to put them, so the free place is where the drop must be;
+            // offering it only on the card's header was a gap the owner met at once (2026-08-29).
+            // The game's add is not per-slot either way: the server places the people, and the row is
+            // only where the gesture is aimed.
+            if (ring.Destination != null && slot.Kind != PopulationSlots.Band.Locked)
             {
-                ColonizedPlanet source = colony;
-                Population held = unit;
-                vtable.OnPickUp = () => Pick(source, held);
+                if (canCarry && colony != null && unit != null)
+                {
+                    ColonizedPlanet source = colony;
+                    Population held = unit;
+                    int carried = PopulationMoves.Carried(units, slot.Unit);
+                    vtable.OnPickUp = () => PopulationMoves.Pick(source, held, carried);
+                }
+
+                Ring on = ring;
+                StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
+                vtable.DropKind = PopulationKind;
+                vtable.DropAccepts = cargo => AcceptsPopulation(on, cargo);
+                vtable.OnDrop = cargo => DropPopulation(on, cargo, replaced);
             }
 
-            List<TooltipChildren.Dossier> nested = SlotDossiers(label, colony, slot, unit);
+            List<TooltipChildren.Dossier> nested = SlotDossiers(ring, slot, unit);
             if (nested.Count == 0)
             {
                 // Synthetic: a slot is read out of the colony's own model - the ring draws a marker
@@ -1549,8 +2202,7 @@ namespace ES2Access.Screens
         /// filled slot under the overpopulation arc, whose row is already the population's dossier and
         /// whose arc still has something to say about it.</summary>
         private static List<TooltipChildren.Dossier> SlotDossiers(
-            PlanetLabel_SystemManagement label,
-            ColonizedPlanet colony,
+            Ring ring,
             PopulationSlots.Slot slot,
             Population unit
         )
@@ -1561,7 +2213,7 @@ namespace ES2Access.Screens
                 return found;
             }
 
-            AgeTooltip carrier = OverpopulationCarrier(label, colony, slot.Rank);
+            AgeTooltip carrier = OverpopulationCarrier(ring, slot.Rank);
             if (carrier != null)
             {
                 TooltipChildren.AddPlain(found, carrier, carrier.AgeTransform);
@@ -1575,24 +2227,23 @@ namespace ES2Access.Screens
         /// it for a locked one - and nothing at all for an ordinary empty place, which the game
         /// explains nowhere either.</summary>
         private static AgeTooltip SlotCarrier(
-            PlanetLabel_SystemManagement label,
-            ColonizedPlanet colony,
+            Ring ring,
             PopulationSlots.Slot slot,
             Population unit
         )
         {
             if (unit != null)
             {
-                return PopulationCarrier(label, colony, slot.Rank, unit);
+                return PopulationCarrier(ring, slot.Rank, unit);
             }
 
             if (slot.Kind == PopulationSlots.Band.Locked)
             {
-                return LockedCarrier(label, slot.Rank);
+                return LockedCarrier(ring, slot.Rank);
             }
 
             return slot.Kind == PopulationSlots.Band.Overpopulation
-                ? OverpopulationCarrier(label, colony, slot.Rank)
+                ? OverpopulationCarrier(ring, slot.Rank)
                 : null;
         }
 
@@ -1600,31 +2251,27 @@ namespace ES2Access.Screens
         /// detailed marker - the same class, the same wrapper, the same context - so the tooltip
         /// window assembles the population's own dossier for a ring that is drawing no tooltips.
         /// </summary>
-        private static AgeTooltip PopulationCarrier(
-            PlanetLabel_SystemManagement label,
-            ColonizedPlanet colony,
-            int rank,
-            Population unit
-        )
+        private static AgeTooltip PopulationCarrier(Ring ring, int rank, Population unit)
         {
             try
             {
+                ColonizedPlanet colony = ring.Colony;
                 AgeTooltip carrier;
                 bool rebind = ScratchTooltips.Rebind(
-                    SlotKey(label, rank),
+                    SlotKey(ring, rank),
                     SlotStamp(colony, (string)unit.Affinity, unit.Count),
                     out carrier
                 );
                 if (rebind && carrier != null)
                 {
-                    GuiPopulation wrapper = Wrap(colony.Empire, unit);
+                    GuiPopulation wrapper = PopulationMoves.Wrap(colony.Empire, unit);
                     carrier.Class = "Population";
                     carrier.Content = wrapper.Title;
                     carrier.Target = wrapper;
                     carrier.Context = wrapper.EmpirePopulationSimulationObject;
                 }
 
-                Park(carrier, label, rank);
+                Park(carrier, ring, rank);
                 return carrier;
             }
             catch (Exception e)
@@ -1638,18 +2285,15 @@ namespace ES2Access.Screens
         /// icon (<c>PlanetPopulationEnumeratorRadial.RefreshOverpopulation</c>), which is plain text
         /// under no class - so it is bound as plain text under no class here. The game picks its
         /// singular or plural by how many slots the arc covers, and so does this.</summary>
-        private static AgeTooltip OverpopulationCarrier(
-            PlanetLabel_SystemManagement label,
-            ColonizedPlanet colony,
-            int rank
-        )
+        private static AgeTooltip OverpopulationCarrier(Ring ring, int rank)
         {
             try
             {
+                ColonizedPlanet colony = ring.Colony;
                 int covered = colony.MaxPopulation - colony.MaxPopulationUnderOverPopulation;
                 AgeTooltip carrier;
                 bool rebind = ScratchTooltips.Rebind(
-                    SlotKey(label, rank) + "/overpopulation",
+                    SlotKey(ring, rank) + "/overpopulation",
                     covered,
                     out carrier
                 );
@@ -1663,7 +2307,7 @@ namespace ES2Access.Screens
                     );
                 }
 
-                Park(carrier, label, rank);
+                Park(carrier, ring, rank);
                 return carrier;
             }
             catch (Exception e)
@@ -1675,13 +2319,13 @@ namespace ES2Access.Screens
 
         /// <summary>A carrier bound as the game binds a locked marker: its own simple panel naming the
         /// project that would raise this world's maximum.</summary>
-        private static AgeTooltip LockedCarrier(PlanetLabel_SystemManagement label, int rank)
+        private static AgeTooltip LockedCarrier(Ring ring, int rank)
         {
             try
             {
                 AgeTooltip carrier;
                 bool rebind = ScratchTooltips.Rebind(
-                    SlotKey(label, rank) + "/locked",
+                    SlotKey(ring, rank) + "/locked",
                     1L,
                     out carrier
                 );
@@ -1693,7 +2337,7 @@ namespace ES2Access.Screens
                     carrier.Content = LockedSentence;
                 }
 
-                Park(carrier, label, rank);
+                Park(carrier, ring, rank);
                 return carrier;
             }
             catch (Exception e)
@@ -1707,18 +2351,21 @@ namespace ES2Access.Screens
         /// marker rather than at the screen's corner. The corner is the fallback and is what
         /// <see cref="ScratchTooltips.Rebind"/> has already set, so a slot the ring is not drawing
         /// this frame simply keeps it.</summary>
-        private static void Park(AgeTooltip carrier, PlanetLabel_SystemManagement label, int rank)
+        private static void Park(AgeTooltip carrier, Ring ring, int rank)
         {
-            AgeTransform marker = DrawnMarker(label, rank - 1);
+            AgeTransform marker = DrawnMarker(ring, rank - 1);
             if (marker != null)
             {
                 ScratchTooltips.PlaceOver(carrier, marker);
             }
         }
 
-        private static string SlotKey(PlanetLabel_SystemManagement label, int rank)
+        /// <summary>A carrier's own key. It carries the RING as well as the world, because a card
+        /// drawing a Sanctuary draws two rings over the same planet and one key for both would hand the
+        /// Sanctuary's slot 1 whatever the world's slot 1 was last bound with.</summary>
+        private static string SlotKey(Ring ring, int rank)
         {
-            return "population-slot/" + label.Planet.GUID + "/" + rank;
+            return "population-slot/" + ring.Card.Planet.GUID + "/" + ring.Scratch + rank;
         }
 
         /// <summary>What a population slot's dossier depends on: the empire's turn, and who is in the
@@ -1753,22 +2400,9 @@ namespace ES2Access.Screens
         /// </summary>
         private static string BandName(PopulationSlots.Band band)
         {
-            string key = PopulationBandTitle;
-            if (band == PopulationSlots.Band.Overpopulation)
-            {
-                key = OverpopulationBandTitle;
-            }
-            else if (band == PopulationSlots.Band.Locked)
-            {
-                key = LockedBandTitle;
-            }
-
-            return AgeText.Clean(Gui.Localize(key));
+            return PopulationMoves.BandName(band);
         }
 
-        private const string PopulationBandTitle = "%PlanetScreenPopulationTitle";
-        private const string OverpopulationBandTitle = "%HappinessOverPopulationPenalties";
-        private const string LockedBandTitle = "%EconomyLockedTradingCompanySlotTitle";
         private const string OverpopulationSentence = "%PlanetLabelOverPopulationDescription";
         private const string OverpopulationSentencePlural =
             "%PlanetLabelOverPopulationDescriptionPlural";
@@ -1788,148 +2422,395 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>One unit of this population, picked up. Null where the game would not let the drag
-        /// start: its own two tests are the system's and the affinity's.</summary>
-        private static CarryItem Pick(ColonizedPlanet source, Population population)
-        {
-            try
-            {
-                IPopulationsManagementService populations =
-                    Services.GetService<IPopulationsManagementService>();
-                if (
-                    population.Count <= 0
-                    || !source.CanMovePopulation
-                    || populations == null
-                    || !populations.CanMovePopulation(population.Affinity)
-                )
-                {
-                    return null;
-                }
-
-                return new CarryItem(population, PopulationName(population), PopulationKind);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: picking a population unit up threw: " + e);
-                return null;
-            }
-        }
-
         /// <summary>
-        /// The population waiting in the spaceport, read the same way a planet card's ring is read: a
-        /// row per affinity, with the count said rather than counted, and a unit of it can be picked up.
+        /// Whether this card's ring would take what is being carried, right now - the game's own
+        /// answer (<see cref="PopulationMoves.Accepts"/>), which is what every population drop target
+        /// on this page advertises itself by.
         ///
-        /// The spaceport is the OTHER place this system keeps population, and the game moves it the same
-        /// way - a drag out of the panel onto one of this page's planet cards, which posts
-        /// <c>OrderTransferSpaceportPopulation</c> (<c>SpaceportSidePanel.StartDrag</c> :201-209,
-        /// <c>IDragDropClient.ApplyDrop</c> :70-80). So it is the same carry, taken by the same planet
-        /// cards, and only where it lands differs.
-        ///
-        /// The panel's markers are its own children rather than a container's, so this claims the
-        /// enumerator itself and stops the walk descending into a row of wordless slots. An empty
-        /// spaceport - and a locked slot the system's level has not paid for yet - contributes nothing,
-        /// which is what the walk did before this and what a planet card with no ring does.
+        /// With one thing added that the game's own check cannot know: a unit coming OUT of the
+        /// SPACEPORT travels by a different route from a unit coming off another planet. The
+        /// spaceport's client posts a single order that clamps against the destination's own room and
+        /// never swaps (<c>SpaceportSidePanel.ApplyDrop</c> :70-80), while
+        /// <c>CanWelcomeSomeOfPopulation</c> accepts a FULL planet on the strength of a swap being
+        /// possible - so a full planet would advertise itself to a port-sourced carry and then move
+        /// nobody. The gate has to agree with the outcome, so the room is asked here for that route
+        /// alone; a planet-sourced drop keeps the game's answer untouched, because there the whole
+        /// carry really does move (the surplus is swapped back).
         /// </summary>
-        private static bool SpaceportPopulations(
-            List<Cell> cells,
-            AgeTransform widget,
-            string keyPrefix,
-            SpaceportSidePanel panel
-        )
+        private static bool AcceptsPopulation(Ring ring, CarryItem held)
         {
-            PopulationEnumerator markers = panel == null
-                ? null
-                : panel.SpaceportPopulationEnumerator;
-            if (markers == null || !ReferenceEquals(widget, markers.AgeTransform))
+            Population population = held == null ? null : held.Cargo as Population;
+            ColonizedPlanet destination = ring.Destination;
+            if (
+                population == null
+                || destination == null
+                || !PopulationMoves.Accepts(ring.Target, population, held.Quantity)
+            )
             {
                 return false;
             }
 
+            return PopulationMoves.PlanetOf(population) != null
+                || PopulationMoves.OntoPlanet(destination, held.Quantity) > 0;
+        }
+
+        /// <summary>
+        /// The spaceport's population markers are claimed by the panel's own reader
+        /// (<see cref="BuildSpaceport"/>) rather than read as ordinary cells: they are a RING like a
+        /// planet card's, with bands and slots and a carry, and the flat cell walk has no way to say
+        /// any of that. Claiming the enumerator here is what stops the walk descending into a row of
+        /// wordless slots and declaring them twice.
+        /// </summary>
+        private static bool SpaceportPopulations(AgeTransform widget, SpaceportSidePanel panel)
+        {
+            PopulationEnumerator markers = panel == null
+                ? null
+                : panel.SpaceportPopulationEnumerator;
+            return markers != null && ReferenceEquals(widget, markers.AgeTransform);
+        }
+
+        /// <summary>
+        /// The spaceport panel: its readouts in drawn order with its population RING opened up in the
+        /// middle of them, the way a planet card's ring is.
+        ///
+        /// The port is the OTHER place a system keeps population, and until 2026-08-29 it was read as
+        /// one row per affinity with the count said - which answered who was waiting and said nothing
+        /// about how much room there was, the very question the row of slots is drawn to answer, and
+        /// left the empty slots (the only things a unit can be dropped INTO) undeclared entirely. So it
+        /// is now modelled exactly like the planet ring: a row per drawn marker, in slot order, banded
+        /// into regions named with the game's own words.
+        ///
+        /// The panel's other controls keep their places around it, which is why the cells are split by
+        /// where the ring is drawn rather than emitted before or after it wholesale.
+        /// </summary>
+        private void BuildSpaceport(
+            GraphBuilder builder,
+            SpaceportSidePanel panel,
+            string keyPrefix
+        )
+        {
+            _cells.Clear();
+            SidePanels.Readouts(_cells, panel, keyPrefix, SpecialCell, Transparent);
+            List<Cell> above = new List<Cell>(_cells.Count);
+            List<Cell> below = new List<Cell>(_cells.Count);
+            AgeTransform ring = panel.SpaceportPopulationEnumerator == null
+                ? null
+                : panel.SpaceportPopulationEnumerator.AgeTransform;
+            float at = ring == null ? float.MaxValue : ring.GetGlobalPosition().y;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                Cell cell = _cells[i];
+                (cell.Widget.GetGlobalPosition().y < at ? above : below).Add(cell);
+            }
+
+            Cells.EmitLinear(builder, above);
+            AddSpaceportSlots(builder, keyPrefix, panel);
+            Cells.EmitLinear(builder, below);
+        }
+
+        /// <summary>
+        /// A row per slot of the spaceport's ring, in the order the game draws them, banded into
+        /// regions exactly as a planet card's slots are - the filled and empty places under the game's
+        /// own population title, the ones the system's level has not paid for yet under its own word
+        /// for a locked slot.
+        ///
+        /// Each row is the marker the game drew, so it carries THAT marker's own tooltip - the panel
+        /// writes one of three sentences onto every marker each refresh, the locked one carrying the
+        /// capacity the next system level would buy (<c>SpaceportSidePanel.Refresh</c> :152-186). A
+        /// marker the panel has not refreshed yet still holds the prefab's placeholder, so only the
+        /// three sentences the panel writes are accepted and anything else is treated as no tooltip at
+        /// all.
+        ///
+        /// A FILLED slot can be picked up from - carrying what the game's own drag would carry from
+        /// that marker - and is a swap target. An EMPTY one is a plain drop target. A LOCKED one is
+        /// neither: it is a place that does not exist yet, and the game says so in its tooltip.
+        /// </summary>
+        private static void AddSpaceportSlots(
+            GraphBuilder builder,
+            string keyPrefix,
+            SpaceportSidePanel panel
+        )
+        {
+            Spaceport port = panel.Spaceport;
+            PopulationEnumerator ring = panel.SpaceportPopulationEnumerator;
+            if (port == null || ring == null)
+            {
+                return;
+            }
+
+            List<AgeTransform> drawn = new List<AgeTransform>(4);
+            List<Population> units = new List<Population>(4);
+            IList<AgeTransform> children = ring.AgeTransform.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform marker = AgeWidgets.DrawnChild(children, i);
+                if (marker == null)
+                {
+                    continue;
+                }
+
+                drawn.Add(marker);
+                PopulationMarker it = marker.GetComponent<PopulationMarker>();
+                units.Add(
+                    it == null || it.GuiPopulation == null ? null : it.GuiPopulation.Population
+                );
+            }
+
+            object outer = builder.Region;
+            List<Cell> band = new List<Cell>(drawn.Count);
+            bool locked = false;
+            bool inBand = false;
             try
             {
-                Spaceport port = panel.Spaceport;
-                IList<AgeTransform> slots = markers.AgeTransform.Children;
-                List<Population> found = new List<Population>(2);
-                for (int i = 0; slots != null && i < slots.Count; i++)
+                for (int i = 0; i < drawn.Count; i++)
                 {
-                    AgeTransform slot = slots[i];
-                    if (slot == null || !slot.Visible)
+                    PopulationMarker it = drawn[i].GetComponent<PopulationMarker>();
+                    bool shut = it != null && it.Locked;
+                    if (inBand && shut != locked)
                     {
-                        continue;
+                        Cells.EmitLinear(builder, band);
+                        band.Clear();
+                        builder.PopContext();
+                        inBand = false;
                     }
 
-                    PopulationMarker it = slot.GetComponent<PopulationMarker>();
-                    Population population =
-                        it == null || it.GuiPopulation == null ? null : it.GuiPopulation.Population;
-                    if (population == null || found.Contains(population))
+                    if (!inBand)
                     {
-                        continue;
+                        locked = shut;
+                        inBand = true;
+                        builder.SetRegion(
+                            keyPrefix
+                                + "spaceport/population/"
+                                + (locked
+                                    ? PopulationSlots.Band.Locked
+                                    : PopulationSlots.Band.Population)
+                        );
+                        builder.PushContext(
+                            BandName(
+                                locked
+                                    ? PopulationSlots.Band.Locked
+                                    : PopulationSlots.Band.Population
+                            )
+                        );
                     }
 
-                    found.Add(population);
-                    Population held = population;
-                    // No tooltip: the sentence the panel writes onto an occupied slot is the one its own
-                    // heading already carries, and a slot the panel has not refreshed yet still holds
-                    // the prefab's placeholder (measured: "This is changed by code").
-                    NodeVtable vtable = GraphNodes.Readout(
-                        () => PopulationName(held),
-                        () => new MessageBuilder().PushQuantity(held.Count).Build(),
-                        null,
-                        null
-                    );
-                    if (port != null)
-                    {
-                        Spaceport source = port;
-                        vtable.OnPickUp = () => PickFromSpaceport(source, held);
-                    }
-
-                    cells.Add(
-                        new Cell
-                        {
-                            Widget = slot,
-                            Id = ControlId.For(
-                                population,
-                                keyPrefix + "spaceport/population/" + found.Count
-                            ),
-                            Vtable = vtable,
-                        }
+                    band.Add(
+                        SpaceportSlot(keyPrefix, panel, port, drawn, units, i)
                     );
                 }
             }
-            catch (Exception e)
+            finally
             {
-                Log.Warn("system: reading the spaceport's population threw: " + e);
-            }
+                if (inBand)
+                {
+                    Cells.EmitLinear(builder, band);
+                    builder.PopContext();
+                }
 
-            return true;
+                builder.SetRegion(outer);
+            }
         }
 
-        /// <summary>One unit of the spaceport's population, picked up - the game's own two tests for
-        /// starting that drag (<c>PopulationEnumerator.OnPopulationMarkerDragStarted</c> :239-252), asked
-        /// of the spaceport instead of a planet.</summary>
-        private static CarryItem PickFromSpaceport(Spaceport port, Population population)
+        /// <summary>One slot of the spaceport's ring.</summary>
+        private static Cell SpaceportSlot(
+            string keyPrefix,
+            SpaceportSidePanel panel,
+            Spaceport port,
+            List<AgeTransform> drawn,
+            List<Population> units,
+            int index
+        )
+        {
+            AgeTransform marker = drawn[index];
+            PopulationMarker it = marker.GetComponent<PopulationMarker>();
+            Population unit = units[index];
+            bool locked = it != null && it.Locked;
+            bool empty = unit == null && !locked;
+            int rank = index + 1;
+            int outOf = drawn.Count;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(
+                        () =>
+                            ModStrings.Format(
+                                empty
+                                    ? ModStrings.SystemPopulationSlotEmpty
+                                    : ModStrings.SystemPopulationSlot,
+                                rank,
+                                outOf
+                            )
+                    ),
+                    GraphNodes.ValuePart(() => unit == null ? null : PopulationName(unit)),
+                },
+                Sections = GraphNodes.Sections(GraphNodes.TooltipSection(SlotSentence(marker))),
+            };
+            AgeWidgets.PointAt(vtable, marker);
+
+            if (unit != null)
+            {
+                Population held = unit;
+                int carried = PopulationMoves.Carried(units, index);
+                vtable.OnPickUp = () => PopulationMoves.Pick(port, held, carried);
+            }
+
+            if (!locked)
+            {
+                SpaceportSidePanel host = panel;
+                StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
+                vtable.DropKind = PopulationKind;
+                vtable.DropAccepts = cargo => PortTakes(host, cargo, unit != null);
+                vtable.OnDrop = cargo => DropIntoSpaceport(host, cargo, replaced);
+            }
+
+            return new Cell
+            {
+                Widget = marker,
+                Id = ControlId.Structural(keyPrefix + "spaceport/population/" + index),
+                Vtable = vtable,
+            };
+        }
+
+        /// <summary>The sentence the panel wrote onto this marker, and nothing else. The panel writes
+        /// exactly one of three keys onto every marker each refresh
+        /// (<c>SpaceportSidePanel.Refresh</c> :166-186); a marker it has not reached yet still carries
+        /// the prefab's placeholder ("This is changed by code"), which is parked text rather than
+        /// something the game is saying.</summary>
+        private static AgeTooltip SlotSentence(AgeTransform marker)
+        {
+            AgeTooltip tooltip = marker == null ? null : marker.AgeTooltip;
+            // The raw content is read to IDENTIFY the sentence, never to say it: the three keys below
+            // are what the panel writes, and anything else is the prefab's placeholder. The words
+            // still reach the player only through the door - the tooltip itself is handed to
+            // GraphNodes.TooltipSection below, or nothing is.
+            string content = tooltip == null ? null : tooltip.Content;
+            return content == SpaceportSlotFilled
+                || content == SpaceportSlotEmpty
+                || content == SpaceportSlotLocked
+                ? tooltip
+                : null;
+        }
+
+        private const string SpaceportSlotFilled = "%SpacePortSelectedPopulationSlotDescription";
+        private const string SpaceportSlotEmpty = "%SpacePortEmptyPopulationSlotDescription";
+        private const string SpaceportSlotLocked = "%SpacePortLockedPopulationSlotDescription";
+
+        /// <summary>
+        /// Whether the spaceport would take what is being carried.
+        ///
+        /// The game asks no <c>CanAcceptPopulationDrop</c> of the port at all - the panel is simply put
+        /// in the target list whenever it is drawn (<c>StartDrag</c> :144-148) - so the tests are the
+        /// panel's own client's: the port is the player's and drawn, the unit is leaving a PLANET, and
+        /// somebody would actually move. There is no port-to-port move: the order the client posts
+        /// names the planet the unit comes off (<c>ApplyDrop</c> :38-44), and a unit already in the
+        /// port has none.
+        ///
+        /// The last test is the clamp itself, asked with the very numbers the drop will use
+        /// (<see cref="PopulationMoves.IntoPort"/>). A drop onto an EMPTY slot needs a free slot. A
+        /// drop onto an OCCUPIED one is the swap, which frees its own slot by bouncing somebody back
+        /// onto the source planet - so it works on a FULL port, but only while that planet has room to
+        /// take them, and a full port plus a full source planet moves nobody at all. Asking the
+        /// arithmetic rather than a hand-written "is there a free slot" is what keeps the word "drop
+        /// target" and the outcome from ever disagreeing.
+        /// </summary>
+        private static bool PortTakes(SpaceportSidePanel panel, CarryItem held, bool swapping)
         {
             try
             {
-                IPopulationsManagementService populations =
-                    Services.GetService<IPopulationsManagementService>();
+                Population population = held == null ? null : held.Cargo as Population;
+                Spaceport port = panel == null ? null : panel.Spaceport;
+                ColonizedPlanet source =
+                    population == null ? null : PopulationMoves.PlanetOf(population);
                 if (
-                    population.Count <= 0
-                    || !port.CanMovePopulation
+                    port == null
+                    || !panel.Shown
                     || port.Empire != Gui.PlayerEmpire
-                    || populations == null
-                    || !populations.CanMovePopulation(population.Affinity)
+                    || source == null
                 )
                 {
-                    return null;
+                    return false;
                 }
 
-                return new CarryItem(population, PopulationName(population), PopulationKind);
+                return PopulationMoves.IntoPort(port, swapping ? source : null, held.Quantity) > 0;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Put the carried unit into the spaceport, the way the drag does it: the drag info is filled
+        /// as the game's own drag start fills it and the SOURCE's client -
+        /// <c>PlanetLabelsWindow_SystemManagement</c>, since the unit is coming off a planet - posts
+        /// the order, which is what keeps the sound and the exact orders the game builds.
+        ///
+        /// A drop onto an OCCUPIED slot names that slot's affinity as the one being replaced, and the
+        /// client then posts the game's own two orders: one of the replaced people back onto the source
+        /// planet, then the carried people in (<c>ApplyDrop</c> :38-44).
+        ///
+        /// What is SAID is what really moved. The port clamps rather than refusing
+        /// (<c>Spaceport.TransferPopulation</c> :191), so a carry of three into one free slot moves one
+        /// and says one.
+        /// </summary>
+        private static DropResult DropIntoSpaceport(
+            SpaceportSidePanel panel,
+            CarryItem item,
+            StaticString replaced
+        )
+        {
+            Population population = item == null ? null : item.Cargo as Population;
+            Spaceport port = panel == null ? null : panel.Spaceport;
+            ColonizedPlanet source =
+                population == null ? null : PopulationMoves.PlanetOf(population);
+            if (population == null || port == null || source == null || !panel.Shown)
+            {
+                return DropResult.Refused(null);
+            }
+
+            try
+            {
+                bool swapping = !StaticString.IsNullOrEmpty(replaced);
+                int moved = PopulationMoves.IntoPort(
+                    port,
+                    swapping ? source : null,
+                    item.Quantity
+                );
+                if (moved <= 0)
+                {
+                    return DropResult.Refused(null);
+                }
+
+                IDragDropClient client =
+                    Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemManagement>(false);
+                if (client == null)
+                {
+                    return DropResult.Refused(null);
+                }
+
+                try
+                {
+                    PopulationMoves.Fill(source, population, item.Quantity, replaced, true);
+                    client.ApplyDrop(panel);
+                }
+                finally
+                {
+                    PopulationMoves.Clear();
+                }
+
+                return DropResult.Done(
+                    ModStrings.Format(
+                        ModStrings.SystemPopulationMoved,
+                        PopulationMoves.Name(population, moved),
+                        ModStrings.Get(ModStrings.SystemSpaceportPanel)
+                    )
+                );
             }
             catch (Exception e)
             {
-                Log.Warn("system: picking a unit out of the spaceport threw: " + e);
-                return null;
+                Log.Warn("system: moving a population unit into the spaceport threw: " + e);
+                return DropResult.Refused(null);
             }
         }
 
@@ -1975,14 +2856,22 @@ namespace ES2Access.Screens
         /// the spaceport panel (<c>OrderTransferSpaceportPopulation</c>) - the same two clients the
         /// game's own two drags use, rather than one order written twice here.
         ///
+        /// <paramref name="replaced"/> is the SWAP: empty for the card's own plain add, and the
+        /// affinity standing in a slot for a drop onto that slot. A planet-to-planet order carries it
+        /// as its <c>PopulationToRemoveFirst</c>; a drop out of the SPACEPORT ignores it, because the
+        /// spaceport's own client ignores it (<c>SpaceportSidePanel.ApplyDrop</c> :70-80 posts one
+        /// order and never reads the field), and mirroring what the mouse does there means mirroring
+        /// that too.
+        ///
         /// The drag info is cleared again whatever happens: it is a static the game's own refresh
         /// reads every frame to draw a unit as already gone, and a stale one would empty a marker the
         /// player is still looking at.
         /// </summary>
-        private static DropResult DropPopulation(PlanetLabel_SystemManagement label, CarryItem item)
+        private static DropResult DropPopulation(Ring ring, CarryItem item, StaticString replaced)
         {
+            PlanetLabel_SystemManagement label = ring.Card;
             Population population = item == null ? null : item.Cargo as Population;
-            ColonizedPlanet destination = Settled(label);
+            ColonizedPlanet destination = ring.Destination;
             ColonizedPlanet source = population == null ? null : SourceOf(destination, population);
             SpaceportSidePanel port =
                 population == null || source != null ? null : SpaceportSource(population);
@@ -1993,29 +2882,39 @@ namespace ES2Access.Screens
 
             try
             {
+                // Out of the spaceport the port clamps against the PLANET's room and never refuses
+                // (Spaceport.TransferPopulation :191); planet to planet the whole carry moves, because
+                // the game swaps the surplus back rather than dropping it
+                // (DepartmentOfTheInterior.TransferPopulationFromPlanetToPlanet).
+                int moved = source != null
+                    ? item.Quantity
+                    : PopulationMoves.OntoPlanet(destination, item.Quantity);
+                if (moved <= 0)
+                {
+                    return DropResult.Refused(null);
+                }
+
                 IDragDropClient client = source != null
                     ? (IDragDropClient)
                         Gui.GuiService.GetWindow<PlanetLabelsWindow_SystemManagement>(false)
                     : port;
-                PopulationEnumerator.PopulationDragInfo drag = PopulationEnumerator.DragInfo;
-                drag.DragInProgress = true;
-                if (source != null)
+                if (client == null)
                 {
-                    drag.SourcePopulationOwner = source;
-                    drag.GuiPopulation = Wrap(source.Empire, population);
-                }
-                else
-                {
-                    drag.SourcePopulationOwner = port.Spaceport;
-                    drag.GuiPopulation = Wrap(port.Spaceport.Empire, population);
+                    return DropResult.Refused(null);
                 }
 
-                drag.Quantity = 1;
-                drag.TransitingPopulation = new TransitingPopulation(population.Affinity, 1);
-                drag.ReplacedPopulationAffinity = StaticString.Empty;
                 try
                 {
-                    if (client == null || !label.PlanetPopulationEnumeratorFocused.CanAcceptPopulationDrop())
+                    PopulationMoves.Fill(
+                        source != null
+                            ? (ICappedPopulationOwner<Population>)source
+                            : port.Spaceport,
+                        population,
+                        item.Quantity,
+                        replaced,
+                        true
+                    );
+                    if (!ring.Target.CanAcceptPopulationDrop())
                     {
                         return DropResult.Refused(null);
                     }
@@ -2024,18 +2923,13 @@ namespace ES2Access.Screens
                 }
                 finally
                 {
-                    drag.DragInProgress = false;
-                    drag.SourcePopulationOwner = null;
-                    drag.GuiPopulation = null;
-                    drag.Quantity = 0;
-                    drag.TransitingPopulation = null;
-                    drag.ReplacedPopulationAffinity = StaticString.Empty;
+                    PopulationMoves.Clear();
                 }
 
                 return DropResult.Done(
                     ModStrings.Format(
                         ModStrings.SystemPopulationMoved,
-                        item.Name,
+                        PopulationMoves.Name(population, moved),
                         AgeText.Clean(destination.LocalizedName)
                     )
                 );
@@ -2047,9 +2941,17 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Which planet of this system the carried unit came off. Found rather than
-        /// remembered: what is carried is the game's own <c>Population</c>, and the planet holding it
-        /// is the one whose own table it is in.</summary>
+        /// <summary>
+        /// Which planet the carried unit came off. Found rather than remembered: what is carried is
+        /// the game's own <c>Population</c>, and the planet holding it is the one whose own table it
+        /// is in.
+        ///
+        /// The destination's own system is searched first, which is the whole answer for the ordinary
+        /// case and is what keeps a unit dropped back on the planet it came from a refusal rather than
+        /// an order from a planet to itself. The empire-wide fall-back is for the SANCTUARY ring: a
+        /// ghost colony belongs to the ghost's system and not to the one on screen, so a unit carried
+        /// off it is in neither of the searched system's tables.
+        /// </summary>
         private static ColonizedPlanet SourceOf(ColonizedPlanet destination, Population population)
         {
             try
@@ -2079,24 +2981,13 @@ namespace ES2Access.Screens
                     }
                 }
 
-                return null;
+                ColonizedPlanet elsewhere = PopulationMoves.PlanetOf(population);
+                return ReferenceEquals(elsewhere, destination) ? null : elsewhere;
             }
             catch (Exception)
             {
                 return null;
             }
-        }
-
-        /// <summary>The game's own wrapper for a population, built the way its own enumerator builds
-        /// one - which is what <c>ApplyDrop</c> reads the affinity out of.</summary>
-        private static GuiPopulation Wrap(Empire owner, Population population)
-        {
-            DepartmentOfTheInterior interior = owner.GetAgency<DepartmentOfTheInterior>();
-            PopulationEmpire empire =
-                interior == null
-                    ? null
-                    : interior.GetPopulationByAffinity(population.Affinity) as PopulationEmpire;
-            return new GuiPopulation(population, empire, owner);
         }
 
         private static AgeTransform StatusWidget(PlanetLabel_SystemManagement label)
@@ -2149,9 +3040,9 @@ namespace ES2Access.Screens
         /// representative panels, an outpost and a ghost get their own sets. Declaring what is drawn
         /// rather than what a colony has is what makes the other two work without being modelled.
         ///
-        /// The ghost pair is the one set no save here can reach - the state needs the Umbral Choir, and
-        /// the Penumbra content is not installed - so it was measured by lending the two panels a real
-        /// colony and showing them (2026-08-25). Every widget the game drew was declared: the growth
+        /// The ghost pair is the one set no save here can reach - the state needs a player empire playing
+        /// the Umbral Choir, which no save in this repo does - so it was measured by lending the two
+        /// panels a real colony and showing them (2026-08-25). Every widget the game drew was declared: the growth
         /// gauge, the affinity of the next population, each population count with its parties, the
         /// panel's own explanation, the link status, and both destination buttons with their refusal
         /// reasons in the buffer. The two boxes the game hides while the link is unset
@@ -2162,34 +3053,52 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildSidePanels(GraphBuilder builder)
         {
+            // The merged stop's own name is a pushed level, so it has to be popped before anything
+            // that is not in that stop is declared - the bottom panels are declared after this and
+            // read "System information, Hangar, ..." while it was left open. Tracked here and closed
+            // on every exit path, including the catch, which is what the push contract asks for.
+            bool merged = false;
             try
             {
                 SidePanels.Drawn(_panels);
                 for (int i = 0; i < _panels.Count; i++)
                 {
                     SidePanel panel = _panels[i];
-                    builder.BeginStop("system:side/" + panel.GetType().Name);
-                    builder.PushContext(PanelName(panel));
-                    ColonyInfoSidePanel colony = panel as ColonyInfoSidePanel;
-                    RepresentativesStarSystemSidePanel representatives =
-                        panel as RepresentativesStarSystemSidePanel;
-                    if (colony != null)
+                    // The spaceport is a WORK surface and keeps a stop of its own; every other panel
+                    // the game is drawing is a region of the merged one. Asked of the panel rather
+                    // than of a list, so an outpost's or a ghost system's own set merges without
+                    // being modelled.
+                    if (panel is SpaceportSidePanel)
                     {
-                        BuildColonyInfo(builder, colony);
-                    }
-                    else if (representatives != null)
-                    {
-                        BuildRepresentatives(
-                            builder,
-                            representatives,
-                            "system:side/" + i + "/"
-                        );
-                    }
-                    else
-                    {
-                        BuildReadouts(builder, panel, "system:side/" + i + "/");
+                        if (merged)
+                        {
+                            merged = false;
+                            builder.PopContext();
+                        }
+
+                        builder.BeginStop("system:side/" + panel.GetType().Name);
+                        builder.PushContext(PanelName(panel));
+                        BuildPanel(builder, panel, i);
+                        builder.PopContext();
+                        continue;
                     }
 
+                    if (!merged)
+                    {
+                        merged = true;
+                        // Keyed by where the run STARTS, so the ordinary page - where every merged
+                        // panel precedes the port - always answers "system:side" and the stop's
+                        // remembered position survives a rebuild. A run beginning after the port
+                        // would key itself apart rather than collide with it.
+                        builder.BeginStop(i == 0 ? SidePanelsStop : SidePanelsStop + "/" + i);
+                        builder.PushContext(ModStrings.Get(ModStrings.SystemSidePanels));
+                    }
+
+                    // The region key is the stop key this panel used to have, so a walk diff reads as
+                    // "stop became region" with nothing else moved.
+                    builder.SetRegion("system:side/" + panel.GetType().Name);
+                    builder.PushContext(PanelName(panel));
+                    BuildPanel(builder, panel, i);
                     builder.PopContext();
                 }
             }
@@ -2197,6 +3106,46 @@ namespace ES2Access.Screens
             {
                 Log.Warn("system: reading the side panels threw: " + e);
             }
+            finally
+            {
+                if (merged)
+                {
+                    builder.PopContext();
+                }
+            }
+        }
+
+        /// <summary>One side panel's contents, under whatever stop or region the caller has opened for
+        /// it. Which reader a panel gets is the panel's own type: three of them are hand-modelled and
+        /// everything else goes through the shared readout walk.</summary>
+        private void BuildPanel(GraphBuilder builder, SidePanel panel, int index)
+        {
+            // The key prefix is the panel's INDEX among the drawn panels, which is what it was before
+            // the merge - so every node keeps the id it had and a remembered cursor still finds it.
+            string keyPrefix = "system:side/" + index + "/";
+            ColonyInfoSidePanel colony = panel as ColonyInfoSidePanel;
+            if (colony != null)
+            {
+                BuildColonyInfo(builder, colony);
+                return;
+            }
+
+            SpaceportSidePanel spaceport = panel as SpaceportSidePanel;
+            if (spaceport != null)
+            {
+                BuildSpaceport(builder, spaceport, keyPrefix);
+                return;
+            }
+
+            RepresentativesStarSystemSidePanel representatives =
+                panel as RepresentativesStarSystemSidePanel;
+            if (representatives != null)
+            {
+                BuildRepresentatives(builder, representatives, keyPrefix);
+                return;
+            }
+
+            BuildReadouts(builder, panel, keyPrefix);
         }
 
         /// <summary>What a side panel is called. The game writes no title on the ones a system draws -
@@ -2218,6 +3167,14 @@ namespace ES2Access.Screens
             if (panel is RepresentativesStarSystemSidePanel)
             {
                 return ModStrings.Get(ModStrings.SystemRepresentativesPanel);
+            }
+
+            // The spaceport panel is another of the unlabelled boxes: without a name it fell through
+            // to its header icon's sentence, so the stop was called "This panel allows you to send
+            // population to a colonized planet." The word is the game's own, off the panel's title.
+            if (panel is SpaceportSidePanel)
+            {
+                return ModStrings.Get(ModStrings.SystemSpaceportPanel);
             }
 
             if (panel is OutpostInfoSidePanel)
@@ -2247,6 +3204,19 @@ namespace ES2Access.Screens
                 return ModStrings.Get(ModStrings.SystemSanctuaryPanel);
             }
 
+            // The third of the sanctuary boxes, and the same kind of unlabelled box again: without a
+            // name it fell through to its header sentence, so the stop was called "This panel shows
+            // where the Ships and Populations created by this System will spawn" (measured by lending
+            // it the fixture's own colony, 2026-08-29). "Sanctuary Link" is the game's own word for
+            // what the panel sets - both its rows are headed with it
+            // (<c>%ShipsSpawnPointTitle</c> "[ship] Sanctuary Link:",
+            // <c>%PopulationsSpawnPointTitle</c>) - so the name stays in that vocabulary, as the two
+            // ghost panels' do.
+            if (panel is ShipsSpawnPointSidePanel)
+            {
+                return ModStrings.Get(ModStrings.SystemSanctuaryLinksPanel);
+            }
+
             return SidePanels.Name(panel);
         }
 
@@ -2269,6 +3239,10 @@ namespace ES2Access.Screens
         {
             _cells.Clear();
 
+            // The banner and the little level badge in its corner are TWO of the game's buttons and go
+            // to two different screens (<see cref="BannerButton"/>), so they are two rows - the badge
+            // named with the game's own word for what it is, since the figure it draws has already been
+            // said by the banner above it.
             AddReadout(
                 _cells,
                 panel.SystemBanner,
@@ -2277,7 +3251,19 @@ namespace ES2Access.Screens
                     ModStrings.Format(
                         ModStrings.SystemLevel,
                         AgeText.Label(panel.LevelLabel)
-                    )
+                    ),
+                null,
+                null,
+                BannerButton(panel, "OnSystemBannerClickCb")
+            );
+            AddReadout(
+                _cells,
+                panel.LevelGroup,
+                "system:colony/level",
+                CardActions.GameText(SystemLevelTitle),
+                null,
+                null,
+                BannerButton(panel, "OnSystemLevelClickSb")
             );
 
             AddMothership(_cells, panel);
@@ -2836,6 +3822,38 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// One of the two buttons the panel hides inside its banner picture: the banner itself opens
+        /// the empire summary at its systems list (<c>OnSystemBannerClickCb</c> :915-928), and the
+        /// level badge in the banner's corner opens the economy screen at its own tab
+        /// (<c>OnSystemLevelClickSb</c> :930-943). Neither carries a word or a tooltip of its own -
+        /// the banner's tooltip belongs to the LEVEL, which is what the row already says - so they are
+        /// found by the handler the prefab wired, as the improvements button beside them is.
+        /// </summary>
+        private static AgeTransform BannerButton(ColonyInfoSidePanel panel, string handler)
+        {
+            AgeTransform banner = panel.SystemBanner;
+            if (banner == null)
+            {
+                return null;
+            }
+
+            AgeControlButton[] buttons = banner.GetComponentsInChildren<AgeControlButton>(true);
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                if (buttons[i] != null && buttons[i].OnActivateMethod == handler)
+                {
+                    return buttons[i].AgeTransform;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The game's own word for what the badge in the banner's corner is - it draws the
+        /// figure and names it nowhere on the panel.</summary>
+        private const string SystemLevelTitle = "%SystemLevelTitle";
+
         private static AgeTransform ImprovementsButton(ColonyInfoSidePanel panel)
         {
             AgeTransform group = panel.SystemUpkeepGroup;
@@ -2917,8 +3935,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            EmitBlock(builder, panel, keyPrefix, "representatives", 0, split);
-            EmitBlock(builder, panel, keyPrefix, "sensitivity", split, _blocks.Count);
+            EmitBlock(builder, panel, keyPrefix, 0, split);
+            EmitBlock(builder, panel, keyPrefix, split, _blocks.Count);
         }
 
         private static readonly Comparison<AgeTransform> ByDrawnY = (left, right) =>
@@ -2926,12 +3944,17 @@ namespace ES2Access.Screens
 
         /// <summary>One captioned block of a panel read in pieces: its own lines, one per row, under the
         /// caption the game drew over them - which is the topmost line the block produced, and is a row
-        /// of the block as well as its name.</summary>
+        /// of the block as well as its name.
+        ///
+        /// The blocks are CONTEXTS and no longer regions of their own (owner design 2026-08-29): the
+        /// side panels are one stop now and a region there is one PANEL, so a panel splitting itself
+        /// into two would put five region-jumps where the design asks for four. The captions still name
+        /// the blocks and are still rows, so nothing the player can hear was lost - only the region
+        /// chord's stop inside this one panel.</summary>
         private void EmitBlock(
             GraphBuilder builder,
             SidePanel panel,
             string keyPrefix,
-            string name,
             int from,
             int to
         )
@@ -2948,7 +3971,6 @@ namespace ES2Access.Screens
             }
 
             string caption = Caption(_cells);
-            builder.SetRegion(keyPrefix + name);
             if (caption != null)
             {
                 builder.PushContext(caption);
@@ -3005,7 +4027,7 @@ namespace ES2Access.Screens
                 return true;
             }
 
-            if (SpaceportPopulations(cells, widget, keyPrefix, panel as SpaceportSidePanel))
+            if (SpaceportPopulations(widget, panel as SpaceportSidePanel))
             {
                 return true;
             }
@@ -3788,7 +4810,8 @@ namespace ES2Access.Screens
             string key,
             Func<string> label,
             Func<string> value = null,
-            AgeTooltip tooltip = null
+            AgeTooltip tooltip = null,
+            AgeTransform click = null
         )
         {
             // Banding input, as at the buttons: Add below is Cells.Add, and the panel passes labels
@@ -3804,6 +4827,25 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(label) },
                 Sections = GraphNodes.Sections(null, tip),
             };
+            // A line the game also made CLICKABLE is a button, and says so: the row is still read the
+            // same way and Enter is the game's own press. Nothing is spoken for the press itself -
+            // every one of these opens a screen, and the screen announces itself.
+            if (click != null)
+            {
+                AgeTransform pressed = click;
+                vtable.ControlType = ControlTypes.Button;
+                vtable.Announcements.Add(
+                    GraphNodes.DisabledPart(() => AgeWidgets.Operable(pressed))
+                );
+                vtable.OnActivate = () =>
+                {
+                    if (AgeWidgets.Operable(pressed))
+                    {
+                        AgeWidgets.Press(pressed);
+                    }
+                };
+            }
+
             if (value != null)
             {
                 vtable.Announcements.Add(GraphNodes.ValuePart(value));

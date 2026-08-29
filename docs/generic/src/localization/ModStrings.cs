@@ -96,18 +96,21 @@ namespace ES2Access.Core.Speech
         // or putting the thing back where it came from - is one phrase and names nothing, because
         // nothing happened to name. A refusal normally speaks the GAME's reason instead; the one here
         // is the fallback for a check that refuses wordlessly.
-        public const string CarryCarrying = "carry.carrying";
-        public const string CarryDropped = "carry.dropped";
-        public const string CarryDropRefused = "carry.drop-refused";
-        public const string CarryCancelled = "carry.cancelled";
+        public const string DragStarted = "drag.started";
+        public const string DragStartedPlain = "drag.started-plain";
+        public const string DragDropped = "drag.dropped";
+        public const string DragDropRefused = "drag.drop-refused";
+        public const string DragCancelled = "drag.cancelled";
 
         /// <summary>What a control says while it would take the thing the player is holding.</summary>
-        public const string CarryDropTarget = "carry.drop-target";
+        public const string DragDropTarget = "drag.drop-target";
 
         /// <summary>What a control the player could pick something up from says while nothing is being
         /// carried. Not said while something IS held: the useful fact
         /// about a control then is whether the thing can go there.</summary>
-        public const string CarryDraggable = "carry.draggable";
+        public const string DragDraggable = "drag.draggable";
+        public const string DragHint = "drag.drag-hint";
+        public const string DragDropHint = "drag.drop-hint";
 
         // ---- one screen's worth, as the example ----
         // Nothing else in this folder speaks these. They are here to show the shape a screen's block
@@ -178,12 +181,15 @@ namespace ES2Access.Core.Speech
             { ScreenMessageBox, "Dialog" },
             { ScreenLoading, "Loading" },
             { LoadingProgress, "{0} percent" },
-            { CarryCarrying, "Dragging {0}" },
-            { CarryDropped, "Dropped {0}" },
-            { CarryDropRefused, "{0} cannot go there" },
-            { CarryCancelled, "Cancelled drag" },
-            { CarryDropTarget, "drop target" },
-            { CarryDraggable, "draggable" },
+            { DragStarted, "Dragging {0}. {1} to drop, {2} to cancel." },
+            { DragStartedPlain, "Dragging {0}" },
+            { DragDropped, "Dropped {0}" },
+            { DragDropRefused, "{0} cannot go there" },
+            { DragCancelled, "Cancelled drag" },
+            { DragDropTarget, "drop target" },
+            { DragDraggable, "draggable" },
+            { DragHint, "Press {0} to pick up {1}." },
+            { DragDropHint, "Press {0} to drop {1}." },
             { ScreenGalaxy, "Galaxy" },
             { GalaxyTurn, "Turn {0}" },
             { GalaxyEndTurn, "End turn" },

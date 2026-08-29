@@ -17,7 +17,7 @@ ES2Access/Screens/DropListScreen.cs | 1 | : Nodes.Synthetic(ControlId.Structural
 
 ES2Access/Screens/EconomyScreen.cs | 2 | builder.AddItem(Nodes.Synthetic(
 
-ES2Access/Screens/EmpireScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(
+ES2Access/Screens/EmpireScreen.cs | 1 | Nodes.Synthetic(
 ES2Access/Screens/EmpireScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/EmpireScreen.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 

@@ -99,7 +99,16 @@ other activation — the game's ALT-click (queue at the head) — **Backslash** 
 action bound as a second chord, never a wired variant, because the game runs one handler for both
 clicks and reads the physical modifier inside it (on the map: a free-movement-only route,
 `FleetOrders.RequestedFlags`), **Ctrl+Alt+Enter** the control's DOUBLE click (`OnDoubleClick`),
-**Space** pick up / swap / put back what is being dragged (`OnPickUp`),
+**Space** pick up / swap what is being dragged (`OnPickUp`) — **never a put-back**: pressed again on
+the control the thing came from it picks it up AGAIN, because a source can hand over different
+amounts of the same thing (a population marker carries itself and every marker of the same people
+after it) and a cancel there would throw the drag away instead of re-sizing it; the back key is the
+only cancel (owner ruling 2026-08-29). The pick-up says what is now held and BOTH ways out
+("Dragging Imperials x 3. Enter to drop, Escape to cancel."), with the chords rendered from the live
+action table like any hint, and **every draggable control ends its buffer with a derived hint** —
+"⟨carry⟩ to drag ⟨thing⟩." while nothing is held, "⟨activate⟩ to drop ⟨thing⟩." on a
+target that would take what is (`CarryState.HintLines`, composed by `NodeBuffer` after the
+hand-picked hints; no screen wires either) —
 **Enter** drop it where it will be taken (`DropKind` + `OnDrop`), **Ctrl+Enter** one item into or out
 of the game's own selection (`OnSelectToggle`), **Shift+Enter** extend that selection to here
 (`OnSelectRange`), **Delete** empty the control the cursor is on (`ui.clear` → `NodeVtable.OnClear`,
@@ -546,6 +555,21 @@ screen that draws it (`docs/test-recipes/`).
 **Which key crosses a multi-region stop** (measured on the empire HUD band, 2026-08-24): Up/Down
 step between the stop's REGIONS (rows) and clamp at the last one; Right/Left walk within the row.
 Alt+Up/Down jump regions by name where the stop declares them.
+
+**A PANEL SET THE PLAYER READS IS ONE STOP, ONE REGION PER PANEL** (owner design 2026-08-29,
+`SystemManagementScreen.BuildSidePanels`). The star-system page's left edge draws four unlabelled
+information boxes — colony info, population, representatives, governor, and whatever an outpost or
+a ghost system draws instead — and they were four Tab stops, so Tab crossed the same edge four
+times to reach the panels below. They are now ONE stop ("System information", the mod's own word:
+naming it after any panel would say that panel's name twice, since it is also the first region),
+with each panel a region named as before, so Alt+Up/Down steps System → Population →
+Representatives → Governor and Up/Down still walks every row in the same order. The SPACEPORT keeps
+its own stop: it is a place to WORK — a ring to carry population out of — not a thing to read. The
+split is asked of the panel, not of a list, so an outpost's or a ghost's set merges without being
+modelled. **One consequence, accepted**: a panel that split ITSELF into regions loses that (the
+representatives panel's two captioned blocks), because a region is now one panel; the captions
+still name the blocks and are still rows, so only the region chord's stop inside that one panel
+went. Regions are flat within a stop — a tier that wants both needs the two-tier model, not this.
 
 **A block's caption names the block, never a row of its own — unless the caption carries a
 tooltip** (owner ruling 2026-08-22). The whole rule, and how to find the widget to ask, is the

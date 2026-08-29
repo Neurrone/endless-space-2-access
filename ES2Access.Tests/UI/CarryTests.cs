@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
@@ -123,8 +124,14 @@ namespace ES2Access.Tests.UI
             Assert.Same(hunter, carry.Held.Cargo);
         }
 
+        /// <summary>There is NO put-back (owner ruling 2026-08-29): the key pressed again on the
+        /// control the thing came from picks it up again rather than ending the carry. It has to be, as
+        /// soon as one source can hand over different AMOUNTS of the same thing - a population marker
+        /// carries itself and every marker after it - because pressing the key on a slot is then how a
+        /// player asks for that slot's amount, and a cancel there would throw the carry away instead.
+        /// The back key is the only cancel.</summary>
         [Fact]
-        public void TheSourceItCameFromPutsItBackDown()
+        public void TheSourceItCameFromHandsItOverAgainInsteadOfPuttingItBack()
         {
             CarryState carry = new CarryState();
             object explorer = new object();
@@ -133,8 +140,211 @@ namespace ES2Access.Tests.UI
 
             CarryOutcome outcome = CarryActions.Press(row, carry, "galaxy");
 
-            Assert.Equal("Cancelled drag", outcome.Speech);
-            Assert.False(carry.IsCarrying);
+            Assert.True(outcome.Handled);
+            Assert.Equal("Dragging Explorer", outcome.Speech);
+            Assert.True(carry.IsCarrying);
+            Assert.Same(explorer, carry.Held.Cargo);
+        }
+
+        /// <summary>A re-pick on the SAME cargo can still change how much of it is held: that is the
+        /// whole reason the put-back had to go.</summary>
+        [Fact]
+        public void ARePickOnTheSameCargoTakesTheNewAmount()
+        {
+            CarryState carry = new CarryState();
+            object imperials = new object();
+            NodeVtable first = Vt("First");
+            first.OnPickUp = () => new CarryItem(imperials, "Imperials x 3", Ship, 3);
+            NodeVtable last = Vt("Last");
+            last.OnPickUp = () => new CarryItem(imperials, "Imperials", Ship);
+
+            CarryActions.Press(first, carry, "system");
+            Assert.Equal(3, carry.Held.Quantity);
+
+            CarryActions.Press(last, carry, "system");
+            Assert.Equal(1, carry.Held.Quantity);
+            Assert.Same(imperials, carry.Held.Cargo);
+        }
+
+        /// <summary>What one press picked up is what the drop is told about, captured at pick-up like
+        /// the name and for the same reason.</summary>
+        [Fact]
+        public void TheQuantityTravelsFromThePickUpToTheDrop()
+        {
+            CarryState carry = new CarryState();
+            NodeVtable source = Vt("Slot");
+            source.OnPickUp = () => new CarryItem(new object(), "Imperials x 3", Ship, 3);
+            int dropped = 0;
+            NodeVtable target = Vt("Port");
+            target.DropKind = Ship;
+            target.OnDrop = item =>
+            {
+                dropped = item.Quantity;
+                return DropResult.Done();
+            };
+
+            CarryActions.Press(source, carry, "system");
+            CarryActions.Activate(target, carry);
+
+            Assert.Equal(3, dropped);
+        }
+
+        /// <summary>The pick-up announcement teaches the way out - both ways - with the chords spelled
+        /// by the injected renderer rather than written into the sentence, so re-binding either gesture
+        /// re-words it.</summary>
+        [Fact]
+        public void ThePickUpAnnouncementNamesBothWaysOutOfTheCarry()
+        {
+            CarryState carry = new CarryState();
+            try
+            {
+                NodeHints.Chord = (action, index) =>
+                    action == CarryState.DropAction ? "Enter" : "Backspace";
+
+                CarryOutcome outcome = CarryActions.Press(
+                    Source(new object(), "Explorer"),
+                    carry,
+                    "galaxy"
+                );
+
+                Assert.Equal(
+                    "Dragging Explorer. Enter to drop, Backspace to cancel.",
+                    outcome.Speech
+                );
+            }
+            finally
+            {
+                NodeHints.Reset();
+            }
+        }
+
+        /// <summary>The two DERIVED hints: what this control would hand over while nothing is held, and
+        /// where what IS held can go. Never both, and neither without a renderer.</summary>
+        [Fact]
+        public void TheDerivedHintsFollowWhatIsHeld()
+        {
+            CarryState carry = new CarryState();
+            NodeVtable source = Vt("Slot");
+            source.OnPickUp = () => new CarryItem(new object(), "Imperials x 3", Ship, 3);
+            NodeVtable target = Target(DropResult.Done());
+            try
+            {
+                NodeHints.Chord = (action, index) =>
+                    action == CarryState.DropAction ? "Enter" : "Space";
+
+                List<string> lines = new List<string>();
+                carry.HintLines(lines, source);
+                Assert.Equal(new[] { "Space to drag Imperials x 3." }, lines);
+
+                lines.Clear();
+                carry.HintLines(lines, target);
+                Assert.Empty(lines);
+
+                CarryActions.Press(source, carry, "system");
+
+                lines.Clear();
+                carry.HintLines(lines, source);
+                Assert.Empty(lines);
+
+                lines.Clear();
+                carry.HintLines(lines, target);
+                Assert.Equal(new[] { "Enter to drop Imperials x 3." }, lines);
+            }
+            finally
+            {
+                NodeHints.Reset();
+            }
+        }
+
+        /// <summary>A target whose own test says no offers no drop hint either - the hint is gated on
+        /// the same <see cref="CarryState.Takes"/> the "drop target" word is, so it inherits every
+        /// screen's <see cref="NodeVtable.DropAccepts"/> for free.</summary>
+        [Fact]
+        public void ATargetThatRefusesThisCargoOffersNoDropHint()
+        {
+            CarryState carry = new CarryState();
+            NodeVtable target = Target(DropResult.Done());
+            target.DropAccepts = held => false;
+            try
+            {
+                NodeHints.Chord = (action, index) => "Enter";
+                CarryActions.Press(Source(new object(), "Explorer"), carry, "galaxy");
+
+                List<string> lines = new List<string>();
+                carry.HintLines(lines, target);
+
+                Assert.Empty(lines);
+            }
+            finally
+            {
+                NodeHints.Reset();
+            }
+        }
+
+        /// <summary>
+        /// Whether a drag says a COUNT is a fact about the cargo, decided by the source when it
+        /// composes the name (owner ruling 2026-08-29). Population is measured in units, so it states
+        /// the count every time, one included; a module, a ship, a queue line and a tactic card are
+        /// single things and must never read "x 1". Both shapes go through the very same phrases,
+        /// which is what this holds: the phrases interpolate the name and add nothing of their own.
+        /// </summary>
+        [Fact]
+        public void OnlyCargoMeasuredInUnitsStatesACountInTheDragPhrases()
+        {
+            try
+            {
+                NodeHints.Chord = (action, index) =>
+                    action == CarryState.DropAction
+                        ? "Enter"
+                        : (action == CarryState.CancelAction ? "Escape" : "Space");
+
+                // What PopulationMoves.Name composes for a single unit: the count, always.
+                CarryState units = new CarryState();
+                NodeVtable people = Vt("Slot");
+                people.OnPickUp = () =>
+                    new CarryItem(new object(), "Imperials x 1", Ship, 1);
+
+                Assert.Equal(
+                    "Dragging Imperials x 1. Enter to drop, Escape to cancel.",
+                    CarryActions.Press(people, units, "system").Speech
+                );
+
+                List<string> lines = new List<string>();
+                new CarryState().HintLines(lines, people);
+                Assert.Equal(new[] { "Space to drag Imperials x 1." }, lines);
+
+                // And a single thing keeps its plain name through the identical phrases.
+                CarryState single = new CarryState();
+                NodeVtable module = Source(new object(), "Basic Warp Drive");
+
+                Assert.Equal(
+                    "Dragging Basic Warp Drive. Enter to drop, Escape to cancel.",
+                    CarryActions.Press(module, single, "shipdesign").Speech
+                );
+
+                lines.Clear();
+                new CarryState().HintLines(lines, module);
+                Assert.Equal(new[] { "Space to drag Basic Warp Drive." }, lines);
+            }
+            finally
+            {
+                NodeHints.Reset();
+            }
+        }
+
+        /// <summary>With no renderer at all neither hint exists, and the pick-up falls back to naming
+        /// what is held: a sentence promising a chord nobody can spell says nothing.</summary>
+        [Fact]
+        public void WithNoChordRendererThereAreNoHintsAndNoPromisedKeys()
+        {
+            CarryState carry = new CarryState();
+            NodeVtable source = Source(new object(), "Explorer");
+
+            List<string> lines = new List<string>();
+            carry.HintLines(lines, source);
+            Assert.Empty(lines);
+
+            Assert.Equal("Dragging Explorer", CarryActions.Press(source, carry, "galaxy").Speech);
         }
 
         [Fact]
@@ -272,7 +482,7 @@ namespace ES2Access.Tests.UI
                 Target(
                     DropResult.Done(
                         ModStrings.Format(
-                            ModStrings.CarryMovedToPosition,
+                            ModStrings.DragMovedToPosition,
                             "Applied Casimir Effect",
                             2
                         )
@@ -418,13 +628,16 @@ namespace ES2Access.Tests.UI
         public void EveryCarryPhraseIsAShippedString()
         {
             string template;
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryCarrying, out template));
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryDropped, out template));
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryDropRefused, out template));
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryCancelled, out template));
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryMovedToPosition, out template));
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryDropTarget, out template));
-            Assert.True(ModStrings.TryGetDefault(ModStrings.CarryDraggable, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragStarted, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragStartedPlain, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragHint, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragDropHint, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragDropped, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragDropRefused, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragCancelled, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragMovedToPosition, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragDropTarget, out template));
+            Assert.True(ModStrings.TryGetDefault(ModStrings.DragDraggable, out template));
             Assert.True(ModStrings.TryGetDefault(ModStrings.NavNotSelected, out template));
         }
     }

@@ -100,6 +100,37 @@ namespace ES2Access.Tests.Speech
             );
         }
 
+        /// <summary>The DRAG's own rule (owner ruling 2026-08-29): a cargo measured in units states
+        /// its count every time, so a one-unit pick-up reads like its three-unit neighbours instead of
+        /// like a different kind of answer. Same template, so a translation says the multiplier its own
+        /// way either side of the rule.</summary>
+        [Theory]
+        [InlineData(3, "Imperials x 3")]
+        [InlineData(1, "Imperials x 1")]
+        [InlineData(0, "Imperials x 0")]
+        public void AlwaysQuantityStatesTheCountEvenAtOne(int count, string expected)
+        {
+            Assert.Equal(
+                expected,
+                new MessageBuilder().Fragment("Imperials").PushQuantityAlways(count).Build()
+            );
+        }
+
+        /// <summary>And the ordinary readout convention is untouched by it - the two live side by
+        /// side, which is the whole reason the drag needed a variant rather than a change.</summary>
+        [Fact]
+        public void TheOrdinaryQuantityStaysSilentAtOne()
+        {
+            Assert.Equal(
+                "Titanium",
+                new MessageBuilder().Fragment("Titanium").PushQuantity(1).Build()
+            );
+            Assert.Equal(
+                "Titanium x 1",
+                new MessageBuilder().Fragment("Titanium").PushQuantityAlways(1).Build()
+            );
+        }
+
         [Fact]
         public void FractionFollowsFragmentSpacingAndListBoundaries()
         {

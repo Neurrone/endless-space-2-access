@@ -557,7 +557,7 @@ namespace ES2Access.UI
                 ControlType = ControlTypes.Button,
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => AgeText.Label(it.Title)),
+                    GraphNodes.LabelPart(() => QueueLineName(it)),
                     GraphNodes.ValuePart(() => QueueLineState(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
@@ -615,7 +615,7 @@ namespace ES2Access.UI
                     return;
                 }
 
-                string name = AgeText.Label(line.Title);
+                string name = QueueLineName(line);
                 bool cancels =
                     !line.Construction.IsAlreadyInvested && !GodGalaxyCursor.IsGuiInGodMode();
                 AgeWidgets.Press(line.MainButton);
@@ -678,12 +678,46 @@ namespace ES2Access.UI
         /// page can carry lands in it.</summary>
         private const string QueueKind = "construction-queue";
 
+        /// <summary>
+        /// A queue line's name in full, which is not what the line DRAWS. The line's caption is an
+        /// auto-truncating label - the engine chops <c>TranslatedText</c> two characters at a time and
+        /// closes it with a period until it fits the column
+        /// (<c>AgePrimitiveLabel.ComputeText_AutoTruncateIfNecessary</c> :720-727,
+        /// <c>AgeUtils.TruncateString</c> :414-430) - so the drawn string is "Xeno-Industrial." and
+        /// speaking it speaks the column width. The assigned <c>Text</c> is still whole, and it is what
+        /// the game COMPOSED for this line: a colonization or curiosity line names its planet, and a
+        /// per-planet construction names planet and constructible together
+        /// (<c>ConstructionLine.Refresh</c> :137-163), none of which the constructible's own title
+        /// carries.
+        ///
+        /// A ship design is the exception, because there the game truncates before assigning: its
+        /// title is composed with the label in hand and the revision number clipped to fit
+        /// (<c>GuiShipDesign.GetFullTitle</c> :766-781 via <c>AgeUtils.TruncateStringWithSuffix</c>),
+        /// so "Big Data Shipy." is already in <c>Text</c>. Asking the same method with no label is the
+        /// game's own untruncated answer, revision and all.
+        /// </summary>
+        private static string QueueLineName(ConstructionLine line)
+        {
+            try
+            {
+                GuiShipDesign design = line.GuiConstructible as GuiShipDesign;
+                return design != null
+                    ? AgeText.Clean(design.GetFullTitle(null))
+                    : AgeText.FullLabel(line.Title);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("system panels: naming a queue line threw: " + e);
+                return AgeText.Label(line.Title);
+            }
+        }
+
         /// <summary>The construction this line stands for, picked up.</summary>
         private static CarryItem Pick(ConstructionLine line)
         {
             try
             {
-                return new CarryItem(line.Construction, AgeText.Label(line.Title), QueueKind);
+                return new CarryItem(line.Construction, QueueLineName(line), QueueKind);
             }
             catch (Exception e)
             {
@@ -720,7 +754,7 @@ namespace ES2Access.UI
                 {
                     // Dropped back where it started - the same case the game's own
                     // <c>OnDragCompleted</c> answers by cancelling the drag without posting anything.
-                    return DropResult.Done(ModStrings.Get(ModStrings.CarryCancelled));
+                    return DropResult.Done(ModStrings.Get(ModStrings.DragCancelled));
                 }
 
                 PlayerController player = Gui.GetActivePlayerController();
@@ -733,7 +767,7 @@ namespace ES2Access.UI
                     )
                 );
                 return DropResult.Done(
-                    ModStrings.Format(ModStrings.CarryMovedToPosition, held.Name, index + 1)
+                    ModStrings.Format(ModStrings.DragMovedToPosition, held.Name, index + 1)
                 );
             }
             catch (Exception e)

@@ -78,6 +78,7 @@ ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipL
 ES2Access/Screens/SystemManagementScreen.cs | 2 | GraphNodes.LabelPart(() => FirstLine(tooltip)),
 ES2Access/Screens/SystemManagementScreen.cs | 1 | private static string FirstLine(AgeTooltip tooltip)
 ES2Access/Screens/SystemManagementScreen.cs | 1 | return CardActions.FirstLine(tooltip);
+ES2Access/Screens/SystemManagementScreen.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/Screens/SystemPoliticsScreen.cs | 1 | Func<IList<string>> words = AgeWidgets.TooltipLines(TableSheet.TooltipOf(cell));
 

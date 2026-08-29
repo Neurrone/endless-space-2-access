@@ -1027,23 +1027,36 @@ namespace ES2Access.Core.Speech
         // or putting the thing back where it came from - is one phrase and names nothing, because
         // nothing happened to name. A refusal normally speaks the GAME's reason instead; the one here
         // is the fallback for a check that refuses wordlessly.
-        public const string CarryCarrying = "carry.carrying";
-        public const string CarryDropped = "carry.dropped";
-        public const string CarryDropRefused = "carry.drop-refused";
-        public const string CarryCancelled = "carry.cancelled";
+        public const string DragStarted = "drag.started";
+
+        /// <summary>The same announcement where no chord can be spelled at all (a test, boot, a host
+        /// with no keyboard): what is held, and nothing promised about keys.</summary>
+        public const string DragStartedPlain = "drag.started-plain";
+
+        public const string DragDropped = "drag.dropped";
+        public const string DragDropRefused = "drag.drop-refused";
+        public const string DragCancelled = "drag.cancelled";
 
         /// <summary>What a queue line says when the thing that was carried lands on it: which item
         /// moved, and the position number the player will hear the line read back with.</summary>
-        public const string CarryMovedToPosition = "carry.moved-to-position";
+        public const string DragMovedToPosition = "drag.moved-to-position";
 
         /// <summary>What a control says while it would take the thing the player is holding.</summary>
-        public const string CarryDropTarget = "carry.drop-target";
+        public const string DragDropTarget = "drag.drop-target";
 
         /// <summary>What a control the player could pick something up from says while nothing is being
         /// carried - one of the few things the readout says a control HAS rather than what it is. Not
         /// said while something IS held: the useful fact about a control then is whether the thing can
         /// go there.</summary>
-        public const string CarryDraggable = "carry.draggable";
+        public const string DragDraggable = "drag.draggable";
+
+        /// <summary>The two DERIVED usage hints every draggable surface gets (<c>CarryState.HintLines</c>):
+        /// what this control would hand over, named in the source's own words with its quantity, and
+        /// where what is held can be put down. <c>{0}</c> is the chord, spelled by the same renderer the
+        /// declared hints use, and <c>{1}</c> the thing.</summary>
+        public const string DragHint = "drag.drag-hint";
+
+        public const string DragDropHint = "drag.drop-hint";
 
         // Putting something in a queue and taking it out again - the system's construction queue and
         // the empire's research queue, which are the same gesture on two screens and so the same
@@ -1150,13 +1163,30 @@ namespace ES2Access.Core.Speech
         /// (<c>%StarSystemSideInfoDescription</c> is the sentence on its header icon), so the word is
         /// the mod's, and it is "System" rather than "Colony" because the box is drawn for an outpost
         /// and a ghost system too (owner ruling 2026-08-22).</summary>
+        /// <summary>The one stop the left-edge information panels share. It has to be a word of its own
+        /// rather than any panel's: naming it after the colony panel would announce "System, System,
+        /// System level 2" on every Tab into it, because that panel is also the first REGION inside it.
+        /// The game titles the group nothing at all - it draws four unlabelled boxes down an edge - so
+        /// the phrase is the mod's.</summary>
+        public const string SystemSidePanels = "system.side-panels";
+
         public const string SystemColonyPanel = "system.colony-panel";
         public const string SystemPopulationPanel = "system.population-panel";
+
+        /// <summary>What the spaceport side panel is called - the game draws the word as the panel's
+        /// own title but writes no name the stop could be read off, so it is a mod string carrying the
+        /// game's word (owner-approved 2026-08-29).</summary>
+        public const string SystemSpaceportPanel = "system.spaceport-panel";
         public const string SystemRepresentativesPanel = "system.representatives-panel";
         public const string SystemOutpostPanel = "system.outpost-panel";
         public const string SystemGovernorPanel = "system.governor-panel";
         public const string SystemSanctuaryPopulationPanel = "system.sanctuary-population-panel";
         public const string SystemSanctuaryPanel = "system.sanctuary-panel";
+
+        /// <summary>The box that says where a ghost empire's ships and people appear. The game heads
+        /// both of its rows with its own words for the thing ("Sanctuary Link:") and writes no title
+        /// for the box, so the name carries that word, as the two panels above it do.</summary>
+        public const string SystemSanctuaryLinksPanel = "system.sanctuary-links-panel";
         public const string SystemConstructiblesPanel = "system.constructibles-panel";
         public const string SystemQueuePanel = "system.queue-panel";
         public const string SystemHangarPanel = "system.hangar-panel";
@@ -2138,13 +2168,16 @@ namespace ES2Access.Core.Speech
             { NavCellEmpty, "empty" },
             { SaveStarted, "Saving the game" },
             { SaveFinished, "Save finished" },
-            { CarryCarrying, "Dragging {0}" },
-            { CarryDropped, "Dropped {0}" },
-            { CarryDropRefused, "{0} cannot go there" },
-            { CarryCancelled, "Cancelled drag" },
-            { CarryMovedToPosition, "Moved {0} to position {1}" },
-            { CarryDropTarget, "drop target" },
-            { CarryDraggable, "draggable" },
+            { DragStarted, "Dragging {0}. {1} to drop, {2} to cancel." },
+            { DragStartedPlain, "Dragging {0}" },
+            { DragDropped, "Dropped {0}" },
+            { DragDropRefused, "{0} cannot go there" },
+            { DragCancelled, "Cancelled drag" },
+            { DragMovedToPosition, "Moved {0} to position {1}" },
+            { DragDropTarget, "drop target" },
+            { DragDraggable, "draggable" },
+            { DragHint, "{0} to drag {1}." },
+            { DragDropHint, "{0} to drop {1}." },
             { QueueQueued, "Queued {0}" },
             { QueueQueuedFirst, "Queued {0} as first item" },
             { QueueCancelled, "Cancelled {0}" },
@@ -2178,13 +2211,16 @@ namespace ES2Access.Core.Speech
             { PlanetNext, "Next planet" },
             { SystemHangarEmpty, "No ships in the hangar" },
             { SystemPlanetsPanel, "Planets" },
+            { SystemSidePanels, "System information" },
             { SystemColonyPanel, "System" },
             { SystemPopulationPanel, "Population" },
+            { SystemSpaceportPanel, "Spaceport" },
             { SystemRepresentativesPanel, "Representatives" },
             { SystemOutpostPanel, "Outpost" },
             { SystemGovernorPanel, "Governor" },
             { SystemSanctuaryPopulationPanel, "Sanctuary population" },
             { SystemSanctuaryPanel, "Sanctuary" },
+            { SystemSanctuaryLinksPanel, "Sanctuary links" },
             { SystemConstructiblesPanel, "Constructibles" },
             { SystemQueuePanel, "Construction queue" },
             { SystemHangarPanel, "Hangar" },

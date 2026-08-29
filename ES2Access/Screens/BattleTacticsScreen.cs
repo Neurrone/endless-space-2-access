@@ -610,7 +610,7 @@ namespace ES2Access.Screens
                 {
                     // Back into the slot it came out of: the drag ends having moved nothing, which is
                     // what putting something down on its own row means everywhere else.
-                    return DropResult.Done(ModStrings.Get(ModStrings.CarryCancelled));
+                    return DropResult.Done(ModStrings.Get(ModStrings.DragCancelled));
                 }
 
                 if (Status(slot) == EncounterPlayDeckSlot.SlotState.Locked || slot.Client == null)
