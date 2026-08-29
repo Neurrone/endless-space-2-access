@@ -403,6 +403,19 @@ namespace ES2Access.Dev
 
                 json.WriteEndArray();
 
+                // And the replay stream's own, which is the one a battle stage checks: two owners on
+                // it after a reload is a narration saying every shot twice.
+                json.WritePropertyName("battleStreamPatch");
+                json.WriteValue(BattleStream.Installed);
+                json.WritePropertyName("battleStreamOwners");
+                json.WriteStartArray();
+                foreach (string owner in BattleStream.Owners())
+                {
+                    json.WriteValue(owner);
+                }
+
+                json.WriteEndArray();
+
                 json.WritePropertyName("visibilityPatch");
                 json.WriteValue(ForeignFleetWatch.Installed);
                 json.WritePropertyName("visibilityOwners");

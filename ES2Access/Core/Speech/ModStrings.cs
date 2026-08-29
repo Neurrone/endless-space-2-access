@@ -1492,6 +1492,34 @@ namespace ES2Access.Core.Speech
         public const string BattleYourFlotillasLost = "battle.your-flotillas-lost";
         public const string BattleEnemyFlotillaLost = "battle.enemy-flotilla-lost";
         public const string BattleEnemyFlotillasLost = "battle.enemy-flotillas-lost";
+
+        // The exchange of fire, which the game draws as tracer and explosion and writes down
+        // nowhere. Each is a whole sentence rather than a stem plus fragments, because the count
+        // and the damage kind sit inside the clause a translation has to inflect - and there is
+        // one per shape the tallies can take, so the composer chooses a form and never builds one.
+        public const string BattleFireEnergy = "battle.fire-energy";
+        public const string BattleFireEnergyMany = "battle.fire-energy-many";
+        public const string BattleFireProjectile = "battle.fire-projectile";
+        public const string BattleFireProjectileMany = "battle.fire-projectile-many";
+        public const string BattleFireMixed = "battle.fire-mixed";
+        public const string BattleFireMixedMany = "battle.fire-mixed-many";
+        public const string BattleFirePlain = "battle.fire-plain";
+        public const string BattleFirePlainMany = "battle.fire-plain-many";
+        public const string BattleFireAbsorbed = "battle.fire-absorbed";
+        public const string BattleFireAbsorbedMany = "battle.fire-absorbed-many";
+        public const string BattleFireMissed = "battle.fire-missed";
+        public const string BattleFireMissedMany = "battle.fire-missed-many";
+        public const string BattleFireMissedClause = "battle.fire-missed-clause";
+        public const string BattleFireMissedClauseMany = "battle.fire-missed-clause-many";
+        public const string BattleFireShieldClause = "battle.fire-shield-clause";
+
+        // What arrives, mends and is awarded mid-fight - each read off the one instruction in the
+        // replay stream that reports it.
+        public const string BattleReinforcements = "battle.reinforcements";
+        public const string BattleEnemyReinforcements = "battle.enemy-reinforcements";
+        public const string BattleRepaired = "battle.repaired";
+        public const string BattleEffectApplied = "battle.effect-applied";
+        public const string BattleMedalEarned = "battle.medal-earned";
         public const string GroundBattleRound = "ground-battle.round";
         public const string GroundBattleBombardment = "ground-battle.bombardment";
         public const string GroundBattleAssault = "ground-battle.assault";
@@ -2425,6 +2453,29 @@ namespace ES2Access.Core.Speech
             { BattleYourFlotillasLost, "{0} of your flotillas destroyed" },
             { BattleEnemyFlotillaLost, "Enemy {0} is destroyed" },
             { BattleEnemyFlotillasLost, "{0} enemy flotillas destroyed" },
+            { BattleFireEnergy, "{0} hit {1}: {2} energy damage" },
+            { BattleFireEnergyMany, "{0} hit {1} {2} times: {3} energy damage" },
+            { BattleFireProjectile, "{0} hit {1}: {2} projectile damage" },
+            { BattleFireProjectileMany, "{0} hit {1} {2} times: {3} projectile damage" },
+            { BattleFireMixed, "{0} hit {1}: {2} energy damage and {3} projectile damage" },
+            {
+                BattleFireMixedMany,
+                "{0} hit {1} {2} times: {3} energy damage and {4} projectile damage"
+            },
+            { BattleFirePlain, "{0} hit {1}: {2} damage" },
+            { BattleFirePlainMany, "{0} hit {1} {2} times: {3} damage" },
+            { BattleFireAbsorbed, "{0} hit {1}: fully absorbed by shields" },
+            { BattleFireAbsorbedMany, "{0} hit {1} {2} times: fully absorbed by shields" },
+            { BattleFireMissed, "{0} missed {1}" },
+            { BattleFireMissedMany, "{0} missed {1} {2} times" },
+            { BattleFireMissedClause, "missed" },
+            { BattleFireMissedClauseMany, "missed {0} times" },
+            { BattleFireShieldClause, "{0} absorbed by shields" },
+            { BattleReinforcements, "Reinforcements arrive: {0}" },
+            { BattleEnemyReinforcements, "Enemy reinforcements arrive: {0}" },
+            { BattleRepaired, "{0} repaired {1}" },
+            { BattleEffectApplied, "{0} applies {1} to {2}" },
+            { BattleMedalEarned, "{0} earned the {1} medal" },
             { GroundBattleRound, "Round {0}" },
             { GroundBattleBombardment, "Orbital bombardment" },
             { GroundBattleAssault, "Ground assault" },

@@ -108,6 +108,18 @@ belong in the files above.
   reinforcements or merged fleets (the fixture has one garrison a side), a plan card the game
   draws `NoEffectsLabel` on, and a plan whose three flotilla ranges differ (only a 3x
   "Short Range" card's nested names were dumped).
+- Space-battle cinematic, the six lines this report cannot produce (2026-08-30 narration stage,
+  r50): the acts, the phases, the losses, the progress quarters, the outcome word and the whole
+  exchange of fire are verified on a watched re-run of the Sabel battle, but reinforcements arriving
+  mid-fight, a ship repairing, a battle effect, a medal, the two shield-absorption clauses and
+  citadel fire have never been heard — that report holds none of what feeds them (the measurements
+  are in `test-recipes/battles.md`, **Fixture-blocked**). Needs a battle with reinforcements, shields
+  that hold, a medal earned, and a defended system.
+- The repair line's own premise is unmeasured (same stage): it is written against a positive `Health`
+  delta on an `EncounterShipSection`, chosen because that is the level the stream writes hull at
+  (measured on the damage side) and because a module's health is part of its section's — but no
+  positive delta occurs on this fixture, so neither the level nor the per-ship summing has been seen
+  to be right. First battle with a repair, check the figure against the ship's own health bar.
 - Advanced-play fleet arrangement (2026-08-29 stage shipped the ship lock and the carry): a
   successful CROSS-FLOTILLA move and the juggernaut SWAP are both unverified — the fixture has one
   valid flotilla, so every drop it can reach is a refusal. Needs a 5+ CP fleet battle: the manual

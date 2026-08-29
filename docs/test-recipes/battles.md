@@ -330,6 +330,185 @@ one stays where it was put.
 
 **Never activate** Fight or Retreat here either.
 
+## The space battle itself (`screen.battle`)
+
+The cinematic is a narrated stream, so almost everything it says is unverifiable without a battle
+actually running. The one part that IS reachable from a script is the PRE-ROLL: the game loads the
+battle and then soft-locks waiting for a raw keypress, and it will sit there indefinitely. **A game
+parked at the pre-roll is a free fixture** — `POST /reload` re-enters the screen with the loading
+window already drawn, which is the same case a player meets when they arrive mid-load.
+
+**Wedge probe handles** (all measured 2026-08-29, r48, owner's Sabel-vs-pirates battle):
+`w = GetWindow<BattleLoadingWindow>(false)` — `w.Shown`, `w.Caption.Text` ("Press space or click to
+launch the battle"), `w.BattleTitle.Text` ("Battle at Sabel"),
+`w.Right/LeftBattleGroupInfoPanel.MainLeaderName.Text` ("Pirates" / "DefaultPlayerName (United
+Empire)" — right is always the enemy), `w.GalaxyEncounter.State`
+(`LoadingWaitForPlayer`), `.Encounter.CurrentPhaseIndex` (-1 here). The BattleScreen alongside it
+reads `Shown=False`, `GalaxyEncounter=null` and PLACEHOLDER titles — never read those two labels off
+an unshown window (`military.md`).
+
+**Reading the battle report without running the battle.** `Encounter.PhaseReports` is public and by
+the pre-roll holds the whole fight. Walk it with an `ArrayList` as a stack (`Instructions` and
+`SubInstructions` are `List<GameType>` — index them through `System.Collections.IList`, never
+`foreach`) and pick out `EncounterReportInstruction_EntityStatus`: that is how the premature-loss bug
+was pinned to two specific flotillas without ever launching the fight.
+
+**Pre-roll stop** `battle:pre-roll`, two read-only rows, no controls: `battle:title` ("Battle at
+Sabel, Pirates") and `battle:launch` ("Press space or click to launch the battle"). Both are the
+game's own drawn words; the screen declares nothing else while the loading window is up. Evidence
+crops: title `18,24,1884,60`, caption `510,1116,900,54`, enemy name `1449,114,453,48`.
+Measured after a reload onto the wedge: the ring is exactly "Battle at Sabel, Pirates" (screen name),
+"Press space or click to launch the battle" (the caption watch), "Battle at Sabel, Pirates, 1 of 2"
+(landing on row 1) — and then 3469 frames / 60 s of silence with no repeat and no loss lines. The
+screen name and row 1 are the same words by design; the arrival therefore says them twice.
+
+### Re-watching a battle from a script
+
+**The report popup's Rewatch button replays the whole cinematic and changes no game state**, which
+makes a fought battle a re-runnable fixture for everything the cinematic says. Route in from the
+galaxy: `/input ui.focusNotifications` → `ui.down` to the "A Battle has ended against …" row →
+`ui.activate` → `ui.end` (the Rewatch button is the last position, "5 of 5") → `ui.activate`.
+`ui.down` from the report's first row descends INTO the fleet groups, so `ui.end` is the only cheap
+way to the controls band. **Never activate `ReplayButton`** — the window has both, and that one
+re-fights the battle.
+
+The rewatch then parks at the **pre-roll gate**, which reads a raw keypress
+(`GalaxyEncounter.Update` :2089-2101 asks `Input.GetKeyDown(Space)` directly). `POST /key` is the
+honest way past it and refuses (409) unless the game holds the foreground — on a locked desktop
+`SetForegroundWindow` reports handle 0 and it never will. The lever is the game's OWN test hook in
+the same condition: `POST /eval GalaxyEncounter.DoNotWaitForPlayerInput = true` runs the identical
+branch a Space press runs (it is what `TestAutomationCatalog` :193 uses). **Set it back to false
+afterwards** — it is a public static and survives the battle. Setting it before the loading window
+has written its labels skips the pre-roll rows, and the screen name falls back to the mod's own
+"Space battle"; wait for the caption if those are what is under test.
+
+The whole run is ~75 s of stream. Poll `/speech?since=N&wait=…` in a loop and allow for ~20 s of
+silence between phases — a quiet-poll exit set shorter than that stops mid-battle.
+
+### What the fight says (verified live 2026-08-30, r50, Sabel vs Pirates)
+
+Measured whole-run transcript, in order: the pre-roll pair, then **"Battle at Sabel, Versus
+Pirates"** (introduction) → **"Balance of power: 1st Conquerors Navy has 310% more military power
+than 8th Greedy Pirates"** (main act) → **"Phase I"** → the exchange of fire → **"Phase II"** →
+… → **"Battle 25 percent fought"** → **"Enemy Prowler is lost"** → **"Enemy Flotilla 2 is
+destroyed"** → **"Phase V"** → **"Decisive Victory"**.
+
+**The exchange of fire is read off the replay STREAM, not the model** (`ES2Access/UI/BattleStream.cs`
+— one Harmony postfix on `GalaxyEncounter.ParseReportInstruction`, the recursion every instruction
+and sub-instruction passes through in play order). Shots are gathered per attacker→target pair over
+a 5 s window and spoken loudest-first, at most three lines a window (`SpaceBattleScreen`
+`VolleySeconds` / `VolleyLines`). Measured cadence on this fixture: 1-3 lines every 5-7 s, e.g.
+"Patrol hit Prowler: 108 energy damage, missed" / "Prowler hit Endeavor 3 times: 86 energy damage" /
+"Prowler missed Endeavor 2 times" / "Endeavor hit Prowler: 188 projectile damage".
+
+**Instruction inventory of this report** (1904 instructions, four phases): 38 `CreateSalvo`,
+27 `Hit`, 39 `PrepareAttack`, 41 `Destruction`/`EntityStatus`, 101 `Event`, 1578 `UpdateProperty`,
+3 `Spawn`, 2 `FlotillaSpawn`. Walk it offline from the report surface without replaying anything —
+`NotificationBattleReport.Encounter.PhaseReports`, an `ArrayList` as the stack (`Instructions` and
+`SubInstructions` are `List<GameType>`; index through `System.Collections.IList`, never `foreach`).
+
+**A MISS is `CreateSalvo.Miss` and nothing else.** No `Attack_Miss` event is emitted and no `Hit`
+follows (`BattleSimulationSalvo.HitTarget` :189-202), so hits and misses need no correlation: count
+misses off the salvos, damage off the hits. Measured 38 salvos / 27 hits / `TotalLongShot` 37 vs
+`TotalLongHit` 27 — consistent.
+
+**Shield absorption, measured.** A shielded hit does NOT suppress the `Hit`, and no
+`Attack_HitShield` event reaches the client stream at all. `Hit.TheoreticalDamages` is
+post-mitigation (`SimulationProperties.Salvo.EffectiveDamage`), and what the shields ate is in the
+hit's own SUB-instructions as `DamageReceivedAbsorbedByShield` `UpdateProperty` deltas on the
+target. The same delta is written once per accounting level — measured twice per hit for
+`DamageReceived…`, three times for `DamageApplied…` — so it is read as a **maximum, never a sum**. A
+shot stopped dead is therefore a `Hit` whose damage is zero with an absorbed delta above it, which
+is what "fully absorbed by shields" is keyed on. **On this fixture every absorbed delta is 0.0**, so
+neither absorption line has ever been heard (roadmap).
+
+**Damage type comes from the weapon module's own flags**, `WeaponTypeEnergy` /
+`WeaponTypePhysical` (the pair `AdvancedEncounterPlayModalWindow.GetModulesPowerValuesByFleet`
+:415-450 sums). Measured: `ModuleWeaponLaser1` and `ModuleWeaponBeam2` energy, `ModuleWeaponMissile1`
+physical. There is **no game-localized bare type noun** to borrow: the `DamageAppliedBy…` GuiElements
+localize only with a Player/Enemy suffix and only as whole gauge captions
+("Damage caused by your Laser weapons: 123"), so the mod's own per-type templates carry the words.
+
+**Ship names come from `GuiShip.GetTitle(ship, design)`** — the ship's user name if it has one, else
+the design's localized name ("Patrol", "Endeavor", "Prowler"). The stream names PARTS (a shot comes
+from a weapon module and lands on a section), so both ends are walked up the `Parent` chain to the
+owning `EncounterShip`. **A citadel has no name anywhere in the game's strings** (`%CitadelTitle` and
+its variants all localize to themselves), so citadel fire is DROPPED rather than given an invented
+attacker — fixture-blocked here regardless, since this report holds no citadel salvo.
+
+**The phase numbers skip, and that is the report's own doing.** Measured `PhaseReports` phase
+indices on this battle: **0, 1, 2, 4** — there is no phase-3 record at all, so the narration says
+"Phase I, Phase II, Phase III, Phase V" and is faithfully reading `Encounter.CurrentPhaseIndex`
+through the game's own `%AdvancedReportModalWindowPhaseTitle`. Not a mod defect; do not "fix" it.
+
+**Phase lines are held until the fight proper is on screen.** The encounter is already in phase one
+while the introduction is playing, so an ungated watch says "Phase I" before the battle has said
+where it is (measured before the gate: Phase I at 0 s, introduction at 1 s, balance at 6 s). The
+gate is the display mode reaching Main or later; measured after: introduction 5 s, balance 10 s,
+Phase I 10 s.
+
+**An empty flotilla gets no destruction line.** Measured on this report, after the fight: the
+player's group holds a flotilla with `Index=0`, `Ships.Length==0` and `Status=Destroyed` — the
+game's own empty reinforcement slot — while the enemy's `Index=1` flotilla holds the one real ship.
+The transcript carries "Enemy Flotilla 2 is destroyed" and NOTHING about the player's, which is the
+evidence pair for the suppression: the model says destroyed, the narration is silent. Restore the
+line (drop the `Ships.Length == 0` test) to see the false "Your Flotilla 1 is destroyed" come back.
+
+**Accepted residue: one bare "unavailable" as the battle screen tears down.** Measured at the end of
+every run. The cursor sits on `battle:camera/0` for the whole fight; its availability flips as the
+screen closes, and the announcer speaks the changed part alone. The same mechanism is why the
+controls stop reads "1 of 5" early and "1 of 4" later — the Skip button is drawn only while the game
+will take a skip. Pre-existing, cosmetic, and outside the narration tiers.
+
+### MANUAL TEST — the battle running (owner)
+
+Fixture: the Sabel battle's report popup, Rewatch (above). Everything
+below rides one uninterrupted run; the mod-authored lines are quoted from `english.json` with the
+fixture's own numbers where known.
+
+1. **Entering the battle** (loading window appears). Expect, in order: the screen-name line **"Battle
+   at Sabel, Pirates"**, then the caption as the game writes it — **"Loading…"**, then **"Press space
+   or click to launch the battle"** when the load finishes. Each caption is said ONCE however long it
+   stays up. *Fails as*: "Battle at Antares, Versus DeltaPattern" (placeholder read), a caption said
+   twice, or the launch caption never said at all.
+2. **Visual check at the pre-roll**: the screen draws "BATTLE AT SABEL" across the top and "Press
+   space or click to launch the battle" along the bottom — the same two lines just spoken, with the
+   pirate skull at the top right and "Pirates" on the right-hand panel.
+3. **Tab / arrows at the pre-roll**, before pressing anything: two rows, "Battle at Sabel, Pirates,
+   1 of 2" and "Press space or click to launch the battle, 2 of 2", each re-readable in the buffer.
+   Neither does anything when activated. *This is also the check that Tab is no longer dead here.*
+4. **Press Space.** The pre-roll rows go with the loading window.
+5. **Introduction act**: the game's own two lines off the battle screen, shaped
+   "Battle at ⟨system⟩, Versus ⟨opponent⟩" — and the same pair is what the screen now answers with if
+   re-announced later in the fight. *Fails as*: the mod's own "Space battle", or the Antares
+   placeholder. **This act, and 6-9 below, are driven off the panels the screen shows, because
+   `BattleScreen.CurrentMode` is never assigned (`military.md`) — before r48 none of them ever
+   spoke, so treat any silence here as a regression report, not as a quiet battle.**
+6. **Main act**: the balance line, "Balance of power: 1st Conquerors Navy has 310% more military
+   power than 8th Greedy Pirates".
+7. **Phases**: "Phase I", then "Phase II", … as the fight moves through them — the phase number and
+   nothing else. *Fails as*: the balance sentence repeated on every one of them, or a phase said
+   before the introduction. A number SKIPPED ("Phase III" then "Phase V") is correct on this
+   fixture — the report itself has no phase-3 record.
+7b. **The exchange of fire**, from the moment the shooting starts: a line every 5 s or so naming both
+   ships, how many shots landed, and how much damage of which kind — "Patrol hit Prowler: 108 energy
+   damage, missed", "Prowler hit Endeavor 3 times: 86 energy damage", "Endeavor hit Prowler: 188
+   projectile damage", "Prowler missed Endeavor 2 times". *Fails as*: silence during a visible
+   exchange, a GUID or a design name where a ship should be, more than three lines in one breath, or
+   one line per shot.
+8. **Losses**, as they happen and never before the fight starts: "Enemy ⟨ship⟩ is lost" / "N enemy
+   ships lost", "Your ⟨ship⟩ is lost" / "N of your ships lost", and per flotilla "Enemy Flotilla 2 is
+   destroyed" / "Your Flotilla 1 is destroyed". On this fixture the player has 310% more power, so
+   expect the enemy's losses and few or none of your own. **The bug this replaces: those two flotilla
+   lines used to arrive during LOADING, before Space was pressed — they were the report's ending
+   being read early. Any destruction line heard before the fight is visibly under way is that bug
+   back.**
+9. **Progress**: "Battle 25 percent fought", then 50, 75 — upward only, at most once each.
+10. **Outcome act**: the game's own outcome word (`OutcomeValue`, one of the nine `EndBattleStatus`
+    words), spoken once.
+11. **Watch it again** (the game's own re-watch): the whole sequence repeats from the top — the clock
+    jumping backwards re-arms every watermark, so the losses and progress marks are news again.
+
 ## Ground battles
 
 **Ground-battle SETUP popup** (verified live 2026-08-25, player attacking). Stop order: title,
@@ -385,5 +564,12 @@ re-dump before interpreting.
   sorting band reads `unavailable` (**ADVANCED battle setup**).
 - The ground-battle OUTCOME-SELECTION popup's live content — it needs a decisive victory
   (**Ground battles**).
+- Six of the cinematic's narration lines, because this report contains nothing that feeds them
+  (**What the fight says**): reinforcements arriving mid-fight (`_Spawn` after time zero — all three
+  spawns here are at 0.0), a ship repairing (a positive `Health` delta on a section — every Health
+  delta here is negative or zero, and the one `Healing` event carries a null initiator and a
+  per-phase recompute), a battle effect and a medal (no `_BattleEffect` and no `_Medal` instruction
+  at all, and both are additionally gated on the game having a written title), both shield-absorption
+  clauses (every absorbed delta is 0.0), and citadel fire (no citadel salvo, and no name to give one).
 - The five battle-stack notification types are never swept by the family sweep, whose
   `Bind` throws without a live encounter (`notifications.md`, **Fixture-blocked**).

@@ -108,6 +108,18 @@ Index and charter: `README.md`.
   Plus/Minus/Asterisk/Pause, none of which the mod claims.
 - `ShowOtherCards` does not clamp; clicking an already-selected card IS the validation; and the
   ENEMY play cards set YOUR plan.
+- **A watched battle is a REPORT being replayed, and the fight lives only in that stream.** The
+  client plays one timestamped instruction at a time through
+  `GalaxyEncounter.ParseReportInstruction` (:1184-1205, recursing into sub-instructions) and applies
+  it to the model, which by the next frame remembers only the resulting STATE — so who shot whom,
+  whether it landed, and what the shields ate are answerable only from the instructions. Three
+  semantics measured on a real report and load-bearing for anything reading it: a MISS is
+  `CreateSalvo.Miss` with no `Hit` following and no `Attack_Miss` event; a `Hit`'s damage is
+  POST-mitigation and the shields' share is in its own sub-instructions as
+  `DamageReceivedAbsorbedByShield` deltas, written once per accounting level and therefore read as a
+  maximum; and `PhaseReports` can skip a phase index outright (measured 0, 1, 2, 4), so the game's own
+  phase numbering has gaps in it. Everything else about the stream, with the counts, is
+  `test-recipes/battles.md`, **What the fight says**.
 - **A ground-battle outcome's second click is on the item's own transform.** Measured off the
   unbound prefab (`GroundBattleOutcomeSelectionNotificationWindow.OutcomeItemPrefab`, readable with no
   battle running): `GroundBattleOutcomeItem.Toggle` sits on the item's own `AgeTransform`, carries
@@ -181,6 +193,34 @@ Index and charter: `README.md`.
   announces its first label with the control parts; the rest reviews a line at a time
   (`NotificationScreen.Control.Drawn` — never `Control.Details`, which replaces the sections and
   would drop the card's refusal tooltip; the struct's doc comment carries the contract).
+- **The battle model holds the ENDING while the battle is loading.** Every phase report is applied to
+  the encounter as it arrives (`Encounter.OnPhaseReportReceived:960` → `ParsePhaseReport:678` →
+  `ParseReportInstruction`, which calls `SetStatus` on the entity each instruction names), and the
+  model is only rewound by `Encounter.RestoreEntitiesSimulation` in `GalaxyEncounter.Ignite`
+  (`GalaxyEncounter.cs:1798`), which runs after the coroutine waits for `Encounter.State` to reach
+  `Report`/`Finished` and just BEFORE `State = LoadingWaitForPlayer` (:1844). So for the whole
+  `GalaxyEncounterState.Loading` window, `Groups[g].Flotillas[f].Status` and every ship's are the
+  battle's FINAL state; at the pre-roll gate they are Alive again. Measured 2026-08-29 on the owner's
+  Sabel fixture: at the wedge all 8 flotillas read `Alive`, while the phase reports carry exactly two
+  flotilla `EntityStatus=Destroyed` instructions (guid 52, the player's empty reinforcement flotilla,
+  `Index=0`, at t=26.6; guid 5, the pirates' only real flotilla, `Index=1`, at t=63.0 — the last event
+  of the fight). Mod policy it forced: the loss, phase and progress tiers read the model only while
+  the stream is being replayed (`SpaceBattleScreen.Playing` — Running/PreparingSkipping/Skipping),
+  because before that the model is a spoiler, not a report of what has happened.
+- **`BattleScreen.CurrentMode` is a dead property.** It is declared (`BattleScreen.cs:130`) and
+  assigned by nothing in the whole assembly, so it reads `None` for the length of every battle. The
+  act is `SwitchBattleDisplayMode` (:163-208), which shows exactly one of `BattleIntroductionPanel`,
+  `BattleDiskPanel` and `BattleOutcomePanel` per act and hides the others — the panels' `Shown` IS the
+  act, and it is what the player is looking at (`SpaceBattleScreen.Acting`).
+- **The battle screen's location and opponent labels are written by one act only.**
+  `RefreshLocationTitle`/`RefreshOpponentTitle` are called from nowhere but
+  `SwitchBattleDisplayMode(Introduction)` (`BattleScreen.cs:166-169`), so before that act — and always
+  while the window is not `Shown` — both hold the PREFAB's placeholders ("Battle at Antares", "Versus
+  #FF8080#DeltaPattern", measured 2026-08-29). They are not an empty-label case, so an
+  empty-means-fall-back guard never fires on them. The loading window is the surface that names the
+  battle earlier: `BattleTitle` ("Battle at Sabel") is composed in `OnBeginShow` (:107) and the two
+  `BattleGroupInfoPanel`s are bound left = the player's group, right = the enemy's (:135-136), so
+  `RightBattleGroupInfoPanel.MainLeaderName` is the opponent ("Pirates").
 - **A hacking outcome's countdown is REAL-TIME seconds** — 10/20/30/45 by outcome, not turns — and it
   auto-picks a default when it runs out, so the choice popup is one of the few surfaces where reading
   slowly changes the result. `PickHackingOperation` only raises its prompt where the node offers MORE

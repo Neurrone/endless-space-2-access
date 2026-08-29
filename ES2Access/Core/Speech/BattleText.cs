@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using ES2Access.Core.UI;
 
 namespace ES2Access.Core.Speech
 {
@@ -52,6 +54,126 @@ namespace ES2Access.Core.Speech
             }
 
             return Optional(manyKey, names.Count);
+        }
+
+        /// <summary>
+        /// One exchange of fire in one sentence: who shot whom, how often, what got through and of
+        /// which kind, and what the shields ate or the shots wasted.
+        ///
+        /// The HEAD is one whole template rather than a stem with fragments glued after it, because
+        /// the count and the damage kind sit inside the clause a translator has to inflect. Which
+        /// head is chosen is the honest reading of the tallies and nothing more: a pair that hit
+        /// nothing says so, a pair whose damage all went into shields says THAT, a weapon that
+        /// answered neither kind loses the type word instead of being assigned one, and both kinds
+        /// together are reported as the two sums they are.
+        ///
+        /// The two CLAUSES after it are the facts that do not change the sentence's shape - the
+        /// shots that missed alongside the ones that landed, and the damage the shields took on top
+        /// of what got through. They join through the list separator, so a translation decides its
+        /// own punctuation.
+        /// </summary>
+        public static string Volley(FireWatch.Volley volley)
+        {
+            if (volley == null || string.IsNullOrEmpty(volley.Attacker)
+                || string.IsNullOrEmpty(volley.Target))
+            {
+                return null;
+            }
+
+            string head = Head(volley);
+            if (string.IsNullOrEmpty(head))
+            {
+                return null;
+            }
+
+            MessageBuilder said = new MessageBuilder().ListItem(head);
+            if (volley.Hits > 0 && volley.Misses > 0)
+            {
+                said.ListItem(
+                    Counted(
+                        ModStrings.BattleFireMissedClause,
+                        ModStrings.BattleFireMissedClauseMany,
+                        volley.Misses
+                    )
+                );
+            }
+
+            int absorbed = Whole(volley.Absorbed);
+            if (absorbed > 0 && Whole(volley.Damage) > 0)
+            {
+                said.ListItem(Optional(ModStrings.BattleFireShieldClause, absorbed));
+            }
+
+            return said.Build();
+        }
+
+        private static string Head(FireWatch.Volley volley)
+        {
+            string attacker = volley.Attacker;
+            string target = volley.Target;
+            if (volley.Hits <= 0)
+            {
+                return volley.Misses == 1
+                    ? Optional(ModStrings.BattleFireMissed, attacker, target)
+                    : Optional(ModStrings.BattleFireMissedMany, attacker, target, volley.Misses);
+            }
+
+            int damage = Whole(volley.Damage);
+            if (damage <= 0 && Whole(volley.Absorbed) > 0)
+            {
+                return volley.Hits == 1
+                    ? Optional(ModStrings.BattleFireAbsorbed, attacker, target)
+                    : Optional(ModStrings.BattleFireAbsorbedMany, attacker, target, volley.Hits);
+            }
+
+            int energy = Whole(volley.Energy);
+            int projectile = Whole(volley.Projectile);
+            bool typed = Whole(volley.Untyped) <= 0;
+            if (typed && energy > 0 && projectile > 0)
+            {
+                return volley.Hits == 1
+                    ? Optional(ModStrings.BattleFireMixed, attacker, target, energy, projectile)
+                    : Optional(
+                        ModStrings.BattleFireMixedMany,
+                        attacker,
+                        target,
+                        volley.Hits,
+                        energy,
+                        projectile
+                    );
+            }
+
+            if (typed && energy > 0)
+            {
+                return volley.Hits == 1
+                    ? Optional(ModStrings.BattleFireEnergy, attacker, target, energy)
+                    : Optional(ModStrings.BattleFireEnergyMany, attacker, target, volley.Hits, energy);
+            }
+
+            if (typed && projectile > 0)
+            {
+                return volley.Hits == 1
+                    ? Optional(ModStrings.BattleFireProjectile, attacker, target, projectile)
+                    : Optional(
+                        ModStrings.BattleFireProjectileMany,
+                        attacker,
+                        target,
+                        volley.Hits,
+                        projectile
+                    );
+            }
+
+            return volley.Hits == 1
+                ? Optional(ModStrings.BattleFirePlain, attacker, target, damage)
+                : Optional(ModStrings.BattleFirePlainMany, attacker, target, volley.Hits, damage);
+        }
+
+        /// <summary>A damage figure as a listener wants it: whole points, never a decimal tail. The
+        /// game's own gauges floor these; a running commentary rounds, because the difference is
+        /// inaudible and the rounding keeps a small hit from reading as nothing.</summary>
+        private static int Whole(float value)
+        {
+            return value <= 0f ? 0 : (int)Math.Round((double)value, MidpointRounding.AwayFromZero);
         }
     }
 }

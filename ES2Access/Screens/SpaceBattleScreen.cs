@@ -18,19 +18,45 @@ namespace ES2Access.Screens
     /// comes from its per-frame watch rather than from a cursor - the same shape as the loading screen and
     /// the system-discovery cutscene.
     ///
-    /// Four tiers, loudest first.
+    /// Five tiers, loudest first.
     ///
     /// The PRE-ROLL GATE is the one that matters most, and it is not narration at all - it is a soft-lock.
     /// When the battle has finished loading the game stops and waits for a keypress it reads RAW, outside
     /// its own input system, and the only thing on screen saying so is a caption on the loading window.
     /// A player who cannot see that caption sits in front of a frozen game with no idea that space or a
-    /// click will start it. So the caption is read the moment it appears, once.
+    /// click will start it. So the caption is read the moment it appears, once - watched by its own TEXT
+    /// and not by the game's state, because the state flips to waiting a frame before the window rewrites
+    /// the label (<c>BattleLoadingWindow.Refresh</c> :213-216 runs off the state change), and a gate armed
+    /// on the state spends itself on the caption that is still there and never says the one that arrives.
+    ///
+    /// The loading window is also the only battle surface with anything to STAND on, so while it is up the
+    /// screen declares two read-only lines - which battle this is, and the prompt that is holding it - and
+    /// a player who tabs at the pre-roll finds them instead of an empty screen. They are the same words the
+    /// window draws, and they go when it goes.
     ///
     /// The ACTS come from the display mode the stream itself queues: the introduction names where this is
     /// and who it is against, the main act opens with the balance of power, and the outcome is the game's
-    /// own word for how it went. The PHASES come from the encounter's own phase index, each with the
-    /// balance again, because how the balance MOVED across a phase is the thing a sighted player is
-    /// reading off the two arcs.
+    /// own word for how it went. The PHASES come from the encounter's own phase index and say only which
+    /// phase it is - a place-marker between stretches of narrated fighting, not a place to repeat the
+    /// balance sentence.
+    ///
+    /// The FIGHT ITSELF is the tier the model cannot answer, and it comes from the report stream the
+    /// client is replaying (<see cref="BattleStream"/>): a shot fired, a shot that missed, damage that
+    /// got through, damage the shields ate, something arriving, something repaired, a medal. Those are
+    /// EVENTS - by the next frame the model has forgotten each one - and there are hundreds of them, one
+    /// per weapon shot. So they are gathered per attacker-target pair over a window
+    /// (<see cref="FireWatch"/>) and reported as one sentence per pair: "Prowler hit Endeavor 3 times:
+    /// 86 energy damage, missed twice". A player following the fight by ear gets a running commentary at
+    /// roughly the pace a sighted player takes the arena in, instead of either silence or a stream of
+    /// individual shots nobody can listen to.
+    ///
+    /// LOSSES, PHASES and PROGRESS are read off the encounter model, and that model is only telling the
+    /// truth about "so far" while the stream is PLAYING. During loading it holds the battle's FINAL state:
+    /// the game applies every phase report to it as the reports arrive
+    /// (<c>Encounter.OnPhaseReportReceived</c> :960 -> <c>ParsePhaseReport</c> :678) and only rewinds it
+    /// with <c>Encounter.RestoreEntitiesSimulation</c> (<c>GalaxyEncounter</c> :1798) just before the
+    /// pre-roll gate. A watch that reads it before then reads the ending - which is how the mod once
+    /// announced who would lose while the player was still waiting to press space.
     ///
     /// LOSSES are the noisy tier and are aggregated (<see cref="BurstWatch"/>): a salvo takes several
     /// ships inside a second, and the player needs "four of your ships lost" rather than four names
@@ -52,6 +78,18 @@ namespace ES2Access.Screens
         /// that a salvo is one utterance, short enough that the report still lands while the wreckage is
         /// on screen.</summary>
         private const float BurstSeconds = 0.75f;
+
+        /// <summary>How long the exchange of fire gathers before it is reported as one round of
+        /// summaries. Much longer than a loss's burst on purpose: a death is urgent and a volley is
+        /// not, and a fight narrated every second is a fight nobody can follow. Long enough that a
+        /// pair trading shots is one sentence, short enough that the summary still describes what is
+        /// on screen.</summary>
+        private const float VolleySeconds = 5.0f;
+
+        /// <summary>How many exchanges one window may report. They come back loudest first, so a
+        /// crowded window keeps the hardest-hit pairs and drops the skirmishes - a cap the fixture's
+        /// three ships never reach, and a big fleet action would.</summary>
+        private const int VolleyLines = 3;
 
         /// <summary>How many quarters the battle's progress is reported in.</summary>
         private const int Milestones = 4;
@@ -82,8 +120,14 @@ namespace ES2Access.Screens
         private const string YourFlotillasLostKey = "battle.your-flotillas-lost";
         private const string EnemyFlotillaLostKey = "battle.enemy-flotilla-lost";
         private const string EnemyFlotillasLostKey = "battle.enemy-flotillas-lost";
+        private const string ReinforcementsKey = "battle.reinforcements";
+        private const string EnemyReinforcementsKey = "battle.enemy-reinforcements";
+        private const string RepairedKey = "battle.repaired";
+        private const string EffectAppliedKey = "battle.effect-applied";
+        private const string MedalEarnedKey = "battle.medal-earned";
 
         private static readonly object ControlsStop = "battle:controls";
+        private static readonly object PreRollStop = "battle:pre-roll";
 
         private readonly StepWatch _act = new StepWatch();
         private readonly StepWatch _phase = new StepWatch();
@@ -91,12 +135,15 @@ namespace ES2Access.Screens
         private readonly BurstWatch _enemyShips = new BurstWatch(BurstSeconds);
         private readonly BurstWatch _yourFlotillas = new BurstWatch(BurstSeconds);
         private readonly BurstWatch _enemyFlotillas = new BurstWatch(BurstSeconds);
+        private readonly FireWatch _fire = new FireWatch(VolleySeconds);
+        private readonly Dictionary<string, float> _mended = new Dictionary<string, float>();
         private readonly List<Cell> _cells = new List<Cell>();
 
         private GalaxyEncounter _run;
         private double _clock;
         private int _milestone;
-        private bool _launchSaid;
+        private bool _titled;
+        private bool _opened;
         private string _caption;
 
         public override string Key
@@ -112,28 +159,64 @@ namespace ES2Access.Screens
             get { return 10; }
         }
 
-        /// <summary>Where this is and who it is against, in the game's own two lines - which it only
-        /// writes while the introduction is on screen, so the mod's own word covers the rest of the
-        /// fight.</summary>
+        /// <summary>
+        /// Where this is and who it is against, in the game's own two lines - taken from whichever
+        /// surface is actually drawing them.
+        ///
+        /// The loading window writes both when it opens (<c>BattleLoadingWindow.OnBeginShow</c> :107 and
+        /// the panel bind at :135-136, left the player's side and right the opponent's), so while it is up
+        /// it is the answer. The battle screen's own pair is written by nothing but
+        /// <c>BattleScreen.SwitchBattleDisplayMode(Introduction)</c> (:166-169), which is why they are read
+        /// only once that act has run: before it - and always while the screen is not shown at all - those
+        /// labels hold the PREFAB's placeholders, and a screen that announces itself as "Battle at Antares,
+        /// Versus DeltaPattern" is telling the player about a battle that does not exist. With neither
+        /// surface talking, the mod's own word covers the rest of the fight.
+        /// </summary>
         public override string ScreenName
         {
             get
             {
                 try
                 {
+                    BattleLoadingWindow loading = Showing();
+                    string named = loading == null ? null : Named(loading);
+                    if (!string.IsNullOrEmpty(named))
+                    {
+                        return named;
+                    }
+
                     global::BattleScreen window = Window();
-                    string where = window == null ? null : AgeText.Label(window.LocationTitle);
-                    string who = window == null ? null : AgeText.Label(window.OpponentTitle);
-                    string named = new MessageBuilder().ListItem(where).ListItem(who).Build();
-                    return string.IsNullOrEmpty(named)
-                        ? BattleText.Optional(ScreenNameKey)
-                        : named;
+                    if (_titled && window != null && window.Shown)
+                    {
+                        named = new MessageBuilder()
+                            .ListItem(AgeText.Label(window.LocationTitle))
+                            .ListItem(AgeText.Label(window.OpponentTitle))
+                            .Build();
+                        if (!string.IsNullOrEmpty(named))
+                        {
+                            return named;
+                        }
+                    }
+
+                    return BattleText.Optional(ScreenNameKey);
                 }
                 catch (Exception)
                 {
                     return null;
                 }
             }
+        }
+
+        /// <summary>The battle the loading window is drawing, in its own two labels: the title it composes
+        /// from the system the fight is over, and the opponent's name off the panel it binds to the enemy
+        /// group.</summary>
+        private static string Named(BattleLoadingWindow loading)
+        {
+            BattleGroupInfoPanel enemy = loading.RightBattleGroupInfoPanel;
+            return new MessageBuilder()
+                .ListItem(AgeText.Label(loading.BattleTitle))
+                .ListItem(enemy == null ? null : AgeText.Label(enemy.MainLeaderName))
+                .Build();
         }
 
         /// <summary>
@@ -198,73 +281,102 @@ namespace ES2Access.Screens
             _enemyShips.Reset();
             _yourFlotillas.Reset();
             _enemyFlotillas.Reset();
+            _fire.Reset();
+            BattleStream.Forget();
             _clock = 0.0;
             _milestone = 0;
-            _launchSaid = false;
+            _titled = false;
+            _opened = false;
             _caption = null;
         }
 
         private void Narrate()
         {
             global::BattleScreen window = Window();
-            BattleLoadingWindow loading = Loading();
+            BattleLoadingWindow loading = Showing();
             GalaxyEncounter encounter = Encounter(window, loading);
+
+            if (encounter != null)
+            {
+                // A fresh battle, or the same one rewound to be watched again: everything is news.
+                double clock = Clock(encounter);
+                if (!ReferenceEquals(encounter, _run) || clock < _clock - Rewound)
+                {
+                    Rearm();
+                    _run = encounter;
+                }
+
+                _clock = clock;
+            }
+
+            // After the re-arm and outside the encounter gate: a run that has just been declared fresh
+            // has forgotten the last caption, so a watch that ran first would say this one twice - and
+            // the caption is the one thing here the player needs whether or not the model resolves.
+            Launch(loading);
+
             if (encounter == null)
             {
                 return;
             }
 
-            // A fresh battle, or the same one rewound to be watched again: everything is news.
-            double clock = Clock(encounter);
-            if (!ReferenceEquals(encounter, _run) || clock < _clock - Rewound)
+            Act(window, encounter);
+            if (Playing(encounter))
             {
-                Rearm();
-                _run = encounter;
+                Phase(encounter);
+                Losses(window, encounter);
+                Flotillas(encounter);
+                Fighting();
+            }
+            else
+            {
+                // Nothing the stream queued belongs to a fight that is not being played - and the
+                // pre-roll is the case that matters, because the report is already in memory then and
+                // a queue left to fill would narrate the ending before the player pressed space.
+                Discard();
             }
 
-            _clock = clock;
-
-            Launch(encounter, loading);
-            Act(window, encounter);
-            Phase(encounter);
-            Losses(window, encounter);
-            Flotillas(encounter);
             Progress(encounter);
         }
 
+        /// <summary>Whether the stream is being REPLAYED - the only span in which the model's per-ship and
+        /// per-flotilla state means "what has happened so far". Skipping counts: the player asked for the
+        /// rest of the fight at speed, and it is still the fight arriving.</summary>
+        private static bool Playing(GalaxyEncounter encounter)
+        {
+            switch (State(encounter))
+            {
+                case GalaxyEncounter.GalaxyEncounterState.Running:
+                case GalaxyEncounter.GalaxyEncounterState.PreparingSkipping:
+                case GalaxyEncounter.GalaxyEncounterState.Skipping:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         /// <summary>
-        /// The gate. While the game is waiting for a key it reads raw, the caption saying so is read
-        /// once; every other caption the loading window writes is read as it changes, which is the
-        /// loading screen's rule and for the same reason - a wait nobody narrates is a wait that looks
-        /// like a hang.
+        /// The gate. Every caption the loading window writes is read as it changes - which is the loading
+        /// screen's rule and for the same reason, that a wait nobody narrates is a wait that looks like a
+        /// hang - and the one saying the game is holding for a keypress is simply the last of them.
+        ///
+        /// Watched by the caption's own TEXT, so it is said exactly once however long the window sits on
+        /// it, and so a caption already on screen when this screen is pushed or the mod reloads is said
+        /// rather than missed (<see cref="Rearm"/> forgets the last one). Keying it on the game's WAITING
+        /// state instead is what used to lose it: the state turns over one frame before
+        /// <c>BattleLoadingWindow.Refresh</c> (:213-216) rewrites the label, so a one-shot armed on the
+        /// state fires on the caption that is still there - "Loading…" - and the branch that noticed
+        /// captions changing was never reached again.
         /// </summary>
-        private void Launch(GalaxyEncounter encounter, BattleLoadingWindow loading)
+        private void Launch(BattleLoadingWindow loading)
         {
             string caption = loading == null ? null : AgeText.Label(loading.Caption);
-            if (string.IsNullOrEmpty(caption))
+            if (string.IsNullOrEmpty(caption) || caption == _caption)
             {
                 return;
             }
 
-            bool waiting =
-                State(encounter) == GalaxyEncounter.GalaxyEncounterState.LoadingWaitForPlayer;
-            if (waiting)
-            {
-                if (!_launchSaid)
-                {
-                    _launchSaid = true;
-                    _caption = caption;
-                    Voice.Say(caption, false);
-                }
-
-                return;
-            }
-
-            if (caption != _caption)
-            {
-                _caption = caption;
-                Voice.Say(caption, false);
-            }
+            _caption = caption;
+            Voice.Say(caption, false);
         }
 
         /// <summary>Which act of the cinematic is running, and what that act is ABOUT: where and against
@@ -273,19 +385,26 @@ namespace ES2Access.Screens
         /// written yet is announced on the frame it writes them.</summary>
         private void Act(global::BattleScreen window, GalaxyEncounter encounter)
         {
-            if (window == null)
+            if (window == null || !window.Shown)
             {
                 return;
             }
 
-            global::BattleScreen.BattleDisplayMode mode;
-            try
-            {
-                mode = window.CurrentMode;
-            }
-            catch (Exception)
+            global::BattleScreen.BattleDisplayMode mode = Acting(window);
+            if (mode == global::BattleScreen.BattleDisplayMode.None)
             {
                 return;
+            }
+
+            // The fight proper is on screen from the main act onwards, which is what releases the
+            // phase lines: the encounter is already in phase one while the introduction is still
+            // playing, so a phase watch with nothing holding it announces "Phase I" before the
+            // battle has said where it is or who it is against (measured: Phase I at 0 s, the
+            // introduction at 1 s, the balance at 6 s). Held here, the opening reads in the order the
+            // screen presents it - where, against whom, the balance, then the phase.
+            if (mode != global::BattleScreen.BattleDisplayMode.Introduction)
+            {
+                _opened = true;
             }
 
             int act = (int)mode;
@@ -298,6 +417,8 @@ namespace ES2Access.Screens
             switch (mode)
             {
                 case global::BattleScreen.BattleDisplayMode.Introduction:
+                    // The act that WRITES the two labels, so from here on they are this battle's own.
+                    _titled = true;
                     said = new MessageBuilder()
                         .ListItem(AgeText.Label(window.LocationTitle))
                         .ListItem(AgeText.Label(window.OpponentTitle))
@@ -330,12 +451,52 @@ namespace ES2Access.Screens
             Voice.Say(said, false);
         }
 
-        /// <summary>Which phase the battle has reached, in the game's own numbering, with the balance as
-        /// it stands - the pair a sighted player reads off the phase strip and the arcs.</summary>
+        /// <summary>
+        /// Which act is on screen, read off the PANELS the battle screen shows rather than off the mode it
+        /// was asked to switch to.
+        ///
+        /// <c>BattleScreen.CurrentMode</c> looks like the answer and is not: it is a public property the
+        /// game declares (<c>BattleScreen</c> :130) and never once assigns - nothing in the whole assembly
+        /// writes it - so it reads <c>None</c> for the length of every battle, and a watch on it fires once
+        /// on nothing and then stays quiet for good. <c>SwitchBattleDisplayMode</c> (:163-208) shows
+        /// exactly one of the three panels per act and hides the others, so the panels ARE the act, and
+        /// they are what the player is looking at besides. Read latest-first: the acts only ever run
+        /// forwards, and the panel going out is still shown for the length of its fade.
+        /// </summary>
+        private static global::BattleScreen.BattleDisplayMode Acting(global::BattleScreen window)
+        {
+            try
+            {
+                if (window.BattleOutcomePanel != null && window.BattleOutcomePanel.Shown)
+                {
+                    return global::BattleScreen.BattleDisplayMode.Outcome;
+                }
+
+                if (window.BattleDiskPanel != null && window.BattleDiskPanel.Shown)
+                {
+                    return global::BattleScreen.BattleDisplayMode.Main;
+                }
+
+                if (window.BattleIntroductionPanel != null && window.BattleIntroductionPanel.Shown)
+                {
+                    return global::BattleScreen.BattleDisplayMode.Introduction;
+                }
+            }
+            catch (Exception) { }
+
+            return global::BattleScreen.BattleDisplayMode.None;
+        }
+
+        /// <summary>Which phase the battle has reached, in the game's own numbering, and nothing else -
+        /// held back until the fight proper is on screen, so the opening is not announced out of order.
+        /// The balance used to ride along with it and no longer does (owner ruling): a phase line is a
+        /// place-marker in a fight that is already being narrated shot by shot, and repeating the whole
+        /// balance sentence at every one of them buried the fighting it was punctuating. The balance is
+        /// still said once, where the main act opens on it.</summary>
         private void Phase(GalaxyEncounter encounter)
         {
             Encounter battle = Battle(encounter);
-            if (battle == null)
+            if (battle == null || !_opened)
             {
                 return;
             }
@@ -364,7 +525,7 @@ namespace ES2Access.Screens
             }
 
             _phase.Told(index);
-            Voice.Say(new MessageBuilder().ListItem(phase).ListItem(Balance(encounter)).Build(), false);
+            Voice.Say(phase, false);
         }
 
         /// <summary>
@@ -414,7 +575,11 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    watch.Note(ship.GUID.ToString(), AgeText.Clean(ship.Name), now);
+                    // Title, not Name: the wrapper's Name is the ship's GUID as a string (the base
+                    // GuiWrapper is constructed with it, GuiBattleShip :386-387), and reading it out
+                    // gave the player an 18-digit number where a ship should have been. Title is what
+                    // the rosters draw - the name the ship was given, else its design's.
+                    watch.Note(ship.GUID.ToString(), AgeText.Clean(ship.Title), now);
                 }
             }
             catch (Exception e)
@@ -454,8 +619,17 @@ namespace ES2Access.Screens
                         if (
                             flotilla == null
                             || flotilla.Status != EncounterEntityStatus.Destroyed
+                            || flotilla.Ships == null
+                            || flotilla.Ships.Length == 0
                         )
                         {
+                            // A flotilla that never held a ship is marked destroyed like any other -
+                            // measured on the player's own empty reinforcement flotilla, which the
+                            // game's report ends with Status Destroyed and zero ships. There is
+                            // nothing there to have been destroyed, and announcing a loss the player
+                            // did not take is worse than saying nothing. A flotilla that HELD ships
+                            // and lost them keeps its roster array, so this only ever drops the
+                            // empty ones.
                             continue;
                         }
 
@@ -491,6 +665,168 @@ namespace ES2Access.Screens
                 ),
                 false
             );
+        }
+
+        /// <summary>
+        /// The fight itself: who is shooting at whom, and what it is doing.
+        ///
+        /// Everything here comes off the replay stream (<see cref="BattleStream"/>) rather than off
+        /// the model, because these are EVENTS - a shot, an arrival, a medal - and the model only ever
+        /// answers what is true now. The shots go through a window (<see cref="FireWatch"/>) and come
+        /// out as one line per attacker-target pair; the rest are rare enough to say as they happen.
+        ///
+        /// Losses are deliberately NOT folded in here. They keep their own short window
+        /// (<see cref="BurstSeconds"/>) because a ship going is the one thing in a battle a player
+        /// needs told immediately, and holding it for the length of a volley summary would land it
+        /// after the fight had moved on.
+        /// </summary>
+        private void Fighting()
+        {
+            try
+            {
+                float now = Time.realtimeSinceStartup;
+
+                List<BattleStream.Shot> shots = BattleStream.TakeShots();
+                if (shots != null)
+                {
+                    for (int i = 0; i < shots.Count; i++)
+                    {
+                        BattleStream.Shot shot = shots[i];
+                        _fire.Note(
+                            shot.Attacker,
+                            shot.Target,
+                            shot.Hit,
+                            shot.Damage,
+                            shot.Absorbed,
+                            shot.Kind,
+                            now
+                        );
+                    }
+                }
+
+                IList<FireWatch.Volley> volleys = _fire.Due(now);
+                if (volleys != null)
+                {
+                    int said = volleys.Count < VolleyLines ? volleys.Count : VolleyLines;
+                    for (int i = 0; i < said; i++)
+                    {
+                        Voice.Say(BattleText.Volley(volleys[i]), false);
+                    }
+                }
+
+                Arrivals();
+                Repairs();
+                Effects();
+                Medals();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: narrating the exchange of fire threw: " + e);
+            }
+        }
+
+        /// <summary>Everything the stream queued while the fight was not being played, thrown away
+        /// unspoken.</summary>
+        private void Discard()
+        {
+            BattleStream.TakeShots();
+            BattleStream.TakeArrivals();
+            BattleStream.TakeMends();
+            BattleStream.TakeEffects();
+            BattleStream.TakeAwards();
+        }
+
+        /// <summary>Something joining a fight already under way - which changes what the player should
+        /// expect from it, and which the game announces with an arrival animation and nothing
+        /// else.</summary>
+        private static void Arrivals()
+        {
+            List<BattleStream.Arrival> arrivals = BattleStream.TakeArrivals();
+            if (arrivals == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < arrivals.Count; i++)
+            {
+                Voice.Say(
+                    BattleText.Optional(
+                        arrivals[i].Mine ? ReinforcementsKey : EnemyReinforcementsKey,
+                        arrivals[i].Name
+                    ),
+                    false
+                );
+            }
+        }
+
+        /// <summary>Hull going back on, per ship - the several sections one repair touches are added
+        /// up so the player hears one figure for the ship rather than one per section.</summary>
+        private void Repairs()
+        {
+            List<BattleStream.Mend> mends = BattleStream.TakeMends();
+            if (mends == null)
+            {
+                return;
+            }
+
+            _mended.Clear();
+            for (int i = 0; i < mends.Count; i++)
+            {
+                float running;
+                _mended.TryGetValue(mends[i].Ship, out running);
+                _mended[mends[i].Ship] = running + mends[i].Amount;
+            }
+
+            foreach (KeyValuePair<string, float> mend in _mended)
+            {
+                int amount = (int)Mathf.Round(mend.Value);
+                if (amount > 0)
+                {
+                    Voice.Say(BattleText.Optional(RepairedKey, mend.Key, amount), false);
+                }
+            }
+        }
+
+        /// <summary>A battle effect landing on a ship, in the game's own title for it.</summary>
+        private static void Effects()
+        {
+            List<BattleStream.Effect> effects = BattleStream.TakeEffects();
+            if (effects == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < effects.Count; i++)
+            {
+                Voice.Say(
+                    BattleText.Optional(
+                        EffectAppliedKey,
+                        effects[i].Initiator,
+                        effects[i].Name,
+                        effects[i].Target
+                    ),
+                    false
+                );
+            }
+        }
+
+        /// <summary>A medal earned mid-fight, which the game marks with a badge on a card the player
+        /// may never look at.</summary>
+        private static void Medals()
+        {
+            List<BattleStream.Award> awards = BattleStream.TakeAwards();
+            if (awards == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < awards.Count; i++)
+            {
+                Voice.Say(
+                    BattleText.Optional(MedalEarnedKey, awards[i].Ship, awards[i].Medal),
+                    false
+                );
+            }
         }
 
         /// <summary>How far through the fight is, at the quarter marks and only ever upward - a battle
@@ -561,6 +897,13 @@ namespace ES2Access.Screens
         /// </summary>
         public override void Build(GraphBuilder builder)
         {
+            BattleLoadingWindow loading = Showing();
+            if (loading != null)
+            {
+                PreRoll(builder, loading);
+                return;
+            }
+
             global::BattleScreen window = Window();
             if (window == null)
             {
@@ -583,6 +926,60 @@ namespace ES2Access.Screens
             {
                 Log.Warn("battle: reading the battle controls threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// What there is to stand on while the battle is loading: which battle this is, and the prompt
+        /// holding it at the pre-roll gate.
+        ///
+        /// Both are read-only lines carrying the game's own words - nothing here is a control, and the
+        /// keypress the second one describes is one the game reads raw, so the row DESCRIBES it and does
+        /// not offer to press it. They exist for the same reason the caption is narrated: a player who
+        /// arrives at a frozen game and reaches for Tab should find the two facts on screen rather than
+        /// nothing at all, and should be able to go back over them at their own pace.
+        /// </summary>
+        private void PreRoll(GraphBuilder builder, BattleLoadingWindow loading)
+        {
+            try
+            {
+                _cells.Clear();
+                BattleLoadingWindow it = loading;
+                Line(
+                    loading.BattleTitle == null ? null : loading.BattleTitle.AgeTransform,
+                    "battle:title",
+                    () => Named(it)
+                );
+                Line(
+                    loading.Caption == null ? null : loading.Caption.AgeTransform,
+                    "battle:launch",
+                    () => AgeText.Label(it.Caption)
+                );
+                if (_cells.Count > 0)
+                {
+                    builder.BeginStop(PreRollStop);
+                    Cells.EmitLinear(builder, _cells);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: reading the loading window threw: " + e);
+            }
+        }
+
+        /// <summary>One read-only line, declared only where the game has written something for it to say -
+        /// a label the window has left empty is not a node with no name.</summary>
+        private void Line(AgeTransform widget, string key, Func<string> words)
+        {
+            if (widget == null || string.IsNullOrEmpty(words()))
+            {
+                return;
+            }
+
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(words) },
+            };
+            Cells.Add(_cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>Skip to the action - drawn only while the game will take it, and saying which of its
@@ -770,13 +1167,16 @@ namespace ES2Access.Screens
             }
         }
 
-        private static BattleLoadingWindow Loading()
+        /// <summary>The loading window while it is the battle surface the game is DRAWING - which is what
+        /// makes its labels this battle's own rather than whatever the last one left in them.</summary>
+        private static BattleLoadingWindow Showing()
         {
             try
             {
-                return Gui.GuiServiceAvailable
+                BattleLoadingWindow loading = Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<BattleLoadingWindow>(false)
                     : null;
+                return loading != null && loading.Shown ? loading : null;
             }
             catch (Exception)
             {
