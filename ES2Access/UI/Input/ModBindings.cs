@@ -201,6 +201,17 @@ namespace ES2Access.UI.Input
                 return null;
             }
 
+            // Compared in the mod's own chord space rather than by KeyCombination.Equals against
+            // ToCombination's rendering, which is one exact SPELLING of a chord: a Mac capture can
+            // hold RightCommand, or order its key list differently, and would never compare equal
+            // to the LeftCommand-first form ToCombination writes - and a chord that fires the
+            // binding is what this answers, however the widget spelled it.
+            KeyboardBinding probe = KeyChords.FromCombination(chord);
+            if (probe == null)
+            {
+                return null;
+            }
+
             IList<InputAction> actions = input.Actions;
             for (int i = 0; i < actions.Count; i++)
             {
@@ -208,7 +219,13 @@ namespace ES2Access.UI.Input
                 for (int b = 0; b < bindings.Count; b++)
                 {
                     KeyboardBinding keyboard = bindings[b] as KeyboardBinding;
-                    if (keyboard != null && chord.Equals(KeyChords.ToCombination(keyboard)))
+                    if (
+                        keyboard != null
+                        && keyboard.Key == probe.Key
+                        && keyboard.Ctrl == probe.Ctrl
+                        && keyboard.Shift == probe.Shift
+                        && keyboard.Alt == probe.Alt
+                    )
                     {
                         return actions[i].Key;
                     }
