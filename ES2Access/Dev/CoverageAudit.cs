@@ -246,6 +246,12 @@ namespace ES2Access.Dev
             // notification the game models, a place on the map - has no widget to be found under, and
             // its POINTER is then the only thing that says where it stands. Asked of the node's own
             // declaration, the same authority the tooltip check uses, never re-derived.
+            if (DeliberatelyUnworked(widget))
+            {
+                result.Inert++;
+                return;
+            }
+
             List<Declared> covering = NotificationAudit.Covering(
                 declared,
                 widget,
@@ -285,6 +291,37 @@ namespace ES2Access.Dev
             finding.Handler = Wiring(control);
             finding.Covered = covering[0].Key;
             Add(result.Uncovered, finding);
+        }
+
+        /// <summary>
+        /// A control the mod has DECIDED not to give a node, which is not the same thing as one it
+        /// missed - the difference this audit exists to keep, and the reason a ruling is written down
+        /// here rather than re-argued at every run.
+        ///
+        /// One entry so far. The star-system page's three bottom panels each draw a
+        /// <c>PanelExpandButton</c> running <c>StarSystemScreen.OnExpandCb</c>, which resizes all three
+        /// frames and remembers the size. Measured 2026-08-29: the panels' lists SCROLL rather than
+        /// losing rows, so the accessible tree is byte-identical expanded and collapsed - the button
+        /// moves pixels and nothing else. A control whose whole effect is how much a sighted player
+        /// sees at once is not an affordance a keyboard player has been denied, so it is omitted
+        /// (owner ruling 2026-08-29), and it is counted <c>inert</c> like the other controls that are
+        /// not affordances rather than reported as uncovered.
+        ///
+        /// The bar for adding to this list is that omitting the control costs the player NOTHING they
+        /// could otherwise perceive - never that declaring it would be awkward.
+        /// </summary>
+        private static bool DeliberatelyUnworked(AgeTransform widget)
+        {
+            try
+            {
+                return widget != null
+                    && widget.name == "PanelExpandButton"
+                    && widget.GetComponentInParent<StarSystemScreen>() != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         /// <summary>
