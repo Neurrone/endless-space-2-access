@@ -65,7 +65,9 @@ mutes voicing but `/speech` still captures.
   `text=1` types the body; arrows are `UpArrow`/`DownArrow`/…). The only route where a key is
   physically down (the consumed-key latch, `anyKeyDown`, engine KeyDown delivery, "was Return
   still down when the focus left"). Refuses (409, nothing sent) unless the foreground window is
-  the game's, re-checked every step; 400 for an unknown key name (the answer lists the vocabulary)
+  the game's, re-checked every step; 400 for an unknown key name (the answer lists the vocabulary).
+  Windows-only (Win32 SendInput): on macOS it refuses naming the platform — `POST /input` and
+  the `DevProbe.EndEdit`/`ArmCommit` levers are the substitutes there
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
   20–100 s: poll the process (not the port) every 2 s and only conclude a hang past 120 s
@@ -160,7 +162,8 @@ owner; never re-Read an image.
 **Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "<a save DevProbe.Saves() lists>"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked PowerShell hits
-execution policy). First act in-game: minimize the tutorial popup (`walks/cs/tut.cs` does it
+execution policy). On a Mac the twins are `./run-game.sh` / `./wait-game.sh`, same arguments.
+First act in-game: minimize the tutorial popup (`walks/cs/tut.cs` does it
 from `/eval`) — expanded, it eats every injection as `unconsumed`. If a launch fails with the
 process alive, `tasklist /FI "PID eq <pid>"` shows whether it is orphaned into another session.
 `POST /quit` can leave the process hung and non-responding: poll it and terminate it after two
