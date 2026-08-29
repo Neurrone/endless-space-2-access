@@ -27,16 +27,56 @@ namespace ES2Access.UI
     /// because captured - is the sentence the game wrote into the row's own tooltip for exactly that
     /// purpose (<c>BattleShipItem.Refresh</c>): the mod picks no words here, it reads the game's. A ship
     /// nothing happened to has no such sentence and says nothing beyond its name and its health.
+    ///
+    /// A HOST screen may hand in more for a flotilla row than the panel drawing it holds
+    /// (<see cref="FlotillaExtras"/>): the advanced setup window draws each flotilla twice - as this
+    /// line of ships, and as a card of its own carrying the unlock sentence and the range hover the
+    /// line has neither of. That is opt-in by construction, so the popups this reader is shared with
+    /// read exactly as they always did.
     /// </summary>
     public static class BattleRosters
     {
-        /// <summary>Whether a fleet's ships are walkable straight away rather than behind an expand.
+        /// <summary>
+        /// What a HOST screen knows about a flotilla row that the panel drawing the row does not.
         ///
-        /// Open, deliberately: the per-ship sentences ARE the report - which of your ships came back -
-        /// and a player who never presses Right on a group would otherwise never hear that any of them
-        /// died. The cost is Down presses past a long roster, which Alt+Down over the side's region
-        /// skips in one. OWNER CALL: flip to false for a shorter read.</summary>
-        private const bool ShipsOpen = true;
+        /// The flotilla lines are drawn by one prefab that the battle report and the advanced setup
+        /// window both use. Only the setup window draws a second surface per flotilla - the card the
+        /// player drags ships onto - and the words that surface carries (why a flotilla is locked, what
+        /// range it is optimal at) exist nowhere on the line. So the host, which is the only thing that
+        /// can match a line to a card, hands them in; a caller that hands nothing in gets the reading
+        /// it always had.
+        /// </summary>
+        public sealed class FlotillaExtras
+        {
+            /// <summary>More of the game's own DRAWN words for the row, joined onto its name the way
+            /// the line's own pieces are - always-drawn text is spoken, not reviewed. Null, or a null
+            /// answer, leaves the name as the line drew it.</summary>
+            public Func<FlotillaLine, string> Drawn;
+
+            /// <summary>The hover surface that explains the flotilla, which the line itself carries
+            /// none of - declared and aimed as the row's own tooltip. Null answer for a line the host
+            /// cannot match to a card.</summary>
+            public Func<FlotillaLine, AgeTooltip> Tooltip;
+
+            /// <summary>
+            /// What the host lets the player DO to a flotilla row, written onto the row's own vtable
+            /// after the roster has finished with it.
+            ///
+            /// The roster reads a flotilla; only the setup window lets one be changed, by dragging a
+            /// ship onto the card it draws beside the line. So the drop target is declared here, by
+            /// the screen that has the card - and a caller that hands nothing in keeps the plain
+            /// readout the report popups have always had.
+            /// </summary>
+            public Action<FlotillaLine, NodeVtable> Row;
+
+            /// <summary>The same for a SHIP row under a flotilla: its lock state and its toggle, the
+            /// pick-up that starts a move, and the drop that lands another ship in the flotilla this
+            /// one is in. Asked only for ships under a FLOTILLA line, never for the ships of a plain
+            /// fleet panel - a ship the battle has not arranged into a flotilla has no flotilla to be
+            /// pinned to or moved out of - and handed the LINE the ship is under, because everything
+            /// the host knows about a flotilla it looks up by that line.</summary>
+            public Action<FlotillaLine, BattleShipItem, NodeVtable> Ship;
+        }
 
         /// <summary>The game's own word for a ship's health, and for the command points a fleet is
         /// worth - both drawn as pictures beside a number, or as a gauge with no number at all.</summary>
@@ -47,8 +87,17 @@ namespace ES2Access.UI
         /// One side's fleets, in the order the game drew them, with everything else the side's panel
         /// wrote (the citadel line, a failed retreat, a revealed camouflage) read in its place among
         /// them.
+        ///
+        /// <paramref name="extras"/> is the host's own reading of a flotilla row
+        /// (<see cref="FlotillaExtras"/>), and null everywhere but the one screen that draws a second
+        /// surface per flotilla.
         /// </summary>
-        public static void Roster(GraphBuilder builder, AgeTransform root, string prefix)
+        public static void Roster(
+            GraphBuilder builder,
+            AgeTransform root,
+            string prefix,
+            FlotillaExtras extras = null
+        )
         {
             // Flow control: the whole roster below is collected by component scrapes over this root.
             if (builder == null || root == null || !AgeWidgets.Visible(root))
@@ -59,7 +108,7 @@ namespace ES2Access.UI
             try
             {
                 List<Entry> entries = new List<Entry>();
-                Collect(entries, root, prefix);
+                Collect(entries, root, prefix, extras);
                 entries.Sort(DownThePanel);
                 for (int i = 0; i < entries.Count; i++)
                 {
@@ -83,8 +132,17 @@ namespace ES2Access.UI
         /// role is FOR ("Primary targets: Protector and then Coordinator ships") and exists nowhere
         /// else on the popup. The badge is therefore a nested entry of its own, as every second hover
         /// surface is.
+        ///
+        /// <paramref name="host"/> is the setup window's own additions to the row - the lock and the
+        /// pick-up (<see cref="FlotillaExtras.Ship"/>) - and null on every other surface, which is
+        /// what keeps a report's ships read-only.
         /// </summary>
-        public static void Ship(GraphBuilder builder, BattleShipItem item, string key)
+        public static void Ship(
+            GraphBuilder builder,
+            BattleShipItem item,
+            string key,
+            Action<BattleShipItem, NodeVtable> host = null
+        )
         {
             AgeTransform widget = item == null ? null : item.AgeTransform;
             if (widget == null)
@@ -108,6 +166,7 @@ namespace ES2Access.UI
                 Sections = GraphNodes.SpokenSections(() => OutcomeLines(it), tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
+            Host(host, item, vtable);
 
             List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
             AgeTransform badge = Role(item);
@@ -134,8 +193,12 @@ namespace ES2Access.UI
         /// <c>Text</c> before anything here could read it. Asking the same method for the WRAPPED
         /// answer is the game's own untruncated one - and it must be asked with word wrap on, because
         /// the unwrapped branch dereferences the label it was not given.
+        ///
+        /// Public because it is also the name a ship is CARRIED under: a drag captures its name at
+        /// pick-up and says it again at the drop, and the row's own reading is the one the player
+        /// just heard.
         /// </summary>
-        private static string ShipName(BattleShipItem item)
+        public static string ShipName(BattleShipItem item)
         {
             try
             {
@@ -245,7 +308,12 @@ namespace ES2Access.UI
 
         private const string ShipWithStatusTooltipClass = "ShipWithSimple";
 
-        private static void Collect(List<Entry> entries, AgeTransform root, string prefix)
+        private static void Collect(
+            List<Entry> entries,
+            AgeTransform root,
+            string prefix,
+            FlotillaExtras extras
+        )
         {
             // The fleet the player brought, and its ships.
             BattleGarrisonPanel[] garrisons = root.GetComponentsInChildren<BattleGarrisonPanel>(true);
@@ -269,7 +337,7 @@ namespace ES2Access.UI
                         Emit = builder =>
                             Fleet(
                                 builder,
-                                it,
+                                Header(it.GarrisonTitleGroup, it.CommandPointsGroup),
                                 ControlId.For(it, key),
                                 it,
                                 () => FleetName(it),
@@ -291,7 +359,7 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                Flotillas(entries, panel, prefix + "/flotillas/" + i);
+                Flotillas(entries, panel, prefix + "/flotillas/" + i, extras);
             }
 
             // Everything else the side's panel wrote: the citadel that is firing for it, a retreat that
@@ -305,7 +373,8 @@ namespace ES2Access.UI
         private static void Flotillas(
             List<Entry> entries,
             BattleFlotillasPanel panel,
-            string prefix
+            string prefix,
+            FlotillaExtras extras
         )
         {
             AgeTransform header = panel.GarrisonTitleGroup;
@@ -348,6 +417,7 @@ namespace ES2Access.UI
                 }
 
                 FlotillaLine it = line;
+                FlotillaExtras more = extras;
                 string key = prefix + "/line/" + i;
                 entries.Add(
                     new Entry
@@ -356,12 +426,15 @@ namespace ES2Access.UI
                         Emit = builder =>
                             Fleet(
                                 builder,
-                                null,
+                                Explains(more, it),
                                 ControlId.For(it, key),
                                 it,
-                                () => FlotillaName(it),
+                                () => FlotillaName(it, more),
                                 it.BattleShipItemsTable,
-                                key
+                                key,
+                                more == null ? null : more.Row,
+                                it,
+                                more == null ? null : more.Ship
                             ),
                     }
                 );
@@ -379,41 +452,41 @@ namespace ES2Access.UI
         /// </summary>
         private static void Fleet(
             GraphBuilder builder,
-            BattleGarrisonPanel panel,
+            AgeTooltip tooltip,
             ControlId id,
             object drawnBy,
             Func<string> name,
             AgeTransform ships,
-            string prefix
+            string prefix,
+            Action<FlotillaLine, NodeVtable> host = null,
+            FlotillaLine line = null,
+            Action<FlotillaLine, BattleShipItem, NodeVtable> hostShip = null
         )
         {
-            AgeTooltip tooltip = panel == null
-                ? null
-                : Header(panel.GarrisonTitleGroup, panel.CommandPointsGroup);
             BattleShipItem[] items = ships == null
                 ? new BattleShipItem[0]
                 : ships.GetComponentsInChildren<BattleShipItem>(true);
             // No role word on the empty one either: with nothing inside it there is no group here,
             // and "Flotilla 1, Empty" is the whole of what the line says.
-            NodeDeclaration row = Nodes.Drawn(
-                id,
+            NodeVtable vtable =
                 items.Length == 0
                     ? Explained(Line(name), tooltip)
-                    : GraphNodes.Group(name, null, tooltip),
-                drawnBy
-            );
+                    : GraphNodes.Group(name, null, tooltip);
+            Host(host, line, vtable);
+            NodeDeclaration row = Nodes.Drawn(id, vtable, drawnBy);
             if (items.Length == 0)
             {
                 builder.AddItem(row);
                 return;
             }
 
-            builder.BeginGroup(row, null, ShipsOpen);
+            Action<BattleShipItem, NodeVtable> perShip = Ships(hostShip, line);
+            builder.BeginGroup(row);
             try
             {
                 for (int i = 0; i < items.Length; i++)
                 {
-                    Ship(builder, items[i], prefix + "/ship/" + i);
+                    Ship(builder, items[i], prefix + "/ship/" + i, perShip);
                 }
             }
             finally
@@ -422,6 +495,25 @@ namespace ES2Access.UI
                 // everything the popup declares after this fleet lands inside it.
                 builder.EndGroup();
             }
+        }
+
+        /// <summary>The host's ship hook with the flotilla LINE it belongs to already bound - what a
+        /// ship row is really handed. The line is the host's own index into everything it draws about
+        /// a flotilla beside the roster, and a ship under a plain fleet panel has none, which is what
+        /// leaves those rows read-only.</summary>
+        private static Action<BattleShipItem, NodeVtable> Ships(
+            Action<FlotillaLine, BattleShipItem, NodeVtable> host,
+            FlotillaLine line
+        )
+        {
+            if (host == null || line == null)
+            {
+                return null;
+            }
+
+            Action<FlotillaLine, BattleShipItem, NodeVtable> it = host;
+            FlotillaLine at = line;
+            return (item, vtable) => it(at, item, vtable);
         }
 
         /// <summary>What a fleet is called, and what it is worth: the name the panel drew (with the
@@ -486,18 +578,17 @@ namespace ES2Access.UI
         }
 
         /// <summary>Which flotilla this is, in the game's own numbering - the line draws the number
-        /// alone, and a row that said "2" would be saying nothing.</summary>
-        private static string FlotillaName(FlotillaLine line)
+        /// alone, and a row that said "2" would be saying nothing - then whatever the host is drawing
+        /// about the same flotilla somewhere the line is not (<see cref="FlotillaExtras.Drawn"/>).
+        /// </summary>
+        private static string FlotillaName(FlotillaLine line, FlotillaExtras extras)
         {
             try
             {
-                string index = AgeText.Label(line.FlotillaIndexLabel);
-                string named = string.IsNullOrEmpty(index)
-                    ? null
-                    : AgeText.Clean(Gui.Localize(FlotillaNameKey, index));
                 return new MessageBuilder()
-                    .ListItem(named ?? index)
+                    .ListItem(FlotillaNumber(line))
                     .ListItem(AgeWidgets.DrawnLabel(line.EmptyLabel))
+                    .ListItem(Drawn(extras, line))
                     .Build();
             }
             catch (Exception)
@@ -506,7 +597,82 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Which flotilla this is and nothing else ("Flotilla 2"), in the game's own
+        /// numbering. Public because it is also how a drop names where a ship LANDED: the row's whole
+        /// name carries the command points and whatever the host draws beside them, and a report that
+        /// said all of that would be reading the destination's readout rather than naming it.
+        /// </summary>
+        public static string FlotillaNumber(FlotillaLine line)
+        {
+            try
+            {
+                string index = AgeText.Label(line.FlotillaIndexLabel);
+                if (string.IsNullOrEmpty(index))
+                {
+                    return null;
+                }
+
+                string named = AgeText.Clean(Gui.Localize(FlotillaNameKey, index));
+                return string.IsNullOrEmpty(named) ? index : named;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private const string FlotillaNameKey = "%FlotillaNameTitle";
+
+        /// <summary>The host's own answers, asked defensively: a screen reading a surface this one
+        /// cannot see is a screen that can throw, and a roster row is not worth a page for it.</summary>
+        private static string Drawn(FlotillaExtras extras, FlotillaLine line)
+        {
+            try
+            {
+                return extras == null || extras.Drawn == null ? null : extras.Drawn(line);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: a host's flotilla words threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The host's own commands, written onto a row this reader has finished building.
+        /// Asked as defensively as its words are: a screen reaching a surface this one cannot see can
+        /// throw, and a roster that failed to gain a drop target is still a roster worth reading.
+        /// A null hook, or a row the host cannot match to its own surfaces, leaves the vtable exactly
+        /// as the roster made it.</summary>
+        private static void Host<T>(Action<T, NodeVtable> host, T row, NodeVtable vtable)
+            where T : class
+        {
+            if (host == null || row == null || vtable == null)
+            {
+                return;
+            }
+
+            try
+            {
+                host(row, vtable);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: a host's additions to a roster row threw: " + e);
+            }
+        }
+
+        private static AgeTooltip Explains(FlotillaExtras extras, FlotillaLine line)
+        {
+            try
+            {
+                return extras == null || extras.Tooltip == null ? null : extras.Tooltip(line);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: a host's flotilla tooltip threw: " + e);
+                return null;
+            }
+        }
 
         /// <summary>A label's own rectangle - what says whether the player can see it, and what its
         /// place among the other rows is worked out from.</summary>

@@ -143,7 +143,8 @@ family's own recipe file.
 - The per-family lists are in the sibling files: `test-recipes/galaxy-map.md`,
   `test-recipes/fleets.md`, `test-recipes/scanner.md`, `test-recipes/systems-and-planets.md`,
   `test-recipes/empire-screens.md`, `test-recipes/modals-and-outgame.md`,
-  `test-recipes/notifications.md`, `test-recipes/inspect-and-influence.md`,
+  `test-recipes/notifications.md`, `test-recipes/battles.md`,
+  `test-recipes/inspect-and-influence.md`,
   and `test-recipes/mod-settings.md`, each under its own
   `## Fixture-blocked` heading.
 - No save shows an UNLOCKED End Turn, so the turn cluster's operable state stays

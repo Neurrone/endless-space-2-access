@@ -47,6 +47,13 @@ namespace ES2Access.Dev
     /// ruling 2026-08-24). Nothing else is filtered, and a mis-aimed or promised-and-empty node on
     /// those same cards is still reported.
     ///
+    /// <b>What it cannot see.</b> Coverage is decided from the node's own WIDGET, so a tooltip a row
+    /// carries as a REVIEWED section (<see cref="GraphNodes.ReviewedTooltipSection"/> - buffer-only
+    /// words, no tooltip identity on the section) reads as uncovered on whatever widget it hangs on:
+    /// the sorting band's sentence on the advanced battle setup and two of that screen's three range
+    /// gauges land in <c>decoration</c> while their words really are in a row's buffer. Read those
+    /// buckets against the screen's declaration, not as a list of silences.
+    ///
     /// Bounded and on demand: a whole-GUI walk is far too expensive to run per frame, and nothing
     /// here speaks, focuses, moves the pointer or changes what the game is showing.
     /// </summary>

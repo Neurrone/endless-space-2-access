@@ -1031,6 +1031,22 @@ namespace ES2Access.Dev
             });
         }
 
+        /// <summary>What the carry has asked the game to PLAY, which is the one thing about a drag a
+        /// test cannot hear: how many sound events this load of the mod has posted and which one it
+        /// posted last (<see cref="ES2Access.UI.CarrySounds"/>). A pick-up and a carry's ending are
+        /// two different ids, so a pair of reads either side of a gesture says which of them
+        /// happened.</summary>
+        public static string Sounds()
+        {
+            return Guarded(json =>
+            {
+                json.WritePropertyName("posted");
+                json.WriteValue(ES2Access.UI.CarrySounds.Posted);
+                json.WritePropertyName("last");
+                json.WriteValue(ES2Access.UI.CarrySounds.Last);
+            });
+        }
+
         public static string TooltipDelay(double seconds)
         {
             return Guarded(json =>

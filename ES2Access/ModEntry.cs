@@ -923,6 +923,11 @@ namespace ES2Access
             CarryState.DropAction = UiActions.Activate;
             CarryState.CancelAction = UiActions.Back;
 
+            // And the game's own two drag noises, so the keyboard's carry sounds like the mouse's
+            // drag. Which cargo has a sound at all is CarrySounds' answer, not the carry's.
+            Carry.Started = CarrySounds.Started;
+            Carry.Ended = CarrySounds.Ended;
+
             GraphSheet.BlankText = () => ModStrings.Get(ModStrings.NavCellEmpty);
             GraphSheet.TableRoleText = () => ModStrings.Get(ModStrings.NavTable);
             GraphSheet.TextCellType = ControlTypes.Text;

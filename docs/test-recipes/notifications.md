@@ -1,7 +1,8 @@
 # Notification popups, the strip and the turn log
 
 Raising, reading, restoring and auditing the notification family — the popups, the HUD
-strip, the mod's own turn log, and the battle popups that arrive as notifications.
+strip and the mod's own turn log. The battle popups that arrive as notifications, and the
+ADVANCED setup window behind them, are `docs/test-recipes/battles.md`.
 
 ## The pending notifications in `[Beginner] test`
 
@@ -380,110 +381,6 @@ several, `Coverage()` reports `NotificationItem001..003` in the `hidden` bucket 
 children keeping the previous binding's tooltip. Not a gap; take the count from
 `GetPlayerEmpireGuiNotifications()`, never from the table's children.
 
-## Battles
-
-**The battle fixture** is a 14-step script (measured live; not preserved in the repo) because a battle cannot be
-created from `/eval` — it needs two hostile fleets meeting. Everything before the meeting is
-read-only; from the setup popup onward the run is destructive, so it goes LAST and ends with
-`POST /loadsave`.
-
-**Space-battle SETUP popup** (verified live 2026-08-29, player vs pirates, one fleet a side). Stop
-order in `notification:content`: title, arena, [yours] fleet header / one row per flotilla,
-[theirs] fleet header group / ships, [aftermath] balance, [plan] the Battle Plan combo row and then
-Advanced / Watch / Retreat / Fight in the SAME band (owner, 2026-08-29: Alt+Down from the balance
-lands on the plan and stops there — the buttons after it are the next rows down, not a section) —
-8 numbered positions with every group shut. The BALANCE line is
-directional and names the two sides ("Balance of power: 1st Conquerors Navy has 103% more military
-power than 8th Greedy Pirates"); the names come from the first non-reinforcement garrison of each
-`EncounterGroup.Setup.ContenderSetups` entry, which is the same string the roster header draws.
-A flotilla the battle left EMPTY is a plain row ("Flotilla 1, Empty" — the game's own `EmptyLabel`),
-not a group: nothing hangs under it, and the lines and their badges carry no game tooltip anywhere
-(measured on `FlotillaLine`, `FlotillaIndexGroup`, `Circle`, `FlotillaIndexLabel`, `EmptyLabel`).
-
-**The PLANS are a DROPLIST, not a band.** Pressing the game's own Previous/Next arrow does not show
-a plan, it CHOOSES it, so the popup carries ONE closed row ("Battle Plan, combo box, ⟨plan⟩,
-⟨effect line⟩") and Enter opens `screen.battle-plan` — a mod-owned child screen, no layer, one
-`GraphNodes.Choice` row per `group.AvailablePlays` entry, landing on the plan in force. **Arrival on
-a chooser row turns the card** (shortest way round, guarded on the row being the focused one), Enter
-ACCEPTS and closes, Escape puts back the plan that was in force when the list opened, and the
-chooser refuses to open at all while the game has the arrows switched off (the closed row then reads
-`unavailable` and swallows Enter — force it with
-`w.Previous/NextPlayButton.AgeTransform.Enable = false`, and put it back). Readback for every step:
-`w.LeftBattleGroupSetupPanel.EncounterGroup.Setup.PlayDefinition` against `AvailablePlays`. Card
-region for the evidence crop: `950,562,210,282` (the title, the three range diagrams and ONE effect
-line change together). The card's effects table is POOLED — `Item001` sits at `Visible=true,
-Alpha=0` holding the previous plan's line, so the row reads it with `AgeWidgets.PaintedText` and the
-crop is the oracle. At most ONE chooser row is expanded at a time, the one the cursor is inside: the
-nested children all read the single drawn card, so a second open row would read this row's card
-under that row's name.
-
-Nested "Tooltips" children, four on the closed row and four on each chooser row: the family badge
-(named with the game's own family title, "Aggressive", and keeping its own different sentence) and
-one per flotilla range diagram. A range child says its line ONCE — "Flotilla 1: Short Range", never
-"Flotilla 1: Short Range, Short Range": the name carries the sentence, so `TooltipChildren.AddPlain`
-takes it back out of the sections (`Unrepeat`).
-Ship rows carry one child each, the role badge named with the game's role title ("Attacker",
-"Exploration") plus the whole different sentence behind it. The arena row carries one, the
-Separator's static "Effects applied to all the ships in the Theater" — `ArenaGroupTooltip` itself is
-class `Simple` with EMPTY content whenever the theater applies no effects.
-`TooltipParity()` is clean here except `Previous/NextPlayButton`, which stay `uncovered`
-(owner-ruled subsumed by the chooser). `NotificationParity()` keeps four accepted residues:
-`battle-setup/balance` `unlocatable` (it is computed, and the game draws only an arc); the same two
-arrow buttons under `tooltips`; `placement` for the two hero portraits and the four bottom-bar
-controls; and `honesty` "says what nothing draws" for every row whose name the mod composes out of
-a key the game draws no words for — "Flotilla N" (`%FlotillaNameTitle` over a line that draws the
-bare number) and the "(Ctrl+L)" on Show Location. The unfocused-plan-row `honesty` entries the
-paged band produced are GONE with the band. **Expand Flotilla N, the enemy garrison, every ship
-row, the arena row and the Battle Plan row before believing either audit** — a collapsed branch
-reads as `unread`/`decoration`.
-**Never activate** Fight, Retreat, the Watch toggle or the auto-popup box.
-
-**Ground-battle SETUP popup** (verified live 2026-08-25, player attacking). Stop order: title,
-balance ("Manpower L against R"), [yours] role / Assigned / Reserve / troop rows / three details
-rows (health, damage, bombing), [theirs] same minus the two multipliers (the game hides them;
-enemy special line "May inflict pre-battle damage" has no tooltip), [aftermath] tactic cards /
-population badge / improvements badge, [controls] Watch / Fight — 9 positions on the attacker
-fixture. Probe handles: `w.BattlePowerGauge.AgeTransform` IS the `PowerBalanceGroup`;
-`w.Left/RightContenderPanel as GroundBattleContenderSetupPanel` reaches the role and details
-labels. The badge rows are named from their PARENT groups' tooltips (`Cells.AddStat`, null title);
-the details rows read at `Visible=true, Alpha=0` while the DETAILS accordion is collapsed — the
-crop is the oracle for what is DRAWN (evidence rects: badges `965,546,180,48`, collapsed DETAILS
-`423,500,460,140`). Selecting a tactic card changes the pending order — restore card 0 if toggled.
-Each card's class-backed "GroundBattleStrategy" tooltip carries the full per-tactic numbers
-(bombing, multipliers, deployment-limit change) in the focused buffer. The notification audits
-prove nothing here (bodies invisible to them — roadmap); use `DevProbe.Tooltip()` directly.
-
-**Ground-battle REPORT popup** (verified live 2026-08-25, attacker, continuing siege). Stop order:
-title (outcome word; buffer adds the game's description sentence), balance ("Manpower L against R",
-final manpowers), [yours] strategy (buffer holds the tactic dossier) / Remaining / Reserve / troop
-rows / "Damage Dealt" + one row per drawn damage block, [theirs] the same shape, [aftermath]
-population / improvements / will-continue, [controls] Retreat / Continue — 7 numbered positions.
-Probe handles: `w.Left/RightPlayTooltip` (class `GroundBattleStrategy`) hang on
-`PlayCardLeft`/`PlayCardRight`, NOT on `PlayTitle` — aim at the tooltip's own transform;
-`w.Left/RightContenderPanel as GroundBattleContenderReportPanel` reaches `DamageIcon`/`DamageGauge`.
-Evidence rects: damage gauges `858,321,60,270` and `1192,321,60,270`, manpower rows
-`393,340,1324,110`. **Never activate** Retreat/Continue/Replay/Minimize/Dismiss — all five dismiss
-the popup and Retreat also posts `GroundBattle.OrderStandBy()`.
-
-**Ground-battle OUTCOME-SELECTION popup** (modelled 2026-08-25, NEVER sighted live — needs a
-decisive victory). Tier-zero inventory off the unshown window (instantiated, `Shown=False`,
-`GuiNotification=null`; fields all non-null): `SystemNameLabel`/`SystemLevelLabel`/
-`SystemPopulationCountTable`/`SystemPopulationNoneLabel` (`%None`)/`SystemImprovementsLabel`
-(`"[improvement] N"`)/`SystemWondersLabel` (`"N [wonder]"`)/`OutcomesTable`/`TimerGauge`. Prefab
-texts are placeholders the bind rewrites — content claims wait for the live popup.
-`SystemPopulationCountPrefab` (= `CapturedPopulationCount`) carries `PopulationCount` + one button
-(`OnClickCb`); `OutcomeItemPrefab`'s toggle has `UseDoubleClick=True` (`OnDoubleClickCb` = pick AND
-validate). The `ValidateButton` ("Confirm") is bound to no window field — by-name lookup only
-(ES2 facts). The countdown is multiplayer-only (ES2 facts); expect NO timer row in single player.
-The notification parity probe reads `nodes:5` on any body-owning popup — it cannot referee this
-family; probe directly. LIVE (sighted 2026-08-25): the popup is destructible by a single
-keypress — one Enter on a card posts `OrderSelectGroundBattleOutcome`, the double-click chord
-validates and COMMITS — so the only safe verification is `ui.down`/`ui.up` plus
-`GET /gui/graph?buffers=1`, with "the previously selected card still reads `selected`" as the
-after-dump guard. It arrives alongside the ground-battle REPORT notification (Alt+Left/Right
-move between them), and the window can change under you if a person is at the keyboard —
-re-dump before interpreting.
-
 ## The turn log's usage hint
 
 `ES2Access.UI.ModNotifications.Raise(new ES2Access.UI.EventModFleetArrived(Gui.PlayerEmpire, fleet,
@@ -507,5 +404,5 @@ fixture and proves the wiring in the same press.
   has one pending.
 - A multi-row Laws Cancelled popup, and any re-summoning of one once dismissed
   (**The Laws Cancelled popup**).
-- `PirateMissionReport`, and the ground-battle OUTCOME-SELECTION popup's live content
-  (**The collapsed-report family**, **Battles**).
+- `PirateMissionReport` (**The collapsed-report family**), and the ground-battle
+  OUTCOME-SELECTION popup's live content (`battles.md`, **Ground battles**).

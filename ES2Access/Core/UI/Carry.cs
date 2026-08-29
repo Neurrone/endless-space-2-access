@@ -126,6 +126,27 @@ namespace ES2Access.Core.UI
 
         public static string CancelAction = "ui.back";
 
+        /// <summary>
+        /// The carry's LIFECYCLE, for a host that wants to do something around it that Core cannot
+        /// do itself - playing the noises the GAME's own mouse drag makes is what these exist for,
+        /// and which noise that is (or whether there is one at all) is the host's answer, never a
+        /// rule in here. Told WHAT was picked up or put down, so a host that cares about one sort of
+        /// cargo only can read the item's kind and stay out of the way for the rest.
+        ///
+        /// <see cref="Started"/> is raised by every press that takes something up, the re-pick that
+        /// swaps what is held included - each is a new carry beginning. <see cref="Ended"/> is
+        /// raised by every ending the PLAYER performed: a drop that landed, a drop the game refused
+        /// (the carry survives that one, and it is still an attempt ending), and a give-up. A carry
+        /// that merely lapses because the player walked off the page
+        /// (<see cref="ScreenChanged"/>) raises nothing, for the reason it says nothing: the player
+        /// did not end it, they left.
+        ///
+        /// An observer that throws costs its own effect and never the carry.
+        /// </summary>
+        public Action<CarryItem> Started;
+
+        public Action<CarryItem> Ended;
+
         /// <summary>What is being carried, or null.</summary>
         public CarryItem Held { get; private set; }
 
@@ -445,8 +466,29 @@ namespace ES2Access.Core.UI
                 return CarryOutcome.NotOurs;
             }
 
+            CarryItem held = carry.Held;
             carry.Clear();
+            Raise(carry.Ended, held);
             return new CarryOutcome(true, ModStrings.Get(ModStrings.DragCancelled));
+        }
+
+        /// <summary>Tell a lifecycle observer, if there is one. Guarded because an observer is
+        /// something hung on the SIDE of the carry: whatever it does, the press it is watching still
+        /// has to do what it said it would.</summary>
+        private static void Raise(Action<CarryItem> observer, CarryItem item)
+        {
+            if (observer == null)
+            {
+                return;
+            }
+
+            try
+            {
+                observer(item);
+            }
+            catch (Exception)
+            {
+            }
         }
 
         private static CarryOutcome PickUp(NodeVtable vtable, CarryState carry, object owner)
@@ -466,6 +508,7 @@ namespace ES2Access.Core.UI
             // re-announce; where it hands over a different one - a population marker further round the
             // ring - it is how the player asks for that amount.
             carry.PickUp(item, owner);
+            Raise(carry.Started, item);
             return new CarryOutcome(true, Carrying(item));
         }
 
@@ -511,6 +554,7 @@ namespace ES2Access.Core.UI
             DropResult result = vtable.OnDrop(held);
             if (result == null || !result.Dropped)
             {
+                Raise(carry.Ended, held);
                 string refusal = result == null ? null : result.Message;
                 return new CarryOutcome(
                     true,
@@ -521,6 +565,7 @@ namespace ES2Access.Core.UI
             }
 
             carry.Clear();
+            Raise(carry.Ended, held);
             return new CarryOutcome(
                 true,
                 string.IsNullOrEmpty(result.Message)

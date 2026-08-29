@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
@@ -532,6 +533,61 @@ namespace ES2Access.Tests.UI
             Assert.True(outcome.Handled);
             Assert.Equal("Cancelled drag", outcome.Speech);
             Assert.False(carry.IsCarrying);
+        }
+
+        [Fact]
+        public void TheLifecycleIsToldOfEveryPickUpAndOfEveryEndingThePlayerPerformed()
+        {
+            CarryState carry = new CarryState();
+            List<string> heard = new List<string>();
+            carry.Started = item => heard.Add("started " + item.Name);
+            carry.Ended = item => heard.Add("ended " + item.Name);
+
+            CarryActions.Press(Source(new object(), "Explorer"), carry, "galaxy");
+            CarryActions.Activate(Target(DropResult.Refused("Full")), carry);
+            CarryActions.Press(Source(new object(), "Hunter"), carry, "galaxy");
+            CarryActions.Cancel(carry);
+            CarryActions.Press(Source(new object(), "Scout"), carry, "galaxy");
+            CarryActions.Activate(Target(DropResult.Done()), carry);
+
+            Assert.Equal(
+                new[]
+                {
+                    "started Explorer",
+                    "ended Explorer",
+                    "started Hunter",
+                    "ended Hunter",
+                    "started Scout",
+                    "ended Scout",
+                },
+                heard
+            );
+
+            // A carry the player never ended - they walked off the page - is not one of its endings,
+            // and an observer that throws costs its own effect and nothing else.
+            carry.Ended = item =>
+            {
+                throw new InvalidOperationException("deaf");
+            };
+            CarryActions.Press(Source(new object(), "Ranger"), carry, "galaxy");
+            carry.ScreenChanged(false);
+            Assert.False(carry.IsCarrying);
+
+            CarryActions.Press(Source(new object(), "Ranger"), carry, "galaxy");
+            Assert.True(CarryActions.Cancel(carry).Handled);
+        }
+
+        [Fact]
+        public void ASourceThatHandsOverNothingStartsNoCarryAndTellsNobody()
+        {
+            CarryState carry = new CarryState();
+            int started = 0;
+            carry.Started = item => started++;
+            NodeVtable empty = Vt("Empty slot");
+            empty.OnPickUp = () => null;
+
+            Assert.True(CarryActions.Press(empty, carry, "galaxy").Handled);
+            Assert.Equal(0, started);
         }
 
         [Fact]

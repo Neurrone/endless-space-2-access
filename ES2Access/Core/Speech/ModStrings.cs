@@ -1443,8 +1443,18 @@ namespace ES2Access.Core.Speech
         public const string ScreenBattle = "screen.battle";
         public const string ScreenGroundBattle = "screen.ground-battle";
         public const string ScreenAdvancedBattleReport = "screen.battle-report-advanced";
+        /// <summary>The band of battle plans on the advanced setup, which Tab stops in on its own
+        /// (the plans are the decision that window exists for). The game draws the hand as cards and
+        /// gives the band no heading at all, so the word naming it is the mod's.</summary>
+        public const string BattleTactics = "battle.tactics";
+
         public const string BattleYourFleets = "battle.your-fleets";
         public const string BattleEnemyFleets = "battle.enemy-fleets";
+
+        /// <summary>The band of figures on the advanced setup - the four pages behind the wordless
+        /// switches, which Tab now stops in on its own. Named for the same reason the two sides are:
+        /// a stop the player lands in says what it is.</summary>
+        public const string BattleStats = "battle.stats";
         public const string BattleYourTroops = "battle.your-troops";
         public const string BattleEnemyTroops = "battle.enemy-troops";
         public const string BattleYourDamage = "battle.your-damage";
@@ -1489,6 +1499,68 @@ namespace ES2Access.Core.Speech
         public const string GroundBattleYourTroopsLost = "ground-battle.your-troops-lost";
         public const string GroundBattleEnemyTroopLost = "ground-battle.enemy-troop-lost";
         public const string GroundBattleEnemyTroopsLost = "ground-battle.enemy-troops-lost";
+
+        /// <summary>The four pages of figures the advanced battle setup keeps behind four wordless
+        /// switches. The game has a description per switch and no title for any of them, so the page
+        /// names are the mod's - and the pages are the list the player walks, so these are what the
+        /// rows are called.</summary>
+        public const string BattleStatsTrajectories = "battle.stats-trajectories";
+        public const string BattleStatsMilitary = "battle.stats-military";
+        public const string BattleStatsDamage = "battle.stats-damage";
+        public const string BattleStatsRange = "battle.stats-range";
+
+        /// <summary>Where one flotilla will fight, for the trajectory page: the flotilla's number and
+        /// the range, the latter already in the game's own words for it. A complete phrase, so a
+        /// language that puts the range first can.</summary>
+        public const string BattleFlotillaRange = "battle.flotilla-range";
+
+        /// <summary>
+        /// How one of the two damage rings is split between the fleets. The window sizes these from
+        /// what each side's weapons of that type get THROUGH the other side's defences of that type,
+        /// which the phrase says out loud - the ring means something narrower than "damage", and a
+        /// listener told a bare percentage would read it as the wrong quantity.
+        ///
+        /// Both halves are always said, including a zero: an unopposed ring means nothing of the other
+        /// side's is getting through, which is a fact worth hearing rather than a half-sentence.
+        /// </summary>
+        public const string BattleEnergyDamageShare = "battle.energy-damage-share";
+        public const string BattleProjectileDamageShare = "battle.projectile-damage-share";
+
+        /// <summary>Which of the two damage rings is drawn thicker - the window's own comparison of how
+        /// much damage of each type there is, which neither ring's split says. Nothing is said for two
+        /// rings drawn alike.</summary>
+        public const string BattleEnergyBiggerThreat = "battle.energy-bigger-threat";
+        public const string BattleProjectileBiggerThreat = "battle.projectile-bigger-threat";
+
+        /// <summary>How one of the three range rings is split between the fleets - how well each side's
+        /// ships shoot at that range, averaged over the ships they are bringing.</summary>
+        public const string BattleShortRangeShare = "battle.short-range-share";
+        public const string BattleMediumRangeShare = "battle.medium-range-share";
+        public const string BattleLongRangeShare = "battle.long-range-share";
+
+        /// <summary>Which of the three range rings is drawn thickest - the range BOTH fleets are best
+        /// suited to, which is where the fight is likely to be decided.</summary>
+        public const string BattleShortRangeMatters = "battle.short-range-matters";
+        public const string BattleMediumRangeMatters = "battle.medium-range-matters";
+        public const string BattleLongRangeMatters = "battle.long-range-matters";
+
+        /// <summary>
+        /// Whether a ship is pinned to the flotilla it is in, which the advanced setup draws as a
+        /// white glow on a 24-pixel chip and writes down nowhere at all.
+        ///
+        /// A locked ship is exempt from the sorting presets: the three buttons that redistribute the
+        /// fleet leave it where the player put it. So the two words are a STATE the player sets and
+        /// re-reads, not a decoration - which is why they are a control's two state words rather than
+        /// one word that appears and vanishes. "Not locked" says the flotilla nothing, because a ship
+        /// that is not pinned has no flotilla it belongs to: the next preset may move it anywhere.
+        /// </summary>
+        public const string BattleShipLockedInFlotilla = "battle.ship-locked-in-flotilla";
+        public const string BattleShipNotLocked = "battle.ship-not-locked";
+
+        /// <summary>A ship carried from one flotilla to another and put down there, in the shape every
+        /// landed drop in the mod reports itself with (<c>fleets.ship-moved</c>,
+        /// <c>system.population-moved</c>) - what moved, and where it went.</summary>
+        public const string BattleShipMoved = "battle.ship-moved";
 
         // The sweep screens: the error and non-blocking dialogs, the target pickers, the
         // cutscenes, the cursor-mode watcher, the end-game pages and the main-menu
@@ -2330,8 +2402,10 @@ namespace ES2Access.Core.Speech
             { ScreenBattle, "Space battle" },
             { ScreenGroundBattle, "Ground battle" },
             { ScreenAdvancedBattleReport, "Advanced battle report" },
+            { BattleTactics, "Tactics" },
             { BattleYourFleets, "Your fleets" },
             { BattleEnemyFleets, "Enemy fleets" },
+            { BattleStats, "Stats" },
             { BattleYourTroops, "Your troops" },
             { BattleEnemyTroops, "Enemy troops" },
             { BattleYourDamage, "Damage you caused" },
@@ -2358,6 +2432,31 @@ namespace ES2Access.Core.Speech
             { GroundBattleYourTroopsLost, "{0} of your troops lost" },
             { GroundBattleEnemyTroopLost, "One enemy {0} is lost" },
             { GroundBattleEnemyTroopsLost, "{0} enemy troops lost" },
+            { BattleStatsTrajectories, "Trajectories" },
+            { BattleStatsMilitary, "Military power" },
+            { BattleStatsDamage, "Damage" },
+            { BattleStatsRange, "Range" },
+            { BattleFlotillaRange, "Flotilla {0} engages at {1}" },
+            {
+                BattleEnergyDamageShare,
+                "Of the energy damage that gets through defenses: {0}% is yours, {1}% is the enemy's"
+            },
+            {
+                BattleProjectileDamageShare,
+                "Of the projectile damage that gets through defenses: {0}% is yours, {1}% is the "
+                    + "enemy's"
+            },
+            { BattleEnergyBiggerThreat, "Energy is the bigger threat" },
+            { BattleProjectileBiggerThreat, "Projectile is the bigger threat" },
+            { BattleShortRangeShare, "Effectiveness at short range: {0}% yours, {1}% enemy's" },
+            { BattleMediumRangeShare, "Effectiveness at medium range: {0}% yours, {1}% enemy's" },
+            { BattleLongRangeShare, "Effectiveness at long range: {0}% yours, {1}% enemy's" },
+            { BattleShortRangeMatters, "Short range matters most" },
+            { BattleMediumRangeMatters, "Medium range matters most" },
+            { BattleLongRangeMatters, "Long range matters most" },
+            { BattleShipLockedInFlotilla, "locked in flotilla" },
+            { BattleShipNotLocked, "not locked" },
+            { BattleShipMoved, "Moved {0} to {1}" },
             { ScreenError, "Error" },
             { ScreenTargetSelection, "Choose a target" },
             { ScreenGroundTargetSelection, "Choose a system to invade" },

@@ -98,17 +98,23 @@ belong in the files above.
   live).
 - Space-battle balance sentence + plan chooser (2026-08-29: directional balance naming both
   fleets, the plan carousel as one closed combo row over a chooser child screen, nested
-  plan/ship/arena tooltip children): the SETUP popup is verified live; the other three users of `BalanceText` are
-  code-symmetry only and need a battle fought — the REPORT popup and the cinematic — or a
-  toggle nobody would flip in a live session: the ADVANCED-PLAY modal declares its balance
-  node only while `BattlePowerGauge` is drawn, and the game draws that gauge only under the
-  "Displays stats about military power" stats radio (measured 2026-08-28: with the default
-  trajectory-visuals radio selected the node is absent altogether). Unsighted with it:
+  plan/ship/arena tooltip children): the SETUP popup is verified live, and so is the
+  ADVANCED-PLAY modal since its stats band became a pager (2026-08-29: the military page's row
+  computes the sentence from the encounter groups, so it reads whatever page the window is
+  showing). The remaining two users of `BalanceText` are code-symmetry only and need a battle
+  fought — the REPORT popup and the cinematic. Unsighted with it:
   `battle.balance-all` (the wipe-out phrase, needs a side
   reduced to zero military power), the first-non-reinforcement-garrison rule on a side with
   reinforcements or merged fleets (the fixture has one garrison a side), a plan card the game
   draws `NoEffectsLabel` on, and a plan whose three flotilla ranges differ (only a 3x
   "Short Range" card's nested names were dumped).
+- Advanced-play fleet arrangement (2026-08-29 stage shipped the ship lock and the carry): a
+  successful CROSS-FLOTILLA move and the juggernaut SWAP are both unverified — the fixture has one
+  valid flotilla, so every drop it can reach is a refusal. Needs a 5+ CP fleet battle: the manual
+  lines are in `test-recipes/battles.md` (ADVANCED block). Two things ride on it — whether
+  `BattleGroupSetupPanel`'s roster lines redraw after a drop (only the 2D flotilla cards are proven
+  to), and whether the swap is worth advertising, since `DropAccepts` is the game's
+  `CanAddShipItem` and that branch succeeds where it says no, so the swap works and no row offers it.
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a

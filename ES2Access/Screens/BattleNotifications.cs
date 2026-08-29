@@ -1231,9 +1231,22 @@ namespace ES2Access.Screens
             BattlePlayCard card
         )
         {
+            return CurrentPlay(window) != index ? null : PlanEffects(card);
+        }
+
+        /// <summary>
+        /// The same words off a card that is showing its OWN plan, with nothing to turn first.
+        ///
+        /// The guard above is a fact about the CAROUSEL - one card the window pages between the
+        /// plans - and not about a card. The advanced window lays the same plans out as a HAND, three
+        /// cards drawn at once with each permanently on the plan it stands for, so there is no
+        /// mis-describing to guard against and this is the whole of the reading.
+        /// </summary>
+        internal static string PlanEffects(BattlePlayCard card)
+        {
             try
             {
-                if (card == null || CurrentPlay(window) != index)
+                if (card == null)
                 {
                     return null;
                 }

@@ -149,7 +149,12 @@ table and every cell of a row (its `DoubleClickButton`, the row selected first b
 handlers all read `GuiTable.SelectedLine`), so the empire page's systems table opens that system's
 management page, the military page shows the fleet on the map, and the two selection modals pick and
 close — no screen declares any of it. The tables whose client does nothing with the gesture stay
-silent, as the mouse does there. The save list's second click ACTS rather than shows — it loads the
+silent, as the mouse does there. **Off a table, one screen wires it by hand**: the advanced battle
+setup's ship rows, where the game's second click on the ship's chip in the 3D arena is what pins it
+to its flotilla, and the chip's SINGLE click does nothing at all (owner ruling 2026-08-29, reversing
+the same day's ruling that had put the pin on Enter). The row keeps Enter for the DROP - it is a
+target for a ship being carried - so the two gestures no longer collide, and the row's buffer names
+the chord (**Usage hints**, above), because nothing about a roster line suggests a double click. The save list's second click ACTS rather than shows — it loads the
 row (behind the same confirmation the Load button raises in game) or saves over it (behind
 `%LoadSaveConfirmOverwriteDescription`) — and it is carried like every other table's: the game's own
 confirmation is the guard on chord and mouse alike (owner ruling 2026-08-14). A selectable table row
@@ -245,8 +250,11 @@ research technology, a constructible and a colony curiosity ("queue it first"); 
 ship tile in the fleet lists ("add to the selection" / "select up to here"); a control carrying a
 LIVE `GuiButtonHint` ("show missing technology" — declared generically wherever `Cells.Add` or
 `CardActions.Emit` wires the jump, plus the troop list's own copy); the military page's fleet row
-("show and select fleet"), the empire page's systems row ("open system management screen") and the
-load list's row in LOAD mode only ("load"). A table's double-click hint is named by the SCREEN
+("show and select fleet"), the empire page's systems row ("open system management screen"), the
+load list's row in LOAD mode only ("load") and the advanced battle setup's ship rows ("lock or
+unlock this ship in its flotilla", naming the DOUBLE-CLICK chord — the one place in the mod where a
+hint names that gesture, because a roster line suggests nothing about it and the game says the same
+thing about its own chips on a button the player may never stand on). A table's double-click hint is named by the SCREEN
 (`TableSheet.DoubleClickHint`) and sits on the row's primary cell alone, though the gesture works
 from every cell of the row: what the second click does is a fact about the row, and repeating it
 down eight columns is eight sentences for one affordance.

@@ -72,6 +72,13 @@ namespace ES2Access.Core.Speech
         public const string HintGoToLocation = "hint.go-to-location";
         public const string HintClearKey = "hint.clear-key";
 
+        /// <summary>The advanced battle setup's ship rows, whose lock is the game's own DOUBLE CLICK on
+        /// the chip in the arena - a gesture nothing about a roster line would suggest, on a chord that
+        /// is not the row's activation key. The game says the same thing about its own chips ("You can
+        /// also change the state of a ship by double clicking on it"), on a button the player may never
+        /// stand on.</summary>
+        public const string HintLockShip = "hint.lock-ship";
+
         private static readonly Dictionary<string, string> HintDefaults = new Dictionary<
             string,
             string
@@ -96,6 +103,7 @@ namespace ES2Access.Core.Speech
             { HintLoad, "{0} to load" },
             { HintGoToLocation, "{0} goes to location" },
             { HintClearKey, "{0} to clear this key" },
+            { HintLockShip, "{0} to lock or unlock this ship in its flotilla" },
             // --- input batch (2026-08-22) ---
             { LabelWithChord, "{0} ({1})" },
             { SystemPrevious, "Previous system" },
