@@ -172,8 +172,12 @@ namespace ES2Access
             }
             else
             {
-                string prismPath = Path.Combine(host.GameRootPath, "prism.dll");
-                if (NativeLoader.LoadPrism(prismPath))
+                // On macOS the mod speaks the system voice itself and loads no Prism
+                // (PrismSpeech.Initialize); the preload is Windows-only.
+                if (
+                    Platform.IsMacOS
+                    || NativeLoader.LoadPrism(Path.Combine(host.GameRootPath, "prism.dll"))
+                )
                 {
                     Speech.Initialize();
                 }
@@ -1392,6 +1396,10 @@ namespace ES2Access
                     false
                 );
             }
+
+            // Last, after everything this frame had to say: a backend that paces its own speech
+            // (the macOS system voice) plays what the frame queued and starts the next render.
+            Speech.Update();
         }
     }
 }

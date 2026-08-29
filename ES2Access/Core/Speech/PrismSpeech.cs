@@ -1,4 +1,5 @@
 using System;
+using ES2Access.Core.Speech.Mac;
 using ES2Access.Core.Util;
 
 namespace ES2Access.Core.Speech
@@ -11,6 +12,11 @@ namespace ES2Access.Core.Speech
     /// prism.dll must already be loaded into the process before <see cref="Initialize"/> runs
     /// (the plugin preloads it by full path via NativeLoader), otherwise the first P/Invoke
     /// throws DllNotFoundException.
+    ///
+    /// On macOS there is no Prism: the mod speaks the system voice itself
+    /// (<see cref="MacSystemVoice"/>), because VoiceOver's announcement API cannot queue and
+    /// AVSpeech's own queue leaves a gap between every line. The chokepoint and its callers do
+    /// not change; only what is behind <see cref="Initialize"/> does.
     /// </summary>
     public sealed class PrismSpeech
     {
@@ -25,6 +31,7 @@ namespace ES2Access.Core.Speech
         private IntPtr _ctx;
         private IntPtr _backend;
         private bool _useOutput;
+        private MacSystemVoice _mac;
 
         /// <summary>True once a backend was created and initialized successfully.</summary>
         public bool Available { get; private set; }
@@ -44,6 +51,21 @@ namespace ES2Access.Core.Speech
         {
             if (Available)
             {
+                return;
+            }
+
+            if (Platform.IsMacOS)
+            {
+                MacSystemVoice mac = new MacSystemVoice();
+                if (!mac.Start())
+                {
+                    return;
+                }
+
+                _mac = mac;
+                BackendName = "System Voice";
+                Available = true;
+                Log.Info("macOS system voice ready: " + mac.Description);
                 return;
             }
 
@@ -142,6 +164,12 @@ namespace ES2Access.Core.Speech
                 return;
             }
 
+            if (_mac != null)
+            {
+                _mac.Speak(text, interrupt);
+                return;
+            }
+
             byte[] utf8 = PrismNative.ToUtf8(text);
             PrismNative.PrismError err = _useOutput
                 ? PrismNative.prism_backend_output(_backend, utf8, interrupt)
@@ -160,7 +188,23 @@ namespace ES2Access.Core.Speech
                 return;
             }
 
+            if (_mac != null)
+            {
+                _mac.Silence();
+                return;
+            }
+
             PrismNative.prism_backend_stop(_backend);
+        }
+
+        /// <summary>Once per frame, from the pump: a backend that paces speech itself (the macOS
+        /// system voice) does its work here. Nothing to do for Prism.</summary>
+        public void Update()
+        {
+            if (_mac != null)
+            {
+                _mac.Update();
+            }
         }
 
         /// <summary>
@@ -169,6 +213,12 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public void Shutdown()
         {
+            if (_mac != null)
+            {
+                _mac.Stop();
+                _mac = null;
+            }
+
             if (_backend != IntPtr.Zero)
             {
                 // Stop before free: freeing alone does not guarantee in-flight speech halts.
