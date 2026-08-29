@@ -9,8 +9,10 @@ namespace ES2Access.UI
 {
     /// <summary>
     /// What each of the sixteen launch bearings is worth, read off the galaxy the probe would fly
-    /// through: how far the map goes that way and which stretches of the way there nobody has
-    /// explored (<see cref="ProbeCorridor"/>, said by <see cref="ProbeContextText"/>).
+    /// through: how much of what the launch would reveal is already known
+    /// (<see cref="ProbeFootprint"/>), how far the map goes that way, and which stretches of the way
+    /// there nobody has explored (<see cref="ProbeCorridor"/>, both said by
+    /// <see cref="ProbeContextText"/>).
     ///
     /// The engine half of that reading. The measuring itself is engine-free and lives in
     /// <c>Core/Map</c>; this is the part that knows where the galaxy's systems are, what the empire's
@@ -19,10 +21,10 @@ namespace ES2Access.UI
     /// MEMOIZED, and it has to be: the navigator recomposes the focused control's whole readout every
     /// frame to decide whether the review buffer still matches it, so a bearing's label asked
     /// naively would ray-march sixteen corridors - some hundred and fifty steps each, sampled three
-    /// times across - into the fog service sixty times a second. The answer only changes when the
-    /// fleet moves, the fog lifts, the probe's own reach changes, or the player changes language, so
-    /// those four are the key and everything else is an array read. <see cref="Recomputes"/> is the
-    /// counter that proves it.
+    /// times across - into the fog service sixty times a second, and count sixteen footprints of a
+    /// couple of hundred tiles besides. The answer only changes when the fleet moves, the fog lifts,
+    /// the probe's own reach or vision changes, or the player changes language, so those are the key
+    /// and everything else is an array read. <see cref="Recomputes"/> is the counter that proves it.
     ///
     /// How far the map goes is cached harder still, and not here: <see cref="GalaxyFrame"/> measures it
     /// once per game, and a bearing ends where it leaves the FRAME the inspect cursor roams, so the rim
@@ -96,11 +98,13 @@ namespace ES2Access.UI
                 );
                 int revision = visibility.VisibilityRevision;
                 string language = ModLocale.Language;
+                int reach = Reach(empire);
                 if (
                     ReferenceEquals(fleet, _fleet)
                     && ReferenceEquals(node, _node)
                     && revision == _revision
                     && halfWidth == _halfWidth
+                    && reach == _reach
                     && language == _language
                     && _lines[0] != null
                 )
@@ -112,10 +116,10 @@ namespace ES2Access.UI
                 _node = node;
                 _revision = revision;
                 _halfWidth = halfWidth;
+                _reach = reach;
                 _language = language;
                 _recomputes++;
 
-                _reach = Reach(empire);
                 Measure(empire, visibility, node, halfWidth);
             }
             catch (Exception e)
@@ -150,7 +154,16 @@ namespace ES2Access.UI
                 double bearing = Bearing(i);
                 _lines[i] = ProbeContextText.Line(
                     bearing,
-                    ProbeCorridor.Read(edges, origin, anchor, bearing, halfWidth, explored)
+                    ProbeCorridor.Read(edges, origin, anchor, bearing, halfWidth, explored),
+                    ProbeFootprint.Read(
+                        edges,
+                        origin,
+                        anchor,
+                        bearing,
+                        _reach,
+                        halfWidth,
+                        explored
+                    )
                 );
             }
         }

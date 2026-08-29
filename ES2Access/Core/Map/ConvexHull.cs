@@ -186,7 +186,7 @@ namespace ES2Access.Core.Map
 
             if (_vertices.Length == 2)
             {
-                double toSegment = SquaredDistanceToSegment(place, _vertices[0], _vertices[1]);
+                double toSegment = place.SquaredDistanceToSegment(_vertices[0], _vertices[1]);
                 return toSegment <= band ? 0 : toSegment;
             }
 
@@ -199,7 +199,7 @@ namespace ES2Access.Core.Map
             for (int i = 0; i < _vertices.Length; i++)
             {
                 int next = i + 1 == _vertices.Length ? 0 : i + 1;
-                double edge = SquaredDistanceToSegment(place, _vertices[i], _vertices[next]);
+                double edge = place.SquaredDistanceToSegment(_vertices[i], _vertices[next]);
                 if (edge < best)
                 {
                     best = edge;
@@ -346,30 +346,6 @@ namespace ES2Access.Core.Map
             }
 
             return new MapPoint(sumX / vertices.Length, sumY / vertices.Length);
-        }
-
-        private static double SquaredDistanceToSegment(MapPoint place, MapPoint from, MapPoint to)
-        {
-            double dx = to.X - from.X;
-            double dy = to.Y - from.Y;
-            double length = dx * dx + dy * dy;
-            double along = 0;
-            if (length > 0)
-            {
-                along = ((place.X - from.X) * dx + (place.Y - from.Y) * dy) / length;
-                if (along < 0)
-                {
-                    along = 0;
-                }
-                else if (along > 1)
-                {
-                    along = 1;
-                }
-            }
-
-            double offX = from.X + along * dx - place.X;
-            double offY = from.Y + along * dy - place.Y;
-            return offX * offX + offY * offY;
         }
 
         private static double Cross(MapPoint origin, MapPoint first, MapPoint second)

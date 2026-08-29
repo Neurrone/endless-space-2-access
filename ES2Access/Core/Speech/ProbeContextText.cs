@@ -4,8 +4,16 @@ using ES2Access.Core.Map;
 namespace ES2Access.Core.Speech
 {
     /// <summary>
-    /// One bearing said as what is down it: the stretches of fog a probe launched that way would fly
-    /// through, and how far the map goes before it runs out.
+    /// One bearing said as what is down it: how much of what a launch that way would reveal is
+    /// already known, then the stretches of fog the probe would fly through, and how far the map goes
+    /// before it runs out.
+    ///
+    /// The share comes FIRST and is one number, because a listener choosing between sixteen of these
+    /// cannot hold six ranges each in their head: "35 percent explored" is enough to skip a bearing or
+    /// to keep listening to it, and everything after it is why. It is always said - a flight line with
+    /// no fog on it at all can still be a corridor whose flanks are half dark, so "fully explored to
+    /// the map edge" is not the same claim and must not silence this one
+    /// (<see cref="ProbeFootprint"/>).
     ///
     /// A probe order cannot be recalled and cannot be aimed at anything but a direction, so the choice
     /// is made entirely on what each direction is worth - which a sighted player reads off the fog on
@@ -31,19 +39,31 @@ namespace ES2Access.Core.Speech
     {
         /// <summary>The whole line for a heading, the bearing named with the sixteen-word compass
         /// (<see cref="CompassDirections.KeyForBearing16"/>).</summary>
-        public static string Line(double bearing, ProbeCorridorReading reading)
+        public static string Line(
+            double bearing,
+            ProbeCorridorReading reading,
+            ProbeFootprint footprint
+        )
         {
-            return Line(ModStrings.Get(CompassDirections.KeyForBearing16(bearing)), reading);
+            return Line(
+                ModStrings.Get(CompassDirections.KeyForBearing16(bearing)),
+                reading,
+                footprint
+            );
         }
 
         /// <summary>The same for a heading the caller has already named - the direction word opens the
         /// sentence, so it is capitalized here rather than by whoever supplies it.</summary>
-        public static string Line(string bearingWord, ProbeCorridorReading reading)
+        public static string Line(
+            string bearingWord,
+            ProbeCorridorReading reading,
+            ProbeFootprint footprint
+        )
         {
             return ModStrings.Format(
                 ModStrings.GalaxyProbeContext,
                 Capitalized(bearingWord),
-                Context(reading)
+                Context(reading, footprint)
             );
         }
 
@@ -62,10 +82,16 @@ namespace ES2Access.Core.Speech
         }
 
         /// <summary>What is down the heading, without naming the heading - for a surface that has
-        /// already said which way it is talking about.</summary>
-        public static string Context(ProbeCorridorReading reading)
+        /// already said which way it is talking about. The share the launch would find already known
+        /// leads, and the template joins it to the detail, so a language that would rather end on the
+        /// summary than open with it can turn the sentence round.</summary>
+        public static string Context(ProbeCorridorReading reading, ProbeFootprint footprint)
         {
-            return Line(reading) + Alongside(reading);
+            return ModStrings.Format(
+                ModStrings.GalaxyProbeContextPercentExplored,
+                footprint.PercentExplored,
+                Line(reading) + Alongside(reading)
+            );
         }
 
         /// <summary>What the probe would fly THROUGH - the flight line's own fog and the rim.

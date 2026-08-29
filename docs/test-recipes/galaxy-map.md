@@ -284,6 +284,33 @@ faction panels need `Bind` + `Show`, then `Hide` + `Unbind` **and** `InspectedEm
 through its private setter: `Unbind` leaves the game's own `Refreshed` handler live, which NREs on
 the next refresh otherwise.
 
+**Sighting the probe launch group** (the sixteen bearing rows, 2026-08-29). It is declared only while
+a `ProbeLaunchingCursor` is armed AND its origin fleet is **in orbit** at the system whose branch is
+being built — and on `[Beginner] test` at turn 21 all six of the player's fleets are mid-lane
+(`f.Position` reads `Movement: NodeIndex:76-(82%)->NodeIndex:75`, `IsInOrbit=False`), so the group
+cannot be reached at all at that turn. **One `ui.endTurn` (twice — the game's idle-system prompt eats
+the first press) puts three of them in orbit** at turn 22; the in-memory drift costs nothing as long
+as the session ends in `POST /quit` rather than a save. Then arm it exactly as the game does
+(`FleetActionButtonInitiateLaunchProbe.OnClick` :22):
+`Amplitude.Unity.Framework.Services.GetService<Amplitude.Unity.View.ICursorService>().ChangeCursor(typeof(ProbeLaunchingCursor), fleet)`
+— `FollowProbeArming` opens the group and lands on the first bearing by itself, so the arming call's
+own `speech` already carries a bearing line ("Launch probe, reach 30, group, expanded, 9 of 9, North:
+22 percent explored; unexplored 5 to the map edge at 120., button, 1 of 16"), and `ui.down` walks the
+other fifteen. Cancel with the game's own `((ProbeLaunchingCursor)Gui.GetCursor()).SwitchToGalaxyCursor()`
+(`GuiManager.cs` :2107) — "Target selection ended", fleet panel back.
+
+**Checking a bearing's spoken numbers by hand.** Every figure in a bearing line is reproducible from
+four live reads and no mod code: `GalaxyFrame.Edges()` (the rim), `GalaxyCoordinates.Origin()` (the
+lattice anchor — the empire's home, NOT the system the probe leaves), the system's `GalaxyPosition`,
+and `IVisibilityService.IsExplored(empire, new GalaxyPosition((float)x,(float)y))` per tile. For the
+percentage, walk the integer lattice around the flight (`origin` → `origin + min(reach, ExitDistance)
+* heading`), keep the tiles within `ProbeVisionRange` of that segment and inside the frame, and count.
+`reach` is `Round(ProbeSpeed × ProbeBaseLifetime)` = 30 on this fixture, `ProbeVisionRange` 3.5.
+Measured at Osulo, turn 22: 22.5° = 141/251 = 56%, 45° = 221/228 = 97%, 67.5° = 202/250 = 81%, each
+equal to the percentage the row spoke. Do NOT pass a captured delegate into
+`ProbeFootprint.Read` from the REPL (the eval-lambda rule in `dev-loop.md`) — inline the count instead,
+which is what makes it an independent oracle rather than the same code twice.
+
 **A merged fleet lozenge has no fixture**: `[Beginner] test` never draws `MergedFleetLabels`
 (count 1, `vis=False alpha=0` at every zoom probed 2026-08-24) — two stacked fleets are needed to
 sight the pooled-lozenge aim re-commit live.

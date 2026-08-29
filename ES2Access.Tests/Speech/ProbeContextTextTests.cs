@@ -20,6 +20,14 @@ namespace ES2Access.Tests.Speech
             ModStrings.Reset();
         }
 
+        /// <summary>A footprint that reads as the given percentage. What is counted into one is
+        /// <see cref="ProbeFootprintTests"/>' business; here it is handed in ready-made, because these
+        /// are tests of the sentence.</summary>
+        private static ProbeFootprint Share(int percent)
+        {
+            return new ProbeFootprint(percent, 100);
+        }
+
         private static ProbeCorridorReading Reading(int edge, params int[] bounds)
         {
             return new ProbeCorridorReading(edge, Spans(bounds));
@@ -59,10 +67,12 @@ namespace ES2Access.Tests.Speech
         public void SixStretchesOfFogAreAllSaidWithTheLastOneRunningOffTheMap()
         {
             Assert.Equal(
-                "Southwest: unexplored 12-15, 17-18, 19-26, 31-35, 38-44, and 46 to the map edge at 58.",
+                "Southwest: 35 percent explored; unexplored 12-15, 17-18, 19-26, 31-35, 38-44, "
+                    + "and 46 to the map edge at 58.",
                 ProbeContextText.Line(
                     225.0,
-                    Reading(58, 12, 15, 17, 18, 19, 26, 31, 35, 38, 44, 46, 58)
+                    Reading(58, 12, 15, 17, 18, 19, 26, 31, 35, 38, 44, 46, 58),
+                    Share(35)
                 )
             );
         }
@@ -71,12 +81,12 @@ namespace ES2Access.Tests.Speech
         public void OneStretchRunningOffTheMapIsSaidWithoutARangeAtAll()
         {
             Assert.Equal(
-                "North: unexplored 7 to the map edge at 51.",
-                ProbeContextText.Line(0.0, Reading(51, 7, 51))
+                "North: 40 percent explored; unexplored 7 to the map edge at 51.",
+                ProbeContextText.Line(0.0, Reading(51, 7, 51), Share(40))
             );
             Assert.Equal(
-                "East: unexplored 8 to the map edge at 12.",
-                ProbeContextText.Line(90.0, Reading(12, 8, 12))
+                "East: 40 percent explored; unexplored 8 to the map edge at 12.",
+                ProbeContextText.Line(90.0, Reading(12, 8, 12), Share(40))
             );
         }
 
@@ -84,8 +94,9 @@ namespace ES2Access.Tests.Speech
         public void AHalfWindHeadingIsNamedWithItsOwnWord()
         {
             Assert.Equal(
-                "North-northeast: unexplored 7-28, 32-35, and 39 to the map edge at 42.",
-                ProbeContextText.Line(22.5, Reading(42, 7, 28, 32, 35, 39, 42))
+                "North-northeast: 12 percent explored; unexplored 7-28, 32-35, and 39 to the map "
+                    + "edge at 42.",
+                ProbeContextText.Line(22.5, Reading(42, 7, 28, 32, 35, 39, 42), Share(12))
             );
         }
 
@@ -93,8 +104,8 @@ namespace ES2Access.Tests.Speech
         public void TwoStretchesTakeTheConjunctionWithoutAComma()
         {
             Assert.Equal(
-                "West: unexplored 7-28 and 32 to the map edge at 42.",
-                ProbeContextText.Line(270.0, Reading(42, 7, 28, 32, 42))
+                "West: 12 percent explored; unexplored 7-28 and 32 to the map edge at 42.",
+                ProbeContextText.Line(270.0, Reading(42, 7, 28, 32, 42), Share(12))
             );
         }
 
@@ -104,12 +115,12 @@ namespace ES2Access.Tests.Speech
             // Otherwise the heading's whole length goes unsaid: "unexplored 12-15" alone could be the
             // start of a long run out of the galaxy or the last thing in reach.
             Assert.Equal(
-                "South: unexplored 12-15 and 20-25, map edge at 58.",
-                ProbeContextText.Line(180.0, Reading(58, 12, 15, 20, 25))
+                "South: 80 percent explored; unexplored 12-15 and 20-25, map edge at 58.",
+                ProbeContextText.Line(180.0, Reading(58, 12, 15, 20, 25), Share(80))
             );
             Assert.Equal(
-                "South: unexplored 12-15, map edge at 58.",
-                ProbeContextText.Line(180.0, Reading(58, 12, 15))
+                "South: 80 percent explored; unexplored 12-15, map edge at 58.",
+                ProbeContextText.Line(180.0, Reading(58, 12, 15), Share(80))
             );
         }
 
@@ -117,8 +128,21 @@ namespace ES2Access.Tests.Speech
         public void AHeadingWithNoFogLeftSaysSoAndStillGivesTheDistance()
         {
             Assert.Equal(
-                "Northwest: fully explored to the map edge at 34.",
-                ProbeContextText.Line(315.0, Reading(34))
+                "Northwest: 100 percent explored; fully explored to the map edge at 34.",
+                ProbeContextText.Line(315.0, Reading(34), Share(100))
+            );
+        }
+
+        [Fact]
+        public void AClearFlightLineStillCarriesTheShareItsCorridorWouldFind()
+        {
+            // The two clauses answer different questions - the line is what the probe flies through,
+            // the share is everything its vision circle would sweep as far as it gets - so a heading
+            // with nothing on the line can still be mostly dark, and the summary is the only warning
+            // of it. Silencing it on "fully explored" would silence exactly the surprising case.
+            Assert.Equal(
+                "Northwest: 18 percent explored; fully explored to the map edge at 34.",
+                ProbeContextText.Line(315.0, Reading(34), Share(18))
             );
         }
 
@@ -126,8 +150,8 @@ namespace ES2Access.Tests.Speech
         public void AHeadingWithNoMapDownItAtAllIsStillASentence()
         {
             Assert.Equal(
-                "East: fully explored to the map edge at 0.",
-                ProbeContextText.Line(90.0, Reading(0))
+                "East: 100 percent explored; fully explored to the map edge at 0.",
+                ProbeContextText.Line(90.0, Reading(0), new ProbeFootprint(0, 0))
             );
         }
 
@@ -135,12 +159,12 @@ namespace ES2Access.Tests.Speech
         public void TheHeadingWordOpensTheSentenceAndIsCapitalizedWhereverItComesFrom()
         {
             Assert.Equal(
-                "Southwest: fully explored to the map edge at 5.",
-                ProbeContextText.Line("southwest", Reading(5))
+                "Southwest: 50 percent explored; fully explored to the map edge at 5.",
+                ProbeContextText.Line("southwest", Reading(5), Share(50))
             );
             Assert.Equal(
-                "Southwest: fully explored to the map edge at 5.",
-                ProbeContextText.Line("Southwest", Reading(5))
+                "Southwest: 50 percent explored; fully explored to the map edge at 5.",
+                ProbeContextText.Line("Southwest", Reading(5), Share(50))
             );
         }
 
@@ -150,9 +174,13 @@ namespace ES2Access.Tests.Speech
             // The live southeast bearing. Said as one corridor it was "unexplored 0 to the map edge at
             // 40" - a heading the player would launch into believing the line ahead was dark.
             Assert.Equal(
-                "Southeast: fully explored to the map edge at 40; "
+                "Southeast: 30 percent explored; fully explored to the map edge at 40; "
                     + "unexplored alongside to the southwest: 2-40.",
-                ProbeContextText.Line(135.0, Beside(135.0, 40, null, new[] { 2, 40 }, null))
+                ProbeContextText.Line(
+                    135.0,
+                    Beside(135.0, 40, null, new[] { 2, 40 }, null),
+                    Share(30)
+                )
             );
         }
 
@@ -160,9 +188,13 @@ namespace ES2Access.Tests.Speech
         public void TheOtherSideOfTheSameHeadingIsNamedTheOtherWay()
         {
             Assert.Equal(
-                "Southeast: fully explored to the map edge at 40; "
+                "Southeast: 30 percent explored; fully explored to the map edge at 40; "
                     + "unexplored alongside to the northeast: 2-40.",
-                ProbeContextText.Line(135.0, Beside(135.0, 40, null, null, new[] { 2, 40 }))
+                ProbeContextText.Line(
+                    135.0,
+                    Beside(135.0, 40, null, null, new[] { 2, 40 }),
+                    Share(30)
+                )
             );
         }
 
@@ -172,11 +204,12 @@ namespace ES2Access.Tests.Speech
             // A pocket of known map the width of the line: hearing the identical five numbers twice
             // tells the player nothing the word "both" does not.
             Assert.Equal(
-                "North: fully explored to the map edge at 40; "
+                "North: 77 percent explored; fully explored to the map edge at 40; "
                     + "unexplored alongside to both sides: 5-9 and 12-14.",
                 ProbeContextText.Line(
                     0.0,
-                    Beside(0.0, 40, null, new[] { 5, 9, 12, 14 }, new[] { 5, 9, 12, 14 })
+                    Beside(0.0, 40, null, new[] { 5, 9, 12, 14 }, new[] { 5, 9, 12, 14 }),
+                    Share(77)
                 )
             );
         }
@@ -185,12 +218,13 @@ namespace ES2Access.Tests.Speech
         public void TwoSidesWithDifferentStretchesAreTwoClauses()
         {
             Assert.Equal(
-                "North: fully explored to the map edge at 40; "
+                "North: 77 percent explored; fully explored to the map edge at 40; "
                     + "unexplored alongside to the east: 5-9; "
                     + "unexplored alongside to the west: 12-14.",
                 ProbeContextText.Line(
                     0.0,
-                    Beside(0.0, 40, null, new[] { 5, 9 }, new[] { 12, 14 })
+                    Beside(0.0, 40, null, new[] { 5, 9 }, new[] { 12, 14 }),
+                    Share(77)
                 )
             );
         }
@@ -199,11 +233,12 @@ namespace ES2Access.Tests.Speech
         public void FogOnTheLineAndFogBesideItAreBothSaid()
         {
             Assert.Equal(
-                "West: unexplored 12-15 and 20 to the map edge at 58; "
+                "West: 5 percent explored; unexplored 12-15 and 20 to the map edge at 58; "
                     + "unexplored alongside to the north: 0-12.",
                 ProbeContextText.Line(
                     270.0,
-                    Beside(270.0, 58, new[] { 12, 15, 20, 58 }, new[] { 0, 12 }, null)
+                    Beside(270.0, 58, new[] { 12, 15, 20, 58 }, new[] { 0, 12 }, null),
+                    Share(5)
                 )
             );
         }
@@ -214,9 +249,13 @@ namespace ES2Access.Tests.Speech
             // The map's edge has already been named by the clause before; saying it again inside the
             // alongside list makes one number sound like two different rims.
             Assert.Equal(
-                "North: fully explored to the map edge at 40; "
+                "North: 60 percent explored; fully explored to the map edge at 40; "
                     + "unexplored alongside to the east: 10-40.",
-                ProbeContextText.Line(0.0, Beside(0.0, 40, null, new[] { 10, 40 }, null))
+                ProbeContextText.Line(
+                    0.0,
+                    Beside(0.0, 40, null, new[] { 10, 40 }, null),
+                    Share(60)
+                )
             );
         }
 
@@ -224,8 +263,8 @@ namespace ES2Access.Tests.Speech
         public void TheContextOnItsOwnNamesNoHeadingAndEndsNoSentence()
         {
             Assert.Equal(
-                "unexplored 7 to the map edge at 51",
-                ProbeContextText.Context(Reading(51, 7, 51))
+                "42 percent explored; unexplored 7 to the map edge at 51",
+                ProbeContextText.Context(Reading(51, 7, 51), Share(42))
             );
         }
 
@@ -236,6 +275,7 @@ namespace ES2Access.Tests.Speech
                 new Dictionary<string, string>
                 {
                     { ModStrings.GalaxyProbeContext, "{0} - {1}" },
+                    { ModStrings.GalaxyProbeContextPercentExplored, "{1} ({0}% bekannt)" },
                     { ModStrings.GalaxyProbeContextUnexplored, "fog at {0}" },
                     { ModStrings.GalaxyProbeContextRange, "{0} bis {1}" },
                     { ModStrings.GalaxyProbeContextToEdge, "{0} onwards, rim {1}" },
@@ -247,13 +287,19 @@ namespace ES2Access.Tests.Speech
                 }
             );
 
+            // The summary need not lead: a translation may put it anywhere in the sentence, which is
+            // why the join lives in the template rather than between two of them.
             Assert.Equal(
-                "Südwesten - fog at 12 bis 15, 17 bis 18 und 46 onwards, rim 58",
-                ProbeContextText.Line(225.0, Reading(58, 12, 15, 17, 18, 46, 58))
+                "Südwesten - fog at 12 bis 15, 17 bis 18 und 46 onwards, rim 58 (35% bekannt)",
+                ProbeContextText.Line(225.0, Reading(58, 12, 15, 17, 18, 46, 58), Share(35))
             );
             Assert.Equal(
-                "Südwesten - frei bis zum Rand 40 (nebenan nordwesten: 2 bis 40)",
-                ProbeContextText.Line(225.0, Beside(225.0, 40, null, new[] { 2, 40 }, null))
+                "Südwesten - frei bis zum Rand 40 (nebenan nordwesten: 2 bis 40) (35% bekannt)",
+                ProbeContextText.Line(
+                    225.0,
+                    Beside(225.0, 40, null, new[] { 2, 40 }, null),
+                    Share(35)
+                )
             );
         }
     }

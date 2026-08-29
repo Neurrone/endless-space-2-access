@@ -25,5 +25,32 @@ namespace ES2Access.Core.Map
             double dy = other.Y - Y;
             return dx * dx + dy * dy;
         }
+
+        /// <summary>Squared distance to the nearest point of a straight run between two places —
+        /// the run itself, not the infinite line through it, so a place off either end is measured
+        /// to that end. A run of no length is one place, and answers the distance to it.</summary>
+        public double SquaredDistanceToSegment(MapPoint from, MapPoint to)
+        {
+            double dx = to.X - from.X;
+            double dy = to.Y - from.Y;
+            double length = dx * dx + dy * dy;
+            double along = 0;
+            if (length > 0)
+            {
+                along = ((X - from.X) * dx + (Y - from.Y) * dy) / length;
+                if (along < 0)
+                {
+                    along = 0;
+                }
+                else if (along > 1)
+                {
+                    along = 1;
+                }
+            }
+
+            double offX = from.X + along * dx - X;
+            double offY = from.Y + along * dy - Y;
+            return offX * offX + offY * offY;
+        }
     }
 }

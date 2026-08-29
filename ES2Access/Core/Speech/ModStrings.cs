@@ -774,6 +774,15 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeContextEdge = "galaxy.probe-context-edge";
         public const string GalaxyProbeContextExplored = "galaxy.probe-context-explored";
 
+        /// <summary>The share of everything a launch this way would reveal that the empire already has
+        /// (<see cref="ProbeFootprint"/>), and the rest of the bearing's sentence after it. One
+        /// template rather than two so that the join between the summary and the detail is the
+        /// translator's to place: {0} is the whole number of percent, {1} everything else the heading
+        /// has to say. It opens the sentence in English because a listener comparing sixteen headings
+        /// needs the one number before the ranges that explain it.</summary>
+        public const string GalaxyProbeContextPercentExplored =
+            "galaxy.probe-context-percent-explored";
+
         /// <summary>What is unexplored BESIDE the flight line rather than on it - the map a probe
         /// would uncover in passing without ever flying into it. It follows the heading's own clause
         /// and names the side it is on, because "unexplored 2-40" and "unexplored alongside to the
@@ -2052,6 +2061,7 @@ namespace ES2Access.Core.Speech
             { GalaxyProbeContextToEdge, "{0} to the map edge at {1}" },
             { GalaxyProbeContextEdge, "map edge at {0}" },
             { GalaxyProbeContextExplored, "fully explored to the map edge at {0}" },
+            { GalaxyProbeContextPercentExplored, "{0} percent explored; {1}" },
             { GalaxyProbeContextAlongside, "; unexplored alongside to the {0}: {1}" },
             { GalaxyProbeContextAlongsideBoth, "; unexplored alongside to both sides: {0}" },
             { GalaxyProbeAt, "at {0}" },
