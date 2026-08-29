@@ -31,9 +31,18 @@ namespace ES2Access.Core.Map
     public struct ProbeFootprint
     {
         /// <summary>How far outside the vision circle still counts as inside it, so that a tile the
-        /// corridor samples as a FLANK - taken at exactly the vision radius - is never dropped here
-        /// for a rounding error's worth of distance.</summary>
+        /// corridor samples as a FLANK - taken at the very edge of the vision radius - is never
+        /// dropped here for a rounding error's worth of distance.</summary>
         private const double OnEdge = 1e-9;
+
+        /// <summary>Whether a tile that far (squared) from the flight is one the probe would light
+        /// up. THE membership test: <see cref="ProbeCorridor"/> asks it of its flank samples with the
+        /// perpendicular distance to the flight line, so a tile the corridor is willing to speak
+        /// about and a tile this counts are the same tile, down to the last epsilon.</summary>
+        internal static bool InVision(double squaredDistance, double halfWidth)
+        {
+            return squaredDistance <= halfWidth * halfWidth + OnEdge;
+        }
 
         public ProbeFootprint(int explored, int tiles)
         {
@@ -119,7 +128,6 @@ namespace ES2Access.Core.Map
             int fromNorth = First(Math.Min(origin.Y, tip.Y) - halfWidth - anchor.Y);
             int toNorth = Last(Math.Max(origin.Y, tip.Y) + halfWidth - anchor.Y);
 
-            double radiusSquared = halfWidth * halfWidth + OnEdge;
             int tiles = 0;
             int known = 0;
             for (int east = fromEast; east <= toEast; east++)
@@ -128,7 +136,7 @@ namespace ES2Access.Core.Map
                 {
                     MapPoint tile = new MapPoint(anchor.X + east, anchor.Y + north);
                     if (
-                        tile.SquaredDistanceToSegment(origin, tip) > radiusSquared
+                        !InVision(tile.SquaredDistanceToSegment(origin, tip), halfWidth)
                         || !galaxy.Contains(tile)
                     )
                     {

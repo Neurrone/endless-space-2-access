@@ -352,21 +352,24 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   **Specials count as galaxy by decision** — a special node is a named place with coordinates and a
   row in the tree, so a frame drawn round stars alone would strand places the player can steer to
   outside the map.
-- **A bearing is now read TWICE over two different stretches, and they can disagree out loud**
-  (2026-08-29). The ranges answer "what is out that way" and run to the map's rim however far past the
-  probe's reach that is; the leading share answers "what would this launch buy me" and covers only the
-  reach-capped flight (`ProbeFootprint`, reach = `Round(ProbeSpeed × ProbeBaseLifetime)` = 30 on
-  `[Beginner] test`, vision half-width `ProbeVisionRange` = 3.5). That scope difference is the owner's
-  decision and is why "unexplored 49 to the map edge at 59" can sit beside "100 percent explored". A
-  SECOND, unintended difference sits under it: the corridor's ALONGSIDE stretches are one sample per
-  side per step taken at exactly the vision radius and then snapped to the lattice
-  (`ProbeCorridor.Explored`), so a flank sample can land up to half a tile's diagonal (~0.71) BEYOND
-  the radius, and misses tiles inside it that no sample lands on. Measured on Dusay's southeast
-  bearing: every one of the 218 tiles within 3.5 of the flight is explored (the share says 100), while
-  widening to 4.21 finds 273 tiles of which 18 are dark — which is exactly the fog the alongside clause
-  was listing. So the alongside clause can name fog the probe would never actually reveal. Owner
-  question, not yet ruled: whether the alongside sampling should be re-cut to the tiles the footprint
-  counts.
+- **A bearing is read TWICE over two different stretches, and only the approved difference is left**
+  (ruled 2026-08-29). The ranges answer "what is out that way" and run to the map's rim however far
+  past the probe's reach that is; the leading share answers "what would this launch buy me" and covers
+  only the reach-capped flight (`ProbeFootprint`, reach = `Round(ProbeSpeed × ProbeBaseLifetime)` = 30
+  on `[Beginner] test`, vision half-width `ProbeVisionRange` = 3.5). That scope difference is the
+  owner's decision and is why "unexplored 49 to the map edge at 59" can sit beside "100 percent
+  explored". **The alongside stretches are cut to the tiles the share counts**: a flank sample is the
+  OUTERMOST lattice tile still inside the vision radius on that step's perpendicular, and membership is
+  `ProbeFootprint.InVision` itself, so the two halves of the sentence cannot disagree about a tile.
+  Within the probe's reach, then, a bearing the share calls fully explored has nothing alongside it to
+  report; past the reach it may still list fog under a 100-percent share, which is the scope difference
+  above and by design. What that replaced: one sample per side per step taken at exactly the vision
+  radius and then rounded to the lattice, which could push the sample half a tile's diagonal (~0.71)
+  PAST the radius while missing tiles inside it that no sample landed on. Measured on Dusay's southeast
+  bearing, where every tile within 3.5 of the flight is explored: the row said "100 percent explored;
+  fully explored to the map edge at 32" and then read out fifteen alongside stretches, every one of
+  them fog from the 3.5-4.25 ring the probe would fly straight past (52 dark tiles sit in that ring);
+  it now says the first half and stops.
 - **Arming a targeting mode from the fleet-actions stop closes the fleet panel and seats the
   cursor back in the acting fleet's system branch** — the last node if the branch is open,
   the system node if closed. That is reconciliation's doing, not a landing, and it only holds

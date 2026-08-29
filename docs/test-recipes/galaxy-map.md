@@ -310,6 +310,14 @@ Measured at Osulo, turn 22: 22.5° = 141/251 = 56%, 45° = 221/228 = 97%, 67.5°
 equal to the percentage the row spoke. Do NOT pass a captured delegate into
 `ProbeFootprint.Read` from the REPL (the eval-lambda rule in `dev-loop.md`) — inline the count instead,
 which is what makes it an independent oracle rather than the same code twice.
+**The alongside stretches come off the same walk**: print each DARK tile's distance along the flight
+and perpendicular to it instead of just counting. Every stretch inside the reach answers to a dark
+tile within `ProbeVisionRange` of the line, and no stretch inside the reach may exist where the share
+reads 100 percent (2026-08-29, `galaxy-map.md`); on a diagonal one tile is the outermost sample for
+two consecutive steps, so six steps of stretch off four dark tiles is right, not a doubling. Measured
+at Osulo, turn 22, 45°: 7 dark tiles of 228, four of them at along 22.4/25.2/28.0/29.5 and perp 2.9,
+and the row spoke "unexplored alongside to the southeast: 22-24, 25-26, 28-31, and 52-69" — the last
+past the reach, where the stretches run on to the rim and the share does not follow.
 
 **A merged fleet lozenge has no fixture**: `[Beginner] test` never draws `MergedFleetLabels`
 (count 1, `vis=False alpha=0` at every zoom probed 2026-08-24) — two stacked fleets are needed to

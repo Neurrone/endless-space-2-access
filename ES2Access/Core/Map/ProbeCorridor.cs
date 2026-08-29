@@ -77,7 +77,8 @@ namespace ES2Access.Core.Map
         public readonly IList<UnexploredSpan> Spans;
 
         /// <summary>Unexplored stretches a quarter circle clockwise of the heading
-        /// (<see cref="Bearing"/> + 90), counted only where the line itself is explored.</summary>
+        /// (<see cref="Bearing"/> + 90), counted only where the line itself is explored, and only at
+        /// tiles the probe's vision would actually reach.</summary>
         public readonly IList<UnexploredSpan> Clockwise;
 
         /// <summary>The same a quarter circle the other way (<see cref="Bearing"/> - 90).</summary>
@@ -104,10 +105,21 @@ namespace ES2Access.Core.Map
     /// where the line is known, since where the line is dark the flank adds nothing a launch would
     /// change.
     ///
-    /// EVERY sample is taken at the same one-unit lattice the inspect cursor tests the fog at, snapped
-    /// by rounding each axis of the offset from the lattice anchor the caller hands in (home, in the
-    /// game). So every number the player hears is a number they can walk to and check tile by tile,
-    /// and a sliver of fog narrower than a tile can never surface as a stretch of one.
+    /// EVERY sample is taken at the same one-unit lattice the inspect cursor tests the fog at, on the
+    /// lattice the anchor the caller hands in sets (home, in the game). So every number the player
+    /// hears is a number they can walk to and check tile by tile, and a sliver of fog narrower than a
+    /// tile can never surface as a stretch of one.
+    ///
+    /// A LINE sample is the tile nearest the point on the line. A FLANK sample is the OUTERMOST tile
+    /// the probe's vision circle still reaches at that step - the corridor's true edge - and never a
+    /// tile beyond it: the flank is not "the tile nearest the edge", which can round outwards and put
+    /// the sample up to half a tile's diagonal outside the vision radius, so that the clause reports
+    /// fog at map the probe would fly straight past. That is the rule the alongside stretches and
+    /// <see cref="ProbeFootprint"/>'s share are held to (2026-08-29, <c>docs/galaxy-map.md</c>): over
+    /// the stretch the probe can actually reach, a corridor the share calls fully explored has nothing
+    /// alongside it to report. Membership is <see cref="ProbeFootprint.InVision"/> itself, so the two
+    /// cannot disagree about a tile - measured here against the flight LINE rather than the
+    /// reach-capped segment, since the alongside stretches deliberately run on to the rim.
     ///
     /// Distances are whole units from the origin, counting outwards, ending at the rim of the map.
     /// Bearings are degrees clockwise from north, north being +north and east +east - the convention
@@ -177,8 +189,8 @@ namespace ES2Access.Core.Map
 
             // The flanks are the heading turned a quarter circle, one to each side; the one the
             // heading turns towards clockwise is the +90 side (due north's is due east).
-            double flankEast = stepNorth * halfWidth;
-            double flankNorth = -stepEast * halfWidth;
+            double flankEast = stepNorth;
+            double flankNorth = -stepEast;
 
             Track line = new Track();
             Track clockwise = new Track();
@@ -195,12 +207,28 @@ namespace ES2Access.Core.Map
                 clockwise.At(
                     step,
                     !dark
-                        && !Explored(explored, anchor, east + flankEast, north + flankNorth)
+                        && FlankDark(
+                            explored,
+                            anchor,
+                            east,
+                            north,
+                            flankEast,
+                            flankNorth,
+                            halfWidth
+                        )
                 );
                 counterClockwise.At(
                     step,
                     !dark
-                        && !Explored(explored, anchor, east - flankEast, north - flankNorth)
+                        && FlankDark(
+                            explored,
+                            anchor,
+                            east,
+                            north,
+                            -flankEast,
+                            -flankNorth,
+                            halfWidth
+                        )
                 );
             }
 
@@ -226,6 +254,96 @@ namespace ES2Access.Core.Map
                 anchor.X + Math.Round(east - anchor.X, MidpointRounding.AwayFromZero),
                 anchor.Y + Math.Round(north - anchor.Y, MidpointRounding.AwayFromZero)
             );
+        }
+
+        /// <summary>Two tiles this near to the same distance out are out equally far - the tolerance
+        /// that decides a tie between them by which is nearer the step's own perpendicular rather than
+        /// by an arithmetic hair.</summary>
+        private const double Tie = 1e-9;
+
+        /// <summary>
+        /// Whether the map alongside the line at this step is dark, asked at the OUTERMOST tile the
+        /// probe's vision circle still reaches on that side: of the lattice tiles about where the edge
+        /// of the circle falls, the one furthest out that is still inside it
+        /// (<see cref="ProbeFootprint.InVision"/>, so a tile the share counts and a tile this speaks
+        /// about are the same tile), ties going to the tile nearest that edge point - which is what
+        /// makes a corridor whose sides run along the lattice sample the step's own tile and not a
+        /// neighbour's.
+        ///
+        /// <paramref name="outEast"/>/<paramref name="outNorth"/> are the unit perpendicular pointing
+        /// at the side being asked about, so the dot product below is the tile's distance out from the
+        /// flight LINE - the line, not the reach-capped segment, because the alongside stretches run
+        /// on to the rim.
+        ///
+        /// The neighbourhood searched is the tiles a step from where the edge falls, widened once when
+        /// none of them is inside the circle; a corridor narrower than the gap between tiles can leave
+        /// nothing to sample at all, and a probe that would reveal nothing beside itself there has
+        /// nothing to report.
+        /// </summary>
+        private static bool FlankDark(
+            MapExplored explored,
+            MapPoint anchor,
+            double east,
+            double north,
+            double outEast,
+            double outNorth,
+            double halfWidth
+        )
+        {
+            double edgeEast = east + outEast * halfWidth;
+            double edgeNorth = north + outNorth * halfWidth;
+            double centreEast =
+                anchor.X + Math.Round(edgeEast - anchor.X, MidpointRounding.AwayFromZero);
+            double centreNorth =
+                anchor.Y + Math.Round(edgeNorth - anchor.Y, MidpointRounding.AwayFromZero);
+
+            for (int spread = 1; spread <= 2; spread++)
+            {
+                bool found = false;
+                double outermost = 0;
+                double nearest = 0;
+                double sampleEast = 0;
+                double sampleNorth = 0;
+                for (int nudgeEast = -spread; nudgeEast <= spread; nudgeEast++)
+                {
+                    for (int nudgeNorth = -spread; nudgeNorth <= spread; nudgeNorth++)
+                    {
+                        double tileEast = centreEast + nudgeEast;
+                        double tileNorth = centreNorth + nudgeNorth;
+                        double outward =
+                            (tileEast - east) * outEast + (tileNorth - north) * outNorth;
+                        if (!ProbeFootprint.InVision(outward * outward, halfWidth))
+                        {
+                            continue;
+                        }
+
+                        double offEast = tileEast - edgeEast;
+                        double offNorth = tileNorth - edgeNorth;
+                        double off = offEast * offEast + offNorth * offNorth;
+                        if (
+                            found
+                            && outward <= outermost + Tie
+                            && (outward < outermost - Tie || off >= nearest)
+                        )
+                        {
+                            continue;
+                        }
+
+                        found = true;
+                        outermost = outward;
+                        nearest = off;
+                        sampleEast = tileEast;
+                        sampleNorth = tileNorth;
+                    }
+                }
+
+                if (found)
+                {
+                    return !explored(sampleEast, sampleNorth);
+                }
+            }
+
+            return false;
         }
 
         /// <summary>One run of samples turned into stretches: told at each step whether that step is

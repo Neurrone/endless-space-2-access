@@ -162,9 +162,10 @@ namespace ES2Access.Tests.Map
             // The case that provoked the redesign: the live southeast bearing had a fog edge running
             // alongside it, just inside the corridor. Read as one corridor it said the whole heading
             // was unexplored from the system outwards; the line itself was known the entire way.
+            // The fog starts at the outermost tile a half-width of 3.5 reaches, three units out.
             MapExplored explored = delegate(double east, double north)
             {
-                return east > -3.5 || north < 2;
+                return east > -3.0 || north < 2;
             };
 
             ProbeCorridorReading reading = North(40, 3.5, explored);
@@ -249,6 +250,95 @@ namespace ES2Access.Tests.Map
             ProbeCorridorReading wide = North(40, 3.0, explored);
             Assert.Empty(wide.Spans);
             Assert.Equal("10-14", Text(wide.Clockwise));
+        }
+
+        [Fact]
+        public void AFlankIsSampledAtTheCorridorsEdgeAndNeverPastIt()
+        {
+            // A half-width of 3.5 out of a lattice point reaches the tile three units out and not the
+            // one four units out. Fog at four is map the probe would fly straight past - the share
+            // leading the same sentence does not count it, so the alongside clause may not name it
+            // either (the old sampling did: it took the flank at exactly 3.5 and rounded that to 4).
+            MapExplored beyond = delegate(double east, double north)
+            {
+                return !(Math.Round(east) == 4 && north >= 5 && north < 9);
+            };
+
+            Assert.Empty(North(40, 3.5, beyond).Clockwise);
+
+            // Widen the corridor until it does reach that tile and the same fog is heard - the tile
+            // is skipped for being outside the vision circle, not for being unreadable.
+            Assert.Equal("5-9", Text(North(40, 4.0, beyond).Clockwise));
+
+            // And the outermost tile the circle DOES reach is sampled, so fog at the corridor's own
+            // edge is never lost by pulling the sample in.
+            MapExplored edge = delegate(double east, double north)
+            {
+                return !(Math.Round(east) == 3 && north >= 5 && north < 9);
+            };
+
+            Assert.Equal("5-9", Text(North(40, 3.5, edge).Clockwise));
+        }
+
+        [Fact]
+        public void WithinTheProbesReachAFullyExploredShareLeavesNothingAlongsideToSay()
+        {
+            // The two halves of a bearing's sentence, over the stretch they share. The empire here has
+            // explored exactly the probe's own footprint and nothing else, so the share reads 100
+            // percent - and no alongside stretch may then begin inside the reach. Past the reach they
+            // may, and do: the stretches deliberately run on to the rim (docs/galaxy-map.md).
+            const double Reach = 30;
+            const double HalfWidth = 3.5;
+            const double Bearing = 22.5;
+
+            double radians = Bearing * Math.PI / 180.0;
+            MapPoint origin = new MapPoint(0.25, -0.5);
+            MapPoint tip = new MapPoint(
+                origin.X + Math.Sin(radians) * Reach,
+                origin.Y + Math.Cos(radians) * Reach
+            );
+            MapExplored explored = delegate(double east, double north)
+            {
+                return new MapPoint(east, north).SquaredDistanceToSegment(origin, tip)
+                    <= HalfWidth * HalfWidth + 1e-9;
+            };
+
+            ProbeFootprint footprint = ProbeFootprint.Read(
+                Galaxy(),
+                origin,
+                origin,
+                Bearing,
+                Reach,
+                HalfWidth,
+                explored
+            );
+
+            Assert.Equal(100, footprint.PercentExplored);
+            Assert.True(footprint.Tiles > 100, "the footprint is a real corridor, not an empty one");
+
+            ProbeCorridorReading reading = ProbeCorridor.Read(
+                Galaxy(),
+                origin,
+                origin,
+                Bearing,
+                HalfWidth,
+                explored
+            );
+
+            NoneBefore(reading.Clockwise, (int)Reach);
+            NoneBefore(reading.CounterClockwise, (int)Reach);
+            Assert.NotEmpty(reading.Clockwise);
+        }
+
+        private static void NoneBefore(IList<UnexploredSpan> spans, int reach)
+        {
+            for (int i = 0; i < spans.Count; i++)
+            {
+                Assert.True(
+                    spans[i].From >= reach,
+                    "alongside stretch " + spans[i] + " begins inside the probe's reach"
+                );
+            }
         }
 
         [Fact]
