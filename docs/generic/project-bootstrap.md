@@ -68,6 +68,7 @@ stderr suppressed — its update nag on stderr otherwise becomes a terminating P
 
 ## Source files
 
-[`src/bootstrap/`](src/bootstrap/) — the mod, loader, and tests csprojs,
+[`src/bootstrap/`](src/bootstrap/) — the mod, loader, and tests csprojs (deliberate
+examples, not synced mirrors — their bytes carry the source mod's release metadata),
 `decompile.ps1`, `run-game.ps1`, `GamePaths.props.template`, and `gitignore.example`
 (rename to `.gitignore` on copy).

@@ -5,6 +5,7 @@
     directly into this test assembly, so anything under Core/ that reached for Unity, BepInEx or
     the game would break this build. That is the point — Core stays BCL-only, and the tests run
     on a modern runtime without the game installed.
+    Deliberate example, not a synced mirror (see ../sync-manifest.txt): rename ES2Access on copy.
   -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>

@@ -1,12 +1,12 @@
 ﻿# Mirror manifest: <snapshot under docs/generic/src> | <live original>
 # Repo-relative, forward slashes. Read by sync-generic-src.ps1 and ES2Access.Tests/GenericSrcMirrorTests.cs.
 # Not listed here (deliberate examples, not mirrors): src/localization/ModStrings.cs,
-# src/localization/english.json (trimmed compile floor), src/bootstrap/gitignore.example.
+# src/localization/english.json (trimmed compile floor), src/bootstrap/gitignore.example,
+# and the three src/bootstrap/*.csproj files - their SHAPE is the pattern being taught, but
+# their bytes carry this mod's release metadata (<Version>), and a mirror would turn every
+# version bump into a forced docs sync.
 docs/generic/src/bootstrap/crop-shot.ps1 | crop-shot.ps1
 docs/generic/src/bootstrap/decompile.ps1 | decompile.ps1
-docs/generic/src/bootstrap/ES2Access.csproj | ES2Access/ES2Access.csproj
-docs/generic/src/bootstrap/ES2Access.Loader.csproj | ES2Access.Loader/ES2Access.Loader.csproj
-docs/generic/src/bootstrap/ES2Access.Tests.csproj | ES2Access.Tests/ES2Access.Tests.csproj
 docs/generic/src/bootstrap/GamePaths.props.template | GamePaths.props.template
 docs/generic/src/bootstrap/run-game.ps1 | run-game.ps1
 docs/generic/src/bootstrap/wait-game.ps1 | wait-game.ps1

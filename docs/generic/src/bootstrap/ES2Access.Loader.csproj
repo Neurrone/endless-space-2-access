@@ -1,4 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- Deliberate example, not a synced mirror (see ../sync-manifest.txt): rename ES2Access
+       on copy. -->
   <Import Project="..\GamePaths.props" Condition="Exists('..\GamePaths.props')" />
 
   <PropertyGroup>

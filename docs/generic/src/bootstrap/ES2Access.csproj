@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <!-- Deliberate example, not a synced mirror (see ../sync-manifest.txt): on copy, rename
+       ES2Access to your mod and swap the game-specific references and deploy steps (the
+       game assemblies below, the prism.dll copy) for your game's. -->
   <Import Project="..\GamePaths.props" Condition="Exists('..\GamePaths.props')" />
 
   <PropertyGroup>
@@ -10,7 +13,7 @@
     <!-- The mod's single version source: the build stamps it into the assembly and ModEntry reads it
          back, so nothing in the sources carries a second copy. Without the second line a newer SDK
          appends "+<git sha>" to the informational version, which would be spoken at startup. -->
-    <Version>0.1.1</Version>
+    <Version>0.1.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DebugType>full</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
