@@ -206,6 +206,7 @@ namespace ES2Access.UI
             TransparentTest transparent
         )
         {
+            int first = cells.Count;
             AgePrimitiveLabel title = TitleLabel(panel);
             AgeTransform titled = title == null ? null : title.AgeTransform;
             if (titled != null && Explained(AgeWidgets.Raw(titled)))
@@ -214,6 +215,40 @@ namespace ES2Access.UI
             }
 
             Collect(cells, panel.ContentGroup, keyPrefix, 0, panel, special, transparent, titled);
+            Explains(cells, panel, first);
+        }
+
+        /// <summary>
+        /// The sentence a panel hangs on its own ROOT, given to the first line it belongs to.
+        ///
+        /// The walk starts at <c>ContentGroup</c> and the heading path only covers a panel that DRAWS a
+        /// heading, so a panel that does neither had one place left for its explanation that nothing
+        /// looked at. Measured across all 31 side panels the game instantiates (2026-08-30): exactly one
+        /// puts a tooltip there - the economy page's <c>InflationSidePanel</c>, which draws no heading
+        /// and hangs nothing anywhere inside itself, so the words explaining the whole box were declared
+        /// by nothing at all and <c>DevProbe.Tooltip()</c> answered <c>shown:false</c> on its only line.
+        ///
+        /// Given to the panel's FIRST line and only while that line has no explanation of its own: the
+        /// sentence is about the box, and a line that carries one already has the closer answer. That
+        /// gate is also what keeps this off the other thirty - none of them reaches it at all, and any
+        /// that grows a root tooltip later gets the same treatment for free.
+        /// </summary>
+        private static void Explains(List<Cell> cells, SidePanel panel, int first)
+        {
+            AgeTransform root = panel == null ? null : panel.AgeTransform;
+            AgeTooltip tooltip = AgeWidgets.Raw(root);
+            if (cells.Count <= first || !Explained(tooltip) || !AgeWidgets.Draws(tooltip))
+            {
+                return;
+            }
+
+            NodeVtable vtable = cells[first].Vtable;
+            if (vtable == null || (vtable.PointsAt != null && vtable.PointsAt() != null))
+            {
+                return;
+            }
+
+            vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);
         }
 
         /// <summary>

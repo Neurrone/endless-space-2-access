@@ -1399,6 +1399,26 @@ namespace ES2Access.Core.Speech
         public const string EconomyInflationPanel = "economy.inflation-panel";
         public const string EconomyTradePanel = "economy.trade-panel";
 
+        // The marketplace's own captions, for the six places the game draws a control or a block and
+        // writes no word over it: the price graph (drawn as a picture with only its axes labelled),
+        // the two quantity steppers (bare arrows), and the three facts the tax box states in a row of
+        // unlabelled values.
+        public const string EconomyPriceHistory = "economy.price-history";
+        public const string EconomyIncrement = "economy.increment";
+        public const string EconomyDecrement = "economy.decrement";
+        public const string EconomyLocation = "economy.location";
+        public const string EconomyOwner = "economy.owner";
+        public const string EconomyTaxRate = "economy.tax-rate";
+
+        // The three bands each trading panel draws: the filter radios across the top, the list of what
+        // is on offer, and the strip the trade is set up in. The game captions none of them.
+        public const string EconomyFilters = "economy.filters";
+        public const string EconomyAvailable = "economy.available";
+        public const string EconomySellingWhat = "economy.selling-what";
+        public const string EconomyBuyingWhat = "economy.buying-what";
+        public const string EconomySellTransaction = "economy.sell-transaction";
+        public const string EconomyBuyTransaction = "economy.buy-transaction";
+
         // The military screen and the fleet picker the Academy raises over it. Both screen names are
         // fallbacks for the frames before the window has written its heading. The rest are for bands
         // the game draws with no heading of its own: the manpower box down the left edge, the three
@@ -2437,6 +2457,18 @@ namespace ES2Access.Core.Speech
             { EconomyEventsPanel, "Market events" },
             { EconomyInflationPanel, "Inflation" },
             { EconomyTradePanel, "Trade overview" },
+            { EconomyPriceHistory, "Price history" },
+            { EconomyIncrement, "Increment" },
+            { EconomyDecrement, "Decrement" },
+            { EconomyLocation, "Location" },
+            { EconomyOwner, "Owner" },
+            { EconomyTaxRate, "Tax rate" },
+            { EconomyFilters, "Filters" },
+            { EconomyAvailable, "Available" },
+            { EconomySellingWhat, "Selling {0}" },
+            { EconomyBuyingWhat, "Buying {0}" },
+            { EconomySellTransaction, "Sell transaction" },
+            { EconomyBuyTransaction, "Buy transaction" },
             { ScreenMilitary, "Military status" },
             { MilitaryManpowerPanel, "Manpower" },
             { MilitaryFleetActions, "Fleet actions" },

@@ -300,6 +300,38 @@ The same forced press on the system-management route is the regression check: it
 `GetWindow<PlanetLabelsWindow_SystemManagement>()`, and the node is `system:planet/<id>/action/0` in
 the `…/actions` region — two `ui.regionNext` jumps from the population region, not `ui.end`.
 
+## The economy page's side panels
+
+**The Inflation panel's explanation hangs on the panel ROOT** — `AgeTooltip` with
+content `%DustInflationDescription` and no class, on the `InflationSidePanel` transform itself, with
+no tooltip anywhere inside it. `SidePanels.Readouts` starts its walk at `ContentGroup` and its
+heading path only fires for a panel that DRAWS a heading, which this one does not, so the sentence
+was declared by nothing and `DevProbe.Tooltip()` answered `shown:false` on the panel's only line
+until `SidePanels.Explains` was added (2026-08-30). Census that justified putting it in the shared
+reader: of **all 31 side panels the game instantiates, exactly one** carries a root tooltip, and it
+carries no other. The gate is "the panel's first line has no explanation of its own", so a panel
+whose heading already carries one is untouched — verified on the academy screen, whose two panels
+both keep their own title tooltips.
+
+**The tooltip audits cannot see any of this.** `TooltipParity`/`Coverage` walk `Screen.RootTransform`
+— the EconomyScreen window — and the side panels live in a different window (`SidePanelsWindow`), so
+they were never in the painted set: parity read `clean` while the sentence was unreachable. Do not
+take a clean audit as coverage of a screen's side panels; the check there is a focused
+`DevProbe.Tooltip()` per panel line.
+
+**"Dust Dust Inflation" is NOT an icon duplicating text** (measured 2026-08-30, contradicting the
+first hypothesis). The two labels are `InflationDescription.Text = "%DustInflationTitle"` — a
+localization key with no icon token, which localizes to the game's own two words "Dust Inflation" —
+and `InflationValue.Text = "x1.11#E6C361#[dust]#REVERT#"`, whose dust icon is TRAILING and so is
+kept by `LabelWithoutLeadingIcon` on purpose (a mid-sentence icon stands in for a noun). Applying
+that helper changes neither string. The real defect is READING ORDER: `AgeWidgets.TextOf` walks
+`Children` in collection order, which is Value then Description, while the game draws Description at
+x=36 and Value at x=204 — so the mod says "x1.11 Dust" before "Dust Inflation" and the two Dusts
+land next to each other. Reading in drawn order gives "Dust Inflation x1.11 Dust". NOT FIXED: the
+sort would have to go into `TextOf`'s shared `Collect` (every caller in the mod) or into
+`SidePanels`' leaf read (all eight `Readouts` callers), and neither blast radius was measured — it
+is an open question for the owner, not a bug in the words.
+
 ## The economy page and the recipe modal
 
 **The economy page and the recipe modal.** Which rows draw at all follows from the save being
@@ -335,6 +367,184 @@ unmeasured). The two STRATEGIC grids draw only for an empire with Material Exper
 here has it, but `SimulationProperties.Empire.CanUseStrategicForRecipe` DOES stick under
 `SetPropertyBaseValue` + `Refresh(false)`: set it, the game draws the real grid itself, set it
 back (verified round trip 2026-08-19).
+
+## The marketplace tab
+
+**No saved fixture researches it.** All three saves refuse the tab (missing Galactic Commodities
+Exchange), so everything below was measured on the OWNER's live mid-session game at turn 27,
+where it is researched but the marketplace itself is unbuilt and unowned. Its shape: 4 buyable
+strategics, 6 sell tiles (3 with stock), Ships and Heroes sections tech-locked and refusing, taxes
+reading "Not built / No owner / 10%", one transaction in the log. Re-measuring means asking the
+owner for that session; nothing in `unlocked` reaches it.
+
+**SEVEN stops** (restructured 2026-08-30 over two rounds — a trading panel is one BOX, Tab moves
+between boxes, and the strip a trade is set up in is a box of its own):
+`economy:market/sell` → `sell-transaction` → `buy` → `buy-transaction` → `history` → `taxes` →
+`log`. The nine-stop shape that split each panel into tabs/rows/band is gone; grep for
+`sell-band`/`buy-tabs` and you are reading a stale note. Each trading panel's drawn heading
+(`PanelTitle`, found by `PanelName`/`PanelCaption`) is the first row of its own panel, and it is a
+row rather than only a name because all four panels hang a sentence on it.
+
+**The stops name themselves.** The two panels take the game's own Sell and Buy button titles
+(`%MarketplaceScreenSellButtonTitle` / `%MarketplaceScreenBuyButtonTitle`) as a stop-level context.
+The two transaction stops are named after what is being traded — "Selling Titanium" / "Buying
+Titanium" (`economy.selling-what` / `economy.buying-what`), falling back to "Sell transaction" /
+"Buy transaction" while nothing is picked. The buy side reads the name off the game's own
+`SelectedBuyableNameLabel`; the sell side has no such label, so it finds the tile whose
+`SelectionToggle.State` is true and names it through the SAME `SalableName` the tile is named by —
+which is what keeps an unlocated luxury's real name out of the stop's title.
+
+**Each trading panel is three regions**, walked with `ui.regionNext`/`ui.regionPrev`:
+`<panel>/heading` (the caption, unnamed — it announces itself), `<panel>/filters` ("Filters", the
+section radios as one row) and `<panel>/available` ("Available"). The **buy panel has FOUR region
+targets, not three**: the sort headers sit in `economy:buy/available` and the `GraphSheet`'s data
+rows get a region of their own (`economy:buy/reg:0`) because the sheet always sets one — the
+"Available, table" title is pushed by the screen over both, so it is announced once, on the header
+row the jump lands on, and the second jump into the rows says only the row. Expect
+`Purchasable Items → Filters → Available, table + Name header → Titanium row`.
+
+**The multiplier chords and their hints.** The game reads the physically held modifier inside its
+own click handler (`MarketplacePanel.GetQuantityToAddFromClick`, `OnQuantityPlusCb` :368-379), so
+Ctrl+Enter (`ui.selectToggle`) and Shift+Enter (`ui.selectRange`) replay the SAME press on the
+sellable tiles, the buy rows and the strip's two steppers — five at a time and the whole stock. A
+vtable with only `OnActivate` does nothing for those two actions; they are their own entries and
+had to be wired on the steppers explicitly. Every one of the four surfaces ends its buffer with the
+two hints (`hint.market-five` / `hint.market-all`), added in one place (`MarketChordHints`) and
+gated on the control being offered, so a refusing tile says neither. **Injected actions carry no
+held modifier**, so `POST /input ui.selectToggle` on Increment moves the quantity by ONE: that
+proves the dispatch reaches the button, never the multiplier. The multiplier itself needs
+`POST /key` with the game in the foreground and stays a manual-test line.
+
+**A buy line carries NO tooltip of its own.** `GuiTableLine.Tooltip` is null on every line of
+`BuyableItemsGuiTable` (measured 2026-08-30); the Resource-class dossier hangs on the drawn CELLS,
+`ColumnName` included. `TableSheet.Explains` is the fallback that answers this — the primary cell's
+own tooltip, for the row's sections and its pointer aim — and it fires only where the line's
+tooltip was null or drew nothing, so every other table in the mod is untouched. Verify it with
+`DevProbe.Tooltip()` on a FOCUSED buy row: `shown:true`, `class:"Resource"`, the header and
+description features. In `/gui/graph?buffers=1` only the focused row shows those lines, because a
+class-backed tooltip's buffer is empty until the tooltip window draws it.
+
+**And the row is the ONLY place that dossier is offered.** `GuiTableCellBuyable` writes the same
+class, content and target onto every buyable column (`GuiTableCellBuyableName`, `…Price`, `…Stat`
+all extend it), so the name, the stock and the price used to promise the same sentences three
+times. `TableSheet.CellVtable` now drops a cell tooltip that is the same SURFACE — matched by
+`AgeWidgets.SameTooltip`, i.e. class + content + target, never by text — as the one the row's
+primary declares (owner ruling 2026-08-30). The check on a focused quantity or price cell is a
+buffer of exactly one line ("Price, 135") while `DevProbe.Tooltip()` on that same cell still shows
+the drawn Resource dossier: the pointer aim is deliberately kept, so a sighted observer sees the
+hover the mouse would have drawn while the blind player is offered the dossier once, on the row.
+`DevProbe.TooltipParity()` stays clean through this because `NotificationAudit.Covering` matches by
+ancestry — the row's primary node stands on the LINE, an ancestor of every cell — so the cell's
+still-painted tooltip is covered and read by the row's node rather than counted uncovered.
+
+**The buy list is a TABLE, the sell list is not** (owner ruling 2026-08-30, after a same-day
+reversal). The game binds `BuyableItemsGuiTable` to the column set its SECTION declares —
+`Public/Gui/GuiElements[Marketplace].xml`: three columns for the resource sections, ten for Ships
+and Heroes — so the columns are the game's own data and `TableSheet.Rows` reads them generically;
+nothing in `EconomyScreen` counts columns, and a ten-column section would inherit ten (UNVERIFIED:
+both are tech-locked here). The sell list is pooled plain toggles with no column set at all, so it
+is one resource per row (`Cells.EmitLinear`), walked with Up/Down; the dense wrapped strip and its
+`GridRowKey` are retired.
+
+**The price graph is a table of its own stop** (`economy:market/history`, shipped 2026-08-30),
+declared AFTER the Purchasable Items stop rather than at its drawn position between the filters and
+the table (owner-approved). Rows are the buy table's own lines in drawn order, cells are the plotted
+value rounded to a whole number through `Gui.FormatAmount`, and columns are turns captioned with the
+turn-log's own wording (`hud.turn-log-turn`, "Turn 27") over the DISPLAYED turn number (snapshot
+turn + 1, which is what the game's X axis draws). **The columns run NEWEST FIRST** (owner ruling
+2026-08-30): the first cell right of a row's name is the current price, and the walk goes back in
+time — the reverse of the drawn axis, which runs oldest-left. Columns are trimmed to the earliest
+snapshot any listed resource has inside the game's own window
+(`SimulationProperties.Marketplace.TradableHistorySpanTurnCount`, 20 live), so a resource that
+started later reads "empty" in the OLDEST columns. The oracle is the game's own data, not the
+picture: index `GuiBuyable.History` from `/eval` (`turn + 1` and `Mathf.RoundToInt(value)`) and
+compare cell for cell — on the turn-27 fixture that is Titanium 15–27 (20→43), Hyperium 16–27,
+Antimatter 20–27, Adamantian 22–27, so column 1 reads "Turn 27, 43" for Titanium and column 2
+"Turn 26, 41". Tab into the stop lands on the first resource row and says "Price history, table,
+Titanium, 1 of 4"; Up from there reaches the caption row, whose buffer holds the panel's own
+"Evolution of market value over time". When the game shows `NoDataAvailableGroup` the stop is that
+one drawn readout instead (unsighted — the fixture always has data).
+
+**The section radios drop their leading icon.** The game writes the category's icon into the label
+and the engine's symbol registry names it, so "Titanium Strategics (3)" was really the Strategics
+filter wearing the name of one of its own resources. `AgeText.LabelWithoutLeadingIcon` is what both
+panels' filter rows use now: expect "Strategics (3)", "Luxuries (3)", "Ships (3)", "Heroes (1)".
+
+**Focusing a history row also scrolls the buy table to that resource's line** — once per arrival,
+never per frame, never on the way out, and only when the line is outside the viewport
+(`EconomyScreen.Reveal` → the shared `ScrollIntoView.Reveal`, which returns before writing anything
+when the gap is zero). There is no scroll-TO call to prefer over the wheel replay:
+`AgeControlScrollView` is public only in `ResetUp/Down/Left/Right` and `MouseWheel`, and the
+clamping, the scrollbar placement and the `OnScroll` message all sit behind the private
+`ConstraintAndPlace` (`firstpass/AgeControlScrollView.cs` :290-306, :476+).
+**This has never fired for real.** No fixture has a scrollable buy section: the four strategics are
+171px of a 258px viewport, `IsVerticalScrollBarVisible` is false, and the view refuses to move —
+`MouseWheel(-1)` and `MouseWheel(+1)` both leave `VirtualArea.Y` at 0, and a forced
+`VirtualArea.Y = -130` is put back to 0 by the engine's next position recompute, so the
+out-of-view state cannot even be staged. What IS proved here is the negative: walking all four
+history rows leaves `VirtualArea.Y` at 0 with nothing in the log. A landing scroll needs a section
+longer than its viewport (luxuries, 6 rows, still fits; Ships and Heroes are tech-locked).
+
+**The curve set does NOT depend on scroll position** — worth knowing before assuming the scroll is
+what makes a curve exist. `TradableHistoryCurvesPanel.Refresh` :100-109 collects its series with
+`GetComponentsInChildren<GuiTableLineBuyable>()` and keeps whichever have a bound `GuiBuyable`;
+neither `AgeControlScrollView` nor `AgeTransform` contains a single `SetActive`, and nothing in
+`Configure`/`ConstraintAndPlace` touches a child's visibility — a scroll only moves `VirtualArea.Y`
+and clips at render time. Measured on this fixture: the enumeration is 6 (four bound resources plus
+two pooled lines left `<unbound>` at alpha 0, which the panel's `is GuiBuyable` filter drops). So
+the mod's history table cannot lose a row to scrolling, and the auto-scroll is a visual courtesy —
+it puts the highlighted resource's line where a sighted observer can see it — rather than a fix for
+a missing curve.
+
+**The graph highlights the focused row** (visual only, owner-approved). While the cursor is on a
+history row the mod writes `Enable` on the curve widgets under
+`TradableHistoryCurvesPanel.TradableHistoryCurvesContainer` — bright for that resource, dim for the
+rest — and hands the graph back with the panel's own `OnSelectedItemChanged()` when focus leaves,
+on screen pop, and on teardown. The curves carry no back-reference to their resource: they are
+bound positionally to the list the panel builds with
+`BuyableItemsGuiTable.GetComponentsInChildren<GuiTableLineBuyable>()`, which is POOLED order, not
+drawn order, so the index is recomputed with that same call. The check is a `crop-shot.ps1` pair on
+`[368,246,766,176]`: one bright curve while a row is focused, all four bright after Tab out. Never
+drive this with `BuyableItemsGuiTable.SelectedLine` — that is real trade state.
+
+**Each trading strip is ONE row**, in the order the equation is written: the selected buyable's
+name (buy side, drawn only once something is picked), the ship spawn point (buy side, drawn only
+for a ship — unsighted, Ships is tech-locked), Price (captioned with the game's
+`%MarketplaceScreenHeaderPriceTitle`), Decrement, the quantity edit, Increment, then the trade
+button — or, once `IsEmpirePointBuyoutUnlocked`, the Dust and Influence pair, both titled with the
+game's `%MarketplaceScreenBuyButtonTitle` and valued by their own drawn total. The total already
+carries its currency as a word (`Gui.GetSymbolString` writes an icon token that `AgeText.Clean`
+names), so "Buy, button, Dust 52" and "Buy, button, Influence 52" need no composition. The drawn
+"-", "×" and "=" glyphs are punctuation and are deliberately not nodes.
+
+**Proving a stepper presses the game's button** needs a selection first, and a selection is real
+state: activate a sell tile (`economy:salable/0`), Tab to the Sell transaction stop, walk right to
+Increment, activate, then probe `SalableItemsPanel.QuantityTextField.Label.Text`. The game writes
+that box SYNCHRONOUSLY from its own quantity setter, so the spoken "Quantity N" is already the new
+number. **The restore is a section-radio round trip** — activate the other section radio and then
+the original one; `OnTabChanged` sets `SelectedTradableItem = null`, which puts quantity, unit
+price, total and the selected-name label back to "-"/0/"". Do this for the buy panel and the sell
+panel separately; there is no safe direct clear (`OnClickTradableItem(null, 0)` dereferences
+`SelectedGuiTradable` and throws). Reaching the buy panel's Filters region takes TWO
+`ui.regionPrev` from the data rows, not one — the first lands on the sort headers, and pressing
+Right/Enter there re-sorts the table instead (recoverable: click the Name header again). **Read the
+selection BEFORE you start**: this screen only exists
+on the owner's live session, so whatever is selected when you arrive is state to put back, not a
+clean slate — the round trip clears it rather than restoring it, and re-selecting plus N presses of
+Increment is how you get back to "Antimatter, quantity 4".
+
+**The log is a region per turn.** `MarketplaceExchangeInformationsPanel.Refresh` draws a header
+line above each turn's group, and a header is the wrapper it built with no transactions in it
+(`TradableTransactionLine.GuiTradableTransaction.TradableTransactions.Count == 0`) — so the header
+text names the region and each transaction is a single-entry row inside it. The panel's heading and
+its `NotOwnerLabel` sit in a `economy:log/head` region of their own, so the stop is regioned all
+the way through and `ui.regionNext` from the heading reaches "Turn 27".
+
+**The tax box is four single-entry rows**: the heading, then Location (the game's button, refusing
+with its own reason while unbuilt), Owner and Tax rate — the last three captioned by the mod
+(`economy.location` / `economy.owner` / `economy.tax-rate`) because the game draws the three values
+with no word over any of them. The OWNER's form (rate editor + its two steppers + the Set button,
+`MarketplaceTaxesPanel.OwnedGroup`) is fixture-blocked and its rows have never been heard.
 
 ## Military and fleet selection
 
@@ -492,7 +702,11 @@ system, and `ui.doubleClick` on a row already selected opens it.
   **The quest journal**); the turn-3 fixture draws exactly one card under every filter.
 - The gene hunter, assimilation, relics, a real election, an enabled Abolish, a drawn history
   graph, an empty senator slot and the outpost panel (**The senate family**).
-- The Marketplace tab and therefore the buy table (**The economy page**).
+- The Marketplace tab and therefore the buy table in every SAVED fixture (**The economy page**);
+  it exists only on the owner's live session (**The marketplace tab**), and even there: the
+  Ships and Heroes sections and so the ship spawn-point picker, the tax box's OWNER form (rate
+  editor, its steppers, the Set button), the graph's "No data available" branch, and the
+  not-owner label the log draws while the empire may not see the exchanges.
 - The star-system HANGAR is empty in `unlocked` (**Military and fleet selection**).
 - Multiplier and pairing slot markers without another RULESET; `Accuracy`/`Evasion`;
   `SpecialStatsTable` outside a mining probe (**The ship designer**).

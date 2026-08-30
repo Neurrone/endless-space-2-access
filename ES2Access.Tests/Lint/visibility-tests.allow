@@ -59,10 +59,17 @@ ES2Access/Screens/DiplomacyScreen.cs | 1 | || !AgeWidgets.Visible(card.Diplomati
 
 ES2Access/Screens/DropListScreen.cs | 1 | if (!AgeWidgets.Visible(request.List.AgeTransform))
 
+ES2Access/Screens/EconomyScreen.cs | 1 | && AgeWidgets.Visible(buy.ShipSpawnPointButtonGroup)
+ES2Access/Screens/EconomyScreen.cs | 1 | && AgeWidgets.Visible(caption)
 ES2Access/Screens/EconomyScreen.cs | 1 | && AgeWidgets.Visible(window.MarketplacePanel.AgeTransform);
+ES2Access/Screens/EconomyScreen.cs | 1 | if (at != null && AgeWidgets.Visible(at))
+ES2Access/Screens/EconomyScreen.cs | 2 | if (at == null || !AgeWidgets.Visible(at))
 ES2Access/Screens/EconomyScreen.cs | 1 | if (children == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/EconomyScreen.cs | 1 | if (curves == null || !AgeWidgets.Visible(curves.AgeTransform))
+ES2Access/Screens/EconomyScreen.cs | 1 | if (empty != null && AgeWidgets.Visible(empty))
 ES2Access/Screens/EconomyScreen.cs | 1 | if (panel != null && AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/EconomyScreen.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
+ES2Access/Screens/EconomyScreen.cs | 1 | if (panel.OwnedGroup != null && AgeWidgets.Visible(panel.OwnedGroup))
 ES2Access/Screens/EconomyScreen.cs | 1 | if (table != null && AgeWidgets.Visible(table))
 ES2Access/Screens/EconomyScreen.cs | 1 | if (table != null && AgeWidgets.Visible(table.AgeTransform))
 ES2Access/Screens/EconomyScreen.cs | 1 | if (widget != null && AgeWidgets.Visible(widget) && !bands.Contains(widget))

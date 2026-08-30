@@ -79,6 +79,14 @@ namespace ES2Access.Core.Speech
         /// stand on.</summary>
         public const string HintLockShip = "hint.lock-ship";
 
+        /// <summary>The marketplace, whose quantity gestures the game gives a multiplier to: a modified
+        /// click on a resource or on one of the strip.s steppers changes the quantity by five or by the
+        /// whole stock (<c>MarketplacePanel.GetQuantityToAddFromClick</c>). Which way it changes is the
+        /// control.s own business - a stepper subtracts - so the sentence names the size of the step
+        /// and not its direction.</summary>
+        public const string HintMarketFive = "hint.market-five";
+        public const string HintMarketAll = "hint.market-all";
+
         private static readonly Dictionary<string, string> HintDefaults = new Dictionary<
             string,
             string
@@ -104,6 +112,8 @@ namespace ES2Access.Core.Speech
             { HintGoToLocation, "{0} goes to location" },
             { HintClearKey, "{0} to clear this key" },
             { HintLockShip, "{0} to lock or unlock this ship in its flotilla" },
+            { HintMarketFive, "{0} to change the quantity by five units" },
+            { HintMarketAll, "{0} to change the quantity by all available stock" },
             // --- input batch (2026-08-22) ---
             { LabelWithChord, "{0} ({1})" },
             { SystemPrevious, "Previous system" },

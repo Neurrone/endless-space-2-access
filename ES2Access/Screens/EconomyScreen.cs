@@ -6,6 +6,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Input;
 
 namespace ES2Access.Screens
 {
@@ -67,20 +68,32 @@ namespace ES2Access.Screens
         private static readonly object LuxuriesStop = "economy:luxuries";
         private static readonly object StrategicsStop = "economy:strategics";
         private static readonly object RecipesStop = "economy:recipes";
-        private static readonly object BuyTabsStop = "economy:market/buy-tabs";
-        private static readonly object BuyRowsStop = "economy:market/buy";
-        private static readonly object BuyBandStop = "economy:market/buy-band";
-        private static readonly object SellTabsStop = "economy:market/sell-tabs";
-        private static readonly object SellRowsStop = "economy:market/sell";
-        private static readonly object SellBandStop = "economy:market/sell-band";
+        /// <summary>A trading panel is ONE stop with three regions in it, not three stops (owner ruling
+        /// 2026-08-30): the filters, the list and the strip the trade is set up in are bands of one box
+        /// the game draws with one heading over it, and Tab is what moves between BOXES.</summary>
+        private static readonly object BuyStop = "economy:market/buy";
+        private static readonly object SellStop = "economy:market/sell";
+
+        /// <summary>The strip a trade is set up in is a stop of its OWN, right after the panel it
+        /// belongs to (owner ruling 2026-08-30): it is where the player goes to ACT once they have
+        /// found what they came for, and reaching it should not be the length of the list away. Its name
+        /// says what is being traded, because that is the one thing the strip's own controls never
+        /// repeat.</summary>
+        private static readonly object BuyBandStop = "economy:market/buy-transaction";
+        private static readonly object SellBandStop = "economy:market/sell-transaction";
+        private static readonly object HistoryStop = "economy:market/history";
         private static readonly object TaxesStop = "economy:market/taxes";
         private static readonly object LogStop = "economy:market/log";
         private static readonly object AdsStop = "economy:market/ads";
         private static readonly object EventsStop = "economy:market/events";
 
-        /// <summary>Shared by the marketplace's sell list, so up and down out of a wrapped strip of
-        /// tiles keeps the column it was in - the list is dense, unlike the resource grids.</summary>
-        private static readonly object GridRowKey = "economy:grid-row";
+        /// <summary>The words the game already has for the marketplace's unlabelled strip: the caption
+        /// over its price column, and the titles on the two trade buttons - which the game writes on one
+        /// of them and leaves off the two it swaps in for the two currencies.</summary>
+        private const string PriceTitleKey = "%MarketplaceScreenHeaderPriceTitle";
+        private const string BuyButtonTitleKey = "%MarketplaceScreenBuyButtonTitle";
+        private const string SellButtonTitleKey = "%MarketplaceScreenSellButtonTitle";
+
 
         /// <summary>The clusters the game draws over every page. They are drawn over this one too.
         /// </summary>
@@ -98,6 +111,24 @@ namespace ES2Access.Screens
         private readonly List<Cell> _cells = new List<Cell>();
         private readonly List<GuiPanel> _boards = new List<GuiPanel>();
         private readonly List<AgeTransform> _bands = new List<AgeTransform>();
+
+        /// <summary>The resources the price-history table declared a row for, in the order it declared
+        /// them - what turns the focused ROW back into the thing whose curve the game draws.</summary>
+        private readonly List<GuiBuyable> _history = new List<GuiBuyable>();
+
+        /// <summary>One token per tradable, so a history row keys and reconciles by the RESOURCE without
+        /// carrying the resource itself: the buy table's own rows already carry that object, and two
+        /// nodes sharing one reference are one control to the cursor.</summary>
+        private readonly Dictionary<ulong, object> _historyKeys = new Dictionary<ulong, object>();
+
+        /// <summary>Whether this screen is currently holding the price graph's curves dimmed. Only ever
+        /// true while the cursor is on a history row, and the restore is the game's own call.</summary>
+        private bool _dimmed;
+
+        /// <summary>Which history row the buy table was last scrolled FOR - the row's own token, so a
+        /// rebuilt wrapper is still the same row. It is what keeps the scroll to the moment focus
+        /// ARRIVES: a scroll re-issued every frame would fight a hand on the wheel.</summary>
+        private object _revealed;
 
         /// <summary>The two resource lattices this page draws, one instance each so a build never
         /// measures one grid over the other's.</summary>
@@ -137,7 +168,7 @@ namespace ES2Access.Screens
         /// panels down the left edge and the tab bar itself are a Shift+Tab away.</summary>
         public override object InitialFocusStop
         {
-            get { return MarketDrawn(Window()) ? BuyTabsStop : CompaniesStop; }
+            get { return MarketDrawn(Window()) ? BuyStop : CompaniesStop; }
         }
 
         /// <summary>A page the player closes and comes straight back to, with the cursor where they left
@@ -196,12 +227,17 @@ namespace ES2Access.Screens
         {
             _editor.Cancel();
             _hud.Forget();
+            RestoreCurves();
+            _revealed = null;
+            _history.Clear();
+            _historyKeys.Clear();
         }
 
         public override void OnUpdate()
         {
             _editor.Update();
             _hud.Update();
+            Curves();
         }
 
         public override void Build(GraphBuilder builder)
@@ -979,79 +1015,135 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The buying half: the sections across the top, the table of what is on offer, and the
-        /// price-and-quantity strip along the bottom.</summary>
+        /// <summary>
+        /// The buying half, as ONE stop with the three bands the game draws down it as regions: the
+        /// heading, the section filters, the list of what is on offer, and the strip the trade is set up
+        /// in.
+        ///
+        /// The list stays a real TABLE (owner ruling 2026-08-30, reversing a same-day ruling that had
+        /// made it one node per row): the game binds this <c>GuiTable</c> to the column set its SECTION
+        /// declares - three for the resource sections, ten for ships and heroes
+        /// (<c>Public/Gui/GuiElements[Marketplace].xml</c>) - so the columns are a fact of the game's own
+        /// data and a walk across them is a walk across what the game says about each offer. Nothing here
+        /// counts columns: the shared table reading pairs each cell to the heading the game drew over it,
+        /// so a section with ten of them inherits ten.
+        ///
+        /// The price graph is declared AFTER this stop rather than where the game draws it, between the
+        /// filters and the table (owner ruling 2026-08-30): it is a page of its own to read, and putting
+        /// it in the middle of the buying walk makes the table the far side of it.
+        /// </summary>
         private void BuildBuy(GraphBuilder builder, MarketplaceBuyableItemsPanel panel)
         {
-            BuildSections(builder, BuyTabsStop, panel, "economy:buy-section/");
+            builder.BeginStop(BuyStop);
+            builder.PushContext(AgeText.Clean(Gui.Localize(BuyButtonTitleKey)));
+            AddCaption(builder, panel, "economy:buy/");
+            BuildSections(builder, panel, "economy:buy/");
 
             GuiTable table = panel.BuyableItemsGuiTable;
-            // Flow control: the shared table reading walks every line and cell of it.
+            // Flow control: the shared table reading walks every line of it, and a region would be
+            // opened around nothing.
             if (table != null && AgeWidgets.Visible(table.AgeTransform))
             {
-                builder.BeginStop(BuyRowsStop);
+                // The band's name and its role are pushed HERE rather than left to the sheet, because
+                // the sort headers are part of it and the sheet opens after them; the sheet is then
+                // given no title of its own, so the region is announced once, on the heading row the
+                // jump lands on. It still sets the stop's landing on the first data row.
+                builder.SetRegion("economy:buy/available");
+                builder.PushContext(
+                    ModStrings.Get(ModStrings.EconomyAvailable),
+                    GraphSheet.TableRoleText == null ? null : GraphSheet.TableRoleText()
+                );
                 _buyTable.Headers(builder, table);
-                _buyTable.Rows(builder, table, PanelName(panel, ModStrings.EconomyBuyPanel));
+                _buyTable.Rows(builder, table, null);
+                builder.PopContext();
             }
 
-            builder.BeginStop(BuyBandStop);
-            _cells.Clear();
-            SidePanels.Content(_cells, panel.AgeTransform, "economy:buy-band/", MarketBandCell, null);
-            Cells.Emit(builder, _cells);
+            builder.PopContext();
+
+            BuildBand(builder, panel, BuyBandStop, "economy:buy/", BuyButtonTitleKey, BandName(panel));
+            BuildHistory(builder, panel);
         }
 
-        /// <summary>The selling half. Its items are not a table at all - they are plain toggles the panel
-        /// pools (<c>MarketplaceSalableItemsPanel.RefreshTradableItemsTable</c> :117-130) - so they read
-        /// as one row per thing on offer, with the same click and the same chords the buy table's rows
-        /// have.</summary>
+        /// <summary>The selling half, the same three bands in one stop. Its items are not a table at all
+        /// - they are plain toggles the panel pools
+        /// (<c>MarketplaceSalableItemsPanel.RefreshTradableItemsTable</c> :117-130) - and they read one
+        /// per row, as the buying list beside them now does: the dense strip the game wraps them into is
+        /// a rendering accident, and walking it sideways bought nothing.</summary>
         private void BuildSell(GraphBuilder builder, MarketplaceSalableItemsPanel panel)
         {
-            BuildSections(builder, SellTabsStop, panel, "economy:sell-section/");
+            builder.BeginStop(SellStop);
+            builder.PushContext(AgeText.Clean(Gui.Localize(SellButtonTitleKey)));
+            AddCaption(builder, panel, "economy:sell/");
+            BuildSections(builder, panel, "economy:sell/");
 
             AgeTransform table = panel.SalableItemsTable;
-            // Flow control: a stop and a context would be opened around nothing, and every item under
-            // the table would be read first.
+            // Flow control: a region and a context would be opened around nothing, and every item under
+            // the table would be read in the band above.
             if (table != null && AgeWidgets.Visible(table))
             {
-                builder.BeginStop(SellRowsStop);
-                builder.PushContext(PanelName(panel, ModStrings.EconomySellPanel));
+                builder.SetRegion("economy:sell/available");
+                builder.PushContext(ModStrings.Get(ModStrings.EconomyAvailable));
                 _cells.Clear();
                 IList<AgeTransform> items = table.Children;
                 for (int i = 0; items != null && i < items.Count; i++)
                 {
-                    AddSalableItem(_cells, items[i], i);
+                    AddSalableItem(_cells, panel, items[i], i);
                 }
 
-                Emit(builder, _cells, GridRowKey);
+                Cells.EmitLinear(builder, _cells);
                 builder.PopContext();
+                if (_cells.Count > 0)
+                {
+                    builder.LandStopOn(_cells[0].Id);
+                }
             }
 
-            builder.BeginStop(SellBandStop);
+            builder.PopContext();
+
+            BuildBand(builder, panel, SellBandStop, "economy:sell/", SellButtonTitleKey, BandName(panel));
+        }
+
+        /// <summary>The panel's own drawn heading, in a region of its own so the stop is regioned all
+        /// the way through and the jump out of the filters reaches it.</summary>
+        private void AddCaption(GraphBuilder builder, GuiPanel panel, string keyPrefix)
+        {
             _cells.Clear();
-            SidePanels.Content(_cells, panel.AgeTransform, "economy:sell-band/", MarketBandCell, null);
-            Cells.Emit(builder, _cells);
+            AddPanelCaption(_cells, panel, keyPrefix + "title");
+            if (_cells.Count == 0)
+            {
+                return;
+            }
+
+            builder.SetRegion(keyPrefix + "heading");
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>The section radios - strategic resources, luxuries, ships, heroes - filtered and
         /// ordered by the game (<c>BuildGuiTradableSections</c>). A section the empire may not trade in
         /// is drawn switched off with the game's own reason on it, and stays declared while it refuses:
-        /// which markets exist, and why not this one, is what the player came here to find out.</summary>
+        /// which markets exist, and why not this one, is what the player came here to find out.
+        ///
+        /// Each label opens with the category's ICON, which reads as the word the engine's symbol
+        /// registry gives it - and for the strategics section that word is "Titanium", the name of one
+        /// of the resources in it. The leading icon is dropped for the same reason it is dropped
+        /// everywhere else: it is a picture standing beside the words, not a word of them.</summary>
         private void BuildSections(
             GraphBuilder builder,
-            object stop,
             MarketplaceTradableItemsPanel panel,
             string keyPrefix
         )
         {
             AgeTransform table = panel.MarketTabRadiosTable;
             IList<AgeTransform> children = table == null ? null : table.Children;
-            // Flow control: same - a stop would be opened around nothing and every radio read first.
+            // Flow control: same - a region would be opened around nothing and every radio read in the
+            // band above it.
             if (children == null || !AgeWidgets.Visible(table))
             {
                 return;
             }
 
-            builder.BeginStop(stop);
+            builder.SetRegion(keyPrefix + "filters");
+            builder.PushContext(ModStrings.Get(ModStrings.EconomyFilters));
             _cells.Clear();
             for (int i = 0; i < children.Count; i++)
             {
@@ -1071,7 +1163,7 @@ namespace ES2Access.Screens
                 // enable flag alone.
                 Func<bool> offered = () => AgeWidgets.Offered(at);
                 NodeVtable vtable = GraphNodes.Radio(
-                    () => AgeText.Label(it.Label),
+                    () => AgeText.LabelWithoutLeadingIcon(it.Label),
                     () => it.Toggle.State,
                     () => AgeWidgets.Toggle(it.Toggle),
                     offered,
@@ -1084,12 +1176,13 @@ namespace ES2Access.Screens
                 Cells.Add(
                     _cells,
                     widget,
-                    ControlId.For(widget, keyPrefix + i),
+                    ControlId.For(widget, keyPrefix + "filter/" + i),
                     vtable
                 );
             }
 
             Cells.Emit(builder, _cells);
+            builder.PopContext();
         }
 
         /// <summary>
@@ -1101,7 +1194,12 @@ namespace ES2Access.Screens
         /// Enter is the item's own click: it makes this the selection and adds to the quantity, with Ctrl
         /// and Shift the game's own multipliers.
         /// </summary>
-        private void AddSalableItem(List<Cell> cells, AgeTransform widget, int index)
+        private void AddSalableItem(
+            List<Cell> cells,
+            MarketplaceSalableItemsPanel panel,
+            AgeTransform widget,
+            int index
+        )
         {
             SalableItem item = widget == null ? null : widget.GetComponent<SalableItem>();
             if (item == null || !SettingRows.Drawn(widget) || item.SelectionToggle == null)
@@ -1111,10 +1209,7 @@ namespace ES2Access.Screens
 
             SalableItem it = item;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            bool named = Identified(tooltip);
-            string label = named
-                ? AgeWidgets.TooltipTitle(tooltip)
-                : CardActions.FirstLine(tooltip);
+            string label = SalableName(widget);
             Func<bool> offered = () => AgeWidgets.Operable(widget);
             NodeVtable vtable = GraphNodes.Radio(
                 () => label,
@@ -1125,7 +1220,13 @@ namespace ES2Access.Screens
                 tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(it.StockLabel)));
-            MarketGestures(vtable, () => AgeWidgets.Toggle(it.SelectionToggle), offered);
+            MarketplaceSalableItemsPanel owner = panel;
+            MarketGestures(
+                vtable,
+                () => AgeWidgets.Toggle(it.SelectionToggle),
+                offered,
+                () => QuantityText(owner)
+            );
             AgeWidgets.Point(vtable, it.SelectionToggle, tooltip, widget);
             Cells.Add(cells, widget, ControlId.For(widget, "economy:salable/" + index), vtable);
         }
@@ -1139,10 +1240,16 @@ namespace ES2Access.Screens
         /// selection rules apply unchanged. The quantity it arrived at is spoken back, because the press
         /// changes a number in the strip along the bottom of the panel and nothing else would say so.
         /// </summary>
-        private void MarketGestures(NodeVtable vtable, Action click, Func<bool> offered)
+        private void MarketGestures(
+            NodeVtable vtable,
+            Action click,
+            Func<bool> offered,
+            Func<string> quantity
+        )
         {
             Action press = click;
             Func<bool> can = offered;
+            Func<string> landed = quantity;
             Action guarded = () =>
             {
                 if (can())
@@ -1152,7 +1259,102 @@ namespace ES2Access.Screens
             };
             vtable.OnSelectToggle = guarded;
             vtable.OnSelectRange = guarded;
-            vtable.StateText = () => can() ? QuantityText() : null;
+            vtable.StateText = () => can() ? landed() : null;
+            MarketChordHints(vtable, can);
+        }
+
+        /// <summary>The two multiplier chords, said in the buffer of everything that has them - the
+        /// sellable tiles, the buy table.s rows and the strip.s own steppers. The game.s tooltip on some
+        /// of those already says what a modified CLICK does; what the keyboard.s chords do is the mod.s
+        /// to say, and it is said in one place so no surface offering the gesture can forget it.
+        /// </summary>
+        private static void MarketChordHints(NodeVtable vtable, Func<bool> offered)
+        {
+            NodeHints.Add(vtable, ModStrings.HintMarketFive, UiActions.SelectToggle, 0, offered);
+            NodeHints.Add(vtable, ModStrings.HintMarketAll, UiActions.SelectRange, 0, offered);
+        }
+
+        /// <summary>
+        /// What the strip is currently set up to trade, which is what its stop is called: nothing else
+        /// in the strip says WHICH resource its price and its total belong to, and a stop the player
+        /// tabs into has to name itself.
+        ///
+        /// A strip with nothing picked keeps a name of the mod's own rather than none: the stop is
+        /// there, it refuses, and a nameless one would announce a bare role word.
+        /// </summary>
+        private static string BandName(MarketplaceTradableItemsPanel panel)
+        {
+            bool buying = panel is MarketplaceBuyableItemsPanel;
+            string what = SelectedName(panel);
+            return string.IsNullOrEmpty(what)
+                ? ModStrings.Get(
+                    buying
+                        ? ModStrings.EconomyBuyTransaction
+                        : ModStrings.EconomySellTransaction
+                )
+                : ModStrings.Format(
+                    buying ? ModStrings.EconomyBuyingWhat : ModStrings.EconomySellingWhat,
+                    what
+                );
+        }
+
+        /// <summary>
+        /// The thing the panel has picked, in the words its own list calls it by.
+        ///
+        /// The buying half is the game's own answer: it writes the picked buyable's title across the
+        /// left of the strip and empties that label again when nothing is picked
+        /// (<c>RefreshBottomGroup</c> :185-207). The selling half draws no such label, so the picked
+        /// TILE is asked - and asked through <see cref="SalableName"/>, so a luxury the empire has never
+        /// located is named here by the same sentence the tile is named by rather than by the name the
+        /// player is not allowed to have.
+        /// </summary>
+        private static string SelectedName(MarketplaceTradableItemsPanel panel)
+        {
+            try
+            {
+                MarketplaceBuyableItemsPanel buy = panel as MarketplaceBuyableItemsPanel;
+                if (buy != null)
+                {
+                    return AgeText.Label(buy.SelectedBuyableNameLabel);
+                }
+
+                MarketplaceSalableItemsPanel sell = panel as MarketplaceSalableItemsPanel;
+                AgeTransform table = sell == null ? null : sell.SalableItemsTable;
+                IList<AgeTransform> items = table == null ? null : table.Children;
+                for (int i = 0; items != null && i < items.Count; i++)
+                {
+                    SalableItem item =
+                        items[i] == null ? null : items[i].GetComponent<SalableItem>();
+                    if (
+                        item != null
+                        && item.SelectionToggle != null
+                        && item.SelectionToggle.State
+                        && SettingRows.Drawn(items[i])
+                    )
+                    {
+                        return SalableName(items[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("economy: reading what is being traded threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>What a sellable tile is called: the game's own wrapper title where the empire has
+        /// located the resource, and the one sentence the game writes in its place where it has not
+        /// (<c>SalableItem.SetTooltip</c>). Decided in ONE place, so the tile and the name of the strip
+        /// that trades it cannot disagree about a resource the player may not be told the name of.
+        /// </summary>
+        private static string SalableName(AgeTransform widget)
+        {
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            return Identified(tooltip)
+                ? AgeWidgets.TooltipTitle(tooltip)
+                : CardActions.FirstLine(tooltip);
         }
 
         private void MarketRow(GuiTableLine line, NodeVtable vtable)
@@ -1161,23 +1363,27 @@ namespace ES2Access.Screens
             MarketGestures(
                 vtable,
                 () => AgeWidgets.Toggle(row.SelectionToggle),
-                () => AgeWidgets.Enabled(row.AgeTransform)
+                () => AgeWidgets.Enabled(row.AgeTransform),
+                () => QuantityText(BuyPanel())
             );
         }
 
-        /// <summary>How much the marketplace is currently set to trade, off the box the game writes it
-        /// into - which is the number a sighted player reads.</summary>
-        private static string QuantityText()
+        /// <summary>
+        /// How much the panel is currently set to trade, off the box the game writes it into - which is
+        /// the number a sighted player reads, and which the game writes SYNCHRONOUSLY from its own
+        /// quantity setter (<c>MarketplaceTradableItemsPanel.SelectedTradableQuantity</c> :80-92 calls
+        /// <c>ReplaceInputText</c>), so it is already the new number when a press asks for it.
+        ///
+        /// Asked of the panel whose control was pressed. Buying and selling are two panels with a box
+        /// each: this used to read the BUYING one whatever was pressed, so every sell-side gesture
+        /// announced the buy side's quantity - "Quantity 0" after a click that had just set it to one
+        /// (measured 2026-08-30).
+        /// </summary>
+        private static string QuantityText(MarketplaceTradableItemsPanel panel)
         {
             try
             {
-                global::EconomyScreen window = Window();
-                MarketplacePanel panel = window == null ? null : window.MarketplacePanel;
-                AgeControlTextField field =
-                    panel == null || panel.BuyableItemsPanel == null
-                        ? null
-                        : panel.BuyableItemsPanel.QuantityTextField;
-                string text = SettingRows.FieldText(field);
+                string text = SettingRows.FieldText(panel == null ? null : panel.QuantityTextField);
                 return string.IsNullOrEmpty(text)
                     ? null
                     : ModStrings.Format(ModStrings.EconomyQuantity, text);
@@ -1189,48 +1395,194 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The one control in a trading panel's bottom strip the shape of the tree cannot read: the box
-        /// the quantity is typed into.
+        /// The price-and-quantity strip along the bottom of a trading panel, as the one row the game
+        /// writes it as: what a unit costs, how many are being traded, and what the trade comes to.
         ///
-        /// It is declared as the game's own editor, handed the keyboard a frame after the request, and
-        /// its two stepper buttons are its left and right - held with Shift, the game's own whole-stock
-        /// step, because those buttons read the physically held modifier too
-        /// (<c>OnQuantityPlusCb</c> :368-379).
+        /// Read as that equation rather than as the widgets it is made of. The game draws a bare "-"
+        /// between the price and the quantity and a bare "=" before the total, and those two glyphs are
+        /// punctuation, not controls - a walk of the shape of the tree used to declare each of them as a
+        /// node whose name was a hyphen. The two steppers are the game's own buttons, named by the mod
+        /// because the game writes no word on them (its sentence about what a click does, and what Ctrl
+        /// and Shift do to it, stays in their buffers where every other explanation is), and the trade
+        /// button is named by the game's own Buy or Sell title with its running total as the value.
         ///
-        /// The rest of the strip - unit price, total, the trade buttons, the spawn-point picker - is read
-        /// by shape, which is what keeps a panel this stage could not draw from being modelled off
-        /// guesses about which label captions which number. The two tables above the strip are consumed
-        /// here so the shape walk does not read them a second time.
+        /// The quantity box is the game's own editor, handed the keyboard a frame after the request. Its
+        /// arrows are NOT wired to the steppers: left and right on a focused box navigate, and the value
+        /// is changed by opening the edit and typing it (owner ruling 2026-08-27, first made on the
+        /// negotiation basket - arrows that move a value the player only meant to walk past are a value
+        /// changed by accident).
         /// </summary>
-        private bool MarketBandCell(
-            List<Cell> cells,
-            AgeTransform widget,
+        private void BuildBand(
+            GraphBuilder builder,
+            MarketplaceTradableItemsPanel panel,
+            object stop,
             string keyPrefix,
-            SidePanel panel
+            string titleKey,
+            string name
         )
         {
-            if (widget == null)
+            _cells.Clear();
+
+            // What the buying half is currently set to trade, which the game writes across the left of
+            // the strip once something is picked (<c>RefreshBottomGroup</c> :185-207 leaves it blank
+            // otherwise, and a blank one contributes no line). Not in the approved shape for this row -
+            // the fixture it was measured on had nothing selected, so nothing was drawn there - and kept
+            // because it is drawn: it is the only place the strip says WHAT is being bought.
+            MarketplaceBuyableItemsPanel buy = panel as MarketplaceBuyableItemsPanel;
+            if (buy != null)
             {
-                return false;
+                Cells.AddReadout(_cells, buy.SelectedBuyableNameGroup, keyPrefix + "selected");
             }
 
+            // Where a bought ship would appear, which the game draws in this strip only while what is
+            // selected is a ship. It is the other member that is not part of the equation, and the game
+            // draws it between the name and the price.
+            // Flow control on a wired prefab field: the panel hides the group for anything that is not a
+            // ship (<c>RefreshBottomGroup</c> :185-207), so this is which of its two shapes is drawn.
             if (
-                widget.GetComponent<GuiTable>() != null
-                || widget.GetComponent<MarketTabRadio>() != null
-                || widget.GetComponent<TradableHistoryCurvesPanel>() != null
-                || widget.GetComponent<SalableItem>() != null
+                buy != null
+                && buy.ShipSpawnPointButtonGroup != null
+                && AgeWidgets.Visible(buy.ShipSpawnPointButtonGroup)
             )
             {
-                return true;
+                Cells.AddControl(_cells, buy.ShipSpawnPointButtonGroup, keyPrefix + "spawn-point");
             }
 
-            AgeControlTextField field = widget.GetComponent<AgeControlTextField>();
-            if (field == null)
+            AddPrice(panel, keyPrefix);
+            AddStepper(
+                panel.QuantityMinusButton,
+                ModStrings.EconomyDecrement,
+                keyPrefix + "minus",
+                () => QuantityText(panel)
+            );
+            AddQuantity(panel, keyPrefix);
+            AddStepper(
+                panel.QuantityPlusButton,
+                ModStrings.EconomyIncrement,
+                keyPrefix + "plus",
+                () => QuantityText(panel)
+            );
+            AddTradeButtons(panel, keyPrefix, titleKey);
+
+            // Flow control: a stop would be opened around nothing on a frame where the game has taken
+            // the whole strip away.
+            if (_cells.Count == 0)
             {
-                return false;
+                return;
             }
 
-            MarketplaceTradableItemsPanel owner = Owner(widget);
+            builder.BeginStop(stop);
+            builder.PushContext(name);
+            Cells.EmitRow(builder, _cells);
+            builder.PopContext();
+        }
+
+        /// <summary>What one unit is going for, under the game's own word for it - the strip draws the
+        /// number with nothing beside it but the "-" that separates it from the quantity.</summary>
+        private void AddPrice(MarketplaceTradableItemsPanel panel, string keyPrefix)
+        {
+            AgePrimitiveLabel label = panel.UnitPriceLabel;
+            AgeTransform at = label == null ? null : label.AgeTransform;
+            // No visibility test: the gate asks whether the game is drawing this label, and its whole
+            // ancestry with it.
+            if (at == null)
+            {
+                return;
+            }
+
+            AgeTransform group = at.Parent ?? at;
+            AgeTooltip tooltip = AgeWidgets.Raw(group) ?? AgeWidgets.Raw(at);
+            AgePrimitiveLabel it = label;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeText.Clean(Gui.Localize(PriceTitleKey)),
+                () => AgeText.Label(it),
+                null,
+                tooltip
+            );
+            Cells.Add(_cells, group, ControlId.For(group, keyPrefix + "unit-price"), vtable);
+        }
+
+        /// <summary>One of the two arrows beside a number the game lets the player step. The game writes
+        /// no word on them at all, so the mod names them; what a press does is the game's own sentence,
+        /// and the number it lands on is spoken back, because the press changes a figure somewhere else
+        /// in the strip and nothing else would say so.</summary>
+        private void AddStepper(
+            AgeControlButton button,
+            string nameKey,
+            string key,
+            Func<string> state
+        )
+        {
+            AgeTransform at = AgeWidgets.Transform(button);
+            // A branch chooser on a wired prefab field: the tax box keeps a pair of these inside the
+            // form it is not drawing, and this is which pair is being read.
+            if (at == null || !AgeWidgets.Visible(at))
+            {
+                return;
+            }
+
+            AgeControlButton it = button;
+            AgeTooltip tooltip = AgeWidgets.Raw(at);
+            Func<string> landed = state;
+            // Whether the press that is being reported on actually happened. Asking the button again
+            // afterwards is not the same question: the press the game accepts LAST is the one that takes
+            // the value to its limit and switches the button off, so a refusal test run after the fact
+            // swallowed exactly the number the player most wanted (measured: incrementing to a stock of
+            // five said "unavailable" and never said five).
+            bool[] acted = new bool[1];
+            NodeVtable vtable = GraphNodes.Button(
+                () => ModStrings.Get(nameKey),
+                () =>
+                {
+                    acted[0] = true;
+                    AgeWidgets.Press(it);
+                },
+                () => AgeWidgets.Offered(at),
+                tooltip
+            );
+            // Nothing at all on a press the game refuses: the player heard "unavailable" on the way in.
+            vtable.StateText = () =>
+            {
+                if (!acted[0])
+                {
+                    return null;
+                }
+
+                acted[0] = false;
+                return landed();
+            };
+            // The same press again for the two multiplier chords. A node with only an activation does
+            // NOTHING for them - they are their own vtable entries - so the button the game reads the
+            // held modifier inside (<c>OnQuantityPlusCb</c> :368-379) has to be wired three times to be
+            // reachable three ways. The arithmetic is never the mod's: what Ctrl and Shift turn one
+            // press into is decided inside the game's own handler.
+            Func<bool> offered = () => AgeWidgets.Offered(at);
+            Action chord = () =>
+            {
+                if (offered())
+                {
+                    acted[0] = true;
+                    AgeWidgets.Press(it);
+                }
+            };
+            vtable.OnSelectToggle = chord;
+            vtable.OnSelectRange = chord;
+            MarketChordHints(vtable, offered);
+            AgeWidgets.Point(vtable, button, tooltip, at);
+            Cells.Add(_cells, at, ControlId.For(at, key), vtable);
+        }
+
+        /// <summary>The box the quantity is typed into, as the game's own editor.</summary>
+        private void AddQuantity(MarketplaceTradableItemsPanel panel, string keyPrefix)
+        {
+            AgeControlTextField field = panel.QuantityTextField;
+            AgeTransform at = AgeWidgets.Transform(field);
+            // No visibility test here either - same reason as the price beside it.
+            if (at == null)
+            {
+                return;
+            }
+
             Cell cell = SettingRows.TextFieldCell(
                 field,
                 null,
@@ -1242,178 +1594,754 @@ namespace ES2Access.Screens
             );
             if (cell == null)
             {
-                return true;
+                return;
             }
 
-            if (owner != null)
-            {
-                cell.Vtable.StateText = QuantityText;
-                // A NUMBER is typed here rather than free text, so the role word says so - but the
-                // arrows are NOT wired to the game's stepper buttons. Left and right on a focused cell
-                // navigate, and the value is changed by opening the edit and typing it (owner ruling
-                // 2026-08-27, first made on the negotiation basket and swept here: arrows that move a
-                // value the player only meant to walk past are a value changed by accident). A SLIDER
-                // keeps its arrows, because a slider has no edit to go inside and they are the only
-                // gesture it has.
-                cell.Vtable.ControlType = ControlTypes.NumericEditField;
-            }
-
-            cells.Add(cell);
-            return true;
+            cell.Vtable.StateText = () => QuantityText(panel);
+            // A NUMBER is typed here rather than free text, so the role word says so.
+            cell.Vtable.ControlType = ControlTypes.NumericEditField;
+            _cells.Add(cell);
         }
 
-        /// <summary>One press of the quantity's own stepper. Which button, and what the press means, are
-        /// the game's: the modifier the player is holding is what turns one into five or into the whole
-        /// stock.</summary>
-        private static void Step(MarketplaceTradableItemsPanel panel, int sign)
+        /// <summary>The button that makes the trade - or, once the empire can buy with influence as well
+        /// as with dust, the two of them the game swaps in for it
+        /// (<c>MarketplaceBuyableItemsPanel.RefreshTradeButtons</c> :291-303). Those two carry no title of
+        /// their own, only a running total beside a currency, so the game's own Buy title names them and
+        /// the total is the value - currency and all, exactly as the game wrote it into the label.
+        /// </summary>
+        private void AddTradeButtons(
+            MarketplaceTradableItemsPanel panel,
+            string keyPrefix,
+            string titleKey
+        )
+        {
+            AddTradeButton(panel.TradeButton, panel.TotalPriceLabel, titleKey, keyPrefix + "trade");
+            MarketplaceBuyableItemsPanel buy = panel as MarketplaceBuyableItemsPanel;
+            if (buy != null)
+            {
+                AddTradeButton(
+                    buy.DustTradeButton,
+                    buy.TotalDustPriceLabel,
+                    titleKey,
+                    keyPrefix + "trade-dust"
+                );
+                AddTradeButton(
+                    buy.EmpirePointTradeButton,
+                    buy.TotalEmpirePointPriceLabel,
+                    titleKey,
+                    keyPrefix + "trade-influence"
+                );
+            }
+        }
+
+        private void AddTradeButton(
+            AgeControlButton button,
+            AgePrimitiveLabel total,
+            string titleKey,
+            string key
+        )
+        {
+            AgeTransform at = AgeWidgets.Transform(button);
+            // A branch chooser, not an existence gate: the panel keeps all three trade buttons wired and
+            // shows either the one or the pair (<c>RefreshTradeButtons</c> :291-303).
+            if (at == null || !AgeWidgets.Visible(at))
+            {
+                return;
+            }
+
+            AgeControlButton it = button;
+            AgePrimitiveLabel amount = total;
+            AgeTooltip tooltip = AgeWidgets.Raw(at);
+            NodeVtable vtable = GraphNodes.Button(
+                () => AgeText.Clean(Gui.Localize(titleKey)),
+                () => AgeWidgets.Press(it),
+                () => AgeWidgets.Offered(at),
+                tooltip
+            );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(amount)));
+            AgeWidgets.Point(vtable, button, tooltip, at);
+            Cells.Add(_cells, at, ControlId.For(at, key), vtable);
+        }
+
+        // ---- the price graph ----
+
+        /// <summary>
+        /// The price graph, as the table it is a picture of: a row per resource the buy table is showing,
+        /// a column per turn, and the value the game plotted in each cell.
+        ///
+        /// Nothing on this panel is text a walk could find. The game draws a set of coloured curves with
+        /// numbered axes and no name anywhere on it - which resource a line belongs to is its colour, and
+        /// what a point is worth is where it sits between two axis labels. The series here are the same
+        /// ones the renderer plots (<c>TradableHistoryCurvesPanel.Refresh</c> :95-152): the buy table's
+        /// own lines, over the turn window the marketplace's <c>TradableHistorySpanTurnCount</c> property
+        /// sets, trimmed at the front to the earliest turn any of them has a reading for. The columns are
+        /// DISPLAYED turn numbers, because the game's own X axis draws snapshot turn plus one, and each
+        /// value goes through the game's own amount formatter rounded to a whole number, the way its axis
+        /// labels are.
+        ///
+        /// Two things are deliberately not here. The Y axis's scale labels: they exist to place a line on
+        /// a picture, and the cells state the values themselves. And the game's
+        /// highlight-the-selected-curve filter, which is a sighted-only narrowing of the same data
+        /// (owner-approved) - what the mod does instead is <see cref="Curves"/>, which points the same
+        /// highlight at whichever row the cursor is on.
+        /// </summary>
+        private void BuildHistory(GraphBuilder builder, MarketplaceBuyableItemsPanel panel)
+        {
+            _history.Clear();
+            TradableHistoryCurvesPanel curves = panel.TradableHistoryCurvesPanel;
+            // Flow control: whether the graph is read at all. Its rows are SYNTHETIC - they are built
+            // from the game's snapshot lists, not from widgets - so no gate stands behind them, and this
+            // is the whole of their existence test.
+            if (curves == null || !AgeWidgets.Visible(curves.AgeTransform))
+            {
+                return;
+            }
+
+            AgeTransform empty = curves.NoDataAvailableGroup;
+            // Flow control, on a wired prefab field that is always there: this is the BRANCH the panel
+            // chooses between its two forms (<c>Refresh</c> :127-137 shows one and hides the other), and
+            // the game's own words for an empty window are then the whole of the stop.
+            if (empty != null && AgeWidgets.Visible(empty))
+            {
+                builder.BeginStop(HistoryStop);
+                builder.PushContext(ModStrings.Get(ModStrings.EconomyPriceHistory));
+                _cells.Clear();
+                Cells.AddReadout(_cells, empty, "economy:history/no-data");
+                Cells.EmitLinear(builder, _cells);
+                builder.PopContext();
+                return;
+            }
+
+            List<GuiTableLine> lines = _buyTable.Lines(panel.BuyableItemsGuiTable);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                ITradableItem item = lines[i] as ITradableItem;
+                GuiBuyable buyable = item == null ? null : item.GuiTradable as GuiBuyable;
+                if (buyable != null && buyable.History != null && buyable.History.Count > 0)
+                {
+                    _history.Add(buyable);
+                }
+            }
+
+            int floor = WindowStart();
+            int first = int.MaxValue;
+            int last = -1;
+            for (int r = 0; r < _history.Count; r++)
+            {
+                List<TradableSnapshot> history = _history[r].History;
+                for (int s = 0; s < history.Count; s++)
+                {
+                    int turn = history[s].Turn;
+                    if (turn < floor)
+                    {
+                        continue;
+                    }
+
+                    if (turn < first)
+                    {
+                        first = turn;
+                    }
+
+                    if (turn > last)
+                    {
+                        last = turn;
+                    }
+                }
+            }
+
+            // Flow control: no reading inside the window is a graph with nothing on it, and the game
+            // draws its own words for that (above) rather than an empty table.
+            if (last < first)
+            {
+                _history.Clear();
+                return;
+            }
+
+            // NEWEST first (owner ruling 2026-08-30): what a resource is worth NOW is the question this
+            // table is opened with, and the answer is then one press right of the row's name rather than
+            // the length of the window away. So column 1 is the latest turn and the walk goes back.
+            int columns = last - first + 1;
+            string[] headers = new string[columns + 1];
+            for (int c = 0; c < columns; c++)
+            {
+                // The DISPLAYED turn, under the same word the turn log names a turn by: a bare number
+                // crossed into says nothing about what kind of number it is.
+                headers[c + 1] = ModStrings.Format(ModStrings.HudTurnLogTurn, last - c + 1);
+            }
+
+            builder.BeginStop(HistoryStop);
+            GraphSheet sheet = new GraphSheet(builder, "economy:history/");
+            sheet.Region(ModStrings.Get(ModStrings.EconomyPriceHistory), headers);
+            AddHistoryCaption(builder, sheet, curves);
+
+            Func<string>[] cells = new Func<string>[columns];
+            for (int r = 0; r < _history.Count; r++)
+            {
+                GuiBuyable buyable = _history[r];
+                for (int c = 0; c < columns; c++)
+                {
+                    // A turn this resource has no reading for is still a CELL - dropping it would put a
+                    // neighbour's price under the wrong turn on the way across - and it says the word
+                    // every other empty cell in the mod says.
+                    cells[c] = Nothing;
+                }
+
+                List<TradableSnapshot> history = buyable.History;
+                for (int s = 0; s < history.Count; s++)
+                {
+                    int column = last - history[s].Turn;
+                    if (column >= 0 && column < columns)
+                    {
+                        string drawn = Gui.FormatAmount(
+                            UnityEngine.Mathf.RoundToInt(history[s].Value),
+                            true,
+                            false,
+                            false
+                        );
+                        cells[column] = () => drawn;
+                    }
+                }
+
+                string title = AgeText.Clean(buyable.Title);
+                NodeVtable primary = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => title),
+                    },
+                };
+                sheet.Row(primary, HistoryKey(buyable), null, cells);
+            }
+
+            sheet.Finish();
+            // Tab into the graph lands on a resource rather than on the sentence about the graph, the
+            // same rule every other table on this page lands by.
+            builder.LandStopOn(sheet.FirstRow);
+        }
+
+        /// <summary>The one sentence the game writes about the graph, which it hangs on the panel itself
+        /// rather than on any caption - there is no drawn heading here to carry it, so the row says the
+        /// mod's own name for the block and the sentence goes in its buffer.</summary>
+        private static void AddHistoryCaption(
+            GraphBuilder builder,
+            GraphSheet sheet,
+            TradableHistoryCurvesPanel curves
+        )
+        {
+            AgeTooltip about = AgeWidgets.Raw(curves.AgeTransform);
+            if (about == null || !AgeWidgets.Draws(about))
+            {
+                return;
+            }
+
+            ControlId lead = ControlId.For(curves.AgeTransform, "economy:history/about");
+            NodeVtable saying = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.EconomyPriceHistory)),
+                },
+            };
+            saying.Sections = GraphNodes.SectionsFor(saying, about);
+            builder.AddNode(Nodes.Drawn(lead, saying, curves.AgeTransform));
+            sheet.Follows(lead);
+        }
+
+        private static readonly Func<string> Nothing = () => null;
+
+        /// <summary>The oldest turn the price graph plots: the game's own window, read off the same
+        /// marketplace property the curves panel binds itself with
+        /// (<c>TradableHistoryCurvesPanel.Bind</c> :61-68, <c>Refresh</c> :93-94).</summary>
+        private static int WindowStart()
         {
             try
             {
-                AgeControlButton button =
-                    sign < 0 ? panel.QuantityMinusButton : panel.QuantityPlusButton;
-                if (button != null && AgeWidgets.Operable(button.AgeTransform))
+                int turn = Gui.Game.Turn;
+                ITradingManagementService trading = Trading();
+                if (trading == null)
                 {
-                    AgeWidgets.Press(button);
+                    return 0;
+                }
+
+                int span = UnityEngine.Mathf.RoundToInt(
+                    trading.SimulationObject.GetPropertyValue(
+                        SimulationProperties.Marketplace.TradableHistorySpanTurnCount
+                    )
+                );
+                return UnityEngine.Mathf.Clamp(turn - span, 0, turn);
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>What a price-history row is keyed and reconciled by. Not the tradable itself, which
+        /// the buy table's own rows already carry: reference identity is followed before the structural
+        /// key, so two nodes sharing one object are one control to the cursor and focus would teleport
+        /// between the graph and the table. A token per tradable keeps the row identified across a
+        /// re-sort without being the same thing as the row below it.</summary>
+        private object HistoryKey(GuiBuyable buyable)
+        {
+            ulong uid = buyable.Tradable.UID;
+            object token;
+            if (!_historyKeys.TryGetValue(uid, out token))
+            {
+                token = new object();
+                _historyKeys[uid] = token;
+            }
+
+            return token;
+        }
+
+        /// <summary>
+        /// The visual courtesy that goes with the price-history table: while the cursor is on one of its
+        /// rows, the game's own graph draws that resource's curve bright and dims the others, so a
+        /// sighted observer can see what is being read (owner-approved).
+        ///
+        /// The lever is the curve widget's own Enable flag, which is exactly what the game writes for its
+        /// own highlight (<c>TradableHistoryCurvesPanel.RefreshTradableHistoryCurve</c> :177,193).
+        /// Selecting the buy table's LINE would look the same and is deliberately not used: that
+        /// selection is real trade state - it feeds the quantity and the totals - and walking a table
+        /// must not spend it.
+        ///
+        /// The curve widgets carry no back-reference to their resource; they are bound positionally to
+        /// the panel's own list, which is built from the POOLED order of the table's line components
+        /// rather than the drawn order (<c>Refresh</c> :100-109), so the index is recomputed with the
+        /// game's own enumeration. Reasserted every frame because the panel rebinds itself whenever the
+        /// table scrolls, and handed back by calling the panel's own refresh, so what returns is the
+        /// game's rule rather than the mod's guess at it.
+        /// </summary>
+        private void Curves()
+        {
+            try
+            {
+                MarketplaceBuyableItemsPanel buy = BuyPanel();
+                TradableHistoryCurvesPanel curves =
+                    buy == null ? null : buy.TradableHistoryCurvesPanel;
+                if (curves == null)
+                {
+                    return;
+                }
+
+                GuiBuyable wanted = FocusedHistoryRow();
+                Reveal(buy, wanted);
+                int index = wanted == null ? -1 : CurveIndex(buy, wanted);
+                IList<AgeTransform> children =
+                    curves.TradableHistoryCurvesContainer == null
+                        ? null
+                        : curves.TradableHistoryCurvesContainer.Children;
+                if (index < 0 || children == null)
+                {
+                    RestoreCurves();
+                    return;
+                }
+
+                for (int i = 0; i < children.Count; i++)
+                {
+                    if (children[i] != null)
+                    {
+                        children[i].Enable = i == index;
+                    }
+                }
+
+                _dimmed = true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("economy: highlighting a price curve threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// Bring the buy table's own line for the focused history row into its scrolling window.
+        ///
+        /// Not a courtesy: it is what makes the graph HAVE that resource's curve at all. The curves
+        /// panel rebuilds its series from the lines the table is currently showing
+        /// (<c>TradableHistoryCurvesPanel.Refresh</c> :100-109) and marks itself dirty whenever the
+        /// table's virtual area moves more than two pixels (<c>SpecificUpdate</c> :85-93), so a row
+        /// scrolled out of that window has no curve to point the highlight at - and on a section long
+        /// enough to scroll, the rows the player is reading in the table below are exactly the ones that
+        /// go out of it.
+        ///
+        /// Through the shared reveal, which asks the scroll view's own question - does this widget sit
+        /// inside the viewport - and does nothing at all when it does. The engine offers no scroll-TO
+        /// call to prefer over it: <c>AgeControlScrollView</c> is public only in its four Reset jumps
+        /// and <c>MouseWheel</c>, and its clamping, its scrollbar placement and its OnScroll message all
+        /// live behind the private <c>ConstraintAndPlace</c> - so replaying the wheel IS the engine's
+        /// own entry point, and writing the virtual area directly would skip the notification the curves
+        /// panel is watching for.
+        ///
+        /// Once per ARRIVAL, never per frame and never on the way out: a scroll the player made stays
+        /// where they put it.
+        /// </summary>
+        private void Reveal(MarketplaceBuyableItemsPanel panel, GuiBuyable wanted)
+        {
+            object key = wanted == null ? null : HistoryKey(wanted);
+            if (ReferenceEquals(key, _revealed))
+            {
+                return;
+            }
+
+            _revealed = key;
+            if (wanted == null)
+            {
+                return;
+            }
+
+            AgeTransform line = LineOf(panel, wanted);
+            if (line != null)
+            {
+                ScrollIntoView.Reveal(line);
+            }
+        }
+
+        /// <summary>The widget the buy table draws this resource's row as, found the way the curves
+        /// panel finds its own series - the game's own enumeration of the table's line components, which
+        /// is why a row it has stopped enumerating is a row this answers nothing for.</summary>
+        private static AgeTransform LineOf(MarketplaceBuyableItemsPanel panel, GuiBuyable wanted)
+        {
+            try
+            {
+                GuiTable table = panel == null ? null : panel.BuyableItemsGuiTable;
+                if (table == null || wanted.Tradable == null)
+                {
+                    return null;
+                }
+
+                GuiTableLineBuyable[] found = table.GetComponentsInChildren<GuiTableLineBuyable>();
+                for (int i = 0; i < found.Length; i++)
+                {
+                    GuiBuyable buyable =
+                        found[i] == null ? null : found[i].GuiTradable as GuiBuyable;
+                    if (
+                        buyable != null
+                        && buyable.Tradable != null
+                        && buyable.Tradable.UID == wanted.Tradable.UID
+                    )
+                    {
+                        return found[i].AgeTransform;
+                    }
                 }
             }
             catch (Exception e)
             {
-                Log.Warn("economy: stepping the quantity threw: " + e);
+                Log.Warn("economy: finding a resource's table row threw: " + e);
             }
-        }
-
-        private static MarketplaceTradableItemsPanel Owner(AgeTransform widget)
-        {
-            try
-            {
-                AgeTransform at = widget;
-                for (int depth = 0; at != null && depth < 12; depth++)
-                {
-                    MarketplaceTradableItemsPanel panel =
-                        at.GetComponent<MarketplaceTradableItemsPanel>();
-                    if (panel != null)
-                    {
-                        return panel;
-                    }
-
-                    at = at.Parent;
-                }
-            }
-            catch (Exception) { }
 
             return null;
         }
 
+        /// <summary>Give the graph back to the game, exactly as it had it.</summary>
+        private void RestoreCurves()
+        {
+            if (!_dimmed)
+            {
+                return;
+            }
+
+            _dimmed = false;
+            try
+            {
+                MarketplaceBuyableItemsPanel buy = BuyPanel();
+                if (buy != null && buy.TradableHistoryCurvesPanel != null)
+                {
+                    buy.TradableHistoryCurvesPanel.OnSelectedItemChanged();
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("economy: restoring the price curves threw: " + e);
+            }
+        }
+
+        private static MarketplaceBuyableItemsPanel BuyPanel()
+        {
+            global::EconomyScreen window = Window();
+            MarketplacePanel market = window == null ? null : window.MarketplacePanel;
+            return market == null ? null : market.BuyableItemsPanel;
+        }
+
+        /// <summary>The resource the cursor is standing on a price-history row of, or nothing where it is
+        /// standing anywhere else. Which row it is on is what says which resource: the sheet stamps the
+        /// row on every one of its cells, so the answer is the same from any column.</summary>
+        private GuiBuyable FocusedHistoryRow()
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || navigator.Screen != this)
+            {
+                return null;
+            }
+
+            GraphNode node = navigator.CurrentNode;
+            if (node == null || !HistoryStop.Equals(node.StopKey) || node.Vtable == null)
+            {
+                return null;
+            }
+
+            TableRow row = node.Vtable.Row;
+            int index = row == null ? 0 : row.Index;
+            return index >= 1 && index <= _history.Count ? _history[index - 1] : null;
+        }
+
+        /// <summary>Which of the graph's curves is this resource's.</summary>
+        private static int CurveIndex(MarketplaceBuyableItemsPanel panel, GuiBuyable wanted)
+        {
+            GuiTable table = panel.BuyableItemsGuiTable;
+            if (table == null || wanted.Tradable == null)
+            {
+                return -1;
+            }
+
+            GuiTableLineBuyable[] found = table.GetComponentsInChildren<GuiTableLineBuyable>();
+            int index = 0;
+            for (int i = 0; i < found.Length; i++)
+            {
+                GuiBuyable buyable = found[i] == null ? null : found[i].GuiTradable as GuiBuyable;
+                if (buyable == null)
+                {
+                    continue;
+                }
+
+                if (buyable.Tradable != null && buyable.Tradable.UID == wanted.Tradable.UID)
+                {
+                    return index;
+                }
+
+                index++;
+            }
+
+            return -1;
+        }
+
+        // ---- the tax box ----
+
         /// <summary>
-        /// The marketplace's tax panel, in whichever of its two forms the game is drawing: the owner's,
-        /// with the rate to set and what setting it would cost, or everybody else's, with the owner's
-        /// name and the rate they have set (<c>MarketplaceTaxesPanel.Refresh</c> :112-188).
+        /// The marketplace's tax box, in whichever of its two forms the game is drawing: the owner's,
+        /// with the rate to set and what setting it would cost, or everybody else's, with where the
+        /// marketplace is, who owns it and the rate they have set
+        /// (<c>MarketplaceTaxesPanel.Refresh</c> :112-188).
         ///
-        /// Read by shape for the same reason as the trading strip, with the rate's own box declared as
-        /// the game's editor. Its two stepper buttons move one percentage point per press and have no
-        /// coarse variant, so Shift does the same as a plain arrow - the game's own behaviour
-        /// (<c>OnIncreaseTaxRateButtonClickCb</c> :240-252).
+        /// The game draws its facts as a row of values with no word over any of them, so each is a line
+        /// of its own under the mod's caption for what it states, with the game's own sentence about it
+        /// in the buffer. The location is a button as well as a fact: it takes the map to the system the
+        /// marketplace was built in, and is drawn switched off with the reason on it until somebody
+        /// builds one.
+        ///
+        /// The owner's form is FIXTURE-BLOCKED on the save this was built against (its marketplace is
+        /// unbuilt and unowned). Its rate box is the game's editor under the same typing rule as the
+        /// trading strip's quantity, its two steppers move one percentage point per press with no coarse
+        /// variant (<c>OnIncreaseTaxRateButtonClickCb</c> :240-252), and its Set button is named by the
+        /// game's own drawn label, which states what the change costs.
         /// </summary>
         private void BuildTaxes(GraphBuilder builder, MarketplaceTaxesPanel panel)
         {
             builder.BeginStop(TaxesStop);
             builder.PushContext(PanelName(panel, ModStrings.EconomyTaxesPanel));
             _cells.Clear();
-            SidePanels.Content(_cells, panel.AgeTransform, "economy:taxes/", TaxCell, null);
-            Cells.Emit(builder, _cells);
+            AddPanelCaption(_cells, panel, "economy:taxes/title");
+            // A branch chooser on a wired prefab field, not an existence gate: the panel keeps both
+            // forms and shows one (<c>Refresh</c> :155-171), so this is which of the two is being read.
+            if (panel.OwnedGroup != null && AgeWidgets.Visible(panel.OwnedGroup))
+            {
+                AddLocation(panel.OwnedLocationButton, panel.OwnedLocationLabel);
+                AddTaxRate(panel);
+            }
+            else
+            {
+                AddLocation(panel.NotOwnedLocationButton, panel.NotOwnedLocationLabel);
+                Cells.AddStat(
+                    _cells,
+                    panel.NotOwnedOwnerNameLabel,
+                    ModStrings.Get(ModStrings.EconomyOwner),
+                    "economy:taxes/owner"
+                );
+                Cells.AddStat(
+                    _cells,
+                    panel.NotOwnedTaxRateLabel,
+                    ModStrings.Get(ModStrings.EconomyTaxRate),
+                    "economy:taxes/rate"
+                );
+            }
+
+            Cells.EmitLinear(builder, _cells);
             builder.PopContext();
         }
 
-        private bool TaxCell(
-            List<Cell> cells,
-            AgeTransform widget,
-            string keyPrefix,
-            SidePanel panel
-        )
+        /// <summary>Where the marketplace is, and the game's own button that takes the map there.
+        /// </summary>
+        private void AddLocation(AgeTransform group, AgePrimitiveLabel label)
         {
-            AgeControlTextField field =
-                widget == null ? null : widget.GetComponent<AgeControlTextField>();
-            if (field == null)
+            // No visibility test: which of the two forms is drawn was decided by the caller, and the
+            // gate asks the rest.
+            if (group == null)
             {
-                return false;
+                return;
             }
 
-            MarketplaceTaxesPanel owner = TaxPanel(widget);
-            Cell cell = SettingRows.TextFieldCell(
-                field,
-                null,
-                null,
-                null,
-                null,
-                ControlId.For(field, keyPrefix + "rate"),
-                _editor
-            );
-            if (cell == null)
+            AgeControlButton button = AgeWidgets.Button(group);
+            AgeTooltip tooltip = AgeWidgets.Raw(group);
+            AgePrimitiveLabel it = label;
+            NodeVtable vtable;
+            if (button == null)
             {
-                return true;
+                vtable = GraphNodes.Readout(
+                    () => ModStrings.Get(ModStrings.EconomyLocation),
+                    () => AgeText.Label(it),
+                    null,
+                    tooltip
+                );
+            }
+            else
+            {
+                AgeControlButton press = button;
+                vtable = GraphNodes.Button(
+                    () => ModStrings.Get(ModStrings.EconomyLocation),
+                    () => AgeWidgets.Press(press),
+                    () => AgeWidgets.Offered(group),
+                    tooltip
+                );
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => AgeText.Label(it)));
+                AgeWidgets.Point(vtable, button, tooltip, group);
             }
 
-            if (owner != null)
-            {
-                // Same ruling as the quantity box above and the negotiation basket's: the arrows are the
-                // player walking, not the player setting, and the rate is typed into the edit.
-                cell.Vtable.StateText = () => SettingRows.FieldText(field);
-                cell.Vtable.ControlType = ControlTypes.NumericEditField;
-            }
-
-            cells.Add(cell);
-            return true;
+            Cells.Add(_cells, group, ControlId.For(group, "economy:taxes/location"), vtable);
         }
 
-        private static MarketplaceTaxesPanel TaxPanel(AgeTransform widget)
+        /// <summary>The owner's rate editor, its two steppers and the button that pays for the change -
+        /// each a line of its own, because the game hangs no shared caption over them to read them
+        /// under.</summary>
+        private void AddTaxRate(MarketplaceTaxesPanel panel)
         {
-            try
+            AgeControlTextField field = panel.TaxRateTextField;
+            AgeTransform at = AgeWidgets.Transform(field);
+            // A branch chooser again: the box lives in the owner form, which the panel keeps wired and
+            // hides while somebody else owns the marketplace.
+            if (at != null && AgeWidgets.Visible(at))
             {
-                AgeTransform at = widget;
-                for (int depth = 0; at != null && depth < 12; depth++)
+                Cell cell = SettingRows.TextFieldCell(
+                    field,
+                    () => ModStrings.Get(ModStrings.EconomyTaxRate),
+                    AgeWidgets.Raw(at.Parent ?? at),
+                    null,
+                    null,
+                    ControlId.For(field, "economy:taxes/rate"),
+                    _editor
+                );
+                if (cell != null)
                 {
-                    MarketplaceTaxesPanel panel = at.GetComponent<MarketplaceTaxesPanel>();
-                    if (panel != null)
-                    {
-                        return panel;
-                    }
-
-                    at = at.Parent;
+                    // Same ruling as the trading strip's quantity: the arrows are the player walking,
+                    // not the player setting, and the rate is typed into the edit.
+                    cell.Vtable.StateText = () => SettingRows.FieldText(field);
+                    cell.Vtable.ControlType = ControlTypes.NumericEditField;
+                    _cells.Add(cell);
                 }
             }
-            catch (Exception) { }
 
-            return null;
+            Func<string> rate = () => SettingRows.FieldText(panel.TaxRateTextField);
+            AddStepper(
+                panel.DecreaseTaxRateButton,
+                ModStrings.EconomyDecrement,
+                "economy:taxes/minus",
+                rate
+            );
+            AddStepper(
+                panel.IncreaseTaxRateButton,
+                ModStrings.EconomyIncrement,
+                "economy:taxes/plus",
+                rate
+            );
+            Cells.AddControl(_cells, panel.ApplyTaxRateButton, "economy:taxes/apply");
         }
 
+        // ---- the exchange log ----
+
         /// <summary>What has been traded, newest at the bottom - which is where the game scrolls the list
-        /// to. One row per line the game drew, with the turn headers it puts between them; a transaction
-        /// of somebody else's is already anonymised by the game before it is written
-        /// (<c>MarketplaceExchangeInformationsPanel.Refresh</c> :16-62), so what is drawn is what may be
-        /// read.</summary>
+        /// to. The game groups the list by turn and draws a header above each group (a line with no
+        /// transactions behind it IS the header -
+        /// <c>MarketplaceExchangeInformationsPanel.Refresh</c> :16-62,
+        /// <c>TradableTransactionLine.Bind</c>), so each turn is a region of its own named by the header
+        /// the game drew and each transaction is a line under it. A transaction of somebody else's is
+        /// already anonymised by the game before it is written, so what is drawn is what may be read.
+        /// </summary>
         private void BuildLog(GraphBuilder builder, MarketplaceExchangeInformationsPanel panel)
         {
             builder.BeginStop(LogStop);
             builder.PushContext(PanelName(panel, ModStrings.EconomyLogPanel));
-            _cells.Clear();
-            Cells.AddReadout(
-                _cells,
-                panel.NotOwnerLabel == null ? null : panel.NotOwnerLabel.AgeTransform,
-                "economy:log/not-owner"
-            );
-            AgeTransform table = panel.TradableTransactionsTable;
-            IList<AgeTransform> lines = table == null ? null : table.Children;
-            for (int i = 0; lines != null && i < lines.Count; i++)
+            try
             {
-                AgeTransform line = lines[i];
-                if (line != null && SettingRows.Drawn(line))
+                // The panel's own heading, and the sentence it draws over the whole list while the empire
+                // may not see one, in a region of their own: a stop is regioned all the way through or
+                // not at all, and the jump out of the last turn has to land somewhere.
+                builder.SetRegion("economy:log/head");
+                _cells.Clear();
+                AddPanelCaption(_cells, panel, "economy:log/title");
+                Cells.AddReadout(
+                    _cells,
+                    panel.NotOwnerLabel == null ? null : panel.NotOwnerLabel.AgeTransform,
+                    "economy:log/not-owner"
+                );
+                Cells.EmitLinear(builder, _cells);
+
+                AgeTransform table = panel.TradableTransactionsTable;
+                IList<AgeTransform> lines = table == null ? null : table.Children;
+                bool turn = false;
+                _cells.Clear();
+                for (int i = 0; lines != null && i < lines.Count; i++)
                 {
-                    Cells.AddReadout(_cells, line, "economy:log/line/" + i);
+                    AgeTransform line = lines[i];
+                    if (line == null || !SettingRows.Drawn(line))
+                    {
+                        continue;
+                    }
+
+                    string header = TurnHeader(line);
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        Cells.AddReadout(_cells, line, "economy:log/line/" + i);
+                        continue;
+                    }
+
+                    Cells.EmitLinear(builder, _cells);
+                    _cells.Clear();
+                    if (turn)
+                    {
+                        builder.PopContext();
+                    }
+
+                    builder.SetRegion("economy:log/turn/" + i);
+                    builder.PushContext(header);
+                    turn = true;
+                }
+
+                Cells.EmitLinear(builder, _cells);
+                if (turn)
+                {
+                    builder.PopContext();
                 }
             }
+            finally
+            {
+                builder.PopContext();
+            }
+        }
 
-            Cells.Emit(builder, _cells);
-            builder.PopContext();
+        /// <summary>The words a line the game drew names a turn with, or nothing where the line is a
+        /// transaction. The header is the wrapper the game made with no transactions in it.</summary>
+        private static string TurnHeader(AgeTransform line)
+        {
+            try
+            {
+                TradableTransactionLine drawn = line.GetComponent<TradableTransactionLine>();
+                GuiTradableTransaction of = drawn == null ? null : drawn.GuiTradableTransaction;
+                bool header =
+                    of != null && of.TradableTransactions != null && of.TradableTransactions.Count == 0;
+                return header ? AgeWidgets.TextOf(line) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>
@@ -1669,20 +2597,60 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What a marketplace panel is called: the heading it draws if it draws one, else a word
-        /// of the mod's - a stop is announced by its name on every Tab into it, and these four panels
-        /// could not be measured for a drawn heading.</summary>
+        /// of the mod's - a stop is announced by its name on every Tab into it. All four of these panels
+        /// DO draw one; the mod's words are the fallback for the frames before the game has written
+        /// them.</summary>
         private static string PanelName(GuiPanel panel, string modKey)
         {
             try
             {
-                AgeTransform heading =
-                    panel == null ? null : AgeWidgets.ChildNamed(panel.AgeTransform, "Title", 2);
+                AgeTransform heading = PanelCaption(panel);
                 string drawn = heading == null ? null : AgeWidgets.TextOf(heading);
                 return string.IsNullOrEmpty(drawn) ? ModStrings.Get(modKey) : drawn;
             }
             catch (Exception)
             {
                 return ModStrings.Get(modKey);
+            }
+        }
+
+        /// <summary>The label a marketplace panel writes its own name into. The prefabs call it
+        /// "PanelTitle"; "Title" is what the economy tab's boxes call theirs, and it is kept as the
+        /// fallback so one lookup answers for both.</summary>
+        private static AgeTransform PanelCaption(GuiPanel panel)
+        {
+            try
+            {
+                AgeTransform at = panel == null ? null : panel.AgeTransform;
+                return at == null
+                    ? null
+                    : AgeWidgets.ChildNamed(at, "PanelTitle", 2)
+                        ?? AgeWidgets.ChildNamed(at, "Title", 2);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The heading the game writes across a marketplace panel, as that panel's first line -
+        /// but only where it carries the sentence explaining the panel, which is the standing rule for a
+        /// caption: a bare word is the block's NAME, and a node that repeats it is a step past nothing.
+        /// </summary>
+        private static void AddPanelCaption(List<Cell> cells, GuiPanel panel, string key)
+        {
+            AgeTransform caption = PanelCaption(panel);
+            AgeTooltip tooltip = caption == null ? null : AgeWidgets.Raw(caption);
+            // A content read, and the same one <see cref="Captions"/> makes: whether the game is drawing
+            // the caption is what decides whether the sentence on it exists to be offered at all.
+            if (
+                caption != null
+                && AgeWidgets.Visible(caption)
+                && tooltip != null
+                && AgeWidgets.Draws(tooltip)
+            )
+            {
+                Cells.AddReadout(cells, caption, key);
             }
         }
 
@@ -1731,19 +2699,6 @@ namespace ES2Access.Screens
         private static readonly Comparison<GuiPanel> PanelsInReadingOrder = (left, right) =>
             InReadingOrder(left.AgeTransform, right.AgeTransform);
 
-        private static void Emit(GraphBuilder builder, List<Cell> cells, object rowKey)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                builder.StartRow(rowKey);
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
-                }
-
-                builder.EndRow();
-            }
-        }
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 

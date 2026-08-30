@@ -61,8 +61,18 @@ belong in the files above.
   Active Events panel; multi-slot recipe projects; the strategics grid; diplomacy side
   panels/metaplot and the three diplomacy modals; the victory family; DLC modals;
   join-game rows; a mod-manager library with a
-  mod installed. The marketplace half of the economy page is still 2D — deferred until
-  measured.
+  mod installed. The marketplace half of the economy page was recut and then restructured on
+  the owner's live turn-27 session (2026-08-30): each trading panel is one stop named by the
+  game's Sell/Buy word with heading/Filters/Available regions, its trade strip a stop of its
+  own named after what is being traded, the sell list and the tax box one per row, the buy
+  list still a table (its columns are the section's own declared set), and the price graph a
+  table of its own stop with newest-turn-first columns. Focusing a history row also scrolls the
+  buy table to that resource's line — implemented, and NEVER ONCE FIRED: no fixture has a buy
+  section taller than its viewport, so only the already-visible no-op path has been exercised.
+  Remaining there: the
+  Ships/Heroes sections — and so both the ship spawn-point picker and a ten-column buy table
+  — the tax box's owner form and the graph's no-data branch; no fixture draws any of them
+  (`test-recipes/empire-screens.md`, **The marketplace tab**).
 - Colony info side panel (declared 2026-08-19, forced-show verified): remaining is the
   live sighting of each conditional state — siege/blockade/invasion/conversion/frozen,
   partial ownership, an exploiting system's resources, wrecked arks, temporary effects,
@@ -451,8 +461,8 @@ belong in the files above.
 - Marketplace SELL rows: the middle-click subtract is covered — the panel's ± buttons are
   declared nodes ("Click: removes 1 unit" / "adds 1 unit", verified live 2026-08-28) and
   the quantity is an edit field (the 2026-08-27 ruling: no Left/Right adjust outside the
-  edit). Remaining: the recipe line for the marketplace family. (Gesture audit,
-  2026-08-14.)
+  edit). The recipe line for the marketplace family landed 2026-08-30
+  (`test-recipes/empire-screens.md`, **The marketplace tab**). (Gesture audit, 2026-08-14.)
 - Coordination-pin drag (ally pings on the map): the game's drag moves the pin to an
   arbitrary world point; a keyboard drop can only land on a NAMED map object — a semantic
   narrowing that needs a ruling before Space/Enter carry it, or the gesture stays declined

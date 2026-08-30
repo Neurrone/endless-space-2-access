@@ -499,6 +499,9 @@ namespace ES2Access.UI
                 List<KeyValuePair<int, NodeVtable>> cells =
                     new List<KeyValuePair<int, NodeVtable>>();
                 int column = 0;
+                // What the ROW is explained by, asked once and handed to every cell of it: a cell
+                // whose own tooltip is that same surface has nothing of its own to say.
+                AgeTooltip rowTip = Explains(line, _cells[0]);
                 for (int i = 1; i < _cells.Count; i++)
                 {
                     AgeTransform cell = _cells[i];
@@ -509,7 +512,7 @@ namespace ES2Access.UI
                         cells.Add(
                             new KeyValuePair<int, NodeVtable>(
                                 ++column,
-                                CellVtable(table, line, cell, header)
+                                CellVtable(table, line, cell, header, rowTip)
                             )
                         );
                         continue;
@@ -632,6 +635,7 @@ namespace ES2Access.UI
             AgeTransform widget = line.AgeTransform;
             AgeTransform name = cell;
             Func<bool> enabled = Operable(table, line);
+            AgeTooltip explains = Explains(line, cell);
             NodeVtable vtable;
             if (Choosable(table))
             {
@@ -641,7 +645,7 @@ namespace ES2Access.UI
                     null,
                     () => AgeWidgets.Toggle(row.SelectionToggle),
                     enabled,
-                    line.Tooltip,
+                    explains,
                     () => RowFacts(row)
                 );
                 // A table row is not read as a radio button, though its selection IS one: the row's
@@ -649,7 +653,7 @@ namespace ES2Access.UI
                 // word on every row of a table the player was just told is a table is noise (owner
                 // ruling 2026-08-14). Text is the role-less type with the table reading order.
                 vtable.ControlType = ControlTypes.Text;
-                AgeWidgets.Point(vtable, row.SelectionToggle, line.Tooltip, widget);
+                AgeWidgets.Point(vtable, row.SelectionToggle, explains, widget);
             }
             else
             {
@@ -662,7 +666,7 @@ namespace ES2Access.UI
                         GraphNodes.LabelPart(() => RowText(row, name)),
                         GraphNodes.DisabledPart(enabled),
                     },
-                    Sections = GraphNodes.Sections(() => RowFacts(row), line.Tooltip),
+                    Sections = GraphNodes.Sections(() => RowFacts(row), explains),
                 };
                 AgeWidgets.PointAt(vtable, widget);
             }
@@ -687,6 +691,39 @@ namespace ES2Access.UI
             }
 
             return vtable;
+        }
+
+        /// <summary>
+        /// The dossier the ROW is explained by.
+        ///
+        /// A table line normally carries it - <c>GuiTableLine.Tooltip</c>, which is what a mouse over
+        /// any part of the row draws - and that is what every table here used. The marketplace's buy
+        /// table does not: the game leaves the line's own field null and hangs the resource's dossier on
+        /// each drawn CELL instead (measured live 2026-08-30), so the row's primary node offered nothing
+        /// while the price cell beside it offered the whole dossier - the same resource, explained from
+        /// a number and not from its name. The primary cell's own tooltip is the fallback, and it is the
+        /// one a mouse over the row's NAME draws.
+        ///
+        /// Additive by construction: it answers only where the line's own tooltip was null or had
+        /// nothing to draw, which is exactly where the row used to promise nothing at all. A table whose
+        /// lines DO carry a drawable tooltip is untouched.
+        /// </summary>
+        private static AgeTooltip Explains(GuiTableLine line, AgeTransform cell)
+        {
+            AgeTooltip own = null;
+            try
+            {
+                own = line == null ? null : line.Tooltip;
+            }
+            catch (Exception) { }
+
+            if (AgeWidgets.Draws(own))
+            {
+                return own;
+            }
+
+            AgeTooltip drawn = AgeWidgets.Raw(cell);
+            return AgeWidgets.Draws(drawn) ? drawn : own;
         }
 
         /// <summary>
@@ -753,7 +790,8 @@ namespace ES2Access.UI
             GuiTable table,
             GuiTableLine line,
             AgeTransform cell,
-            GuiTableHeader header
+            GuiTableHeader header,
+            AgeTooltip rowTip
         )
         {
             GuiTable owner = table;
@@ -771,6 +809,18 @@ namespace ES2Access.UI
             {
                 AgeTooltip cellTip = Supplied(heading, it) ? null : TooltipOf(it);
                 List<AgeTooltip> inner = Inside(it, cellTip);
+                // A cell declares a tooltip only where the game gave that COLUMN something of its
+                // own. Some tables hang one hover surface across the whole row - the marketplace.s
+                // buy lines carry the same Resource dossier, same class and same target, on the name,
+                // the stock and the price alike (measured 2026-08-30) - and there the row already
+                // says it, so a cell repeating it is the same sentence three times over. Identity,
+                // never text: the election table.s per-cell "Weak support" is a different surface on
+                // every column and stays declared (owner ruling 2026-08-30).
+                if (AgeWidgets.SameTooltip(cellTip, rowTip))
+                {
+                    cellTip = null;
+                }
+
                 // Where the cell carries nothing of its own, the pointer goes to the last dossier
                 // drawn inside it - otherwise its section is a promise the player can never collect,
                 // since a renderer-assembled tooltip has no words until the game draws it.
