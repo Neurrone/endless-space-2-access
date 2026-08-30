@@ -16,14 +16,30 @@ namespace ES2Access.Screens
     /// bars, and the numbers behind all of it live only in the sentences the game writes onto their
     /// tooltips. So this screen is those sentences, arranged the way the pictures are.
     ///
-    /// The phase panel is a TABLE and reads as one (<see cref="GraphSheet"/>): a row per flotilla, a
-    /// column per phase, and in each cell the whole sentence the game wrote for that flotilla in that
-    /// phase - "The Flotillas 2 were at Long range during phase 1, Damage repartition: 340 vs 120" - plus
-    /// whichever of the three cloaking addenda applies. The sentence is kept WHOLE rather than split into
-    /// the numbers inside it: the game already wrote the reading, and a cell that said "Long, 340, 120"
-    /// would be the mod paraphrasing a sentence it did not need to. It costs some redundancy against the
-    /// column header the player crossed to get there, which is the cheaper of the two mistakes. A phase
-    /// the battle never reached is a cell the game disables and empties, and it reads as the blank it is.
+    /// The phase panel is a LIST, not a table. Each phase sentence already names its own flotilla and
+    /// its own phase ("The Flotillas 2 were at Long range during phase 1, Damage repartition: 340 vs
+    /// 120"), so a grid would hand the player a coordinate system to re-read words the game had already
+    /// finished writing. It reads as a flat run of those sentences instead, flotilla-major - down the
+    /// list is one flotilla through the battle - and a flotilla name leads its run ONLY where more than
+    /// one flotilla fought, because with one the sentences name it on every line. Each sentence is kept
+    /// WHOLE rather than split into the numbers inside it: the game already wrote the reading, and a
+    /// line that said "Long, 340, 120" would be the mod paraphrasing. A phase the battle never reached
+    /// draws no item at all and so contributes no line.
+    ///
+    /// The TACTICS stop is the two plans the battle was fought under, one card a side: the game's own
+    /// "Selected Plan" title, the plan's name, and the effect lines the card PRINTS (always-drawn text,
+    /// so spoken). Behind each is the card's own how-often-chosen sentence and the same nested entries
+    /// the setup screens give the same prefab - the family badge and one range diagram per flotilla.
+    ///
+    /// Three things the window draws as pictures and writes down nowhere join the heading: the balance
+    /// of power (the same ring, the same reading as every other battle surface,
+    /// <see cref="BattleNotifications.Balance"/>), the morale bonus (the game stamps one happiness icon
+    /// per holding side on EVERY fought phase, so it is one line in that side's heading rather than a
+    /// repeat down the phase list), and - for the enemy, whose roster panel is a garrison with no
+    /// flotilla lines to hang it on - the arena card's sentence naming the range its flotilla is optimal
+    /// at. The player's side has flotilla lines, so its cards go where the flotillas already are
+    /// (<see cref="BattleRosters.FlotillaExtras"/>), exactly as the advanced SETUP window hands its own
+    /// in.
     ///
     /// The damage panels are the same idea a second time: a row per bar the gauge is showing, each the
     /// game's own sentence for that bar ("Damage caused by your Beam weapons: 340"), with the tactical
@@ -32,9 +48,9 @@ namespace ES2Access.Screens
     /// foot are all bars of the same kind and all read the same way.
     ///
     /// The two fleet toggles do not open anything of the mod's: the game slides a roster panel over the
-    /// grid, so what this screen declares follows what is DRAWN - grid while the grid is up, rosters while
-    /// a roster is - and the toggles themselves are the only thing that has to be declared for the
-    /// keyboard.
+    /// phase panel, so what this screen declares follows what is DRAWN - the phase lines while the
+    /// phases are up, the roster while a roster is - and the toggles themselves are the only thing that
+    /// has to be declared for the keyboard.
     ///
     /// Escape is the game's, and it is not a plain close: the window's own <c>HandleInput</c> puts the
     /// report popup back up, which is where the player came from.
@@ -42,6 +58,7 @@ namespace ES2Access.Screens
     public sealed class AdvancedBattleReportScreen : Screen
     {
         private static readonly object HeadingStop = "battle-advanced:heading";
+        private static readonly object TacticsStop = "battle-advanced:tactics";
         private static readonly object PhasesStop = "battle-advanced:phases";
         private static readonly object DamageStop = "battle-advanced:damage";
         private static readonly object ControlsStop = "battle-advanced:controls";
@@ -54,9 +71,16 @@ namespace ES2Access.Screens
         private const string MissedDamageTitleKey =
             "%AdvancedReportModalWindowShowMissedDamageTitle";
         private const string FlotillaNameKey = "%FlotillaNameTitle";
+        private const string PlanTitleKey = "%NotificationBattleReportSelectedPlayTitle";
 
-        /// <summary>The mod's own, for the two things the game names nowhere: which side a damage panel
-        /// belongs to, and the two switches that swap the grid for a roster.</summary>
+        /// <summary>The mod's own, for the things the game names nowhere: which side a damage panel
+        /// belongs to, the two switches that swap the phase panel for a roster, and which side is
+        /// holding the morale bonus (the game says that with an empire COLOUR, which speech has not
+        /// got). "Tactics" is the same key the advanced SETUP window names its own hand of plans with,
+        /// so the two windows say the same word for the same thing.</summary>
+        private const string TacticsKey = "battle.tactics";
+        private const string YourMoraleKey = "battle.your-morale-bonus";
+        private const string EnemyMoraleKey = "battle.enemy-morale-bonus";
         private const string YourDamageKey = "battle.your-damage";
         private const string EnemyDamageKey = "battle.enemy-damage";
         private const string YourFleetsKey = "battle.your-fleets";
@@ -133,6 +157,9 @@ namespace ES2Access.Screens
                 builder.BeginStop(HeadingStop);
                 Heading(builder, window);
 
+                builder.BeginStop(TacticsStop);
+                Tactics(builder, window);
+
                 builder.BeginStop(PhasesStop);
                 Phases(builder, window);
                 Rosters(builder, window);
@@ -151,33 +178,577 @@ namespace ES2Access.Screens
 
         /// <summary>Who fought, how it ended, and what each side spent: the command-point line is the
         /// game's own "before, then after" sentence, which is the only place the losses in fleet capacity
-        /// are written down.</summary>
+        /// are written down. The ring beside the outcome is the balance of power, which the window draws
+        /// as two arcs and writes down nowhere at all.</summary>
         private static void Heading(
             GraphBuilder builder,
             AdvancedEncounterReportModalWindow window
         )
         {
             Note(builder, window.BattleTitle, "battle-advanced/outcome");
+            BattleNotifications.Balance(
+                builder,
+                Widget(window.BattlePowerGauge),
+                window.PlayerEncounterGroup,
+                window.EnemyEncounterGroup,
+                false,
+                "battle-advanced/balance"
+            );
 
             builder.SetRegion(YoursRegion);
             Leader(builder, window.PlayerBattleGroupInfoPanel, "battle-advanced/yours");
             Value(builder, window.PlayerCPLabel, CommandPointsTitleKey, "battle-advanced/your-cp");
+            Morale(
+                builder,
+                window,
+                window.PlayerEncounterGroup,
+                YourMoraleKey,
+                "battle-advanced/your-morale"
+            );
+            Squadrons(builder, window, true, "battle-advanced/your-squadrons");
 
             builder.SetRegion(TheirsRegion);
             Leader(builder, window.EnemyBattleGroupInfoPanel, "battle-advanced/theirs");
             Value(builder, window.EnemyCPLabel, CommandPointsTitleKey, "battle-advanced/their-cp");
+            Morale(
+                builder,
+                window,
+                window.EnemyEncounterGroup,
+                EnemyMoraleKey,
+                "battle-advanced/their-morale"
+            );
+            Flotillas(builder, window.EnemyFlotillaCard2DContainer, "battle-advanced/their-flotilla");
+            Squadrons(builder, window, false, "battle-advanced/their-squadrons");
             builder.SetRegion(null);
         }
 
         /// <summary>
-        /// The phase grid: a row per flotilla, a column per phase.
+        /// What became of a side's fighter and bomber squadrons: how many are still flying and how many
+        /// were shot down.
         ///
-        /// The game lays this out the other way round - a panel per phase, each holding one item per
-        /// flotilla - because that is how it draws it. Read as a table it has to be flotilla-major, so
-        /// that walking down compares the same flotilla through the battle and walking across compares
-        /// the phases; the columns are matched by the position the game gave each item inside its phase,
-        /// which is the same flotilla order in every phase (<c>AdvancedReportPhaseItem.FilterFlotillas</c>
-        /// walks one list).
+        /// The arena draws these as up to four icon-and-number chips per card
+        /// (<c>EncounterFighterBomberCard2D</c>), and the numbers are the only place in the whole report
+        /// a squadron is counted at all - the roster lists SHIPS, and a carrier's wing is not a ship.
+        /// Each chip carries the game's own sentence for what it counts ("Number of operational Fighter
+        /// units.", "Number of destroyed Bomber units."), so no mod phrase is needed and none is
+        /// invented: the sentence names the row and the drawn number is its value.
+        ///
+        /// A chip whose count is zero is a group the card hides, and a card with all four hidden hides
+        /// itself (<c>RefreshValues</c>) - so a battle with no carriers declares nothing here, which is
+        /// this fixture and the reason the positive side is fixture-blocked. The player's side draws one
+        /// card per flotilla and the enemy's one for the whole fleet
+        /// (<c>EncounterPlayFlotillaCardContainer.RefreshFlotillaCards2D</c> :71-88,
+        /// <c>EncounterPlayFleetCardContainer.Bind</c> :22-25), so the rows are led by the flotilla
+        /// number wherever more than one card is drawing.
+        /// </summary>
+        private static void Squadrons(
+            GraphBuilder builder,
+            AdvancedEncounterReportModalWindow window,
+            bool mine,
+            string prefix
+        )
+        {
+            AgeTransform group = Squadrons(window, mine);
+            // Flow control: a walk of the group's cards and a COUNT of the drawn ones, both of which
+            // run before any node exists for the gate to see.
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            List<EncounterFighterBomberCard2D> cards = new List<EncounterFighterBomberCard2D>(3);
+            List<AgeTransform> children = group.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                EncounterFighterBomberCard2D card =
+                    children[i].GetComponent<EncounterFighterBomberCard2D>();
+                // Spoken count: how many cards are DRAWING decides whether each row is led by the
+                // flotilla it belongs to.
+                if (card != null && AgeWidgets.Visible(card.AgeTransform))
+                {
+                    cards.Add(card);
+                }
+            }
+
+            for (int i = 0; i < cards.Count; i++)
+            {
+                EncounterFighterBomberCard2D card = cards[i];
+                string flotilla =
+                    cards.Count > 1
+                        ? AgeText.Clean(
+                            Gui.Localize(FlotillaNameKey, (Index(group, card) + 1).ToString())
+                        )
+                        : null;
+                AgePrimitiveLabel[] counts = card.FighterBombersCounts;
+                for (int j = 0; counts != null && j < counts.Length; j++)
+                {
+                    Squadron(builder, flotilla, counts[j], prefix + "/" + i + "/" + j);
+                }
+            }
+        }
+
+        /// <summary>One chip of a squadron card: the game's sentence for what it counts, and the number
+        /// it drew. The sentence hangs on the GROUP holding the icon and the label, not on the label -
+        /// aiming at the label would draw nothing.</summary>
+        private static void Squadron(
+            GraphBuilder builder,
+            string flotilla,
+            AgePrimitiveLabel count,
+            string key
+        )
+        {
+            AgeTransform widget = count == null ? null : count.AgeTransform;
+            AgeTransform chip = widget == null ? null : widget.Parent;
+            if (chip == null)
+            {
+                return;
+            }
+
+            AgePrimitiveLabel it = count;
+            AgeTransform at = chip;
+            string named = flotilla;
+            AgeTooltip tooltip = AgeWidgets.Raw(chip);
+            NodeVtable vtable = new NodeVtable
+            {
+                ControlType = ControlTypes.Text,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    // LABEL FALLBACK: the chip is an icon and a bare number, and the sentence the game
+                    // wrote for it is the only thing that says WHAT is being counted - the same rung
+                    // the ordinary naming ladder would have reached. It is this row's whole name, so
+                    // the door has nothing left to announce twice.
+                    GraphNodes.LabelPart(
+                        () =>
+                            new MessageBuilder()
+                                .ListItem(named)
+                                // LABEL FALLBACK: see above - the chip draws an icon and a number,
+                                // and this sentence is the only thing that names what it counts.
+                                .ListItem(AgeText.Tooltip(tooltip))
+                                .Build()
+                    ),
+                    GraphNodes.ValuePart(() => AgeWidgets.DrawnLabel(at, it), false),
+                },
+                Sections = null,
+            };
+            AgeWidgets.PointAt(vtable, chip);
+            builder.AddItem(Nodes.Drawn(ControlId.For(count, key), vtable, chip));
+        }
+
+        /// <summary>Where a side keeps its squadron cards: the arena container that draws them, which is
+        /// a flotilla container on the player's side and a fleet container on the enemy's - two types
+        /// with the same field and no shared declaration of it, so both are asked.</summary>
+        private static AgeTransform Squadrons(
+            AdvancedEncounterReportModalWindow window,
+            bool mine
+        )
+        {
+            try
+            {
+                EncounterPlayScreen3D arena = window.EncounterPlayScreen3D;
+                EncounterPlayContainer[] containers =
+                    arena == null
+                        ? null
+                        : (mine
+                            ? arena.PlayerEncounterPlayContainers
+                            : arena.EnemyEncounterPlayContainers);
+                for (int i = 0; containers != null && i < containers.Length; i++)
+                {
+                    EncounterPlayFlotillaCardContainer flotillas =
+                        containers[i] as EncounterPlayFlotillaCardContainer;
+                    if (flotillas != null && flotillas.FighterBomber2DCardGroup != null)
+                    {
+                        return flotillas.FighterBomber2DCardGroup;
+                    }
+
+                    EncounterPlayFleetCardContainer fleet =
+                        containers[i] as EncounterPlayFleetCardContainer;
+                    if (fleet != null && fleet.FighterBomber2DCardGroup != null)
+                    {
+                        return fleet.FighterBomber2DCardGroup;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle report: looking for the squadron cards threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>Which flotilla a squadron card stands for: the position the container gave it, which
+        /// is the flotilla index the card was refreshed from
+        /// (<c>EncounterPlayFlotillaCardContainer.RefreshFlotillaCards2D</c> walks one list).</summary>
+        private static int Index(AgeTransform group, EncounterFighterBomberCard2D card)
+        {
+            List<AgeTransform> children = group.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (children[i] == card.AgeTransform)
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// That this side HAD the morale bonus, once, as a statement rather than a caption.
+        ///
+        /// The game stamps it as a happiness icon on every phase it fought, one per holding side and
+        /// coloured to say WHICH - a repeat of one group-level fact, not a per-phase reading
+        /// (<c>AdvancedReportPhaseItem.Refresh</c> asks the GROUP for it and draws the same answer in
+        /// every column). So it is one line in the side's own heading.
+        ///
+        /// The game's own title for it ("Morale bonus") is not the line: read out it is a caption, and
+        /// the owner heard "Morale bonus" followed by the definition and could not tell whose fleet had
+        /// one (2026-08-30). The colour is what says whose, and speech has no colour; the region a row
+        /// sits in is not spoken either. So the line is the mod's own sentence naming the side, and the
+        /// game's definition stays behind it where it was.
+        /// </summary>
+        private static void Morale(
+            GraphBuilder builder,
+            AdvancedEncounterReportModalWindow window,
+            EncounterGroup group,
+            string phraseKey,
+            string key
+        )
+        {
+            // Flow control: this is the group's own property, read before anything is declared for it.
+            if (!Holds(group))
+            {
+                return;
+            }
+
+            AgeTransform widget = MoraleIcon(window);
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            string phrase = phraseKey;
+            NodeVtable vtable = new NodeVtable
+            {
+                ControlType = ControlTypes.Text,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => BattleText.Optional(phrase)),
+                },
+                Sections = GraphNodes.Sections(null, tooltip),
+            };
+            if (widget == null)
+            {
+                vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
+                builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
+                return;
+            }
+
+            AgeWidgets.PointAt(vtable, widget);
+            builder.AddItem(Nodes.Drawn(ControlId.For(widget, key), vtable, widget));
+        }
+
+        private static bool Holds(EncounterGroup group)
+        {
+            try
+            {
+                return group != null
+                    && group.GetPropertyValue(SimulationProperties.EncounterGroup.MoraleBonus) > 0f;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The happiness icon the phase panels draw the bonus as - the first one the window is
+        /// drawing, since every fought phase draws the same one. It is where the explanation lives, and
+        /// where the pointer goes so that explanation is on screen too.</summary>
+        private static AgeTransform MoraleIcon(AdvancedEncounterReportModalWindow window)
+        {
+            try
+            {
+                AgeTransform container = window.AdvancedReportPhaseItemContainer;
+                AdvancedReportPhaseItem[] phases =
+                    container == null
+                        ? null
+                        : container.GetComponentsInChildren<AdvancedReportPhaseItem>(true);
+                for (int i = 0; phases != null && i < phases.Length; i++)
+                {
+                    AgeTransform icon = Widget(
+                        phases[i] == null ? null : phases[i].MoraleBonusLabel
+                    );
+                    // Candidate choice, not existence: every fought phase draws the same icon and the
+                    // first drawn one stands for all of them.
+                    if (icon != null && AgeWidgets.Visible(icon))
+                    {
+                        return icon;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle report: looking for the morale icon threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The arena cards for a side whose roster panel has no flotilla lines to carry them.
+        ///
+        /// A flotilla is drawn twice on this window too - as a line of ships in the roster panel, and as
+        /// a card in the arena carrying the sentence that says which range it is optimal at and how well
+        /// its ships suit that range. The player's roster draws flotilla lines, so its cards are handed
+        /// to those lines (<see cref="FlotillaCards"/>); the enemy's roster is a garrison panel with no
+        /// flotilla line anywhere, so its cards are read here, under the flotilla number the game
+        /// numbers them by.
+        /// </summary>
+        private static void Flotillas(GraphBuilder builder, AgeTransform container, string prefix)
+        {
+            // Flow control: the cards are found by a walk of the container's children.
+            if (container == null || !AgeWidgets.Visible(container))
+            {
+                return;
+            }
+
+            List<AgeTransform> children = container.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                EncounterPlayFlotillaCard2D card = Card(children[i]);
+                AgeTransform widget = Drawn(card);
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                // The game numbers the flotillas from one where it writes them down and from zero
+                // where it binds them.
+                string number = (card.Index + 1).ToString();
+                NodeVtable vtable = new NodeVtable
+                {
+                    ControlType = ControlTypes.Text,
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(
+                            () => AgeText.Clean(Gui.Localize(FlotillaNameKey, number))
+                        ),
+                    },
+                    Sections = GraphNodes.Sections(null, AgeWidgets.Raw(widget)),
+                };
+                AgeWidgets.PointAt(vtable, widget);
+                builder.AddItem(
+                    Nodes.Drawn(ControlId.For(card, prefix + "/" + i), vtable, card)
+                );
+            }
+        }
+
+        /// <summary>The same cards for the side whose roster DOES draw flotilla lines, handed to the
+        /// lines rather than read on their own: the shared roster reader puts each card's sentence on
+        /// the row for the flotilla it belongs to, matched by the NUMBER the line draws and never by
+        /// child order - the two collections are built by different code and agreeing today is not a
+        /// contract.</summary>
+        private static BattleRosters.FlotillaExtras FlotillaCards(
+            AdvancedEncounterReportModalWindow window
+        )
+        {
+            AdvancedEncounterReportModalWindow it = window;
+            return new BattleRosters.FlotillaExtras
+            {
+                Tooltip = line =>
+                    AgeWidgets.Raw(Drawn(Card(it.PlayerFlotillaCard2DContainer, line))),
+            };
+        }
+
+        /// <summary>The card standing for the flotilla a roster line names, by the number the line drew.
+        /// Null where nothing answers to that number.</summary>
+        private static EncounterPlayFlotillaCard2D Card(
+            AgeTransform container,
+            FlotillaLine line
+        )
+        {
+            try
+            {
+                int number;
+                if (
+                    container == null
+                    || line == null
+                    || !int.TryParse(AgeText.Label(line.FlotillaIndexLabel), out number)
+                )
+                {
+                    return null;
+                }
+
+                List<AgeTransform> children = container.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    EncounterPlayFlotillaCard2D card = Card(children[i]);
+                    if (card != null && card.Index == number - 1)
+                    {
+                        return card;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle report: looking for a flotilla card threw: " + e);
+            }
+
+            return null;
+        }
+
+        private static EncounterPlayFlotillaCard2D Card(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null
+                    ? null
+                    : widget.GetComponent<EncounterPlayFlotillaCard2D>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>A card's own rectangle, and only while the arena is drawing that card: a flotilla
+        /// the battle did not field keeps a card the window hides, and its sentence is a statement about
+        /// a flotilla that was not there.</summary>
+        private static AgeTransform Drawn(EncounterPlayFlotillaCard2D card)
+        {
+            try
+            {
+                AgeTransform widget = card == null ? null : card.AgeTransform;
+                // Content read: the answer is handed to the shared roster reader as a TOOLTIP for
+                // somebody else's row, where no gate of this screen's will ever look at it.
+                return widget != null && AgeWidgets.Visible(widget) ? widget : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The two plans the battle was fought under, one card a side.
+        ///
+        /// A stop of its own between the outcome and the phases, because which plan each side played is
+        /// the first thing that explains the rest of the window - and the two cards are the only place
+        /// either plan is named. Each says the game's own title for the slot, the plan's name and the
+        /// effect lines the card prints; the how-often-chosen sentence behind it and the badges drawn on
+        /// it are the same hover surfaces the setup screens read off the same prefab.
+        /// </summary>
+        private static void Tactics(
+            GraphBuilder builder,
+            AdvancedEncounterReportModalWindow window
+        )
+        {
+            // The same word the advanced SETUP window names its own hand of plans with, from the same
+            // key: a stop the player lands in says what it is, and the two windows say the same thing
+            // the same way.
+            string name = BattleText.Optional(TacticsKey);
+            bool named = !string.IsNullOrEmpty(name);
+            if (named)
+            {
+                builder.PushContext(name, null, false);
+            }
+
+            Plan(
+                builder,
+                YoursRegion,
+                YourFleetsKey,
+                window.PlayerPlayCardContainer,
+                "battle-advanced/your-plan"
+            );
+            Plan(
+                builder,
+                TheirsRegion,
+                EnemyFleetsKey,
+                window.EnemyPlayCardContainer,
+                "battle-advanced/their-plan"
+            );
+            if (named)
+            {
+                builder.PopContext();
+            }
+
+            builder.SetRegion(null);
+        }
+
+        private static void Plan(
+            GraphBuilder builder,
+            object region,
+            string nameKey,
+            AgeTransform container,
+            string key
+        )
+        {
+            BattlePlayCard card = PlayCard(container);
+            AgeTransform widget = card == null ? null : card.AgeTransform;
+            // Flow control: a context is opened below, and the dossiers are a walk of the card's badges.
+            if (widget == null || !AgeWidgets.Visible(widget))
+            {
+                return;
+            }
+
+            builder.SetRegion(region);
+            string name = BattleText.Optional(nameKey);
+            bool named = !string.IsNullOrEmpty(name);
+            if (named)
+            {
+                builder.PushContext(name, null, false);
+            }
+
+            BattlePlayCard it = card;
+            NodeVtable vtable = new NodeVtable
+            {
+                ControlType = ControlTypes.Text,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeText.Clean(PlanTitleKey)),
+                    GraphNodes.ValuePart(() => AgeText.Label(it.PlayTitle), false),
+                    GraphNodes.ValuePart(() => BattleNotifications.PlanEffects(it), false),
+                },
+                Sections = GraphNodes.Sections(null, card.Tooltip),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            TooltipChildren.Declare(
+                builder,
+                Nodes.Drawn(ControlId.For(card, key), vtable, card),
+                key,
+                BattleNotifications.PlanDossiers(it, null)
+            );
+            if (named)
+            {
+                builder.PopContext();
+            }
+        }
+
+        /// <summary>The card the window instantiated into a side's slot - the report draws exactly one
+        /// per side, permanently on the plan that side played.</summary>
+        private static BattlePlayCard PlayCard(AgeTransform container)
+        {
+            try
+            {
+                return container == null
+                    ? null
+                    : container.GetComponentInChildren<BattlePlayCard>(true);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The phases, as the flat run of sentences they are - flotilla-major, so that reading down is
+        /// one flotilla through the battle.
+        ///
+        /// The game lays this out the other way round, a panel per phase each holding one item per
+        /// flotilla, because that is how it draws it; the items are matched into flotillas by the
+        /// position the game gave each inside its phase, which is the same flotilla order in every phase
+        /// (<c>AdvancedReportPhaseItem.FilterFlotillas</c> walks one list). A phase the battle never
+        /// reached draws no item, so that flotilla simply has one line fewer.
+        ///
+        /// A flotilla is NAMED at the head of its run only where more than one fought: the game writes
+        /// the flotilla into every one of these sentences, so with a single flotilla the name would be a
+        /// line saying what the next line says anyway.
         /// </summary>
         private static void Phases(
             GraphBuilder builder,
@@ -185,98 +756,81 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform container = window.AdvancedReportPhaseItemContainer;
-            // Flow control: everything below is a component scrape and a COUNT of phases, both of
+            // Flow control: everything below is a component scrape and a COUNT of flotillas, both of
             // which run before any node exists for the gate to see.
             if (container == null || !AgeWidgets.Visible(container))
             {
                 return;
             }
 
-            List<AdvancedReportPhaseItem> phases = new List<AdvancedReportPhaseItem>();
-            List<string> columns = new List<string>();
-            List<AgeTransform> widgets = new List<AgeTransform>();
             AdvancedReportPhaseItem[] items = container.GetComponentsInChildren<AdvancedReportPhaseItem>(
                 true
             );
+            // The flotillas, in the order every phase drew them.
+            List<AdvancedReportPhaseFlotillaStatItem[]> phases =
+                new List<AdvancedReportPhaseFlotillaStatItem[]>();
+            int rows = 0;
             for (int i = 0; i < items.Length; i++)
             {
                 AdvancedReportPhaseItem phase = items[i];
-                // Which phases become the sheet's COLUMNS - a count and a header list, decided before
-                // any cell is declared.
+                // Which phases contribute a line at all, counted before any is declared.
                 if (phase == null || !AgeWidgets.Visible(phase.AgeTransform))
                 {
                     continue;
                 }
 
-                phases.Add(phase);
-                widgets.Add(phase.AgeTransform);
-                columns.Add(AgeText.Label(phase.PhaseNameLabel));
-            }
-
-            if (phases.Count == 0)
-            {
-                return;
-            }
-
-            // The flotillas, in the order the first phase drew them - every phase draws the same set.
-            List<AdvancedReportPhaseFlotillaStatItem[]> cells =
-                new List<AdvancedReportPhaseFlotillaStatItem[]>();
-            int rows = 0;
-            for (int i = 0; i < phases.Count; i++)
-            {
-                AdvancedReportPhaseFlotillaStatItem[] stats = Stats(phases[i]);
-                cells.Add(stats);
+                AdvancedReportPhaseFlotillaStatItem[] stats = Stats(phase);
+                phases.Add(stats);
                 if (stats.Length > rows)
                 {
                     rows = stats.Length;
                 }
             }
 
-            if (rows == 0)
-            {
-                return;
-            }
-
-            // The flotilla column has no caption to speak: the game draws no heading over this grid at
-            // all - the phase names come off the phase panels themselves - so column 0 leads the header
-            // list as a null and its crossing stays label-free. Nothing is invented for it.
-            columns.Insert(0, null);
-
-            GraphSheet sheet = new GraphSheet(builder, "battle-advanced:phases:");
-            sheet.Region(null, columns.ToArray());
+            // How many flotillas fought - the count that decides whether the runs are named.
+            int fought = 0;
             for (int row = 0; row < rows; row++)
             {
-                object rowRef = "battle-advanced:flotilla:" + row;
-                int index = row;
-                List<KeyValuePair<int, NodeVtable>> line =
-                    new List<KeyValuePair<int, NodeVtable>>();
-                for (int column = 0; column < cells.Count; column++)
+                if (FirstStat(phases, row) != null)
+                {
+                    fought++;
+                }
+            }
+
+            for (int row = 0; row < rows; row++)
+            {
+                AdvancedReportPhaseFlotillaStatItem first = FirstStat(phases, row);
+                if (first == null)
+                {
+                    continue;
+                }
+
+                if (fought > 1)
+                {
+                    builder.AddItem(Nodes.Synthetic(
+                        ControlId.Structural("battle-advanced/flotilla/" + row),
+                        Flotilla(first, row)
+                    ));
+                }
+
+                for (int column = 0; column < phases.Count; column++)
                 {
                     AdvancedReportPhaseFlotillaStatItem stat =
-                        index < cells[column].Length ? cells[column][index] : null;
-                    // Which columns this ROW has, read before the sheet builds it.
+                        row < phases[column].Length ? phases[column][row] : null;
+                    // A phase this flotilla was not in: the game draws no item for it, and there is
+                    // no sentence to read.
                     if (stat == null || !AgeWidgets.Visible(stat.AgeTransform))
                     {
-                        // A phase the battle never reached: the game disables the panel and draws no
-                        // items in it, and the cell reads as the blank it is.
                         continue;
                     }
 
-                    line.Add(new KeyValuePair<int, NodeVtable>(column + 1, Stat(stat)));
+                    builder.AddItem(Nodes.Drawn(
+                        ControlId.For(stat, "battle-advanced/phase/" + row + "/" + column),
+                        Stat(stat),
+                        stat
+                    ));
                 }
-
-                // Keyed by a string, so the row has no rectangle of its own: the first cell the phase
-                // drew stands for where the row IS, which is what a landing here is scrolled to.
-                AdvancedReportPhaseFlotillaStatItem first = FirstStat(cells, index);
-                sheet.RowAt(
-                    Flotilla(first, index),
-                    rowRef,
-                    line,
-                    first == null ? null : first.AgeTransform
-                );
             }
-
-            sheet.Finish();
         }
 
         private static AdvancedReportPhaseFlotillaStatItem[] Stats(AdvancedReportPhaseItem phase)
@@ -295,6 +849,9 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The first phase this flotilla was DRAWN in - what says the flotilla fought at all.
+        /// The container pools its items, so a flotilla the battle never fielded still has an item in
+        /// every phase: hidden, unbound, and with an empty sentence on it.</summary>
         private static AdvancedReportPhaseFlotillaStatItem FirstStat(
             List<AdvancedReportPhaseFlotillaStatItem[]> cells,
             int row
@@ -302,17 +859,21 @@ namespace ES2Access.Screens
         {
             for (int i = 0; i < cells.Count; i++)
             {
-                if (row < cells[i].Length && cells[i][row] != null)
+                AdvancedReportPhaseFlotillaStatItem stat =
+                    row < cells[i].Length ? cells[i][row] : null;
+                // Spoken count: what this answers is how many flotillas FOUGHT, which decides whether
+                // the runs are named at all - a count taken before any node exists for the gate to see.
+                if (stat != null && AgeWidgets.Visible(stat.AgeTransform))
                 {
-                    return cells[i][row];
+                    return stat;
                 }
             }
 
             return null;
         }
 
-        /// <summary>Which flotilla a row is, in the game's own numbering - the grid draws the number on
-        /// the fleet cards beside it rather than on the row.</summary>
+        /// <summary>Which flotilla a run of phase lines belongs to, in the game's own numbering - the
+        /// panel draws the number on the arena cards beside it rather than on the lines.</summary>
         private static NodeVtable Flotilla(AdvancedReportPhaseFlotillaStatItem stat, int row)
         {
             int number = stat == null ? row + 1 : stat.VisualFlotillaIndex;
@@ -329,9 +890,9 @@ namespace ES2Access.Screens
             };
         }
 
-        /// <summary>One cell of the grid: the sentence the game wrote for this flotilla in this phase,
-        /// whole, with the pointer parked on the item so the tooltip it came from is on screen too.
-        /// </summary>
+        /// <summary>What the game wrote for this flotilla in this phase, kept whole and kept in the
+        /// LINES it was written in, with the pointer parked on the item so the box it came from is on
+        /// screen too.</summary>
         private static NodeVtable Stat(AdvancedReportPhaseFlotillaStatItem stat)
         {
             AgeTransform widget = stat.AgeTransform;
@@ -339,31 +900,90 @@ namespace ES2Access.Screens
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.ValuePart(() => Sentence(tooltip), false),
-                },
+                Announcements = new List<NodeAnnouncement>(),
                 Sections = null,
             };
+            // LABEL FALLBACK: the stat item draws a range icon and two arcs and no words at all, so the
+            // sentence the game wrote for it is the only thing that could name this row - the same rung
+            // the ordinary naming ladder would have reached. Its lines are the row's own parts, so the
+            // door has nothing left to announce twice.
+            Prose(vtable, () => AgeText.Lines(AgeText.Tooltip(tooltip)), false, null);
             AgeWidgets.PointAt(vtable, widget);
             return vtable;
         }
 
-        /// <summary>A tooltip the game wrote as prose, as one spoken line: its own line breaks are where
-        /// the box ran out of width and where it started a new paragraph, not punctuation.</summary>
-        private static string Sentence(AgeTooltip tooltip)
+        /// <summary>
+        /// A block of the game's own prose as a control's readout: one announcement PART per line the
+        /// game DREW, so the landing stays one utterance and the review buffer steps line by line.
+        ///
+        /// The breaks in these are the game's own punctuation, not a box running out of width. The
+        /// phase sentence is written as a statement and then its damage tally
+        /// (<c>AdvancedReportPhaseFlotillaStatItem.Refresh</c> :62), with each cloaking addendum
+        /// appended as a paragraph of its own (:64-78); a damage bar's title is a caption and then its
+        /// critical-hit clause. Joined into one part they became one unsteppable buffer line with a
+        /// newline inside it, which is neither what the box draws nor something the buffer can walk.
+        ///
+        /// The COUNT is read as the node is built - this screen rebuilds every frame, so it follows the
+        /// text - while each part re-reads its own line as it is spoken, like every other part here.
+        /// <paramref name="fallback"/> is for a block the game has not written yet, where the control
+        /// still has a name of its own to fall back on.
+        /// </summary>
+        private static void Prose(
+            NodeVtable vtable,
+            Func<IList<string>> lines,
+            bool named,
+            Func<string> fallback
+        )
         {
-            MessageBuilder message = new MessageBuilder();
-            foreach (string line in AgeText.Lines(AgeText.Tooltip(tooltip)))
+            int count = Read(lines).Count;
+            if (count == 0)
             {
-                message.Fragment(line);
+                vtable.Announcements.Add(
+                    named || fallback != null
+                        ? GraphNodes.LabelPart(fallback ?? (() => null))
+                        : GraphNodes.ValuePart(fallback ?? (() => null), false)
+                );
+                return;
             }
 
-            return message.Build();
+            for (int i = 0; i < count; i++)
+            {
+                int at = i;
+                Func<string> line = () => Line(lines, at);
+                vtable.Announcements.Add(
+                    named && at == 0
+                        ? GraphNodes.LabelPart(line)
+                        : GraphNodes.ValuePart(line, false)
+                );
+            }
         }
 
-        /// <summary>The rosters the fleet toggles slide over the grid, while one is up. Which side's is
-        /// showing is the game's decision and is read off what is drawn.</summary>
+        private static IList<string> Read(Func<IList<string>> lines)
+        {
+            try
+            {
+                IList<string> read = lines == null ? null : lines();
+                return read ?? new List<string>();
+            }
+            catch (Exception)
+            {
+                return new List<string>();
+            }
+        }
+
+        /// <summary>One line of a block as it stands NOW - a line the game has since dropped answers
+        /// nothing rather than the wrong line.</summary>
+        private static string Line(Func<IList<string>> lines, int index)
+        {
+            IList<string> read = Read(lines);
+            return index < read.Count ? read[index] : null;
+        }
+
+        /// <summary>The rosters the fleet toggles slide over the phase panel, while one is up. Which
+        /// side's is showing is the game's decision and is read off what is drawn. Only the player's
+        /// panel draws flotilla lines, so only it is handed the arena cards
+        /// (<see cref="FlotillaCards"/>) - the enemy's is a garrison, and its card is read in the
+        /// heading instead (<see cref="Flotillas"/>).</summary>
         private static void Rosters(
             GraphBuilder builder,
             AdvancedEncounterReportModalWindow window
@@ -374,16 +994,44 @@ namespace ES2Access.Screens
                 YoursRegion,
                 YourFleetsKey,
                 Widget(window.PlayerBattleGroupReportPanel),
-                "battle-advanced/yours"
+                "battle-advanced/yours",
+                FlotillaCards(window),
+                Rewarded(window)
             );
             Roster(
                 builder,
                 TheirsRegion,
                 EnemyFleetsKey,
                 Widget(window.EnemyBattleGroupReportPanel),
-                "battle-advanced/theirs"
+                "battle-advanced/theirs",
+                null,
+                null
             );
             builder.SetRegion(null);
+        }
+
+        /// <summary>
+        /// The player's roster panel as the kind that carries what the battle PAID.
+        ///
+        /// The window's field is typed as the base panel
+        /// (<c>AdvancedEncounterReportModalWindow</c> :21), but the instance it binds is the player
+        /// subclass, which is the only one with a rewards table - the experience gained, the resources
+        /// earned and the salvage rescued, three labels the base panel has nowhere for (verified live
+        /// 2026-08-30). The enemy's panel is the enemy subclass and has none of them, which is why only
+        /// this side is asked.
+        /// </summary>
+        private static PlayerBattleGroupReportPanel Rewarded(
+            AdvancedEncounterReportModalWindow window
+        )
+        {
+            try
+            {
+                return window.PlayerBattleGroupReportPanel as PlayerBattleGroupReportPanel;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         private static void Roster(
@@ -391,7 +1039,9 @@ namespace ES2Access.Screens
             object region,
             string nameKey,
             AgeTransform panel,
-            string prefix
+            string prefix,
+            BattleRosters.FlotillaExtras extras,
+            PlayerBattleGroupReportPanel rewards
         )
         {
             // Flow control: the roster under a panel the report is not drawing is a walk of its own,
@@ -409,7 +1059,8 @@ namespace ES2Access.Screens
                 builder.PushContext(name, null, false);
             }
 
-            BattleRosters.Roster(builder, panel, prefix);
+            BattleRosters.Roster(builder, panel, prefix, extras);
+            BattleNotifications.Rewards(builder, rewards, prefix);
             if (named)
             {
                 builder.PopContext();
@@ -430,6 +1081,7 @@ namespace ES2Access.Screens
                 YoursRegion,
                 YourDamageKey,
                 window.PlayerDamageGauge,
+                window.PlayerEncounterGroup,
                 window.PlayerTotalDamageLabel,
                 window.PlayerTotalDamageTooltip,
                 "battle-advanced/your-damage"
@@ -439,6 +1091,7 @@ namespace ES2Access.Screens
                 TheirsRegion,
                 EnemyDamageKey,
                 window.EnemyDamageGauge,
+                window.EnemyEncounterGroup,
                 window.EnemyTotalDamageLabel,
                 window.EnemyTotalDamageTooltip,
                 "battle-advanced/their-damage"
@@ -451,6 +1104,7 @@ namespace ES2Access.Screens
             object region,
             string nameKey,
             DamageGauge gauge,
+            EncounterGroup group,
             AgePrimitiveLabel total,
             AgeTooltip totalTooltip,
             string prefix
@@ -473,7 +1127,7 @@ namespace ES2Access.Screens
 
             Bars(builder, gauge.EffectiveDamageCells, prefix + "/effective");
             Bars(builder, gauge.AbsorbedDamageCells, prefix + "/absorbed");
-            Missed(builder, gauge.MissedDamageGroup, prefix + "/missed");
+            Missed(builder, gauge.MissedDamageGroup, group, prefix + "/missed");
             Total(builder, total, totalTooltip, prefix + "/total");
             if (named)
             {
@@ -504,7 +1158,7 @@ namespace ES2Access.Screens
                     ControlId.For(cell, prefix + "/" + i),
                     Bar(
                         cell.AgeTransform,
-                        () => Title(it.DamageData),
+                        () => AgeText.Lines(Title(it.DamageData)),
                         () => Description(it.DamageData)
                     ),
                     cell
@@ -512,9 +1166,28 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The shots that missed, which the game hangs on the band itself rather than on a cell
-        /// of its own - the same wrapper underneath, so the same sentence.</summary>
-        private static void Missed(GraphBuilder builder, AgeTransform group, string key)
+        /// <summary>
+        /// The shots that missed, which the game hangs on the band itself rather than on a cell of its
+        /// own - the same wrapper underneath, so the same sentence - plus the one thing the BAND says
+        /// that the sentence does not.
+        ///
+        /// The game writes the count ("Missed Shots: 2") and draws the PROPORTION: the band's height is
+        /// the whole gauge's times <c>1 - hitRatio</c> (<c>DamageGauge.RefreshMissedDamage</c>
+        /// :229-243), so a sighted player reads "about a fifth of the shooting missed" off a picture
+        /// with no number on it, and a listener told "2" cannot recover it. So the row says the share,
+        /// as a percentage, and the totals stay where the game put them, which is nowhere - the same
+        /// call the balance of power makes (<see cref="BattleNotifications.BalanceText"/>).
+        ///
+        /// It is said only while the band is DRAWN, which is what the Show Missed Shots switch governs:
+        /// the game hides the group when the switch is off or nothing missed, and the gate drops this
+        /// node with it.
+        /// </summary>
+        private static void Missed(
+            GraphBuilder builder,
+            AgeTransform group,
+            EncounterGroup side,
+            string key
+        )
         {
             if (group == null)
             {
@@ -522,12 +1195,75 @@ namespace ES2Access.Screens
             }
 
             AgeTooltip tooltip = AgeWidgets.Raw(group);
-            builder.AddItem(Nodes.Drawn(
-                ControlId.For(group, key),
-                Bar(group, () => Title(Data(tooltip)), () => Description(Data(tooltip))),
-                group
-            ));
+            EncounterGroup it = side;
+            NodeVtable vtable = Bar(
+                group,
+                () => AgeText.Lines(Title(Data(tooltip))),
+                () => Description(Data(tooltip))
+            );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => MissedShare(it), false));
+            builder.AddItem(Nodes.Drawn(ControlId.For(group, key), vtable, group));
         }
+
+        /// <summary>
+        /// What share of this side's shooting missed, in the phrase the mod has for it.
+        ///
+        /// Computed from the same two properties the gauge sizes its band from and summed the same way
+        /// (<c>DamageGauge.Refresh</c> :80-86, :106-108): every flotilla of the side, plus its
+        /// citadels, which the game counts in and a flotilla walk would leave out. The gauge keeps the
+        /// answer in a private field, so this re-derives it rather than reading it - and re-derives it
+        /// off the game's own inputs rather than off the band's pixel height, which is scaled by a
+        /// second ratio the band shares with the rest of the gauge.
+        /// </summary>
+        private static string MissedShare(EncounterGroup group)
+        {
+            try
+            {
+                if (group == null)
+                {
+                    return null;
+                }
+
+                float shots = DamageGauge.GetFlotillasPropertyValue(
+                    group,
+                    SimulationProperties.Flotilla.TotalShotSent
+                );
+                float hits = DamageGauge.GetFlotillasPropertyValue(
+                    group,
+                    SimulationProperties.Flotilla.TotalHitSent
+                );
+                for (int i = 0; group.Citadels != null && i < group.Citadels.Count; i++)
+                {
+                    EncounterCitadel citadel = group.Citadels[i];
+                    if (citadel == null)
+                    {
+                        continue;
+                    }
+
+                    shots += citadel.GetPropertyValue(SimulationProperties.Flotilla.TotalShotSent);
+                    hits += citadel.GetPropertyValue(SimulationProperties.Flotilla.TotalHitSent);
+                }
+
+                if (shots <= 0f)
+                {
+                    return null;
+                }
+
+                return BattleText.Optional(
+                    MissedShareKey,
+                    UnityEngine.Mathf.RoundToInt(
+                        UnityEngine.Mathf.Clamp01(1f - hits / shots) * 100f
+                    )
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle report: reading the missed-shot share threw: " + e);
+                return null;
+            }
+        }
+
+        private const string MissedShareKey = "battle.shots-missed";
 
         private static void Total(
             GraphBuilder builder,
@@ -546,31 +1282,40 @@ namespace ES2Access.Screens
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => Sentence(tooltip) ?? AgeText.Label(it)),
-                },
+                Announcements = new List<NodeAnnouncement>(),
                 Sections = null,
             };
+            // LABEL FALLBACK: the label draws a bare figure and an icon ("2074 [damageApplied]"), and
+            // the game's name for what it counts is written only in the tooltip - so the tooltip's
+            // sentence names the row, with the drawn figure as the fallback where it is not written.
+            Prose(
+                vtable,
+                () => AgeText.Lines(AgeText.Tooltip(tooltip)),
+                true,
+                () => AgeText.Label(it)
+            );
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(total, key), vtable, total));
         }
 
-        /// <summary>One bar of a damage gauge: the game's own sentence for it, and the tactical advice it
-        /// hangs beside it kept for the review buffer - the advice is the same paragraph every battle, and
-        /// a player comparing eight bars does not want to hear it eight times.</summary>
+        /// <summary>One bar of a damage gauge: the game's own caption for it - which is a caption and,
+        /// where the bar has one, a clause of its own on a second line, so it is read a part per line
+        /// (<see cref="Prose"/>) - and the tactical advice it hangs beside it kept for the review buffer,
+        /// since the advice is the same paragraph every battle and a player comparing eight bars does
+        /// not want to hear it eight times.</summary>
         private static NodeVtable Bar(
             AgeTransform widget,
-            Func<string> title,
+            Func<IList<string>> title,
             Func<IList<string>> advice
         )
         {
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
-                Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(title) },
+                Announcements = new List<NodeAnnouncement>(),
                 Sections = GraphNodes.Sections(advice, null),
             };
+            Prose(vtable, title, true, null);
             AgeWidgets.PointAt(vtable, widget);
             return vtable;
         }
@@ -599,17 +1344,66 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// Everything the bar's own box says under its caption: the game's tactical advice, and - where
+        /// one of the two plans moved this number - the game's sentence saying which.
+        ///
+        /// The second one is a whole feature of the tooltip the mod would otherwise drop.
+        /// <c>GuiDamageData</c> is an <c>IAffectingPlaysProvider</c> and computes the plays that touched
+        /// its own properties (:99-152); the <c>DamageGaugeCell</c> tooltip class lists
+        /// <c>PanelFeatureAffectedByPlay</c> among its four features (measured off the live panel
+        /// definition, 2026-08-30), which renders that list as a sentence and hides itself when the list
+        /// is empty. Reading only Title and Description therefore lost it on every battle where a plan
+        /// modified damage. The words are the game's own two keys, and which of them applies is the
+        /// game's own rule (one play named, or the first two of several).
+        /// </summary>
         private static IList<string> Description(GuiDamageData data)
         {
             try
             {
-                return data == null ? null : AgeText.Lines(AgeText.Clean(data.Description));
+                if (data == null)
+                {
+                    return null;
+                }
+
+                IList<string> lines = AgeText.Lines(AgeText.Clean(data.Description));
+                string plays = Plays(data);
+                if (!string.IsNullOrEmpty(plays))
+                {
+                    lines.Add(plays);
+                }
+
+                return lines;
             }
             catch (Exception)
             {
                 return null;
             }
         }
+
+        private static string Plays(GuiDamageData data)
+        {
+            List<string> names = data.AffectingPlayNames;
+            if (names == null || names.Count == 0)
+            {
+                return null;
+            }
+
+            return AgeText.Clean(
+                names.Count == 1
+                    ? Gui.Localize(OnePlayKey, Gui.GetLocalizedTitle(names[0]))
+                    : Gui.Localize(
+                        TwoPlaysKey,
+                        Gui.GetLocalizedTitle(names[0]),
+                        Gui.GetLocalizedTitle(names[1])
+                    )
+            );
+        }
+
+        /// <summary>The game's own two sentences for "a tactic moved this number", and the same choice
+        /// between them the feature makes.</summary>
+        private const string OnePlayKey = "%PanelFeatureAffectedByOnePlayDescription";
+        private const string TwoPlaysKey = "%PanelFeatureAffectedByTwoPlaysDescription";
 
         /// <summary>The three switches and the way out. The switches are the game's own boxes; Back has
         /// no field of its own on the window, so it is found where the window drew it.</summary>
@@ -796,6 +1590,30 @@ namespace ES2Access.Screens
             try
             {
                 return panel == null ? null : panel.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static AgeTransform Widget(GuiBehaviour behaviour)
+        {
+            try
+            {
+                return behaviour == null ? null : behaviour.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static AgeTransform Widget(AgePrimitiveLabel label)
+        {
+            try
+            {
+                return label == null ? null : label.AgeTransform;
             }
             catch (Exception)
             {

@@ -14,16 +14,21 @@ ES2Access/Screens/AcademyScreen.cs | 1 | AgeTooltip found = child == null || !Ag
 ES2Access/Screens/AcademyScreen.cs | 1 | if (band == null || !AgeWidgets.Visible(band))
 
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | && AgeWidgets.Visible(button.AgeTransform)
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (card != null && AgeWidgets.Visible(card.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 2 | if (container == null || !AgeWidgets.Visible(container))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (gauge == null || !AgeWidgets.Visible(gauge.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (icon != null && AgeWidgets.Visible(icon))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (phase == null || !AgeWidgets.Visible(phase.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (stat != null && AgeWidgets.Visible(stat.AgeTransform))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (stat == null || !AgeWidgets.Visible(stat.AgeTransform))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return container == null || !AgeWidgets.Visible(container)
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return widget != null && AgeWidgets.Visible(widget) ? widget : null;
 
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | && AgeWidgets.Visible(button.AgeTransform)
-ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (!AgeWidgets.Visible(gauge))
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (AgeWidgets.Visible(window.EnemyDeckGroup))
 
 ES2Access/Screens/BattleNotifications.cs | 2 | if (group == null || !AgeWidgets.Visible(group))

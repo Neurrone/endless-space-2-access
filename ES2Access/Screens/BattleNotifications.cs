@@ -236,7 +236,7 @@ namespace ES2Access.Screens
                 Widget(window.LeftBattleGroupReportPanel),
                 "battle-report/yours"
             );
-            Rewards(builder, window.LeftBattleGroupReportPanel);
+            Rewards(builder, window.LeftBattleGroupReportPanel, "battle-report");
             Close(builder, yours);
 
             builder.SetRegion(TheirsRegion);
@@ -1524,8 +1524,11 @@ namespace ES2Access.Screens
         /// popup for a sighted player - it is what tells them whether to fight or run. Setup and report
         /// ask the same question of different halves of the model (what is committed vs what survived),
         /// which is the <paramref name="setup"/> flag.
+        ///
+        /// Internal because the ADVANCED report window draws the same ring over the same two groups
+        /// (<see cref="AdvancedBattleReportScreen"/>) - one question, one home.
         /// </summary>
-        private static void Balance(
+        internal static void Balance(
             GraphBuilder builder,
             AgeTransform group,
             EncounterGroup left,
@@ -1835,7 +1838,19 @@ namespace ES2Access.Screens
 
         /// <summary>What the player earned: the resources, the salvage and the experience, each with the
         /// itemised breakdown the game hangs on it.</summary>
-        private static void Rewards(GraphBuilder builder, PlayerBattleGroupReportPanel panel)
+        /// <summary>
+        /// What the battle PAID the player - the three labels the report panel writes under the roster.
+        ///
+        /// Internal and prefixed because the ADVANCED report window binds the same
+        /// <c>PlayerBattleGroupReportPanel</c> behind its own fleet switch
+        /// (<see cref="AdvancedBattleReportScreen"/>), and the two windows read the same three labels
+        /// the same way: one question, one home.
+        /// </summary>
+        internal static void Rewards(
+            GraphBuilder builder,
+            PlayerBattleGroupReportPanel panel,
+            string prefix
+        )
         {
             if (panel == null)
             {
@@ -1844,9 +1859,9 @@ namespace ES2Access.Screens
 
             try
             {
-                Note(builder, panel.ResourcesEarnedTitleLabel, "battle-report/resources");
-                Note(builder, panel.SalvageRescuedTitleLabel, "battle-report/salvage");
-                Note(builder, panel.TotalExperienceTitleLabel, "battle-report/experience");
+                Note(builder, panel.ResourcesEarnedTitleLabel, prefix + "/resources");
+                Note(builder, panel.SalvageRescuedTitleLabel, prefix + "/salvage");
+                Note(builder, panel.TotalExperienceTitleLabel, prefix + "/experience");
             }
             catch (Exception e)
             {

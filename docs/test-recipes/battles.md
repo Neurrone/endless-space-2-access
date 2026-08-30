@@ -330,6 +330,203 @@ one stays where it was put.
 
 **Never activate** Fight or Retreat here either.
 
+## ADVANCED battle report
+
+**ADVANCED battle report** (`screen.battle-report-advanced`, `AdvancedEncounterReportModalWindow`) —
+the window the report popup's Advanced button opens (`battle-report/advanced`; the Back button
+returns to that popup, and `Back()` answers false so Escape stays the game's). Layer 42. Fixture
+used throughout: the owner's own session, 2026-08-30 — a fought battle vs Pirates, "Decisive
+Victory", ONE flotilla a side ("Flotilla 2"), the enemy wiped, 2 of the 3 phase columns fought.
+Reached by activating `battle-report/advanced` on the notification popup; **never**
+`w.HandleInput(InputAction.Exit)` from `/eval`, which wedges the stack.
+
+**Five stops**: `battle-advanced:heading`, `:tactics`, `:phases`, `:damage`, `:controls`, then the
+shared `hud:tutorial` and round to the heading. Regions inside them are `battle-advanced:yours` /
+`:theirs`. Measured whole cycle (r3, 2026-08-30): heading (8 positions) → tactics (the two plan
+records, one per side) → phases (2 positions on this fixture) + the roster region while a fleet
+toggle is out → damage → controls (4) → tutorial (3) → heading.
+
+**The heading is eight rows**, and three of them are things the window draws as pictures and writes
+down nowhere:
+
+- `battle-advanced/outcome` — "Decisive Victory, You destroyed all the enemy ships".
+- `battle-advanced/balance` — `BattleNotifications.Balance` (internal since this stage; one
+  question, one home) over `w.BattlePowerGauge.AgeTransform` (= `PowerBalanceGroup`,
+  `885,174,150,150`, tooltip `%NotificationBattleSetupPowerBalanceDescription` → "This diagram
+  shows the balance of power between the two opposing fleets."), `w.Player/EnemyEncounterGroup`,
+  `setup:false`. Measured powers 1998.4 vs 0, so this fixture exercises the **`BalanceAllKey`
+  branch**: "Balance of power: 1st Conquerors Navy has all the military power, 8th Greedy Pirates
+  has none". Evidence crop `600,100,720,300` — the ring is solid blue with no grey arc. It is the
+  one `unlocatable` node in `Ghosts()` (synthetic, as on the setup popup).
+- `battle-advanced/your-morale` / `their-morale` — ONE line per holding side, in that side's region.
+  The line is the mod's own STATEMENT, not the game's caption: `battle.your-morale-bonus` = "Your
+  fleet had the morale bonus" / `battle.enemy-morale-bonus` = "Their fleet had the morale bonus",
+  with `%SpaceBattleMoraleBonusDescription` ("A fleet gets a morale bonus when it has more active
+  flotillas than its opponent.") behind it as before. The game's own title
+  `%SpaceBattleMoraleBonusTitle` ("Morale bonus") is deliberately NOT the line — read out it is a
+  caption followed by a definition, and the owner could not tell whose fleet had one (2026-08-30);
+  whose it is, is drawn as the icon's empire COLOUR, which speech has not got, and the region a row
+  sits in is not spoken. Measured landing: "Your fleet had the morale bonus, A fleet gets a morale
+  bonus when it has more active flotillas than its opponent., 5 of 8". The gate is
+  `group.GetPropertyValue(SimulationProperties.EncounterGroup.MoraleBonus) > 0`
+  (`AdvancedReportPhaseItem.Refresh` :39-62 asks the GROUP, then stamps the same colourised
+  `[happiness]` on EVERY fought phase — a group-level fact repeated, not a per-phase reading).
+  Measured: player 1, enemy 0, so one line and one icon colour — the ENEMY phrase is therefore
+  fixture-blocked here and only its resolution is proven
+  (`ModStrings.Get("battle.enemy-morale-bonus")` → "Their fleet had the morale bonus"). The row
+  points at the FIRST drawn
+  `MoraleBonusLabel`; evidence pair `740,940,420,170` shows the two blue thumbs over "Phase I" and
+  "Phase II", none over "Phase III", with the tooltip drawn at `800,1056,342,43`.
+- `battle-advanced/their-flotilla/N` — the enemy's arena cards, see the flotilla block below.
+
+**The tactics stop is the two plans the battle was fought under.** The window instantiates one
+`BattlePlayCard` per side into `PlayerPlayCardContainer`/`EnemyPlayCardContainer`
+(`AdvancedEncounterReportModalWindow` :95-116, bound in `OnBeginShow` :182-201), so each card is
+permanently on its own plan and `BattleNotifications.PlanEffects(card)` (the card-only core) is a
+Value part exactly as on the ADVANCED setup window. Each row is wrapped in the same
+"Your fleets"/"Enemy fleets" context the report POPUP puts round its own plan rows, because the
+title is the same on both sides: `%NotificationBattleReportSelectedPlayTitle` → **"Selected Plan"**.
+The stop itself is named "Tactics" from `battle.tactics` — the SAME key the ADVANCED SETUP window
+names its own hand of plans with, so the two windows say the same word for the same thing
+(2026-08-30). Measured landings: `ui.next` into the stop says "**Tactics**, Your fleets, Selected
+Plan, Power to Shields, +100% Shield absorption on Ships, +10% Shield capacity on Ships, collapsed",
+and `ui.down` to the other side says "Enemy fleets, Selected Plan, Hard Target, +25% Long range
+defense bonus on Ships, collapsed" — the "Tactics" level is already entered by then and is not
+repeated. Crop `600,100,720,300` shows both cards printing those same effect lines.
+`ui.right` opens the card's "Tooltips" region — `BattleNotifications.PlanDossiers(card, null)`,
+nothing to turn: "Tooltips, Defensive, Focuses on reducing damage taken. Every Fighter Squadron
+remains with the friendly ships to protect against enemy bombers., 1 of 4", then "Flotilla 1: Medium
+Range, 2 of 4" / "Flotilla 2: Long Range, 3 of 4" / "Flotilla 3: Long Range, 4 of 4". Three range
+indicators are drawn per card whatever the battle fielded, `Enable=True` only on the live flotilla.
+`ui.left` collapses; **`ui.back` does not** — measured silent on a dossier entry.
+The card's own tooltip is CLASS-backed (`BattlePlayCard`), so it reads EMPTY in an unfocused
+`/gui/graph?buffers=1` and only appears once the row is focused: "Increases long range defenses;
+used to keep distance in battle" / "The enemy chose this in 100% of battles against you" (the
+player's says "You chose this in 100% of battles overall, and 100% against the opposing empire").
+
+**The phases are a flat list, not a grid** (2026-08-30, replacing the `GraphSheet`). Each sentence
+the game writes already names its flotilla and its phase, so the reading is flotilla-major runs of
+whole sentences and a flotilla name leads a run ONLY where more than one fought. Measured:
+"The Flotillas 2 were at Long range during phase 1, Damage repartition: 1893 vs 0, 1 of 2" /
+"… Medium range during phase 2, Damage repartition: 180 vs 0, 2 of 2" — **one utterance, two buffer
+lines**, because the game's own `\n` here is punctuation, not wrapping (`Refresh` :62 writes the
+statement and the tally as two lines, and each cloaking addendum is appended as a `\n\n` paragraph
+:64-78). Every glued reading on this screen was split the same way on 2026-08-30 (`Prose`): the
+phase stats, the two Totals, and the damage bars — "Damage caused by your Beam weapons: 968,
+Including 215 critical" is now two buffer lines, not one line with a newline inside it.
+`AdvancedReportPhaseItemContainer` holds three
+`AdvancedReportPhaseItem`s; the unfought one is `Visible=True, Enable=False` with
+`PhaseReport=null` and an invisible `FlotillaStatItemContainer`, so it contributes no line.
+**The stat items are POOLED**: every phase holds three, and the ones for flotillas that never
+fielded are `Visible=False` with `VisualFlotillaIndex=0` and an EMPTY tooltip — so both the
+fought-flotilla count and the run anchor must test `AgeWidgets.Visible`, or a one-flotilla battle
+reads as three. A crop of a stat item's rect (`717,511,146,72`) shows nothing: the phase panel is
+painted in the perspective arena and the roster panel is drawn over the left of it, the same trap
+the setup window's arena labels have. The sentences are tooltip text — probe them, don't crop them.
+
+**A flotilla is drawn TWICE here too, and the two sides resolve differently** (measured
+2026-08-30). `PlayerFlotillaCard2DContainer` and `EnemyFlotillaCard2DContainer` are fields on the
+window (no need for the setup screen's walk through `EncounterPlayScreen3D`); each holds three
+`EncounterPlayFlotillaCard2D`, of which only the live flotilla's is `Visible`. But only the PLAYER's
+roster panel draws flotilla lines — `w.PlayerBattleGroupReportPanel` holds one
+`BattleFlotillasPanel` and, with the toggle out, three `FlotillaLine`s numbered 1/2/3;
+`EnemyBattleGroupReportPanel` holds ZERO (it is an `EnemyBattleGroupReportPanel`, a garrison). So:
+- the player's cards go in through `BattleRosters.FlotillaExtras.Tooltip`, matched to the line by
+  the NUMBER the line DRAWS (`FlotillaIndexLabel`, 1-based) against `Card2D.Index` (0-based), never
+  by child order. Measured with the Your-fleets toggle on: "Flotilla 2, group, collapsed, This
+  flotilla is optimal at Long range and has 95% compatibility with the ships", while Flotilla 1 and
+  3 stay "Flotilla 1, Empty" — their cards are `Visible=False` and hand in nothing.
+- the enemy's card has no line to hang on and is read in the THEIRS heading region instead:
+  "Flotilla 2, This flotilla is optimal at Medium range and has 95% compatibility with the ships,
+  8 of 8", tooltip drawn at `1569,716,342,43` (evidence crop taken there).
+This asymmetry — the player's sentence only while the roster is out, the enemy's always — is
+measured, not designed; flag it if the reading should be symmetric.
+
+**A damage bar can say which TACTIC moved it, and that sentence is a tooltip FEATURE.** `GuiDamageData`
+is an `IAffectingPlaysProvider` and computes, from the fought plans' modifiers (:99-152), which plays
+touched the properties behind that bar; the `DamageGaugeCell` tooltip class's own panel definition
+lists four features and the fourth is `PanelFeatureAffectedByPlay` (read off the live
+`GuiTooltipWindow.TooltipDescription.PanelFeaturesDescriptions`, 2026-08-30:
+`PanelFeatureHeader`, `PanelFeatureDescriptionGameplay`, `PanelFeatureSeparator`,
+`PanelFeatureAffectedByPlay`). The feature hides itself on an empty list, so it never showed here —
+but the mod's `Title`/`Description`-only reading WOULD have dropped it on any battle where a plan
+modified damage. It is appended to the bar's buffer section in the game's own words:
+`%PanelFeatureAffectedByOnePlayDescription` = 'The Tactic "{0}" affected this value' and
+`%PanelFeatureAffectedByTwoPlaysDescription` = 'The Tactics "{0}" and "{1}" affected this value',
+chosen by the same rule the feature uses (one name, else the first two). **No mod phrase.**
+*Correction to the "every cell is empty" reading*: measured on this fixture, the two ABSORBED cells
+carry one play each on both gauges — player `DamageAppliedAbsorbedByHullPlating` / `…ByShield` →
+"Hard Target", enemy `…ByShield` → "Power to Shields" — they are simply `Visible=false` because
+nothing was absorbed. **Fixture-blocked**: needs a battle with absorbed damage, or a plan that
+modifies an offensive damage property.
+
+**The missed-shot band's PROPORTION is spoken; its totals are not.** The game writes the count on
+the band's tooltip ("Missed Shots: 2" / the enemy gauge's "Evaded Shots: 9") and draws the share as
+the band's height, `MainContentTable.Height * (1 - hitRatio)` with no figure anywhere
+(`DamageGauge.RefreshMissedDamage` :229-243), so the row adds `battle.shots-missed` =
+"{0}% of shots missed" and no total — the same call `BalanceText` makes. `hitRatio` is
+`totalHitSent / totalShotSent` over the group's flotillas PLUS its citadels (`Refresh` :80-86,
+:106-108); the gauge keeps all three in private fields, so the mod re-derives them from
+`DamageGauge.GetFlotillasPropertyValue(group, SimulationProperties.Flotilla.TotalShotSent |
+TotalHitSent)` plus the citadel loop. The node is `Nodes.Drawn` on `MissedDamageGroup`, which the
+game hides whenever the Show Missed Shots switch is off or nothing missed, so the gate is what
+governs the phrase. Measured 2026-08-30 (reflection read-back vs the drawn band): player
+`totalShotSent 17 / totalHitSent 15 / hitRatio 0.8824`, band `101/861 = 0.1173` → "Missed Shots: 2,
+12% of shots missed"; enemy `21 / 12 / 0.5714`, band `61/142 = 0.4296` → "Evaded Shots: 9, 43% of
+shots missed". The band-height share and `1 - hitRatio` agree to the layout's own rounding, and
+`shots - hits` equals the count the game wrote (2 and 9). **Negative control, measured the same
+day**: with Show Missed Shots unticked, BOTH missed rows leave the damage stop entirely — count and
+percentage together — because the game hides `MissedDamageGroup` and the gate drops the node.
+
+**The rewards ride on the player's ROSTER, behind the Your-fleets switch.** The window's field is
+typed `BattleGroupReportPanel` (`AdvancedEncounterReportModalWindow` :21) but the bound instance is
+the `PlayerBattleGroupReportPanel` subclass (verified live 2026-08-30), which owns `RewardsTable` +
+`ResourcesEarnedTitleLabel` / `SalvageRescuedTitleLabel` / `TotalExperienceTitleLabel`. The screen
+reads them with the SAME helper the simple report popup uses — `BattleNotifications.Rewards`, now
+internal and prefixed — so the two windows say the same thing. Measured with Your fleets on:
+"**Experience gained: 5, The total experience gained by your Ships and Hero. Ships gain bonus health
+every level.**" at `battle-advanced/yours/experience`, last row of the yours region. The resources
+and salvage labels exist but are `Visible=False` this battle (they still hold their raw prefab keys,
+`%NotificationBattleReport…Title`) and appear in `Ghosts().droppedByGate` — **fixture-blocked**.
+The enemy panel is the `EnemyBattleGroupReportPanel` subclass and has no rewards table at all, which
+is why only the player side is asked.
+
+**Fighter/bomber squadron counts** (`battle-advanced/your-squadrons` / `their-squadrons`, in each
+side's HEADING region). `EncounterFighterBomberCard2D` counts operational and destroyed fighters and
+bombers in report mode (:76-92, the `useSetup=false` branch), and those numbers are the only place
+in the report a squadron is counted — the rosters list ships. **The card is NOT caption-less**: each
+of its four chips is an Icon + a Label under a group carrying the game's own content-backed tooltip
+(measured 2026-08-30) —
+`%EncounterFighterBomberFighterDescription` "Number of operational Fighter units.",
+`…DeadFighterDescription` "Number of destroyed Fighter units.",
+`…BomberDescription` "Number of operational Bomber units.",
+`…DeadBomberDescription` "Number of destroyed Bomber units." — so the row is named by the game's
+sentence (label fallback) with the drawn number as its value, and **no mod phrase was added**.
+A chip whose count is zero is hidden and a card with all four hidden hides itself (`RefreshValues`).
+*Container correction*: on the REPORT, **both** sides are `EncounterPlayFlotillaCardContainer` with
+three cards each (`FighterBomber2DCardLeftGroup` / `…RightGroup`), not a fleet container on the
+enemy side as on the setup window — so the flotilla-number lead applies to both. Aim at the chip's
+GROUP, never the label: the tooltip is on the group. **Fixture-blocked**: all six cards read
+`Visible=false` on this pirate battle (no carriers), so only the absence is verified — the screen
+declares nothing here and `Ghosts()` stays clean.
+
+**Toggling a roster from a script**: `ui.next` to `:controls`, `ui.home`, `ui.activate` (the mod's
+own checkbox; answers "checked"/"not checked"). Toggle it back — the panel slides OVER the phase
+grid, so the phases stop's own content changes with it.
+
+`TooltipParity()` on this screen: `clean:true`, 50 nodes, all eleven buckets empty — but `root` is
+`null`, so that is the DECLARATION half only, not a painted-side pass. `Ghosts()`:
+`shippedUnpainted:0`; `droppedByGate:24`, all accounted for (the two hero portraits the window is
+not drawing, the zero-height damage cells for weapon types that never fired, the two hidden reward
+labels, and the missed-shot rows whenever that switch is off). `Coverage()` is run
+under a modal, so 16 of its 17 roots are the HUD behind it — subtract by path first. What is left
+inside `AdvancedEncounterReportModalWindow` is ten `unread` entries, all the COLLAPSED-branch blind
+spot: the family badge and three range indicators on each plan card, plus the two `RoleIcon`s under
+the collapsed flotilla group. Expand before believing them.
+
+**Never activate** anything but the three checkboxes here: Back closes the window (recoverable via
+the popup's `battle-report/advanced`), and the popup behind it owns Rewatch and Replay.
+
 ## The space battle itself (`screen.battle`)
 
 The cinematic is a narrated stream, so almost everything it says is unverifiable without a battle
@@ -564,6 +761,20 @@ re-dump before interpreting.
   sorting band reads `unavailable` (**ADVANCED battle setup**).
 - The ground-battle OUTCOME-SELECTION popup's live content — it needs a decisive victory
   (**Ground battles**).
+- On the ADVANCED battle REPORT, everything a MULTI-flotilla battle would show: the flotilla-name
+  line that leads each run in the phase list (measured `fought == 1` on this fixture, so no name is
+  emitted and the branch is unexercised), the enemy-side morale line "Their fleet had the morale
+  bonus" (`MoraleBonus` reads 0 there — only the phrase's resolution is proven), and more than one
+  enemy heading flotilla line. The
+  percentage branch of the balance sentence is unexercised too — the enemy's military power is 0,
+  so only `BalanceAllKey` has been heard here (**ADVANCED battle report**).
+- On the ADVANCED battle REPORT, three more that this battle cannot draw: the **resources** and
+  **salvage** reward lines (both labels `Visible=False`, only Experience is drawn); every
+  **fighter/bomber squadron count** (all six cards `Visible=false` — needs a battle with carriers);
+  and the **"The Tactic … affected this value"** sentence on a damage bar (the only cells whose
+  `AffectingPlayNames` is non-empty are the two absorbed-damage cells, and nothing was absorbed —
+  needs absorbed damage, or a plan modifying an offensive damage property)
+  (**ADVANCED battle report**).
 - Six of the cinematic's narration lines, because this report contains nothing that feeds them
   (**What the fight says**): reinforcements arriving mid-fight (`_Spawn` after time zero — all three
   spawns here are at 0.0), a ship repairing (a positive `Health` delta on a section — every Health

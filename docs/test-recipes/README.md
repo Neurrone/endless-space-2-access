@@ -28,7 +28,7 @@ sibling file for that family, never here.
 |---|---|
 | `fixtures.md` | The three saves, the tools that undo a probe, the tutorial-minimize recipe, the modal-stack drain and the full-screen close, the offline proofs, how to read a usage hint |
 | `notifications.md` | Popups, the HUD strip, the turn log, the parity probe, Ctrl+L, the two dismiss-alls |
-| `battles.md` | The space-battle setup popup, the battle plan chooser, the ADVANCED setup window (plans, stats pager, arena, ship lock and flotilla carry), the ground-battle popups |
+| `battles.md` | The space-battle setup popup, the battle plan chooser, the ADVANCED setup window (plans, stats pager, arena, ship lock and flotilla carry), the ADVANCED report window (balance, tactics, flat phase list, morale, flotilla cards), the ground-battle popups |
 | `galaxy-map.md` | The page's screen model (tree shape, the four panels, the HUD empire bands, the turn log stop, quest markers), fog and labels, the camera rule, locates, the scan view, type-ahead, dossiers and tooltips, the tree/place/page keys, usage hints |
 | `fleets.md` | Fleet rows in the tree, foreign fleets, ordering and re-routing, targeting modes, the route-loss watcher, the selection chords and drag, the selected-fleet panel |
 | `inspect-and-influence.md` | The inspect cell cursor and everything influence-shaped |
