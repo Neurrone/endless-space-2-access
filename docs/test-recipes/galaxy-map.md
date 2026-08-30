@@ -27,9 +27,16 @@ so those two words are said on every one of the thirteen screens that draw those
 Controls" is the galaxy's alone (gated on the zoom ladder no other page passes) and is the one name
 that overrides a word the game DRAWS — "GALAXY VIEW" on `TopTitlePanel`, owner ruling 2026-08-19,
 because the view's name says which page the player is on and the screen has already said that
-(ES2 facts).
+(ES2 facts). Three of the four names carry the chord that focuses them, appended by
+`ChordNames.Label` off the live binding: "Galactic Map (Ctrl+G)", "Notifications (Ctrl+N)" and — on
+the Turn log stop below — "Turn log (Ctrl+T)". While a targeting mode is armed the map stop reads
+the game's instruction instead and the chord is NOT appended to it (`MapContext`); View Controls and
+Quest have no focus key and are unchanged.
 
-**The shared HUD's empire stop carries a row region per drawn band**, on every page in the game:
+**The shared HUD's empire stop carries a row region per drawn band**, on every page in the game.
+The stop itself is named "Hud (Ctrl+H)" (`hud.panel` + `ChordNames.Label`), a `PushContext` level
+around the whole row loop, so a landing reads the place before the band: "Hud (Ctrl+H), Controls,
+…". The regions:
 `hud:empire/{controls,key-resources,research,strategics}` (labelled Controls / Key Resources /
 Research — reusing `galaxy.research` — / Strategic Resources) plus the seven faction bands
 `hud:empire/{lifeforce,genes,singularities,golden-age,pirate-mark,honor,relics}` (Essence, Manage
@@ -41,7 +48,7 @@ panels contribute to gets neither word nor key (`hud:empire/line/<n>`) rather th
 contributor's.
 
 **The Turn log** (2026-08-20): a second notifications stop, `hud:turn-log` (context word
-`hud.turn-log-panel`, "Turn log"), rides the shared `GlobalHud` contribution immediately after
+`hud.turn-log-panel`, spoken "Turn log (Ctrl+T)"), rides the shared `GlobalHud` contribution immediately after
 `hud:notifications` on all eleven HUD pages. The game's own notifications keep the first stop
 — `GlobalHud.Notifications` filters `ModNotification`s out — and the mod's (sightings,
 arrivals, sieges, dispatches; `ModNotifications`) live in the second, grouped under
@@ -415,8 +422,8 @@ arrivals, neither of them a "go and look at this", and the mechanism is in `docs
   (cursor on the HUD, map memory on Rigel, camera on Rigel) — then load, minimize the tutorial, and read
   three things: `ES2Access.ModEntry.Navigator.RememberedStop("galaxy:systems")` must name the centred
   system (`ControlId(galaxy:constellation/446/system/535, ref=Dusay (535))`), the cursor must still be
-  `hud:empire/…` with the arrival announcement unchanged ("Controls, Empire Summary, button, …, 1 of 8"),
-  and `ui.focusMap` must then say "Galactic Map, Serpens, group, expanded, 1 of 2, Dusay, 0, 0, group,
+  `hud:empire/…` with the arrival announcement unchanged ("Hud (Ctrl+H), Controls, Empire Summary, button, …, 1 of 8"),
+  and `ui.focusMap` must then say "Galactic Map (Ctrl+G), Serpens, group, expanded, 1 of 2, Dusay, 0, 0, group,
   Home System, colonized, …, 6 of 13". BEFORE the fix the same key said "Serpens, group, expanded, 1 of
   2" and dragged the camera from Dusay to (53.285, -24.86). The expectation is written down first from
   `GalaxyView.GetLocalEmpireMainSystemPosition()` — (68.884, 0, -22.450) = Dusay on `[Beginner] test`.
@@ -429,7 +436,7 @@ arrivals, neither of them a "go and look at this", and the mechanism is in `docs
   own `Back()` falls through to) puts the camera back where it was, while
   `ES2Access.UI.GalaxyViewLevels.StepZoom(-1, false)` (the zoom slider) centres the system that was on
   the page. So the case where the tree disagreed with the picture is: in on Dusay, page to Heka, zoom
-  out — cursor must land on Heka, "Galactic Map, Serpens, group, expanded, 1 of 2, Heka, -1, -9, group,
+  out — cursor must land on Heka, "Galactic Map (Ctrl+G), Serpens, group, expanded, 1 of 2, Heka, -1, -9, group,
   outpost, 2 fleets under way nearby, collapsed, 8 of 13", ONE row announcement, camera (67.756,
   -31.146) step 12. In and straight out again with the cursor already on that system is the silence
   half: the same four utterances as before the change (the scan button, "Galaxy", "Zoom level 13 of 15,
@@ -860,9 +867,9 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
   lane children — so "Nothing in here", the group staying open and the second Right being a
   consumed leaf are still unit-test-only.
 - **The six place keys.** MEASURED on the galaxy page, each landing identical to the one Tab reaches:
-  `ui.focusEmpire` → "Controls, Empire Summary, button, unavailable, …, 1 of 8"; `ui.focusNotifications`
-  → "Notifications, Laws Cancelled, button"; `ui.focusTurn` → "End Turn (Ctrl+Alt+E), button, Turn 21,
-  1 of 6"; `ui.focusMap` → "Galactic Map, …" on the remembered position. Where the stop is absent the
+  `ui.focusEmpire` → "Hud (Ctrl+H), Controls, Empire Summary, button, unavailable, …, 1 of 8"; `ui.focusNotifications`
+  → "Notifications (Ctrl+N), Laws Cancelled, button"; `ui.focusTurn` → "End Turn (Ctrl+Alt+E), button, Turn 21,
+  1 of 6"; `ui.focusMap` → "Galactic Map (Ctrl+G), …" on the remembered position. Where the stop is absent the
   key is TOTAL silence with the cursor unmoved, proved twice by `DevProbe.Screen()` either side:
   `ui.focusTurnLog` on the galaxy (the fixture's Tab ring is Controls → View Controls → Galactic Map
   → Quest → Tutorial → Notifications → End Turn, with no turn-log stop) and `ui.focusMap` on the
@@ -919,7 +926,8 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
   - academy: "Previous hero (Alt+Left Arrow)" / "Next hero (Alt+Right Arrow)", 1 and 2 of 2.
   `ChordNames.Of(ES2Access.ModEntry.Input, "ui.pagePrev", 0)` is the chord on its own, and the key
   names come out of the GAME's table (`%KeyCodeLeftArrow` = "Left Arrow").
-- **"Galactic Map".** MEASURED: the galaxy map stop's context word is "Galactic Map" on every landing.
+- **"Galactic Map".** MEASURED: the galaxy map stop's context word is "Galactic Map" on every landing
+  (now spoken "Galactic Map (Ctrl+G)" — the focus chord is appended by `ChordNames.Label`).
 - **The Academy's strip arrows ARE declared** (`academy:previous`/`academy:next`, owner decision
   2026-08-22). Structure verified on a FORCED show (`Gui.GuiService.ShowWindow(GetWindow<AcademyScreen>
   (false))` — `ControlBanner.ToggleScreen("AcademyScreen")` does nothing in this save): both nodes

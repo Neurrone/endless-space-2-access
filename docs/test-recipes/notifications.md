@@ -21,7 +21,7 @@ returns the manager's LIVE list, so `RecordEventForEmpire` can be replayed by ha
 `new NotificationLawCancelled()` → `RegisterComponents()` → `Bind(new EventLawCancelled(empire,
 lawDef))` → `Load()` → `AlreadyRead = true` → `list.Insert(0, n)` → the private
 `OnPlayerEmpireNotificationsCollectionChanged(CollectionChangeAction.Add, n)` by reflection so the
-HUD strip refreshes. Verified: the strip read "Notifications, Laws Cancelled, button, 1 of 2" again.
+HUD strip refreshes. Verified: the strip read "Notifications (Ctrl+N), Laws Cancelled, button, 1 of 2" again.
 The event bus is exactly the route to avoid here — `EventLawCancelled` is an `EventOnPolitics`,
 which `QuestManager` reads as a quest trigger (`QueryPoliticsNameFromGameEvent` :2934).
 **The same live list is how a real notification is STASHED and put back** — the cheap, exact way to

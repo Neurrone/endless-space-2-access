@@ -494,7 +494,8 @@ lane stays silent. **Enter on a planet card defers to an armed targeting mode** 
 nodes and lanes do (`PlanetClick`: `ConfirmAt(system)` first, else the planet page) — before
 2026-08-20 the page opened over the mode and silently discarded it. **The map stop names itself
 with the game's targeting instruction while a mode is armed** (`MapContext()`; the label reverts
-to "Galactic Map" when the mode ends). Arming while the cursor is inside the stop adds no extra utterance
+to "Galactic Map (Ctrl+G)" when the mode ends — the focus chord rides on the map's own name only,
+never on the game's instruction). Arming while the cursor is inside the stop adds no extra utterance
 (the announcer diffs on focus change); Tab-away/Tab-back re-speaks the instruction, which is the
 point; child node ids and the cursor survive the rename.
 

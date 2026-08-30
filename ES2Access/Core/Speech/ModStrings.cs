@@ -1005,6 +1005,11 @@ namespace ES2Access.Core.Speech
         public const string HudKeyResourcesPanel = "hud.key-resources-panel";
         public const string HudStrategicResourcesPanel = "hud.strategic-resources-panel";
 
+        /// <summary>The cluster itself, over those rows: the one Tab stop that had no word of its own,
+        /// so a player landing on it heard the row and never the place. The game captions the corner
+        /// with nothing at all, so the word is the mod's.</summary>
+        public const string HudPanel = "hud.panel";
+
         // The two faction rows of that cluster the game has no standalone name for. The other five are
         // named by the game's own titles (%NetEmpireLifeforceTitle, %AssimilationShortcutTitle,
         // %GoldenAgeTitle, %HonorTitle, %RelicsTitle - all five verified to resolve). These two do not
@@ -2325,6 +2330,7 @@ namespace ES2Access.Core.Speech
             { HudDismissAllNotifications, "Dismiss all notifications" },
             { HudDismissAllTurnLog, "Dismiss all Turn log entries" },
             { HudViewControlsPanel, "View Controls" },
+            { HudPanel, "Hud" },
             { HudControlsPanel, "Controls" },
             { HudKeyResourcesPanel, "Key Resources" },
             { HudStrategicResourcesPanel, "Strategic Resources" },

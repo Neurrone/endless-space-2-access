@@ -394,6 +394,10 @@ namespace ES2Access.Screens
         /// no game word to prefer. The faction panels the game stacks underneath for the empires that
         /// have them are named too (<see cref="AddFactionPanels"/>), and five of those seven DO have a
         /// game word, because the thing each of them counts is a titled thing in the game's own data.
+        ///
+        /// The CLUSTER is named over the rows, with the chord that focuses it after the word - "Hud
+        /// (Ctrl+H)". The rows say which band the player is in; without a level above them the landing
+        /// said "Controls" and never said which corner of the screen that was.
         /// </summary>
         public void Empire(GraphBuilder builder)
         {
@@ -420,33 +424,44 @@ namespace ES2Access.Screens
             AddFactionPanels(cells, window);
 
             builder.BeginStop(EmpireStop);
-            int line = 0;
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
+            // The cluster's own word, over the rows' words: without it the player lands on "Controls"
+            // and is never told which corner of the screen that is. Popped in a finally for the same
+            // reason the notification strip's is - a level left open takes every stop after it.
+            builder.PushContext(ChordNames.Label(ModStrings.Get(ModStrings.HudPanel), UiActions.FocusEmpire, 0));
+            try
             {
-                string named = RowName(row);
-                // EVERY row carries a region, not only the named ones: the jump is asked of the focused
-                // node's own region key, so one unregioned line in the middle of the stop is a key that
-                // does nothing exactly there. A line two panels share has no name to take one from and
-                // takes its place in the stop instead.
-                string region = RowRegion(row);
-                builder.SetRegion(EmpireStop + "/" + (region ?? "line/" + line));
-                line++;
-                if (named != null)
+                int line = 0;
+                foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
                 {
-                    builder.PushContext(named);
-                }
+                    string named = RowName(row);
+                    // EVERY row carries a region, not only the named ones: the jump is asked of the
+                    // focused node's own region key, so one unregioned line in the middle of the stop is
+                    // a key that does nothing exactly there. A line two panels share has no name to take
+                    // one from and takes its place in the stop instead.
+                    string region = RowRegion(row);
+                    builder.SetRegion(EmpireStop + "/" + (region ?? "line/" + line));
+                    line++;
+                    if (named != null)
+                    {
+                        builder.PushContext(named);
+                    }
 
-                builder.StartRow();
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
-                }
+                    builder.StartRow();
+                    foreach (Cell cell in row)
+                    {
+                        builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
+                    }
 
-                builder.EndRow();
-                if (named != null)
-                {
-                    builder.PopContext();
+                    builder.EndRow();
+                    if (named != null)
+                    {
+                        builder.PopContext();
+                    }
                 }
+            }
+            finally
+            {
+                builder.PopContext();
             }
 
             builder.SetRegion(null);
@@ -1967,7 +1982,7 @@ namespace ES2Access.Screens
             // The strip is a column of bare icons with no caption over it, so the word is the mod's.
             // Popped in a finally because the walk below has an early return and a catch of its own,
             // and a level left open would take every stop declared after this one with it.
-            builder.PushContext(ModStrings.Get(ModStrings.HudNotificationsPanel));
+            builder.PushContext(ChordNames.Label(ModStrings.Get(ModStrings.HudNotificationsPanel), UiActions.FocusNotifications, 0));
             int count = 0;
             try
             {
@@ -2130,7 +2145,7 @@ namespace ES2Access.Screens
             turns.Reverse();
 
             builder.BeginStop(TurnLogStop);
-            builder.PushContext(ModStrings.Get(ModStrings.HudTurnLogPanel));
+            builder.PushContext(ChordNames.Label(ModStrings.Get(ModStrings.HudTurnLogPanel), UiActions.FocusTurnLog, 0));
             try
             {
                 for (int t = 0; t < turns.Count; t++)

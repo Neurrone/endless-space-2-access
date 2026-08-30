@@ -3166,12 +3166,17 @@ namespace ES2Access.Screens
         /// The rename changes the context's identity (its id is derived from parent and label), which
         /// is what makes leaving and re-entering the stop read the instruction again - the point of
         /// putting it here. The nodes UNDER it key on their own places and are untouched by it.
+        ///
+        /// The focus chord rides on the map's name only. It belongs to the word "map" - it is how the
+        /// player gets back here - and gluing it onto the game's own question would make a sentence out
+        /// of two voices. The suffix is static per binding, so the identity above still turns only on
+        /// which of the two branches answered.
         /// </summary>
         private static string MapContext()
         {
             string instruction = GlobalHud.Instruction();
             return string.IsNullOrEmpty(instruction)
-                ? ModStrings.Get(ModStrings.GalaxyMapPanel)
+                ? ChordNames.Label(ModStrings.Get(ModStrings.GalaxyMapPanel), UiActions.FocusMap, 0)
                 : instruction;
         }
 

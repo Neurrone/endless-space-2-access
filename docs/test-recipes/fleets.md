@@ -289,7 +289,7 @@ the tutorial, put the camera somewhere else
 `Gui.GuiService.ShowWindow<MilitaryScreen>()`, minimize the tutorial page it raises, Tab to a fleet
 row and `POST /input ui.doubleClick`. Sample `DevProbe.Camera()` densely — the excursion lasts under a
 second and polling every ~2 s misses it. Measured after: one continuous move `(55, -40)` →
-`(68.48, -22.85)` and then bit-identical for 100 frames, landing announced as *"Galactic Map, Serpens,
+`(68.48, -22.85)` and then bit-identical for 100 frames, landing announced as *"Galactic Map (Ctrl+G), Serpens,
 group, expanded, Dusay, 0, 0, group, Home System, colonized, 2 Fleets, expanded, 1 of 1, 1st Heroes
 Navy, 0, 0, button, Settler, Docked at Dusay, 5 movement points, collapsed, 8 of 9"*. Before, the same
 route went star → berth `(66.74, -21.21)` → back to `(68.48, -22.85)` about 20 frames later.

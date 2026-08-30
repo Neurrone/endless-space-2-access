@@ -459,9 +459,9 @@ target").
 
 **The Tab order, top to bottom** (owner design 2026-08-29 — what the system IS comes before what is
 in it). Walking it with `FocusStop("hud:empire")` then eleven `ui.next`, the spoken order on a
-colony page is: Controls (the empire banners) → System management scan → **System information** →
-**Spaceport** → **Planets** → Constructibles → Construction queue → Hangar → Quest → Notifications →
-End Turn, and the twelfth wraps back to Controls. The stop keys in declaration order are
+colony page is: Hud (the empire banners, whose first row is Controls) → System management scan →
+**System information** → **Spaceport** → **Planets** → Constructibles → Construction queue → Hangar →
+Quest → Notifications → End Turn, and the twelfth wraps back to the empire banners. The stop keys in declaration order are
 `hud:empire`, `hud:view-title`, `system:side`, `system:side/SpaceportSidePanel`, `system:planets`,
 `system:constructibles`, `system:queue`, `system:hangar`, `hud:quest`, `hud:notifications`,
 `hud:turn` (`system:page`, the traitors-mode toggle, sits between `hud:view-title` and `system:side`
