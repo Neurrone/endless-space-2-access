@@ -21,10 +21,11 @@ namespace ES2Access.Screens
     /// open - by visibility, like everything else here, so nothing has to know which state the box was
     /// left in.
     ///
-    /// A reinforcement threshold draws a number on a circle and explains itself only in a tooltip the
+    /// A reinforcement threshold draws only its ORDINAL on a circle and explains itself in a tooltip the
     /// renderer assembles (<c>RefreshReinforcementsThresholdItem</c> :464-479 sets the class and the
-    /// target), so each is read as a readout whose words come from pointing at it; where there are none,
-    /// the game draws its own "no reinforcements" label instead and that is what the band holds.
+    /// target), so what it says is composed here from the costs behind the track and the pointer is
+    /// aimed at the circle, where that tooltip actually hangs; where there are none, the game draws its
+    /// own "no reinforcements" label instead and that is what the band holds.
     ///
     /// The band of actions is the shared one (<see cref="DiplomacyActions"/>) - this window's action items
     /// are the same prefab shape as the minor-faction window's and the Academy's.
@@ -131,10 +132,23 @@ namespace ES2Access.Screens
 
         /// <summary>The pirates' power level, drawn on a circular gauge with the level written across it.
         /// The gauge is wired to a click that does nothing but exist, so it is read as the readout it is.
+        ///
+        /// The window's own title comes first, outside the band's name: it carries the only sentence
+        /// saying what this whole window is for, and a screen's name is a spoken phrase with no buffer
+        /// behind it, so the title is a row - the first one, where the player lands coming back up the
+        /// stops (the same shape the minor-faction window's identity band opens with).
         /// </summary>
         private void BuildPower(GraphBuilder builder, PirateDiplomacyModalWindow window)
         {
             builder.BeginStop(PowerStop);
+            _cells.Clear();
+            Cells.AddReadout(
+                _cells,
+                AgeWidgets.ChildNamed(window.AgeTransform, "Title", 3),
+                Keys + "window-title"
+            );
+            Cells.EmitLinear(builder, _cells);
+
             builder.PushContext(ModStrings.Get(ModStrings.PiratePower));
             _cells.Clear();
             try
@@ -274,6 +288,18 @@ namespace ES2Access.Screens
             Cells.AddStat(_cells, label, titleKey, Keys + key);
         }
 
+        /// <summary>
+        /// The firepower the pirates have banked towards their next fleet: the caption the game draws
+        /// over the track, then the marks strung along it - or, where the fleet has no reinforcements
+        /// to earn at all, the game's own label saying so.
+        ///
+        /// The caption is a row rather than the band's name because the sentence explaining what the
+        /// track measures hangs on the LABEL itself, not on the group around it, and nothing else here
+        /// would carry it. The marks are the shared circle track (<see cref="ThresholdTracks"/>); what
+        /// each one SAYS is worked out here, because the window draws neither half of it: it overwrites
+        /// every circle's figure with the mark's ordinal (<c>RefreshReinforcementsThresholdItem</c>
+        /// :473) and shows the distance only as a bar filling behind the circle.
+        /// </summary>
         private void Thresholds(PirateDiplomacyModalWindow window)
         {
             AgeTransform none = window.NoReinforcementsLabel;
@@ -282,6 +308,16 @@ namespace ES2Access.Screens
                 Cells.AddReadout(_cells, none, Keys + "no-reinforcements");
             }
 
+            Cells.AddReadout(
+                _cells,
+                AgeWidgets.ChildNamed(window.NextFleetGroup, "ReinforcementsTitle", 3),
+                Keys + "reinforcements-title"
+            );
+
+            IPiratesManagementService pirates = Pirates();
+            PirateFleetReinforcement[] marks = Marks(pirates);
+            float stock = pirates == null ? 0f : pirates.PirateReinforcementsStock;
+            float below = 0f;
             IList<AgeTransform> children = AgeWidgets.DrawnChildren(
                 window.ReinforcementsThresholdsTable
             );
@@ -293,21 +329,72 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                ThresholdItem item = at.GetComponent<ThresholdItem>();
-                AgeTooltip tooltip = item != null && item.CircleTooltip != null
-                    ? item.CircleTooltip
-                    : AgeWidgets.Raw(at);
-                NodeVtable vtable = new NodeVtable
-                {
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
-                        GraphNodes.ValuePart(() => AgeWidgets.TextOf(at)),
-                    },
-                    Sections = GraphNodes.Sections(null, tooltip),
-                };
-                AgeWidgets.PointAt(vtable, at);
-                Cells.Add(_cells, at, ControlId.For(at, Keys + "threshold/" + i), vtable);
+                float min = below;
+                float max = marks != null && i < marks.Length ? min + marks[i].Cost : min;
+                below = max;
+                ThresholdTracks.Add(_cells, at, Mark(at, i, min, max, stock), Keys + "threshold/" + i);
+            }
+        }
+
+        /// <summary>
+        /// What one mark on the firepower track says: which mark it is, and either that the pirates
+        /// have banked it or how far along its own stretch of the track they are.
+        ///
+        /// The thresholds are CUMULATIVE costs, so a mark's stretch runs from everything below it to
+        /// its own total, and the percentage is of that stretch - which is exactly what the bar behind
+        /// the circle draws (<c>ThresholdItem.Bind</c> :26-52 fills it by the same fraction). The
+        /// number is the reading, not the arithmetic behind it: the raw stock and cost are the game's
+        /// own bookkeeping and are never spoken (owner ruling 2026-08-30).
+        ///
+        /// With no costs to divide by, the mark is left at nothing banked. That cannot be met on a
+        /// drawn track - the game populates the table from the same method that reads the service for
+        /// every circle (:413-429), so a circle exists only where the costs answered.
+        /// </summary>
+        private static string Mark(AgeTransform widget, int index, float min, float max, float stock)
+        {
+            string drawn = AgeWidgets.TextOf(widget);
+            string ordinal = string.IsNullOrEmpty(drawn) ? (index + 1).ToString() : drawn;
+            if (max > min && stock >= max)
+            {
+                return ModStrings.Format(ModStrings.PirateThresholdReached, ordinal);
+            }
+
+            double filled = max > min ? (stock - min) / (max - min) : 0.0;
+            filled = filled < 0.0 ? 0.0 : (filled > 1.0 ? 1.0 : filled);
+            return ModStrings.Format(
+                ModStrings.PirateThresholdProgress,
+                ordinal,
+                (int)Math.Round(filled * 100.0)
+            );
+        }
+
+        /// <summary>The service the window reads the pirates' banked firepower from, fetched the
+        /// window's own way (:293) - its handle on the service is private, so there is nothing to
+        /// borrow.</summary>
+        private static IPiratesManagementService Pirates()
+        {
+            try
+            {
+                return Amplitude.Unity.Framework.Services.GetService<IPiratesManagementService>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The reinforcements the next fleet can earn, in the order the track draws them -
+        /// each one's <c>Cost</c> is what the mark above it adds to the total.</summary>
+        private static PirateFleetReinforcement[] Marks(IPiratesManagementService pirates)
+        {
+            try
+            {
+                PirateFleetSpawn spawn = pirates == null ? null : pirates.SelectedPirateFleetSpawn;
+                return spawn == null ? null : spawn.Reinforcements;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

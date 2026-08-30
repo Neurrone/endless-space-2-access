@@ -324,8 +324,9 @@ belong in the files above.
   a row only where it carries a tooltip — the `Captions` doc comment,
   `ES2Access/UI/Captions.cs`) has been applied to
   minor diplomacy, the population overview, the economy/senate/recipe/negotiation headings, and
-  (2026-08-22) the Academy and pirate diplomacy ACTION bands — the last two prefab-verified only,
-  since neither window opens in `[Beginner] test`. The Academy's own "Status" caption over its
+  (2026-08-22) the Academy and pirate diplomacy ACTION bands — neither window opens in
+  `[Beginner] test`, so the Academy's stays prefab-verified while the pirate window's was confirmed
+  live on 2026-08-30 (on a save that has contacted a Lair). The Academy's own "Status" caption over its
   relation panel is NOT converted: its stop still reads the mod's `academy.relation`, and swapping it
   for the game's word is an owner call bundled with the rest of that screen's wording. Left
   as they are, with reasons: `SidePanels.Effects` (:411-450) declares a `PanelFeatureEffects`

@@ -341,7 +341,6 @@ ES2Access/Screens/PopulationScreen.cs | 1 | if (AgeWidgets.Visible(row.Assimilat
 ES2Access/Screens/PopulationScreen.cs | 3 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/PopulationScreen.cs | 1 | if (row == null || row.GuiPopulation == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/PopulationScreen.cs | 1 | if (toggle != null && AgeWidgets.Visible(toggle))
-ES2Access/Screens/PopulationScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/PopulationScreen.cs | 1 | return AgeWidgets.Visible(row.ReadyForAssimilationIcon)
 
 ES2Access/Screens/QuestJournalScreen.cs | 1 | && AgeWidgets.Visible(item)
@@ -583,6 +582,8 @@ ES2Access/UI/TableSheet.cs | 1 | if (header != null && AgeWidgets.Visible(child)
 ES2Access/UI/TableSheet.cs | 1 | if (paintedOnly && widget.Alpha <= 0f)
 ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
 ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > limit || !widget.Visible)
+
+ES2Access/UI/ThresholdTracks.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Painted(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Visible(widget))

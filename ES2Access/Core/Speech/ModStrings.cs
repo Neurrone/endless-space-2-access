@@ -1865,6 +1865,16 @@ namespace ES2Access.Core.Speech
         public const string PirateStanding = "pirate.standing";
         public const string PirateNextFleet = "pirate.next-fleet";
 
+        /// <summary>One mark on the pirate window's additional-firepower track. The game writes the
+        /// mark's ORDINAL on the circle and says nothing else about it in words - how near the next
+        /// fleet is to it lives only in how far the bar behind the circle has filled, and whether it is
+        /// reached only in the circle's alpha - so both phrases are the mod's, each a whole sentence.
+        /// The distance is spoken as a percentage of THIS mark's own stretch of the track, which is
+        /// what the bar draws; the raw stock and cost are the game's arithmetic, not a reading (owner
+        /// ruling 2026-08-30).</summary>
+        public const string PirateThresholdReached = "pirate.threshold-reached";
+        public const string PirateThresholdProgress = "pirate.threshold-progress";
+
         public const string ScreenAcademyDiplomacy = "screen.academy-diplomacy";
         public const string ScreenAcademyModal = "screen.academy-modal";
         public const string AcademyRelation = "academy-diplomacy.relation";
@@ -2684,6 +2694,8 @@ namespace ES2Access.Core.Speech
             { PiratePower, "Pirate power" },
             { PirateStanding, "Standing" },
             { PirateNextFleet, "Next pirate fleet" },
+            { PirateThresholdReached, "Threshold {0}, reached" },
+            { PirateThresholdProgress, "Threshold {0}, {1} percent" },
             { ScreenAcademyDiplomacy, "Academy diplomacy" },
             { ScreenAcademyModal, "The Academy" },
             { AcademyRelation, "Relation" },

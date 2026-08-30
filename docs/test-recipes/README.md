@@ -35,7 +35,7 @@ sibling file for that family, never here.
 | `scanner.md` | The scanner's tiers, categories, oracles, Alt+Home and custom categories |
 | `systems-and-planets.md` | The star-system page, the management round trip, orbital and planet cards, population, outposts |
 | `empire-screens.md` | Research, quests, senate, economy, military, ship designer, heroes, tables |
-| `modals-and-outgame.md` | Opening modals from `/eval`, the election wizard, minor civilizations, DLC, the out-game family, chat |
+| `modals-and-outgame.md` | Opening modals from `/eval`, the election wizard, minor civilizations, the pirate window, DLC, the out-game family, chat |
 | `mod-settings.md` | The mod's own settings window: key bindings, the Scanner tab, the physical key paths |
 
 Each sibling ends with a `## Fixture-blocked` section gathering that family's blocked items.

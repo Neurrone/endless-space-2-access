@@ -502,7 +502,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One collection threshold: the number of them it takes, and whether the empire has
-        /// that many. The effect lines the circle explains itself with stay reviewable.</summary>
+        /// that many. The circle it is drawn as, and the effect lines it explains itself with, are the
+        /// shared track's business (<see cref="ThresholdTracks"/>).</summary>
         private static void AddThreshold(
             List<Cell> cells,
             AgeTransform widget,
@@ -511,47 +512,20 @@ namespace ES2Access.Screens
             int count
         )
         {
-            // Banding input: Cells.Add takes the threshold without asking the gate, and the circles are
-            // worked into a row by where they are drawn along the track.
-            if (widget == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            ThresholdItem item = widget.GetComponent<ThresholdItem>();
-            AgeTransform circle = AgeWidgets.ChildNamed(widget, "Circle", 2) ?? widget;
-            AgeTooltip tooltip =
-                item != null && item.CircleTooltip != null
-                    ? item.CircleTooltip
-                    : AgeWidgets.Raw(circle);
-            if (tooltip == null)
-            {
-                return;
-            }
-
+            ThresholdItem item = widget == null ? null : widget.GetComponent<ThresholdItem>();
             string drawn = item == null ? null : AgeText.Label(item.ThresholdMaxValue);
             string figure = string.IsNullOrEmpty(drawn) ? threshold.ToString() : drawn;
             bool reached = threshold > 0 && count >= threshold;
-            string words = ModStrings.Format(
-                reached
-                    ? ModStrings.PopulationThresholdReached
-                    : ModStrings.PopulationThresholdNotReached,
-                figure
-            );
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => words),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, circle);
-            Cells.Add(
+            ThresholdTracks.Add(
                 cells,
-                circle,
-                ControlId.For(widget, "population:threshold/" + index),
-                vtable
+                widget,
+                ModStrings.Format(
+                    reached
+                        ? ModStrings.PopulationThresholdReached
+                        : ModStrings.PopulationThresholdNotReached,
+                    figure
+                ),
+                "population:threshold/" + index
             );
         }
 

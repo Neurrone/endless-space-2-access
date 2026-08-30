@@ -735,6 +735,8 @@
   "pirate.power": "Pirate power",
   "pirate.standing": "Standing",
   "pirate.next-fleet": "Next pirate fleet",
+  "pirate.threshold-reached": "Threshold {0}, reached",
+  "pirate.threshold-progress": "Threshold {0}, {1} percent",
   "screen.academy-diplomacy": "Academy diplomacy",
   "screen.academy-modal": "The Academy",
   "academy-diplomacy.relation": "Relation",

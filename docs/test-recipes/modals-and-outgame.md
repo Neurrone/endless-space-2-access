@@ -182,9 +182,10 @@ word on the label and hangs the sentence on the group, and three different group
 named the relation panel "Niris" and left both sentences with no surface — ES2 facts).
 **The same propagation reached the Academy and pirate windows**, whose action bands carry the
 identical shape: `academy-diplomacy:actions-title` and `pirate:actions-title` name those stops by the
-game's drawn "Actions" and carry its sentence, with `diplomacy.actions-band` as the fallback. Both
-are fixture-blocked (neither window opens in `[Beginner] test`), so that pair is prefab-verified
-only. The Academy's own `RelationInfo/TitleGroup` ("Status") is NOT converted — its stop is still
+game's drawn "Actions" and carry its sentence, with `diplomacy.actions-band` as the fallback. Neither
+window opens in `[Beginner] test`; the ACADEMY half is still prefab-verified only, while the pirate
+half was measured live on 2026-08-30 (a save where a Pirate Lair has been contacted — see "The pirate
+window" below) and reads as designed. The Academy's own `RelationInfo/TitleGroup` ("Status") is NOT converted — its stop is still
 named by `academy.relation`, awaiting the owner's ruling with the rest of that screen's wording.
 
 **The gauge's four bands are named by the game, twice over** (2026-08-22): "CORDIAL (25)" — the
@@ -236,6 +237,36 @@ the unshown window — `MinorFactionCard.Refresh(playerEmpire, minorEmpire, Gui.
 the card's two figure rows must read **"Ally, None"** (or "Ally, Unknown Empire") and
 **"Relation, UNKNOWN (?, +0/turn)"**, with the icons' sentences still in their buffers. Every other
 popup's drawn body must be unchanged — walk a battle report and a construction report and diff.
+
+## The pirate window
+
+**Walking the additional-firepower track** (`PirateDiplomacyModalWindow`). The window needs a save
+where the player has contacted a Pirate Lair, which `[Beginner] test` is not; the routes in are the
+diplomacy page's pirate button and a pirate-held system's diplomacy button. Expected (`/gui/graph`,
+measured 2026-08-30):
+
+- `pirate:power` opens on `pirate:window-title` — the drawn "Pirate Diplomacy" carrying the only
+  sentence about what the whole window is for — and the "Pirate power" band comes after it. Same
+  shape as `minor:identity`'s first row.
+- `pirate:next-fleet` ends in the track: `pirate:reinforcements-title` reading **"Additional
+  Firepower:"** with its own sentence (the game hangs that one on the LABEL, not on the group), then
+  one `pirate:threshold/N` per circle reading **"Threshold 1, 21 percent"** or **"Threshold 1,
+  reached"**. The `ReinforcementsThresholdsKeyCircle` beside them repeats the caption's sentence and
+  is left as decoration.
+- The percentage is of THAT mark's own stretch of the track, never of the whole: the thresholds are
+  cumulative costs, so mark N runs from the sum below it to its own total
+  (`RefreshReinforcementsThresholdItem`). Cross-check against the drawing — `.\crop-shot.ps1` the
+  `ReinforcementsGroup` rect: the orange fill before circle 1 must be about the fraction the first
+  mark speaks, and a BRIGHT circle must be a "reached" node.
+- The circle's effect lines ("Bonus effects applied to the Fleet:" / "+1 Movement Points on Ships")
+  are buffer-only. Their tooltip hangs on the Circle CHILD, so a node aimed at the item AROUND it
+  makes `DevProbe.Tooltip()` answer `shown:false` with an empty buffer — that was the defect fixed on
+  2026-08-30, and it is what the walk re-checks: focus a threshold, `TooltipDelay(0)`, step off and
+  back on, and both `Tooltip()` and `/gui/graph?buffers=1` must carry the lines.
+- The states the fixture's stock cannot reach (a mark REACHED, a mark clamped below its own stretch)
+  are exercised on the composer instead of the game: reflect the private static
+  `ES2Access.Screens.PirateDiplomacyScreen.Mark` from `/eval` and invoke it with
+  `(widget, index, min, max, stock)` triples.
 
 ## DLC panels and windows
 
