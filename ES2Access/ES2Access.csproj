@@ -10,7 +10,7 @@
     <!-- The mod's single version source: the build stamps it into the assembly and ModEntry reads it
          back, so nothing in the sources carries a second copy. Without the second line a newer SDK
          appends "+<git sha>" to the informational version, which would be spoken at startup. -->
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DebugType>full</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
