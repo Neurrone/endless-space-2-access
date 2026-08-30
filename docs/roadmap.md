@@ -470,9 +470,10 @@ belong in the files above.
 - One-row tables still say "1 of 1" (the empire page's single system): the count is the
   answer to "how many rows", so it is spoken even for one. Say if it should be suppressed
   at 1.
-- Document-shaped `GraphSheet` regions (battle report lines, negotiation terms,
-  notification tables) inherited the row positions the tables gained — rows of the same
-  sheet engine. Say if a document-shaped region should stay silent instead.
+- Document-shaped `GraphSheet` regions (negotiation terms, notification tables) inherited
+  the row positions the tables gained — rows of the same sheet engine. Say if a
+  document-shaped region should stay silent instead. (The advanced battle report's phase
+  grid was the third of these and is gone: 2026-08-30 made it a flat list.)
 - Scan-lens hero efficiency speaks the dial's drawn angle as "{0}%" (`scan.hero-efficiency`
   — mod-authored, the game draws no number). Sign off or reword.
 - Chat polish trio: Escape-out-of-typing is silent when the cursor was already the box

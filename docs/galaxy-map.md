@@ -491,8 +491,27 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   `EndTurnWindow` survives, while `TopTitlePanel` keeps the lens-naming label even hidden.
   `ScanViewWindowCaptionsPanel` is a pool that does not clean up (surplus children stay fully
   visible with stale words, arranged past the table's extents), so counts come from the lens's
-  own `GuiElement` data through `Prerequisite.Check`. `BattleScanViewWindow` has no header (fall
-  back to `Shown`), and `StarSystemOrbitalScanViewWindow` is an unregistered stub.
+  own `GuiElement` data through `Prerequisite.Check`, and `StarSystemOrbitalScanViewWindow` is an
+  unregistered stub. `IsInScanView` is the raw flag and NOT the question worth asking: a BATTLE,
+  a ground battle and the system-discovery and planet-destruction cinematics all set it while
+  meaning their own overlay rather than a lens over the map. The game's own compound for "the
+  galaxy scan view is what is up" is `GuiManager.IsInGalaxyScanView` (:355 —
+  `IsInScanView && !IsInBattle && !IsInGroundBattle && !IsInSystemDiscoveryView &&
+  !IsInPlanetDestructionView`), and that is what the mod's scan-view screen gates on, so it stands
+  down from all five (owner ruling 2026-08-30); a battle's Scan toggle stays `battle:scan` on the
+  battle screen.
+- **The mode outlives the battle by the length of a fade**, which is the one place
+  `IsInGalaxyScanView` is not enough. `IsInBattle` reads the VIEW LEVEL
+  (`CurrentGalaxyViewLevel is GalaxyViewLevel_Encounter`), but the game's auto-off for a scan
+  toggle left checked runs from `BattleScreen.OnEndHide` — the END of the screen's fade-out. In
+  between, the galaxy's own lens genuinely comes up. Measured across two teardowns (2026-08-30):
+  the window opens the frame the view level flips to `GalaxyViewLevel_GalaxyOverview` and closes
+  the frame `IsInScanView` goes false, lasting 3 frames on one run and 288 (~9.5 s) on another —
+  so it cannot be waited out. The gate is `BattleScreen.Visible` (see `ScanViewScreen.BattleEnding`):
+  `GuiPanel.Shown => (Visible && !Hiding) || Showing` is already false for the whole fade, whereas
+  `Visible` is true from the battle appearing until `GuiPanel.OnEndHide` clears it — in the same
+  call that ran the auto-off, so the gate releases on the frame the mode ends and can never outlast
+  its own backstop.
 - **A layer band is NOT a lens: nine descriptors map onto six lens titles**
   (`TopTitlePanel.Load`, :116-124 — Painting+GalaxyMap = Diplomacy, InformativeGalaxy+Constellation
   = Trade, Systems = Economy, System+SystemOverview = the system overview, plus SystemManagement

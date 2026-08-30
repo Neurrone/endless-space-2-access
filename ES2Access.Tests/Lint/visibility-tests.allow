@@ -14,16 +14,21 @@ ES2Access/Screens/AcademyScreen.cs | 1 | AgeTooltip found = child == null || !Ag
 ES2Access/Screens/AcademyScreen.cs | 1 | if (band == null || !AgeWidgets.Visible(band))
 
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | && AgeWidgets.Visible(button.AgeTransform)
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (card != null && AgeWidgets.Visible(card.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 2 | if (container == null || !AgeWidgets.Visible(container))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (gauge == null || !AgeWidgets.Visible(gauge.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (icon != null && AgeWidgets.Visible(icon))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (phase == null || !AgeWidgets.Visible(phase.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (stat != null && AgeWidgets.Visible(stat.AgeTransform))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (stat == null || !AgeWidgets.Visible(stat.AgeTransform))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return container == null || !AgeWidgets.Visible(container)
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return widget != null && AgeWidgets.Visible(widget) ? widget : null;
 
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | && AgeWidgets.Visible(button.AgeTransform)
-ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (!AgeWidgets.Visible(gauge))
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (AgeWidgets.Visible(window.EnemyDeckGroup))
 
 ES2Access/Screens/BattleNotifications.cs | 2 | if (group == null || !AgeWidgets.Visible(group))
@@ -387,7 +392,6 @@ ES2Access/Screens/ResourcesExportModScreen.cs | 2 | if (widget == null || !AgeWi
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | || AgeWidgets.Visible(window.LoadingGroup);
 
 ES2Access/Screens/ScanViewScreen.cs | 1 | && AgeWidgets.Visible(label.AgeTransform)
-ES2Access/Screens/ScanViewScreen.cs | 1 | AgeWidgets.Visible(window.AgeTransform)
 ES2Access/Screens/ScanViewScreen.cs | 1 | IList<string> trade = AgeWidgets.Visible(window.TradingGroup)
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (!AgeWidgets.Painted(label.BattleLine))
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (!AgeWidgets.Painted(label.RelationGroup))
@@ -404,6 +408,7 @@ ES2Access/Screens/ScanViewScreen.cs | 1 | if (widget == null || !AgeWidgets.Pain
 ES2Access/Screens/ScanViewScreen.cs | 2 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (window == null || !window.Shown || !AgeWidgets.Visible(window.NodeInfoGroup))
 ES2Access/Screens/ScanViewScreen.cs | 1 | line != null && AgeWidgets.Painted(line) && AgeWidgets.Operable(line);
+ES2Access/Screens/ScanViewScreen.cs | 1 | return battle != null && (battle.Visible || battle.Showing);
 ES2Access/Screens/ScanViewScreen.cs | 1 | return item != null && AgeWidgets.Painted(item.AgeTransform) ? item : null;
 ES2Access/Screens/ScanViewScreen.cs | 1 | return panel != null && AgeWidgets.Painted(panel.AgeTransform);
 ES2Access/Screens/ScanViewScreen.cs | 1 | return rating == null || !AgeWidgets.Painted(rating.AgeTransform)

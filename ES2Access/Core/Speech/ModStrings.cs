@@ -1614,6 +1614,21 @@ namespace ES2Access.Core.Speech
         public const string BattleMediumRangeShare = "battle.medium-range-share";
         public const string BattleLongRangeShare = "battle.long-range-share";
 
+        /// <summary>Which side had the morale bonus, for the advanced report's heading. The game draws
+        /// this as a happiness icon tinted with the holder's empire colour and titles it "Morale bonus";
+        /// the colour is the whole of WHOSE it is, and a title read out is a caption a listener cannot
+        /// answer "mine or theirs?" from (owner-reported 2026-08-30). So the mod states the fact and
+        /// names the side, and the game's own definition of the bonus stays in the review buffer behind
+        /// it. Past tense: the report is written after the fight.</summary>
+        public const string BattleYourMoraleBonus = "battle.your-morale-bonus";
+        public const string BattleEnemyMoraleBonus = "battle.enemy-morale-bonus";
+
+        /// <summary>How much of a side's shooting missed, for the advanced report's damage gauges. The
+        /// game writes the COUNT beside the band and draws the SHARE as the band's height, with no
+        /// figure on it and no total written anywhere - so the phrase says the share and no total, which
+        /// is exactly what the picture says.</summary>
+        public const string BattleShotsMissed = "battle.shots-missed";
+
         /// <summary>Which of the three range rings is drawn thickest - the range BOTH fleets are best
         /// suited to, which is where the fight is likely to be decided.</summary>
         public const string BattleShortRangeMatters = "battle.short-range-matters";
@@ -2569,6 +2584,9 @@ namespace ES2Access.Core.Speech
             { BattleShortRangeShare, "Effectiveness at short range: {0}% yours, {1}% enemy's" },
             { BattleMediumRangeShare, "Effectiveness at medium range: {0}% yours, {1}% enemy's" },
             { BattleLongRangeShare, "Effectiveness at long range: {0}% yours, {1}% enemy's" },
+            { BattleYourMoraleBonus, "Your fleet had the morale bonus" },
+            { BattleEnemyMoraleBonus, "Their fleet had the morale bonus" },
+            { BattleShotsMissed, "{0}% of shots missed" },
             { BattleShortRangeMatters, "Short range matters most" },
             { BattleMediumRangeMatters, "Medium range matters most" },
             { BattleLongRangeMatters, "Long range matters most" },

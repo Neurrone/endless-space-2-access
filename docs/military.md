@@ -120,6 +120,45 @@ Index and charter: `README.md`.
   maximum; and `PhaseReports` can skip a phase index outright (measured 0, 1, 2, 4), so the game's own
   phase numbering has gaps in it. Everything else about the stream, with the counts, is
   `test-recipes/battles.md`, **What the fight says**.
+- **The advanced report's morale badge is a GROUP fact drawn once per phase.**
+  `AdvancedReportPhaseItem.Refresh` (:39-62) asks
+  `EncounterGroup.GetPropertyValue(SimulationProperties.EncounterGroup.MoraleBonus)` of each side and
+  stamps a `[happiness]` glyph tinted with that side's empire colour onto EVERY fought phase column —
+  the same answer, repeated. So it is a fact about the side, not about the phase, and a reader that
+  put it on each phase would be saying one thing N times (mod policy: one line per holding side, in
+  that side's heading). The game names it: `%SpaceBattleMoraleBonusTitle` = "Morale bonus",
+  `%SpaceBattleMoraleBonusDescription` = "A fleet gets a morale bonus when it has more active
+  flotillas than its opponent." — the same pair `BattleStateGroupPanel` hangs on the in-battle badge
+  as the `SpaceBattleMoraleBonus` GuiElement. But WHOSE bonus it is, the game says only in the
+  glyph's tint, so the mod's line has to state it (`battle.your-morale-bonus` /
+  `battle.enemy-morale-bonus`) and the game's title, read out, is a caption a listener cannot answer
+  "mine or theirs?" from (owner-reported 2026-08-30). The description stays behind the line.
+- **The advanced report binds the PLAYER subclass behind a base-typed field.**
+  `AdvancedEncounterReportModalWindow.PlayerBattleGroupReportPanel` is declared
+  `BattleGroupReportPanel` (:21), but the instance is `PlayerBattleGroupReportPanel` — the only
+  panel with a `RewardsTable` and the three labels under it (experience gained, resources earned,
+  salvage rescued). A reader that trusts the declared type loses all three; cast, do not trust the
+  field. The enemy's field holds `EnemyBattleGroupReportPanel`, which has no rewards at all.
+- **A damage bar's tooltip has a fourth feature nobody sees on an ordinary battle.** The
+  `DamageGaugeCell` tooltip class's panel definition is `PanelFeatureHeader`,
+  `PanelFeatureDescriptionGameplay`, `PanelFeatureSeparator`, `PanelFeatureAffectedByPlay`, and the
+  last renders `%PanelFeatureAffectedByOnePlayDescription` / `…TwoPlaysDescription` off
+  `GuiDamageData.AffectingPlayNames` — a list the game computes from the fought plans' modifiers
+  against the bar's own properties (:99-152) and which is EMPTY for most bars, so the feature hides
+  itself and a reader taking only Title and Description looks complete. Read a tooltip class's
+  feature list off `GuiTooltipWindow.TooltipDescription.PanelFeaturesDescriptions` (each entry's
+  `Prefab` names the feature) before concluding a tooltip has been fully read; `DevProbe.Tooltip()`
+  reports only the features that RENDERED.
+- **The advanced report's two roster panels are different shapes.**
+  `BattleGroupReportPanel` (the player's) draws a `BattleFlotillasPanel` and one `FlotillaLine` per
+  flotilla; `EnemyBattleGroupReportPanel` overrides `Refresh` to bind a single `BattleGarrisonPanel`
+  and draws no flotilla line at all. The window nonetheless keeps arena cards for BOTH sides
+  (`Player/EnemyFlotillaCard2DContainer`, three each, only the live flotilla's `Visible`), so the
+  sentence naming a flotilla's optimal range has a roster row to live on for the player and none for
+  the enemy. Unlike the ADVANCED SETUP window, where the enemy has no cards either. The
+  fighter/bomber squadron cards are symmetric on the report, though: BOTH sides' arena containers are
+  `EncounterPlayFlotillaCardContainer` with three `EncounterFighterBomberCard2D` each, where the
+  setup window gives the enemy a single fleet-wide card.
 - **A ground-battle outcome's second click is on the item's own transform.** Measured off the
   unbound prefab (`GroundBattleOutcomeSelectionNotificationWindow.OutcomeItemPrefab`, readable with no
   battle running): `GroundBattleOutcomeItem.Toggle` sits on the item's own `AgeTransform`, carries

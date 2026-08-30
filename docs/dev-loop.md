@@ -253,10 +253,13 @@ per-frame recorder: start `POST /wait?timeout=30000` with body
 `GET /log?since=0&grep=trace` (collapse runs of identical lines — a 30 s trace is ~1800 of them).
 Each line is the stack, the focused screen, the cursor, the node count that screen declared, and the
 tutorial/window state. A single-digit node count on an active page is a page declaring somebody
-else's content. The same per-frame evaluation makes a PLAIN boolean predicate an existence test over
-a whole transition: `satisfied:false` after N frames proves no frame in that window had the property
-(154 frames of a popup's arrival, never ready-and-unpainted) — but only once a weaker predicate that
-DOES fire proves the window was really sampled.
+else's content. For CUSTOM fields, `var td = new System.Collections.ArrayList();` and wait on
+`td.Add(<string>) >= 0 && <defect>` — `Add` returns an index, so one plain expression records every
+frame AND stops on the defect; `td` persists for an IIFE to read back deduped. One recording wait,
+never two chained around a window — the round trip between them loses frames. That same per-frame
+evaluation makes a PLAIN boolean predicate an existence test over a whole transition:
+`satisfied:false` after N frames proves no frame had the property — but only once a weaker predicate
+that DOES fire, or a recorded transition, proves the window was really sampled.
 
 **Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart —
 a no-delay loop does not fail loudly, it reports a plausible WRONG route (rows appearing
