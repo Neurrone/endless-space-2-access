@@ -632,7 +632,8 @@ namespace ES2Access.UI
 
         /// <summary>
         /// The buy-out buttons the line draws along its right-hand end, one per currency the game is
-        /// willing to consider. A refused one is left DRAWN and switched off with the reason in its own
+        /// willing to consider, each with the price it writes on itself (<see cref="Buyouts.Cost"/>).
+        /// A refused one is left DRAWN and switched off with the reason in its own
         /// tooltip (<c>ConstructionLine.RefreshBuyout</c> :272-343), so it is declared and refusing
         /// rather than dropped - the player hears which currencies exist here and why today's answer is
         /// no. One the game has hidden outright (missing technology, wrong affinity, another empire's
@@ -662,7 +663,8 @@ namespace ES2Access.UI
                             ModStrings.Format(
                                 ModStrings.SystemBuyOut,
                                 AgeText.Clean(Gui.GetLocalizedTitle("Empire" + it.Resource))
-                            )
+                            ),
+                        value: () => Buyouts.Cost(it)
                     );
                 }
             }

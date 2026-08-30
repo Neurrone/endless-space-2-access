@@ -113,7 +113,8 @@ namespace ES2Access.UI
             List<CardAction> found,
             AgeTransform widget,
             Func<string> label,
-            bool keptWhileFaded = false
+            bool keptWhileFaded = false,
+            Func<string> value = null
         )
         {
             // Flow control AND a synthetic node's own existence test: where the caller has measured
@@ -136,6 +137,7 @@ namespace ES2Access.UI
                     Label = label,
                     Offered = () => AgeWidgets.Offered(at),
                     KeptWhileFaded = keptWhileFaded,
+                    Value = value,
                 }
             );
         }
@@ -257,6 +259,11 @@ namespace ES2Access.UI
                         offered,
                         tooltip
                     );
+                if (toggle == null && action.Value != null)
+                {
+                    vtable.Announcements.Add(GraphNodes.ValuePart(action.Value));
+                }
+
                 // The refusal in the game's own words, for a button whose tooltip is the assembled kind
                 // and so is only indicated. A button whose tooltip is plain text already says it.
                 GraphNodes.AddRefusal(vtable, tooltip, offered);

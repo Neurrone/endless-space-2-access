@@ -935,10 +935,7 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Offered(at),
                 tooltip
             );
-            // The price the button writes on itself, and only while the button is on offer: a refused
-            // one carries a marker there rather than a number ("x", "-") and its tooltip already names
-            // the amount that cannot be afforded.
-            vtable.Announcements.Add(GraphNodes.ValuePart(() => BuyoutCost(it, at)));
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => Buyouts.Cost(it)));
             GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Offered(at));
             AgeWidgets.PointAt(vtable, at);
             cells.Add(
@@ -949,20 +946,6 @@ namespace ES2Access.Screens
                     Vtable = vtable,
                 }
             );
-        }
-
-        private static string BuyoutCost(BuyoutButton buyout, AgeTransform widget)
-        {
-            try
-            {
-                return AgeWidgets.Offered(widget) && buyout.CostLabel != null
-                    ? AgeText.Label(buyout.CostLabel)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static string ResearchText(Empire empire)
