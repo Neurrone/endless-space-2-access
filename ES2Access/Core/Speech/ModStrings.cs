@@ -1376,9 +1376,14 @@ namespace ES2Access.Core.Speech
         /// the same reason the fleet panel announces itself. Each phrase names the panel with the word
         /// the player will then hear as the region they are walking, and the system whose row was
         /// clicked. The construction cell opens the game's constructibles and queue panels side by side
-        /// and they are ONE thing to the player, so they share one phrase.</summary>
-        public const string EmpirePlanetsPanelOpened = "empire.planets-panel-opened";
-        public const string EmpirePlanetsPanelClosed = "empire.planets-panel-closed";
+        /// and they are ONE thing to the player, so they share one phrase. The status and population
+        /// cells slide out the same cards panel in two drawn modes - with the planet action buttons,
+        /// or with the population rings - and those are two different answers to a press, so each mode
+        /// has a phrase of its own.</summary>
+        public const string EmpirePlanetActionsPanelOpened = "empire.planet-actions-panel-opened";
+        public const string EmpirePlanetActionsPanelClosed = "empire.planet-actions-panel-closed";
+        public const string EmpirePopulationPanelOpened = "empire.population-panel-opened";
+        public const string EmpirePopulationPanelClosed = "empire.population-panel-closed";
         public const string EmpireConstructionPanelOpened = "empire.construction-panel-opened";
         public const string EmpireConstructionPanelClosed = "empire.construction-panel-closed";
         public const string EmpireHangarPanelOpened = "empire.hangar-panel-opened";
@@ -2446,8 +2451,10 @@ namespace ES2Access.Core.Speech
             { EmpireRelicSlotAssign, "Assign relics" },
             { EmpireRelicSlotRemove, "Remove relics" },
             { EmpirePopulationSent, "Sent {0} to {1} by spaceport" },
-            { EmpirePlanetsPanelOpened, "Planets panel open for {0}" },
-            { EmpirePlanetsPanelClosed, "Planets panel closed" },
+            { EmpirePlanetActionsPanelOpened, "Planet actions panel open for {0}" },
+            { EmpirePlanetActionsPanelClosed, "Planet actions panel closed" },
+            { EmpirePopulationPanelOpened, "Population panel open for {0}" },
+            { EmpirePopulationPanelClosed, "Population panel closed" },
             { EmpireConstructionPanelOpened, "Construction panel open for {0}" },
             { EmpireConstructionPanelClosed, "Construction panel closed" },
             { EmpireHangarPanelOpened, "Hangar panel open for {0}" },

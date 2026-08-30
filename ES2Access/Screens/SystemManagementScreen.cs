@@ -1379,10 +1379,12 @@ namespace ES2Access.Screens
                 // declares exactly these off the same prefab family (<c>EmpireScreen.CardButtons</c>)
                 // and this page declared none of them, so choosing a planet's specialization was
                 // unreachable from the system page by keyboard at all. Each names itself in the
-                // sentence its own tooltip explains it with.
-                CardActions.AddNamedByTooltip(found, label.BuildInfrastructureButton);
-                CardActions.AddNamedByTooltip(found, label.ReduceAnomalyButton);
-                CardActions.AddNamedByTooltip(found, label.TerraformButton);
+                // sentence its own tooltip explains it with - and each is kept while DRAWN, because
+                // the game switches them off with the reason appended to that tooltip and a blocked
+                // one should refuse rather than vanish.
+                CardActions.AddRefusableNamedByTooltip(found, label.BuildInfrastructureButton);
+                CardActions.AddRefusableNamedByTooltip(found, label.ReduceAnomalyButton);
+                CardActions.AddRefusableNamedByTooltip(found, label.TerraformButton);
                 AddAnomalyHints(found, label);
                 AddCuriosities(found, label);
             }

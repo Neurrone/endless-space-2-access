@@ -204,6 +204,20 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The same tooltip-named button, kept while the game DRAWS it rather than only while
+        /// it would dispatch it - for the planet card's build buttons, which the game switches off with
+        /// the failure appended to that same tooltip (<c>PlanetCard.RefreshBuildInfrastructureButton</c>
+        /// :615-634 and its two siblings; <c>PlanetLabel_SystemManagement</c> :814-826 the same shape).
+        /// Collected through <see cref="AddNamedByTooltip"/> these VANISHED when refused, when the
+        /// refusal's reason - "no relevant construction" - is what the player opened the card to ask;
+        /// declared-and-refusing is the policy <see cref="Emit"/> already states for a blocked button.
+        /// </summary>
+        public static void AddRefusableNamedByTooltip(List<CardAction> found, AgeControl control)
+        {
+            AgeTransform at = AgeWidgets.Transform(control);
+            AddRefusable(found, at, NameFromTooltip(at));
+        }
+
         /// <summary>The words to call a control the game names ONLY in the sentence its own tooltip
         /// opens with, resolved when they are spoken - for a caller assembling its own node rather than
         /// declaring one through <see cref="AddNamedByTooltip"/>.</summary>

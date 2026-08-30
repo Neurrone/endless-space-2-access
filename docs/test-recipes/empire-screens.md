@@ -258,31 +258,43 @@ the player's own gesture are **`[Beginner] access test`** (turn 32, FOUR coloniz
 Primus, Ita, Sabel — the one to use for anything that needs a row swap) and **`unlocked`** (turn 1,
 one system, Xiu).
 
-**The panels a cell slides out, and their announcements.** The three openers and what each says
-(measured 2026-08-29 on `[Beginner] access test`, all through `POST /input`): the STATUS cell (col 1)
-and the POPULATION cell (col 2) both open the planet-cards panel — *"Planets panel open for ⟨system⟩"*;
+**The panels a cell slides out, and their announcements.** The four openers and what each says
+(measured 2026-08-29, phrases re-measured 2026-08-30, on `[Beginner] access test`, all through
+`POST /input`): the STATUS cell (col 1) and the POPULATION cell (col 2) both open the planet-cards
+panel but in the game's two DIFFERENT card modes (`PlanetCard.DisplayMode`, picked by which cell
+was clicked in `StarSystemsManagementPanel.OnLineSelection` :311-318) — status is Actions mode with
+the colonize/specialization/terraform buttons on each card, *"Planet actions panel open for
+⟨system⟩"*; population is Population mode with the slot rings and NO action buttons at all
+(`PlanetActionsTable.Visible` false), *"Population panel open for ⟨system⟩"*;
 the CONSTRUCTION cell (col 11) opens the game's constructibles and queue panels together and is ONE
 announcement — *"Construction panel open for ⟨system⟩"*; the HANGAR cell (col 13) — *"Hangar panel open
 for ⟨system⟩"*. Walk the columns with `ui.right` from the row node (`ui.home` goes to the HEADER row,
 not to column 0, and Enter there sorts the table). The HERO cell is col 4, and Enter on it opens a
 modal — close it with `Gui.GuiService.HideWindow(Gui.GuiService.GetWindow<HeroSelectionModalWindow>(false))`,
 because `ui.back` does not.
-Swaps say only the NEW opening: stepping down the rows with the Status column held gives *"Planets
-panel open for Ita"*, *"… Primus"*, *"… Sabel"* one line each, and Construction → Hangar on one row gives
-just the hangar line. A status↔population swap on the SAME row is silent by design (one name covers
-both card modes). The **close** line needs a gesture that leaves the page standing: pressing the
+Swaps say only the NEW opening: stepping down the rows with the Status column held gives *"Planet
+actions panel open for Ita"*, *"… Primus"*, *"… Sabel"* one line each, and Construction → Hangar on one
+row gives just the hangar line. A status↔population swap on the SAME row also announces (measured
+2026-08-30: *"Population panel open for Dusay"* then *"Planet actions panel open for Dusay"*) — it was
+silent until then because one Detail member covered both card modes, which was the defect that hid
+the specialization button: a player who opened the panel from the population cell had no way to hear
+that the status cell's panel is a different one carrying the planet action buttons. The **close** line
+needs a gesture that leaves the page standing: pressing the
 already-selected **Systems tab** re-shows the table panel, whose `GuiTable.BeginShow` nulls the
 selection and hides everything under it — *"Hangar panel closed"* / *"Construction panel closed"* /
-*"Planets panel closed"*. Leaving the page, and opening the hero modal, both pop the mod screen first,
+*"Planet actions panel closed"* / *"Population panel closed"*. Leaving the page, and opening the hero modal, both pop the mod screen first,
 so neither says a close line; arriving says nothing either (the watch baselines on push).
 
 **The specialization list from a planet card** (`screen.planet-constructibles`, layer 20, over the
-empire page at 15). Route: population or status cell → Tab to `empire:detail/planets` → `ui.right` to
-expand a card → Enter on its "Click to select a specialization Improvement…" button. **No save has an
-ENABLED one**: `PlanetCard.RefreshBuildInfrastructureButton` draws the button only for a colonized
-planet of a Colony-state system and enables it only when
+empire page at 15). Route: STATUS cell only (Actions mode is the one that draws the card buttons;
+the population cell's mode has none) → Tab to `empire:detail/planets` → `ui.right` to
+expand a card → Enter on its "Click to select a specialization Improvement…" button. **No fixture
+save has an ENABLED one as saved** (a session advanced past the right research does get one —
+measured live 2026-08-30, turn 37 off `[Beginner] access test`: Raia's button enabled, the list
+offering "SPIN Project" for real): `PlanetCard.RefreshBuildInfrastructureButton` draws the button
+only for a colonized planet of a Colony-state system and enables it only when
 `DepartmentOfIndustry.GetAvailableConstructibles(planet, PlanetImprovementDefinition, Discard)` is
-non-empty, and every planet in every save answers "No relevant or available construction is
+non-empty, and every planet in every fixture answers "No relevant or available construction is
 available" (Terraform needs `TerraformationGameplayUnlocked`; Reduce Anomaly needs a reduction the
 empire has researched — Primus I has the anomaly and not the tech). Force it with
 `card.BuildInfrastructureButton.Enable = true` and press through the mod's own `ui.activate`: the

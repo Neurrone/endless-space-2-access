@@ -725,13 +725,20 @@ namespace ES2Access.Screens
 
         // ---- the panels a cell slides out ----
 
-        /// <summary>What the table has under it - the three things a cell can slide out, as the player
+        /// <summary>What the table has under it - the four things a cell can slide out, as the player
         /// meets them. The construction cell shows the game's constructibles and queue panels side by
-        /// side, which is one thing to press a cell for and so one member here.</summary>
+        /// side, which is one thing to press a cell for and so one member here. The status and
+        /// population cells slide out the SAME cards panel in two drawn modes
+        /// (<c>StarSystemsManagementPanel.OnLineSelection</c> :311-318 picks by clicked cell,
+        /// <c>PlanetCard.DisplayMode</c>): actions, with the colonize/specialization/terraform buttons
+        /// on each card, and population, with the rings and no buttons at all - so they are two members
+        /// here, because a player told only "planets panel" cannot know which of two different panels
+        /// arrived, or that pressing the OTHER cell is what brings out the buttons.</summary>
         private enum Detail
         {
             None,
-            Planets,
+            PlanetActions,
+            PlanetPopulation,
             Construction,
             Hangar,
         }
@@ -806,10 +813,13 @@ namespace ES2Access.Screens
                 Child<StarSystemConstructiblePanel>(panel.ConstructiblePanelContainer);
             StarSystemQueuePanel queue = Child<StarSystemQueuePanel>(panel.QueuePanelContainer);
             StarSystemHangarPanel hangar = Child<StarSystemHangarPanel>(panel.HangarPanelContainer);
-            // Which of the three is up - the game shows exactly one at a time.
+            // Which of the three is up - the game shows exactly one at a time. The cards panel is
+            // asked its MODE as well: the same panel is two different things to the player.
             if (cards != null && cards.Shown)
             {
-                detail = Detail.Planets;
+                detail = cards.Mode == PlanetCard.DisplayMode.Actions
+                    ? Detail.PlanetActions
+                    : Detail.PlanetPopulation;
             }
             else if (
                 (constructibles != null && constructibles.Shown)
@@ -839,8 +849,10 @@ namespace ES2Access.Screens
                     return ModStrings.EmpireConstructionPanelOpened;
                 case Detail.Hangar:
                     return ModStrings.EmpireHangarPanelOpened;
+                case Detail.PlanetActions:
+                    return ModStrings.EmpirePlanetActionsPanelOpened;
                 default:
-                    return ModStrings.EmpirePlanetsPanelOpened;
+                    return ModStrings.EmpirePopulationPanelOpened;
             }
         }
 
@@ -852,8 +864,10 @@ namespace ES2Access.Screens
                     return ModStrings.EmpireConstructionPanelClosed;
                 case Detail.Hangar:
                     return ModStrings.EmpireHangarPanelClosed;
+                case Detail.PlanetActions:
+                    return ModStrings.EmpirePlanetActionsPanelClosed;
                 default:
-                    return ModStrings.EmpirePlanetsPanelClosed;
+                    return ModStrings.EmpirePopulationPanelClosed;
             }
         }
 
@@ -1027,9 +1041,12 @@ namespace ES2Access.Screens
             try
             {
                 CardActions.AddNamedByMod(found, card.ColonizeButton, ModStrings.SystemColonize);
-                CardActions.AddNamedByTooltip(found, card.BuildInfrastructureButton);
-                CardActions.AddNamedByTooltip(found, card.ReduceAnomalyButton);
-                CardActions.AddNamedByTooltip(found, card.TerraformButton);
+                // Refusable, not merely named: the game keeps these three drawn while switched off,
+                // with the reason appended to the naming tooltip, so a blocked one is declared
+                // refusing rather than vanishing.
+                CardActions.AddRefusableNamedByTooltip(found, card.BuildInfrastructureButton);
+                CardActions.AddRefusableNamedByTooltip(found, card.ReduceAnomalyButton);
+                CardActions.AddRefusableNamedByTooltip(found, card.TerraformButton);
                 AddCuriosities(found, card);
             }
             catch (Exception e)
