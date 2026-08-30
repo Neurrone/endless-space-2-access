@@ -1689,11 +1689,9 @@ namespace ES2Access.Core.Speech
         public const string CreditsLines = "credits.lines";
 
         /// <summary>What the content browser expresses as the SHAPE of a row - a tick to activate what you
-        /// own, a store button for what you do not - and what the tick itself is called, since the game
-        /// draws it as a bare box.</summary>
+        /// own, a store button for what you do not - and nowhere in words.</summary>
         public const string DlcOwned = "dlc.owned";
         public const string DlcNotOwned = "dlc.not-owned";
-        public const string DlcActivated = "dlc.activated";
 
         /// <summary>The mod manager's activation box, which the game draws as a bare tick beside the mod's
         /// name.</summary>
@@ -2624,7 +2622,6 @@ namespace ES2Access.Core.Speech
             { CreditsLines, "{0} lines" },
             { DlcOwned, "owned" },
             { DlcNotOwned, "not owned" },
-            { DlcActivated, "Activated" },
             { ModdingActivated, "Activated" },
             { JoinGameNoGames, "No multiplayer games found" },
             { JoinGameGameFound, "{0} multiplayer game found" },

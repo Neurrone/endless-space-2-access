@@ -17,9 +17,16 @@ namespace ES2Access.Screens
     /// remembered for the session (<c>CurrentTabType</c> outlives a close), so a test that switches one puts
     /// it back.
     ///
-    /// A row is read as the three things the game drew on it - the content's name, what kind it is, and
-    /// whether it is YOURS - and it carries its own description in the review buffer, which is the paragraph
-    /// the eye reads and the words a player is deciding on.
+    /// A row is read as the content's name and whether it is YOURS, and it says its own description as it
+    /// is read - the paragraph the eye reads and the words a player is deciding on, short enough to hear
+    /// in full and still steppable in the review buffer afterwards. What KIND of content it is goes unsaid:
+    /// the tab the list is following has already named it, and every row on a tab is that same kind.
+    ///
+    /// Where the content is owned, the row IS the tick that activates it - one checkbox saying the name,
+    /// the word owned, and its own on or off - rather than a readout followed by a second cell called
+    /// "Activated", which made the player step twice over one line. Rows the game draws no tick on -
+    /// content you do not own, and the whole Updates tab - stay plain readouts, and the store button the
+    /// game draws below one of them is its own stop as before.
     ///
     /// Ownership is read off WHICH CONTROL the game drew rather than out of the accessibility flags behind
     /// it (<c>DLCItem.Refresh</c>): content you have shows a tick that activates it, content you do not
@@ -237,7 +244,8 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
-        /// <summary>One piece of content: what it is, and the one control the game offers on it.</summary>
+        /// <summary>One piece of content: the row itself where the game's tick makes it a checkbox, a
+        /// readout where it does not, and the store button the game may draw beside it.</summary>
         private void Item(AgeTransform widget, int index)
         {
             DLCItem item = widget == null ? null : widget.GetComponent<DLCItem>();
@@ -252,40 +260,43 @@ namespace ES2Access.Screens
             string key = "dlc:item/" + Named(item, index);
             DLCItem it = item;
             AgePrimitiveLabel description = item.DescriptionLabel;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Label(it.TitleLabel)),
-                    GraphNodes.ValuePart(() => AgeText.Label(it.TypeLabel)),
-                    GraphNodes.ValuePart(() => Ownership(it)),
-                },
-                Sections = GraphNodes.Sections(
-                    () => AgeText.Lines(AgeText.Label(description)),
-                    null
-                ),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
+            Func<IList<string>> details = () => AgeText.Lines(AgeText.Label(description));
 
             AgeTransform activate = AgeWidgets.Transform(item.ActivateToggle);
-            // Banding input, as at the tabs: Cells.Add takes the tick without asking the gate, and its
-            // rectangle is what puts it in a row beside the store button below.
             if (AgeWidgets.Visible(activate))
             {
                 AgeControlToggle box = item.ActivateToggle;
                 AgeTransform at = activate;
                 AgeTooltip tooltip = AgeWidgets.Raw(activate);
                 NodeVtable tick = GraphNodes.Checkbox(
-                    () => ModStrings.Get(ModStrings.DlcActivated),
+                    () => AgeText.Label(it.TitleLabel),
                     () => box.State,
                     () => AgeWidgets.Toggle(box),
                     () => AgeWidgets.Offered(at),
-                    tooltip
+                    tooltip,
+                    null,
+                    () => ModStrings.Get(ModStrings.DlcOwned)
                 );
+                // Said as the row is read rather than left to the buffer: the description is one short
+                // paragraph and it is the whole of what the player is deciding on.
+                tick.Sections = GraphNodes.SpokenSections(details, tooltip);
                 GraphNodes.AddRefusal(tick, tooltip, () => AgeWidgets.Offered(at));
                 AgeWidgets.Point(tick, box, tooltip, at);
-                Cells.Add(_cells, activate, ControlId.Structural(key + "/activate"), tick);
+                Cells.Add(_cells, widget, ControlId.Structural(key), tick);
+            }
+            else
+            {
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => AgeText.Label(it.TitleLabel)),
+                        GraphNodes.ValuePart(() => Ownership(it)),
+                    },
+                    Sections = GraphNodes.SpokenSections(details, null),
+                };
+                AgeWidgets.PointAt(vtable, widget);
+                Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
             }
 
             // The store button carries no caption - it is named by the sentence the game explains it
