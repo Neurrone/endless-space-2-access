@@ -385,7 +385,6 @@ ES2Access/Screens/ResourcesExportModScreen.cs | 2 | if (widget == null || !AgeWi
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | || AgeWidgets.Visible(window.LoadingGroup);
 
 ES2Access/Screens/ScanViewScreen.cs | 1 | && AgeWidgets.Visible(label.AgeTransform)
-ES2Access/Screens/ScanViewScreen.cs | 1 | AgeWidgets.Visible(window.AgeTransform)
 ES2Access/Screens/ScanViewScreen.cs | 1 | IList<string> trade = AgeWidgets.Visible(window.TradingGroup)
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (!AgeWidgets.Painted(label.BattleLine))
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (!AgeWidgets.Painted(label.RelationGroup))
@@ -402,6 +401,7 @@ ES2Access/Screens/ScanViewScreen.cs | 1 | if (widget == null || !AgeWidgets.Pain
 ES2Access/Screens/ScanViewScreen.cs | 2 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (window == null || !window.Shown || !AgeWidgets.Visible(window.NodeInfoGroup))
 ES2Access/Screens/ScanViewScreen.cs | 1 | line != null && AgeWidgets.Painted(line) && AgeWidgets.Operable(line);
+ES2Access/Screens/ScanViewScreen.cs | 1 | return battle != null && (battle.Visible || battle.Showing);
 ES2Access/Screens/ScanViewScreen.cs | 1 | return item != null && AgeWidgets.Painted(item.AgeTransform) ? item : null;
 ES2Access/Screens/ScanViewScreen.cs | 1 | return panel != null && AgeWidgets.Painted(panel.AgeTransform);
 ES2Access/Screens/ScanViewScreen.cs | 1 | return rating == null || !AgeWidgets.Painted(rating.AgeTransform)

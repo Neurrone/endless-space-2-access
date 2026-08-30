@@ -57,7 +57,7 @@ upgrade on live sighting — baseline ships today, so these stay SUPPORTED.
 | BailiffReportNotificationWindow | NS (variant row) | NotificationScreen.cs |
 | BattleLoadingWindow | read | SpaceBattleScreen.cs |
 | BattleReportNotificationWindow | own | BattleNotifications.cs |
-| BattleScanViewWindow | own | ScanViewScreen.cs |
+| BattleScanViewWindow | not modelled (the battle's per-ship stats overlay; `screen.battle` keeps focus — ScanViewScreen stands down in battle) | — |
 | BattleScreen | own | SpaceBattleScreen.cs |
 | BattleSetupNotificationWindow | own | BattleNotifications.cs |
 | ColonizationCutsceneModalWindow | own | CutsceneScreen.cs |

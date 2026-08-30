@@ -559,6 +559,41 @@ Measured after a reload onto the wedge: the ring is exactly "Battle at Sabel, Pi
 (landing on row 1) — and then 3469 frames / 60 s of silence with no repeat and no loss lines. The
 screen name and row 1 are the same words by design; the arrival therefore says them twice.
 
+**The Scan checkbox (`battle:scan`) runs the game's global scan-view mode** —
+`BattleScreen`:520 calls `ToggleScanView()`, the same `GuiManager.IsInScanView` the galaxy map
+uses — but in a battle it only draws `BattleScanViewWindow`, a per-ship stats overlay on the fight.
+The mod's scan-view screen must NOT push during a battle: before the `!IsInBattle` gate it arrived
+at layer 11 over `screen.battle`'s 10 with an empty tree, and because `ScreenManager.Tick` calls
+`OnUpdate` on the focused screen alone, ALL narration went silent (measured 2026-08-30).
+Verification: toggle it mid-fight and expect "checked" / "not checked" alone (never a lens name),
+`DevProbe.Stack()` holding `screen.battle` only, and volley/phase lines still arriving.
+The checkbox goes UNAVAILABLE for stretches of the fight and refuses the second press in silence,
+so an off-toggle may have to wait — and left ON, the game turns it off itself
+(`BattleScreen.OnEndHide`).
+
+**The teardown flash, found and fixed 2026-08-30.** That auto-off runs at the END of the battle
+screen's fade-out, while `IsInBattle` goes false as soon as the view level leaves `Encounter` — so
+the teardown holds a window of `IsInGalaxyScanView`, and the mod's scan-view screen used to arrive
+in it and say a galaxy lens into the middle of a battle ending ("Decisive Victory" → "unavailable"
+→ **"Economy scan"** → **"Economy, button, 1 of 2"** → "Galaxy"). The window is NOT a fixed length:
+measured 3 frames on one run and 288 (~9.5 s) on another, so no debounce covers it. The gate is
+`BattleScreen.Visible` (`ScanViewScreen.BattleEnding`) — true for the whole fade, cleared by
+`GuiPanel.OnEndHide` in the same call that ran the auto-off. After: the same run reads "Decisive
+Victory" → "unavailable" → "Galaxy", with no lens line at all.
+
+**How to re-verify it**, and the pattern for any teardown-window claim: a `POST /wait` predicate
+that RECORDS per frame and fires only on the defect. `var td = new System.Collections.ArrayList();`
+then wait on
+`td.Add(UnityEngine.Time.frameCount+" "+ES2Access.Dev.DevProbe.Stack()+" gsv="+((GuiManager)Gui.GuiService).IsInGalaxyScanView+" vis="+Gui.GuiService.GetWindow<BattleScreen>(false).Visible) >= 0 && ((string)td[td.Count-1]).Contains("scan-view")`.
+`ArrayList.Add` returns the index, which is what makes a per-frame recorder a plain bool expression
+(a lambda would silently evaluate false — `dev-loop.md`). Arm it once the fight is past Phase II and
+read `satisfied:false` with the frame count: measured `satisfied:false / 2640 frames`, and the
+deduped readback shows the whole transition — `screen.battle gsv=False vis=True` → one frame of
+`screen.battle gsv=True vis=True` → `stack:[] gsv=True vis=True` (the mod holding NO screen, which
+is the correct answer during a fade nothing is asked of the player in) → `gsv=False vis=False` in
+one frame (auto-off and gate release together) → `screen.galaxy`. Do NOT try to bracket the window
+with two chained waits: the HTTP round trip between them lost 288 frames on the first attempt.
+
 ### Re-watching a battle from a script
 
 **The report popup's Rewatch button replays the whole cinematic and changes no game state**, which

@@ -56,12 +56,13 @@ namespace ES2Access.Screens
     /// across the top of every other page keeps a label naming the lens for the current zoom layer, and
     /// the game goes on writing it while the panel itself is hidden.
     ///
-    /// The battle lens cannot be reached from a save with no battle in it, so its labels - which are
-    /// ships, flotillas and damage numbers the renderer creates and destroys as the fight goes - are
-    /// read by the same drawn-labels reading as any lens without a model of its own
-    /// (<c>BattleScanViewWindow</c>, verified by class only; a manual test is handed over for it). The
-    /// hacking dashboard and its banners are not modelled: the game switches all three off outright for
-    /// a session without that content (<c>ScanOverlayWindow.OnGameCreated</c>).
+    /// A battle's own Scan button enters this same game mode (<c>BattleScreen</c> calls
+    /// <c>ToggleScanView</c>), but there it means something else entirely: an overlay of per-ship stats
+    /// on the fight the player is already watching, not a lens over the map. So this screen stands down
+    /// for the duration of a battle (<see cref="IsActive"/>) and the battle screen keeps the player and
+    /// the narration; the toggle is one checkbox on that screen. The hacking dashboard and its banners
+    /// are not modelled: the game switches all three off outright for a session without that content
+    /// (<c>ScanOverlayWindow.OnGameCreated</c>).
     ///
     /// <b>Why every drawn test in this file stays.</b> A lens row stands for a GAME ENTITY - a node, a
     /// planet, a lane, a hero - and not for the label the renderer happens to be drawing it with, so
@@ -159,6 +160,16 @@ namespace ES2Access.Screens
         /// an ARRIVAL gate and nothing more: once the lens is up the screen stays ours until the mode
         /// ends, so the frames where the game is fading the lens back out do not hand the player to the
         /// page underneath and back again.
+        ///
+        /// Which is asked as <c>IsInGalaxyScanView</c> rather than as the raw <c>IsInScanView</c> flag,
+        /// because the game already has a word for "the scan view is what is up" and it is the narrower
+        /// one: the same flag is also the battle's per-ship stats overlay, the ground battle's, and the
+        /// system-discovery and planet-destruction cinematics', each of which is its own event with its
+        /// own screen and its own things to say (owner ruling 2026-08-30). Borrowing the game's compound
+        /// keeps this page standing down from all five without a list of its own to keep in step.
+        ///
+        /// And not while the battle is still leaving the screen (<see cref="BattleEnding"/>), which the
+        /// game's own compound does not cover.
         /// </summary>
         public override bool IsActive()
         {
@@ -167,7 +178,8 @@ namespace ES2Access.Screens
                 GuiManager gui = GuiState();
                 bool scanning =
                     gui != null
-                    && gui.IsInScanView
+                    && gui.IsInGalaxyScanView
+                    && !BattleEnding()
                     && !gui.IsAnyScreenVisible
                     && !gui.IsAnyModalVisible
                     && !gui.IsInLoadingWindow;
@@ -186,8 +198,34 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Whether a lens has anything of its own on the screen yet. Every lens but the battle's
-        /// draws a title strip; the battle's has no section at all, so it answers for itself.
+        /// <summary>
+        /// Whether the battle screen is still on its way off the screen, which is the one window where
+        /// the scan view outlives the thing it was an overlay ON.
+        ///
+        /// A player who leaves the battle's Scan toggle checked is still in the game's scan MODE when the
+        /// fight ends, and the game turns it off from <c>BattleScreen.OnEndHide</c> - at the END of the
+        /// screen's fade-out, whereas <c>IsInBattle</c> goes false the moment the view level stops being
+        /// the encounter, several frames earlier. Between the two the galaxy's own lens is genuinely up:
+        /// the game shows <c>EconomyScanViewWindow</c> and this screen arrived on it, announced a lens
+        /// and a title row, and was gone again - two lines about the map thrown into the middle of a
+        /// battle ending.
+        ///
+        /// <c>Visible</c> is the answer rather than <c>Shown</c> because the fade-out is exactly the
+        /// window in question and <c>Shown</c> is already false throughout it
+        /// (<c>GuiPanel.Shown => (Visible &amp;&amp; !Hiding) || Showing</c>). It cannot strand anyone:
+        /// <c>GuiPanel.OnEndHide</c> clears <c>Visible</c> in the same call that ran the game's auto-off,
+        /// so this gate releases on the very frame the mode ends - the backstop and the gate are one
+        /// event. And it delays no ordinary entry: with no battle on the screen the window is not
+        /// visible at all.
+        /// </summary>
+        private static bool BattleEnding()
+        {
+            BattleScreen battle = Window<BattleScreen>();
+            return battle != null && (battle.Visible || battle.Showing);
+        }
+
+        /// <summary>Whether a lens has anything of its own on the screen yet. Every lens draws a title
+        /// strip, so the drawn strip is the answer.
         ///
         /// Drawn is not enough: the game switches the lens's controls on a frame AFTER it shows them, so
         /// a screen arriving the moment the strip appears reads it "unavailable" once - once, and then
@@ -196,13 +234,7 @@ namespace ES2Access.Screens
         private bool Drawn()
         {
             ScanViewWindowHeader header = DrawnHeader();
-            if (header != null)
-            {
-                return AgeWidgets.Operable(header.AgeTransform);
-            }
-
-            BattleScanViewWindow battle = Window<BattleScanViewWindow>();
-            return battle != null && battle.Shown;
+            return header != null && AgeWidgets.Operable(header.AgeTransform);
         }
 
         /// <summary>Escape is the game's: it is what leaves the lens, and the mod inventing a way out of
@@ -295,7 +327,6 @@ namespace ES2Access.Screens
             BuildSystemOverview(builder);
             BuildSystemManagement(builder);
             BuildPlanet(builder);
-            BuildUnmodelled(builder);
             // Last of the map's content, because it is the one thing here that does not belong to the
             // live lens: the trade lines are laid over the galaxy for the whole mode, so they follow
             // whatever the lens itself is drawing rather than interrupting it.
@@ -1712,28 +1743,6 @@ namespace ES2Access.Screens
                 && !string.IsNullOrEmpty(AgeText.Label(label));
         }
 
-        // ---- a lens with no model of its own ----
-
-        /// <summary>Whatever a lens this mod has not modelled is drawing, read off its labels. Today
-        /// that is the battle lens alone, which no save without a battle in it can reach; it is declared
-        /// so that a player who does reach it hears the fight rather than silence.</summary>
-        private void BuildUnmodelled(GraphBuilder builder)
-        {
-            BattleScanViewWindow window = Window<BattleScanViewWindow>();
-            if (window == null || !window.Shown)
-            {
-                return;
-            }
-
-            AddDrawnLines(
-                builder,
-                AgeWidgets.Visible(window.AgeTransform)
-                    ? AgeWidgets.DrawnLines(window.AgeTransform)
-                    : null,
-                "scan:battle"
-            );
-        }
-
         /// <summary>A read-only panel as one node per line of words it draws.</summary>
         private static void AddDrawnLines(GraphBuilder builder, IList<string> lines, string key)
         {
@@ -1964,9 +1973,9 @@ namespace ES2Access.Screens
                 ScanViewWindowHeader header = DrawnHeader();
                 if (header == null)
                 {
-                    // The battle lens draws no title strip of its own, and the label the panel keeps is
-                    // about the map's zoom layer rather than about the fight - so there is no name here
-                    // and the mod says what the mode is instead of a lens that is not the one showing.
+                    // No strip drawn at all - a frame between lenses. Naming the mode is the honest
+                    // answer; the panel's label is about the map's zoom layer and may name a lens that
+                    // is not the one showing.
                     return ModStrings.Get(ModStrings.ScreenScanView);
                 }
 
@@ -2037,7 +2046,6 @@ namespace ES2Access.Screens
             AddHeader(found, Window<StarSystemOverviewScanViewWindow>());
             AddHeader(found, Window<StarSystemManagementScanViewWindow>());
             AddHeader(found, Window<PlanetScanViewWindow>());
-            AddHeader(found, Window<BattleScanViewWindow>());
             _headers = found.ToArray();
             return _headers;
         }
