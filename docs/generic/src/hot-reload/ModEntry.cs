@@ -1302,6 +1302,17 @@ namespace ES2Access
             // keyboard would otherwise leave the whole layer standing down for a field nobody can see.
             GameKeyboardHandover.Tick();
 
+            // Any key going down silences whatever is still playing, before the press is handled -
+            // the screen reader convention, copied from the Say the Spire port (its key handler's
+            // first act, ahead even of its bare-modifier filter). Most presses speak something new
+            // that interrupts anyway; this covers the rest - a key that says nothing, and bare
+            // Control, the canonical stop-speech key. anyKeyDown counts mouse buttons too, which
+            // is the same promise for a click; injected dev actions press nothing and stay exempt.
+            if (UnityEngine.Input.anyKeyDown)
+            {
+                Speech.Silence();
+            }
+
             // Keys first, screens second: a keypress and the announcement it causes then land in
             // the same frame, instead of the player hearing the result of the previous one.
             Input.Tick();

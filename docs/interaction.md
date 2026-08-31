@@ -94,6 +94,11 @@ modifier. The one place the choice is made is `KeyboardBinding` (its doc comment
 full reasoning; the conflict scan and the player-facing spelling are `macos/README.md`). The
 game's own Control bindings stay on real Control on both systems.
 
+**Any key going down silences in-flight speech** before the press is handled (screen reader
+convention, copied from the Say the Spire port; `ModEntry.Update`, ahead of `Input.Tick`).
+There is no dedicated silence binding — bare Control works because every key does; mouse
+buttons count too (`anyKeyDown`), injected dev actions do not.
+
 **ES2 key map, in one place** (defaults in `ModEntry.BindKeys`; the generic table is
 `docs/generic/input.md`). On top of arrows/Tab/Enter/Backspace/Escape/Home/End, Alt+arrows and
 the Ctrl review chords: **Shift+Left/Right** coarse slider step — and, while the galaxy's inspect
