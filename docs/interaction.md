@@ -789,6 +789,14 @@ own subject cannot stand in for a position here, because a `Constellation` IS an
 (its centroid), and asking the subject bookmarked the middle of a stretch of sky. Jumping works from
 any stop of the page, because coming back to a place is what a player reading the notifications
 wants and making them Tab to the map first is asking them to be where they are trying to go.
+**With the inspect cell driving the map, the set key is made out of the CELL** (owner ruling
+2026-08-31; `GalaxyBookmarks.SetFromCell` ← `GalaxyInspect.CellPlace`): the square holding exactly
+one place bookmarks that place, GUID and all, so a bookmark made from the cell and one made from the
+tree are the same bookmark — "exactly one" being the cell's own rule for the one thing in it, since
+a cursor eleven units across can hold two stars and naming one would be a guess — and every other
+square keeps its own point of galaxy. Which happened is audible: the line names the system or says
+the pair. PARKED it never arises, because the cursor is off the map stop and a set there is already
+silently nothing.
 
 **A jump is a FOCUS landing and never a click** — an armed targeting cursor is waiting for an Enter
 somewhere, and a jump that confirmed it would send a fleet to the bookmark instead of taking the
@@ -799,16 +807,37 @@ asked for on the press and the landing waits for the build that opens it
 (`GalaxyHudScreen.FollowBookmarkLanding`, 12 frames, falling back to the system's own row). A point
 bookmark lands on its own synthetic row, and the camera slides onto the point through the same rule.
 Inspect ON, the CELL moves instead — `GalaxyInspect.JumpTo` on the bookmark's rounded spoken pair,
-the mode never exited and the zoom never touched; PARKED, the map stop is focused first and the cell
-moved SILENTLY second (`GalaxyInspect.MoveTo`), so the mode's own resume is what reads the new cell
-and the stop landing's camera move cannot end up looking somewhere else. An empty slot is a spoken
-refusal ("No bookmark n") and moves nothing.
+the mode never exited and the zoom never touched; PARKED, the cell is moved SILENTLY
+(`GalaxyInspect.MoveTo`) and the mode's own resume is what reads it, so the arrival is said once.
+An empty slot is a spoken refusal ("No bookmark n") and moves nothing.
+**EVERY inspect-mode jump reseats the tree cursor underneath, onto the bookmark's own row**
+(owner ruling 2026-08-31; `GalaxyBookmarks.Seat` = `GraphNavigator.FocusNode` +
+`GalaxyInspect.Reseat`, the pairing the page's own go-to already makes). Leaving the mode puts the
+player back on the control it was ARMED from, camera and all, so without it Escape undid the jump;
+with it, Escape lands on the bookmark. A system is seated on its own ROW and never inside it —
+going inside is what brings the camera in, and the mode is deliberately leaving the picture alone.
+LIVE the seat is silent (the cell is what is being read); PARKED it is the landing the player hears,
+which is also what took the stray zoom out of the parked jump: aimed at whatever the map stop
+happened to remember, the camera followed that row on the way, and a remembered PLANET row zoomed
+into a system nobody had asked for (measured 8 → 12, stage B; measured holding at 8 with the
+same fixture, stage C).
 
 **A bookmarked system's row ends with "bookmark n"**, last of everything it says: it is the player's
 own note about the place, not a fact about it. A bookmark whose system this build lists no row for
 falls back to a synthetic row of its own, "Bookmark n at ⟨pair⟩", filed in the constellation whose
 outline holds it (`ConstellationMap`) and read in that group's own order — or, where no named
 stretch of sky does, walked into the top level by position like everything else homeless on this map.
+**The inspect cell says the same word, from the same composition** (`GalaxyHudScreen.BookmarkWord`,
+one method with two overloads and one ModStrings key, so the two surfaces cannot drift): a
+bookmarked system standing in the square ends ITS part of the cell's sentence with "bookmark n"
+("Dusay, bookmark 5, 1st Defenders Navy, …"), exactly where its tree row ends with it, and a POINT
+bookmark inside the square is named by the same containment every other thing in the cell is found
+by — so it is right at every cursor size — reading "bookmark n" alone, last of the things standing
+in the square and ahead of the lanes crossing it. It says which slot and no more: a bookmark has no
+name, and where it is is the pair the cell is about to say anyway. **Both join cell identity**, so
+the Shift+arrow skip stops at a bookmarked square (`CellSkip`) — a point bookmark is the one thing a
+square can hold that the map draws nothing for, and a skip blind to it would sweep the cursor
+straight over the one place the player asked to be able to find again.
 
 ## Tab, type-ahead and text editing
 

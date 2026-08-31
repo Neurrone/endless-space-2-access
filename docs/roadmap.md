@@ -439,6 +439,12 @@ belong in the files above.
   readout with a real Behemoth (mechanism shipped and verified via take-system; the message
   branch — ETA, star odds, protection warning — is unsighted, no Behemoth fixture).
 
+- Map bookmarks shipped 2026-08-31 (below); what no stage could reach is a MANUAL pass, written
+  out as player steps in `bookmarks-manual-test.md`: a point-bookmark SET from a free fleet or
+  probe (no fixture draws one), the first-save flush on a never-saved campaign, and the physical
+  Shift+digit set made with the inspect cell live (the desktop was locked for stage C's `/key`
+  pass — the injected path is proven, the real keypress is not).
+
 - The balance-bar captions in a tooltip's ship/fleet stat block (`TooltipFeatures.Balance`) are
   sighted on the `ShipDesignHeroRecruitement`, `ShipDesign` and `Ship` classes only. Still to
   sight: the `Garrison` class (`PanelFeatureMilitaryPowerBalance`, reached from `FleetLine` /
@@ -515,3 +521,4 @@ belong in the files above.
 | Deselecting a fleet seats the cursor on the fleet's own row | FleetPanel, GalaxyHudScreen |
 | A line clipped by its scrolling window is measured at the window | `UI/AgeWidgets.Clipped` |
 | Docked fleets in the scanner and the inspect cursor; minor/Academy fleets read by standing | GalaxyScanner, `UI/FleetPresence` |
+| Map bookmarks: ten per campaign, set/jump/home, tree rows and inspect cells, per-campaign file | GalaxyBookmarks, GalaxyHudScreen, GalaxyInspect, `UI/Bookmarks/MapBookmarkStore`, `Core/Bookmarks/` |

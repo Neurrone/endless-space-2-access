@@ -3760,7 +3760,7 @@ namespace ES2Access.Screens
             }
 
             OpenPlace(node);
-            _bookmarkLanding = ControlId.For(node, SystemKey(node));
+            _bookmarkLanding = SystemRow(node);
             _bookmarkLandingFrames = BookmarkLandingFrames;
         }
 
@@ -3879,6 +3879,38 @@ namespace ES2Access.Screens
         {
             BookmarkPoint point;
             return _bookmarkSpots.TryGetValue(digit, out point) && point.Listed ? point.Id : null;
+        }
+
+        /// <summary>The row a SYSTEM is read as on this stop - what a jump aims the tree cursor at
+        /// while the inspect cell is driving the map, where landing INSIDE it would zoom a picture the
+        /// mode is deliberately leaving alone (<see cref="LandInside"/> is the other, out-of-mode
+        /// landing).</summary>
+        internal static ControlId SystemRow(StarSystemNode node)
+        {
+            return node == null ? null : ControlId.For(node, SystemKey(node));
+        }
+
+        /// <summary>
+        /// This build's point bookmarks, one at a time: which slot, and where it stands. False past the
+        /// end, so a caller walks it with no list of its own.
+        ///
+        /// The inspect cell is the caller. A point bookmark is the one thing a square of the map can
+        /// hold that the map draws nothing for, so the cell cannot find it by looking at the picture
+        /// the way it finds everything else - it has to ask the page which places the player has
+        /// named.
+        /// </summary>
+        internal bool BookmarkPointAt(int index, out char digit, out GalaxyPosition at)
+        {
+            digit = '\0';
+            at = default(GalaxyPosition);
+            if (index < 0 || index >= _bookmarkPoints.Count)
+            {
+                return false;
+            }
+
+            digit = _bookmarkPoints[index].Digit;
+            at = _bookmarkPoints[index].At;
+            return true;
         }
 
         /// <summary>
@@ -4064,13 +4096,25 @@ namespace ES2Access.Screens
 
         /// <summary>The word a bookmarked system's row ends with. Last of everything the row says: it
         /// is the player's own note about the place and not a fact about it, so it comes after every
-        /// answer the map itself is giving.</summary>
-        private string BookmarkWord(StarSystemNode node)
+        /// answer the map itself is giving.
+        ///
+        /// The one composition of that word: the inspect cell says it about a bookmarked system
+        /// standing inside the square too (<see cref="GalaxyInspect"/>), and a second
+        /// <see cref="ModStrings.GalaxyBookmarkSuffix"/> anywhere would be a wording free to drift
+        /// from this one.</summary>
+        internal string BookmarkWord(StarSystemNode node)
         {
             char digit;
             return node != null && _bookmarkedDigit.TryGetValue((ulong)node.GUID, out digit)
-                ? ModStrings.Format(ModStrings.GalaxyBookmarkSuffix, digit.ToString())
+                ? BookmarkWord(digit)
                 : null;
+        }
+
+        /// <summary>The same word for a slot named on its own - what the inspect cell says about a
+        /// point bookmark standing in the square, which has no row of the map's to carry it.</summary>
+        internal static string BookmarkWord(char digit)
+        {
+            return ModStrings.Format(ModStrings.GalaxyBookmarkSuffix, digit.ToString());
         }
 
         /// <summary>Declare every point bookmark in this stretch of sky that reads before

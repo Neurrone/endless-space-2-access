@@ -941,6 +941,45 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
   the card's first child instead of the card. Re-record any stored route that opens something with
   Right before diffing it against a pre-batch baseline.
 
+## Bookmarks
+
+The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cell surfaces are
+`inspect-and-influence.md`. What is here is how to drive and read them.
+
+- **Driving them.** `POST /input galaxy.bookmarkSet<n>` / `galaxy.bookmarkGoTo<n>` /
+  `galaxy.bookmarkHome`, `n` in `1..9,0`. Set is answered only on the map stop, so a set from
+  another stop answering `speech: []` is the design and not a lost injection.
+- **Reading the store.** `MapBookmarkStore.Bookmarks.Count`, `MapBookmarkStore.Campaign`,
+  and `System.IO.File.ReadAllText(MapBookmarkStore.Path)` — the file is written on every set, so
+  the disk is checkable in the same breath as the speech. To CLEAR slots and leave the file right,
+  `Bookmarks.Clear('<digit>')` in memory and then one `MapBookmarkStore.Set` of a slot you are
+  keeping: `Set` is the only call that flushes.
+- **The two landings, measured on `[Beginner] test`'s successor fixture (campaign `ee4517b1…`,
+  turn 26).** Inspect OFF, a system bookmark lands on the system's FIRST CHILD with the camera all
+  the way in ("… Rigel, -16, -5, group, No owner, **bookmark 4**, expanded, 9 of 15, Rigel I, Small
+  Forest, Colonizable, 1 of 5"; `zoomStep` 8 → 12, eye 1.812), and a point bookmark on its own
+  synthetic row ("Bookmark 2 at 0, 4, 6 of 15" at `galaxy:constellation/446/bookmark/2` — filed in
+  the constellation the point falls in, ordered among that group's own entries). Inspect ON, neither
+  happens: the CELL moves and `zoomStep` holds (measured 8 through a live jump, a parked jump and a
+  `galaxy.bookmarkHome`).
+- **The reseat is proved by ESCAPE, not by the jump.** After an inspect-mode jump the tree cursor is
+  moved silently underneath, so the evidence is `/input ui.back` afterwards: "Exited inspect mode"
+  then the bookmark's own row ("… Lors, -66, -26, group, No owner, **bookmark 3**, collapsed, 2 of
+  3"). Probing the cursor immediately after the jump can still show the OLD row — the seat is a
+  pending focus and lands a frame or two later.
+- **Fixture: two standing bookmarks.** Campaign `ee4517b1…` carries `slot1` = a POINT at spoken
+  `-68, 18` (in Corvus, nothing there) and `slot3` = the SYSTEM Lors, left set on purpose so both
+  kinds are reachable without making one first. The file is
+  `<game>\BepInEx\plugins\ES2Access\bookmarks\ee4517b11d7c45098a2d5baa69737a1e.cfg`; delete it to
+  clear them. A DIFFERENT campaign has its own file and reads empty — that is the keying working,
+  not a lost store (`docs/saves.md`).
+- **Do not put two slots on one system.** The row's word comes from one digit per system GUID, so
+  the second slot silently wins the word; pick a fresh system per slot when measuring.
+- **The Controls rows** are 21 of the tab's 81, in three runs: Set bookmark 1..0 at 55–64, Jump to
+  bookmark 1..0 at 65–74, Jump to home system at 75. `POST /type "set bookmark"` on `options:rows`
+  is the cheap way onto one ("Set bookmark 1, Shift + 1, Remember the place on the galaxy map the
+  cursor is standing on as bookmark 1., 55 of 81").
+
 ## Usage hints on the map
 
 - **Map target + starlane (`[Beginner] test`).** Both fleets in Heka's branch are mid-free-move and

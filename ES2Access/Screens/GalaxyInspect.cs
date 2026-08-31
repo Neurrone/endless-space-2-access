@@ -165,6 +165,40 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// What a bookmark set while the cell is driving the map is made OF: the square the cursor is
+        /// standing on, and the one place standing in it where there is exactly one.
+        ///
+        /// The place is offered by the cell's OWN rule for "the one thing in here"
+        /// (<see cref="Activate"/>): a cursor eleven units across can hold two stars, and naming one
+        /// of them would be a guess. Where it is not exactly one - an empty square, two stars, a fleet
+        /// crossing open space - the square itself is the answer, which is the bookmark's own default
+        /// and is never wrong.
+        ///
+        /// <paramref name="at"/> is the cell's centre turned back into a place on the map, the same
+        /// way the camera turns it (<see cref="GalaxyCoordinates.Origin"/>): the cursor is held in the
+        /// pair the player is told, and a bookmark is kept in the galaxy's own coordinates.
+        /// </summary>
+        public bool CellPlace(out GalaxyPosition at, out StarSystemNode place)
+        {
+            at = default(GalaxyPosition);
+            place = null;
+            if (!_live)
+            {
+                return false;
+            }
+
+            GalaxyPosition origin = GalaxyCoordinates.Origin();
+            at = new GalaxyPosition(origin.X + _x, origin.Y + _y);
+            Contents contents = Read();
+            if (contents.Places.Count + contents.Special.Count == 1)
+            {
+                place = contents.Places.Count == 1 ? contents.Places[0] : contents.Special[0];
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Arm the cursor ON a place another mode of the map chose - the scanner sending the player to
         /// a square of sky.
         ///
@@ -968,6 +1002,19 @@ namespace ES2Access.Screens
                     things.Add("lane:" + contents.Links[i].GUID);
                 }
 
+                // A place the player NAMED is part of what the square is, exactly as a star standing
+                // in it is: the skip is "take me to the next thing over there", and a bookmark is a
+                // thing the player put over there on purpose. Both kinds count - the point with
+                // nothing at it, and the word a bookmarked star's reading ends with - because cell
+                // identity is the identity of everything the reading names.
+                for (int i = 0; i < contents.Bookmarks.Count; i++)
+                {
+                    things.Add("bookmark:" + contents.Bookmarks[i]);
+                }
+
+                Bookmarked(things, contents.Places);
+                Bookmarked(things, contents.Special);
+
                 // Whose influence covers the cell is part of what the cell IS, exactly as the star
                 // standing in it is: a border is a thing a sighted player steers by, and a skip that
                 // ran straight through one would carry the cursor from deep inside an empire to deep
@@ -979,6 +1026,20 @@ namespace ES2Access.Screens
             {
                 _x = wasX;
                 _y = wasY;
+            }
+        }
+
+        /// <summary>The bookmark word each of these places wears, as identity - nothing at all for the
+        /// places nobody has named.</summary>
+        private void Bookmarked(List<string> things, List<StarSystemNode> places)
+        {
+            for (int i = 0; i < places.Count; i++)
+            {
+                string word = _screen.BookmarkWord(places[i]);
+                if (word != null)
+                {
+                    things.Add("bookmark:" + word);
+                }
             }
         }
 
@@ -1572,6 +1633,13 @@ namespace ES2Access.Screens
             /// planted out on a fleet crossing a lane alike, since the cell is about what the map
             /// DRAWS here and a pin is drawn wherever the thing it is bound to stands.</summary>
             public readonly List<QuestMarkers.Marker> Markers = new List<QuestMarkers.Marker>();
+
+            /// <summary>The slots of the point bookmarks standing in the cell - places the player
+            /// named that the map draws nothing at, so the only way the cell can know about one is to
+            /// ask the page (<c>GalaxyHudScreen.BookmarkPointAt</c>). A bookmarked SYSTEM is not one
+            /// of these: it is the star itself, which the cell already holds, wearing the same word on
+            /// the end of its own reading.</summary>
+            public readonly List<char> Bookmarks = new List<char>();
             public readonly List<string> Lanes = new List<string>();
 
             /// <summary>The lanes themselves, in the order the sentence names them - what the travel
@@ -1648,6 +1716,16 @@ namespace ES2Access.Screens
             {
                 Item(message, QuestMarkers.Name(contents.Markers[i]));
                 Item(message, PairOf(contents.Markers[i].At));
+            }
+
+            // Last of the things standing in the square and ahead of the lanes crossing it, which is
+            // where a thing with no picture belongs: everything above is something the map draws, and
+            // a bookmark is the player's own note about this stretch of sky. It says which slot and no
+            // more - a bookmark has no name of its own, and where it stands is the square the cell is
+            // already about to name (<see cref="BookmarkWord"/>).
+            for (int i = 0; i < contents.Bookmarks.Count; i++)
+            {
+                Item(message, BookmarkWord(contents.Bookmarks[i]));
             }
 
             for (int i = 0; i < contents.Lanes.Count; i++)
@@ -1751,6 +1829,11 @@ namespace ES2Access.Screens
                 Line(lines, line);
             }
 
+            for (int i = 0; i < contents.Bookmarks.Count; i++)
+            {
+                Line(lines, BookmarkWord(contents.Bookmarks[i]));
+            }
+
             for (int i = 0; i < contents.Lanes.Count; i++)
             {
                 lines.Add(contents.Lanes[i]);
@@ -1775,6 +1858,7 @@ namespace ES2Access.Screens
             message.Fragment(node.LocalizedName);
             message.ListItemForcedComma(PairOf(node.GalaxyPosition));
             message.ListItemForcedComma(GalaxyHudScreen.SpecialKind(node));
+            message.ListItemForcedComma(_screen.BookmarkWord(node));
             return message.Build();
         }
 
@@ -1799,6 +1883,16 @@ namespace ES2Access.Screens
             Item(message, node.LocalizedName);
             Item(message, PairOf(node.GalaxyPosition));
             Item(message, GalaxyHudScreen.SpecialKind(node));
+            // Last of what this place says, exactly as it is last of what the place's own tree row
+            // says, and written by that row's own composition (<see cref="BookmarkWord"/>).
+            Item(message, _screen.BookmarkWord(node));
+        }
+
+        /// <summary>The word a bookmark is said with in a cell - the map tree's own word for a slot,
+        /// composed where the tree composes it, so the two surfaces cannot drift apart.</summary>
+        private static string BookmarkWord(char digit)
+        {
+            return GalaxyHudScreen.BookmarkWord(digit);
         }
 
         /// <summary>Where a thing in the cell stands, said only where it is not simply the cell's own
@@ -1910,6 +2004,16 @@ namespace ES2Access.Screens
                     if (Holds(markers[i].At))
                     {
                         contents.Markers.Add(markers[i]);
+                    }
+                }
+
+                char digit;
+                GalaxyPosition spot;
+                for (int i = 0; _screen.BookmarkPointAt(i, out digit, out spot); i++)
+                {
+                    if (Holds(spot))
+                    {
+                        contents.Bookmarks.Add(digit);
                     }
                 }
 

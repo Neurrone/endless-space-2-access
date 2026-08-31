@@ -232,6 +232,35 @@ namespace ES2Access.Tests.UI
             Assert.Equal(0, skipped);
         }
 
+        /// <summary>A place the PLAYER named is a stop like any other thing in a cell: the map draws
+        /// nothing at a point bookmark, so a skip that did not carry the word would sweep the cursor
+        /// straight over the one square the player had asked to be able to find again.</summary>
+        [Fact]
+        public void ABookmarkIsSomethingToStopAt()
+        {
+            Strip strip = new Strip(null, null, null, "bookmark:1");
+            int to;
+            int skipped;
+            Assert.True(Skip(strip, 0, 1, out to, out skipped));
+            Assert.Equal(3, to);
+            Assert.Equal(2, skipped);
+        }
+
+        /// <summary>And the word a bookmarked STAR's reading ends with counts too - two cells holding
+        /// the same star are one stop, and a star wearing the word is not the same reading as the star
+        /// without it.</summary>
+        [Fact]
+        public void TheBookmarkWordJoinsWhatACellIs()
+        {
+            CellSignature plain = new CellSignature(new List<string> { "place:3" }, CellFog.Clear);
+            CellSignature noted = new CellSignature(
+                new List<string> { "place:3", "bookmark:bookmark 1" },
+                CellFog.Clear
+            );
+            Assert.False(plain.Equals(noted));
+            Assert.Equal(2, noted.Count);
+        }
+
         /// <summary>West as readily as east: the walk is the direction it was handed.</summary>
         [Fact]
         public void ItWalksWestAsWellAsEast()

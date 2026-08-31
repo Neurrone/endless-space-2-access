@@ -310,6 +310,29 @@ the non-occlusion evidence) but it makes an ugly crop, and
 `/eval ES2Access.UI.PointerFocus.Release()` after the last `/input` clears it, the next focus change
 putting it back.
 
+## Bookmarks in the cell
+
+The rules are `docs/interaction.md`, **Bookmark keys**; the tree half and the standing fixture
+bookmarks are `galaxy-map.md`, **Bookmarks**.
+
+- **A point bookmark in the square** reads as one item of the sentence, last of the things standing
+  in it: `galaxy.bookmarkGoTo1` (inspect off) then `galaxy.inspect` opens the cell on the point and
+  answers **"bookmark 1, Unexplored, -68, 18"** — before, the same cell read "Unexplored, -68, 18".
+  Its own line in the review buffer, in the same place.
+- **A bookmarked system in the square** ends ITS part of the sentence with the word, not the cell's:
+  **"Dusay, bookmark 5, 1st Defenders Navy, Patrol, Star lane from Rigel to Dusay, …, 0, 0"**, and
+  `buffer.first` reads the place line as **"Dusay, bookmark 5"**. Re-reading a cell after setting on
+  it needs a step away and back (`ui.right` then `ui.left`) — the sentence is spoken on arrival.
+- **Setting from the cell.** `galaxy.bookmarkSet<n>` with the cursor live on a square holding one
+  system says "Bookmark n set on ⟨system⟩" and writes `slot<n> = <guid>,<x>,<y>`; on any other
+  square it says "Bookmark n set on ⟨pair⟩" and writes `slot<n> = 0,<x>,<y>`, where `<x>,<y>` is
+  `GalaxyCoordinates.Origin()` plus the cell's own pair — an arithmetic check the file can be read
+  against (home `68.884, -22.45`, cell `0, 4` → `0,68.8843002,-18.4499054`).
+- **The skip stops at one.** Two adjacent bare squares in the same influence bubble differ only by
+  the bookmark, which is the clean test: from `0, 6` southward, `galaxy.inspectSkipSouth` answers
+  "Skipped 1 square" and then "bookmark 2, 0, 4". Pick the pair inside ONE bubble — an influence
+  crossing is part of cell identity too and would stop the walk for its own reasons.
+
 ## Fixture-blocked
 
 - The growing and shrinking influence wordings, the "Under … influence" suffix and the

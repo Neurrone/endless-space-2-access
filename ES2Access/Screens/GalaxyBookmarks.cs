@@ -132,12 +132,10 @@ namespace ES2Access.Screens
             }
 
             // While the inspect cursor is driving, the place the player is standing on is the CELL and
-            // not the tree row underneath it. Reading that cell is the inspect feature's own job and
-            // is not wired yet, so the key is taken and does nothing rather than bookmarking a row the
-            // player is not looking at.
+            // not the tree row underneath it.
             if (GalaxyInspect.Live)
             {
-                return true;
+                return SetFromCell(digit);
             }
 
             StarSystemNode system = SystemOf(focused);
@@ -157,6 +155,41 @@ namespace ES2Access.Screens
                 return true;
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// The same bookmark, made out of the CELL - the square the player is reading instead of the
+        /// tree row underneath it.
+        ///
+        /// A square holding exactly one place bookmarks that place, GUID and all, so a bookmark set
+        /// from the cell and one set from the tree are the same bookmark; anything else keeps the
+        /// square's own point of galaxy. Which is which is audible: the line says the system's name or
+        /// the pair, the same two answers the tree's own set has.
+        ///
+        /// PARKED, this is never reached - the cursor is on another stop, and a set off the map stop
+        /// is already silently nothing (owner ruling 2026-08-31: focus is not on the map, so there is
+        /// no place there to keep).
+        /// </summary>
+        private bool SetFromCell(char digit)
+        {
+            GalaxyPosition at;
+            StarSystemNode place;
+            if (!_screen.Inspect.CellPlace(out at, out place))
+            {
+                return true;
+            }
+
+            if (place != null)
+            {
+                GalaxyPosition star = place.GalaxyPosition;
+                MapBookmarkStore.Set(digit, MapBookmark.OfSystem(place.GUID, star.X, star.Y));
+                Say(digit, place.LocalizedName);
+                return true;
+            }
+
+            MapBookmarkStore.Set(digit, MapBookmark.AtPoint(at.X, at.Y));
+            Say(digit, GalaxyCoordinates.Text(at));
             return true;
         }
 
@@ -293,18 +326,23 @@ namespace ES2Access.Screens
                 GalaxyCoordinates.Offsets(at, out east, out north);
                 int x = MapCoordinates.Round(east);
                 int y = MapCoordinates.Round(north);
+                // The row the tree cursor is put on UNDER the cell: a system is seated on its own row
+                // and not inside it, because going inside is what brings the camera in and the mode is
+                // deliberately leaving the picture alone.
+                ControlId seat = system != null ? GalaxyHudScreen.SystemRow(system) : row;
                 if (GalaxyInspect.Active)
                 {
                     _screen.Inspect.JumpTo(x, y);
+                    Seat(navigator, seat, at, false);
                 }
                 else
                 {
                     // The stop first and the cell second. Landing back on the map is an ordinary
-                    // landing and the page's camera rule follows it (measured: onto the row the map
-                    // stop remembers, which is anywhere at all); the cell's own slide has to be the
-                    // last word, or the camera ends up looking at the place the player LEFT while the
-                    // cell reads out the place they asked for.
-                    navigator.FocusStop(GalaxyHudScreen.SystemStop);
+                    // landing and the page's camera rule follows it, so it is aimed at the BOOKMARK's
+                    // own row: aimed at whatever the map stop happened to remember, the camera went to
+                    // that row's place on the way - a zoom into a system the player had not asked for
+                    // (measured, stage B). The cell's own slide is still the last word.
+                    Seat(navigator, seat, at, true);
                     _screen.Inspect.MoveTo(x, y);
                 }
 
@@ -323,6 +361,38 @@ namespace ES2Access.Screens
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Put the tree cursor on the bookmark's own row underneath the cell, and tell the mode that
+        /// is where it now stands.
+        ///
+        /// Without the second half, Escape out of the mode undid the jump: leaving puts the player
+        /// back on the control the mode was ARMED from, camera and all
+        /// (<see cref="GalaxyInspect.Reseat"/>), so a player who swept to a bookmark and pressed
+        /// Escape was returned to wherever they had been ten minutes earlier. It is the same pairing
+        /// the page's own go-to makes while the cell is up (<c>GalaxyHudScreen.GoTo</c>).
+        ///
+        /// <paramref name="announce"/> is the parked case, where the cursor really is being sent
+        /// somewhere the player is not: that landing is the one they hear. LIVE, the cell is what they
+        /// are reading and the tree move is silent, felt only when the mode ends.
+        /// </summary>
+        private void Seat(GraphNavigator navigator, ControlId seat, GalaxyPosition at, bool announce)
+        {
+            if (seat == null)
+            {
+                // A bookmark this build lists no row for at all. The cell has still gone there, so
+                // only the seat is missing; parked, the map stop's own landing is the way back.
+                if (announce)
+                {
+                    navigator.FocusStop(GalaxyHudScreen.SystemStop);
+                }
+
+                return;
+            }
+
+            navigator.FocusNode(seat, announce);
+            _screen.Inspect.Reseat(seat, at);
         }
     }
 }
