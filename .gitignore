@@ -39,3 +39,6 @@ tools/glossary/out/
 
 # Prism fallback binary fetched at build on macOS (ES2Access.csproj FetchPrism)
 prism-build/
+
+# BepInEx macOS runtime fetched by build_release.sh
+bepinex-build/
