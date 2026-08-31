@@ -537,6 +537,16 @@ belong in the files above.
   draws it), and the `WreckedMothership` / `WreckedMothershipVampirilis` classes. All three go
   through the same helper, so what is unsighted is the PREFAB question: whether those prefabs
   draw a caption beside each bar, which would make the added one a double-name.
+- **macOS port remainder (`macos-support` branch; what shipped: `macos/README.md`).** Still
+  open by the player's own hands: the Option/Command chords under live keys, and whether
+  Option+Enter toggles fullscreen in the Mac player (Alt+Enter does on the Windows D3D11
+  player — `docs/interaction.md`). Known gap: the mod settings window's key rows speak the
+  game's spelling of a combination on a Mac (Alt, LeftCommand) where everything else says
+  Option and Cmd. Future, into the mod settings window (`ES2Access/UI/ModOptions/`): a
+  macOS-only Speech category picking the backend (streamed system voice, today the automatic
+  primary, vs Prism/VoiceOver, today only the automatic fallback) and a voice and rate of the
+  mod's own — today Spoken Content is the picker, read once at start, so a change needs a
+  game restart. A macOS release zip and install script (`build_release.ps1` has no Mac path).
 
 ## To decide (owner)
 
