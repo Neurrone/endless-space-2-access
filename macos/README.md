@@ -8,15 +8,22 @@ Windows build changes.
 - **Speech is the macOS system voice.** The mod speaks it itself: each line is rendered with
   the system speech synthesizer and played back-to-back through the mod's own audio engine, so
   queued lines (notifications, chat, the save spinner, buffer review) follow each other with no
-  gap, and a key press cuts speech at once. The voice and speaking rate are the ones you set
-  under System Settings, Accessibility, Spoken Content ("System voice" and "Speaking rate");
-  change them there and restart the game. VoiceOver is not needed and, normally, not used: its
-  announcement API cannot queue, so every queued line would cut off the one before it. You can
-  leave VoiceOver running; the game window has no accessibility tree for it to read. Only if
-  the system voice cannot be started at all does the mod fall back to the Prism speech library
-  (`libprism.dylib` next to the .app), which speaks through VoiceOver when it is running —
-  usable, but queued lines will cut each other off there; the log
-  (`BepInEx/LogOutput.log`) says which backend is speaking.
+  gap, and a key press cuts speech at once. Out of the box the voice and speaking rate are the
+  ones you set under System Settings, Accessibility, Spoken Content ("System voice" and
+  "Speaking rate"), and they follow that setting across restarts until you pick your own.
+  VoiceOver is not needed and, normally, not used: its announcement API cannot queue, so every
+  queued line would cut off the one before it. You can leave VoiceOver running; the game window
+  has no accessibility tree for it to read. If the system voice cannot be started at all, the
+  mod falls back to the Prism speech library (`libprism.dylib` next to the .app), which speaks
+  through VoiceOver when it is running; the log (`BepInEx/LogOutput.log`) says which backend is
+  speaking.
+- **The Speech tab in Mod settings.** The "Mod settings" entry (right after Options on the main
+  menu and the pause menu) has a macOS-only Speech tab: the backend (System voice, or VoiceOver
+  through Prism if you prefer VoiceOver's own speech and can live without the queue), the
+  voice — the list offers the voices for the game's language, with your Spoken Content voice
+  as the default first entry — and the speaking rate and speech volume. Changes take effect as
+  you make them; Apply keeps them, Cancel puts everything back, and "Reset voice and rate to
+  Spoken Content" returns to following the OS setting.
 - **The chord modifiers are Option and Command.** Every key the manual writes as `Ctrl+X` is
   `Option+X` on a Mac, and every `Alt+X` is `Cmd+X`; the letters do not change. So: Option+H
   the empire banners, Option+N the notifications, Option+E the turn controls, Option+T the turn

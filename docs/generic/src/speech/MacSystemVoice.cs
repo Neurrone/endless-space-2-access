@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using ES2Access.Core.Util;
 
@@ -21,8 +22,11 @@ namespace ES2Access.Core.Speech.Mac
         private const int BoundaryImmediate = 0; // AVSpeechBoundaryImmediate
 
         private IntPtr _synth; // owned (+1): AVSpeechSynthesizer, for the fallback; also marks the voice as started
-        private string _voiceIdentifier; // the Spoken Content voice; null for AVSpeech's default
+        private string _voiceIdentifier; // the voice in use; null for AVSpeech's default
+        private string _systemVoiceIdentifier; // the Spoken Content voice, what the default setting means
+        private readonly List<VoiceInfo> _voices = new List<VoiceInfo>(); // installed voices, disambiguated
         private float _rate = 0.5f; // AVSpeech's [0, 1] scale
+        private float _volume = 1f;
         private MacSpeechStream _stream;
 
         private static readonly IntPtr SelSetVolume = ObjC.Sel("setVolume:");
@@ -50,9 +54,14 @@ namespace ES2Access.Core.Speech.Mac
             {
                 ObjC.LoadSpeechFrameworks();
                 _synth = ObjC.Alloc("AVSpeechSynthesizer", "init");
-                _voiceIdentifier = MacSpokenContent.DefaultVoiceIdentifier();
-                float stored = _voiceIdentifier == null ? -1f : MacSpokenContent.DefaultVoiceRate(_voiceIdentifier);
+                _systemVoiceIdentifier = MacSpokenContent.DefaultVoiceIdentifier();
+                _voiceIdentifier = _systemVoiceIdentifier;
+                float stored = _systemVoiceIdentifier == null
+                    ? -1f
+                    : MacSpokenContent.DefaultVoiceRate(_systemVoiceIdentifier);
                 _rate = stored >= 0f ? stored : 0.5f;
+                _voices.Clear();
+                _voices.AddRange(InstalledVoices());
                 CreateStream();
                 return true;
             }
@@ -68,6 +77,113 @@ namespace ES2Access.Core.Speech.Mac
             }
         }
 
+        /// <summary>The installed voices, disambiguated - what the Voice setting's picker offers.
+        /// Empty until <see cref="Start"/>.</summary>
+        public IList<VoiceInfo> Voices
+        {
+            get { return _voices; }
+        }
+
+        /// <summary>The Spoken Content voice's identifier, what the default Voice setting means;
+        /// null when macOS reports none.</summary>
+        public string SystemVoiceIdentifier
+        {
+            get { return _systemVoiceIdentifier; }
+        }
+
+        /// <summary>The rate being spoken with, AVSpeech's [0, 1] scale - the Spoken Content rate
+        /// until <see cref="SetRate01"/> says otherwise.</summary>
+        public float Rate01
+        {
+            get { return _rate; }
+        }
+
+        /// <summary>
+        /// Switch to the voice a setting key names (<see cref="VoiceSelection.DefaultKey"/> or an
+        /// uninstalled voice mean the Spoken Content voice). Messages already queued keep the
+        /// voice they were queued with.
+        /// </summary>
+        public void SetVoiceKey(string key)
+        {
+            string identifier = _systemVoiceIdentifier;
+            if (key != VoiceSelection.DefaultKey)
+            {
+                VoiceInfo voice = VoiceSelection.FindByKey(_voices, key);
+                if (voice != null)
+                {
+                    identifier = voice.Identifier;
+                }
+                else
+                {
+                    Log.Info("speech: the set voice \"" + key + "\" is not installed; the Spoken Content voice stands in");
+                }
+            }
+
+            _voiceIdentifier = identifier;
+        }
+
+        /// <summary>Speak at <paramref name="rate"/> on AVSpeech's [0, 1] scale from here on.</summary>
+        public void SetRate01(float rate)
+        {
+            _rate = SpeechAudio.Clamp(rate, 0f, 1f);
+        }
+
+        /// <summary>Speak at <paramref name="volume"/>, 0 to 1, from here on - lines already
+        /// scheduled included.</summary>
+        public void SetVolume01(float volume)
+        {
+            _volume = SpeechAudio.Clamp(volume, 0f, 1f);
+            if (_stream != null)
+            {
+                _stream.SetVolume(_volume);
+            }
+        }
+
+        /// <summary>Every installed AVSpeech voice, disambiguated where names repeat - what the
+        /// Voice setting's picker offers. Callable whether or not a system voice is running (the
+        /// picker also fills while Prism is the backend); an empty list on failure, logged. Only
+        /// called on macOS.</summary>
+        public static List<VoiceInfo> InstalledVoices()
+        {
+            IntPtr pool = ObjC.AutoreleasePoolPush();
+            try
+            {
+                ObjC.LoadSpeechFrameworks();
+                IntPtr all = ObjC.Send(
+                    ObjC.Class("AVSpeechSynthesisVoice"),
+                    ObjC.Sel("speechVoices")
+                );
+                List<VoiceInfo> raw = new List<VoiceInfo>();
+                long count = ObjC.Count(all);
+                for (long i = 0; i < count; i++)
+                {
+                    IntPtr voice = ObjC.Send(all, ObjC.Sel("objectAtIndex:"), new IntPtr(i));
+                    string id = ObjC.ToManagedString(ObjC.Send(voice, ObjC.Sel("identifier")));
+                    string name = ObjC.ToManagedString(ObjC.Send(voice, ObjC.Sel("name")));
+                    if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(name))
+                    {
+                        continue;
+                    }
+
+                    string language = ObjC.ToManagedString(ObjC.Send(voice, ObjC.Sel("language")));
+                    raw.Add(
+                        new VoiceInfo(id, name, string.IsNullOrEmpty(language) ? null : language)
+                    );
+                }
+
+                return VoiceSelection.Disambiguate(raw);
+            }
+            catch (Exception e)
+            {
+                Log.Error("speech: reading the installed voices failed: " + e.Message);
+                return new List<VoiceInfo>();
+            }
+            finally
+            {
+                ObjC.AutoreleasePoolPop(pool);
+            }
+        }
+
         /// <summary>Set up the streaming queue. If that fails, messages go to AVSpeech's own queue instead.</summary>
         private void CreateStream()
         {
@@ -75,7 +191,7 @@ namespace ES2Access.Core.Speech.Mac
             try
             {
                 _stream = new MacSpeechStream();
-                _stream.SetVolume(1f);
+                _stream.SetVolume(_volume);
             }
             catch (Exception e)
             {
@@ -211,7 +327,7 @@ namespace ES2Access.Core.Speech.Mac
                 return;
             }
 
-            ObjC.SendFloat(utterance, SelSetVolume, 1f);
+            ObjC.SendFloat(utterance, SelSetVolume, _volume);
             ObjC.Send(_synth, SelSpeak, utterance);
         }
     }

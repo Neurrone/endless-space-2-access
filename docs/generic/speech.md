@@ -115,3 +115,15 @@ Copy nearly verbatim: [`src/speech/PrismNative.cs`](src/speech/PrismNative.cs),
 [`src/speech/NativeLoader.cs`](src/speech/NativeLoader.cs). Pump ordering example:
 [`src/hot-reload/ModEntry.cs`](src/hot-reload/ModEntry.cs). Obtain `prism.dll` itself from
 the Prism project's releases (ship its license files alongside).
+
+For a game that also ships on macOS, the streamed system voice and its helpers (the reasons
+are in each file's own header — VoiceOver's announcement API cannot queue, AVSpeech's own
+queue gaps between lines): [`src/speech/Platform.cs`](src/speech/Platform.cs),
+[`src/speech/ObjC.cs`](src/speech/ObjC.cs),
+[`src/speech/SpeechAudio.cs`](src/speech/SpeechAudio.cs),
+[`src/speech/MacSpeechStream.cs`](src/speech/MacSpeechStream.cs),
+[`src/speech/MacSpokenContent.cs`](src/speech/MacSpokenContent.cs),
+[`src/speech/MacSystemVoice.cs`](src/speech/MacSystemVoice.cs), and — for an in-game voice
+picker — [`src/speech/VoiceSelection.cs`](src/speech/VoiceSelection.cs). `PrismSpeech`
+stands the stream up ahead of Prism on macOS and falls back through it; obtain
+`libprism.dylib` from the same Prism release for the fallback.
