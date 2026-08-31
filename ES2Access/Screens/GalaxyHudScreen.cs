@@ -9101,7 +9101,7 @@ namespace ES2Access.Screens
                     Fleet it = fleets[i];
                     List<TooltipChildren.Dossier> badges;
                     NodeVtable vtable = FleetNode(it, docks, flying, out badges);
-                    AddFleet(builder, place + "/fleet/" + it.GUID, vtable, badges);
+                    AddFleet(builder, it, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -9115,15 +9115,16 @@ namespace ES2Access.Screens
         /// which lane it is on and which way that lane leaves.
         ///
         /// A lane runs between two systems and the fleet flying it is at neither, so the map draws it
-        /// out in between and the tree hangs it under BOTH ends. Either end is a true answer to "where
-        /// is it", and hosting it under one alone would make the answer depend on which of the two the
-        /// player happened to open - the same reasoning the fleet search index has always been built on.
-        /// Under the lane node itself is what this used to be, and a lane is a leaf now: travelling one
-        /// is what right means there.
+        /// out in between and the tree hangs it under the end it is ARRIVING at - the same end a free
+        /// mover hangs under, and the only one the picture says anything about (<see cref="Bound"/>).
+        /// A fleet STOPPED on a lane is heading for neither end and keeps a row under each. Under the
+        /// lane node itself is what this used to be, and a lane is a leaf now: travelling one is what
+        /// right means there.
         ///
-        /// Keyed under the SYSTEM, with no reference carried, exactly as a parked fleet is: the two
-        /// hosts' keys differ by the system in them, so the two nodes are distinct controls, and a fleet
-        /// is parked or under way and never both, so neither key can collide with the other set.
+        /// Keyed under the SYSTEM, exactly as a parked fleet is: the two hosts' keys differ by the
+        /// system in them, so the two nodes are distinct controls, and a fleet is parked or under way
+        /// and never both, so neither key can collide with the other set. The identity anchor rides
+        /// the SOLE host only (<see cref="EnRoute.Sole"/>).
         /// </summary>
         private static void AddEnRoute(GraphBuilder builder, string place, List<EnRoute> flying)
         {
@@ -9160,7 +9161,13 @@ namespace ES2Access.Screens
                             false
                         )
                     );
-                    AddFleet(builder, place + "/fleet/" + it.GUID, vtable, badges);
+                    // The anchor goes on the row that is the fleet's ONLY row. A fleet in transit hangs
+                    // under the end it is arriving at and nowhere else, so that row holds it and the
+                    // cursor rides it in as the key changes to the destination's. A fleet STOPPED on a
+                    // lane hangs under both ends, and there neither row takes it: where two nodes show
+                    // one entity at most one may carry the reference, or the cursor jumps between them
+                    // on every rebuild, and there is no reason to prefer one end of a stopped fleet.
+                    AddFleet(builder, leg.Sole ? it : null, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -9224,7 +9231,7 @@ namespace ES2Access.Screens
                             false
                         )
                     );
-                    AddFleet(builder, place + "/fleet/" + it.GUID, vtable, badges);
+                    AddFleet(builder, it, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -9259,7 +9266,7 @@ namespace ES2Access.Screens
                     1,
                     GraphNodes.ValuePart(() => ModStrings.Get(phrase), false)
                 );
-                AddFleet(builder, AdriftKey(it), vtable, badges);
+                AddFleet(builder, it, AdriftKey(it), vtable, badges);
             }
             catch (Exception e)
             {
@@ -9269,7 +9276,7 @@ namespace ES2Access.Screens
 
         private static ControlId AdriftId(Fleet fleet)
         {
-            return ControlId.Structural(AdriftKey(fleet));
+            return PlacedRows.Anchor(fleet, AdriftKey(fleet));
         }
 
         /// <summary>The key that id is built from, which the declaration needs as well: a fleet with
@@ -9550,15 +9557,19 @@ namespace ES2Access.Screens
 
         /// <summary>A fleet's node as the tree declares it - a GROUP where the map drew badges on its
         /// lozenge, so each badge's sentence is a stop of its own under the fleet, and the plain leaf
-        /// it has always been otherwise.</summary>
+        /// it has always been otherwise. The fleet itself comes in because its row is ANCHORED on it
+        /// (<see cref="PlacedRows.Anchor"/>): a fleet's key names the system it is at or heading for,
+        /// so the key changes the moment it departs, and the cursor follows the fleet rather than the
+        /// berth it left.</summary>
         private static void AddFleet(
             GraphBuilder builder,
+            Fleet fleet,
             string key,
             NodeVtable vtable,
             List<TooltipChildren.Dossier> badges
         )
         {
-            ControlId id = ControlId.Structural(key);
+            ControlId id = PlacedRows.Anchor(fleet, key);
             if (badges == null || badges.Count == 0)
             {
                 // Synthetic: the row stands for a thing in the galaxy model; the enumeration above is the honesty about it.
@@ -9584,6 +9595,11 @@ namespace ES2Access.Screens
             public int Number;
             public string Direction;
             public bool Wormhole;
+
+            /// <summary>Whether this system is the ONLY one hosting the fleet - it is the end the
+            /// fleet is arriving at. False for a fleet stopped on the lane, which hangs under both
+            /// ends (<see cref="Bound"/>).</summary>
+            public bool Sole;
         }
 
         /// <summary>
@@ -9605,9 +9621,10 @@ namespace ES2Access.Screens
                 for (int j = 0; j < onLane.Count; j++)
                 {
                     Fleet fleet = onLane[j];
+                    bool sole;
                     if (
                         Holds(flying, fleet)
-                        || !Bound(positioning, fleet, lanes[i].Link, node)
+                        || !Bound(positioning, fleet, lanes[i].Link, node, out sole)
                     )
                     {
                         continue;
@@ -9620,6 +9637,7 @@ namespace ES2Access.Screens
                             Number = i + 1,
                             Direction = CompassDirections.KeyForBearing(lanes[i].Bearing),
                             Wormhole = lanes[i].Wormhole,
+                            Sole = sole,
                         }
                     );
                 }
@@ -9644,14 +9662,21 @@ namespace ES2Access.Screens
         /// neither end, so there is no destination to prefer and it keeps the row under EACH end that
         /// it has always had. The rule is about a fleet IN TRANSIT; a fleet that has stopped is as much
         /// at one end's lane as at the other's.
+        ///
+        /// <paramref name="sole"/> is that difference, answered for the caller: true when this node is
+        /// the destination and therefore the ONLY host, false when the fleet has stopped and both ends
+        /// carry a row for it. It decides which of the two rows may hold the fleet as its identity
+        /// anchor - at most one node may carry a reference, or the cursor jumps between them.
         /// </summary>
         private static bool Bound(
             IPositioningService positioning,
             Fleet fleet,
             Link link,
-            StarSystemNode node
+            StarSystemNode node,
+            out bool sole
         )
         {
+            sole = false;
             try
             {
                 GameNode goal = GoalOf(positioning, fleet);
@@ -9663,7 +9688,8 @@ namespace ES2Access.Screens
                     )
                 )
                 {
-                    return ReferenceEquals(goal, node);
+                    sole = ReferenceEquals(goal, node);
+                    return sole;
                 }
 
                 return true;
@@ -10362,9 +10388,12 @@ namespace ES2Access.Screens
             return "galaxy:probe/" + probe.Probe.GUID;
         }
 
+        /// <summary>Anchored on the PROBE and not on the row's own struct: the struct is rebuilt every
+        /// build (it is a probe plus whichever star it currently reads its bearing from), and the thing
+        /// that persists across the crossing is the probe.</summary>
         private static ControlId ProbeId(DriftingProbe probe)
         {
-            return ControlId.Structural(ProbeKey(probe));
+            return PlacedRows.Anchor(probe.Probe, ProbeKey(probe));
         }
 
         /// <summary>One travelling probe as the SCANNER needs it: what it is called, what else its row
@@ -10753,7 +10782,7 @@ namespace ES2Access.Screens
         /// declaration cannot drift apart.</summary>
         internal static ControlId ProjectileId(ObliteratorProjectile shot)
         {
-            return ControlId.Structural("galaxy:projectile/" + shot.GUID);
+            return PlacedRows.Anchor(shot, "galaxy:projectile/" + shot.GUID);
         }
 
         /// <summary>Where a constellation's GROUP node stands in the tree - built here, beside the one
@@ -10767,7 +10796,7 @@ namespace ES2Access.Screens
         /// <summary>The same, for an ally's pin.</summary>
         internal static ControlId PinId(CoordinationRequest request)
         {
-            return ControlId.Structural(PinKey(request));
+            return PlacedRows.Anchor(request, PinKey(request));
         }
 
         private static string PinKey(CoordinationRequest request)

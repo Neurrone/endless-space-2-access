@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ES2Access.Core.UI;
+using ES2Access.Core.UI.Graph;
 using Xunit;
 
 namespace ES2Access.Tests.UI
@@ -130,6 +131,53 @@ namespace ES2Access.Tests.UI
             Assert.Equal("unexplored", PlacedRows.SegmentOf("galaxy:constellation/unexplored"));
             Assert.Null(PlacedRows.SegmentOf(null));
             Assert.Null(PlacedRows.SegmentOf(string.Empty));
+        }
+
+        /// <summary>The identity anchor, kind by kind: the four that travel and the star whose key
+        /// changes under it carry their entity; the game's own annotation and the player's note do
+        /// not.</summary>
+        [Fact]
+        public void TheMovableKindsAreAnchored()
+        {
+            Assert.True(PlacedRows.Named("system").Anchored);
+            Assert.True(PlacedRows.Named("fleet").Anchored);
+            Assert.True(PlacedRows.Named("probe").Anchored);
+            Assert.True(PlacedRows.Named("projectile").Anchored);
+            Assert.True(PlacedRows.Named("pin").Anchored);
+            Assert.False(PlacedRows.Named("marker").Anchored);
+            Assert.False(PlacedRows.Named("bookmark").Anchored);
+            Assert.False(PlacedRows.Named("constellation").Anchored);
+            Assert.False(PlacedRows.Named("unexplored").Anchored);
+        }
+
+        /// <summary>The column is SPENT and not merely declared: the one minting call reads it, so an
+        /// anchored kind cannot be built without its anchor and an unanchored one cannot pick one up.
+        /// </summary>
+        [Fact]
+        public void AnchorCarriesTheSubjectOnlyWhereTheTableSaysSo()
+        {
+            object fleet = new object();
+            ControlId travelling = PlacedRows.Anchor(
+                fleet,
+                "galaxy:constellation/446/system/535/fleet/9"
+            );
+            Assert.Same(fleet, travelling.Subject);
+            Assert.True(travelling.SubjectMatches(fleet));
+
+            // The same fleet re-filed under another system: a different key, still the same node to a
+            // cursor that was standing on it.
+            ControlId arrived = PlacedRows.Anchor(fleet, "galaxy:constellation/1/system/162/fleet/9");
+            Assert.NotEqual(travelling, arrived);
+            Assert.True(arrived.SubjectMatches(fleet));
+
+            Assert.Null(PlacedRows.Anchor(new object(), "galaxy:constellation/1/bookmark/1").Subject);
+            Assert.Null(PlacedRows.Anchor(new object(), "galaxy:marker/17").Subject);
+            Assert.Null(PlacedRows.Anchor(new object(), "galaxy:constellation/1").Subject);
+            // Carried and undeclared segments get the bare key: this is not their question.
+            Assert.Null(
+                PlacedRows.Anchor(new object(), "galaxy:constellation/1/system/162/planet/0").Subject
+            );
+            Assert.Null(PlacedRows.Anchor(null, "galaxy:probe/1621").Subject);
         }
 
         /// <summary>A row kind the table does not name is CARRIED by an ancestor and answers nothing

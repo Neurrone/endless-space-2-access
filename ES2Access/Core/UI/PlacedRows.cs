@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.UI.Graph;
 
 namespace ES2Access.Core.UI
 {
@@ -31,6 +32,15 @@ namespace ES2Access.Core.UI
     /// - is deliberately absent from this table: it stands nowhere itself and answers every one of the
     /// four questions through the star it hangs under. The lint keeps a list of those by name, so a
     /// NEW segment is neither silently positioned nor silently carried.
+    ///
+    /// THE FIFTH QUESTION IS IDENTITY, and it is asked of the kinds that MOVE. A row's structural key
+    /// says where in the tree it hangs, so a thing that travels gets a NEW key the moment it re-files -
+    /// a fleet leaving its berth is keyed under the system it is heading for, and a star's own key
+    /// changes the turn the player learns which constellation it is in. The cursor standing on that row
+    /// is reconciled by key, so a key that changed reads as a row that DIED and the player is put back
+    /// on a neighbour. <see cref="Anchored"/> is the answer: the row's id carries the game entity as
+    /// its <c>Subject</c>, and tier-1 reconciliation follows the object to wherever its new key is
+    /// (<c>ControlId</c>, <c>KeyGraph.Reconcile</c>).
     /// </summary>
     public sealed class PlacedRow
     {
@@ -56,13 +66,20 @@ namespace ES2Access.Core.UI
         /// </summary>
         public readonly bool Refuses;
 
+        /// <summary>Whether this row's id must ANCHOR ON THE ENTITY it is about - carry it as the
+        /// <c>Subject</c> - so that the cursor follows the thing when its structural key changes under
+        /// it. True for the kinds that travel; false for a row whose key only ever changes because the
+        /// row itself was replaced, where following would be following the wrong thing.</summary>
+        public readonly bool Anchored;
+
         private PlacedRow(
             string segment,
             bool arms,
             int enterTier,
             bool leap,
             bool restore,
-            bool refuses
+            bool refuses,
+            bool anchored
         )
         {
             Segment = segment;
@@ -71,19 +88,27 @@ namespace ES2Access.Core.UI
             Leap = leap;
             Restore = restore;
             Refuses = refuses;
+            Anchored = anchored;
         }
 
         /// <summary>A row that stands somewhere of its own.</summary>
-        public static PlacedRow Placed(string segment, int enterTier, bool leap, bool restore)
+        public static PlacedRow Placed(
+            string segment,
+            int enterTier,
+            bool leap,
+            bool restore,
+            bool anchored
+        )
         {
-            return new PlacedRow(segment, true, enterTier, leap, restore, false);
+            return new PlacedRow(segment, true, enterTier, leap, restore, false, anchored);
         }
 
-        /// <summary>A grouping: never a place, whatever the entity behind it happens to carry.
-        /// </summary>
+        /// <summary>A grouping: never a place, whatever the entity behind it happens to carry. Its key
+        /// is a name the map wrote across the sky and nothing travels between two of them, so it is
+        /// never anchored - the entity a heading happens to hold is not identity here.</summary>
         public static PlacedRow Grouping(string segment)
         {
-            return new PlacedRow(segment, false, 0, false, false, true);
+            return new PlacedRow(segment, false, 0, false, false, true, false);
         }
     }
 
@@ -118,14 +143,25 @@ namespace ES2Access.Core.UI
         private static readonly PlacedRow[] Table = new PlacedRow[]
         {
             // A star system, and the special nodes the map strings the galaxy with - the same row
-            // shape, the same key, and the cell reads them alike.
-            PlacedRow.Placed("system", TierPlace, true, true),
-            PlacedRow.Placed("fleet", TierFleet, true, true),
-            PlacedRow.Placed("probe", TierMover, true, true),
-            PlacedRow.Placed("projectile", TierMover, true, true),
-            PlacedRow.Placed("pin", TierMover, true, true),
-            PlacedRow.Placed("marker", TierMarker, true, true),
-            PlacedRow.Placed("bookmark", TierBookmark, true, true),
+            // shape, the same key, and the cell reads them alike. A star does not travel, but its KEY
+            // does: the head of it is the constellation, and the turn the player is first shown which
+            // stretch of sky it belongs to the whole branch moves out of the unexplored bucket. So it
+            // is anchored, and has been since before this column named the reason.
+            PlacedRow.Placed("system", TierPlace, true, true, true),
+            // The four that TRAVEL. A fleet is re-keyed under the system it is heading for the moment
+            // it leaves its berth; a probe, a missile and an ally's pin are keyed at the top of the
+            // stop and change nothing as they cross - but they are the same kind of thing, and a key
+            // shape is not a promise. All four carry their entity (owner-approved 2026-08-31).
+            PlacedRow.Placed("fleet", TierFleet, true, true, true),
+            PlacedRow.Placed("probe", TierMover, true, true, true),
+            PlacedRow.Placed("projectile", TierMover, true, true, true),
+            PlacedRow.Placed("pin", TierMover, true, true, true),
+            PlacedRow.Placed("marker", TierMarker, true, true, false),
+            // A bookmark is the one row that is the PLAYER'S note rather than a thing in the galaxy,
+            // and it is keyed by the slot digit. Deliberately unanchored: when one place, one slot
+            // empties a slot, that row is meant to die under the cursor and the restore is meant to
+            // find the replacing slot's row - an anchor would be a thing to follow where nothing moved.
+            PlacedRow.Placed("bookmark", TierBookmark, true, true, false),
             // The two groupings. Both are keyed under the same head as the systems they gather, and
             // neither is anywhere the player can be standing.
             PlacedRow.Grouping("constellation"),
@@ -143,6 +179,30 @@ namespace ES2Access.Core.UI
         public static PlacedRow Of(object structuralKey)
         {
             return Named(SegmentOf(structuralKey));
+        }
+
+        /// <summary>
+        /// The id a placed row is declared with: the entity carried as the subject where the table
+        /// says this kind is <see cref="PlacedRow.Anchored"/>, and the bare structural key where it
+        /// does not. The one place the column is spent, so a kind cannot be declared anchored and then
+        /// built without its anchor.
+        ///
+        /// ACROSS A SAVE AND A LOAD the anchor is worth nothing: the game builds new instances for
+        /// everything, so no subject from the session before matches. That is what the GUID in the
+        /// structural key is for - tier 2 catches the rebuilt object under the same key, and between
+        /// them a row is followed whether it moved or was remade. Neither survives BOTH at once, and
+        /// nothing needs it to: focus does not outlive a load.
+        ///
+        /// A row this table does not name - a segment carried by an ancestor, or one nobody has
+        /// declared yet - gets the bare key. A carried row that wants a subject passes
+        /// <c>ControlId.For</c> itself; it is not a placed row and this is not its question.
+        /// </summary>
+        public static ControlId Anchor(object subject, string structuralKey)
+        {
+            PlacedRow row = Named(SegmentOf(structuralKey));
+            return subject != null && row != null && row.Anchored
+                ? ControlId.For(subject, structuralKey)
+                : ControlId.Structural(structuralKey);
         }
 
         /// <summary>The declaration for a segment, or null.</summary>
