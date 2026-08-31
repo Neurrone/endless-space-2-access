@@ -337,13 +337,16 @@ namespace ES2Access.Screens
                 }
                 else
                 {
-                    // The stop first and the cell second. Landing back on the map is an ordinary
+                    // The landing first and the cell second. Landing back on the map is an ordinary
                     // landing and the page's camera rule follows it, so it is aimed at the BOOKMARK's
                     // own row: aimed at whatever the map stop happened to remember, the camera went to
                     // that row's place on the way - a zoom into a system the player had not asked for
-                    // (measured, stage B). The cell's own slide is still the last word.
-                    Seat(navigator, seat, at, true);
-                    _screen.Inspect.MoveTo(x, y);
+                    // (measured, stage B). The cell's own slide is still the last word, and it is
+                    // SILENT: the landing has just named the place, and the mode's own resume reading
+                    // the cell out said it a second time (owner ruling 2026-08-31 - a jump announces
+                    // exactly once).
+                    bool landed = Seat(navigator, seat, at, true);
+                    _screen.Inspect.MoveTo(x, y, landed);
                 }
 
                 return true;
@@ -376,23 +379,29 @@ namespace ES2Access.Screens
         /// <paramref name="announce"/> is the parked case, where the cursor really is being sent
         /// somewhere the player is not: that landing is the one they hear. LIVE, the cell is what they
         /// are reading and the tree move is silent, felt only when the mode ends.
+        ///
+        /// Answers whether the cursor was really aimed at the BOOKMARK's own row, which is what tells
+        /// the parked jump whether its landing has already named the place
+        /// (<see cref="GalaxyInspect.MoveTo"/>).
         /// </summary>
-        private void Seat(GraphNavigator navigator, ControlId seat, GalaxyPosition at, bool announce)
+        private bool Seat(GraphNavigator navigator, ControlId seat, GalaxyPosition at, bool announce)
         {
             if (seat == null)
             {
                 // A bookmark this build lists no row for at all. The cell has still gone there, so
-                // only the seat is missing; parked, the map stop's own landing is the way back.
+                // only the seat is missing; parked, the map stop's own landing is the way back - and
+                // it names wherever that stop was left, not the bookmark, so the cell keeps its voice.
                 if (announce)
                 {
                     navigator.FocusStop(GalaxyHudScreen.SystemStop);
                 }
 
-                return;
+                return false;
             }
 
             navigator.FocusNode(seat, announce);
             _screen.Inspect.Reseat(seat, at);
+            return true;
         }
     }
 }

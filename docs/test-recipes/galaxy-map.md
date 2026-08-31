@@ -962,6 +962,11 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   the constellation the point falls in, ordered among that group's own entries). Inspect ON, neither
   happens: the CELL moves and `zoomStep` holds (measured 8 through a live jump, a parked jump and a
   `galaxy.bookmarkHome`).
+- **One utterance per jump, three shapes.** Inspect off it is the tree landing; inspect live it is
+  the cell; parked it is the landing on the bookmark's row, with the mode's resume silenced for that
+  one landing. A second line in `/speech` after a jump is a defect, not a slow frame — except the
+  page's own "Zoom level n of 15, ⟨view⟩", which is the zoom watcher and rides on any camera-moving
+  landing.
 - **The reseat is proved by ESCAPE, not by the jump.** After an inspect-mode jump the tree cursor is
   moved silently underneath, so the evidence is `/input ui.back` afterwards: "Exited inspect mode"
   then the bookmark's own row ("… Lors, -66, -26, group, No owner, **bookmark 3**, collapsed, 2 of

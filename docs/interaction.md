@@ -808,8 +808,17 @@ asked for on the press and the landing waits for the build that opens it
 bookmark lands on its own synthetic row, and the camera slides onto the point through the same rule.
 Inspect ON, the CELL moves instead — `GalaxyInspect.JumpTo` on the bookmark's rounded spoken pair,
 the mode never exited and the zoom never touched; PARKED, the cell is moved SILENTLY
-(`GalaxyInspect.MoveTo`) and the mode's own resume is what reads it, so the arrival is said once.
+(`GalaxyInspect.MoveTo`) behind the landing that takes the player back to the map.
 An empty slot is a spoken refusal ("No bookmark n") and moves nothing.
+**A JUMP ANNOUNCES EXACTLY ONCE** (owner ruling 2026-08-31), whichever of the three shapes it takes:
+inspect off, the tree landing is the announcement; inspect live, the cell's own reading is; parked,
+the landing on the bookmark's row is — and the coming-back-to-the-map resume that would ordinarily
+read the cell out is silenced for that one landing, because it named the same place a second time.
+Only that landing's resume: the silence is armed by the jump, expires by itself
+(`GalaxyInspect.SilentResumeFrames`) and is not armed at all where the jump could not seat the
+cursor on the bookmark's row, so an ordinary Tab-away/Tab-back still re-reads the cell. **The cell
+is still READ** — the sentence and the review buffer are one call — so a silenced resume still
+leaves the cell's lines under the review chords.
 **EVERY inspect-mode jump reseats the tree cursor underneath, onto the bookmark's own row**
 (owner ruling 2026-08-31; `GalaxyBookmarks.Seat` = `GraphNavigator.FocusNode` +
 `GalaxyInspect.Reseat`, the pairing the page's own go-to already makes). Leaving the mode puts the

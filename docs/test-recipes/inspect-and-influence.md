@@ -319,6 +319,10 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   in it: `galaxy.bookmarkGoTo1` (inspect off) then `galaxy.inspect` opens the cell on the point and
   answers **"bookmark 1, Unexplored, -68, 18"** — before, the same cell read "Unexplored, -68, 18".
   Its own line in the review buffer, in the same place.
+- **A PARKED bookmark jump reads no cell out loud, by design** (a jump announces once — the row it
+  lands on). So it is the wrong route for measuring a cell's wording: the reading is still in the
+  review buffer (`buffer.first` → "bookmark 1", then "Unexplored", "-68, 18"), and out loud it comes
+  back with one arrow key or an ordinary Tab-away/Tab-back, which still speaks.
 - **A bookmarked system in the square** ends ITS part of the sentence with the word, not the cell's:
   **"Dusay, bookmark 5, 1st Defenders Navy, Patrol, Star lane from Rigel to Dusay, …, 0, 0"**, and
   `buffer.first` reads the place line as **"Dusay, bookmark 5"**. Re-reading a cell after setting on

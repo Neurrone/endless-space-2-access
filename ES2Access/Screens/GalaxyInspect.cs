@@ -148,10 +148,19 @@ namespace ES2Access.Screens
         ///
         /// The one caller is a bookmark jump made while the mode is PARKED: the player is standing on
         /// another stop, so the cell is not what they are reading, and the jump puts them back on the
-        /// map - where coming back is already the thing that reads the cell out
-        /// (<see cref="Update"/>). Speaking here as well would say the same cell twice.
+        /// map.
+        ///
+        /// <paramref name="landingSpeaks"/> is that jump saying it has already aimed a focus landing
+        /// at the very place the cell is being moved to. **A jump announces exactly once** (owner
+        /// ruling 2026-08-31): the landing on the bookmark's own row is the announcement, and the
+        /// coming-back-to-the-map resume that would ordinarily read the cell out
+        /// (<see cref="Update"/>) said the same place a second time. So that ONE resume is silenced -
+        /// the buffer is still filled, and an ordinary Tab-away/Tab-back still speaks, because the
+        /// silence is armed by the jump and expires on its own. False where the jump could not seat
+        /// the cursor on the bookmark's row at all, since then the landing is about somewhere else
+        /// and the cell is the only thing that would name where the player has been sent.
         /// </summary>
-        public bool MoveTo(int x, int y)
+        public bool MoveTo(int x, int y, bool landingSpeaks)
         {
             if (!_live)
             {
@@ -161,6 +170,11 @@ namespace ES2Access.Screens
             _x = x;
             _y = y;
             Show();
+            if (landingSpeaks)
+            {
+                _silentResume = SilentResumeFrames;
+            }
+
             return true;
         }
 
@@ -472,6 +486,7 @@ namespace ES2Access.Screens
             _driving = null;
             _wasOnMap = false;
             _resume = 0;
+            _silentResume = 0;
             _entry = null;
             InspectMarker.Hide();
             _aim.Clear();
@@ -596,9 +611,19 @@ namespace ES2Access.Screens
         /// It waits a few frames rather than speaking on the frame the focus changed: the stop being
         /// arrived at announces itself in a burst that interrupts, and a line queued into the middle of
         /// that burst is thrown away.
+        ///
+        /// The one resume that does NOT speak is the one a parked bookmark jump caused
+        /// (<see cref="MoveTo"/>): that jump has already announced the place, on the row it seated the
+        /// cursor on, and reading the cell here made the arrival be said twice. The cell is still READ
+        /// - the review buffer is filled by the same call - only the sentence is dropped.
         /// </summary>
         public void Update()
         {
+            if (_silentResume > 0)
+            {
+                _silentResume--;
+            }
+
             bool onMap = Active;
             if (onMap && !_wasOnMap)
             {
@@ -622,16 +647,36 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (--_resume == 0 && onMap)
+            if (--_resume != 0 || !onMap)
             {
-                Voice.Say(Look(), false);
+                return;
             }
+
+            // Read either way: the sentence and the review buffer are one call, and a resume that said
+            // nothing must still leave the cell's lines where the player can go back over them.
+            string cell = Look();
+            if (_silentResume > 0)
+            {
+                _silentResume = 0;
+                return;
+            }
+
+            Voice.Say(cell, false);
         }
 
         /// <summary>How long the resume line waits for the stop the player has just landed on to finish
         /// announcing itself - a fifth of a second, several times the gap between the parts of one
         /// arrival.</summary>
         private const int ResumeFrames = 12;
+
+        /// <summary>How long a parked jump's silence stays armed. It has to outlast the landing it is
+        /// waiting on - a focus aimed into a shut constellation opens one branch per build before the
+        /// cursor can arrive - and then EXPIRE, so that a landing which never happened costs at most a
+        /// couple of seconds rather than silencing the player's own next Tab back to the map.</summary>
+        private const int SilentResumeFrames = 120;
+
+        /// <summary>What is left of that arming (<see cref="MoveTo"/>).</summary>
+        private int _silentResume;
 
         // ---- the mode ----
 
@@ -746,6 +791,7 @@ namespace ES2Access.Screens
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
             _wasOnMap = true;
             _resume = 0;
+            _silentResume = 0;
             // A camera closer than the ceiling is pulled out to it, so enough of the map is visible
             // around the square; one already further out is the player's own choice and stays
             // (owner's ruling - the floor guarantees visibility, it does not impose a framing).
@@ -794,6 +840,7 @@ namespace ES2Access.Screens
             _driving = null;
             _wasOnMap = false;
             _resume = 0;
+            _silentResume = 0;
             InspectMarker.Hide();
             // The game's tooltip was the CELL's while the mode drove the map (Point), so the mode
             // takes its own aim down and the control the tree cursor is standing on takes the pointer
