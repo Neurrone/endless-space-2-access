@@ -20,8 +20,10 @@ The game should be largely playable now including space and ground combat. This 
 - Add scanner for finding various categories of items with support for custom categories
 - Added a "Mod Settings" screen, accessed from the main or pause menu to configure custom scanner categories and remap commands
 - Tooltips that draw additional tooltips on hover are now exposed as nested tooltips
-- `Ctrl+I` in the galactic map enables inspect mode to explore the geometry of the map. Use `Alt+Left` or `Alt+Right` to follow a fleet or a star lane to its destination. Use `+` or `-` to change the cursor size, and shift with the arrow keys to move to the next interesting tile
+- `Ctrl+I` in the galactic map enables inspect mode to explore the geometry of the map. Use `Alt+Left` or `Alt+Right` to follow a fleet or a star lane to its source / destination. Use `+` or `-` to change the cursor size, and shift with the arrow keys to move to the next interesting tile. `Enter` exits inspect mode and returns to the tree view with focus on where your cursor was when inspecting. `Escape` exits inspect mode and restores focus to your previous position.
 - The system's influence radius is indicated in its buffer and influence is read in inspect mode
+- `Ctrl+C` jumps to your capital system
+- Up to 10 bookmarks can be set by `Shift+1` through `0`. Use `Ctrl+1` through `0` to jump to a bookmark. This works with inspect mode. Jumping to bookmarks does not require focus to be on the map.
 
 ## V0.1.1
 
