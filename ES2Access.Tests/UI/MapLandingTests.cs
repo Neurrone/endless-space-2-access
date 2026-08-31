@@ -47,7 +47,7 @@ namespace ES2Access.Tests.UI
         // ---- with the free cursor up: the cell is what the player is reading ----
 
         [Fact]
-        public void APlaceKeepsTheCellUpAndStillZooms()
+        public void APlaceKeepsTheCellUpAndDoesNotZoom()
         {
             MapLanding plan = MapLandings.Decide(MapThing.Place, true);
             Assert.False(plan.ExitInspect);
@@ -56,9 +56,28 @@ namespace ES2Access.Tests.UI
             // player hears the cell and the node for one press.
             Assert.True(plan.FocusNode);
             Assert.False(plan.AnnounceNode);
-            // The place's own zoom overrides the cell's slide, so the picture is the same whichever
-            // way the map is being read.
-            Assert.Equal(MapCameraMove.Zoom, plan.Camera);
+            // Owner ruling 2026-08-31, reversing the 2026-08-22 zoom-in-the-cell line: the cell's own
+            // slide is the whole camera move, and the scale stays where the player put it.
+            Assert.Equal(MapCameraMove.None, plan.Camera);
+        }
+
+        /// <summary>The ruling in one line: under the cell a place and a point ask the camera for
+        /// exactly the same thing, so no gesture arrives differently from any other.</summary>
+        [Fact]
+        public void UnderTheCellNoLandingChangesTheZoom()
+        {
+            foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point })
+            {
+                MapLanding plan = MapLandings.Decide(thing, true);
+                Assert.True(plan.MoveCell);
+                Assert.Equal(MapCameraMove.None, plan.Camera);
+            }
+
+            // The one landing that still zooms with the cursor up is the one that TAKES IT DOWN
+            // first, and it is no longer reading the map through a square by the time it does.
+            MapLanding world = MapLandings.Decide(MapThing.PlanetBound, true);
+            Assert.True(world.ExitInspect);
+            Assert.Equal(MapCameraMove.Zoom, world.Camera);
         }
 
         [Fact]

@@ -538,6 +538,23 @@ closest-neighbour), never with a neighbourhood radius, and never "nearest system
 Contested Influence's own Alt+Home still ARMS the inspect cursor, since a square of sky is a thing by
 design rather than a lost one.
 
+**UNDER A LIVE INSPECT CELL, NO LANDING CHANGES THE ZOOM** (owner ruling 2026-08-31, reversing the
+2026-08-22 line that had a place's zoom override the cell's own slide). While the player is driving a
+square about the map, that square is the only thing that moves the camera: a landing centres what it
+found and leaves the picture at the scale the player chose. It is one rule for every gesture — the
+scanner's Alt+Home, a notification's show-location, Ctrl+L, travelling a lane, a bookmark jump —
+because they are all the one landing, and the change is one line of `MapLandings.Decide` rather than
+a case per caller. Leaving the mode then puts the cursor on what was landed on, the row framed and
+not dived into, and stepping INSIDE it zooms exactly as any tree walk does (measured 2026-08-31:
+Alt+Home onto Heracles held `zoomStep` at 8, Escape landed on Heracles's own row, and one Right
+answered "Zoom level 13 of 15, System Overview"). **The seat such a landing makes is marked
+camera-free** (`GalaxyHudScreen.CameraFreeSeat`): the cell's slide is not the page's camera rule, so
+the rule's record reads stale, and the seat's own focus visual — which arrives a dozen frames later,
+once the branch it was aimed into has opened — used to move the camera a SECOND time, off the square
+and onto the star (measured: a clean glide, then a one-frame twitch twenty frames later). The mark is
+keyed to the landing's own row and lives exactly as long as the focus request can, so the two give up
+together.
+
 **The galaxy system readout says whose place it is** (owner ruling 2026-08-22): name, coordinates,
 `group`, then the OWNER WORD — the controlling empire as the game's own system dossier states it
 (`GuiEmpire.GetLeaderName`, so an empire the player has not met reads `%EmpireUnknownTitle`
@@ -810,8 +827,12 @@ which is what brings the camera all the way in through the page's one camera rul
 asked for on the press and the landing waits for the build that opens it
 (`GalaxyHudScreen.FollowBookmarkLanding`, 12 frames, falling back to the system's own row). A point
 bookmark lands on its own synthetic row, and the camera slides onto the point through the same rule.
-Inspect ON, the CELL moves instead — `GalaxyInspect.JumpTo` on the bookmark's rounded spoken pair,
-the mode never exited and the zoom never touched; PARKED, the cell is moved SILENTLY
+Inspect ON, the jump is **the page's own landing and nothing of its own** (`GalaxyHudScreen.GoTo`
+with a `MapTarget` — since 2026-08-31, when the under-cell no-zoom ruling removed the reason the
+bookmark had a copy): the cell moves to the bookmark's rounded spoken pair, the tree cursor is seated
+under it silently, the mode is never exited and the zoom is never touched, exactly as the scanner's
+go-to now behaves. PARKED is the one shape that landing cannot express — the difference is SPEECH,
+not camera — so the bookmark keeps its own pairing there: the cell is moved SILENTLY
 (`GalaxyInspect.MoveTo`) behind the landing that takes the player back to the map.
 An empty slot is a spoken refusal ("No bookmark n") and moves nothing.
 **A JUMP ANNOUNCES EXACTLY ONCE** (owner ruling 2026-08-31), whichever of the three shapes it takes:
@@ -824,8 +845,8 @@ cursor on the bookmark's row, so an ordinary Tab-away/Tab-back still re-reads th
 is still READ** — the sentence and the review buffer are one call — so a silenced resume still
 leaves the cell's lines under the review chords.
 **EVERY inspect-mode jump reseats the tree cursor underneath, onto the bookmark's own row**
-(owner ruling 2026-08-31; `GalaxyBookmarks.Seat` = `GraphNavigator.FocusNode` +
-`GalaxyInspect.Reseat`, the pairing the page's own go-to already makes). Leaving the mode puts the
+(owner ruling 2026-08-31; live it is the landing's own seat, parked it is `GalaxyBookmarks.Seat` =
+`GraphNavigator.FocusNode` + `GalaxyInspect.Reseat`). Leaving the mode puts the
 player back on the control it was ARMED from, camera and all, so without it Escape undid the jump;
 with it, Escape lands on the bookmark. A system is seated on its own ROW and never inside it —
 going inside is what brings the camera in, and the mode is deliberately leaving the picture alone.

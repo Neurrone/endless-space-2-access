@@ -637,6 +637,9 @@ namespace ES2Access.Screens
             // has to be opened before there is anything in it to land on
             // (<see cref="FollowBookmarkLanding"/>).
             FollowBookmarkLanding();
+            // And the camera-free seat's own budget, so one that never landed is let go of rather
+            // than left to silence the player's next step onto that row.
+            ForgetStaleCameraFreeSeat();
             // Before the visual is followed, so that a window put right is what the pointer is then
             // aimed at, on the one frame (<see cref="ShowFocusedSystem"/>).
             ShowFocusedSystem();
@@ -1505,6 +1508,57 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The one landing whose seat must NOT move the camera - written down here because the seat
+        /// and its focus visual are frames apart.
+        ///
+        /// A landing made under the live inspect cell moves the camera by moving the CELL, and the
+        /// cell's own slide is deliberately not the page's camera rule
+        /// (<c>GalaxyInspect.Show</c> calls the camera directly and bumps the counter
+        /// <see cref="Showing"/> stamps against). So the record reads stale by construction, and the
+        /// seat's focus visual - which arrives a dozen frames later, once the branch it was aimed into
+        /// has opened - asked the rule again and moved the camera a SECOND time, off the square and
+        /// onto the star: measured 2026-08-31 as a clean glide followed, twenty frames later, by a
+        /// one-frame twitch. This says "that landing already decided the camera", and the visual that
+        /// answers to it does nothing.
+        ///
+        /// Keyed by the id, so it can only ever silence the landing it was written for, and it lives
+        /// exactly as long as that landing can: the focus request's own budget
+        /// (<see cref="FocusRequest.DefaultFrames"/>), so the two give up together. A shorter one is
+        /// worse than none - measured 2026-08-31 with twelve frames, where the landing arrived on the
+        /// twentieth and moved the camera after all.
+        /// </summary>
+        private void CameraFreeSeat(ControlId id)
+        {
+            _cameraFreeSeat = id;
+            _cameraFreeSeatFrames = FocusRequest.DefaultFrames;
+        }
+
+        /// <summary>Whether this focus visual is the camera-free seat, consuming it if so.</summary>
+        private bool TakeCameraFreeSeat(ControlId id)
+        {
+            if (_cameraFreeSeat == null || id == null || !_cameraFreeSeat.Equals(id))
+            {
+                return false;
+            }
+
+            _cameraFreeSeat = null;
+            return true;
+        }
+
+        private ControlId _cameraFreeSeat;
+        private int _cameraFreeSeatFrames;
+
+        /// <summary>Let go of a camera-free seat whose landing never came, so it cannot silence the
+        /// player's own next step onto that row.</summary>
+        private void ForgetStaleCameraFreeSeat()
+        {
+            if (_cameraFreeSeat != null && --_cameraFreeSeatFrames <= 0)
+            {
+                _cameraFreeSeat = null;
+            }
+        }
+
         /// <summary>Whether the focus visual being committed right now is the cursor having been
         /// PLACED - moved by the player or seated by this page - as opposed to this page being
         /// re-entered or the visual being re-taken where it already was. Everything on this page that
@@ -1546,6 +1600,11 @@ namespace ES2Access.Screens
         public override void OnFocusVisual(GraphNode node)
         {
             if (!CursorMoved() || node == null || !SystemStop.Equals(node.StopKey))
+            {
+                return;
+            }
+
+            if (TakeCameraFreeSeat(node.Id))
             {
                 return;
             }
@@ -2419,7 +2478,14 @@ namespace ES2Access.Screens
         /// (<see cref="MapLandings.Decide"/>, off the engine and unit-tested) and every caller hands
         /// in a resolved <see cref="MapTarget"/>: the game's own show-location
         /// (<see cref="FollowTheGame"/>), the scanner's go-to, travelling a starlane
-        /// (<see cref="Arrive"/>) and the go-to-location key.
+        /// (<see cref="Arrive"/>), the go-to-location key, and a bookmark jump made with the inspect
+        /// cell live (<see cref="GalaxyBookmarks"/> - the one bookmark shape this landing can express).
+        ///
+        /// Under a live cell every one of them arrives the same way, and none of them changes the
+        /// zoom (owner ruling 2026-08-31): the cell's slide is the whole camera move, the tree cursor
+        /// is seated silently underneath it for the mode to end on, and the seat is marked camera-free
+        /// so its own focus visual does not move the picture a second time
+        /// (<see cref="CameraFreeSeat"/>).
         ///
         /// The camera moves are marked as the MOD's own (<see cref="GalaxyLocate.Suppressed"/>): the
         /// mod pans through the same calls the game leads the player with, and an unmarked pan here
@@ -2474,6 +2540,12 @@ namespace ES2Access.Screens
                     if (plan.MoveCell)
                     {
                         _inspect.Reseat(target.Id, target.At);
+                        if (plan.Camera == MapCameraMove.None)
+                        {
+                            // This landing has DECIDED the camera is the cell's alone, so the seat it
+                            // is about to make must not move it either (<see cref="CameraFreeSeat"/>).
+                            CameraFreeSeat(target.Id);
+                        }
                     }
                 }
 

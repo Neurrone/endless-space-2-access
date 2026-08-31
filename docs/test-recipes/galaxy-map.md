@@ -961,7 +961,13 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   synthetic row ("Bookmark 2 at 0, 4, 6 of 15" at `galaxy:constellation/446/bookmark/2` — filed in
   the constellation the point falls in, ordered among that group's own entries). Inspect ON, neither
   happens: the CELL moves and `zoomStep` holds (measured 8 through a live jump, a parked jump and a
-  `galaxy.bookmarkHome`).
+  `galaxy.bookmarkHome`). The live jump IS the page's landing since 2026-08-31, so it arrives exactly
+  as `galaxy.scanGoTo` does — and both are one continuous glide with no zoom change and no late
+  second move. **Frame-tracing an arrival**: a `POST /wait` predicate appending
+  `Time.frameCount + DevProbe.Camera()` to a persistent `ArrayList`, read back deduped on the focus
+  x and the zoom step; the predicate is expensive enough to hold the game near 10 fps, so counts are
+  FRAMES and wall-clock is ~6x shorter. A healthy arrival is one decelerating run of samples ending
+  at the square's centre; a defect looks like that run followed by dead frames and a one-frame jump.
 - **One utterance per jump, three shapes.** Inspect off it is the tree landing; inspect live it is
   the cell; parked it is the landing on the bookmark's row, with the mode's resume silenced for that
   one landing. A second line in `/speech` after a jump is a defect, not a slow frame — except the
@@ -975,8 +981,14 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
 - **Fixture: two standing bookmarks.** Campaign `ee4517b1…` carries `slot1` = a POINT at spoken
   `-68, 18` (in Corvus, nothing there) and `slot3` = the SYSTEM Lors, left set on purpose so both
   kinds are reachable without making one first. The file is
-  `<game>\BepInEx\plugins\ES2Access\bookmarks\ee4517b11d7c45098a2d5baa69737a1e.cfg`; delete it to
-  clear them. A DIFFERENT campaign has its own file and reads empty — that is the keying working,
+  `<game>\BepInEx\plugins\ES2Access\bookmarks\FactionTerransTutorial-ee4517b11d7c45098a2d5baa69737a1e.cfg`;
+  delete it to clear them. **The name is `<faction>-<guid>.cfg`** — the faction's INTERNAL name
+  (`Faction.Name`, never the localized one, so a language switch cannot fork a campaign's file) put
+  through `FileNameText.Safe`, and the bare `<guid>.cfg` where nothing survives that. The file opens
+  with the mod's own header comment, `#! <localized faction>, <save title>, turn <n>`, rewritten on
+  every write; `#!` is the mark that says the line is the mod's, so a `#` comment a player writes at
+  the top of the file is never clobbered. Files from before 2026-08-31 use the bare `<guid>.cfg`
+  name and are NOT migrated — delete one and set a bookmark to regenerate it. A DIFFERENT campaign has its own file and reads empty — that is the keying working,
   not a lost store (`docs/saves.md`).
 - **Do not put two slots on one system.** The row's word comes from one digit per system GUID, so
   the second slot silently wins the word; pick a fresh system per slot when measuring.

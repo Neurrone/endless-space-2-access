@@ -314,12 +314,21 @@ namespace ES2Access.Screens
         /// bookmark instead of taking the player there (the measured travel-versus-click split -
         /// <c>docs/interaction.md</c>). So jump-then-Enter is how a bookmark aims an order.
         ///
-        /// With the inspect cursor up the cell is what the player is reading, so the cell is what
-        /// moves - onto the ROUNDED pair the bookmark's place is spoken as, which is the pair that
-        /// puts it inside even the one-unit cursor. The mode is never exited and the zoom is never
-        /// touched. Parked off the map, the cell is moved silently and the player is put back on the
-        /// map, where the mode's own resume reads the new cell out - one reading of the arrival
-        /// instead of two.
+        /// With the inspect cursor LIVE this is not a landing of its own at all: it is the page's one
+        /// landing (<c>GalaxyHudScreen.GoTo</c>), which already knows how to move the cell, seat the
+        /// tree cursor under it silently, tell the mode where it now stands and leave the camera to
+        /// the cell (<see cref="MapLandings.Decide"/>, owner ruling 2026-08-31 - nothing changes the
+        /// zoom under the cell). A bookmark arrives exactly as the scanner's go-to does, because it
+        /// IS the scanner's go-to.
+        ///
+        /// PARKED is the one shape that landing cannot make, and it is a difference of SPEECH rather
+        /// than of camera: the player is on another stop, so the landing that brings them back to the
+        /// map is the one utterance they get (owner ruling 2026-08-31 - a jump announces exactly
+        /// once), and the cell is moved silently behind it. The landing table's under-cell plan says
+        /// the opposite in both halves - the tree move silent, the cell's own move spoken - because it
+        /// was written for a player who is already reading the cell. So the pairing is made here for
+        /// that case only. **Anything changed about the seat, the reseat or the camera in
+        /// <c>GalaxyHudScreen.GoTo</c> has to be looked at here too, and the other way round.**
         /// </summary>
         private bool Go(StarSystemNode system, ControlId row, GalaxyPosition at)
         {
@@ -329,36 +338,31 @@ namespace ES2Access.Screens
                 return true;
             }
 
+            // The row the tree cursor is put on UNDER the cell: a system is seated on its own row and
+            // not inside it, because going inside is what brings the camera in and the mode leaves the
+            // picture alone. Leaving the mode then lands there, and a step further in zooms as any
+            // tree walk does.
+            ControlId seat = system != null ? GalaxyHudScreen.SystemRow(system) : row;
+            if (GalaxyInspect.Active)
+            {
+                MapTarget target = system != null
+                    ? MapTarget.Place(system, seat, at)
+                    : MapTarget.Point(seat, at);
+                _screen.GoTo(target, MapCamera.Auto);
+                return true;
+            }
+
             if (GalaxyInspect.Live)
             {
                 double east;
                 double north;
                 GalaxyCoordinates.Offsets(at, out east, out north);
-                int x = MapCoordinates.Round(east);
-                int y = MapCoordinates.Round(north);
-                // The row the tree cursor is put on UNDER the cell: a system is seated on its own row
-                // and not inside it, because going inside is what brings the camera in and the mode is
-                // deliberately leaving the picture alone.
-                ControlId seat = system != null ? GalaxyHudScreen.SystemRow(system) : row;
-                if (GalaxyInspect.Active)
-                {
-                    _screen.Inspect.JumpTo(x, y);
-                    Seat(navigator, seat, at, false);
-                }
-                else
-                {
-                    // The landing first and the cell second. Landing back on the map is an ordinary
-                    // landing and the page's camera rule follows it, so it is aimed at the BOOKMARK's
-                    // own row: aimed at whatever the map stop happened to remember, the camera went to
-                    // that row's place on the way - a zoom into a system the player had not asked for
-                    // (measured, stage B). The cell's own slide is still the last word, and it is
-                    // SILENT: the landing has just named the place, and the mode's own resume reading
-                    // the cell out said it a second time (owner ruling 2026-08-31 - a jump announces
-                    // exactly once).
-                    bool landed = Seat(navigator, seat, at, true);
-                    _screen.Inspect.MoveTo(x, y, landed);
-                }
-
+                bool landed = Seat(navigator, seat, at, true);
+                _screen.Inspect.MoveTo(
+                    MapCoordinates.Round(east),
+                    MapCoordinates.Round(north),
+                    landed
+                );
                 return true;
             }
 
@@ -383,12 +387,13 @@ namespace ES2Access.Screens
         /// Without the second half, Escape out of the mode undid the jump: leaving puts the player
         /// back on the control the mode was ARMED from, camera and all
         /// (<see cref="GalaxyInspect.Reseat"/>), so a player who swept to a bookmark and pressed
-        /// Escape was returned to wherever they had been ten minutes earlier. It is the same pairing
-        /// the page's own go-to makes while the cell is up (<c>GalaxyHudScreen.GoTo</c>).
+        /// Escape was returned to wherever they had been ten minutes earlier.
         ///
-        /// <paramref name="announce"/> is the parked case, where the cursor really is being sent
-        /// somewhere the player is not: that landing is the one they hear. LIVE, the cell is what they
-        /// are reading and the tree move is silent, felt only when the mode ends.
+        /// **The LIVE case does not come through here** - it is the page's own landing, which makes
+        /// this same pairing once for every caller (<c>GalaxyHudScreen.GoTo</c>). What is left here is
+        /// the PARKED jump alone, whose announcement contract that landing cannot express (see
+        /// <see cref="Go"/>). The two are a knowing duplicate of one pairing: change one and read the
+        /// other.
         ///
         /// Answers whether the cursor was really aimed at the BOOKMARK's own row, which is what tells
         /// the parked jump whether its landing has already named the place

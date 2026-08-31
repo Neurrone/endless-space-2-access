@@ -304,7 +304,8 @@ again) is reachable only by a fleet PARKED at a system the map does not name or 
 map does not draw — a free mover always has a row, top-level if its destination is unperceived
 (`AddAdrift`). No fixture produces either.
 
-**It lands AND zooms, on every category** (owner decision 2026-08-22). For anything standing at a
+**It lands AND zooms, on every category — OUT OF THE INSPECT CELL** (owner decision 2026-08-22;
+under a live cell nothing zooms, 2026-08-31, below). For anything standing at a
 NODE — a planet and a lane included — the landing is the page's own locate landing: focus the node,
 and ask the camera rule for the place (so they land on their own node under their system and zoom to
 the system). A thing that stands at a bare POINT (a fleet under way, a probe, a pin, a missile) has
@@ -315,12 +316,19 @@ PLANET on `…/system/505/planet/0` with both ancestors opened and the camera zo
 while the camera slides to it; a PROBE lands on `galaxy:probe/1621` with the camera SLID (zoomStep
 unchanged, focus (13.59, -52.30)). Contested Influence must still ARM the cursor — fixture-blocked,
 the category is empty here.
-**With the inspect cursor UP** (`galaxy.inspect` first): a SYSTEM keeps the mode, moves the cell to
-its tile, ZOOMS anyway, and the `>` line shows the tree cursor on the system node
-(measured: Byrtus, cell "-25, -42, Byrtus", zoomStep 9 → 12, cursor
-`galaxy:constellation/446/system/572`); a FLEET keeps the mode and only slides (cell "-37, -31, 1st
-Patriots Navy", cursor `…/system/491/fleet/1304`); a PLANET **says "Exited inspect mode" first**,
-`GalaxyInspect.Live` reads false, and the landing is the ordinary one (measured: Rigel I).
+**With the inspect cursor UP, NOTHING ZOOMS** (owner ruling 2026-08-31, reversing the "zooms anyway"
+line measured here on 2026-08-22 — `docs/interaction.md`, **The galaxy map's keys and landings**): a
+SYSTEM keeps the mode, moves the cell to its tile and leaves the picture at the scale the player
+chose, exactly as a FLEET at a bare point always did, and the `>` line shows the tree cursor seated
+silently on the system's own row. Measured 2026-08-31 on the turn-26 fixture: `galaxy.scanGoTo` onto
+**Heracles** answered "Serpens constellation" / "Heracles, Star lane from Heracles to Osulo, -43,
+-30", camera focus `[25.884, 0, -52.45]` = the square's centre, **`zoomStep` 8 before and after**,
+cursor `galaxy:constellation/446/system/488`. Then `ui.back` landed on Heracles's own row with the
+camera framed on it and still at 8, and one `ui.right` INTO the system answered "Zoom level 13 of 15,
+System Overview" — the ordinary camera machinery, untouched. A PLANET still **says "Exited inspect
+mode" first**, `GalaxyInspect.Live` reads false, and the landing is the ordinary zooming one
+(measured: Rigel I) — the one landing that still zooms with the cursor up is the one that takes it
+down.
 **The settled-row proof.** Zoom out first (`GalaxyViewLevels.SetZoom(5, Vector3.zero)`), move the
 cursor off the target (`ui.home`), then run the go-to and read `/speech`: the landing must be the
 CLOSE-camera reading. Osulo I settled is

@@ -76,9 +76,17 @@ namespace ES2Access.Core.UI
     /// the mode ends.</item>
     /// <item>A PLANET-BOUND thing ENDS the free cursor first: it is read from the tree and from the
     /// close-up view, neither of which the cell can show.</item>
-    /// <item>A place is ZOOMED to, a point is SLID to - even in the cell, where the place's zoom
-    /// overrides the cell's own slide, so the picture is the same whichever way the player is
-    /// reading.</item>
+    /// <item>OUT of the cell, a place is ZOOMED to and a point is SLID to.</item>
+    /// <item>UNDER THE CELL, NOTHING CHANGES THE ZOOM (owner ruling 2026-08-31, reversing the
+    /// 2026-08-22 line that had a place's zoom override the cell's own slide). While the player is
+    /// driving a square about the map, that square is the only thing moving the camera: it centres
+    /// what was landed on and the picture stays at the scale the player chose. A landing that dived
+    /// in was answering a question they had not asked - they asked where a thing IS, not to be taken
+    /// down to it - and it disagreed with the map's other go-to gestures, which leave the zoom alone.
+    /// So a place and a point are the same plan in the cell: move the cell, seat the cursor silently,
+    /// and let the cell's slide be the whole camera move. Leaving the mode then puts the cursor on
+    /// what was landed on, and stepping INSIDE it zooms as any tree walk does - the ordinary machinery,
+    /// unchanged.</item>
     /// <item>Out of the free cursor the landing's own announcement is the whole utterance, once.
     /// </item>
     /// <item>A point with NOTHING on it is a defect, not a behaviour (owner ruling, 2026-08-22):
@@ -98,7 +106,9 @@ namespace ES2Access.Core.UI
                         MoveCell = inspectLive,
                         FocusNode = true,
                         AnnounceNode = !inspectLive,
-                        Camera = MapCameraMove.Zoom,
+                        // Out of the cell a place is zoomed to. UNDER the cell nothing is: the cell's
+                        // own slide is the whole camera move, exactly as it is for a point.
+                        Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Zoom,
                     };
 
                 case MapThing.Point:

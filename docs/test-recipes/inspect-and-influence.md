@@ -319,6 +319,15 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   in it: `galaxy.bookmarkGoTo1` (inspect off) then `galaxy.inspect` opens the cell on the point and
   answers **"bookmark 1, Unexplored, -68, 18"** — before, the same cell read "Unexplored, -68, 18".
   Its own line in the review buffer, in the same place.
+- **Every landing made under the live cell arrives the same way and none of them zooms** (owner
+  ruling 2026-08-31): the cell glides to the thing's square, the tree cursor is seated silently on
+  its row for the mode to end on, and `zoomStep` is the same before and after. That covers the
+  scanner's Alt+Home, a bookmark jump, Ctrl+L and a notification's show-location alike, because they
+  are one landing (`MapLandings.Decide` with `inspectLive`). The check that catches a regression is
+  `zoomStep` either side plus one frame-trace: **one** decelerating run of camera samples ending at
+  the square's centre. A run followed by dead frames and then a one-frame jump onto the star is the
+  seat's focus visual moving the camera a second time — the defect
+  `GalaxyHudScreen.CameraFreeSeat` exists to stop.
 - **A PARKED bookmark jump reads no cell out loud, by design** (a jump announces once — the row it
   lands on). So it is the wrong route for measuring a cell's wording: the reading is still in the
   review buffer (`buffer.first` → "bookmark 1", then "Unexplored", "-68, 18"), and out loud it comes
