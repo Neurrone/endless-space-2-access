@@ -523,6 +523,16 @@ namespace ES2Access.Core.Speech
         // way round every time (westmost first), so one lane heard from two neighbouring cells is
         // heard as one lane; a lane whose far end the map has not named says which way it runs
         // instead, exactly as the lane's own node does.
+        // MAP BOOKMARKS - ten places the player names by a digit. Every one of these is the mod's own
+        // word: the game has no bookmarks and no text for one. The digit is a placeholder rather than
+        // part of the sentence, so a language that puts the number elsewhere can; and the "set" line
+        // names the place in the same breath, because a confirmation that does not say WHAT was
+        // remembered is a confirmation the player has to go and check.
+        public const string GalaxyBookmarkSet = "galaxy.bookmark.set";
+        public const string GalaxyBookmarkEmpty = "galaxy.bookmark.empty";
+        public const string GalaxyBookmarkSuffix = "galaxy.bookmark.suffix";
+        public const string GalaxyBookmarkPoint = "galaxy.bookmark.point";
+
         public const string GalaxyInspectEntered = "galaxy.inspect.entered";
         public const string GalaxyInspectExited = "galaxy.inspect.exited";
         public const string GalaxyInspectCursorSize = "galaxy.inspect.cursor-size";
@@ -2148,6 +2158,10 @@ namespace ES2Access.Core.Speech
                 GalaxyMapSummary,
                 "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}."
             },
+            { GalaxyBookmarkSet, "Bookmark {0} set on {1}" },
+            { GalaxyBookmarkEmpty, "No bookmark {0}" },
+            { GalaxyBookmarkSuffix, "bookmark {0}" },
+            { GalaxyBookmarkPoint, "Bookmark {0} at {1}" },
             { GalaxyInspectEntered, "Inspect mode" },
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },

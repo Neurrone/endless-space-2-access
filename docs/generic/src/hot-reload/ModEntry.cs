@@ -11,6 +11,7 @@ using ES2Access.Loader;
 using ES2Access.Localization;
 using ES2Access.Screens;
 using ES2Access.UI;
+using ES2Access.UI.Bookmarks;
 using ES2Access.UI.Input;
 using ES2Access.UI.ModOptions;
 using ES2Access.UI.Settings;
@@ -148,6 +149,9 @@ namespace ES2Access
             // Before anything reads a setting: the keys the player has moved are applied to the
             // actions as they are registered, further down.
             ModSettings.Load(host.PluginDirectory);
+            // Nothing is read here: which campaign is being played is not known until there is a game,
+            // and the store answers that for itself from the pump (<see cref="MapBookmarkStore"/>).
+            MapBookmarkStore.Start(host.PluginDirectory);
 
             Speech = new PrismSpeech();
             if (Environment.GetEnvironmentVariable(NoSpeechEnv) == "1")
@@ -887,6 +891,42 @@ namespace ES2Access
                 .Bind(KeyCode.Slash, shift: true)
                 .ClaimedWhile(ES2Access.Screens.GalaxyScanner.QuickKeysClaimed);
 
+            // THE TEN MAP BOOKMARKS, and the home system beside them (owner-approved 2026-08-31).
+            // Shift and a digit makes one, Control and the same digit goes back to it, in the digit
+            // order the player counts them in - 1 to 9 and then 0, which is the tenth slot and not a
+            // zeroth. The top-row digits alone: the keypad's are a different key and nothing here
+            // asks for them.
+            //
+            // The chords are free. The game's only digit bindings are its DebugSwitchToEmpire
+            // actions, which are dead behind an accessibility gate no shipped build opens
+            // (measured 2026-08-31), and it binds nothing at all to C. The mod's type-ahead takes
+            // letters and space and drops every other character, so Shift and a digit is never
+            // typing. Claimed only while the galaxy page is up and the game's scan lens is off
+            // (<see cref="ES2Access.Screens.GalaxyBookmarks.KeysClaimed"/>) - under the lens the
+            // digits go back to the game whole.
+            //
+            // Not repeating: every press is a jump, or a place being written down.
+            for (int slot = 0; slot < MapActions.BookmarkSet.Length; slot++)
+            {
+                input
+                    .Register(MapActions.BookmarkSet[slot])
+                    .Bind(BookmarkDigits[slot], shift: true)
+                    .ClaimedWhile(ES2Access.Screens.GalaxyBookmarks.KeysClaimed);
+            }
+
+            for (int slot = 0; slot < MapActions.BookmarkGoTo.Length; slot++)
+            {
+                input
+                    .Register(MapActions.BookmarkGoTo[slot])
+                    .Bind(BookmarkDigits[slot], ctrl: true)
+                    .ClaimedWhile(ES2Access.Screens.GalaxyBookmarks.KeysClaimed);
+            }
+
+            input
+                .Register(MapActions.BookmarkHome)
+                .Bind(KeyCode.C, ctrl: true)
+                .ClaimedWhile(ES2Access.Screens.GalaxyBookmarks.KeysClaimed);
+
             input.Register(BufferActions.LineUp).Bind(KeyCode.UpArrow, ctrl: true);
             input.Register(BufferActions.LineDown).Bind(KeyCode.DownArrow, ctrl: true);
             input.Register(BufferActions.Prev).Bind(KeyCode.LeftArrow, ctrl: true);
@@ -897,6 +937,22 @@ namespace ES2Access
             // The chord the game's chat key sits on is handed back to the game rather than declared
             // here, because it follows a binding the player can change - see GameChatKey.
         }
+
+        /// <summary>The ten digit keys, in SLOT order - 1 to 9 and then 0, the order
+        /// <c>MapBookmarks.Digits</c> and <see cref="MapActions.BookmarkSet"/> are both in.</summary>
+        private static readonly KeyCode[] BookmarkDigits = new KeyCode[]
+        {
+            KeyCode.Alpha1,
+            KeyCode.Alpha2,
+            KeyCode.Alpha3,
+            KeyCode.Alpha4,
+            KeyCode.Alpha5,
+            KeyCode.Alpha6,
+            KeyCode.Alpha7,
+            KeyCode.Alpha8,
+            KeyCode.Alpha9,
+            KeyCode.Alpha0,
+        };
 
         /// <summary>
         /// Teach the announcer and the table emitter the mod's own wording, and hand it the live drag so
@@ -1118,6 +1174,9 @@ namespace ES2Access
             // chose is already on disk (the window wrote it when it hid), so this only lets go.
             Step("bindings", ModBindings.Reset);
             Step("scanner categories", ScannerCustomSettings.Reset);
+            // Every bookmark a saved campaign has is already on disk (the set wrote it), so this only
+            // lets go of the game the store was watching.
+            Step("bookmarks", MapBookmarkStore.Reset);
             Step("settings", ModSettings.Reset);
 
             Step("locale", ModLocale.Reset);
@@ -1186,6 +1245,10 @@ namespace ES2Access
         {
             KeepSimulatingUnfocused();
             ModLocale.Tick();
+
+            // Before the screens build: which campaign's bookmarks are in hand decides what the map's
+            // rows say, and the answer changes on the frame a save is loaded or a new game begins.
+            MapBookmarkStore.Tick();
 
             // Before the keys are polled, and idempotent: the game's chat key has to be off the mod's
             // keys for the layer's suppression to leave a way into chat at all.

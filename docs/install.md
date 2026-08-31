@@ -101,6 +101,7 @@ REPL, the out-game pages and the lobby, and the chat panels. Index and charter: 
   ever MP.
 - `EnableFactionIntroductionVideos` is FALSE in this install, so the faction intro cutscenes
   cannot be sighted here at all.
+- The save system — campaign identity, descriptors, loading one named file — is `docs/saves.md`.
 
 ## Chat
 

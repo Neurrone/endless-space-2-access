@@ -304,6 +304,114 @@ namespace ES2Access.Core.Speech
                 "Go to the previous thing custom category 3 found."
             },
 
+
+            // MAP BOOKMARKS: ten places the player names by a digit - a key to make each one
+            // and a key to go back to it - and the home system on a key of its own.
+            { "action.galaxy.bookmarkSet1.title", "Set bookmark 1" },
+            {
+                "action.galaxy.bookmarkSet1.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 1."
+            },
+            { "action.galaxy.bookmarkSet2.title", "Set bookmark 2" },
+            {
+                "action.galaxy.bookmarkSet2.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 2."
+            },
+            { "action.galaxy.bookmarkSet3.title", "Set bookmark 3" },
+            {
+                "action.galaxy.bookmarkSet3.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 3."
+            },
+            { "action.galaxy.bookmarkSet4.title", "Set bookmark 4" },
+            {
+                "action.galaxy.bookmarkSet4.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 4."
+            },
+            { "action.galaxy.bookmarkSet5.title", "Set bookmark 5" },
+            {
+                "action.galaxy.bookmarkSet5.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 5."
+            },
+            { "action.galaxy.bookmarkSet6.title", "Set bookmark 6" },
+            {
+                "action.galaxy.bookmarkSet6.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 6."
+            },
+            { "action.galaxy.bookmarkSet7.title", "Set bookmark 7" },
+            {
+                "action.galaxy.bookmarkSet7.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 7."
+            },
+            { "action.galaxy.bookmarkSet8.title", "Set bookmark 8" },
+            {
+                "action.galaxy.bookmarkSet8.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 8."
+            },
+            { "action.galaxy.bookmarkSet9.title", "Set bookmark 9" },
+            {
+                "action.galaxy.bookmarkSet9.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 9."
+            },
+            { "action.galaxy.bookmarkSet0.title", "Set bookmark 0" },
+            {
+                "action.galaxy.bookmarkSet0.description",
+                "Remember the place on the galaxy map the cursor is standing on as bookmark 0."
+            },
+            { "action.galaxy.bookmarkGoTo1.title", "Jump to bookmark 1" },
+            {
+                "action.galaxy.bookmarkGoTo1.description",
+                "Go to the place remembered as bookmark 1."
+            },
+            { "action.galaxy.bookmarkGoTo2.title", "Jump to bookmark 2" },
+            {
+                "action.galaxy.bookmarkGoTo2.description",
+                "Go to the place remembered as bookmark 2."
+            },
+            { "action.galaxy.bookmarkGoTo3.title", "Jump to bookmark 3" },
+            {
+                "action.galaxy.bookmarkGoTo3.description",
+                "Go to the place remembered as bookmark 3."
+            },
+            { "action.galaxy.bookmarkGoTo4.title", "Jump to bookmark 4" },
+            {
+                "action.galaxy.bookmarkGoTo4.description",
+                "Go to the place remembered as bookmark 4."
+            },
+            { "action.galaxy.bookmarkGoTo5.title", "Jump to bookmark 5" },
+            {
+                "action.galaxy.bookmarkGoTo5.description",
+                "Go to the place remembered as bookmark 5."
+            },
+            { "action.galaxy.bookmarkGoTo6.title", "Jump to bookmark 6" },
+            {
+                "action.galaxy.bookmarkGoTo6.description",
+                "Go to the place remembered as bookmark 6."
+            },
+            { "action.galaxy.bookmarkGoTo7.title", "Jump to bookmark 7" },
+            {
+                "action.galaxy.bookmarkGoTo7.description",
+                "Go to the place remembered as bookmark 7."
+            },
+            { "action.galaxy.bookmarkGoTo8.title", "Jump to bookmark 8" },
+            {
+                "action.galaxy.bookmarkGoTo8.description",
+                "Go to the place remembered as bookmark 8."
+            },
+            { "action.galaxy.bookmarkGoTo9.title", "Jump to bookmark 9" },
+            {
+                "action.galaxy.bookmarkGoTo9.description",
+                "Go to the place remembered as bookmark 9."
+            },
+            { "action.galaxy.bookmarkGoTo0.title", "Jump to bookmark 0" },
+            {
+                "action.galaxy.bookmarkGoTo0.description",
+                "Go to the place remembered as bookmark 0."
+            },
+            { "action.galaxy.bookmarkHome.title", "Jump to home system" },
+            {
+                "action.galaxy.bookmarkHome.description",
+                "Go to the system your empire began in."
+            },
             // Reading the description of what the cursor is on.
             { "action.buffer.lineUp.title", "Move to previous description line" },
             {

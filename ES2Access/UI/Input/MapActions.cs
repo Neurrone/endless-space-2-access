@@ -74,5 +74,67 @@ namespace ES2Access.UI.Input
             ScanCustom2Prev,
             ScanCustom3Prev,
         };
+
+        // THE TEN MAP BOOKMARKS, a set key and a jump key each
+        // (<see cref="ES2Access.Screens.GalaxyBookmarks"/>). One action per slot rather than one
+        // parameterised action, so every one of them is a row of the Controls tab the player can move
+        // - which is the whole reason the scanner's quick keys are ten rows too. The names carry the
+        // DIGIT and not an index, because the digit is what the player presses and what they hear.
+        public const string BookmarkSet1 = "galaxy.bookmarkSet1";
+        public const string BookmarkSet2 = "galaxy.bookmarkSet2";
+        public const string BookmarkSet3 = "galaxy.bookmarkSet3";
+        public const string BookmarkSet4 = "galaxy.bookmarkSet4";
+        public const string BookmarkSet5 = "galaxy.bookmarkSet5";
+        public const string BookmarkSet6 = "galaxy.bookmarkSet6";
+        public const string BookmarkSet7 = "galaxy.bookmarkSet7";
+        public const string BookmarkSet8 = "galaxy.bookmarkSet8";
+        public const string BookmarkSet9 = "galaxy.bookmarkSet9";
+        public const string BookmarkSet0 = "galaxy.bookmarkSet0";
+
+        public const string BookmarkGoTo1 = "galaxy.bookmarkGoTo1";
+        public const string BookmarkGoTo2 = "galaxy.bookmarkGoTo2";
+        public const string BookmarkGoTo3 = "galaxy.bookmarkGoTo3";
+        public const string BookmarkGoTo4 = "galaxy.bookmarkGoTo4";
+        public const string BookmarkGoTo5 = "galaxy.bookmarkGoTo5";
+        public const string BookmarkGoTo6 = "galaxy.bookmarkGoTo6";
+        public const string BookmarkGoTo7 = "galaxy.bookmarkGoTo7";
+        public const string BookmarkGoTo8 = "galaxy.bookmarkGoTo8";
+        public const string BookmarkGoTo9 = "galaxy.bookmarkGoTo9";
+        public const string BookmarkGoTo0 = "galaxy.bookmarkGoTo0";
+
+        /// <summary>Go to the empire's home system - the same landing a bookmark jump makes, at a
+        /// place the player never has to set and that consumes no slot.</summary>
+        public const string BookmarkHome = "galaxy.bookmarkHome";
+
+        /// <summary>The set and jump actions in SLOT order - the order of
+        /// <c>ES2Access.Core.Bookmarks.MapBookmarks.Digits</c>, 1 to 9 and then 0, so index i and
+        /// digit i are the same slot in both tables.</summary>
+        public static readonly string[] BookmarkSet = new string[]
+        {
+            BookmarkSet1,
+            BookmarkSet2,
+            BookmarkSet3,
+            BookmarkSet4,
+            BookmarkSet5,
+            BookmarkSet6,
+            BookmarkSet7,
+            BookmarkSet8,
+            BookmarkSet9,
+            BookmarkSet0,
+        };
+
+        public static readonly string[] BookmarkGoTo = new string[]
+        {
+            BookmarkGoTo1,
+            BookmarkGoTo2,
+            BookmarkGoTo3,
+            BookmarkGoTo4,
+            BookmarkGoTo5,
+            BookmarkGoTo6,
+            BookmarkGoTo7,
+            BookmarkGoTo8,
+            BookmarkGoTo9,
+            BookmarkGoTo0,
+        };
     }
 }

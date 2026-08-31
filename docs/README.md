@@ -29,6 +29,7 @@ proposed to the owner for `docs/generic/`.
 | `heroes-and-diplomacy.md` | Heroes and the academy, diplomacy and the sweep |
 | `notifications.md` | The notification pipeline and its events, popups, show-location, quests and the journal, the tutorial popup, endings |
 | `install.md` | Store and DLC gating, the game's logger, the Mono runtime under the REPL, the out-game pages and the lobby, chat |
+| `saves.md` | The save system: the campaign GUID and its lifecycle, save descriptors and titles, loading one named file |
 
 ## Research
 

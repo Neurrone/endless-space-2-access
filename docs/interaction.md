@@ -760,6 +760,56 @@ The physical modifier is the only thing that separates the two presses. `DevProb
 prove this half (it holds no key); what it proves is the important half — with no modifier held,
 `Claims("PageUp")` reads `claims:false` on the galaxy page.
 
+## Bookmark keys
+
+**Ten places the player names by a digit, and the home system beside them** (owner-approved
+2026-08-31; `ES2Access/Screens/GalaxyBookmarks.cs`, store `ES2Access/UI/Bookmarks/MapBookmarkStore.cs`):
+**Shift+1..9,0 SET bookmark n**, **Ctrl+1..9,0 JUMP to bookmark n**, and **Ctrl+C JUMPS TO THE HOME
+SYSTEM** — the same landing, at a place nobody has to set, consuming no slot and never written down
+(the game's own `DepartmentOfTheInterior.HomeSystemNode`). Top-row digits only; the keypad's are a
+different key and nothing asks for them. None of the twenty-one repeats.
+**All twenty-one are claimed while the galaxy page is up AND the game's scan lens is off**
+(`GalaxyBookmarks.KeysClaimed` → `GraphNavigator.DeclaresStop(galaxy:systems)` +
+`GalaxyViewLevels.Scanning`, through `InputAction.ClaimedWhile`; the handler asks the scan half
+again, because an unclaimed key still reaches `Screen.AnyKey`). Under the lens the digits go back to
+the game whole (measured 2026-08-31: `Claims("Alpha1,Alpha3")` reads true on the galaxy page and
+false with the lens up). The chords are free: the game's only digit bindings are its
+`DebugSwitchToEmpire*` actions, dead behind the `Accessibility<=Internal || EnableModdingTools` gate
+(`GuiManager.cs:2131`, measured Public/False), it binds nothing at all to C, and the type-ahead takes
+A–Z and space and drops every other character, so Shift+digit is never typing (measured 2026-08-31:
+a PHYSICAL bare `Alpha3` on the galaxy page says nothing and moves nothing).
+
+**SET is a key of the MAP WIDGET; JUMP is a key of the PAGE.** A bookmark is made out of where the
+tree cursor stands, so off the map stop the set key is silently nothing — not a refusal, because
+there is no place there to refuse. Any row the tree files under a system bookmarks THAT SYSTEM (by
+`GameEntityGUID`, so the bookmark follows it); anything with a row of its own out on the map — a
+probe, a fleet away from any berth, a missile, a pin — bookmarks the POINT it stands at today, a
+photograph and not a leash. A constellation, and every other heading, is silently nothing: a row's
+own subject cannot stand in for a position here, because a `Constellation` IS an entity with one
+(its centroid), and asking the subject bookmarked the middle of a stretch of sky. Jumping works from
+any stop of the page, because coming back to a place is what a player reading the notifications
+wants and making them Tab to the map first is asking them to be where they are trying to go.
+
+**A jump is a FOCUS landing and never a click** — an armed targeting cursor is waiting for an Enter
+somewhere, and a jump that confirmed it would send a fleet to the bookmark instead of taking the
+player there (the travel-versus-click split above; measured 2026-08-31 with a `ProbeLaunchingCursor`
+armed, which survived the jump). Inspect OFF, a system bookmark lands on the system's FIRST CHILD,
+which is what brings the camera all the way in through the page's one camera rule; the branch is
+asked for on the press and the landing waits for the build that opens it
+(`GalaxyHudScreen.FollowBookmarkLanding`, 12 frames, falling back to the system's own row). A point
+bookmark lands on its own synthetic row, and the camera slides onto the point through the same rule.
+Inspect ON, the CELL moves instead — `GalaxyInspect.JumpTo` on the bookmark's rounded spoken pair,
+the mode never exited and the zoom never touched; PARKED, the map stop is focused first and the cell
+moved SILENTLY second (`GalaxyInspect.MoveTo`), so the mode's own resume is what reads the new cell
+and the stop landing's camera move cannot end up looking somewhere else. An empty slot is a spoken
+refusal ("No bookmark n") and moves nothing.
+
+**A bookmarked system's row ends with "bookmark n"**, last of everything it says: it is the player's
+own note about the place, not a fact about it. A bookmark whose system this build lists no row for
+falls back to a synthetic row of its own, "Bookmark n at ⟨pair⟩", filed in the constellation whose
+outline holds it (`ConstellationMap`) and read in that group's own order — or, where no named
+stretch of sky does, walked into the top level by position like everything else homeless on this map.
+
 ## Tab, type-ahead and text editing
 
 **Tab and Shift+Tab wrap** (owner decision 2026-08-12): the last stop's Tab lands on the first,

@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using Amplitude;
+using ES2Access.Core.Bookmarks;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.Bookmarks;
 using ES2Access.UI.Input;
 using UnityEngine;
 
@@ -141,10 +143,16 @@ namespace ES2Access.Screens
         /// off the page rather than replacing anything.</summary>
         private readonly GalaxyScanner _scanner;
 
+        /// <summary>The ten places the player has named on this map and the keys that make and use
+        /// them (<see cref="GalaxyBookmarks"/>). Like the scanner it is not a mode and hangs off the
+        /// page; unlike either of the other two it also puts rows in the tree.</summary>
+        private readonly GalaxyBookmarks _bookmarks;
+
         public GalaxyHudScreen()
         {
             _inspect = new GalaxyInspect(this);
             _scanner = new GalaxyScanner(this);
+            _bookmarks = new GalaxyBookmarks(this);
         }
 
         /// <summary>The map's inspect cursor, for the scanner: it measures from the cursor while the
@@ -359,7 +367,9 @@ namespace ES2Access.Screens
             // nothing else. The scanner's chords are none of those, so it is offered every key the
             // cursor passed on - and it answers whether or not the cursor is up, which is what makes
             // the two work together rather than one displacing the other.
-            return _inspect.HandleKey(actionKey) || _scanner.HandleKey(actionKey);
+            return _inspect.HandleKey(actionKey)
+                || _scanner.HandleKey(actionKey)
+                || _bookmarks.HandleKey(actionKey);
         }
 
         /// <summary>
@@ -428,6 +438,10 @@ namespace ES2Access.Screens
             // now is, and a square still drawn on a map nobody is looking at would be a mode nothing
             // could end.
             _inspect.Forget();
+            // And a bookmark landing still waiting for a branch to open: the branch belongs to the
+            // map that is going away, and a landing answered on some later visit would move the
+            // cursor for a reason nobody could remember.
+            _bookmarkLanding = null;
             // A constellation name the mod was holding drawn belongs to the map that is going away.
             ConstellationLabelHold.Release();
             // Where the camera was sent goes with the page too: whatever replaced this one may have
@@ -619,6 +633,10 @@ namespace ES2Access.Screens
             // After both, and outstanding over several frames rather than answered on one: this
             // landing waits for the camera the game is still flying into the system.
             FollowActionSeat();
+            // And beside it: a bookmark jump lands INSIDE the system it names, which is a branch that
+            // has to be opened before there is anything in it to land on
+            // (<see cref="FollowBookmarkLanding"/>).
+            FollowBookmarkLanding();
             // Before the visual is followed, so that a window put right is what the pointer is then
             // aimed at, on the one frame (<see cref="ShowFocusedSystem"/>).
             ShowFocusedSystem();
@@ -1573,6 +1591,16 @@ namespace ES2Access.Screens
                 return true;
             }
 
+            // A place the PLAYER put out on the map, which the map draws nothing at. It is a point
+            // like the four above and belongs with them, ahead of the ancestor walk: its row hangs in
+            // a constellation for reading order and it is not a thing that constellation contains.
+            BookmarkPoint bookmark = BookmarkAt(node == null ? null : node.Id);
+            if (bookmark != null)
+            {
+                place = bookmark;
+                return true;
+            }
+
             for (GraphNode walk = node; walk != null; walk = walk.Parent)
             {
                 StarSystemNode system = walk.Id == null ? null : walk.Id.Subject as StarSystemNode;
@@ -1831,6 +1859,19 @@ namespace ES2Access.Screens
                     _binding = ViewBindFrames;
                     // A camera that is PUT somewhere leaves the map's own labels believing it never
                     // moved (<see cref="_labelCatchUp"/>).
+                    _labelCatchUp = ViewBindFrames;
+                    Remember(place, inside);
+                    return;
+                }
+
+                // A bookmarked point of galaxy: the same slide the things below get, off the position
+                // the player kept rather than off an entity, since there is no entity there at all.
+                BookmarkPoint bookmark = place as BookmarkPoint;
+                if (bookmark != null)
+                {
+                    GalaxyViewLevels.CenterOn(bookmark.At, LandingDamping);
+                    GalaxyViewLevels.Settle();
+                    _settling = SnapSettleFrames;
                     _labelCatchUp = ViewBindFrames;
                     Remember(place, inside);
                     return;
@@ -3694,6 +3735,436 @@ namespace ES2Access.Screens
             _pendingExpand.Add(RootId(node));
         }
 
+        // ---- bookmarks (GalaxyBookmarks owns the keys; these are the map's half) ----
+
+        /// <summary>
+        /// Take the player INSIDE a system - the landing a bookmark jump makes.
+        ///
+        /// The cursor goes to the system's FIRST CHILD rather than to its row, which is what brings
+        /// the camera all the way in: the page's one camera rule reads a row inside a system as being
+        /// in that place and snaps to it, where the system's own row is a place being looked AT from
+        /// wherever the camera stands (<see cref="FollowPlace"/>). So a jump leaves the player exactly
+        /// where walking in with Right would have.
+        ///
+        /// It cannot be done on the press. The branch is shut - possibly inside a shut constellation -
+        /// so the child does not exist yet and its key is not something this page can compose: what a
+        /// system's first child IS depends on what the map is drawing there
+        /// (<see cref="AddInside"/>). The branch is asked to open and the landing waits for the build
+        /// that opens it (<see cref="FollowBookmarkLanding"/>).
+        /// </summary>
+        internal void LandInside(StarSystemNode node)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            OpenPlace(node);
+            _bookmarkLanding = ControlId.For(node, SystemKey(node));
+            _bookmarkLandingFrames = BookmarkLandingFrames;
+        }
+
+        /// <summary>Put the cursor on the first thing inside the system a jump named, once the build
+        /// that opened the branch has declared it. A system with nothing in it - and a branch that
+        /// never opens, which is the budget running out - lands on the system's own row instead, which
+        /// is the honest answer to "go inside" where there is no inside.</summary>
+        private void FollowBookmarkLanding()
+        {
+            if (_bookmarkLanding == null)
+            {
+                return;
+            }
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphRender render = navigator == null ? null : navigator.Render;
+            GraphNode node = render == null ? null : render.NodeAt(_bookmarkLanding);
+            bool open = node != null && node.Expanded;
+            bool spent = --_bookmarkLandingFrames <= 0;
+            if (!open && !spent)
+            {
+                // The branch was asked for on the press and opens on a later build: a system that is
+                // merely DECLARED is the shut row the jump was made from, and landing on it would be
+                // the jump giving up one frame before it could have gone inside.
+                return;
+            }
+
+            ControlId landing = _bookmarkLanding;
+            _bookmarkLanding = null;
+            ControlId child = open ? FirstChild(render, node) : null;
+            if (navigator != null)
+            {
+                navigator.FocusNode(child ?? landing);
+            }
+        }
+
+        /// <summary>The first thing declared inside a group in this render - declaration order is the
+        /// reading order, so the first is the one an arrow key would reach first.</summary>
+        private static ControlId FirstChild(GraphRender render, GraphNode group)
+        {
+            for (int i = 0; i < render.Order.Count; i++)
+            {
+                GraphNode node = render.Order[i];
+                if (ReferenceEquals(node.Parent, group))
+                {
+                    return node.Id;
+                }
+            }
+
+            return null;
+        }
+
+        private ControlId _bookmarkLanding;
+        private int _bookmarkLandingFrames;
+
+        /// <summary>How long a bookmark landing waits for the branch it asked for. Two builds is
+        /// enough - the constellation on one, the system on the next - and twelve is the same generous
+        /// count every other wait on this page uses.</summary>
+        private const int BookmarkLandingFrames = 12;
+
+        /// <summary>The system a GUID names, or null where the galaxy has no such node - what a
+        /// bookmark holding a system has to be resolved through, since a bookmark outlives every
+        /// object the map builds.</summary>
+        internal static StarSystemNode SystemByGuid(ulong guid)
+        {
+            try
+            {
+                foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
+                {
+                    if ((ulong)node.GUID == guid)
+                    {
+                        return node;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: looking a system up by its guid threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>Where the player's empire began - the game's own answer
+        /// (<c>DepartmentOfTheInterior.HomeSystemNode</c>), which is why the home jump is not a
+        /// bookmark and nothing about it is ever written down.</summary>
+        internal static StarSystemNode HomeSystem()
+        {
+            try
+            {
+                Empire empire = PlayerEmpire();
+                DepartmentOfTheInterior interior =
+                    empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
+                return interior == null ? null : interior.HomeSystemNode;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: finding the home system threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The system a slot is bookmarking, where the map is listing it - null for a slot
+        /// that is a point of space, empty, or naming a system this build declares no row for (the
+        /// point row that stands in for it is <see cref="BookmarkedPoint"/>).</summary>
+        internal StarSystemNode BookmarkedSystem(char digit)
+        {
+            StarSystemNode node;
+            return _bookmarkSystems.TryGetValue(digit, out node) ? node : null;
+        }
+
+        /// <summary>The row a slot's point of space is declared as, or null where the slot is a system
+        /// or empty. It is the id the row WOULD have, whether or not the branch it hangs in is open -
+        /// a landing opens its ancestors on the way (<c>KeyGraph.AncestorKeys</c>).</summary>
+        internal ControlId BookmarkedPoint(char digit)
+        {
+            BookmarkPoint point;
+            return _bookmarkSpots.TryGetValue(digit, out point) && point.Listed ? point.Id : null;
+        }
+
+        /// <summary>
+        /// One bookmarked point of galaxy, as the tree has to hold it: which slot it is, where it is,
+        /// and which stretch of sky it falls in.
+        ///
+        /// A CLASS and kept per slot rather than rebuilt per build, because the camera rule records
+        /// where it sent the camera BY REFERENCE (<see cref="Showing"/>) - a fresh object every frame
+        /// would be a place the record never recognises, and the camera would re-centre on every frame
+        /// the cursor stood on the row.
+        /// </summary>
+        private sealed class BookmarkPoint
+        {
+            public char Digit;
+            public GalaxyPosition At;
+            public Constellation Sky;
+            public ControlId Id;
+
+            /// <summary>Whether this build is declaring the row at all.</summary>
+            public bool Listed;
+
+            /// <summary>Whether this build has already declared it - the merge walks the same list
+            /// once per group and once at the top level.</summary>
+            public bool Emitted;
+        }
+
+        /// <summary>Every slot that is a point of space, kept by slot for the reason
+        /// <see cref="BookmarkPoint"/> gives.</summary>
+        private readonly Dictionary<char, BookmarkPoint> _bookmarkSpots =
+            new Dictionary<char, BookmarkPoint>();
+
+        /// <summary>This build's point bookmarks in reading order.</summary>
+        private readonly List<BookmarkPoint> _bookmarkPoints = new List<BookmarkPoint>();
+
+        /// <summary>The slot each bookmarked system's row says it is, for the word the row ends with.
+        /// </summary>
+        private readonly Dictionary<ulong, char> _bookmarkedDigit = new Dictionary<ulong, char>();
+
+        /// <summary>The system each slot bookmarks, where this build is listing it.</summary>
+        private readonly Dictionary<char, StarSystemNode> _bookmarkSystems =
+            new Dictionary<char, StarSystemNode>();
+
+        private static readonly Comparison<BookmarkPoint> BookmarkReadingOrder = CompareBookmarks;
+
+        private static int CompareBookmarks(BookmarkPoint left, BookmarkPoint right)
+        {
+            return ComparePositions(left.At, right.At);
+        }
+
+        /// <summary>
+        /// Work out what each filled slot is for THIS build: a word on a system's row, or a row of
+        /// its own.
+        ///
+        /// A slot naming a system the build is listing is the first - the system's own row carries the
+        /// bookmark, so an obliterated system keeps it (the game strips a system of everything and
+        /// never takes its node away). A slot whose system the map is not listing at all falls back to
+        /// the bare point it was set at, which is the only honest thing left to offer.
+        ///
+        /// Asked after the lists of places are settled and before anything is declared from them, so
+        /// "is this system listed" is answered against the very build that would carry the word.
+        /// </summary>
+        private void GatherBookmarks(Empire empire)
+        {
+            _bookmarkPoints.Clear();
+            _bookmarkedDigit.Clear();
+            _bookmarkSystems.Clear();
+            foreach (KeyValuePair<char, BookmarkPoint> parked in _bookmarkSpots)
+            {
+                parked.Value.Listed = false;
+                parked.Value.Emitted = false;
+            }
+
+            MapBookmarks bookmarks = MapBookmarkStore.Bookmarks;
+            if (bookmarks.Count == 0)
+            {
+                return;
+            }
+
+            foreach (char digit in MapBookmarks.Digits)
+            {
+                MapBookmark bookmark;
+                if (!bookmarks.TryGet(digit, out bookmark))
+                {
+                    continue;
+                }
+
+                StarSystemNode listed = bookmark.IsSystem ? Listed(bookmark.SystemGuid) : null;
+                if (listed != null)
+                {
+                    _bookmarkedDigit[bookmark.SystemGuid] = digit;
+                    _bookmarkSystems[digit] = listed;
+                    continue;
+                }
+
+                _bookmarkPoints.Add(
+                    BookmarkSpot(digit, new GalaxyPosition(bookmark.X, bookmark.Y), empire)
+                );
+            }
+
+            _bookmarkPoints.Sort(BookmarkReadingOrder);
+        }
+
+        /// <summary>The system a bookmark names, where this build's own lists of places hold it -
+        /// which is what decides whether a bookmarked system has a row to carry the word.</summary>
+        private StarSystemNode Listed(ulong guid)
+        {
+            for (int i = 0; i < _colonies.Count; i++)
+            {
+                if ((ulong)_colonies[i].GUID == guid)
+                {
+                    return _colonies[i];
+                }
+            }
+
+            for (int i = 0; i < _systems.Count; i++)
+            {
+                if ((ulong)_systems[i].GUID == guid)
+                {
+                    return _systems[i];
+                }
+            }
+
+            for (int i = 0; i < _located.Count; i++)
+            {
+                if ((ulong)_located[i].GUID == guid)
+                {
+                    return _located[i];
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>This slot's kept point, brought up to date for this build: where it is, which
+        /// stretch of sky holds it, and therefore where its row hangs.</summary>
+        private BookmarkPoint BookmarkSpot(char digit, GalaxyPosition at, Empire empire)
+        {
+            BookmarkPoint point;
+            if (!_bookmarkSpots.TryGetValue(digit, out point))
+            {
+                point = new BookmarkPoint { Digit = digit };
+                _bookmarkSpots[digit] = point;
+            }
+
+            double east;
+            double north;
+            GalaxyCoordinates.Offsets(at, out east, out north);
+            Constellation sky = ConstellationMap.Classify(east, north);
+            point.At = at;
+            point.Sky = InGroups(sky) ? sky : null;
+            point.Listed = true;
+            point.Emitted = false;
+            point.Id = ControlId.Structural(
+                (point.Sky == null ? StrayBookmarkKey : GroupKey(point.Sky, empire) + "/bookmark/")
+                    + digit
+            );
+            return point;
+        }
+
+        /// <summary>Whether a stretch of sky is one this build is declaring a group for. A
+        /// constellation whose members are all unlisted has no group, so a point that falls inside it
+        /// has nowhere to hang and takes the row of its own that everything homeless on this map
+        /// takes (<see cref="AddAdrift"/>).</summary>
+        private bool InGroups(Constellation sky)
+        {
+            if (sky == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _groups.Count; i++)
+            {
+                if (ReferenceEquals(_groups[i].Constellation, sky))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private const string StrayBookmarkKey = "galaxy:bookmark/";
+
+        /// <summary>The word a bookmarked system's row ends with. Last of everything the row says: it
+        /// is the player's own note about the place and not a fact about it, so it comes after every
+        /// answer the map itself is giving.</summary>
+        private string BookmarkWord(StarSystemNode node)
+        {
+            char digit;
+            return node != null && _bookmarkedDigit.TryGetValue((ulong)node.GUID, out digit)
+                ? ModStrings.Format(ModStrings.GalaxyBookmarkSuffix, digit.ToString())
+                : null;
+        }
+
+        /// <summary>Declare every point bookmark in this stretch of sky that reads before
+        /// <paramref name="before"/> - the merge that walks them into the group's own order, the same
+        /// order its systems and fleets are in.</summary>
+        private void EmitBookmarksBefore(
+            GraphBuilder builder,
+            Constellation sky,
+            GalaxyPosition before
+        )
+        {
+            for (int i = 0; i < _bookmarkPoints.Count; i++)
+            {
+                BookmarkPoint point = _bookmarkPoints[i];
+                if (
+                    point.Emitted
+                    || !ReferenceEquals(point.Sky, sky)
+                    || ComparePositions(point.At, before) >= 0
+                )
+                {
+                    continue;
+                }
+
+                AddBookmarkPoint(builder, point);
+            }
+        }
+
+        /// <summary>The rest of one stretch of sky's point bookmarks, after its last other entry.
+        /// </summary>
+        private void EmitBookmarksAfter(GraphBuilder builder, Constellation sky)
+        {
+            for (int i = 0; i < _bookmarkPoints.Count; i++)
+            {
+                BookmarkPoint point = _bookmarkPoints[i];
+                if (!point.Emitted && ReferenceEquals(point.Sky, sky))
+                {
+                    AddBookmarkPoint(builder, point);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A place the player named that the map draws nothing at.
+        ///
+        /// It is the mod's own row in the fullest sense - nothing on the screen answers for it, and
+        /// nothing in the game's model does either - so it says the two things that are true of it:
+        /// which slot it is, and where it is. The camera follows it like anything else standing out on
+        /// the map (<see cref="Place"/>), and there is nothing to activate: a point of space has no
+        /// click.
+        /// </summary>
+        private void AddBookmarkPoint(GraphBuilder builder, BookmarkPoint point)
+        {
+            point.Emitted = true;
+            BookmarkPoint it = point;
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(
+                        () =>
+                            ModStrings.Format(
+                                ModStrings.GalaxyBookmarkPoint,
+                                it.Digit.ToString(),
+                                GalaxyCoordinates.Text(it.At)
+                            )
+                    ),
+                },
+            };
+            // Synthetic: the mod's own row for a place the mod is the only one that knows about.
+            builder.AddItem(Nodes.Synthetic(point.Id, vtable));
+        }
+
+        /// <summary>The point bookmark a row on this stop stands for, or null - the same identity
+        /// lookup <see cref="OpenSpaceThing"/> makes for the things the map really does draw out
+        /// there, and for the same reason: the row is keyed structurally, so nothing on the id says
+        /// where it is.</summary>
+        private BookmarkPoint BookmarkAt(ControlId id)
+        {
+            if (id == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < _bookmarkPoints.Count; i++)
+            {
+                if (id.Equals(_bookmarkPoints[i].Id))
+                {
+                    return _bookmarkPoints[i];
+                }
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// Backspace on the map is the way back down the lanes that have been travelled, and it belongs to
         /// the MAP rather than to whatever node the cursor is on - the player is somewhere because of the
@@ -3827,10 +4298,14 @@ namespace ES2Access.Screens
                 StarSystemLabel[] labels = SystemLabels();
                 ConstellationLabel[] regions = ConstellationLabels();
                 Partition(empire);
+                // After the partition, because which stretch of sky a bookmarked point hangs in
+                // depends on which stretches this build is declaring at all.
+                GatherBookmarks(empire);
 
                 // Two lists already in the same order, merged as they are declared: a homeless fleet
                 // takes its place among the constellations rather than being parked at either end of
-                // them.
+                // them. A bookmarked point that falls in no stretch of sky the map is naming is
+                // walked in with them, by the same rule and for the same reason.
                 int sky = 0;
                 int fleet = 0;
                 while (sky < _groups.Count || fleet < _adrift.Count)
@@ -3844,6 +4319,10 @@ namespace ES2Access.Screens
                                 _adrift[fleet].GalaxyPosition
                             ) <= 0
                         );
+                    GalaxyPosition next = takeSky
+                        ? _groups[sky].Constellation.GalaxyPosition
+                        : _adrift[fleet].GalaxyPosition;
+                    EmitBookmarksBefore(builder, null, next);
                     if (takeSky)
                     {
                         AddConstellation(builder, _groups[sky], empire, labels, regions);
@@ -3856,6 +4335,7 @@ namespace ES2Access.Screens
                     }
                 }
 
+                EmitBookmarksAfter(builder, null);
                 AddUnexplored(builder, empire, labels);
 
                 if (drifting > 0)
@@ -4043,8 +4523,13 @@ namespace ES2Access.Screens
                 List<StarSystemNode> members = _members[group.Members];
                 for (int i = 0; i < members.Count; i++)
                 {
+                    // A bookmarked point of sky in this stretch is one of its entries and reads in
+                    // the same order they do (<see cref="EmitBookmarksBefore"/>).
+                    EmitBookmarksBefore(builder, it, members[i].GalaxyPosition);
                     AddPlace(builder, members[i], empire, labels);
                 }
+
+                EmitBookmarksAfter(builder, it);
             }
 
             builder.EndGroup();
@@ -4496,6 +4981,11 @@ namespace ES2Access.Screens
             // hovering over this system, in words. Silent while nothing is selected. Emphatically not
             // watched: the answer is a pathfinding search (<see cref="FleetRoute"/>).
             vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetRoute.Preview(it), false));
+
+            // Last of everything: the player's own note about this place
+            // (<see cref="BookmarkWord"/>). It is not a fact about the system, so it comes after
+            // every answer the map itself is giving about one.
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => BookmarkWord(it), false));
 
             // The two clicks the map itself puts on a system, and nothing invented on top of them.
             vtable.OnActivate = () => ZoomIn(it);

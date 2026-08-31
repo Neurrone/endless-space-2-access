@@ -143,6 +143,28 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// Put the cell somewhere and say NOTHING - the same move, for a caller that is about to make
+        /// the reading happen by another route.
+        ///
+        /// The one caller is a bookmark jump made while the mode is PARKED: the player is standing on
+        /// another stop, so the cell is not what they are reading, and the jump puts them back on the
+        /// map - where coming back is already the thing that reads the cell out
+        /// (<see cref="Update"/>). Speaking here as well would say the same cell twice.
+        /// </summary>
+        public bool MoveTo(int x, int y)
+        {
+            if (!_live)
+            {
+                return false;
+            }
+
+            _x = x;
+            _y = y;
+            Show();
+            return true;
+        }
+
+        /// <summary>
         /// Arm the cursor ON a place another mode of the map chose - the scanner sending the player to
         /// a square of sky.
         ///
@@ -1311,8 +1333,10 @@ namespace ES2Access.Screens
         private int _bubblesY;
         private int _bubblesSize;
 
-        /// <summary>Put the camera and the drawn square on the cell, then say what is in it.</summary>
-        private void Settle(bool interrupt)
+        /// <summary>Put the camera and the drawn square on the cell - the picture half of a move, with
+        /// nothing said. Split out so a caller that will have the cell read out by another route can
+        /// move it without speaking (<see cref="MoveTo"/>).</summary>
+        private void Show()
         {
             GalaxyPosition origin = GalaxyCoordinates.Origin();
             GalaxyViewLevels.CenterOn(
@@ -1325,6 +1349,12 @@ namespace ES2Access.Screens
                 (float)(origin.Y + InspectGrid.Low(_y, _size)),
                 (float)(origin.Y + InspectGrid.High(_y, _size))
             );
+        }
+
+        /// <summary>Put the camera and the drawn square on the cell, then say what is in it.</summary>
+        private void Settle(bool interrupt)
+        {
+            Show();
             // Ahead of the cell, and as its own line: it is news about the MOVE rather than about what
             // is standing here, which is the place the skip key's own count already occupies. The
             // cell's reading keeps the interrupt it was going to have; where both are said the
