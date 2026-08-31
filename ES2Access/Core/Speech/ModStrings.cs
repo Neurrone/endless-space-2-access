@@ -1246,7 +1246,6 @@ namespace ES2Access.Core.Speech
         public const string SystemBuyOut = "system.buy-out";
         public const string SystemQueuePosition = "system.queue-position";
         public const string SystemProgress = "system.progress";
-        public const string SystemIndustryCost = "system.industry-cost";
         public const string SystemShipSelected = "system.ship-selected";
 
         /// <summary>A rate with no holding beside it: the colony panel's resource strip draws each
@@ -2427,7 +2426,6 @@ namespace ES2Access.Core.Speech
             { SystemBuyOut, "Buy out with {0}" },
             { SystemQueuePosition, "position {0}" },
             { SystemProgress, "{0} percent built" },
-            { SystemIndustryCost, "{0} industry" },
             { SystemShipSelected, "selected" },
             { SystemNetPerTurn, "{0} per turn" },
             { FleetsPanelOpened, "Fleet panel open for {0}" },
