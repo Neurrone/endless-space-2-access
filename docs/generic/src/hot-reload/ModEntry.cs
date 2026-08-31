@@ -173,14 +173,18 @@ namespace ES2Access
             else
             {
                 // On macOS the mod speaks the system voice itself and Prism is only the
-                // fallback (PrismSpeech.Initialize), so a preload failure there costs the
-                // fallback, not speech.
+                // fallback or an opt-in (PrismSpeech.Initialize), so a preload failure there
+                // costs those, not speech.
                 bool prismLoaded = NativeLoader.LoadPrism(
                     Path.Combine(host.GameRootPath, Platform.IsMacOS ? "libprism.dylib" : "prism.dll")
                 );
                 if (prismLoaded || Platform.IsMacOS)
                 {
+                    // The settings file's backend choice decides what Initialize stands up,
+                    // and the voice, rate and volume land on whatever it stood up.
+                    SpeechSettings.Configure(Speech);
                     Speech.Initialize();
+                    SpeechSettings.Apply(Speech);
                 }
             }
 

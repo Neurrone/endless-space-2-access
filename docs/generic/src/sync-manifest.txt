@@ -76,4 +76,5 @@ docs/generic/src/speech/SpeechAudio.cs | ES2Access/Core/Speech/Mac/SpeechAudio.c
 docs/generic/src/speech/MacSpeechStream.cs | ES2Access/Core/Speech/Mac/MacSpeechStream.cs
 docs/generic/src/speech/MacSpokenContent.cs | ES2Access/Core/Speech/Mac/MacSpokenContent.cs
 docs/generic/src/speech/MacSystemVoice.cs | ES2Access/Core/Speech/Mac/MacSystemVoice.cs
+docs/generic/src/speech/VoiceSelection.cs | ES2Access/Core/Speech/Mac/VoiceSelection.cs
 docs/generic/src/engine-example/AgeWidgets.cs | ES2Access/UI/AgeWidgets.cs
