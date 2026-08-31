@@ -820,6 +820,18 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   re-derives on the player empire changing IDENTITY rather than subscribing. Fixture `[Beginner]
   test`: Dusay at raw (68.884, -22.450), and the 13 systems the map names span -43..23 east and
   -42..34 north of it against a whole-galaxy span of -95..92 by -64..66.
+- **HOME MOVES, so the origin FOLLOWS it and is never latched** (`GalaxyCoordinates.Resolve`, owner
+  ruling 2026-08-31). The property has exactly three writers: the colonise-your-home path, the
+  Penumbra capital DISPLACEMENT (`DepartmentOfTheInterior.DisplaceSystem:1732`) which re-elects it
+  mid-game, and save-load. Conquest never nulls it and never re-elects it, and the Vaulters
+  (`FactionTraitManualHomeSystem`, `DownloadableContent9.cs:18`) START with it null until they
+  manually super-colonise. So the origin is re-asked once a frame the cheap way — a raw reference
+  compare against the system it was taken from, the position re-read only when that answer changes,
+  which is the same shape `MapBookmarkStore.Tick` polls the campaign GUID with. **Measured
+  2026-08-31** on the turn-26 fixture by re-pointing `HomeSystemNode`: home at Dusay, origin
+  (68.884, -22.450), Dusay reads "0, 0"; re-pointed to Rigel, origin (53.008, -27.058), Rigel reads
+  "0, 0" and Dusay "16, 5"; nulled, origin (0, 0) and Dusay reads its raw "69, -22"; put back,
+  "0, 0" again. A latched origin would have answered Dusay's numbers throughout.
 - **The system-discovery cutscene is a VIEW LEVEL at the same layer as the galaxy** — a fleet
   action that selects an undiscovered system POPS the galaxy page 2-3 frames after the click
   (not a cover). Measured 193-352 frames (~10-18 s at ~20 fps); it hands the camera back at

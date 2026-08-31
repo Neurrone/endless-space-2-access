@@ -9,12 +9,18 @@ namespace ES2Access.UI
     /// system. The wording and the rounding are <see cref="MapCoordinates"/>'s; what lives here is the
     /// one thing that needs the game: where home is.
     ///
-    /// The origin is cached because it is a two-service lookup and an agency walk, and a coordinate
-    /// part is asked of the focused node on EVERY frame (an un-watched part is still asked - see
-    /// dev-loop). It is re-derived whenever the player empire changes IDENTITY, which is what loading
-    /// another save looks like from here, and retried for as long as the empire has no home system yet
-    /// (a game still starting up). At most one attempt per frame, so the fallback case costs no more
-    /// than the settled one.
+    /// The origin is cached because it is an agency walk and a position read, and a coordinate part is
+    /// asked of the focused node on EVERY frame (an un-watched part is still asked - see dev-loop).
+    /// What is asked once a frame is the cheap half: which system the game currently calls home, as a
+    /// raw reference compare against the one the origin was taken from - the same shape
+    /// <see cref="Bookmarks.MapBookmarkStore"/> polls the campaign's GUID with. The position is only
+    /// re-read when that answer CHANGES, so the settled case allocates nothing.
+    ///
+    /// It FOLLOWS the current home rather than latching onto the first one found, because home moves:
+    /// Penumbra's capital displacement re-elects it (<c>DepartmentOfTheInterior.DisplaceSystem</c>),
+    /// and a Vaulters empire has none at all until it sets one down. A latch would leave the whole map
+    /// measured from a place the empire no longer lives in, and Ctrl+C - which asks the game directly -
+    /// would land somewhere that did not read "0, 0".
     ///
     /// With no home to measure from, the pair is the place's own unshifted position rather than
     /// silence: the numbers are still a consistent map, only with the game's own origin at their
@@ -90,18 +96,19 @@ namespace ES2Access.UI
             north = position.Y - origin.Y;
         }
 
-        /// <summary>Let go of the empire the origin was taken from - mod teardown.</summary>
+        /// <summary>Let go of the empire and the home the origin was taken from - mod teardown.
+        /// </summary>
         public static void Forget()
         {
             _empire = null;
+            _home = null;
             _origin = default(GalaxyPosition);
-            _settled = false;
             _frame = -1;
         }
 
         private static Empire _empire;
+        private static StarSystemNode _home;
         private static GalaxyPosition _origin;
-        private static bool _settled;
         private static int _frame = -1;
 
         private static void Resolve()
@@ -116,23 +123,29 @@ namespace ES2Access.UI
             Empire empire = Gui.PlayerEmpire;
             if (!ReferenceEquals(empire, _empire))
             {
+                // Another save loaded, or the menu: everything about the old game goes, including the
+                // home - whose instance the new game rebuilds even where it is the same star.
                 _empire = empire;
+                _home = null;
                 _origin = default(GalaxyPosition);
-                _settled = false;
             }
 
-            if (_settled || empire == null)
+            if (empire == null)
             {
                 return;
             }
 
             DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
             StarSystemNode home = interior == null ? null : interior.HomeSystemNode;
-            if (home != null)
+            if (ReferenceEquals(home, _home))
             {
-                _origin = home.GalaxyPosition;
-                _settled = true;
+                return;
             }
+
+            // A star does not move, so the position is only ever re-read when the game names a
+            // DIFFERENT system as home - or none, which puts the pairs back on the game's own origin.
+            _home = home;
+            _origin = home == null ? default(GalaxyPosition) : home.GalaxyPosition;
         }
     }
 }

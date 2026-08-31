@@ -315,15 +315,21 @@ namespace ES2Access.Screens
         /// It is not a bookmark and consumes no slot: the game knows where home is
         /// (<c>DepartmentOfTheInterior.HomeSystemNode</c>) and nothing about it is ever written down.
         ///
-        /// An empire with no home system at all - which no game the player can be in has - is taken
-        /// and silent rather than refused: there is no wording for a place the game itself does not
-        /// have.
+        /// An empire with no home system at all REFUSES OUT LOUD - "No home system" (owner ruling and
+        /// wording 2026-08-31). It is a real state and not a defensive branch: a Vaulters empire begins
+        /// with none at all and has none until it super-colonises somewhere
+        /// (<c>FactionTraitManualHomeSystem</c>), so the key can be pressed with nowhere to go, and a
+        /// key that answers nothing is indistinguishable from a key that does not work. Conquest never
+        /// takes it away; the only other thing that moves it is Penumbra's capital displacement
+        /// (<c>DepartmentOfTheInterior.DisplaceSystem</c>), which changes where home is rather than
+        /// whether there is one.
         /// </summary>
         private bool Home()
         {
             StarSystemNode home = GalaxyHudScreen.HomeSystem();
             if (home == null)
             {
+                Voice.Say(ModStrings.Get(ModStrings.GalaxyBookmarkNoHome), true);
                 return true;
             }
 

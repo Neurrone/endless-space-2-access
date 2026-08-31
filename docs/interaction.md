@@ -864,7 +864,11 @@ prove this half (it holds no key); what it proves is the important half — with
 2026-08-31; `ES2Access/Screens/GalaxyBookmarks.cs`, store `ES2Access/UI/Bookmarks/MapBookmarkStore.cs`):
 **Shift+1..9,0 SET bookmark n**, **Ctrl+1..9,0 JUMP to bookmark n**, and **Ctrl+C JUMPS TO THE HOME
 SYSTEM** — the same landing, at a place nobody has to set, consuming no slot and never written down
-(the game's own `DepartmentOfTheInterior.HomeSystemNode`). Top-row digits only; the keypad's are a
+(the game's own `DepartmentOfTheInterior.HomeSystemNode`). **An empire with no home system yet gets
+a spoken refusal, "No home system"** (`galaxy.bookmark.no-home`, owner's wording, owner ruling
+2026-08-31): the Vaulters begin that way and stay so until they super-colonise
+(`FactionTraitManualHomeSystem`), so it is a state a player can really be in, and a key that answers
+nothing is indistinguishable from a key that does not work. Top-row digits only; the keypad's are a
 different key and nothing asks for them. None of the twenty-one repeats.
 **All twenty-one are claimed while the galaxy page is up AND the game's scan lens is off**
 (`GalaxyBookmarks.KeysClaimed` → `GraphNavigator.DeclaresStop(galaxy:systems)` +

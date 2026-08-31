@@ -545,6 +545,12 @@ namespace ES2Access.Core.Speech
         // wrong.
         public const string GalaxyBookmarkShrink = "galaxy.bookmark.shrink";
 
+        // The home key's own refusal: an empire that has not got a home system yet. The Vaulters begin
+        // that way - their whole faction is a ship, and there is no capital until they set one down -
+        // so the key is pressed and there is nowhere to go. Said rather than swallowed, because silence
+        // from a key the player just pressed is indistinguishable from a key that does not work.
+        public const string GalaxyBookmarkNoHome = "galaxy.bookmark.no-home";
+
         // The one line of the bookmarks file a PERSON reads: which game's bookmarks these are, written
         // at the top of it and refreshed on every write. It is a caption and not speech - nothing says
         // it out loud - but it is the player's own language for all that, and it is a whole sentence
@@ -2183,6 +2189,7 @@ namespace ES2Access.Core.Speech
             { GalaxyBookmarkSuffix, "bookmark {0}" },
             { GalaxyBookmarkPoint, "Bookmark {0} at {1}" },
             { GalaxyBookmarkShrink, "Shrink cursor so it contains only one system" },
+            { GalaxyBookmarkNoHome, "No home system" },
             { GalaxyBookmarkFileHeader, "{0}, {1}, turn {2}" },
             { GalaxyInspectEntered, "Inspect mode" },
             { GalaxyInspectExited, "Exited inspect mode" },
