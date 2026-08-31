@@ -1,7 +1,14 @@
 #!/bin/sh
-# macOS twin of run-game.ps1: build, then launch Endless Space 2 through BepInEx's run_bepinex.sh.
+# macOS twin of run-game.ps1: build, then launch Endless Space 2 through macos/run-modded.sh,
+# as a launchd job in the GUI session.
 #
 #   ./run-game.sh [--no-build] [--no-speech] [--no-dev] [--no-wait] [--load-save "<save title>"]
+#
+# The GUI session matters for speech: a process started from an SSH login cannot reach the
+# Eloquence voices, and AVSpeech silently swaps in the compact default voice - the mod would ask
+# for the player's Spoken Content voice and something else would answer. launchd's gui domain
+# runs the game in the logged-in desktop session whichever terminal this script runs from,
+# exactly as a Steam launch would.
 #
 # The game folder comes from GamePaths.props (GameDir). Steam must be running: the game's own
 # steam_api needs it, whichever way the binary is started. One game at a time, as on Windows:
@@ -45,8 +52,8 @@ if [ ! -d "$app" ]; then
     echo "game not found: $app (check GameDir in GamePaths.props)" >&2
     exit 1
 fi
-if [ ! -x "$game_dir/run_bepinex.sh" ]; then
-    echo "BepInEx is not installed next to the .app (no $game_dir/run_bepinex.sh); see macos/README.md" >&2
+if [ ! -f "$game_dir/BepInEx/core/BepInEx.Preloader.dll" ] || [ ! -f "$game_dir/libdoorstop.dylib" ]; then
+    echo "BepInEx is not installed next to the .app (no BepInEx/core or libdoorstop.dylib in $game_dir); see macos/README.md" >&2
     exit 1
 fi
 
@@ -93,11 +100,59 @@ else
     printf '\n[Dev]\ndevServer = %s\n' "$dev_value" >> "$cfg"
 fi
 
-# run_bepinex.sh execs the game (through `arch` on Apple Silicon, which execs in turn), so the
-# pid below is the game's own.
+launcher="$game_dir/run-modded.sh"
+if [ ! -x "$launcher" ]; then
+    echo "the launcher is not deployed at $launcher; build first (dotnet build ES2Access/ES2Access.csproj)" >&2
+    exit 1
+fi
+
+# The game's steam_api asks Steam to relaunch the game when started outside Steam, unless the
+# app id sits next to the binary.
+[ -f "$game_dir/steam_appid.txt" ] || printf '392110\n' > "$game_dir/steam_appid.txt"
+
 log="${TMPDIR:-/tmp}/es2access-run-game.out"
-( cd "$game_dir" && exec "$game_dir/run_bepinex.sh" "$app" ) > "$log" 2>&1 &
-game_pid=$!
+label="es2access.game"
+plist="${TMPDIR:-/tmp}/es2access-game.plist"
+uid="$(id -u)"
+launchctl bootout "gui/$uid/$label" 2>/dev/null || true
+speech_env=""
+if [ "$no_speech" = 1 ]; then
+    speech_env="  <key>EnvironmentVariables</key><dict><key>ES2ACCESS_NO_SPEECH</key><string>1</string></dict>"
+fi
+cat > "$plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$label</string>
+  <key>ProgramArguments</key><array><string>$launcher</string></array>
+  <key>WorkingDirectory</key><string>$game_dir</string>
+  <key>StandardOutPath</key><string>$log</string>
+  <key>StandardErrorPath</key><string>$log</string>
+  <key>RunAtLoad</key><true/>
+$speech_env
+</dict>
+</plist>
+EOF
+if ! launchctl bootstrap "gui/$uid" "$plist"; then
+    echo "warning: no GUI session to launch into; starting directly (speech will not use the Spoken Content voice)" >&2
+    ( cd "$game_dir" && exec "$launcher" ) > "$log" 2>&1 &
+fi
+
+game_pid=""
+waited=0
+while [ -z "$game_pid" ] && [ "$waited" -lt 30 ]; do
+    game_pid="$(pgrep -x EndlessSpace2 || true)"
+    [ -n "$game_pid" ] && break
+    sleep 1
+    waited=$((waited + 1))
+done
+if [ -z "$game_pid" ]; then
+    echo "the game did not start; launcher output: $log" >&2
+    tail -5 "$log" >&2 || true
+    launchctl bootout "gui/$uid/$label" 2>/dev/null || true
+    exit 1
+fi
 printf '%s\n' "$game_pid" > "$lock"
 if [ "$no_dev" = 1 ]; then
     echo "Endless Space 2 started (pid $game_pid). Dev server disabled. Launcher output: $log"
@@ -127,8 +182,12 @@ if [ -n "$load_save" ]; then
     esac
 fi
 
+# The game is launchd's child, not ours, so waiting is polling.
 if [ "$no_wait" = 0 ]; then
-    wait "$game_pid" && code=0 || code=$?
+    while kill -0 "$game_pid" 2>/dev/null; do
+        sleep 2
+    done
+    launchctl bootout "gui/$uid/$label" 2>/dev/null || true
     rm -f "$lock"
-    echo "Game exited with code $code."
+    echo "Game exited."
 fi
