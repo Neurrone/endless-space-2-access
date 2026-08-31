@@ -430,6 +430,10 @@ null); the rate row then shows the OS Spoken Content rate, not a placeholder.
   the game's own dispatch); drive the Cancel BUTTON instead - it raises the same confirmation
   and the same restore. What only ears can prove: the audio actually changing voice, rate and
   volume, and VoiceOver announcing when the Prism backend is chosen.
+- **Owner's pass, 2026-08-31**: every by-ear and physical item above confirmed - the audio
+  changing voice, rate and volume; VoiceOver announcing on the Prism backend; the Prism
+  refusal heard with the dylib missing; the live capture spoken as Option/Cmd; the
+  Option/Command chords under live keys; and chat opening on Option+Tab.
 
 ## The key rows on a Mac: spoken as Option and Cmd
 
