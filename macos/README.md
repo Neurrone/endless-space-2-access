@@ -39,11 +39,14 @@ Windows build changes.
    `~/Library/Application Support/Steam/steamapps/common/Endless Space 2/`. Afterwards that
    folder holds `BepInEx/`, `run_bepinex.sh`, `libdoorstop.dylib` and `.doorstop_version` next to
    the .app.
-3. Copy the mod's `BepInEx/plugins/ES2Access/` folder into `BepInEx/plugins/`.
+3. Copy the mod's `BepInEx/plugins/ES2Access/` folder into `BepInEx/plugins/`, and the mod's
+   `run-modded.sh` next to the .app (beside `run_bepinex.sh`). The mod brings its own launcher
+   because BepInEx's `run_bepinex.sh` cannot start this game's elderly Mono correctly; the
+   header of `run-modded.sh` explains the three problems it fixes.
 4. Clear the quarantine flag macOS puts on downloaded libraries, or the game will refuse to
    load them: in Terminal, `xattr -dr com.apple.quarantine "$HOME/Library/Application Support/Steam/steamapps/common/Endless Space 2"`.
 5. In Steam, open the game's Properties, Launch Options, and enter:
-   `"$HOME/Library/Application Support/Steam/steamapps/common/Endless Space 2/run_bepinex.sh" %command%`
+   `"$HOME/Library/Application Support/Steam/steamapps/common/Endless Space 2/run-modded.sh" %command%`
    with `$HOME` written out as your home folder (`/Users/yourname`).
 6. Launch from Steam. The mod announces itself once the main menu is up.
 
@@ -60,9 +63,12 @@ the game. The game's saves live in `~/Library/Application Support/Endless Space 
   on Windows. Build outputs go to `bin/mac` and `obj/mac` so a checkout shared with a Windows
   machine keeps the two builds apart.
 - `./run-game.sh [--no-build] [--no-speech] [--no-dev] [--no-wait] [--load-save "<title>"]`
-  launches the game through `run_bepinex.sh` with the dev server on; Steam must be running.
-  `./wait-game.sh <menu|ingame|loading|dialog>` blocks until the game is there. Both are twins
-  of the PowerShell scripts and take the same arguments.
+  launches the game through the deployed `run-modded.sh` with the dev server on; Steam must be
+  running. `./wait-game.sh <menu|ingame|loading|dialog>` blocks until the game is there. Both
+  are twins of the PowerShell scripts and take the same arguments. The launch goes through
+  launchd's gui domain: a game started straight from an SSH login cannot reach the Eloquence
+  voices, and speech would come out in the compact default voice instead of the Spoken Content
+  one.
 - `dotnet test ES2Access.Tests/ES2Access.Tests.csproj` runs the offline tests.
 - The dev server's `POST /key` (real OS key events) is Windows-only and answers a refusal on
   macOS; `POST /input` runs actions everywhere.

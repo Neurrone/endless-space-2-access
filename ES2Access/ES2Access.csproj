@@ -79,5 +79,7 @@
     <Copy SourceFiles="@(DescriptionFile)" DestinationFolder="$(PluginDir)/descriptions" SkipUnchangedFiles="true" />
     <!-- Windows only: on macOS the mod speaks through the system voice itself (Core/Speech/Mac) and loads no Prism. -->
     <Copy SourceFiles="$(MSBuildThisFileDirectory)../vendor/prism/prism.dll" DestinationFiles="$(GameDir)/prism.dll" SkipUnchangedFiles="true" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
+    <!-- macOS only: the launcher players point Steam at (macos/README.md); Exec keeps it executable, Copy would not. -->
+    <Exec Command="install -m 755 &quot;$(MSBuildThisFileDirectory)../macos/run-modded.sh&quot; &quot;$(GameDir)/run-modded.sh&quot;" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
   </Target>
 </Project>
