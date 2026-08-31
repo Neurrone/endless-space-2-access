@@ -95,11 +95,15 @@
     <PrismStampFile>$(PrismBuildDir)/version.txt</PrismStampFile>
     <PrismFetchedVersion Condition="Exists('$(PrismStampFile)')">$([System.IO.File]::ReadAllText('$(PrismStampFile)').Trim())</PrismFetchedVersion>
   </PropertyGroup>
-  <Target Name="FetchPrism" BeforeTargets="DeployToGame" Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(GameDir)') And ('$(PrismFetchedVersion)' != '$(PrismVersion)' Or !Exists('$(PrismBuildDir)/libprism.dylib'))">
+  <!-- FetchPrism is also invoked on its own by build_release.sh (dotnet msbuild -t:FetchPrism),
+       which is why the deploy gating lives on the wrapper target below and not here: the release
+       build of a machine that has never deployed to a game folder needs the same fetch. -->
+  <Target Name="FetchPrism" Condition="$([MSBuild]::IsOSPlatform('OSX')) And ('$(PrismFetchedVersion)' != '$(PrismVersion)' Or !Exists('$(PrismBuildDir)/libprism.dylib'))">
     <DownloadFile SourceUrl="https://github.com/ethindp/prism/releases/download/$(PrismVersion)/prism-macos-universal.zip" DestinationFolder="$(PrismBuildDir)/download" DestinationFileName="$(PrismVersion)-prism-macos-universal.zip" SkipUnchangedFiles="true" />
     <Unzip SourceFiles="$(PrismBuildDir)/download/$(PrismVersion)-prism-macos-universal.zip" DestinationFolder="$(PrismBuildDir)/download/$(PrismVersion)" OverwriteReadOnlyFiles="true" />
     <Copy SourceFiles="$(PrismBuildDir)/download/$(PrismVersion)/dynamic/release/lib/libprism.dylib" DestinationFolder="$(PrismBuildDir)" />
     <WriteLinesToFile File="$(PrismStampFile)" Lines="$(PrismVersion)" Overwrite="true" />
     <Message Text="Prism $(PrismVersion) fetched into $(PrismBuildDir)" Importance="high" />
   </Target>
+  <Target Name="FetchPrismForDeploy" BeforeTargets="DeployToGame" DependsOnTargets="FetchPrism" Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(GameDir)')" />
 </Project>
