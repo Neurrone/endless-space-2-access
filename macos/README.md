@@ -37,8 +37,9 @@ Windows build changes.
   and "Cmd" accordingly.
 - Cmd+Q quits the game at once, with no prompt. On a laptop keyboard Home, End, PageUp and
   PageDown are Fn+Left, Fn+Right, Fn+Up and Fn+Down.
-- Known gap: the mod's own settings window shows key rows in the game's spelling of a
-  combination (Alt, LeftCommand); what is spoken elsewhere says Option and Cmd.
+- The mod's own settings window speaks its key rows in the same spelling ("Option+Shift+Enter",
+  "Cmd+Up Arrow"); the text DRAWN in those cells is still the game's own ("Alt", "LeftCommand"),
+  which only a sighted onlooker meets.
 
 ## Installing
 
