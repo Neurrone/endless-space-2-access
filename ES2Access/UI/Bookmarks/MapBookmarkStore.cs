@@ -1,8 +1,10 @@
 using System;
+using System.Globalization;
 using System.IO;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Bookmarks;
 using ES2Access.Core.Settings;
+using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
 
 namespace ES2Access.UI.Bookmarks
@@ -15,10 +17,20 @@ namespace ES2Access.UI.Bookmarks
     /// then carries verbatim through every save, save-as and load
     /// (<c>GameManager.UpdateGameSaveDescriptor</c>) - so a save and every descendant of it share one
     /// set of bookmarks, which is what a player means by "my bookmarks in this game". One file per
-    /// campaign, <c>bookmarks\&lt;guid&gt;.cfg</c> beside the plugin, in the same flat format the
-    /// settings file uses and through the same disk half
+    /// campaign, <c>bookmarks\&lt;faction&gt;-&lt;guid&gt;.cfg</c> beside the plugin, in the same flat
+    /// format the settings file uses and through the same disk half
     /// (<see cref="SettingsFileOnDisk"/>) - deliberately NOT <c>settings.cfg</c>, whose write
     /// lifecycle belongs to the options window.
+    ///
+    /// The GUID is what IDENTIFIES the campaign; the faction in front of it is there so that a folder
+    /// of these files can be read by a person. It is the faction's INTERNAL name
+    /// (<c>Faction.Name</c>) and never the localized one, so that switching the game's language does
+    /// not fork one campaign's bookmarks into two files, and it is put through
+    /// <see cref="FileNameText.Safe"/> because a custom faction's name is whatever the player typed
+    /// into the editor. Where nothing survives that - a faction named entirely in punctuation, or no
+    /// faction at all yet - the file is the bare <c>&lt;guid&gt;.cfg</c> it always was. The file also
+    /// opens with a header comment naming the game in the player's own language
+    /// (<see cref="Stamp"/>), refreshed on every write.
     ///
     /// Written on every set, because there is no moment a player would recognise as "saving my
     /// bookmarks"; the file is ten short lines and the write is the same one the settings file makes.
@@ -64,18 +76,71 @@ namespace ES2Access.UI.Bookmarks
             get { return _campaign; }
         }
 
-        /// <summary>Where this campaign's file is, or null while there is no campaign or no plugin
-        /// directory to put it in.</summary>
+        /// <summary>
+        /// Where this campaign's file is, or null while there is no campaign or no plugin directory
+        /// to put it in.
+        ///
+        /// The name is worked out fresh each time rather than kept, and is NULL - "ask me again" -
+        /// for as long as the game has a campaign but no player empire yet, which is what a save
+        /// coming up looks like from here. A path answered during that window would name the file
+        /// without its faction, and the campaign's bookmarks would be read from a file that does not
+        /// exist and then written to one that does.
+        /// </summary>
         public static string Path
         {
             get
             {
-                return _campaign == null || string.IsNullOrEmpty(_directory)
-                    ? null
-                    : System.IO.Path.Combine(
-                        System.IO.Path.Combine(_directory, FolderName),
-                        _campaign + ".cfg"
-                    );
+                string faction;
+                if (
+                    _campaign == null
+                    || string.IsNullOrEmpty(_directory)
+                    || !FactionPart(out faction)
+                )
+                {
+                    return null;
+                }
+
+                return System.IO.Path.Combine(
+                    System.IO.Path.Combine(_directory, FolderName),
+                    (faction.Length == 0 ? _campaign : faction + "-" + _campaign) + ".cfg"
+                );
+            }
+        }
+
+        /// <summary>How much of the faction's internal name the file's own name may carry. Long
+        /// enough for any name a person would recognise it by, short enough that the whole path
+        /// stays comfortable beside a plugin directory that is already deep.</summary>
+        private const int FactionNameLimit = 48;
+
+        /// <summary>
+        /// The faction part of the file's name, and whether it can be answered at all.
+        ///
+        /// False is "not yet" - there is no player empire, so the game is still coming up. An empty
+        /// part with TRUE is settled: a faction the game gives no name, or a custom one whose name
+        /// has nothing in it a file name may keep, both of which fall back to the bare GUID.
+        /// </summary>
+        private static bool FactionPart(out string part)
+        {
+            part = string.Empty;
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                if (empire == null)
+                {
+                    return false;
+                }
+
+                Faction faction = empire.Faction;
+                if (faction != null)
+                {
+                    part = FileNameText.Safe(faction.Name.ToString(), FactionNameLimit);
+                }
+
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 
@@ -110,6 +175,15 @@ namespace ES2Access.UI.Bookmarks
                 Guid campaign = game == null ? Guid.Empty : CampaignGuid();
                 if (ReferenceEquals(game, _game) && campaign == _campaignGuid)
                 {
+                    // Nothing has changed - but the file may still be outstanding, because the name
+                    // it goes under needs the player empire and a campaign is identified before one
+                    // exists (<see cref="Path"/>). A campaign whose file has neither been read nor
+                    // written yet is asked for again, once a frame, until it can be named.
+                    if (_campaign != null && _file == null)
+                    {
+                        Load();
+                    }
+
                     return;
                 }
 
@@ -207,7 +281,52 @@ namespace ES2Access.UI.Bookmarks
             }
 
             Slots.WriteTo(_file);
+            Stamp(_file);
             SettingsFileOnDisk.Write(path, _file, "bookmarks");
+        }
+
+        /// <summary>
+        /// Put the header comment on the file - which game these bookmarks belong to, in the player's
+        /// own language, for whoever opens the folder.
+        ///
+        /// Refreshed on every write rather than written once, so the turn it names is the turn the
+        /// bookmarks were last touched on. It says nothing the mod READS: the campaign is identified
+        /// by the GUID in the file's name, and this line exists only so that a person can tell one
+        /// file from another. Where any of the three parts is missing the header is left exactly as
+        /// it is - half a sentence would be worse than the one already there, or than none.
+        /// </summary>
+        private static void Stamp(SettingsFile file)
+        {
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                Faction faction = empire == null ? null : empire.Faction;
+                GameManager manager =
+                    Services.GetService<IGameSerializationService>() as GameManager;
+                GameSaveDescriptor descriptor = manager == null ? null : manager.GameSaveDescriptor;
+                if (
+                    faction == null
+                    || descriptor == null
+                    || string.IsNullOrEmpty(faction.LocalizedName)
+                    || string.IsNullOrEmpty(descriptor.LocalizedTitle)
+                )
+                {
+                    return;
+                }
+
+                file.SetHeaderComment(
+                    ModStrings.Format(
+                        ModStrings.GalaxyBookmarkFileHeader,
+                        faction.LocalizedName,
+                        descriptor.LocalizedTitle,
+                        descriptor.Turn.ToString(CultureInfo.InvariantCulture)
+                    )
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bookmarks: naming the file's own header threw: " + e);
+            }
         }
 
         private static bool Exists(string path)

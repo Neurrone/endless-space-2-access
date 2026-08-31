@@ -21,6 +21,11 @@ namespace ES2Access.Core.Settings
     /// a hand-edited file reads the way a player would expect and a save cannot end up with two
     /// answers.
     ///
+    /// A file may also carry the mod's own HEADER COMMENT on its first line
+    /// (<see cref="SetHeaderComment"/>) - a sentence for whoever opens the file, rewritten on every
+    /// write. It lives here rather than in the callers because this class owns the file's lines: a
+    /// caller that inserted its own first line would be writing this format from outside it.
+    ///
     /// Deliberately BCL-only: it is the half of the settings store that can be unit-tested off the
     /// engine. The file itself is somebody else's job (<c>ES2Access.UI.Settings.ModSettings</c>).
     /// </summary>
@@ -133,6 +138,98 @@ namespace ES2Access.Core.Settings
             _lines.Clear();
             _lines.AddRange(kept);
             Reindex();
+        }
+
+        /// <summary>
+        /// The mark that says a first-line comment is the MOD's header and not the player's own.
+        ///
+        /// A bare <c>#</c> could not tell them apart, and a header refreshed on every write would
+        /// eventually eat a note somebody had written at the top of their own file. <c>#!</c> is the
+        /// one shape nobody types by accident, it is still a comment to every reader of this format
+        /// (<see cref="KeyOf"/> ignores it exactly as it ignores <c>#</c>), and it needs no word in
+        /// it - so the header's TEXT stays a translated sentence with no file syntax in it.
+        /// </summary>
+        private const string HeaderMark = "#!";
+
+        /// <summary>
+        /// The mod's own header line, without its mark - null where the file has none.
+        ///
+        /// Only the FIRST line is ever the header: a file's header is where a person looks first, and
+        /// a mark found further down is somebody else's line, left alone.
+        /// </summary>
+        public string HeaderComment
+        {
+            get
+            {
+                if (_lines.Count == 0 || !IsHeader(_lines[0]))
+                {
+                    return null;
+                }
+
+                return _lines[0].Substring(HeaderMark.Length).Trim();
+            }
+        }
+
+        /// <summary>
+        /// Write the mod's header comment at the top of the file - replacing the one that is there,
+        /// or putting the first one in.
+        ///
+        /// It is REFRESHED rather than appended, so a file written a hundred times has one header and
+        /// not a hundred. A first line that is a comment of the PLAYER's - anything not carrying
+        /// <see cref="HeaderMark"/> - is not touched: the header goes in above it and their note stays
+        /// where they put it.
+        ///
+        /// A null or blank text takes the mod's header out again and leaves everything else alone.
+        /// Line breaks in the text would end the comment and turn the rest into rubbish the parser
+        /// would keep forever, so they are folded to spaces here rather than trusted to the caller.
+        /// </summary>
+        public void SetHeaderComment(string text)
+        {
+            string line = OneLine(text);
+            bool has = _lines.Count > 0 && IsHeader(_lines[0]);
+            if (line == null)
+            {
+                if (has)
+                {
+                    _lines.RemoveAt(0);
+                    Reindex();
+                }
+
+                return;
+            }
+
+            if (has)
+            {
+                _lines[0] = HeaderMark + " " + line;
+                return;
+            }
+
+            _lines.Insert(0, HeaderMark + " " + line);
+            Reindex();
+        }
+
+        private static bool IsHeader(string line)
+        {
+            return line != null && line.StartsWith(HeaderMark, StringComparison.Ordinal);
+        }
+
+        /// <summary>The header's text as one line, or null for nothing to say.</summary>
+        private static string OneLine(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+
+            StringBuilder flat = new StringBuilder(text.Length);
+            for (int i = 0; i < text.Length; i++)
+            {
+                char c = text[i];
+                flat.Append(c == '\n' || c == '\r' ? ' ' : c);
+            }
+
+            string line = flat.ToString().Trim();
+            return line.Length == 0 ? null : line;
         }
 
         /// <summary>The keys the file holds, in the order it holds them.</summary>

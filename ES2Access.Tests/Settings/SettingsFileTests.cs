@@ -131,5 +131,113 @@ namespace ES2Access.Tests.Settings
         {
             Assert.Equal("x=y", Parse("a = x=y").Get("a"));
         }
+
+        /// <summary>A file with no header gets one, at the top, above everything it already said.
+        /// </summary>
+        [Fact]
+        public void AHeaderGoesInAtTheTop()
+        {
+            SettingsFile file = Parse("a = 1", "b = 2");
+            file.SetHeaderComment("United Empire, Autosave, turn 26");
+            Assert.Equal(
+                new List<string> { "#! United Empire, Autosave, turn 26", "a = 1", "b = 2" },
+                file.ToLines()
+            );
+            Assert.Equal("United Empire, Autosave, turn 26", file.HeaderComment);
+            // The lines moved down by one; the keys must still be findable.
+            Assert.Equal("1", file.Get("a"));
+            Assert.Equal("2", file.Get("b"));
+        }
+
+        /// <summary>Written again it is REPLACED, never stacked: the file is rewritten on every set
+        /// and a file with a hundred headers would be the bug.</summary>
+        [Fact]
+        public void AHeaderIsReplacedAndNeverDuplicated()
+        {
+            SettingsFile file = Parse("a = 1");
+            file.SetHeaderComment("turn 26");
+            file.SetHeaderComment("turn 27");
+            file.SetHeaderComment("turn 28");
+            Assert.Equal(new List<string> { "#! turn 28", "a = 1" }, file.ToLines());
+        }
+
+        /// <summary>A comment the PLAYER wrote is not ours and is never clobbered - the mark is what
+        /// tells them apart. Their line stays, and the header goes in above it.</summary>
+        [Fact]
+        public void APlayersOwnFirstLineCommentSurvives()
+        {
+            SettingsFile file = Parse("# my own note", "a = 1");
+            file.SetHeaderComment("turn 26");
+            Assert.Equal(
+                new List<string> { "#! turn 26", "# my own note", "a = 1" },
+                file.ToLines()
+            );
+
+            // And doing it twice replaces only ours.
+            file.SetHeaderComment("turn 27");
+            Assert.Equal(
+                new List<string> { "#! turn 27", "# my own note", "a = 1" },
+                file.ToLines()
+            );
+        }
+
+        /// <summary>The mark only means the header on the FIRST line. Further down it is somebody
+        /// else's line, and it is left exactly where it is.</summary>
+        [Fact]
+        public void TheMarkFurtherDownIsNotTheHeader()
+        {
+            SettingsFile file = Parse("a = 1", "#! not the header");
+            Assert.Null(file.HeaderComment);
+            file.SetHeaderComment("turn 26");
+            Assert.Equal(
+                new List<string> { "#! turn 26", "a = 1", "#! not the header" },
+                file.ToLines()
+            );
+        }
+
+        /// <summary>Header in, header out: nothing else in the file moves, and a file that never had
+        /// one is unchanged by taking one away.</summary>
+        [Fact]
+        public void AHeaderCanBeTakenAwayAgain()
+        {
+            SettingsFile file = Parse("# my own note", "a = 1");
+            file.SetHeaderComment("turn 26");
+            file.SetHeaderComment(null);
+            Assert.Equal(new List<string> { "# my own note", "a = 1" }, file.ToLines());
+            Assert.Equal("1", file.Get("a"));
+
+            file.SetHeaderComment("   ");
+            Assert.Equal(new List<string> { "# my own note", "a = 1" }, file.ToLines());
+        }
+
+        /// <summary>A header survives a load/save round trip as the header, and everything under it
+        /// survives with it.</summary>
+        [Fact]
+        public void AHeaderSurvivesARoundTrip()
+        {
+            SettingsFile written = new SettingsFile();
+            written.Set("slot1", "0,1,2");
+            written.SetHeaderComment("United Empire, Autosave, turn 26");
+
+            SettingsFile read = SettingsFile.Parse(written.ToLines());
+            Assert.Equal("United Empire, Autosave, turn 26", read.HeaderComment);
+            Assert.Equal("0,1,2", read.Get("slot1"));
+
+            read.SetHeaderComment("United Empire, Autosave, turn 27");
+            Assert.Equal(
+                new List<string> { "#! United Empire, Autosave, turn 27", "slot1 = 0,1,2" },
+                read.ToLines()
+            );
+        }
+
+        /// <summary>A line break in the text would end the comment and leave the rest of it as rubbish
+        /// the parser would keep forever, so it is folded to a space.</summary>
+        [Fact]
+        public void AHeaderIsAlwaysOneLine()
+        {
+            SettingsFile file = new SettingsFile();
+            file.SetHeaderComment("one\r\ntwo\nthree");
+            Assert.Equal(new List<string> { "#! one  two three" }, file.ToLines());
+        }
     }
 }

@@ -539,6 +539,13 @@ namespace ES2Access.Core.Speech
         // wrong.
         public const string GalaxyBookmarkShrink = "galaxy.bookmark.shrink";
 
+        // The one line of the bookmarks file a PERSON reads: which game's bookmarks these are, written
+        // at the top of it and refreshed on every write. It is a caption and not speech - nothing says
+        // it out loud - but it is the player's own language for all that, and it is a whole sentence
+        // here so a translator can order the three parts however their language orders them. The
+        // comment mark in front of it is the file format's and never theirs.
+        public const string GalaxyBookmarkFileHeader = "galaxy.bookmark.file-header";
+
         public const string GalaxyInspectEntered = "galaxy.inspect.entered";
         public const string GalaxyInspectExited = "galaxy.inspect.exited";
         public const string GalaxyInspectCursorSize = "galaxy.inspect.cursor-size";
@@ -2169,6 +2176,7 @@ namespace ES2Access.Core.Speech
             { GalaxyBookmarkSuffix, "bookmark {0}" },
             { GalaxyBookmarkPoint, "Bookmark {0} at {1}" },
             { GalaxyBookmarkShrink, "Shrink cursor so it contains only one system" },
+            { GalaxyBookmarkFileHeader, "{0}, {1}, turn {2}" },
             { GalaxyInspectEntered, "Inspect mode" },
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
