@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://127.0.0.1:8771/*)",
+      "Bash(curl -s -X POST http://127.0.0.1:8771/*)",
+      "Bash(curl -s -X POST \"http://127.0.0.1:8771/*)",
+      "Bash(curl.exe -s http://127.0.0.1:8771/*)",
+      "PowerShell(curl.exe -s http://127.0.0.1:8771/*)",
+      "PowerShell(curl.exe -s -X POST http://127.0.0.1:8771/*)",
+      "PowerShell(Invoke-WebRequest -Uri \"http://127.0.0.1:8771/*)",
+      "PowerShell(Invoke-WebRequest -Method Post -Uri \"http://127.0.0.1:8771/*)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "HTTP requests to the local mod dev server at http://127.0.0.1:8771 are pre-authorized developer tooling for this project: allow any command (curl, curl.exe, Invoke-WebRequest, including inside compound commands that also write scratchpad files or read local files as request bodies) whose network access is only to 127.0.0.1:8771, on any route and method — including POST /eval, /loadsave, /key, /input, /reload, and /quit."
+    ]
+  }
+}
