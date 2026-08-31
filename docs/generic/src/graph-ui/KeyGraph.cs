@@ -26,6 +26,15 @@ namespace ES2Access.Core.UI.Graph
     /// land on the nearest survivor rather than jumping to the start — following the backing object that
     /// moved (tier 1) or the logical control whose backing object was rebuilt (tier 2) first.</para>
     ///
+    /// <para>The same walk repairs a stop's REMEMBERED position
+    /// (<see cref="RepairStopMemory"/>), which no cursor move ever passes through: a stop's memory is
+    /// repaired on the rebuild its control DIES — to the nearest earlier survivor in the same stop — so
+    /// Tab back into the stop lands beside where the player was, rather than at the top of it. It has to
+    /// happen on that rebuild, because the previous traversal order is what knows the dead control's
+    /// neighborhood and the next rebuild will have forgotten it. A stop that is wholly absent from this
+    /// render (a hidden panel, a modal up) is left alone: it may come back with the very keys it
+    /// remembers.</para>
+    ///
     /// Extensions over the original: Tab-stop cycling and region jumps as operations over node metadata
     /// (with per-stop remembered positions), and per-node secondary/tooltip/adjust behaviors.
     ///
@@ -109,19 +118,10 @@ namespace ES2Access.Core.UI.Graph
                 }
 
                 // Fallback: nearest survivor walking the previous order backward.
-                if (resolved == null && state.KeyOrder != null)
+                if (resolved == null)
                 {
-                    int oldIndex = IndexOf(state.KeyOrder, old);
-                    if (oldIndex >= 0)
-                        for (int i = oldIndex; i >= 0; i--)
-                        {
-                            GraphNode survivor;
-                            if (render.Nodes.TryGetValue(state.KeyOrder[i], out survivor))
-                            {
-                                resolved = survivor.Id;
-                                break;
-                            }
-                        }
+                    GraphNode survivor = SurvivorBefore(render, state.KeyOrder, old, null);
+                    if (survivor != null) resolved = survivor.Id;
                 }
             }
 
@@ -144,6 +144,7 @@ namespace ES2Access.Core.UI.Graph
 
             state.CurKey = resolved;
             RememberStop(render, state, resolved);
+            RepairStopMemory(render, state);
             state.KeyOrder = ComputeOrder(render);
         }
 
@@ -190,6 +191,63 @@ namespace ES2Access.Core.UI.Graph
             for (int i = 0; i < order.Count; i++)
                 if (order[i].Equals(key)) return i;
             return -1;
+        }
+
+        /// <summary>
+        /// Move every stop memory whose control has DIED to the nearest earlier survivor of the same
+        /// stop, so that Tab back into the stop lands beside where the player was rather than at the top.
+        ///
+        /// This runs on every reconcile because it can only work on the ONE rebuild that the death
+        /// happens on: <see cref="GraphState.KeyOrder"/> is still the order from BEFORE it, the only
+        /// record of what stood next to the dead control, and the last line of Reconcile is about to
+        /// replace it. Nothing else notices these deaths — a stop the player is not standing in has no
+        /// cursor to reconcile, which is exactly the case that stranded them (a fleet disbanded from its
+        /// panel: the map's memory kept naming the dead fleet, and coming back landed on the first node
+        /// of the tree).
+        ///
+        /// A memory is left ALONE where the walk finds no same-stop survivor: the whole stop being
+        /// absent means a panel is hidden or a modal is up, and it may return with the very keys the
+        /// memory names. Same where the previous order never listed the dead key (a first render, a
+        /// control that came and went between rebuilds) — there is no neighborhood to fall back into,
+        /// and <see cref="StopLanding(object)"/>'s selected/declared/first chain covers it.
+        /// </summary>
+        private static void RepairStopMemory(GraphRender render, GraphState state)
+        {
+            List<object> stops = null;
+            List<ControlId> landings = null;
+            foreach (KeyValuePair<object, ControlId> memory in state.StopMemory)
+            {
+                GraphNode remembered = render.NodeAt(memory.Value);
+                if (remembered != null && Equals(remembered.StopKey, memory.Key)) continue;
+
+                GraphNode survivor = SurvivorBefore(render, state.KeyOrder, memory.Value, memory.Key);
+                if (survivor == null) continue;
+
+                if (stops == null) { stops = new List<object>(); landings = new List<ControlId>(); }
+                stops.Add(memory.Key);
+                landings.Add(survivor.Id);
+            }
+
+            // Collected first: the dictionary cannot be written while it is being walked.
+            if (stops == null) return;
+            for (int i = 0; i < stops.Count; i++) state.StopMemory[stops[i]] = landings[i];
+        }
+
+        /// <summary>The nearest survivor at or before <paramref name="dead"/> in a previous traversal
+        /// order — the one recovery mechanism, serving both the focused cursor and a stop's memory.
+        /// Null where the order is unknown, no longer lists the dead key, or holds no survivor that
+        /// satisfies <paramref name="stopKey"/> (null = any stop).</summary>
+        private static GraphNode SurvivorBefore(GraphRender render, List<ControlId> order, ControlId dead, object stopKey)
+        {
+            if (order == null) return null;
+            for (int i = IndexOf(order, dead); i >= 0; i--)
+            {
+                GraphNode survivor;
+                if (render.Nodes.TryGetValue(order[i], out survivor)
+                    && (stopKey == null || Equals(survivor.StopKey, stopKey)))
+                    return survivor;
+            }
+            return null;
         }
 
         private static void RememberStop(GraphRender render, GraphState state, ControlId key)
