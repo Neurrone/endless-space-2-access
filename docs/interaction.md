@@ -33,6 +33,11 @@ choice is made is `KeyboardBinding` (its doc comment carries the full reasoning;
 and the player-facing spelling are `macos/README.md`). The game's own Control bindings stay on real
 Control on both systems.
 
+**Any key going down silences in-flight speech** before the press is handled (screen reader
+convention, copied from the Say the Spire port; `ModEntry.Update`, ahead of `Input.Tick`).
+There is no dedicated silence binding — bare Control works because every key does; mouse
+buttons count too (`anyKeyDown`), injected dev actions do not.
+
 **There is no reorder chord**: moving an item within its list is a drag like any other.
 
 **Usage hints are hand-picked, not a policy.** There is no runtime dedup, so each new hint is an
