@@ -3625,6 +3625,19 @@ namespace ES2Access.Screens
             /// <summary>Whether the destination's branch was opened BY this hop. A system the player had
             /// already opened themselves is theirs, and is left open when they leave.</summary>
             public bool Opened;
+
+            /// <summary>A LEAP rather than a lane hop - a bookmark, the home key, the scanner's go-to.
+            /// It has no destination and opened nothing: all it knows is the exact row the player was
+            /// standing on and, where that row was inside a system, which system that was
+            /// (<see cref="Origin"/>). The two kinds share one chronological trail, because what the
+            /// player wants back is the last place they left, not the last place of a particular
+            /// kind.</summary>
+            public bool Leap;
+
+            /// <summary>Where the leap started, for a row that belongs to no system - a probe, a
+            /// missile, an ally's pin, a bookmarked point of space. The camera has to be told
+            /// somewhere, and there is no system to name.</summary>
+            public GalaxyPosition At;
         }
 
         private readonly List<Journey> _trail = new List<Journey>();
@@ -3711,6 +3724,91 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// A LEAP IS ABOUT TO HAPPEN - remember where the player is standing, so Backspace can bring
+        /// them back (owner-approved 2026-08-31).
+        ///
+        /// Three gestures throw the player across the galaxy in one press: a bookmark jump, the home
+        /// jump, and the scanner's go-to. Walking back from one is not possible - there is no path
+        /// through the tree from Lors to wherever they were - so the way back is remembered instead,
+        /// on the SAME trail the lanes use. One trail and not two, in the order things happened,
+        /// because "take me back" is a question about the last place left and not about which kind of
+        /// key left it.
+        ///
+        /// WHICH stack it goes on is decided here, once, for every caller:
+        /// <list type="bullet">
+        /// <item>The inspect cell up - LIVE or PARKED - and the leap is the CELL's, so the cell's own
+        /// stack takes it (<c>GalaxyInspect.PushCell</c>). Parked counts: Backspace is not reachable
+        /// from another stop, but the player Tabs back and it must be there.</item>
+        /// <item>Off the map stop with no cell up, and NOTHING is remembered (owner ruling): Backspace
+        /// is claimed only while focus is in the map stop, and a trail entry pushed from the
+        /// notifications would be a way back the player could never ask for - or worse, would pull
+        /// their focus off the panel they are reading.</item>
+        /// <item>Otherwise the tree trail, carrying the EXACT row the cursor was on, at whatever depth:
+        /// a planet, a lane, a fleet, a dossier. That is where the player was, and a way back that
+        /// landed on the system instead would be a different place from the one they left.</item>
+        /// </list>
+        /// </summary>
+        internal void NoteLeap()
+        {
+            try
+            {
+                if (GalaxyInspect.Live)
+                {
+                    _inspect.PushCell();
+                    return;
+                }
+
+                GraphNavigator navigator = ModEntry.Navigator;
+                GraphNode focused = navigator == null ? null : navigator.CurrentNode;
+                if (focused == null || !IsMapStop(focused.StopKey) || focused.Id == null)
+                {
+                    return;
+                }
+
+                CheckTrailSession();
+                StarSystemNode system = null;
+                for (GraphNode walk = focused; walk != null && system == null; walk = walk.Parent)
+                {
+                    system = walk.Id == null ? null : walk.Id.Subject as StarSystemNode;
+                }
+
+                GalaxyPosition at = default(GalaxyPosition);
+                if (system != null)
+                {
+                    at = system.GalaxyPosition;
+                }
+                else if (!PositionOf(focused.Id, out at))
+                {
+                    // Not in a system and not one of the things the map draws out on its own: the last
+                    // possibility is a place the PLAYER put there. Anything else - a constellation
+                    // heading, the unexplored group - has no point of galaxy under it at all, and a
+                    // leap from one is not remembered rather than remembered wrongly.
+                    BookmarkPoint bookmark = BookmarkAt(focused.Id);
+                    if (bookmark == null)
+                    {
+                        return;
+                    }
+
+                    at = bookmark.At;
+                }
+
+                _trail.Add(
+                    new Journey
+                    {
+                        Leap = true,
+                        Origin = system,
+                        Return = focused.Id,
+                        At = at,
+                    }
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: remembering where a leap started threw: " + e);
+            }
+        }
+
+        /// <summary>
         /// Backspace: back up the lane the player came down.
         ///
         /// The cursor goes to the LANE node it was on when the hop was taken, which means the origin has
@@ -3722,6 +3820,15 @@ namespace ES2Access.Screens
         /// fog moves, empires lose vision, and a lane node under a system the map has stopped drawing is
         /// not there to be landed on. Popping continues to the next hop that is still true, and a trail
         /// with none left is spent.
+        ///
+        /// A LEAP entry (<see cref="NoteLeap"/>) comes back the same way, and the fog rule is the same
+        /// one: an entry whose system the player can no longer see is skipped. What is NOT skipped is
+        /// an entry whose exact ROW has gone while its place is still there - a fleet that has moved on,
+        /// a card the map has stopped drawing. **Owner's choice was left to me: it falls back to the
+        /// system's own row.** The player asked to be taken back to a PLACE; the row they stood on is
+        /// where they were looking, and the place is what they meant. Skipping instead would silently
+        /// carry them TWO leaps back, which is the one answer they cannot make sense of - and a landing
+        /// one row off inside the right system is a step away from where they were.
         /// </summary>
         private bool PopTrail()
         {
@@ -3731,6 +3838,17 @@ namespace ES2Access.Screens
             {
                 Journey hop = _trail[_trail.Count - 1];
                 _trail.RemoveAt(_trail.Count - 1);
+                if (hop.Leap)
+                {
+                    if (hop.Origin != null && (empire == null || !Perceived(hop.Origin, empire)))
+                    {
+                        continue;
+                    }
+
+                    ReturnToLeap(hop);
+                    return true;
+                }
+
                 if (
                     empire == null
                     || hop.Origin == null
@@ -3753,6 +3871,46 @@ namespace ES2Access.Screens
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Put the player back where a leap started, through the page's one landing like everything
+        /// else that sends them somewhere (<see cref="GoTo"/>).
+        ///
+        /// A row inside a SYSTEM is a place the camera zooms to, and the row is aimed at exactly - its
+        /// ancestors open on the way, which is the ordinary landing machinery. The one case that needs
+        /// deciding is a row whose branch IS open and which is still not there: the row has genuinely
+        /// gone, and the system's own row stands in for it (see <see cref="PopTrail"/>). A row that
+        /// belongs to no system - a probe, a missile, a pin, a bookmarked point - is a point, and the
+        /// camera slides to it.
+        /// </summary>
+        private void ReturnToLeap(Journey hop)
+        {
+            if (hop.Origin == null)
+            {
+                GoTo(MapTarget.Point(hop.Return, hop.At), MapCamera.Auto);
+                return;
+            }
+
+            OpenPlace(hop.Origin);
+            GoTo(MapTarget.Place(hop.Origin, LeapRow(hop), hop.At), MapCamera.Auto);
+        }
+
+        /// <summary>The row a leap comes back to: the exact one, unless its branch is open and the row
+        /// is not in it - which is the only way to tell "shut, and will open on the way" from "really
+        /// gone".</summary>
+        private ControlId LeapRow(Journey hop)
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphRender render = navigator == null ? null : navigator.Render;
+            ControlId row = RootId(hop.Origin);
+            GraphNode system = render == null ? null : render.NodeAt(row);
+            if (system == null || !system.Expanded)
+            {
+                return hop.Return;
+            }
+
+            return render.NodeAt(hop.Return) != null ? hop.Return : row;
         }
 
         /// <summary>Ask for the branch, then hand the rest to the page's one landing
@@ -4282,12 +4440,19 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Backspace on the map is the way back down the lanes that have been travelled, and it belongs to
-        /// the MAP rather than to whatever node the cursor is on - the player is somewhere because of the
-        /// hops they took, not because of the planet they are standing on.
+        /// Backspace on the map is the way back from every leap the player has made across it - the lanes
+        /// they have travelled and the jumps they have taken, in one chronological trail
+        /// (<see cref="NoteLeap"/>) - and it belongs to the MAP rather than to whatever node the cursor
+        /// is on: the player is somewhere because of the hops they took, not because of the planet they
+        /// are standing on.
         ///
         /// Only in the systems stop. The clusters round the edges of the screen keep whatever the key
         /// meant to them, because a trail of places has nothing to say about a notification icon.
+        ///
+        /// And only with the inspect cell DOWN: while it is up the key is the cell's own way back and is
+        /// taken before this is ever asked (<c>GalaxyInspect.HandleKey</c>, which <see cref="AnyKey"/>
+        /// offers every key first). The two ways of reading the map keep separate trails, because a
+        /// square of sky is not a row and neither could restore the other.
         ///
         /// Consumed even with nothing to go back to, and silent then: pressing it at the start of a
         /// journey is asking for something that is simply not there, and a cue for it on a key pressed

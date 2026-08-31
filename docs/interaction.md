@@ -217,7 +217,7 @@ on Backspace until 2026-08-13 and moved, because the game dismisses on right cli
 (`NotificationItemsWindow.HandleInput` :90-101).
 The key is offered to the SCREEN first (`Screen.Secondary`, taking the focused node — mirroring
 `Screen.Contextual`), for a second command that belongs to a PANEL rather than to a control: the
-galaxy's way back down the starlanes it has travelled is about where the player has BEEN, and wiring
+galaxy's way back from every leap it has taken is about where the player has BEEN, and wiring
 it per node would mean wiring it onto every node that panel will ever declare. A screen answers only
 inside the stop it means it in and leaves every other panel's Backspace exactly as it was. And a LIVE
 type-ahead search takes the key ahead of both (below).
@@ -518,6 +518,37 @@ Enter on the same lane); a lane into the dark is a silent leaf. **Backspace pops
 focus is in `galaxy:systems`, again with no words, and an empty trail is consumed and silent. Where
 the trail leads and what it collapses is `docs/test-recipes/galaxy-map.md`, **Travelling the
 starlanes**.
+
+**BACKSPACE RETURNS FROM EVERY LEAP, NOT ONLY FROM A LANE** (owner-approved 2026-08-31;
+`GalaxyHudScreen.NoteLeap`). A bookmark jump, the home jump and the scanner's go-to throw the player
+across the galaxy in one press, and there is no walk back through the tree from where they land — so
+the way back is remembered on the SAME trail the lanes use, in the order things happened, and
+Backspace undoes the most recent leap whichever kind it is. One trail and not two, because "take me
+back" is a question about the last place left and never about which key left it. A lane hop restores
+its lane node exactly as before; a jump restores **the exact row the cursor was on, at whatever
+depth** — a planet, a lane, a fleet, a dossier — because that is where the player was, and coming
+back to the system instead would be a different place from the one they left. The trail's existing
+rules are inherited whole: it dies with the game session, and an entry whose place the player can no
+longer see is skipped rather than taken. Where the exact row has gone while its place is still there,
+the landing falls back to **that system's own row** (implementer's call, owner-delegated: the player
+asked for a PLACE, and skipping would silently carry them two leaps back — the one answer they cannot
+make sense of). **A jump made from anywhere but the map stop remembers nothing at all**: Backspace is
+claimed only while focus is in `galaxy:systems`, and a trail entry pushed from the notifications
+would be a way back that could only ever pull the player's focus off the panel they were reading.
+The restore goes through the page's one landing (`GoTo`) like everything else that sends the player
+somewhere.
+
+**THE INSPECT CELL KEEPS ITS OWN STACK, AND THE TWO NEVER MIX** (same ruling; `GalaxyInspect`). While
+the cell is live Backspace is the CELL's way back — the mode takes the key ahead of the page, so the
+tree's trail is for inspect-off alone. What goes on it is leaps only: a bookmark jump, the home jump,
+the scanner's go-to (a row target or a square alike) and the two Alt+arrow travel keys, which cross
+a lane's length in one press. The plain arrows and the Shift+arrow skips push NOTHING — they are how
+the player moves, and a stack recording every step would be an undo history of a sweep rather than a
+way back from a jump. Popping teleports the cell back and the cell's own reading is the announcement,
+with the zoom untouched like everything else under the cell. The stack lives and dies with the mode
+instance — arming clears it, leaving clears it — and an empty one is consumed and silent, exactly as
+the empty tree trail is. A jump made while the mode is PARKED still pushes its cell: Backspace is not
+reachable from another stop, but the landing brings the player back to the map and it must be there.
 **Zoom is an adjustable node** on the existing
 Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
 `hud:view-title` stop, in a row of its own (the view-name label and its close-button node are gone —
@@ -835,6 +866,9 @@ go-to now behaves. PARKED is the one shape that landing cannot express — the d
 not camera — so the bookmark keeps its own pairing there: the cell is moved SILENTLY
 (`GalaxyInspect.MoveTo`) behind the landing that takes the player back to the map.
 An empty slot is a spoken refusal ("No bookmark n") and moves nothing.
+**Backspace comes back from a jump** — the leap is remembered on the tree's trail, or on the cell's
+own stack while the inspect cursor is up (**Backspace: the screen's second command**, above). A jump
+made from another panel of the page remembers nothing, and an empty slot's refusal is not a leap.
 **A JUMP ANNOUNCES EXACTLY ONCE** (owner ruling 2026-08-31), whichever of the three shapes it takes:
 inspect off, the tree landing is the announcement; inspect live, the cell's own reading is; parked,
 the landing on the bookmark's row is — and the coming-back-to-the-map resume that would ordinarily

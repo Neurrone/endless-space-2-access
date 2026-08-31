@@ -1457,6 +1457,12 @@ namespace ES2Access.Screens
                 return true;
             }
 
+            // A go-to is a leap: the way back is remembered for Backspace, on the tree's trail or the
+            // cell's stack depending on how the player is reading the map
+            // (<c>GalaxyHudScreen.NoteLeap</c>). Only this key, and only once it is certain to travel -
+            // the six quick keys that walk a category are movement rather than a leap, and an empty
+            // scope has already refused above.
+            _screen.NoteLeap();
             Travel(scope[at], at, scope.Count, east, north, true);
             return true;
         }

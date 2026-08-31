@@ -139,6 +139,66 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// WHERE THE CELL LEAPT FROM - the mode's own way back, kept apart from the tree's.
+        ///
+        /// The tree has a trail of the lanes and the jumps the player took while walking it
+        /// (<c>GalaxyHudScreen</c>); this is the same idea for the other way of reading the map, and the
+        /// two never mix. A cell that has been thrown across the galaxy by a bookmark, by the scanner or
+        /// by a travel key has lost the square the player was working in, and the arrows cannot walk
+        /// back across twenty units of empty space - so the leap is remembered and Backspace undoes it.
+        ///
+        /// Only LEAPS go on it. The plain arrows and the skip arrows are how the player MOVES, and a
+        /// stack that recorded every step would be an undo history of a sweep rather than a way back
+        /// from a jump.
+        ///
+        /// It lives and dies with the mode: entering clears it, leaving clears it, and there is nothing
+        /// to restore into once the cell is gone.
+        /// </summary>
+        private readonly List<InspectCell> _leaps = new List<InspectCell>();
+
+        private struct InspectCell
+        {
+            public int X;
+            public int Y;
+        }
+
+        /// <summary>Remember the square the cell is standing on, because it is about to be thrown
+        /// somewhere else. Silent, and nothing at all while the mode is down.</summary>
+        public void PushCell()
+        {
+            if (_live)
+            {
+                _leaps.Add(new InspectCell { X = _x, Y = _y });
+            }
+        }
+
+        /// <summary>
+        /// Backspace: put the cell back where the last leap took it from.
+        ///
+        /// The cell's own reading is the announcement, exactly as it is for an arrow key - the player
+        /// is told where they now are, which is the whole of what coming back means. The zoom is not
+        /// touched, because nothing under the cell touches it (owner ruling 2026-08-31).
+        ///
+        /// An empty stack is TAKEN and silent, the same answer the tree's empty trail gives: the key is
+        /// pressed speculatively, and a refusal for it would be a word on every press at the start of a
+        /// sweep.
+        /// </summary>
+        private bool PopCell()
+        {
+            if (_leaps.Count == 0)
+            {
+                return true;
+            }
+
+            InspectCell was = _leaps[_leaps.Count - 1];
+            _leaps.RemoveAt(_leaps.Count - 1);
+            _x = was.X;
+            _y = was.Y;
+            Settle(true);
+            return true;
+        }
+
+        /// <summary>
         /// Put the cell on a place named by something else - the scanner sending the cursor to what it
         /// found.
         ///
@@ -514,6 +574,7 @@ namespace ES2Access.Screens
             _wasOnMap = false;
             _resume = 0;
             _silentResume = 0;
+            _leaps.Clear();
             _entry = null;
             InspectMarker.Hide();
             _aim.Clear();
@@ -582,6 +643,8 @@ namespace ES2Access.Screens
                     case UiActions.Back:
                         Exit(false);
                         return true;
+                    case UiActions.Secondary:
+                        return PopCell();
                     case MapActions.InspectGrow:
                         return Resize(InspectGrid.Grow(_size));
                     case MapActions.InspectShrink:
@@ -819,6 +882,7 @@ namespace ES2Access.Screens
             _wasOnMap = true;
             _resume = 0;
             _silentResume = 0;
+            _leaps.Clear();
             // A camera closer than the ceiling is pulled out to it, so enough of the map is visible
             // around the square; one already further out is the player's own choice and stays
             // (owner's ruling - the floor guarantees visibility, it does not impose a framing).
@@ -868,6 +932,7 @@ namespace ES2Access.Screens
             _wasOnMap = false;
             _resume = 0;
             _silentResume = 0;
+            _leaps.Clear();
             InspectMarker.Hide();
             // The game's tooltip was the CELL's while the mode drove the map (Point), so the mode
             // takes its own aim down and the control the tree cursor is standing on takes the pointer
@@ -1259,6 +1324,12 @@ namespace ES2Access.Screens
             {
                 return;
             }
+
+            // A travel key is a LEAP and not a step - it crosses whatever is between here and the far
+            // end of a lane in one press - so the square being left is remembered, and Backspace comes
+            // back to it (<see cref="_leaps"/>). After the refusal test above: a key that went nowhere
+            // has nothing to come back from.
+            PushCell();
 
             double east;
             double north;

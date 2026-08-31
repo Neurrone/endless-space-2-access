@@ -338,6 +338,12 @@ namespace ES2Access.Screens
                 return true;
             }
 
+            // Before anything moves: a jump is a leap across the galaxy and the way back is remembered
+            // for Backspace, on whichever trail the player is reading the map by
+            // (<c>GalaxyHudScreen.NoteLeap</c>, which also decides that a jump made from another panel
+            // remembers nothing at all).
+            _screen.NoteLeap();
+
             // The row the tree cursor is put on UNDER the cell: a system is seated on its own row and
             // not inside it, because going inside is what brings the camera in and the mode leaves the
             // picture alone. Leaving the mode then lands there, and a step further in zooms as any

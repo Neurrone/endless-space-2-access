@@ -319,6 +319,16 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   in it: `galaxy.bookmarkGoTo1` (inspect off) then `galaxy.inspect` opens the cell on the point and
   answers **"bookmark 1, Unexplored, -68, 18"** — before, the same cell read "Unexplored, -68, 18".
   Its own line in the review buffer, in the same place.
+- **Backspace is the CELL's way back while the mode is live** (`ui.secondary`), on a stack of its own
+  that never touches the tree's trail. Pushed by leaps only — a bookmark jump, `galaxy.bookmarkHome`,
+  `galaxy.scanGoTo`, and `galaxy.inspectFollowWest`/`East`; the plain and Shift arrows push nothing.
+  Measured: Alt+Left from `-4, 23` (the one-lane cell) travelled to Qarius at `-5, 23`, and
+  `ui.secondary` answered **"Star lane from Qarius to Ita, -4, 23"** with the cell back and
+  `zoomStep` unchanged. Three silences to check while you are there — an empty stack (`speech: []`,
+  cell unmoved), a travel key that REFUSED (a cell with two lanes: it pushes nothing, so the next
+  Backspace is still silent), and a re-armed mode (push one, Escape, Ctrl+I again, Backspace: silent,
+  because the stack dies with the mode instance). A PARKED jump pushes too: park, jump, and the
+  landing brings focus back to the map with the entry waiting.
 - **Every landing made under the live cell arrives the same way and none of them zooms** (owner
   ruling 2026-08-31): the cell glides to the thing's square, the tree cursor is seated silently on
   its row for the mode to end on, and `zoomStep` is the same before and after. That covers the

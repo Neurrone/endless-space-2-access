@@ -973,6 +973,16 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   one landing. A second line in `/speech` after a jump is a defect, not a slow frame — except the
   page's own "Zoom level n of 15, ⟨view⟩", which is the zoom watcher and rides on any camera-moving
   landing.
+- **Backspace comes back from a jump** (`ui.secondary`), on the same trail lane travel uses. Driving
+  it: stand on an exact child (a planet, a lane, a fleet row — quote it before the press), jump, then
+  `/input ui.secondary` and read the cursor back: it must be that child, not its system. Interleaving
+  is the test worth keeping — a jump, then a lane hop, then two presses — because it is the one that
+  catches a second stack pretending to be one trail (measured: `…/system/535/lane/658` then
+  `…/system/162/lane/636`, newest first). **A jump made from another stop pushes nothing**, so a
+  Backspace after one is silent and moves nothing rather than undoing it; and Backspace on an empty
+  trail is silent with the cursor unmoved. The scanner's go-to is a leap too; the six quick keys that
+  walk a category are deliberately NOT (movement, not a leap — one line in `GalaxyScanner.GoTo` if
+  that is ever wanted).
 - **The reseat is proved by ESCAPE, not by the jump.** After an inspect-mode jump the tree cursor is
   moved silently underneath, so the evidence is `/input ui.back` afterwards: "Exited inspect mode"
   then the bookmark's own row ("… Lors, -66, -26, group, No owner, **bookmark 3**, collapsed, 2 of
