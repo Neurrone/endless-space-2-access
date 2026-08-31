@@ -19,9 +19,11 @@ own exclusive modal stack voids any layer constraint against its stack-mates.
 
 **Each of the mod's chords means the game's own gesture and nothing else** — the right click, the
 Alt-click, the Ctrl-click, the second click. The Alt-click is the one chord whose keys are not its
-gesture's (Alt+Enter is Unity's own fullscreen toggle, below every managed layer), and the cost of
-that move is that a game handler reading a physically held Alt no longer sees it: any such click
-must be WIRED, never left to the plain-click fall-back.
+gesture's (Alt+Enter is Unity's own fullscreen toggle, below every managed layer; the Mac player
+has no such toggle — Option+Enter reaches the mod untouched, owner's hands 2026-08-31 — so the
+macOS chords carry no equivalent constraint), and the cost of that move is that a game handler
+reading a physically held Alt no longer sees it: any such click must be WIRED, never left to the
+plain-click fall-back.
 
 **Ctrl and Alt in the mod's docs name its FIRST and SECOND chord modifiers, not two fixed keys.**
 On Windows they are Control and Alt; on macOS they are held as Option and Command (every
