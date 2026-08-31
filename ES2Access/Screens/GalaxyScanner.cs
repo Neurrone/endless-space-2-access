@@ -906,9 +906,11 @@ namespace ES2Access.Screens
         /// What a found thing is CALLED here, which depends on which column it is being read out of.
         ///
         /// In a category whose columns are kinds, a per-kind column has already said the kind - every
-        /// row in it is one - so the row is the planet and nothing else. The "all" column has not, and
-        /// a list of bare planet names there would leave the player unable to tell an anomaly from a
-        /// curiosity, so the kind goes in front of it through a template of the language's own.
+        /// row in it is one - so the row is the planet and nothing else. A column the category wrote
+        /// down for itself has not: neither "all" nor the curiosities' own explorable and
+        /// insufficient-power columns say what a row IS, and a list of bare planet names there would
+        /// leave the player unable to tell an anomaly from a curiosity, so the kind goes in front of
+        /// it through a template of the language's own.
         /// </summary>
         private string Spoken(Found found)
         {
@@ -922,7 +924,8 @@ namespace ES2Access.Screens
             // said" cannot be asked of where the cursor now stands.
             bool prefix = Custom(_cursor.Category)
                 ? found.Prefix
-                : Kinds(_cursor.Category) && _cursor.Subcategory == ScopeAll;
+                : Kinds(_cursor.Category)
+                    && _cursor.Subcategory < ScopeKeys[_cursor.Category].Length;
             return prefix
                 ? ModStrings.Format(ModStrings.GalaxyScannerOnPlanet, found.Kind, found.Name)
                 : found.Name;
@@ -1291,7 +1294,7 @@ namespace ES2Access.Screens
         )
         {
             List<Found> source = world[category];
-            bool prefix = Kinds(category) && subcategory == ScopeAll;
+            bool prefix = Kinds(category) && subcategory < ScopeKeys[category].Length;
             for (int i = 0; i < source.Count; i++)
             {
                 if (!Holds(source[i], category, subcategory, labels[category]))
