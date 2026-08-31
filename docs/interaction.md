@@ -527,12 +527,17 @@ Backspace undoes the most recent leap whichever kind it is. One trail and not tw
 back" is a question about the last place left and never about which key left it. A lane hop restores
 its lane node exactly as before; a jump restores **the exact row the cursor was on, at whatever
 depth** — a planet, a lane, a fleet, a dossier — because that is where the player was, and coming
-back to the system instead would be a different place from the one they left. The trail's existing
-rules are inherited whole: it dies with the game session, and an entry whose place the player can no
-longer see is skipped rather than taken. Where the exact row has gone while its place is still there,
-the landing falls back to **that system's own row** (implementer's call, owner-delegated: the player
-asked for a PLACE, and skipping would silently carry them two leaps back — the one answer they cannot
-make sense of). **A jump made from anywhere but the map stop remembers nothing at all**: Backspace is
+back to the system instead would be a different place from the one they left. **ONE INVALIDATION RULE
+FOR THE WHOLE TRAIL** (owner ruling 2026-08-31, overturning an earlier fall-back-to-the-system's-row):
+an entry that can no longer be honoured EXACTLY is dropped and the pop carries on to the one before
+it, exactly as a lane hop into the fog already was; a trail with none left does nothing. A leap is a
+promise to put the player back on the row they were standing on, and landing on that row's system
+instead would report success while restoring nothing they meant — the case that settled it is a leap
+made from an in-transit fleet's row, where the fleet has since arrived and the tree files it
+somewhere else entirely, so the old system is not even where the thing is. What is NOT invalid is a
+row inside a branch the player has since SHUT: the landing opens its ancestors on the way, so that
+entry stands (`GalaxyHudScreen.LeapStands` tells the two apart by asking whether the deepest ancestor
+the tree still declares is open). **A jump made from anywhere but the map stop remembers nothing at all**: Backspace is
 claimed only while focus is in `galaxy:systems`, and a trail entry pushed from the notifications
 would be a way back that could only ever pull the player's focus off the panel they were reading.
 The restore goes through the page's one landing (`GoTo`) like everything else that sends the player

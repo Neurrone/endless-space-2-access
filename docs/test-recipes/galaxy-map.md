@@ -983,6 +983,17 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   trail is silent with the cursor unmoved. The scanner's go-to is a leap too; the six quick keys that
   walk a category are deliberately NOT (movement, not a leap — one line in `GalaxyScanner.GoTo` if
   that is ever wanted).
+- **Staging an INVALIDATED leap** (an entry whose exact row has gone, which must be DROPPED rather
+  than approximated): the cheap way needs no fleet order and no turn — leap FROM a point-bookmark's
+  own row, then clear that slot (`Bookmarks.Clear('<digit>')` + one `MapBookmarkStore.Set` to flush),
+  and the row stops being declared. **Make the previous entry land somewhere else**, or the test
+  proves nothing: popping onto the row the cursor is already standing on is silent and looks exactly
+  like a drop. Measured: entries [Dusay I, then the bookmark row], slot cleared, one press → landed on
+  **Dusay I**; a second press → the entry before it; a third → silence.
+- **A row inside a branch the player has SHUT is still valid** — the landing opens ancestors on the
+  way. Stage it by leaping out of a system and collapsing it with Left on its header before pressing
+  Backspace; the branch re-opens and the exact child is landed on ("Zoom level 13 of 15, System
+  Overview" then the child).
 - **The reseat is proved by ESCAPE, not by the jump.** After an inspect-mode jump the tree cursor is
   moved silently underneath, so the evidence is `/input ui.back` afterwards: "Exited inspect mode"
   then the bookmark's own row ("… Lors, -66, -26, group, No owner, **bookmark 3**, collapsed, 2 of
@@ -1002,6 +1013,15 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   not a lost store (`docs/saves.md`).
 - **Do not put two slots on one system.** The row's word comes from one digit per system GUID, so
   the second slot silently wins the word; pick a fresh system per slot when measuring.
+- **A point-bookmark row must answer for its OWN place, and the regression to check is Ctrl+I on
+  one** (bug 2026-08-31): arming on a bookmark row opened the cell on the row's CONSTELLATION
+  centroid, because the page's "where does this row stand" index (`GalaxyHudScreen.PositionOf`) had
+  no branch for bookmark rows and the caller walked up to the parent, whose subject is an entity with
+  a position of its own. Two point bookmarks in one constellation both landed on the same wrong
+  square, which is what made it look like one bookmark stealing the other's place. The check:
+  `galaxy.bookmarkGoTo<n>` onto a point row, then `galaxy.inspect`, and the cell must read
+  "bookmark n, ⟨that row's pair⟩". Worth re-running on a SYSTEM row and on a second point row in
+  another constellation, since one right answer proves nothing here.
 - **The Controls rows** are 21 of the tab's 81, in three runs: Set bookmark 1..0 at 55–64, Jump to
   bookmark 1..0 at 65–74, Jump to home system at 75. `POST /type "set bookmark"` on `options:rows`
   is the cheap way onto one ("Set bookmark 1, Shift + 1, Remember the place on the galaxy map the

@@ -2870,6 +2870,20 @@ namespace ES2Access.Screens
                         return true;
                     }
                 }
+
+                // A place the PLAYER put on the map. It belongs in this list for the same reason the
+                // four above do - its row is keyed structurally, so nothing on the id says where it is
+                // - and it was missing from it, which is the whole of bug 2026-08-31: a caller walking
+                // UP from a row that could not answer reached the row's constellation, whose subject
+                // is an entity with a position of its own (the centroid the map writes the name at),
+                // and armed the inspect cursor a whole stretch of sky away from the bookmark the
+                // player was standing on.
+                BookmarkPoint bookmark = BookmarkAt(id);
+                if (bookmark != null)
+                {
+                    at = bookmark.At;
+                    return true;
+                }
             }
             catch (Exception e)
             {
@@ -3779,17 +3793,11 @@ namespace ES2Access.Screens
                 }
                 else if (!PositionOf(focused.Id, out at))
                 {
-                    // Not in a system and not one of the things the map draws out on its own: the last
-                    // possibility is a place the PLAYER put there. Anything else - a constellation
-                    // heading, the unexplored group - has no point of galaxy under it at all, and a
-                    // leap from one is not remembered rather than remembered wrongly.
-                    BookmarkPoint bookmark = BookmarkAt(focused.Id);
-                    if (bookmark == null)
-                    {
-                        return;
-                    }
-
-                    at = bookmark.At;
+                    // A row standing at no point of galaxy at all - a constellation heading, the
+                    // unexplored group. A leap from one is not remembered rather than remembered
+                    // wrongly. (Everything that DOES stand somewhere answers above, bookmarked points
+                    // of space included - see <see cref="PositionOf"/>.)
+                    return;
                 }
 
                 _trail.Add(
@@ -3821,14 +3829,15 @@ namespace ES2Access.Screens
         /// not there to be landed on. Popping continues to the next hop that is still true, and a trail
         /// with none left is spent.
         ///
-        /// A LEAP entry (<see cref="NoteLeap"/>) comes back the same way, and the fog rule is the same
-        /// one: an entry whose system the player can no longer see is skipped. What is NOT skipped is
-        /// an entry whose exact ROW has gone while its place is still there - a fleet that has moved on,
-        /// a card the map has stopped drawing. **Owner's choice was left to me: it falls back to the
-        /// system's own row.** The player asked to be taken back to a PLACE; the row they stood on is
-        /// where they were looking, and the place is what they meant. Skipping instead would silently
-        /// carry them TWO leaps back, which is the one answer they cannot make sense of - and a landing
-        /// one row off inside the right system is a step away from where they were.
+        /// A LEAP entry (<see cref="NoteLeap"/>) obeys the SAME invalidation rule, which is the whole
+        /// point of one trail: an entry that can no longer be honoured EXACTLY is dropped and the pop
+        /// carries on to the one before it (owner ruling 2026-08-31, overturning an earlier
+        /// fall-back-to-the-system's-row). A leap is a promise to put the player back on the row they
+        /// were standing on; landing on that row's SYSTEM instead would report success while restoring
+        /// nothing they meant - the case that settled it is a leap made from an in-transit fleet's row,
+        /// where the fleet has since arrived and the tree files it somewhere else entirely, so the old
+        /// system is not even where the thing is any more. Better to give them the leap before it, or
+        /// nothing.
         /// </summary>
         private bool PopTrail()
         {
@@ -3840,7 +3849,7 @@ namespace ES2Access.Screens
                 _trail.RemoveAt(_trail.Count - 1);
                 if (hop.Leap)
                 {
-                    if (hop.Origin != null && (empire == null || !Perceived(hop.Origin, empire)))
+                    if (!LeapStands(hop, empire))
                     {
                         continue;
                     }
@@ -3875,14 +3884,11 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// Put the player back where a leap started, through the page's one landing like everything
-        /// else that sends them somewhere (<see cref="GoTo"/>).
+        /// else that sends them somewhere (<see cref="GoTo"/>). Always the EXACT row - an entry that
+        /// could not be honoured exactly never reaches here (<see cref="LeapStands"/>).
         ///
-        /// A row inside a SYSTEM is a place the camera zooms to, and the row is aimed at exactly - its
-        /// ancestors open on the way, which is the ordinary landing machinery. The one case that needs
-        /// deciding is a row whose branch IS open and which is still not there: the row has genuinely
-        /// gone, and the system's own row stands in for it (see <see cref="PopTrail"/>). A row that
-        /// belongs to no system - a probe, a missile, a pin, a bookmarked point - is a point, and the
-        /// camera slides to it.
+        /// A row inside a SYSTEM is a place the camera zooms to; a row that belongs to no system - a
+        /// probe, a missile, a pin, a bookmarked point - is a point, and the camera slides to it.
         /// </summary>
         private void ReturnToLeap(Journey hop)
         {
@@ -3893,24 +3899,57 @@ namespace ES2Access.Screens
             }
 
             OpenPlace(hop.Origin);
-            GoTo(MapTarget.Place(hop.Origin, LeapRow(hop), hop.At), MapCamera.Auto);
+            GoTo(MapTarget.Place(hop.Origin, hop.Return, hop.At), MapCamera.Auto);
         }
 
-        /// <summary>The row a leap comes back to: the exact one, unless its branch is open and the row
-        /// is not in it - which is the only way to tell "shut, and will open on the way" from "really
-        /// gone".</summary>
-        private ControlId LeapRow(Journey hop)
+        /// <summary>
+        /// Whether a leap can still be undone EXACTLY - the trail's one invalidation question, asked of
+        /// a leap the way the fog question is asked of a lane hop.
+        ///
+        /// Two ways to fail. The place has gone dark, which is the lane hops' own rule; or the row
+        /// itself is no longer in the tree. Telling "gone" from "merely shut" is the whole difficulty,
+        /// because a row inside a collapsed branch is absent from the render and yet perfectly
+        /// restorable - the landing opens its ancestors on the way, one level per build
+        /// (<c>KeyGraph.AncestorKeys</c>, the same ancestry every programmatic landing reads). So: the
+        /// row itself present is valid; otherwise the DEEPEST ancestor the tree is still declaring
+        /// decides - shut, and the row is inside it and will arrive; open, and the row is simply not
+        /// there any more.
+        ///
+        /// One false answer is possible and accepted: a branch opened on this very frame has not built
+        /// its children yet (<c>ReachStep.Waiting</c>), and an entry asked about in that window reads
+        /// as gone. Nothing opens a branch at the moment Backspace is pressed, and the cost of the
+        /// wrong answer is the leap BEFORE it - a defined behaviour - rather than a landing that lies.
+        /// </summary>
+        private bool LeapStands(Journey hop, Empire empire)
         {
-            GraphNavigator navigator = ModEntry.Navigator;
-            GraphRender render = navigator == null ? null : navigator.Render;
-            ControlId row = RootId(hop.Origin);
-            GraphNode system = render == null ? null : render.NodeAt(row);
-            if (system == null || !system.Expanded)
+            if (hop.Origin != null && (empire == null || !Perceived(hop.Origin, empire)))
             {
-                return hop.Return;
+                return false;
             }
 
-            return render.NodeAt(hop.Return) != null ? hop.Return : row;
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphRender render = navigator == null ? null : navigator.Render;
+            if (render == null || hop.Return == null)
+            {
+                return false;
+            }
+
+            if (render.NodeAt(hop.Return) != null)
+            {
+                return true;
+            }
+
+            IList<object> keys = KeyGraph.AncestorKeys(hop.Return.StructuralKey);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                GraphNode ancestor = render.NodeAt(ControlId.Structural(keys[i]));
+                if (ancestor != null)
+                {
+                    return !ancestor.Expanded;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Ask for the branch, then hand the rest to the page's one landing
