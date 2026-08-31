@@ -190,7 +190,6 @@ namespace ES2Access.UI
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => ConstructibleName(it)),
-                    GraphNodes.ValuePart(() => ConstructibleCost(it, owner)),
                     GraphNodes.DisabledPart(() => AgeWidgets.Operable(it.AgeTransform)),
                 },
                 Sections = GraphNodes.Sections(
@@ -240,30 +239,21 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The item's full name. The grid clips its caption to fit the tile - "Cerebral ." -
-        /// so the name is taken from what the tile is FOR rather than from what the tile says.
+        /// <summary>
+        /// The item's full name, which is the whole of what a tile says. The grid clips its caption to
+        /// fit the tile - "Cerebral ." - so the name is taken from what the tile is FOR rather than
+        /// from what the tile says.
+        ///
+        /// No cost is spoken with it: the tile's prefab is a title label and its badges and draws no
+        /// price at all, and the only cost the game ever writes for the item - industry, strategic
+        /// resources and the turns they come to - is the tooltip's own cost line, which the tile's
+        /// tooltip section already carries for whoever opens it (owner ruling 2026-08-31).
         /// </summary>
         private static string ConstructibleName(StarSystemConstructibleItem item)
         {
             try
             {
                 return AgeText.Clean(Gui.Localize(item.GuiConstructible.Title));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ConstructibleCost(
-            StarSystemConstructibleItem item,
-            StarSystemConstructiblePanel panel
-        )
-        {
-            try
-            {
-                float cost = item.GuiConstructible.GetIndustryCost(panel.ColonizedStarSystem);
-                return cost <= 0f ? null : ModStrings.Format(ModStrings.SystemIndustryCost, Amount(cost));
             }
             catch (Exception)
             {
@@ -903,18 +893,6 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("system panels: reading the hangar threw: " + e);
-            }
-        }
-
-        private static string Amount(float value)
-        {
-            try
-            {
-                return Gui.FormatAmount(value, true, Gui.Rounding.Floor, false, 0);
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
     }

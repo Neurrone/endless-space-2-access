@@ -445,6 +445,13 @@ heights 292, and `crop-shot.ps1 -Rect 385,880,900,315` for the sighted half (col
 rows of constructibles, expanded four). Collapsing while the page is UP must stick — the entry
 latch has already fired — which is the second half of the check.
 
+**The colony panel's resource rows read net alone.** Its `ResourcesBanner` hides each
+`ResourceItem`'s `StockLabel` at prefab level (a system-located stock is always 0) and draws only
+the net, so a resource row's expected reading is `<name>, <signed net> per turn` — "Hyperium, +2
+per turn", no stock figure. The same `ResourceItem` prefab reads stock-and-net on the empire strip
+and stock-only on the Juggernaut panel: three drawn shapes from one widget, each row gated on
+which of its labels the game is drawing.
+
 **The four information side panels are ONE stop with four regions** (owner design 2026-08-29;
 `docs/interaction.md`). A colony page has 11 Tab stops, not 14. Walking them: Tab to
 `system:side` lands on the colony banner announcing "System information, System, System level 2, …";

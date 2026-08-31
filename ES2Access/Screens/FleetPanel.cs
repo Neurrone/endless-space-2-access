@@ -1000,8 +1000,8 @@ namespace ES2Access.Screens
                 bool regions = halves > 1;
 
                 builder.BeginStop(ShipsStop);
-                // All bands read linearly: the hero's ship tile carries a dossier group,
-                // which a row cannot host.
+                // The hero band reads linearly: its ship tile carries a dossier group, which a row
+                // cannot host.
                 Cells.EmitRegion(
                     builder,
                     HeroRegion,
@@ -1010,13 +1010,14 @@ namespace ES2Access.Screens
                     _hero,
                     Cells.OnePerRow
                 );
+                // The toolbar is plain buttons, so it stands as the one row it is drawn as.
                 Cells.EmitRegion(
                     builder,
                     ShipsActionsRegion,
                     ModStrings.DiplomacyActionsBand,
                     regions,
                     _bar,
-                    Cells.OnePerRow
+                    regions ? Cells.AsDrawnRows : Cells.OnePerRow
                 );
                 Cells.EmitRegion(
                     builder,

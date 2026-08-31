@@ -912,6 +912,148 @@ namespace ES2Access.Tests.UI
             Assert.Equal("b", Focused(g)); // the survivor before it in the previous order
         }
 
+        /// <summary>The Create-button shape: the control under the cursor is destroyed by pressing it.
+        /// Recovery is the same backward walk it always was - pinned here because the stop memory is now
+        /// rewritten on the same rebuild, and it must follow the cursor rather than fight it.</summary>
+        [Fact]
+        public void TheFocusedControlDyingTakesItsStopMemoryWithIt()
+        {
+            GraphState state = new GraphState();
+            bool withButton = true;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.BeginStop("band");
+                b.AddItem(new SyntheticNode(Id("band/split"), Vt("Split")));
+                if (withButton) b.AddItem(new SyntheticNode(Id("mgmt/create"), Vt("Create")));
+                b.AddItem(new SyntheticNode(Id("band/merge"), Vt("Merge")));
+                return b.Build();
+            }, state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            Assert.Equal("mgmt/create", Focused(g));
+
+            withButton = false; // pressing Create is what destroyed it
+            g.Rerender();
+            Assert.Equal("band/split", Focused(g));
+            Assert.Equal(Id("band/split"), state.StopMemory["band"]);
+        }
+
+        /// <summary>The disband shape: the control dies while the player stands in ANOTHER stop, so no
+        /// cursor reconciliation ever sees it - only the stop's memory does. Coming back must land beside
+        /// where the player was, not at the top of the tree.</summary>
+        [Fact]
+        public void AStopRemembersTheNeighbourOfAControlThatDiedWhileAway()
+        {
+            GraphState state = new GraphState();
+            bool withFleet = true;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.BeginStop("map");
+                b.AddItem(new SyntheticNode(Id("system/585"), Vt("Ingris")));
+                b.AddItem(new SyntheticNode(Id("system/585/fleet/1"), Vt("Scout")));
+                if (withFleet) b.AddItem(new SyntheticNode(Id("system/585/fleet/2"), Vt("Doomed")));
+                b.BeginStop("panel");
+                b.AddItem(new SyntheticNode(Id("panel/hangar"), Vt("Hangar")));
+                return b.Build();
+            }, state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.Move(GraphDir.Down);
+            Assert.Equal("system/585/fleet/2", Focused(g));
+            g.MoveStop(1, true);
+            Assert.Equal("panel/hangar", Focused(g));
+
+            withFleet = false; // disbanded from the panel, which stays open
+            g.Rerender();
+            g.MoveStop(-1, true);
+            Assert.Equal("system/585/fleet/1", Focused(g)); // its sibling, not "system/585" the stop's first node
+        }
+
+        [Fact]
+        public void RepairingAStopMemorySkipsSurvivorsFromOtherStops()
+        {
+            GraphState state = new GraphState();
+            GraphRender render = TwoStopRender();
+            ControlId dead = Id("m3");
+            state.CurKey = Id("o1"); // the player is standing in the other stop
+            state.StopMemory["map"] = dead;
+            state.KeyOrder = new List<ControlId> { Id("m1"), Id("m2"), Id("o1"), dead };
+
+            KeyGraph.Reconcile(render, state);
+
+            Assert.Equal(Id("m2"), state.StopMemory["map"]); // "o1" is nearer, and belongs elsewhere
+        }
+
+        /// <summary>A stop absent from this render - a hidden panel, a modal up - is not a stop whose
+        /// control died: leave the memory alone, because the stop may return with the very keys it
+        /// names, and it does.</summary>
+        [Fact]
+        public void AStopMissingFromTheRenderKeepsItsMemory()
+        {
+            GraphState state = new GraphState();
+            GraphRender hidden = Renderer(b => b.BeginStop("other").AddItem(new SyntheticNode(Id("o1"), Vt("O1"))))();
+            ControlId remembered = Id("m2");
+            state.CurKey = Id("o1");
+            state.StopMemory["map"] = remembered;
+            state.KeyOrder = new List<ControlId> { Id("m1"), remembered, Id("o1") };
+
+            KeyGraph.Reconcile(hidden, state);
+            Assert.Equal(remembered, state.StopMemory["map"]);
+
+            Assert.Equal("m2", Key(KeyGraph.StopLanding(TwoStopRender(), state, "map")));
+        }
+
+        /// <summary>A control the previous order never listed leaves no neighbourhood to fall back into,
+        /// so the memory stands and the landing chain answers as it always did.</summary>
+        [Fact]
+        public void AMemoryTheOldOrderNeverKnewIsLeftAlone()
+        {
+            GraphState state = new GraphState();
+            GraphRender render = TwoStopRender();
+            ControlId dead = Id("came-and-went");
+            state.CurKey = Id("o1");
+            state.StopMemory["map"] = dead;
+            state.KeyOrder = new List<ControlId> { Id("m1"), Id("m2"), Id("o1") };
+
+            KeyGraph.Reconcile(render, state);
+
+            Assert.Equal(dead, state.StopMemory["map"]);
+            Assert.Equal("m1", Key(KeyGraph.StopLanding(render, state, "map"))); // the stop's first node
+        }
+
+        /// <summary>A structural key that is not a string is just a key to the walk - repair reads no
+        /// structure out of it and must not trip over one.</summary>
+        [Fact]
+        public void ANonStringKeyFlowsThroughMemoryRepair()
+        {
+            GraphState state = new GraphState();
+            ControlId cell = ControlId.Structural(new int[] { 3, 7 });
+            GraphRender render = TwoStopRender();
+            state.CurKey = Id("o1");
+            state.StopMemory["map"] = cell;
+            state.KeyOrder = new List<ControlId> { Id("m1"), Id("m2"), cell, Id("o1") };
+
+            KeyGraph.Reconcile(render, state);
+
+            Assert.Equal(Id("m2"), state.StopMemory["map"]);
+        }
+
+        /// <summary>Two stops of two and one - the fixture the memory-repair cases walk backwards
+        /// through.</summary>
+        private static GraphRender TwoStopRender()
+        {
+            return Renderer(b =>
+            {
+                b.BeginStop("map");
+                b.AddItem(new SyntheticNode(Id("m1"), Vt("M1")));
+                b.AddItem(new SyntheticNode(Id("m2"), Vt("M2")));
+                b.BeginStop("other");
+                b.AddItem(new SyntheticNode(Id("o1"), Vt("O1")));
+            })();
+        }
+
         [Fact]
         public void AnUnrecognizableRebuildFallsBackToTheStartNode()
         {

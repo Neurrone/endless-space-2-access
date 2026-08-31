@@ -8,7 +8,12 @@ Alt+Home — the one go-to that every category shares.
 **The galaxy SCANNER** (read-only; `GalaxyScanner`). Drive it by action key —
 `galaxy.scanCategoryNext|Prev`, `galaxy.scanSubcategoryNext|Prev`, `galaxy.scanNext|Prev`,
 `galaxy.scanGoTo` — and read `/speech`. The FIRST press after a `/reload` says where the cursor
-already is and moves nothing (the screen instance is new, so every reload re-arms it).
+already is and moves nothing (the screen instance is new, so every reload re-arms it), and that
+re-armed cursor starts at `Systems: all` again — a column parked in before the reload is gone.
+**They are keys of the MAP stop.** With the cursor anywhere else on the galaxy page — the HUD
+stop is where a fresh session sits — every scanner key answers `unconsumed` and nothing is
+spoken, which reads exactly like the scanner being broken. Seat the cursor on the tree first
+(`Navigator.FocusNode(ControlId.Structural("galaxy:constellation/<c>/system/<s>"))`), then press.
 
 ## What each tier says
 
