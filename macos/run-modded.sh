@@ -52,7 +52,9 @@ export DOORSTOP_TARGET_ASSEMBLY="$game_dir/BepInEx/core/BepInEx.Preloader.dll"
 export DOORSTOP_IGNORE_DISABLED_ENV=0
 export DOORSTOP_MONO_DLL_SEARCH_PATH_OVERRIDE="$game_dir/BepInEx/core"
 export DYLD_INSERT_LIBRARIES="$game_dir/libdoorstop.dylib"
-export DYLD_LIBRARY_PATH="$mono_native_dir"
+# The game folder rides along for libprism.dylib, the fallback speech backend: Mono's
+# by-name probe for the "prism" P/Invoke searches DYLD_LIBRARY_PATH.
+export DYLD_LIBRARY_PATH="$mono_native_dir:$game_dir"
 
 cd "$game_dir"
 exec "$executable" "$@"
