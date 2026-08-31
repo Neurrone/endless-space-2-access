@@ -1025,6 +1025,10 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   rounded pair. The rule fires ON SET only, so a file that already holds a duplicate (this fixture's
   own `slot2`/`slot4` do) keeps it until a set touches that tile — which also makes such a file the
   cheapest way to reach the multi-duplicate path.
+- **Verify `live=True` before any step that assumes the cell is up.** Since the arming refusal
+  shipped (Ctrl+I on a row that stands nowhere is silent), a staging script that arms from whatever
+  the cursor happens to be on can proceed with the mode DOWN — and then a `galaxy.bookmarkSet<n>`
+  meant for a square lands on a tree row instead. Arm from a SYSTEM row, and probe between presses.
 - **Staging a collision** without disturbing the standing slots: arm the inspect cell on a square no
   slot holds, `galaxy.bookmarkSet8`, then `galaxy.bookmarkSet9` on the same square — the second says
   the replacing line and the file shows `slot8` gone and `slot9` gained in ONE write. For the system

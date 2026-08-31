@@ -858,8 +858,19 @@ namespace ES2Access.UI
                 && !_screen.BetweenViews
             )
             {
-                // Queued: an arrival follows the screen name rather than cutting it off.
-                Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), false);
+                // A mode of the screen owns the player's attention, so the line is SWALLOWED - and
+                // written down as though it had been said. Suppressing without recording only defers
+                // it: the memo stays owing, and the first frame after the mode ends reads out the row
+                // the tree re-seated to while nobody was listening, ahead of the landing the exit
+                // actually made (measured 2026-08-31 - "Libra…" then the restore, two utterances for
+                // one exit). Where a screen wants a line HELD rather than dropped, that is
+                // <see cref="Screen.BetweenViews"/> above, which deliberately does not stamp.
+                if (!_screen.SilentUnderMode)
+                {
+                    // Queued: an arrival follows the screen name rather than cutting it off.
+                    Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), false);
+                }
+
                 _lastSpokenKey = node.Id;
                 _lastSpokenNode = node;
             }

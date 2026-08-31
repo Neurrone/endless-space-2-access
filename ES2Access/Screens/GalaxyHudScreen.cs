@@ -522,6 +522,16 @@ namespace ES2Access.Screens
             get { return GalaxyViewLevels.ChangingLevel || _binding > 0 || _centreSeat > 0; }
         }
 
+        /// <summary>The inspect cell is a mode of this page's map widget, and while it is DRIVING the
+        /// player is reading squares rather than rows - so a cursor the tree re-seats underneath them
+        /// says nothing until they leave (<see cref="Screen.SilentUnderMode"/>). Scoped to the cell
+        /// being live AND on the map: parked, the player is reading an ordinary stop and every landing
+        /// there speaks as usual.</summary>
+        public override bool SilentUnderMode
+        {
+            get { return GalaxyInspect.Active; }
+        }
+
         /// <summary>Frames still to wait for the orbital surface of a system the camera has just been
         /// snapped into (<see cref="ViewBindFrames"/>).</summary>
         private int _binding;
@@ -3954,13 +3964,26 @@ namespace ES2Access.Screens
             return pick.Found ? rows[pick.Index] : null;
         }
 
-        /// <summary>Where a row stands ITSELF, or false for one that stands nowhere of its own - the
-        /// shared question behind arming the cell, the leap trail's origin and the restore. A star
-        /// system is its own place; everything keyed structurally answers through
-        /// <see cref="PositionOf"/>.</summary>
+        /// <summary>
+        /// Where a row stands ITSELF, or false for one that stands nowhere of its own - the shared
+        /// question behind arming the cell, the leap trail's origin and the restore.
+        ///
+        /// The registry answers WHETHER first (<see cref="PlacedRows"/>): a kind declared as a
+        /// GROUPING is refused outright however well-placed the entity behind it happens to be, which
+        /// is what stops a constellation heading lending its centroid to a row that has no place. A
+        /// kind the table does not name is carried by an ancestor and answers here with false, and the
+        /// walk that called this goes up to its star.
+        /// </summary>
         internal bool RowPlace(ControlId id, out GalaxyPosition at)
         {
-            StarSystemNode star = id == null ? null : id.Subject as StarSystemNode;
+            at = default(GalaxyPosition);
+            PlacedRow kind = id == null ? null : PlacedRows.Of(id.StructuralKey);
+            if (kind == null || kind.Refuses)
+            {
+                return false;
+            }
+
+            StarSystemNode star = id.Subject as StarSystemNode;
             if (star != null)
             {
                 at = star.GalaxyPosition;

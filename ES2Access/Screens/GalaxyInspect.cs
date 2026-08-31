@@ -1672,60 +1672,143 @@ namespace ES2Access.Screens
         private bool Activate()
         {
             Contents contents = Read();
-            int places = contents.Places.Count + contents.Special.Count;
-            IGameEntityWithGalaxyPosition thing = null;
-            if (places == 1)
-            {
-                thing = contents.Places.Count == 1 ? contents.Places[0] : contents.Special[0];
-            }
-            else if (places == 0 && contents.Fleets.Count == 1)
-            {
-                thing = contents.Fleets[0];
-            }
 
-            if (thing == null)
+            // ENTER'S ORDER IS DATA (<c>PlacedRows</c>): the tiers are walked from the top, and the
+            // first one with anything in it decides. Exactly one candidate there is the landing;
+            // several is the ambiguity this mode always answers with silence; a tier with nothing in
+            // it hands on. What each tier CONTAINS is the only part of the order this file knows.
+            for (int tier = 1; tier <= PlacedRows.Tiers; tier++)
             {
-                // A QUEST PIN is the last thing offered, and only where the cell holds exactly one
-                // and nothing else it could have meant: a pin standing at a star is a child of that
-                // star and the star has already won, and a pin planted on a fleet crossing a lane is
-                // beside the fleet, which wins for the same reason. What is left is a pin the player
-                // has swept a cell down onto and nothing else - the one case where "the one thing in
-                // here" IS the marker (owner ruling, 2026-08-22: a marker is a node now, so Enter has
-                // somewhere to go).
-                MapTarget marker;
-                if (
-                    contents.Markers.Count == 1
-                    && _screen.MarkerTarget(contents.Markers[0], out marker)
-                    && marker.Id != null
-                )
+                List<IGameEntityWithGalaxyPosition> things =
+                    new List<IGameEntityWithGalaxyPosition>();
+                List<ControlId> rows = new List<ControlId>();
+                Gather(contents, tier, things, rows);
+                int found = things.Count + rows.Count;
+                if (found == 0)
                 {
-                    Exit(false, marker.Id, true);
+                    continue;
+                }
+
+                if (found > 1)
+                {
+                    // Two stars, two fleets, a probe beside a missile: the key is pressed
+                    // speculatively while sweeping and a wrong guess costs the player their place.
                     return true;
                 }
 
-                // And LAST of all, a place the player named: a point bookmark has a row of its own in
-                // the tree and always has had, so the gap this closes was Enter's inventory and never
-                // the tree (owner ruling 2026-08-31). It is offered after everything the MAP draws,
-                // and only where the square holds exactly one and nothing else it could have meant -
-                // a bookmark on a star is that star's business, and the star has already won above.
-                if (contents.Bookmarks.Count == 1)
+                return rows.Count == 1 ? LandOnRow(rows[0]) : LandOnThing(contents, things[0]);
+            }
+
+            return true;
+        }
+
+        /// <summary>What the cell holds at one of Enter's tiers - the mapping from the cell's own
+        /// lists onto the table's declarations. Things the PAGE can find a row for are gathered as
+        /// entities; the two kinds whose row the cell already knows the identity of are gathered as
+        /// rows.</summary>
+        private void Gather(
+            Contents contents,
+            int tier,
+            List<IGameEntityWithGalaxyPosition> things,
+            List<ControlId> rows
+        )
+        {
+            if (tier == PlacedRows.TierPlace)
+            {
+                for (int i = 0; i < contents.Places.Count; i++)
                 {
-                    ControlId spot = _screen.BookmarkedPoint(contents.Bookmarks[0]);
-                    if (spot != null)
+                    things.Add(contents.Places[i]);
+                }
+
+                for (int i = 0; i < contents.Special.Count; i++)
+                {
+                    things.Add(contents.Special[i]);
+                }
+
+                return;
+            }
+
+            if (tier == PlacedRows.TierFleet)
+            {
+                for (int i = 0; i < contents.Fleets.Count; i++)
+                {
+                    things.Add(contents.Fleets[i]);
+                }
+
+                return;
+            }
+
+            if (tier == PlacedRows.TierMover)
+            {
+                // The three the map draws out between the stars, closed as data on 2026-08-31: each
+                // already had a row, a position and a place in every other inventory, and was missing
+                // from this one alone.
+                for (int i = 0; i < contents.Probes.Count; i++)
+                {
+                    Probe probe = contents.Probes[i].Probe;
+                    if (probe != null)
                     {
-                        Exit(false, spot, true);
+                        things.Add(probe);
                     }
                 }
 
-                return true;
+                for (int i = 0; i < contents.Projectiles.Count; i++)
+                {
+                    things.Add(contents.Projectiles[i]);
+                }
+
+                for (int i = 0; i < contents.Pins.Count; i++)
+                {
+                    things.Add(contents.Pins[i]);
+                }
+
+                return;
             }
 
-            // Asked of the PAGE, and asked before the mode is taken down: the page knows where each
-            // thing it draws lives in the tree and opens the branch that holds it on the way
-            // (GalaxyHudScreen.NodeFor - the same landing the scanner's "go to" makes). Reaching for
-            // the system's id directly was the old way, and it could only ever answer for a system: a
-            // fleet's row hangs under whichever system the map files it at, and Enter on a fleet
-            // therefore ended the mode and landed on nothing at all (owner-reported).
+            if (tier == PlacedRows.TierMarker)
+            {
+                for (int i = 0; i < contents.Markers.Count; i++)
+                {
+                    MapTarget marker;
+                    if (_screen.MarkerTarget(contents.Markers[i], out marker) && marker.Id != null)
+                    {
+                        rows.Add(marker.Id);
+                    }
+                }
+
+                return;
+            }
+
+            if (tier == PlacedRows.TierBookmark)
+            {
+                for (int i = 0; i < contents.Bookmarks.Count; i++)
+                {
+                    ControlId spot = _screen.BookmarkedPoint(contents.Bookmarks[i]);
+                    if (spot != null)
+                    {
+                        rows.Add(spot);
+                    }
+                }
+            }
+        }
+
+        /// <summary>Leave the mode on a row the caller already has the identity of - a quest marker's,
+        /// a bookmark's.</summary>
+        private bool LandOnRow(ControlId row)
+        {
+            Exit(false, row, true);
+            return true;
+        }
+
+        /// <summary>
+        /// Leave the mode on the row the PAGE has for a thing it draws.
+        ///
+        /// Asked of the page, and asked before the mode is taken down: the page knows where each thing
+        /// it draws lives in the tree and opens the branch that holds it on the way
+        /// (<c>GalaxyHudScreen.NodeFor</c> - the same landing the scanner's go-to makes).
+        /// </summary>
+        private bool LandOnThing(Contents contents, IGameEntityWithGalaxyPosition thing)
+        {
             ControlId landing = _screen.NodeFor(thing);
             Fleet fleet = thing as Fleet;
             if (landing == null && fleet == null)
@@ -2526,22 +2609,13 @@ namespace ES2Access.Screens
                 navigator == null ? null : navigator.Screen as GalaxyHudScreen;
             for (int depth = 0; node != null && depth < 16; depth++)
             {
-                if (screen != null && screen.PositionOf(node.Id, out position))
+                // The row's OWN place, decided by the registry (<c>PlacedRows</c>): a kind that
+                // stands somewhere answers, a GROUPING refuses however well-placed the entity behind
+                // it is, and a row carried by an ancestor says nothing and lets this walk go up to its
+                // star. That last is why the walk is still a walk - a planet, a lane, a dossier and a
+                // berthed fleet all arm at the star the map draws them at.
+                if (screen != null && screen.RowPlace(node.Id, out position))
                 {
-                    return true;
-                }
-
-                // A STAR SYSTEM and nothing else (owner ruling 2026-08-31). Asking for any entity
-                // with a position let a row inherit its PARENT's, and a Constellation is such an
-                // entity - the centroid the map writes its name at - so Ctrl+I on a constellation
-                // heading armed the cell in the middle of a stretch of sky the player was not
-                // standing anywhere in. A grouping is not a place. What legitimately resolves this
-                // way is everything a system CONTAINS - a planet, a lane, a dossier, a berthed fleet -
-                // none of which has a position of its own because the map draws them all at the star.
-                StarSystemNode star = node.Id == null ? null : node.Id.Subject as StarSystemNode;
-                if (star != null)
-                {
-                    position = star.GalaxyPosition;
                     return true;
                 }
 

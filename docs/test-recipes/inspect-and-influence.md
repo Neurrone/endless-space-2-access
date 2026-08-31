@@ -337,6 +337,24 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   regression: `zoomStep` either side, and the cursor probed before arming and again after Escape.
   The camera frame-trace is still the finer one — **one** decelerating run of samples ending at the
   square's centre, with nothing after it.
+- **Enter's tiers, and the three kinds that became enterable 2026-08-31.** A probe, an obliterator
+  missile and an ally's pin now end the mode on their own rows, at a tier between the fleet and the
+  quest marker. **Fixture-blocked here**: `ScannedProbes().Count`, `SightedProjectiles.Count` and
+  `SightedPins.Count` all read 0 on the turn-26 save, so the three are unit-tested and manual-listed
+  rather than measured. To check one when a fixture has it: sweep the cell onto a square holding only
+  that thing and press `ui.activate` — the mode should say "Exited inspect mode" and then that row.
+  The tier order itself is `Core/UI/PlacedRows.cs` and is pinned by `PlacedRowsTests`.
+- **A row kind that stands somewhere must be DECLARED.** `PlacedRowLintTests` extracts the key
+  segments the galaxy tree builds and fails on any that is neither in the registry nor on
+  `placed-rows.allow` (the segments an ancestor carries — planet, lane, launch, action, wreck,
+  hangar, and the stop key itself). A new row kind therefore red-bars the build until somebody
+  answers its four questions: arms, enterable and at which tier, leap-recordable, restore-candidate.
+- **A vanished focused row is SILENT while the cell is live, and only then.** Stage it with two
+  bookmark slots on one tile: arm on slot A's row, jump the cell away, then set slot B onto slot A's
+  tile from the cell — the dedupe kills slot A's row under the cursor. Expect no neighbour
+  announcement at all until Escape, which then says one landing (the nearest surviving place, which
+  is slot B at distance zero). The control is the same kill with the mode OFF: the neighbour still
+  announces, measured as "Libra, -11, 11, group, No owner, collapsed, 5 of 15".
 - **Ctrl+I refuses a row that stands nowhere.** On a CONSTELLATION heading it is silent, arms nothing
   and moves nothing (`speech: []`, `live=False`, cursor unmoved) — the check is worth keeping because
   the failure mode was not a crash but a cell opening a stretch of sky away, at the constellation's

@@ -441,6 +441,25 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// A MODE of this screen owns the player's attention, so a cursor that moves underneath it
+        /// says nothing (owner ruling 2026-08-31; the galaxy's inspect cell is the only one).
+        ///
+        /// The cursor does not move by the player's hand while such a mode is up - the keys belong to
+        /// the mode - so what this silences is the tree re-seating ITSELF: the row the cursor was
+        /// parked on stops being declared (a bookmark whose slot was taken, a fleet the map has
+        /// re-filed) and the cursor lands on a neighbour it did not choose. Reading that neighbour out
+        /// interrupts a player who is somewhere else entirely, to name a row they never went to.
+        ///
+        /// The re-seat still HAPPENS - the cursor has to stand somewhere real - and leaving the mode
+        /// announces wherever the player is put down, which is the moment the news is worth having.
+        /// Off the mode this is false everywhere, so a vanished row keeps its voice in the tree.
+        /// </summary>
+        public virtual bool SilentUnderMode
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// The player has just moved the cursor on this screen themselves: give up any landing this
         /// screen is still waiting to make.
         ///

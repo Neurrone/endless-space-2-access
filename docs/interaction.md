@@ -592,6 +592,16 @@ built for it and none of it is left inert: the deferred seat, its camera-free ma
 `Reseat` entry point. The whole double-speak class went with it — there is no landing in flight at
 Escape any more.
 
+**A cursor the tree re-seats underneath a live mode says NOTHING** (owner ruling 2026-08-31;
+`Screen.SilentUnderMode`, overridden by the galaxy page while the cell is live and on the map). The
+player is reading squares, not rows; when the row the cursor was parked on stops being declared, the
+tree lands it on a neighbour it did not choose, and reading that out interrupts them to name
+somewhere they never went. The re-seat still happens — the cursor must stand somewhere real — and the
+news comes when they leave, on the exit's own landing. The line is SWALLOWED rather than held:
+suppressing without recording it only defers it, and the first frame after the mode ends then reads
+the neighbour out ahead of the exit's landing (measured: two utterances for one exit). With the mode
+off, a vanished focused row keeps its voice everywhere.
+
 **Where the armed-from row has DIED while the mode was up** — a bookmark whose slot a dedupe took, a
 fleet the tree has re-filed — **Escape lands on the nearest surviving thing that stands somewhere**,
 measured from the place that row stood at (`GalaxyHudScreen.RestoreRow` → `NearestPlacedRow`, reusing
@@ -695,15 +705,19 @@ pressed from another stop is NOT claimed and does nothing at all — no focus mo
 (a jump to the map stop was tried and vetoed, 2026-08-17). **That veto is about a key that ARMS A
 MODE, not about moving the cursor**: Ctrl+G, whose whole job is to go to the map stop, is exactly the
 key the player would have had to press first, and it arms nothing (2026-08-22).
-**WHAT ENTER LANDS ON, in order** (the inventory, extended 2026-08-31): the one PLACE in the square —
-a star system or a special node — else the one FLEET, else the one QUEST MARKER, else the one POINT
-BOOKMARK. Each tier needs exactly one of its kind and is only reached when the tiers above it have
-not answered, so a place beats a fleet standing at it and beats a bookmark on its tile (measured: a
-square holding Dusay, a fleet and bookmark 8 exits on Dusay's row). The bookmark tier is the newest
-and closes a gap that was Enter's and never the tree's — a point bookmark has always had a synthetic
-row; Enter simply did not know to offer it, so the square read "bookmark n" and answered nothing.
-Anything else — an empty square, two places, a probe, a missile, an ally's pin — is taken and silent,
-which is the refusal a key pressed speculatively mid-sweep should give.
+**WHAT ENTER LANDS ON, in order** (owner ruling 2026-08-31; the order is DATA, in
+`Core/UI/PlacedRows.cs`): the one PLACE in the square — a star system or a special node — else the
+one FLEET, else the one MOVER the map draws out between the stars (a probe, an obliterator missile,
+an ally's pin), else the one QUEST MARKER, else the one POINT BOOKMARK. Things that move come before
+things that annotate, and the player's own note comes last of all. Each tier needs exactly one
+candidate and the tiers above it to be empty, so a place beats a fleet standing at it and beats a
+bookmark on its tile (measured: a square holding Dusay, a fleet and bookmark 8 exits on Dusay's row);
+two of anything at the deciding tier is taken and silent, which is the refusal a key pressed
+speculatively mid-sweep should give. **The bookmark, probe, missile and pin tiers all closed the same
+gap**: each had a row, a position, a place in the leap trail and a place in the restore, and was
+missing from Enter's list alone — so a square that READ OUT "bookmark 1" answered nothing when Enter
+was pressed on it. The four inventories are one table now, and a row kind that is not in it fails a
+build-time lint rather than working in three places out of four.
 
 **THE CURSOR IS ARMED ON A PLACE, so a row that stands nowhere refuses** (owner ruling 2026-08-31):
 Ctrl+I on a CONSTELLATION heading is silent, arms nothing and moves nothing, exactly as Shift+n
