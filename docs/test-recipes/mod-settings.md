@@ -431,6 +431,19 @@ null); the rate row then shows the OS Spoken Content rate, not a placeholder.
   and the same restore. What only ears can prove: the audio actually changing voice, rate and
   volume, and VoiceOver announcing when the Prism backend is chosen.
 
+## The key rows on a Mac: spoken as Option and Cmd
+
+On macOS the MOD window's key cells are respoken through the mod's own chord names
+(`OptionsScreen.KeyText`: `KeyChords.FromCombination` then `ChordNames.Of`, gated on
+`ModOptions.IsOurs`): a row stored as the game's `Alt+Shift+Return` reads "Option+Shift+Enter",
+`LeftCommand` reads "Cmd" (verified 2026-08-31 against the live dump - no "Alt"/"LeftCommand"
+in any spoken row). The game's OWN Controls tab keeps the game's spelling ("Ctrl + Tab",
+"Ctrl + F5" - real Control keys, verified same session). The DRAWN cell text is the game's on
+both windows, by design. Mid-capture the same translation runs off the widget's live
+`KeyCombination` (it updates as each key goes down), with two consequences only physical keys
+can show: the building chord speaks as Option/Cmd, and a held REAL Control is absent from the
+spoken form exactly as it will be from the committed binding.
+
 ## Reset to Defaults on the Controls tab
 
 Only the mod's window has it, and only while the Controls tab is showing: the game's own

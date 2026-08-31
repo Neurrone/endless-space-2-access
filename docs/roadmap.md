@@ -538,14 +538,19 @@ belong in the files above.
   through the same helper, so what is unsighted is the PREFAB question: whether those prefabs
   draw a caption beside each bar, which would make the added one a double-name.
 - **macOS port remainder (`macos-support` branch; what shipped: `macos/README.md`; the
-  Speech settings tab shipped 2026-08-31 — recipe in `test-recipes/mod-settings.md`).** Still
-  open by the player's own hands: the Option/Command chords under live keys, whether
-  Option+Enter toggles fullscreen in the Mac player (Alt+Enter does on the Windows D3D11
-  player — `docs/interaction.md`), and the Speech tab's by-ear checks (the audio actually
-  changing voice, rate and volume; VoiceOver announcing when the Prism backend is chosen).
-  Known gap: the mod settings window's key rows speak the game's spelling of a combination
-  on a Mac (Alt, LeftCommand) where everything else says Option and Cmd. A macOS release
-  zip and install script (`build_release.ps1` has no Mac path).
+  Speech settings tab and the Option/Cmd spelling of the settings window's key rows shipped
+  2026-08-31 — recipe in `test-recipes/mod-settings.md`; Option+Enter confirmed NOT a
+  fullscreen toggle in the Mac player, owner's hands 2026-08-31).** Still open by the
+  player's own hands: the Option/Command chords under live keys, the Speech tab's by-ear
+  checks (the audio actually changing voice, rate and volume; VoiceOver announcing when the
+  Prism backend is chosen; the Prism flip refused with the dylib missing — the box, the row
+  snapping back, speech alive — recipe in `test-recipes/mod-settings.md`), a key CAPTURE
+  spoken live as Option/Cmd while the chord builds (same code path as the settled cells, but
+  only physical keys drive a capture), and multiplayer chat opening on Option+Tab (the chat
+  binding the mod writes is `Alt+Tab` in the game's registry form there). A
+  macOS release zip and install script (`build_release.ps1` has no Mac path). The drawn
+  (not spoken) key-cell text still shows the game's spelling on a Mac — cosmetic, sighted
+  onlookers only.
 
 ## To decide (owner)
 

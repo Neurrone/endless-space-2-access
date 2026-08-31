@@ -127,7 +127,8 @@ Ctrl+Shift+Enter the Alt-click, Ctrl+Enter the Ctrl-click, Ctrl+Alt+Enter the se
 **The Alt-click is the one chord whose keys are not its gesture's, and that is deliberate**:
 Alt+Enter is Unity's own built-in fullscreen toggle, handled inside the player's D3D11 window
 code below every managed layer, so the mod's claim never reaches it and nothing suppressible
-does either (bug 17). The gesture moved to Ctrl+Shift+Enter, which the game binds nothing to and
+does either (bug 17). The Mac player has no such toggle: Option+Enter reaches the mod
+untouched (owner's hands, 2026-08-31), so the macOS chords carry no equivalent constraint. The gesture moved to Ctrl+Shift+Enter, which the game binds nothing to and
 which keeps the family: every modified click is still a modified Enter. Owner ruling 2026-08-19.
 
 ## Modified clicks and their fall-backs
