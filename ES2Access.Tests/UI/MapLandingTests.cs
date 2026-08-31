@@ -52,31 +52,36 @@ namespace ES2Access.Tests.UI
             MapLanding plan = MapLandings.Decide(MapThing.Place, true);
             Assert.False(plan.ExitInspect);
             Assert.True(plan.MoveCell);
-            // The tree cursor follows underneath, to be felt when the mode ends - silently, or the
-            // player hears the cell and the node for one press.
-            Assert.True(plan.FocusNode);
+            // Owner ruling 2026-08-31 (the later of the two that day, reversing the reseat): under the
+            // cell the tree cursor does not move at all, so leaving the mode puts the player back
+            // where they armed it.
+            Assert.False(plan.FocusNode);
             Assert.False(plan.AnnounceNode);
-            // Owner ruling 2026-08-31, reversing the 2026-08-22 zoom-in-the-cell line: the cell's own
-            // slide is the whole camera move, and the scale stays where the player put it.
+            // And the cell's own slide is the whole camera move: the scale stays where the player
+            // put it.
             Assert.Equal(MapCameraMove.None, plan.Camera);
         }
 
-        /// <summary>The ruling in one line: under the cell a place and a point ask the camera for
-        /// exactly the same thing, so no gesture arrives differently from any other.</summary>
+        /// <summary>The ruling in one line: under the cell a place and a point do exactly the same
+        /// thing - move the cell, touch neither the cursor nor the zoom - so no gesture arrives
+        /// differently from any other.</summary>
         [Fact]
-        public void UnderTheCellNoLandingChangesTheZoom()
+        public void UnderTheCellOnlyTheCellMoves()
         {
             foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point })
             {
                 MapLanding plan = MapLandings.Decide(thing, true);
                 Assert.True(plan.MoveCell);
+                Assert.False(plan.FocusNode);
+                Assert.False(plan.AnnounceNode);
                 Assert.Equal(MapCameraMove.None, plan.Camera);
             }
 
-            // The one landing that still zooms with the cursor up is the one that TAKES IT DOWN
-            // first, and it is no longer reading the map through a square by the time it does.
+            // The one landing that still moves the cursor and zooms with the cursor up is the one that
+            // TAKES IT DOWN first, and it is no longer reading the map through a square by then.
             MapLanding world = MapLandings.Decide(MapThing.PlanetBound, true);
             Assert.True(world.ExitInspect);
+            Assert.True(world.FocusNode);
             Assert.Equal(MapCameraMove.Zoom, world.Camera);
         }
 
@@ -85,7 +90,8 @@ namespace ES2Access.Tests.UI
         {
             MapLanding plan = MapLandings.Decide(MapThing.Point, true);
             Assert.True(plan.MoveCell);
-            Assert.True(plan.FocusNode);
+            // The cursor stays where the mode was armed (owner ruling 2026-08-31).
+            Assert.False(plan.FocusNode);
             Assert.False(plan.AnnounceNode);
             // Nothing on top of the cell's own slide.
             Assert.Equal(MapCameraMove.None, plan.Camera);
@@ -135,7 +141,9 @@ namespace ES2Access.Tests.UI
                     MapLanding plan = MapLandings.Decide(thing, inspecting);
                     Assert.False(plan.MoveCell && plan.AnnounceNode);
                     Assert.False(plan.MoveCell && plan.ExitInspect);
-                    Assert.True(plan.FocusNode);
+                    // Moving the CELL and moving the CURSOR are now the two halves of one choice:
+                    // exactly one of them happens on every landing that is not a defect.
+                    Assert.NotEqual(plan.MoveCell, plan.FocusNode);
                 }
             }
         }

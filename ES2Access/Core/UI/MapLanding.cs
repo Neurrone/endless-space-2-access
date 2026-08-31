@@ -104,7 +104,10 @@ namespace ES2Access.Core.UI
                     return new MapLanding
                     {
                         MoveCell = inspectLive,
-                        FocusNode = true,
+                        // Under the cell the TREE CURSOR DOES NOT MOVE AT ALL (owner ruling
+                        // 2026-08-31, reversing the reseat ruling of the same day): the cell is the
+                        // only thing that goes anywhere.
+                        FocusNode = !inspectLive,
                         AnnounceNode = !inspectLive,
                         // Out of the cell a place is zoomed to. UNDER the cell nothing is: the cell's
                         // own slide is the whole camera move, exactly as it is for a point.
@@ -115,7 +118,7 @@ namespace ES2Access.Core.UI
                     return new MapLanding
                     {
                         MoveCell = inspectLive,
-                        FocusNode = true,
+                        FocusNode = !inspectLive,
                         AnnounceNode = !inspectLive,
                         // The cell slides itself; out of the mode the caller does it.
                         Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Slide,

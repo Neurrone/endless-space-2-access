@@ -329,15 +329,21 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   Backspace is still silent), and a re-armed mode (push one, Escape, Ctrl+I again, Backspace: silent,
   because the stack dies with the mode instance). A PARKED jump pushes too: park, jump, and the
   landing brings focus back to the map with the entry waiting.
-- **Every landing made under the live cell arrives the same way and none of them zooms** (owner
-  ruling 2026-08-31): the cell glides to the thing's square, the tree cursor is seated silently on
-  its row for the mode to end on, and `zoomStep` is the same before and after. That covers the
-  scanner's Alt+Home, a bookmark jump, Ctrl+L and a notification's show-location alike, because they
-  are one landing (`MapLandings.Decide` with `inspectLive`). The check that catches a regression is
-  `zoomStep` either side plus one frame-trace: **one** decelerating run of camera samples ending at
-  the square's centre. A run followed by dead frames and then a one-frame jump onto the star is the
-  seat's focus visual moving the camera a second time — the defect
-  `GalaxyHudScreen.CameraFreeSeat` exists to stop.
+- **Every landing made under the live cell moves the CELL and nothing else** (owner rulings
+  2026-08-31): the cell glides to the thing's square, `zoomStep` is the same before and after, and
+  the tree cursor does not move at all — so the mode still ends on the row it was armed from. That
+  covers the scanner's Alt+Home, a bookmark jump, Ctrl+L and a notification's show-location alike,
+  because they are one landing (`MapLandings.Decide` with `inspectLive`). Two checks catch a
+  regression: `zoomStep` either side, and the cursor probed before arming and again after Escape.
+  The camera frame-trace is still the finer one — **one** decelerating run of samples ending at the
+  square's centre, with nothing after it.
+- **Ctrl+I refuses a row that stands nowhere.** On a CONSTELLATION heading it is silent, arms nothing
+  and moves nothing (`speech: []`, `live=False`, cursor unmoved) — the check is worth keeping because
+  the failure mode was not a crash but a cell opening a stretch of sky away, at the constellation's
+  centroid. On a system row, a planet, a lane or a bookmark row it still arms at that row's own
+  place. To enumerate the refuse-list on any fixture, walk `render.Order` for the map stop and ask
+  `GalaxyHudScreen.RowPlace` up each row's ancestry: the rows where no ancestor answers are the ones
+  Ctrl+I refuses.
 - **A PARKED bookmark jump reads no cell out loud, by design** (a jump announces once — the row it
   lands on). So it is the wrong route for measuring a cell's wording: the reading is still in the
   review buffer (`buffer.first` → "bookmark 1", then "Unexplored", "-68, 18"), and out loud it comes

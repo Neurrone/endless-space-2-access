@@ -339,20 +339,18 @@ namespace ES2Access.Screens
         /// <c>docs/interaction.md</c>). So jump-then-Enter is how a bookmark aims an order.
         ///
         /// With the inspect cursor LIVE this is not a landing of its own at all: it is the page's one
-        /// landing (<c>GalaxyHudScreen.GoTo</c>), which already knows how to move the cell, seat the
-        /// tree cursor under it silently, tell the mode where it now stands and leave the camera to
-        /// the cell (<see cref="MapLandings.Decide"/>, owner ruling 2026-08-31 - nothing changes the
-        /// zoom under the cell). A bookmark arrives exactly as the scanner's go-to does, because it
-        /// IS the scanner's go-to.
+        /// landing (<c>GalaxyHudScreen.GoTo</c>), which moves the CELL and nothing else - not the tree
+        /// cursor, not the zoom (<see cref="MapLandings.Decide"/>, owner rulings 2026-08-31). The cell
+        /// reading is the one utterance, and leaving the mode later puts the player back on the row
+        /// they armed it from, because nothing ever moved it. A bookmark arrives exactly as the
+        /// scanner's go-to does, because it IS the scanner's go-to.
         ///
-        /// PARKED is the one shape that landing cannot make, and it is a difference of SPEECH rather
-        /// than of camera: the player is on another stop, so the landing that brings them back to the
-        /// map is the one utterance they get (owner ruling 2026-08-31 - a jump announces exactly
-        /// once), and the cell is moved silently behind it. The landing table's under-cell plan says
-        /// the opposite in both halves - the tree move silent, the cell's own move spoken - because it
-        /// was written for a player who is already reading the cell. So the pairing is made here for
-        /// that case only. **Anything changed about the seat, the reseat or the camera in
-        /// <c>GalaxyHudScreen.GoTo</c> has to be looked at here too, and the other way round.**
+        /// PARKED is the shape that landing cannot make, and it is a difference of SPEECH: the player
+        /// is on another stop, so somebody has to bring them back to the map, and a stop landing
+        /// announces itself. The map stop is therefore focused SILENTLY and the mode's own resume
+        /// reads the new cell - one utterance, and it names the place jumped to rather than whichever
+        /// row the map stop was left on. Coming back to that stop lands on the row the mode was armed
+        /// from, which is where Escape would have put them anyway, so the two agree.
         /// </summary>
         private bool Go(StarSystemNode system, ControlId row, GalaxyPosition at)
         {
@@ -368,16 +366,12 @@ namespace ES2Access.Screens
             // remembers nothing at all).
             _screen.NoteLeap();
 
-            // The row the tree cursor is put on UNDER the cell: a system is seated on its own row and
-            // not inside it, because going inside is what brings the camera in and the mode leaves the
-            // picture alone. Leaving the mode then lands there, and a step further in zooms as any
-            // tree walk does.
-            ControlId seat = system != null ? GalaxyHudScreen.SystemRow(system) : row;
             if (GalaxyInspect.Active)
             {
+                ControlId aim = system != null ? GalaxyHudScreen.SystemRow(system) : row;
                 MapTarget target = system != null
-                    ? MapTarget.Place(system, seat, at)
-                    : MapTarget.Point(seat, at);
+                    ? MapTarget.Place(system, aim, at)
+                    : MapTarget.Point(aim, at);
                 _screen.GoTo(target, MapCamera.Auto);
                 return true;
             }
@@ -387,12 +381,8 @@ namespace ES2Access.Screens
                 double east;
                 double north;
                 GalaxyCoordinates.Offsets(at, out east, out north);
-                bool landed = Seat(navigator, seat, at, true);
-                _screen.Inspect.MoveTo(
-                    MapCoordinates.Round(east),
-                    MapCoordinates.Round(north),
-                    landed
-                );
+                navigator.FocusStop(GalaxyHudScreen.SystemStop, false);
+                _screen.Inspect.MoveTo(MapCoordinates.Round(east), MapCoordinates.Round(north));
                 return true;
             }
 
@@ -407,45 +397,6 @@ namespace ES2Access.Screens
                 navigator.FocusNode(row);
             }
 
-            return true;
-        }
-
-        /// <summary>
-        /// Put the tree cursor on the bookmark's own row underneath the cell, and tell the mode that
-        /// is where it now stands.
-        ///
-        /// Without the second half, Escape out of the mode undid the jump: leaving puts the player
-        /// back on the control the mode was ARMED from, camera and all
-        /// (<see cref="GalaxyInspect.Reseat"/>), so a player who swept to a bookmark and pressed
-        /// Escape was returned to wherever they had been ten minutes earlier.
-        ///
-        /// **The LIVE case does not come through here** - it is the page's own landing, which makes
-        /// this same pairing once for every caller (<c>GalaxyHudScreen.GoTo</c>). What is left here is
-        /// the PARKED jump alone, whose announcement contract that landing cannot express (see
-        /// <see cref="Go"/>). The two are a knowing duplicate of one pairing: change one and read the
-        /// other.
-        ///
-        /// Answers whether the cursor was really aimed at the BOOKMARK's own row, which is what tells
-        /// the parked jump whether its landing has already named the place
-        /// (<see cref="GalaxyInspect.MoveTo"/>).
-        /// </summary>
-        private bool Seat(GraphNavigator navigator, ControlId seat, GalaxyPosition at, bool announce)
-        {
-            if (seat == null)
-            {
-                // A bookmark this build lists no row for at all. The cell has still gone there, so
-                // only the seat is missing; parked, the map stop's own landing is the way back - and
-                // it names wherever that stop was left, not the bookmark, so the cell keeps its voice.
-                if (announce)
-                {
-                    navigator.FocusStop(GalaxyHudScreen.SystemStop);
-                }
-
-                return false;
-            }
-
-            navigator.FocusNode(seat, announce);
-            _screen.Inspect.Reseat(seat, at);
             return true;
         }
     }

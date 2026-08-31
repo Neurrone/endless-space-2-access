@@ -221,24 +221,16 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Put the cell somewhere and say NOTHING - the same move, for a caller that is about to make
+        /// Put the cell somewhere and say NOTHING here - the same move, for the one caller that makes
         /// the reading happen by another route.
         ///
-        /// The one caller is a bookmark jump made while the mode is PARKED: the player is standing on
-        /// another stop, so the cell is not what they are reading, and the jump puts them back on the
-        /// map.
-        ///
-        /// <paramref name="landingSpeaks"/> is that jump saying it has already aimed a focus landing
-        /// at the very place the cell is being moved to. **A jump announces exactly once** (owner
-        /// ruling 2026-08-31): the landing on the bookmark's own row is the announcement, and the
-        /// coming-back-to-the-map resume that would ordinarily read the cell out
-        /// (<see cref="Update"/>) said the same place a second time. So that ONE resume is silenced -
-        /// the buffer is still filled, and an ordinary Tab-away/Tab-back still speaks, because the
-        /// silence is armed by the jump and expires on its own. False where the jump could not seat
-        /// the cursor on the bookmark's row at all, since then the landing is about somewhere else
-        /// and the cell is the only thing that would name where the player has been sent.
+        /// That caller is a jump made while the mode is PARKED: the player is standing on another
+        /// stop, so the cell is not what they are reading. The jump puts them silently back on the map
+        /// and the mode's own resume reads the new cell out (<see cref="Update"/>), which is the one
+        /// utterance a jump is allowed - and it names the place they jumped to rather than the row
+        /// they happened to leave the map on.
         /// </summary>
-        public bool MoveTo(int x, int y, bool landingSpeaks)
+        public bool MoveTo(int x, int y)
         {
             if (!_live)
             {
@@ -248,11 +240,6 @@ namespace ES2Access.Screens
             _x = x;
             _y = y;
             Show();
-            if (landingSpeaks)
-            {
-                _silentResume = SilentResumeFrames;
-            }
-
             return true;
         }
 
@@ -322,25 +309,6 @@ namespace ES2Access.Screens
 
             Enter(true, x, y);
             return true;
-        }
-
-        /// <summary>
-        /// The tree cursor was moved UNDER the cell by a landing the player asked for (the page's own
-        /// <c>GoTo</c> while the mode is up), so the place leaving the mode puts them back on is that
-        /// landing rather than wherever the mode was opened from.
-        ///
-        /// Without it a go-to made from inside the mode was undone by Escape: the cursor went back to
-        /// the node the player armed the mode on, and the camera with it.
-        /// </summary>
-        public void Reseat(ControlId id, UnityEngine.Vector3 at)
-        {
-            if (!_live)
-            {
-                return;
-            }
-
-            _entry = id;
-            _entryAt = new GalaxyPosition(at);
         }
 
         /// <summary>Once per frame from the pump, after the screens have settled and before the
@@ -573,7 +541,6 @@ namespace ES2Access.Screens
             _driving = null;
             _wasOnMap = false;
             _resume = 0;
-            _silentResume = 0;
             _leaps.Clear();
             _entry = null;
             InspectMarker.Hide();
@@ -702,18 +669,12 @@ namespace ES2Access.Screens
         /// arrived at announces itself in a burst that interrupts, and a line queued into the middle of
         /// that burst is thrown away.
         ///
-        /// The one resume that does NOT speak is the one a parked bookmark jump caused
-        /// (<see cref="MoveTo"/>): that jump has already announced the place, on the row it seated the
-        /// cursor on, and reading the cell here made the arrival be said twice. The cell is still READ
-        /// - the review buffer is filled by the same call - only the sentence is dropped.
+        /// EVERY resume speaks. A jump made while the mode is parked deliberately lands the player
+        /// back on the map in silence, so that this reading is the one utterance it makes
+        /// (<see cref="MoveTo"/>).
         /// </summary>
         public void Update()
         {
-            if (_silentResume > 0)
-            {
-                _silentResume--;
-            }
-
             bool onMap = Active;
             if (onMap && !_wasOnMap)
             {
@@ -742,31 +703,13 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // Read either way: the sentence and the review buffer are one call, and a resume that said
-            // nothing must still leave the cell's lines where the player can go back over them.
-            string cell = Look();
-            if (_silentResume > 0)
-            {
-                _silentResume = 0;
-                return;
-            }
-
-            Voice.Say(cell, false);
+            Voice.Say(Look(), false);
         }
 
         /// <summary>How long the resume line waits for the stop the player has just landed on to finish
         /// announcing itself - a fifth of a second, several times the gap between the parts of one
         /// arrival.</summary>
         private const int ResumeFrames = 12;
-
-        /// <summary>How long a parked jump's silence stays armed. It has to outlast the landing it is
-        /// waiting on - a focus aimed into a shut constellation opens one branch per build before the
-        /// cursor can arrive - and then EXPIRE, so that a landing which never happened costs at most a
-        /// couple of seconds rather than silencing the player's own next Tab back to the map.</summary>
-        private const int SilentResumeFrames = 120;
-
-        /// <summary>What is left of that arming (<see cref="MoveTo"/>).</summary>
-        private int _silentResume;
 
         // ---- the mode ----
 
@@ -821,18 +764,31 @@ namespace ES2Access.Screens
         private double _lowY;
         private double _highY;
 
-        private void Enter()
+        private bool Enter()
         {
-            Enter(false, 0, 0);
+            return Enter(false, 0, 0);
         }
 
         /// <summary>The entry itself. <paramref name="placed"/> is the scanner's entry
         /// (<see cref="ArmAt"/>), which chooses the square the cell opens on; the place the player is
         /// STANDING is remembered either way, because that is where leaving puts the cursor and the
         /// camera back.</summary>
-        private void Enter(bool placed, int atX, int atY)
+        private bool Enter(bool placed, int atX, int atY)
         {
             GraphNavigator navigator = ModEntry.Navigator;
+            GalaxyPosition at;
+            bool stands = FocusedPlace(navigator, out at);
+            if (!stands && !placed)
+            {
+                // THE CURSOR IS ARMED ON A PLACE, and a row that is a heading rather than a place has
+                // none to arm on (owner ruling 2026-08-31) - a constellation, and anything else that
+                // groups rows without standing anywhere itself. Silently nothing, exactly as the set
+                // key answers the same rows: the chord was pressed for somewhere, and there is no
+                // somewhere here to refuse. Nothing is touched on the way out - not the search, not
+                // the entry memo - because nothing happened.
+                return false;
+            }
+
             _entry = navigator == null ? null : navigator.FocusedKey;
             if (navigator != null)
             {
@@ -844,8 +800,7 @@ namespace ES2Access.Screens
                 navigator.ClearSearch();
             }
 
-            GalaxyPosition at;
-            if (FocusedPlace(navigator, out at))
+            if (stands)
             {
                 _entryAt = at;
                 double east;
@@ -856,8 +811,8 @@ namespace ES2Access.Screens
             }
             else
             {
-                // Home, which is where the pair "0, 0" is - the one place on this map every player
-                // already knows.
+                // A square the SCANNER chose, arriving with no row under the cursor to measure from -
+                // the camera goes back to home when the mode ends, the one place every player knows.
                 _entryAt = GalaxyCoordinates.Origin();
                 _x = 0;
                 _y = 0;
@@ -881,7 +836,6 @@ namespace ES2Access.Screens
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
             _wasOnMap = true;
             _resume = 0;
-            _silentResume = 0;
             _leaps.Clear();
             // A camera closer than the ceiling is pulled out to it, so enough of the map is visible
             // around the square; one already further out is the player's own choice and stays
@@ -903,6 +857,7 @@ namespace ES2Access.Screens
                 true
             );
             Settle(false);
+            return true;
         }
 
         /// <summary>Leave the mode. <paramref name="deferred"/> is the ending that happened during a
@@ -931,7 +886,6 @@ namespace ES2Access.Screens
             _driving = null;
             _wasOnMap = false;
             _resume = 0;
-            _silentResume = 0;
             _leaps.Clear();
             InspectMarker.Hide();
             // The game's tooltip was the CELL's while the mode drove the map (Point), so the mode
@@ -941,6 +895,12 @@ namespace ES2Access.Screens
             _aim.Clear();
             PointerFocus.Release();
             GraphNavigator navigator = ModEntry.Navigator;
+            // ESCAPE RESTORES: the row the mode was armed from, which nothing moved while it was up
+            // (owner ruling 2026-08-31). Where that row has DIED under the player - a bookmark whose
+            // slot a dedupe took, a fleet the tree has re-filed - the nearest thing still standing
+            // near where it stood answers instead, because the place is what they meant. A landing
+            // Enter made overrides both: that is the player choosing somewhere, not coming back.
+            ControlId leaveOn = landing ?? _screen.RestoreRow(_entry, _entryAt);
             if (navigator != null)
             {
                 navigator.ClearVisual();
@@ -952,7 +912,22 @@ namespace ES2Access.Screens
                 // "only when the cursor moved" rule would leave the player hearing the exit line and
                 // nothing about where they are (owner-reported twice - first for the Enter landing,
                 // then for Escape; an earlier revision kept Escape quiet and that was wrong).
-                navigator.AnnounceNextLanding();
+                //
+                // Promised to the ROW BEING LEFT ON rather than to "whatever comes next", because the
+                // two differ in the one case that is not the ordinary one: when the armed-from row has
+                // DIED, the tree has already re-seated the cursor onto some neighbour of its own
+                // choosing and the restore lands somewhere else again (<see cref="GalaxyHudScreen.RestoreRow"/>).
+                // A promise to "next" was spent reading that neighbour out before the real landing
+                // arrived - measured, two utterances. Aimed at the target, the neighbour stays silent
+                // and the exit says exactly one landing.
+                if (deferred || leaveOn == null)
+                {
+                    navigator.AnnounceNextLanding();
+                }
+                else
+                {
+                    navigator.AnnounceLandingAt(leaveOn);
+                }
             }
 
             // Queued behind this line, both of them: the landing above announces itself with a queued
@@ -970,7 +945,7 @@ namespace ES2Access.Screens
             else
             {
                 Voice.Say(line, true);
-                ControlId to = landing ?? _entry;
+                ControlId to = leaveOn;
                 if (navigator != null && to != null)
                 {
                     navigator.FocusNode(to);
@@ -1725,6 +1700,21 @@ namespace ES2Access.Screens
                 )
                 {
                     Exit(false, marker.Id, true);
+                    return true;
+                }
+
+                // And LAST of all, a place the player named: a point bookmark has a row of its own in
+                // the tree and always has had, so the gap this closes was Enter's inventory and never
+                // the tree (owner ruling 2026-08-31). It is offered after everything the MAP draws,
+                // and only where the square holds exactly one and nothing else it could have meant -
+                // a bookmark on a star is that star's business, and the star has already won above.
+                if (contents.Bookmarks.Count == 1)
+                {
+                    ControlId spot = _screen.BookmarkedPoint(contents.Bookmarks[0]);
+                    if (spot != null)
+                    {
+                        Exit(false, spot, true);
+                    }
                 }
 
                 return true;
@@ -2541,11 +2531,17 @@ namespace ES2Access.Screens
                     return true;
                 }
 
-                IGameEntityWithGalaxyPosition placed =
-                    node.Id == null ? null : node.Id.Subject as IGameEntityWithGalaxyPosition;
-                if (placed != null)
+                // A STAR SYSTEM and nothing else (owner ruling 2026-08-31). Asking for any entity
+                // with a position let a row inherit its PARENT's, and a Constellation is such an
+                // entity - the centroid the map writes its name at - so Ctrl+I on a constellation
+                // heading armed the cell in the middle of a stretch of sky the player was not
+                // standing anywhere in. A grouping is not a place. What legitimately resolves this
+                // way is everything a system CONTAINS - a planet, a lane, a dossier, a berthed fleet -
+                // none of which has a position of its own because the map draws them all at the star.
+                StarSystemNode star = node.Id == null ? null : node.Id.Subject as StarSystemNode;
+                if (star != null)
                 {
-                    position = placed.GalaxyPosition;
+                    position = star.GalaxyPosition;
                     return true;
                 }
 

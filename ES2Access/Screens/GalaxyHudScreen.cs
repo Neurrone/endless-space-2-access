@@ -637,9 +637,6 @@ namespace ES2Access.Screens
             // has to be opened before there is anything in it to land on
             // (<see cref="FollowBookmarkLanding"/>).
             FollowBookmarkLanding();
-            // And the camera-free seat's own budget, so one that never landed is let go of rather
-            // than left to silence the player's next step onto that row.
-            ForgetStaleCameraFreeSeat();
             // Before the visual is followed, so that a window put right is what the pointer is then
             // aimed at, on the one frame (<see cref="ShowFocusedSystem"/>).
             ShowFocusedSystem();
@@ -1508,57 +1505,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// The one landing whose seat must NOT move the camera - written down here because the seat
-        /// and its focus visual are frames apart.
-        ///
-        /// A landing made under the live inspect cell moves the camera by moving the CELL, and the
-        /// cell's own slide is deliberately not the page's camera rule
-        /// (<c>GalaxyInspect.Show</c> calls the camera directly and bumps the counter
-        /// <see cref="Showing"/> stamps against). So the record reads stale by construction, and the
-        /// seat's focus visual - which arrives a dozen frames later, once the branch it was aimed into
-        /// has opened - asked the rule again and moved the camera a SECOND time, off the square and
-        /// onto the star: measured 2026-08-31 as a clean glide followed, twenty frames later, by a
-        /// one-frame twitch. This says "that landing already decided the camera", and the visual that
-        /// answers to it does nothing.
-        ///
-        /// Keyed by the id, so it can only ever silence the landing it was written for, and it lives
-        /// exactly as long as that landing can: the focus request's own budget
-        /// (<see cref="FocusRequest.DefaultFrames"/>), so the two give up together. A shorter one is
-        /// worse than none - measured 2026-08-31 with twelve frames, where the landing arrived on the
-        /// twentieth and moved the camera after all.
-        /// </summary>
-        private void CameraFreeSeat(ControlId id)
-        {
-            _cameraFreeSeat = id;
-            _cameraFreeSeatFrames = FocusRequest.DefaultFrames;
-        }
-
-        /// <summary>Whether this focus visual is the camera-free seat, consuming it if so.</summary>
-        private bool TakeCameraFreeSeat(ControlId id)
-        {
-            if (_cameraFreeSeat == null || id == null || !_cameraFreeSeat.Equals(id))
-            {
-                return false;
-            }
-
-            _cameraFreeSeat = null;
-            return true;
-        }
-
-        private ControlId _cameraFreeSeat;
-        private int _cameraFreeSeatFrames;
-
-        /// <summary>Let go of a camera-free seat whose landing never came, so it cannot silence the
-        /// player's own next step onto that row.</summary>
-        private void ForgetStaleCameraFreeSeat()
-        {
-            if (_cameraFreeSeat != null && --_cameraFreeSeatFrames <= 0)
-            {
-                _cameraFreeSeat = null;
-            }
-        }
-
         /// <summary>Whether the focus visual being committed right now is the cursor having been
         /// PLACED - moved by the player or seated by this page - as opposed to this page being
         /// re-entered or the visual being re-taken where it already was. Everything on this page that
@@ -1600,11 +1546,6 @@ namespace ES2Access.Screens
         public override void OnFocusVisual(GraphNode node)
         {
             if (!CursorMoved() || node == null || !SystemStop.Equals(node.StopKey))
-            {
-                return;
-            }
-
-            if (TakeCameraFreeSeat(node.Id))
             {
                 return;
             }
@@ -2481,11 +2422,13 @@ namespace ES2Access.Screens
         /// (<see cref="Arrive"/>), the go-to-location key, and a bookmark jump made with the inspect
         /// cell live (<see cref="GalaxyBookmarks"/> - the one bookmark shape this landing can express).
         ///
-        /// Under a live cell every one of them arrives the same way, and none of them changes the
-        /// zoom (owner ruling 2026-08-31): the cell's slide is the whole camera move, the tree cursor
-        /// is seated silently underneath it for the mode to end on, and the seat is marked camera-free
-        /// so its own focus visual does not move the picture a second time
-        /// (<see cref="CameraFreeSeat"/>).
+        /// Under a live cell every one of them arrives the same way: ONLY THE CELL MOVES (owner
+        /// rulings 2026-08-31). The zoom is not touched - the cell's own slide is the whole camera
+        /// move - and neither is the tree cursor, so leaving the mode puts the player back on the row
+        /// they armed it from rather than on whatever they last looked at through the square. That
+        /// second half reverses an earlier ruling of the same day which had the landing seat the
+        /// cursor underneath the cell; what died with it was a deferred seat, its camera-free mark and
+        /// a re-seat call on the mode - a lever apiece, all removed rather than left inert.
         ///
         /// The camera moves are marked as the MOD's own (<see cref="GalaxyLocate.Suppressed"/>): the
         /// mod pans through the same calls the game leads the player with, and an unmarked pan here
@@ -2534,19 +2477,7 @@ namespace ES2Access.Screens
                 GraphNavigator navigator = ModEntry.Navigator;
                 if (plan.FocusNode && target.Id != null && navigator != null)
                 {
-                    // Silent while the cell is what the player is reading: the tree move is felt when
-                    // the mode ends, which is the whole of what it is for.
                     navigator.FocusNode(target.Id, plan.AnnounceNode);
-                    if (plan.MoveCell)
-                    {
-                        _inspect.Reseat(target.Id, target.At);
-                        if (plan.Camera == MapCameraMove.None)
-                        {
-                            // This landing has DECIDED the camera is the cell's alone, so the seat it
-                            // is about to make must not move it either (<see cref="CameraFreeSeat"/>).
-                            CameraFreeSeat(target.Id);
-                        }
-                    }
                 }
 
                 if (target.Select != null && !plan.MoveCell)
@@ -3927,19 +3858,37 @@ namespace ES2Access.Screens
                 return false;
             }
 
+            return RowStands(hop.Return);
+        }
+
+        /// <summary>
+        /// Whether a row can still be landed on: it is in the render, or it is inside a branch that is
+        /// merely SHUT and will open on the way (a landing opens ancestors a level per build).
+        ///
+        /// The one way to tell "shut" from "gone" is the deepest ancestor the tree is still declaring:
+        /// shut, and the row is inside it and will arrive; open without the row in it, and the row is
+        /// not there any more. Shared by everything that has to decide whether a remembered id is
+        /// still worth landing on - the Backspace trail's entries and the inspect mode's way back.
+        ///
+        /// One false answer is possible and accepted: a branch opened on this very frame has not built
+        /// its children yet (<c>ReachStep.Waiting</c>), and a row asked about in that window reads as
+        /// gone. Nothing opens a branch at the moment either caller asks.
+        /// </summary>
+        internal bool RowStands(ControlId id)
+        {
             GraphNavigator navigator = ModEntry.Navigator;
             GraphRender render = navigator == null ? null : navigator.Render;
-            if (render == null || hop.Return == null)
+            if (render == null || id == null)
             {
                 return false;
             }
 
-            if (render.NodeAt(hop.Return) != null)
+            if (render.NodeAt(id) != null)
             {
                 return true;
             }
 
-            IList<object> keys = KeyGraph.AncestorKeys(hop.Return.StructuralKey);
+            IList<object> keys = KeyGraph.AncestorKeys(id.StructuralKey);
             for (int i = 0; i < keys.Count; i++)
             {
                 GraphNode ancestor = render.NodeAt(ControlId.Structural(keys[i]));
@@ -3950,6 +3899,86 @@ namespace ES2Access.Screens
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// WHERE TO PUT THE PLAYER BACK when the row they left is gone - the nearest thing on the map
+        /// that still STANDS somewhere, measured from the place that row stood at (owner ruling
+        /// 2026-08-31).
+        ///
+        /// The inspect mode is the caller: it remembers both the row it was armed from and that row's
+        /// PLACE, and a row can die under it - a bookmark whose slot a dedupe took, a fleet that has
+        /// arrived and been re-filed. Landing on nothing would leave the player wherever the tree
+        /// happened to seat them; the nearest surviving place puts them where they were LOOKING, which
+        /// is what "put me back" means. The dedupe case falls out for free: the slot that replaced
+        /// theirs is at distance zero and wins.
+        ///
+        /// **Escape alone gets this.** The Backspace trail is exact-or-drop, because it always has an
+        /// earlier entry to fall to; Escape has nothing behind it, so a near miss beats nothing.
+        ///
+        /// Candidates are the rows that stand somewhere THEMSELVES (<see cref="RowPlace"/>) - a row
+        /// that only borrows its parent's position is not one, for the same reason it cannot arm the
+        /// cell. Ties go to whoever is offered first (<see cref="NearestPick"/>), which is the reading
+        /// order of the stop.
+        /// </summary>
+        internal ControlId NearestPlacedRow(GalaxyPosition at)
+        {
+            GraphNavigator navigator = ModEntry.Navigator;
+            GraphRender render = navigator == null ? null : navigator.Render;
+            if (render == null)
+            {
+                return null;
+            }
+
+            NearestPick pick = new NearestPick(RestoreReach);
+            List<ControlId> rows = new List<ControlId>();
+            for (int i = 0; i < render.Order.Count; i++)
+            {
+                GraphNode node = render.Order[i];
+                GalaxyPosition stands;
+                if (
+                    node.Id == null
+                    || !SystemStop.Equals(node.StopKey)
+                    || !RowPlace(node.Id, out stands)
+                )
+                {
+                    continue;
+                }
+
+                double dx = stands.X - at.X;
+                double dy = stands.Y - at.Y;
+                pick.Offer(rows.Count, dx * dx + dy * dy);
+                rows.Add(node.Id);
+            }
+
+            return pick.Found ? rows[pick.Index] : null;
+        }
+
+        /// <summary>Where a row stands ITSELF, or false for one that stands nowhere of its own - the
+        /// shared question behind arming the cell, the leap trail's origin and the restore. A star
+        /// system is its own place; everything keyed structurally answers through
+        /// <see cref="PositionOf"/>.</summary>
+        internal bool RowPlace(ControlId id, out GalaxyPosition at)
+        {
+            StarSystemNode star = id == null ? null : id.Subject as StarSystemNode;
+            if (star != null)
+            {
+                at = star.GalaxyPosition;
+                return true;
+            }
+
+            return PositionOf(id, out at);
+        }
+
+        /// <summary>How far the restore will look for a surviving place. Larger than the galaxy on
+        /// purpose: there is no distance at which "nowhere" beats "a long way off".</summary>
+        private const double RestoreReach = 10000.0;
+
+        /// <summary>The row the inspect mode leaves the player on: the one it was armed from where that
+        /// still stands, and the nearest surviving place where it does not.</summary>
+        internal ControlId RestoreRow(ControlId armedFrom, GalaxyPosition at)
+        {
+            return RowStands(armedFrom) ? armedFrom : NearestPlacedRow(at);
         }
 
         /// <summary>Ask for the branch, then hand the rest to the page's one landing

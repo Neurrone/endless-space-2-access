@@ -574,22 +574,31 @@ closest-neighbour), never with a neighbourhood radius, and never "nearest system
 Contested Influence's own Alt+Home still ARMS the inspect cursor, since a square of sky is a thing by
 design rather than a lost one.
 
-**UNDER A LIVE INSPECT CELL, NO LANDING CHANGES THE ZOOM** (owner ruling 2026-08-31, reversing the
-2026-08-22 line that had a place's zoom override the cell's own slide). While the player is driving a
-square about the map, that square is the only thing that moves the camera: a landing centres what it
-found and leaves the picture at the scale the player chose. It is one rule for every gesture — the
-scanner's Alt+Home, a notification's show-location, Ctrl+L, travelling a lane, a bookmark jump —
-because they are all the one landing, and the change is one line of `MapLandings.Decide` rather than
-a case per caller. Leaving the mode then puts the cursor on what was landed on, the row framed and
-not dived into, and stepping INSIDE it zooms exactly as any tree walk does (measured 2026-08-31:
-Alt+Home onto Heracles held `zoomStep` at 8, Escape landed on Heracles's own row, and one Right
-answered "Zoom level 13 of 15, System Overview"). **The seat such a landing makes is marked
-camera-free** (`GalaxyHudScreen.CameraFreeSeat`): the cell's slide is not the page's camera rule, so
-the rule's record reads stale, and the seat's own focus visual — which arrives a dozen frames later,
-once the branch it was aimed into has opened — used to move the camera a SECOND time, off the square
-and onto the star (measured: a clean glide, then a one-frame twitch twenty frames later). The mark is
-keyed to the landing's own row and lives exactly as long as the focus request can, so the two give up
-together.
+**UNDER A LIVE INSPECT CELL, ONLY THE CELL MOVES** (owner rulings 2026-08-31). A landing made while
+the player is driving a square about the map moves the SQUARE and nothing else: not the zoom — that
+reverses the 2026-08-22 line which had a place's zoom override the cell's own slide, so the picture
+stays at the scale the player chose — and not the tree cursor, which reverses the reseat ruling made
+earlier the same day. It is one rule for every gesture — the scanner's Alt+Home, a notification's
+show-location, Ctrl+L, travelling a lane, a bookmark jump — because they are all the one landing, and
+it is two lines of `MapLandings.Decide` rather than a case per caller.
+
+**ESCAPE RESTORES; ENTER COMMITS** (owner ruling 2026-08-31, the settled shape of leaving the mode).
+Because nothing moves the cursor while the cell is up, **Escape always lands on the row the mode was
+armed from** — however far the cell was swept, jumped or travelled in between. Coming back is what
+Escape means. **Enter is the other half**: it exits on what the cell HOLDS, so a player who wants to
+stay where they swept to presses Enter rather than Escape, and stepping inside what they landed on
+zooms exactly as any tree walk does. What died with the reseat is worth naming, because all of it was
+built for it and none of it is left inert: the deferred seat, its camera-free mark, and the mode's
+`Reseat` entry point. The whole double-speak class went with it — there is no landing in flight at
+Escape any more.
+
+**Where the armed-from row has DIED while the mode was up** — a bookmark whose slot a dedupe took, a
+fleet the tree has re-filed — **Escape lands on the nearest surviving thing that stands somewhere**,
+measured from the place that row stood at (`GalaxyHudScreen.RestoreRow` → `NearestPlacedRow`, reusing
+`Core/UI/NearestPick.cs`). The place is what the player meant, and the replacement case falls out for
+free: a bookmark that took the old slot's tile is at distance zero and wins. **This is Escape's rule
+alone.** The Backspace trail stays exact-or-drop, because it always has an earlier entry to fall to;
+Escape has nothing behind it, so a near miss beats nothing at all.
 
 **The galaxy system readout says whose place it is** (owner ruling 2026-08-22): name, coordinates,
 `group`, then the OWNER WORD — the controlling empire as the game's own system dossier states it
@@ -647,7 +656,8 @@ from the game wherever a mod screen is focused, which costs nothing. While the m
 its keys at MODE level, ahead of the review chords and of navigation (`Screen.AnyKey` — the same hook
 the cutscene uses, and the same displacement the map already lives with under an armed targeting
 cursor): **arrows** move the cell by exactly its own size, **Enter** lands on the one thing in the
-cell (silent for none or several), **Escape** leaves ("Exited inspect mode"), **`+`/`-`** grow and
+cell (silent for none or several — **Enter commits, Escape restores**, below), **Escape** leaves
+("Exited inspect mode", on the row the mode was armed from), **`+`/`-`** grow and
 shrink it through 1/3/5/7/9/11 units, **Shift+arrows** go to the next INTERESTING cell and
 **Alt+Left/Right** travel by what the cell holds. **The cursor opens at 1 by 1** (owner ruling 2026-08-19), and
 at either END of that ladder the size key is consumed and SILENT rather than repeating the size it
@@ -684,7 +694,28 @@ short wait, so the arriving stop's own announcement is not cut off). ARMING obey
 pressed from another stop is NOT claimed and does nothing at all — no focus move, no arming, no speech
 (a jump to the map stop was tried and vetoed, 2026-08-17). **That veto is about a key that ARMS A
 MODE, not about moving the cursor**: Ctrl+G, whose whole job is to go to the map stop, is exactly the
-key the player would have had to press first, and it arms nothing (2026-08-22). Escape and the size
+key the player would have had to press first, and it arms nothing (2026-08-22).
+**WHAT ENTER LANDS ON, in order** (the inventory, extended 2026-08-31): the one PLACE in the square —
+a star system or a special node — else the one FLEET, else the one QUEST MARKER, else the one POINT
+BOOKMARK. Each tier needs exactly one of its kind and is only reached when the tiers above it have
+not answered, so a place beats a fleet standing at it and beats a bookmark on its tile (measured: a
+square holding Dusay, a fleet and bookmark 8 exits on Dusay's row). The bookmark tier is the newest
+and closes a gap that was Enter's and never the tree's — a point bookmark has always had a synthetic
+row; Enter simply did not know to offer it, so the square read "bookmark n" and answered nothing.
+Anything else — an empty square, two places, a probe, a missile, an ally's pin — is taken and silent,
+which is the refusal a key pressed speculatively mid-sweep should give.
+
+**THE CURSOR IS ARMED ON A PLACE, so a row that stands nowhere refuses** (owner ruling 2026-08-31):
+Ctrl+I on a CONSTELLATION heading is silent, arms nothing and moves nothing, exactly as Shift+n
+answers the same rows. A constellation is a grouping, not somewhere the player is standing — and the
+`Constellation` entity HAS a position, the centroid the map writes its name at, which is the trap:
+the arming used to walk up from a row that could not answer and take its parent's, so the cell opened
+a whole stretch of sky away from the heading the player was on. The walk now accepts a STAR SYSTEM
+and nothing else, which is what keeps a planet, a lane, a dossier or a berthed fleet arming at their
+star — none of those has a position of its own, because the map draws them all there. The refuse-list
+measured on the fixture is exactly the constellation headings; by the same rule any other grouping
+row with no place of its own joins it (the unexplored bucket, code-predicted — this fixture declares
+none). Escape and the size
 keys are claimed from the game ONLY while the mode is live AND on the map stop
 (`GalaxyInspect.KeysClaimed` → `Active` through
 `InputAction.ClaimedWhile`, the Space precedent), which is what leaves the game its own KeypadMinus
@@ -880,36 +911,21 @@ asked for on the press and the landing waits for the build that opens it
 (`GalaxyHudScreen.FollowBookmarkLanding`, 12 frames, falling back to the system's own row). A point
 bookmark lands on its own synthetic row, and the camera slides onto the point through the same rule.
 Inspect ON, the jump is **the page's own landing and nothing of its own** (`GalaxyHudScreen.GoTo`
-with a `MapTarget` — since 2026-08-31, when the under-cell no-zoom ruling removed the reason the
-bookmark had a copy): the cell moves to the bookmark's rounded spoken pair, the tree cursor is seated
-under it silently, the mode is never exited and the zoom is never touched, exactly as the scanner's
-go-to now behaves. PARKED is the one shape that landing cannot express — the difference is SPEECH,
-not camera — so the bookmark keeps its own pairing there: the cell is moved SILENTLY
-(`GalaxyInspect.MoveTo`) behind the landing that takes the player back to the map.
+with a `MapTarget`): the cell moves to the bookmark's rounded spoken pair and NOTHING else does — not
+the zoom, not the tree cursor — exactly as the scanner's go-to now behaves, so Escape afterwards
+still puts the player back where they armed the mode (**Under a live inspect cell**, above). PARKED
+is the one shape that landing cannot express, and the difference is SPEECH: somebody has to bring the
+player back to the map, and a stop landing announces itself. So the map stop is focused SILENTLY
+(`GraphNavigator.FocusStop(stop, announce: false)`) and the mode's own resume reads the new cell —
+one utterance, naming the place jumped to rather than whichever row the map stop was left on. That
+return lands on the armed-from row, which is where Escape would have gone anyway, so the two agree.
 An empty slot is a spoken refusal ("No bookmark n") and moves nothing.
 **Backspace comes back from a jump** — the leap is remembered on the tree's trail, or on the cell's
 own stack while the inspect cursor is up (**Backspace: the screen's second command**, above). A jump
 made from another panel of the page remembers nothing, and an empty slot's refusal is not a leap.
 **A JUMP ANNOUNCES EXACTLY ONCE** (owner ruling 2026-08-31), whichever of the three shapes it takes:
 inspect off, the tree landing is the announcement; inspect live, the cell's own reading is; parked,
-the landing on the bookmark's row is — and the coming-back-to-the-map resume that would ordinarily
-read the cell out is silenced for that one landing, because it named the same place a second time.
-Only that landing's resume: the silence is armed by the jump, expires by itself
-(`GalaxyInspect.SilentResumeFrames`) and is not armed at all where the jump could not seat the
-cursor on the bookmark's row, so an ordinary Tab-away/Tab-back still re-reads the cell. **The cell
-is still READ** — the sentence and the review buffer are one call — so a silenced resume still
-leaves the cell's lines under the review chords.
-**EVERY inspect-mode jump reseats the tree cursor underneath, onto the bookmark's own row**
-(owner ruling 2026-08-31; live it is the landing's own seat, parked it is `GalaxyBookmarks.Seat` =
-`GraphNavigator.FocusNode` + `GalaxyInspect.Reseat`). Leaving the mode puts the
-player back on the control it was ARMED from, camera and all, so without it Escape undid the jump;
-with it, Escape lands on the bookmark. A system is seated on its own ROW and never inside it —
-going inside is what brings the camera in, and the mode is deliberately leaving the picture alone.
-LIVE the seat is silent (the cell is what is being read); PARKED it is the landing the player hears,
-which is also what took the stray zoom out of the parked jump: aimed at whatever the map stop
-happened to remember, the camera followed that row on the way, and a remembered PLANET row zoomed
-into a system nobody had asked for (measured 8 → 12, stage B; measured holding at 8 with the
-same fixture, stage C).
+the cell's reading again, behind a silent return to the map.
 
 **A bookmarked system's row ends with "bookmark n"**, last of everything it says: it is the player's
 own note about the place, not a fact about it. A bookmark whose system this build lists no row for

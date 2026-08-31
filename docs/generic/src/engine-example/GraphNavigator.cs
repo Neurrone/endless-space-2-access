@@ -50,6 +50,10 @@ namespace ES2Access.UI
         private ControlId _lastSpokenKey;
         private GraphNode _lastSpokenNode;
 
+        /// <summary>The one landing promised a reading when it arrives
+        /// (<see cref="AnnounceLandingAt"/>), or null.</summary>
+        private ControlId _announceLandingAt;
+
         // A requested landing, applied on the next EnsureFocus - and kept across the frames a branch
         // takes to open where the control asked for is inside a collapsed one (see FocusRequest).
         private FocusRequest _pendingFocus;
@@ -377,6 +381,32 @@ namespace ES2Access.UI
         {
             _lastSpokenKey = null;
             _lastSpokenNode = null;
+            // A newer instruction than any target already armed below, and it supersedes it: this one
+            // means "read whatever is under the cursor next", which answers the same question.
+            _announceLandingAt = null;
+        }
+
+        /// <summary>
+        /// The same news, promised to ONE landing that has been asked for and has not arrived yet.
+        ///
+        /// <see cref="AnnounceNextLanding"/> says "read whatever the cursor is on next", which is
+        /// right when the caller knows the cursor is already where it will end up. It is wrong when
+        /// the landing is somewhere ELSE: the promise is then spent on the row being passed over, and
+        /// the player hears that row and then the one they asked for. The galaxy's inspect mode is the
+        /// caller - leaving it lands on the row it was armed from, and where that row has died under
+        /// the player the landing is the nearest surviving place instead, which is not where the
+        /// cursor is standing (owner ruling 2026-08-31: one utterance on the landing).
+        ///
+        /// So this arms the promise for a TARGET. The memo of what was last said is left alone, which
+        /// is what keeps the row being passed over silent under the ordinary rule, and the
+        /// announcement fires when - and only when - the cursor arrives at the id asked for.
+        ///
+        /// A landing that never arrives leaves the promise standing, which is harmless: it can only
+        /// force a reading of the very node it names, which an arrival there would have said anyway.
+        /// </summary>
+        public void AnnounceLandingAt(ControlId id)
+        {
+            _announceLandingAt = id;
         }
 
         /// <summary>
@@ -444,8 +474,14 @@ namespace ES2Access.UI
         ///
         /// It lands where TAB would land (<see cref="KeyGraph.StopLanding(GraphRender,GraphState,object)"/>
         /// - the remembered position, else the selected member, else the first control), so the key and
-        /// Tab agree about where a panel begins.</summary>
-        public bool FocusStop(object stopKey)
+        /// Tab agree about where a panel begins.
+        ///
+        /// <paramref name="announce"/> false is for a caller that is bringing the player back to a
+        /// panel in order to say something ELSE about where they now are, and must not say two things:
+        /// the galaxy's parked inspect jump moves the player back to the map so that the cell's own
+        /// reading is the arrival (<c>GalaxyBookmarks.Go</c>). The cursor still MOVES, and is still a
+        /// placement - only the line is left out.</summary>
+        public bool FocusStop(object stopKey, bool announce = true)
         {
             if (_screen == null || _graph == null || !_graph.Rerender())
             {
@@ -460,6 +496,14 @@ namespace ES2Access.UI
             }
 
             _placed = true;
+            if (!announce)
+            {
+                // The memo is stamped as though it had been read, which is what keeps the ordinary
+                // per-frame announcement from saying it a moment later.
+                _lastSpokenKey = _graph.CurrentNode.Id;
+                _lastSpokenNode = _graph.CurrentNode;
+                return true;
+            }
 
             AnnounceMove(
                 new MoveResult { From = from, To = _graph.CurrentNode, Moved = true }
@@ -800,7 +844,19 @@ namespace ES2Access.UI
                 }
             }
 
-            if ((_lastSpokenKey == null || !_lastSpokenKey.Equals(node.Id)) && !_screen.BetweenViews)
+            // A landing somebody PROMISED this node gets read whether or not the cursor moved to
+            // reach it (<see cref="AnnounceLandingAt"/>), and the promise is spent here rather than by
+            // whatever the cursor was standing on while the landing was in flight.
+            bool promised = _announceLandingAt != null && _announceLandingAt.Equals(node.Id);
+            if (promised)
+            {
+                _announceLandingAt = null;
+            }
+
+            if (
+                (promised || _lastSpokenKey == null || !_lastSpokenKey.Equals(node.Id))
+                && !_screen.BetweenViews
+            )
             {
                 // Queued: an arrival follows the screen name rather than cutting it off.
                 Voice.Say(GraphAnnouncer.Compose(_lastSpokenNode, node), false);

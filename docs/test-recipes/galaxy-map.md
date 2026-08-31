@@ -994,11 +994,18 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   way. Stage it by leaping out of a system and collapsing it with Left on its header before pressing
   Backspace; the branch re-opens and the exact child is landed on ("Zoom level 13 of 15, System
   Overview" then the child).
-- **The reseat is proved by ESCAPE, not by the jump.** After an inspect-mode jump the tree cursor is
-  moved silently underneath, so the evidence is `/input ui.back` afterwards: "Exited inspect mode"
-  then the bookmark's own row ("… Lors, -66, -26, group, No owner, **bookmark 3**, collapsed, 2 of
-  3"). Probing the cursor immediately after the jump can still show the OLD row — the seat is a
-  pending focus and lands a frame or two later.
+- **ESCAPE RESTORES, ENTER COMMITS** (2026-08-31, replacing the reseat this line used to describe).
+  After ANY jump made under the live cell the tree cursor has NOT moved, so `/input ui.back` lands on
+  the row the mode was armed from — quote that row before arming, it is the expectation, and it holds
+  however far the cell was jumped, arrowed or Alt-travelled in between. To stay where the cell was
+  swept to, `ui.activate` instead: Enter exits on what the square holds. Both say exactly ONE landing
+  line after "Exited inspect mode"; two lines is the regression, and it is worth re-running with the
+  jump and the Escape back-to-back, because the old defect only appeared when a landing was still in
+  flight.
+- **Enter's inventory, in precedence order**: the one place (system or special node), else the one
+  fleet, else the one quest marker, else the one point bookmark. Each tier needs exactly one and is
+  reached only when the tiers above stay silent — measured: a square holding Dusay, a fleet AND
+  bookmark 8 exits on Dusay's row. Anything else is taken and silent.
 - **Fixture: two standing bookmarks.** Campaign `ee4517b1…` carries `slot1` = a POINT at spoken
   `-68, 18` (in Corvus, nothing there) and `slot3` = the SYSTEM Lors, left set on purpose so both
   kinds are reachable without making one first. The file is
