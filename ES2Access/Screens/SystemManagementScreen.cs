@@ -3646,6 +3646,13 @@ namespace ES2Access.Screens
         /// (<see cref="GlobalHud"/>): the resource's name, then what is held and what the next turn
         /// does to it, computed rather than read off the labels - the labels are animated towards
         /// their targets and a reading taken mid-slide is a number the game never displayed.
+        ///
+        /// Which of the two figures is said is the labels' answer, though: this panel's items keep
+        /// their stock label HIDDEN at prefab level (measured - the banner asks for neither
+        /// <c>ShowAllStock</c> nor <c>ShowIfNonZeroStock</c>) and draw the per-turn figure alone, and a
+        /// system-located resource's stock is always 0, so reading one would say a "0" the game never
+        /// wrote. Each figure is therefore GATED on its own label being drawn and still COMPUTED from
+        /// the cache when it is.
         /// </summary>
         private static void AddResources(List<Cell> cells, ColonyInfoSidePanel panel)
         {
@@ -3676,14 +3683,10 @@ namespace ES2Access.Screens
                     }
 
                     GuiLocatedResource it = resource;
+                    ResourceItem row = item;
                     NodeVtable vtable = GraphNodes.Readout(
                         () => AgeText.Clean(it.Title),
-                        () =>
-                            GlobalHud.StockAndNet(
-                                it.GetStockValueFromCache(),
-                                it.GetNetValueFromCache(),
-                                it.GetStockValueFromCache() < 10f ? 1 : 0
-                            ),
+                        () => ResourceFigures(row, it),
                         null,
                         item.Tooltip
                     );
@@ -3705,6 +3708,39 @@ namespace ES2Access.Screens
             {
                 Log.Warn("system: reading the colony panel's resources threw: " + e);
             }
+        }
+
+        /// <summary>What one resource row says about its numbers: whichever of the holding and the
+        /// per-turn change the row is actually DRAWING, in the game's own number formatting - both,
+        /// the rate alone (which is all this panel ever draws), the holding alone, or nothing at all.
+        ///
+        /// The labels decide WHICH figures are said and the cache decides WHAT they say: a label is
+        /// animated towards its target, so its own text mid-slide is a number the game never settled
+        /// on, while a hidden label keeps whatever it was last bound with and would invent a figure
+        /// that is nowhere on the screen.
+        ///
+        /// Decimals follow the item's own rule for each label (<c>ResourceItem.Refresh</c> :110-144):
+        /// one below ten, none above.</summary>
+        private static string ResourceFigures(ResourceItem item, GuiLocatedResource resource)
+        {
+            float stock = resource.GetStockValueFromCache();
+            float net = resource.GetNetValueFromCache();
+            bool heldDrawn = AgeWidgets.DrawnLabel(item.StockLabel) != null;
+            bool rateDrawn = AgeWidgets.DrawnLabel(item.NetLabel) != null;
+            if (heldDrawn && rateDrawn)
+            {
+                return GlobalHud.StockAndNet(stock, net, stock < 10f ? 1 : 0);
+            }
+
+            if (rateDrawn)
+            {
+                return ModStrings.Format(
+                    ModStrings.SystemNetPerTurn,
+                    GlobalHud.Amount(net, true, net < 10f ? 1 : 0)
+                );
+            }
+
+            return heldDrawn ? GlobalHud.Amount(stock, false, stock < 10f ? 1 : 0) : null;
         }
 
         /// <summary>How many wrecked Arks are drifting in this system, which is the only thing the

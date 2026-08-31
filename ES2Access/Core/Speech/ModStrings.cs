@@ -1249,6 +1249,11 @@ namespace ES2Access.Core.Speech
         public const string SystemIndustryCost = "system.industry-cost";
         public const string SystemShipSelected = "system.ship-selected";
 
+        /// <summary>A rate with no holding beside it: the colony panel's resource strip draws each
+        /// resource's per-turn figure and hides the stock label entirely, so the row says what the
+        /// next turn does and nothing about what is held.</summary>
+        public const string SystemNetPerTurn = "system.net-per-turn";
+
         // The panel the game puts up while a fleet is selected. Its three panels draw no headings of
         // their own, so these name them; everything inside them is in the game's own words - including
         // the ship toolbar, which the game names under the action each button carries out. The panel is
@@ -2424,6 +2429,7 @@ namespace ES2Access.Core.Speech
             { SystemProgress, "{0} percent built" },
             { SystemIndustryCost, "{0} industry" },
             { SystemShipSelected, "selected" },
+            { SystemNetPerTurn, "{0} per turn" },
             { FleetsPanelOpened, "Fleet panel open for {0}" },
             { FleetsPanelClosed, "Fleet panel closed" },
             { FleetsActionsPanel, "Fleet actions" },
