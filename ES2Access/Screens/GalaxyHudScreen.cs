@@ -33,10 +33,10 @@ namespace ES2Access.Screens
     /// There is no separate stop for the fleets. A fleet is not somewhere else on the screen: it is
     /// drawn AT a system or ON a lane between two of them, and either way it is walked under a SYSTEM -
     /// after that system's planets and starlanes. A fleet in orbit hangs under the system it is
-    /// orbiting; a fleet under way hangs under BOTH systems its lane runs between, saying which lane it
-    /// is on and which way that lane leaves, because a lane is drawn map geometry and either end is a
-    /// true answer to "where is it". A fleet crossing OPEN SPACE has no drawn road and hangs under its
-    /// DESTINATION alone (<see cref="AddFreeMoving"/>), or at the top of the systems list where the map
+    /// orbiting; a fleet under way on a lane hangs under the system it is ARRIVING at, saying which
+    /// lane it is on and which way that lane leaves, because what the map shows of a fleet under way
+    /// is where it is and where it is going, never where it set out from. A fleet crossing OPEN SPACE
+    /// hangs under its DESTINATION the same way (<see cref="AddFreeMoving"/>), or at the top of the systems list where the map
     /// has not named that destination (<see cref="AddAdrift"/>). A list of
     /// every fleet in the empire, in a corner of its own, described a picture the map does not draw and
     /// made "where is it" a question the player had to answer from a sentence rather than from the tree
@@ -1579,8 +1579,8 @@ namespace ES2Access.Screens
         /// <see cref="MapLandings.Decide"/> makes).
         ///
         /// The fleet is the case that needed saying, because the tree files it under a STAR: a fleet
-        /// crossing a lane has a row under each end of that lane, and one crossing open space a row
-        /// under the system it is bound for - a filing that says where to LOOK for the row, not where
+        /// crossing a lane and one crossing open space alike get a row under the system they are bound
+        /// for - a filing that says where to LOOK for the row, not where
         /// the thing is. Resolving such a row to its system ancestor sent the camera into a star's
         /// orbital view to show a fleet that is not drawn in that picture at all. A fleet PARKED at a
         /// star really is at that star, and keeps the system-ancestor resolution and its zoom in on
@@ -1639,14 +1639,14 @@ namespace ES2Access.Screens
         /// <summary>
         /// The thing a row on this stop stands for, where the map draws that thing out on the map
         /// rather than at a star: a probe under way, an obliterator missile in flight, an ally's pin,
-        /// and a fleet away from any berth - the four kinds whose rows this page keys STRUCTURALLY,
-        /// so that <c>ControlId.Subject</c> is null for exactly the rows the camera most needs to
-        /// name (<see cref="PositionOf"/> walks these same lists for the same reason).
+        /// and a fleet away from any berth - the four kinds that travel, and so the four whose rows
+        /// are ANCHORED on the thing itself (<see cref="PlacedRows.Anchor"/>; <see cref="PositionOf"/>
+        /// walks these same lists for the same reason).
         ///
         /// Resolved through the page's own indexes - the very lists the rows are declared from - and
         /// never by reading a row's KEY, which is a string this page builds and not a fact about the
-        /// map. A fleet flying a lane has a row under each end of it and the index holds both, so
-        /// either row answers.
+        /// map. A fleet flying a lane has exactly one row, under the end it is arriving at
+        /// (<see cref="Bound"/>), and the index holds that one.
         ///
         /// A fleet PARKED at a star is deliberately not one of these: the map draws it in the star's
         /// own berth, so the star is the place the player is reading and the row keeps its
@@ -3435,12 +3435,11 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The fleets one system holds - parked, under way on its lanes, and crossing open
-        /// space TO it, all three of which hang under the system itself. A lane is reached from both of
-        /// its ends, so a fleet flying one is indexed under each end: two results with one name, which
-        /// is the right way round, because either end is a true answer to "where is it" and dropping one
-        /// would make the answer depend on which system the search happened to reach first. A crossing
-        /// of open space is indexed under its DESTINATION alone (<see cref="FreeMovingAt"/>), because
-        /// that is the one end the map itself shows. Every list here is the one the BRANCH is built
+        /// space TO it, all three of which hang under the system itself. A fleet flying a lane is
+        /// indexed under the end it is ARRIVING at and no other (<see cref="EnRouteOn"/>), exactly as a
+        /// crossing of open space is indexed under its DESTINATION alone
+        /// (<see cref="FreeMovingAt"/>): that is the one end the map itself shows, and one row per
+        /// fleet is one search result per fleet. Every list here is the one the BRANCH is built
         /// from - the lanes the map draws (<see cref="LanesOf"/>) and the same crossings - so the index
         /// cannot offer a fleet the branch will not hold.</summary>
         private static void IndexPlace(
@@ -5760,10 +5759,10 @@ namespace ES2Access.Screens
         /// here has to be made poorer than anything else.
         ///
         /// The fleets are in THREE groups because the map draws them at three distances: what is parked
-        /// here, then what is under way on the lanes leaving here - the latter under both ends of its
-        /// lane, each saying which lane it is on (<see cref="AddEnRoute"/>) - and last what is crossing
-        /// the open space TOWARDS here with no lane to fly (<see cref="AddFreeMoving"/>), which hangs
-        /// under this end alone.
+        /// here, then what is under way on the lanes leaving here - the latter under the end it is
+        /// arriving at, each saying which lane it is on (<see cref="AddEnRoute"/>) - and last what is
+        /// crossing the open space TOWARDS here with no lane to fly (<see cref="AddFreeMoving"/>).
+        /// Both of the moving groups hang under the destination alone.
         /// </summary>
         private void AddInside(
             GraphBuilder builder,
@@ -9116,15 +9115,14 @@ namespace ES2Access.Screens
         ///
         /// A lane runs between two systems and the fleet flying it is at neither, so the map draws it
         /// out in between and the tree hangs it under the end it is ARRIVING at - the same end a free
-        /// mover hangs under, and the only one the picture says anything about (<see cref="Bound"/>).
-        /// A fleet STOPPED on a lane is heading for neither end and keeps a row under each. Under the
-        /// lane node itself is what this used to be, and a lane is a leaf now: travelling one is what
-        /// right means there.
+        /// mover hangs under, the only one the picture says anything about, and the ONLY host it gets
+        /// (<see cref="Bound"/>). Under the lane node itself is what this used to be, and a lane is a
+        /// leaf now: travelling one is what right means there.
         ///
-        /// Keyed under the SYSTEM, exactly as a parked fleet is: the two hosts' keys differ by the
-        /// system in them, so the two nodes are distinct controls, and a fleet is parked or under way
-        /// and never both, so neither key can collide with the other set. The identity anchor rides
-        /// the SOLE host only (<see cref="EnRoute.Sole"/>).
+        /// Keyed under the SYSTEM, exactly as a parked fleet is: a fleet is parked or under way and
+        /// never both, so this key set cannot collide with the parked one. The row is anchored on the
+        /// fleet itself (<see cref="PlacedRows.Anchor"/>), which is sound precisely because there is
+        /// one row: a subject on two nodes is one control to the cursor.
         /// </summary>
         private static void AddEnRoute(GraphBuilder builder, string place, List<EnRoute> flying)
         {
@@ -9161,13 +9159,10 @@ namespace ES2Access.Screens
                             false
                         )
                     );
-                    // The anchor goes on the row that is the fleet's ONLY row. A fleet in transit hangs
+                    // The anchor goes on the row that is the fleet's ONLY row: a fleet in transit hangs
                     // under the end it is arriving at and nowhere else, so that row holds it and the
-                    // cursor rides it in as the key changes to the destination's. A fleet STOPPED on a
-                    // lane hangs under both ends, and there neither row takes it: where two nodes show
-                    // one entity at most one may carry the reference, or the cursor jumps between them
-                    // on every rebuild, and there is no reason to prefer one end of a stopped fleet.
-                    AddFleet(builder, leg.Sole ? it : null, place + "/fleet/" + it.GUID, vtable, badges);
+                    // cursor rides it in as the key changes to the destination's.
+                    AddFleet(builder, it, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
             catch (Exception e)
@@ -9503,14 +9498,15 @@ namespace ES2Access.Screens
                 PointAt(vtable, lozenge);
             }
 
-            // Keyed by the caller on the fleet's own GUID but NOT carrying the fleet as a reference:
-            // the selected-fleet panel is declared on this same screen, and its fleet line is keyed on
-            // the garrison - which for a fleet is this very object. Two nodes sharing a backing object
-            // are ONE control to the cursor (reference identity is followed before the structural key),
-            // so the panel's line teleported the player straight back out to the map on the next
-            // rebuild. The line is the one that needs the reference - its widget is a pool slot the game
-            // rebinds - and a GUID key is stable without one. It is also what lets a fleet under way be
-            // hosted under both ends of its lane at once.
+            // This row is the fleet's ONE subject-bearing node: the caller keys it on the fleet's own
+            // GUID under the place it is at or heading for, and anchors it on the fleet
+            // (<see cref="PlacedRows.Anchor"/>) so the cursor rides the fleet when a departure or an
+            // arrival re-files it under another system. One subject per render is the invariant that
+            // makes that safe - two nodes sharing a backing object are ONE control to the cursor
+            // (reference identity is followed before the structural key), and the selected-fleet
+            // panel's line, keyed on the garrison that IS this fleet, is therefore declared
+            // structurally (<c>FleetPanel</c>). It teleported the player back out to the map on the
+            // next rebuild both times that invariant was broken.
             return vtable;
         }
 
@@ -9595,11 +9591,6 @@ namespace ES2Access.Screens
             public int Number;
             public string Direction;
             public bool Wormhole;
-
-            /// <summary>Whether this system is the ONLY one hosting the fleet - it is the end the
-            /// fleet is arriving at. False for a fleet stopped on the lane, which hangs under both
-            /// ends (<see cref="Bound"/>).</summary>
-            public bool Sole;
         }
 
         /// <summary>
@@ -9621,11 +9612,7 @@ namespace ES2Access.Screens
                 for (int j = 0; j < onLane.Count; j++)
                 {
                     Fleet fleet = onLane[j];
-                    bool sole;
-                    if (
-                        Holds(flying, fleet)
-                        || !Bound(positioning, fleet, lanes[i].Link, node, out sole)
-                    )
+                    if (Holds(flying, fleet) || !Bound(positioning, fleet, node))
                     {
                         continue;
                     }
@@ -9637,7 +9624,6 @@ namespace ES2Access.Screens
                             Number = i + 1,
                             Direction = CompassDirections.KeyForBearing(lanes[i].Bearing),
                             Wormhole = lanes[i].Wormhole,
-                            Sole = sole,
                         }
                     );
                 }
@@ -9658,45 +9644,31 @@ namespace ES2Access.Screens
         /// selected, the path AHEAD. So a fleet in transit hangs under the end it is arriving at, the
         /// same end a free mover hangs under, and it appears once for everyone.
         ///
-        /// A fleet on a lane that is not under way at all - stopped between two stars - is heading for
-        /// neither end, so there is no destination to prefer and it keeps the row under EACH end that
-        /// it has always had. The rule is about a fleet IN TRANSIT; a fleet that has stopped is as much
-        /// at one end's lane as at the other's.
+        /// So the destination is the SOLE host, with no second case to fall back on: "a fleet stopped
+        /// mid-lane with no destination", which this used to hang under both ends, is unreachable by
+        /// the game's own rules. A fleet is only in this list because <c>FleetPresence.Between</c>
+        /// put it there, and that requires <c>IsInMovement</c> plus a leg whose start and goal are the
+        /// lane's two extremities. <c>IsInMovement</c> is <c>Movement.IsValid</c> - start and goal are
+        /// valid <c>NodePosition</c>s and nothing more (<c>Movement.cs</c>): there is no "actively
+        /// moving" sense to it, an out-of-movement-points fleet keeps its valid leg, and cancelling an
+        /// order leaves start and goal intact (<see cref="UI.FleetPresence"/>). <c>GetGameNode</c> is a
+        /// plain array index answering a node for any valid position (<c>Galaxy.cs</c>). So
+        /// <see cref="GoalOf"/> resolves to one of the two extremities for every fleet this walk can
+        /// see, and the fleet appears under that one.
         ///
-        /// <paramref name="sole"/> is that difference, answered for the caller: true when this node is
-        /// the destination and therefore the ONLY host, false when the fleet has stopped and both ends
-        /// carry a row for it. It decides which of the two rows may hold the fleet as its identity
-        /// anchor - at most one node may carry a reference, or the cursor jumps between them.
+        /// What is left is degenerate failure - no positioning service, or a throw - and there the
+        /// fleet is simply UNLISTED rather than hosted somewhere chosen by a rule: a row built on a
+        /// read that failed is worth less than no row, and there is nothing to tiebreak with.
         /// </summary>
-        private static bool Bound(
-            IPositioningService positioning,
-            Fleet fleet,
-            Link link,
-            StarSystemNode node,
-            out bool sole
-        )
+        private static bool Bound(IPositioningService positioning, Fleet fleet, StarSystemNode node)
         {
-            sole = false;
             try
             {
-                GameNode goal = GoalOf(positioning, fleet);
-                if (
-                    goal != null
-                    && (
-                        ReferenceEquals(goal, link.ExtremityNode1)
-                        || ReferenceEquals(goal, link.ExtremityNode2)
-                    )
-                )
-                {
-                    sole = ReferenceEquals(goal, node);
-                    return sole;
-                }
-
-                return true;
+                return ReferenceEquals(GoalOf(positioning, fleet), node);
             }
             catch (Exception)
             {
-                return true;
+                return false;
             }
         }
 

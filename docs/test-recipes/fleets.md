@@ -11,8 +11,9 @@ game-side facts are in `docs/fleets.md`.
 **Destination-only, for lane fleets and free movers alike.** A fleet in transit is declared under
 the endpoint it is flying TO and nowhere else — a lane fleet saying which of THAT system's lanes it
 is on, a free mover reading "free moving to ⟨system⟩". The independent oracle is the leg itself:
-`IPositioningService.GetGameNode(fleet.Position.Movement.Goal)`. A fleet on a lane that is NOT under
-way keeps a row under each end, which is what it always had — the rule is about transit. The LANE
+`IPositioningService.GetGameNode(fleet.Position.Movement.Goal)`, and it always answers one of the
+lane's two ends — "on a lane with no destination" is unreachable (`docs/fleets.md`), so there is no
+second-host case to test for and each lane fleet has exactly ONE row. The LANE
 node's own "what is flying this lane" phrase is not reconciled with it: a lane is a leaf, so its
 count is a statement about the lane rather than about children it does not have.
 

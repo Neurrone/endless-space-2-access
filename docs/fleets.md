@@ -89,10 +89,22 @@ and ship transfer. Index and charter: `README.md`.
   fleet's committed path is drawn ahead of it as dots and numbered turn markers; `Fleet.Path` starts
   at the node being flown towards, so the source is not in it, and the only place the game writes a
   destination as text is owner-gated (`PanelFeatureGarrisonInfoAutomatedFleet` :77-85). A lane fleet
-  keeps its two rows, because a lane is drawn geometry with both ends on the screen.
+  is filed the same way, under the extremity its leg is flying TO and no other.
   `GalaxyHudScreen.CrossingOpenSpace` is the one test (`Linked(start, goal)` over the start node's own
   `Links`), which is also what keeps this list and `EnRouteOn` from both claiming one fleet — two
   claims under one system is a duplicate control id and throws the page out of `Build`.
+- **"On a lane with no destination" does not exist: every fleet on a lane is flying to one of its
+  two ends.** A fleet enters a lane's list only through `FleetPresence.Between`, which demands
+  `IsInMovement` AND that the leg's start and goal node-positions be the lane's two extremities.
+  `IsInMovement` is `Movement.IsValid` — start and goal are valid `NodePosition`s, nothing more
+  (`decompiled/Assembly-CSharp/Movement.cs`): there is no "actively moving" sense to it, an
+  out-of-movement-points fleet keeps its valid leg, and a cancelled order leaves start and goal
+  intact (above). And `IPositioningService.GetGameNode` is a plain array index that answers a node
+  for any valid position and throws only for an invalid one
+  (`decompiled/Assembly-CSharp/Galaxy.cs` :374). So the goal of any listed fleet always resolves to
+  one lane extremity. **Mod consequence**: `GalaxyHudScreen.Bound` files a lane fleet under that end
+  alone with no second branch; on the degenerate failures left (no positioning service, a throw) the
+  fleet is left UNLISTED rather than hosted by a guess.
 - **A leg WITH a link the map does not draw is still not a free mover, and is still tree-absent.**
   `EnRouteOn` walks `LanesOf`, which drops a lane below the drawn intensity and a wormhole an empire
   cannot see, while `FreeMovingAt` skips any leg its two ends have a `Link` for. So a fleet flying an

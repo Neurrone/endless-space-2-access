@@ -1520,7 +1520,7 @@ namespace ES2Access.Screens
             }
 
             // A fleet the tree has NO node for. The tree hangs a fleet under the system it is parked
-            // at, under both ends of the starlane it is flying, under the DESTINATION of the
+            // at, under the END OF THE STARLANE it is flying towards, under the DESTINATION of the
             // open-space crossing it is making, or - where that destination is a place the map has
             // never named - at the top level of the systems stop. So a free mover always has a row
             // now, and what is left here is a fleet parked at a system the map does not name and a

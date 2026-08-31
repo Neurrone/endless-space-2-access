@@ -226,6 +226,14 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 
 - **A starlane is ONE `Link` shared by both end systems**, so per-system nodes built from a link
   must key STRUCTURALLY (measured as a focus teleport on a fog-off build).
+- **Mod policy: one game object is the `Subject` of at most ONE node per render.** Reconciliation
+  matches subjects before structural keys, so two nodes sharing a backing object are one control and
+  the cursor teleports between them on every rebuild. Met twice on this page: the shared `Link`
+  above, and the fleet — whose galaxy-tree row is the anchored one (`PlacedRows.Anchor`, so the
+  cursor follows a fleet as its key re-files under the system it arrives at) while the
+  selected-fleet panel's line, keyed on the garrison that IS that fleet, is declared structurally on
+  its stable GUID key (measured 2026-09-01: with the panel open, Tab to the Fleets stop announced
+  the line and the next rebuild threw focus back onto the map row).
 - **A link's drawn line is built full-length at ignition and only TINTED by exploration.**
   `GalaxyWarplink.Ignite` uses both extremities' real positions unconditionally;
   `GetIntensityFromState` (:362-372) paints Localized/Identified at intensity 0 — invisible —

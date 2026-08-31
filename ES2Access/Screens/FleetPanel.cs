@@ -769,7 +769,13 @@ namespace ES2Access.Screens
                 Cells.Add(
                     cells,
                     line.AgeTransform,
-                    ControlId.For(garrison, "fleets:line/" + garrison.GUID),
+                    // STRUCTURAL, not anchored on the garrison: the galaxy tree's own fleet row carries
+                    // that same Fleet object as its subject (<c>PlacedRows.Anchor</c>), and a subject
+                    // on two nodes is one control to the cursor - reconciliation searches subjects
+                    // before keys, so this line teleported the player back out to the map on the next
+                    // rebuild. A subject buys nothing here anyway: the GUID key is stable across the
+                    // pool's rebinds, which is the only change this row ever sees.
+                    ControlId.Structural("fleets:line/" + garrison.GUID),
                     vtable
                 );
                 AddLineBadge(cells, line, "fleets:line/" + garrison.GUID);
