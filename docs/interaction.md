@@ -855,6 +855,22 @@ the one thing that gets them what they asked for, and the size keys are already 
 The two that DO store are audible apart: the line names the system or says the pair. PARKED none of
 it arises, because the cursor is off the map stop and a set there is already silently nothing.
 
+**ONE PLACE, ONE SLOT** (owner ruling 2026-08-31; `MapBookmarks.SetAlone`). Setting a bookmark
+somewhere another slot already holds EMPTIES that other slot: the player meant to move the place to
+this digit, not to own it twice, and two digits for one place is a wasted slot out of ten. It is
+said, in a sentence of its own — "Bookmark ⟨new⟩ set on ⟨place⟩, replacing bookmark ⟨old⟩"
+(`galaxy.bookmark.set-replacing`; the plain line stays for a set that collided with nothing) —
+because a slot the player set must never go missing without their hearing it. **What counts as the
+same place is asked kind by kind**: two SYSTEM bookmarks are the same place when they are the same
+system, by GUID, so two different stars that happen to round into one spoken tile keep both slots;
+everything else is judged on the TILE, the rounded pair the player hears, so two points they cannot
+tell apart when read out are one place, and so is a point set on a bookmarked system's tile.
+Re-setting a slot the player is already standing on is the plain overwrite it always was — a slot
+never collides with itself. **The rule applies ON SET only**: a file that already holds two slots for
+one place keeps them until a set touches that place, because rewriting a player's file on the
+strength of a rule they have not invoked is not the store's business. Both changes go to disk in one
+write.
+
 **A jump is a FOCUS landing and never a click** — an armed targeting cursor is waiting for an Enter
 somewhere, and a jump that confirmed it would send a fleet to the bookmark instead of taking the
 player there (the travel-versus-click split above; measured 2026-08-31 with a `ProbeLaunchingCursor`

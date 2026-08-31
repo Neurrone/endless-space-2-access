@@ -234,12 +234,24 @@ namespace ES2Access.UI.Bookmarks
             }
         }
 
-        /// <summary>Put a bookmark in a slot and write the file, if this campaign has one yet.
+        /// <summary>
+        /// Put a bookmark in a slot and write the file, if this campaign has one yet.
+        ///
+        /// One place, one slot: a slot that already held this place is emptied in the same breath and
+        /// the file is written ONCE, so the two changes reach the disk together and no crash can leave
+        /// a place owned twice or not at all (<see cref="MapBookmarks.SetAlone"/> decides what "this
+        /// place" means; the tile it measures is measured from home, which is why the origin comes in
+        /// from here).
+        ///
+        /// Answers the slot that was emptied, or <c>'\0'</c> - what the gesture needs to tell the
+        /// player their other bookmark has moved here.
         /// </summary>
-        public static void Set(char digit, MapBookmark bookmark)
+        public static char Set(char digit, MapBookmark bookmark)
         {
-            Slots.Set(digit, bookmark);
+            GalaxyPosition origin = GalaxyCoordinates.Origin();
+            char emptied = Slots.SetAlone(digit, bookmark, origin.X, origin.Y);
             Save();
+            return emptied;
         }
 
         /// <summary>Let go of everything - mod teardown. A campaign with a file will read it again;

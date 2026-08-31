@@ -142,16 +142,19 @@ namespace ES2Access.Screens
             if (system != null)
             {
                 GalaxyPosition at = system.GalaxyPosition;
-                MapBookmarkStore.Set(digit, MapBookmark.OfSystem(system.GUID, at.X, at.Y));
-                Say(digit, system.LocalizedName);
+                char replaced = MapBookmarkStore.Set(
+                    digit,
+                    MapBookmark.OfSystem(system.GUID, at.X, at.Y)
+                );
+                Say(digit, system.LocalizedName, replaced);
                 return true;
             }
 
             GalaxyPosition point;
             if (PointOf(focused, out point))
             {
-                MapBookmarkStore.Set(digit, MapBookmark.AtPoint(point.X, point.Y));
-                Say(digit, GalaxyCoordinates.Text(point));
+                char replaced = MapBookmarkStore.Set(digit, MapBookmark.AtPoint(point.X, point.Y));
+                Say(digit, GalaxyCoordinates.Text(point), replaced);
                 return true;
             }
 
@@ -185,13 +188,16 @@ namespace ES2Access.Screens
             {
                 case CellSubject.Place:
                     GalaxyPosition star = place.GalaxyPosition;
-                    MapBookmarkStore.Set(digit, MapBookmark.OfSystem(place.GUID, star.X, star.Y));
-                    Say(digit, place.LocalizedName);
+                    char onStar = MapBookmarkStore.Set(
+                        digit,
+                        MapBookmark.OfSystem(place.GUID, star.X, star.Y)
+                    );
+                    Say(digit, place.LocalizedName, onStar);
                     return true;
 
                 case CellSubject.Point:
-                    MapBookmarkStore.Set(digit, MapBookmark.AtPoint(at.X, at.Y));
-                    Say(digit, GalaxyCoordinates.Text(at));
+                    char onPoint = MapBookmarkStore.Set(digit, MapBookmark.AtPoint(at.X, at.Y));
+                    Say(digit, GalaxyCoordinates.Text(at), onPoint);
                     return true;
 
                 case CellSubject.Crowded:
@@ -203,10 +209,28 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void Say(char digit, string where)
+        /// <summary>
+        /// What a set says: which slot, and the place it now holds - the system's name, or the pair
+        /// for a bare point of space.
+        ///
+        /// <paramref name="replaced"/> is the slot this set TOOK the place from, where one place was
+        /// already bookmarked twice over (one place, one slot -
+        /// <see cref="MapBookmarks.SetAlone"/>). It gets a whole sentence of its own rather than a
+        /// clause glued onto the plain one, so that a language which puts the news first can: a slot
+        /// the player set has just been emptied, and hearing about it now is the difference between a
+        /// bookmark that moved and one that went missing.
+        /// </summary>
+        private static void Say(char digit, string where, char replaced)
         {
             Voice.Say(
-                ModStrings.Format(ModStrings.GalaxyBookmarkSet, digit.ToString(), where),
+                replaced == '\0'
+                    ? ModStrings.Format(ModStrings.GalaxyBookmarkSet, digit.ToString(), where)
+                    : ModStrings.Format(
+                        ModStrings.GalaxyBookmarkSetReplacing,
+                        digit.ToString(),
+                        where,
+                        replaced.ToString()
+                    ),
                 true
             );
         }

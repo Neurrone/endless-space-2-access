@@ -1011,8 +1011,22 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
   the top of the file is never clobbered. Files from before 2026-08-31 use the bare `<guid>.cfg`
   name and are NOT migrated — delete one and set a bookmark to regenerate it. A DIFFERENT campaign has its own file and reads empty — that is the keying working,
   not a lost store (`docs/saves.md`).
-- **Do not put two slots on one system.** The row's word comes from one digit per system GUID, so
-  the second slot silently wins the word; pick a fresh system per slot when measuring.
+- **You CANNOT put two slots on one system any more** (2026-08-31): a set takes the place off
+  whichever slot held it and says so — "Bookmark 9 set on 0, 6, replacing bookmark 8". So a measuring
+  run that wants several slots must use several PLACES, and a test that expected two slots on one
+  tile now measures the dedupe instead. Two SYSTEM bookmarks collide by GUID; everything else by the
+  rounded pair. The rule fires ON SET only, so a file that already holds a duplicate (this fixture's
+  own `slot2`/`slot4` do) keeps it until a set touches that tile — which also makes such a file the
+  cheapest way to reach the multi-duplicate path.
+- **Staging a collision** without disturbing the standing slots: arm the inspect cell on a square no
+  slot holds, `galaxy.bookmarkSet8`, then `galaxy.bookmarkSet9` on the same square — the second says
+  the replacing line and the file shows `slot8` gone and `slot9` gained in ONE write. For the system
+  shape, put the cell on a star instead and use two slots the same way. Two shapes are NOT stageable
+  through the gestures on this fixture and are unit-tested only: two DIFFERENT systems sharing one
+  rounded tile (no such pair exists among the 16 perceived systems here), and a MIXED collision — a
+  point set can only happen where there is no system and a system set only where there is one, so
+  through the keys their tiles can never coincide; it needs a free-floating fleet or probe row, which
+  this fixture never draws.
 - **A point-bookmark row must answer for its OWN place, and the regression to check is Ctrl+I on
   one** (bug 2026-08-31): arming on a bookmark row opened the cell on the row's CONSTELLATION
   centroid, because the page's "where does this row stand" index (`GalaxyHudScreen.PositionOf`) had

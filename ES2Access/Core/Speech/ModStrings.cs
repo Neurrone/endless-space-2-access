@@ -529,6 +529,12 @@ namespace ES2Access.Core.Speech
         // names the place in the same breath, because a confirmation that does not say WHAT was
         // remembered is a confirmation the player has to go and check.
         public const string GalaxyBookmarkSet = "galaxy.bookmark.set";
+
+        // The same confirmation, for the set that took a place another slot already held: one place
+        // belongs to one slot, so the old one is emptied, and the player is told rather than left to
+        // find a slot missing later. One whole sentence and not the plain line with a clause bolted
+        // on, so a language that puts the news first can.
+        public const string GalaxyBookmarkSetReplacing = "galaxy.bookmark.set-replacing";
         public const string GalaxyBookmarkEmpty = "galaxy.bookmark.empty";
         public const string GalaxyBookmarkSuffix = "galaxy.bookmark.suffix";
         public const string GalaxyBookmarkPoint = "galaxy.bookmark.point";
@@ -2172,6 +2178,7 @@ namespace ES2Access.Core.Speech
                 "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}."
             },
             { GalaxyBookmarkSet, "Bookmark {0} set on {1}" },
+            { GalaxyBookmarkSetReplacing, "Bookmark {0} set on {1}, replacing bookmark {2}" },
             { GalaxyBookmarkEmpty, "No bookmark {0}" },
             { GalaxyBookmarkSuffix, "bookmark {0}" },
             { GalaxyBookmarkPoint, "Bookmark {0} at {1}" },

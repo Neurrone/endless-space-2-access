@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Settings;
+using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
 
 namespace ES2Access.Core.Bookmarks
@@ -57,6 +58,77 @@ namespace ES2Access.Core.Bookmarks
             }
 
             _slots[digit] = bookmark;
+        }
+
+        /// <summary>
+        /// Put a bookmark in a slot, and take that same PLACE out of every other slot: one place, one
+        /// slot (owner ruling 2026-08-31). Answers the first slot emptied, or <c>'\0'</c>.
+        ///
+        /// A player who bookmarks somewhere they have already bookmarked meant to MOVE it there, not
+        /// to own it twice - two digits for one place is two ways to say the same thing and one slot
+        /// wasted out of ten. Which slot went is ANSWERED rather than swallowed, because a slot the
+        /// player set must never vanish without their hearing it; the caller is the one that says so
+        /// (<c>GalaxyBookmarks.Say</c>).
+        ///
+        /// WHAT COUNTS AS THE SAME PLACE has to be asked kind by kind, because the two kinds are not
+        /// the same sort of thing. Two SYSTEM bookmarks are the same place when they are the same
+        /// system - by GUID, so two different stars that happen to round into one spoken tile are two
+        /// places and both keep their slots, which is the case a tile test would get wrong. Everything
+        /// else is judged on the TILE, the rounded pair the player hears: two points the player cannot
+        /// tell apart when they are read out are one place to them, and a point set on a system's tile
+        /// is the player saying "here" about somewhere they have already named.
+        ///
+        /// The origin is the caller's because the tile is measured from the empire's home and this
+        /// store has no way to ask where that is.
+        ///
+        /// Dedupe happens ON SET and never on load: a file that already holds two slots for one place
+        /// keeps them until a set touches that place, because rewriting a player's file behind their
+        /// back on the strength of a rule they have not invoked is not this store's business.
+        /// </summary>
+        public char SetAlone(char digit, MapBookmark bookmark, float originX, float originY)
+        {
+            char emptied = '\0';
+            for (int i = 0; i < Digits.Length; i++)
+            {
+                char other = Digits[i];
+                MapBookmark held;
+                if (other == digit || !_slots.TryGetValue(other, out held))
+                {
+                    continue;
+                }
+
+                if (!SamePlace(held, bookmark, originX, originY))
+                {
+                    continue;
+                }
+
+                _slots.Remove(other);
+                if (emptied == '\0')
+                {
+                    emptied = other;
+                }
+            }
+
+            Set(digit, bookmark);
+            return emptied;
+        }
+
+        /// <summary>Whether two bookmarks name the same place - see <see cref="SetAlone"/> for why the
+        /// question is asked differently of two systems than of anything else.</summary>
+        private static bool SamePlace(
+            MapBookmark one,
+            MapBookmark two,
+            float originX,
+            float originY
+        )
+        {
+            if (one.IsSystem && two.IsSystem)
+            {
+                return one.SystemGuid == two.SystemGuid;
+            }
+
+            return MapCoordinates.Round(one.X - originX) == MapCoordinates.Round(two.X - originX)
+                && MapCoordinates.Round(one.Y - originY) == MapCoordinates.Round(two.Y - originY);
         }
 
         /// <summary>Empty a slot.</summary>

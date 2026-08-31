@@ -164,6 +164,135 @@ namespace ES2Access.Tests.Bookmarks
             Assert.False(bookmarks.TryGet('1', out _));
         }
 
+        // ---- one place, one slot (owner ruling 2026-08-31) ----
+
+        // Home is deliberately NOT at the origin in these tests: the tile is measured from the
+        // empire's home, and a test that put home at (0,0) would pass for an implementation that
+        // forgot to subtract it.
+        private const float HomeX = 68.884f;
+        private const float HomeY = -22.45f;
+
+        private static char SetAlone(MapBookmarks bookmarks, char digit, MapBookmark bookmark)
+        {
+            return bookmarks.SetAlone(digit, bookmark, HomeX, HomeY);
+        }
+
+        /// <summary>Two SYSTEM bookmarks on the same system are one place: the older slot goes.
+        /// </summary>
+        [Fact]
+        public void SettingASystemAlreadyBookmarkedEmptiesTheOldSlot()
+        {
+            MapBookmarks bookmarks = new MapBookmarks();
+            SetAlone(bookmarks, '2', MapBookmark.OfSystem(162, 2.4f, -48.6f));
+            SetAlone(bookmarks, '7', MapBookmark.OfSystem(505, 53.0f, -27.0f));
+
+            Assert.Equal('2', SetAlone(bookmarks, '9', MapBookmark.OfSystem(162, 2.4f, -48.6f)));
+            Assert.False(bookmarks.TryGet('2', out _));
+            Assert.True(bookmarks.TryGet('9', out _));
+            // Nothing else is touched.
+            Assert.True(bookmarks.TryGet('7', out _));
+            Assert.Equal(2, bookmarks.Count);
+        }
+
+        /// <summary>Two POINT bookmarks the player cannot tell apart when they are read out - the same
+        /// rounded pair - are one place, however far apart the raw floats are inside the tile.
+        /// </summary>
+        [Fact]
+        public void SettingAPointOnABookmarkedTileEmptiesTheOldSlot()
+        {
+            MapBookmarks bookmarks = new MapBookmarks();
+            SetAlone(bookmarks, '3', MapBookmark.AtPoint(HomeX + 4.4f, HomeY - 2.4f));
+
+            Assert.Equal(
+                '3',
+                SetAlone(bookmarks, '8', MapBookmark.AtPoint(HomeX + 3.6f, HomeY - 1.6f))
+            );
+            Assert.False(bookmarks.TryGet('3', out _));
+            Assert.Equal(1, bookmarks.Count);
+        }
+
+        /// <summary>Mixed kinds collide on the tile, both ways round: a point set on a bookmarked
+        /// system's tile takes the system's slot, and a system set on a bookmarked point's tile takes
+        /// the point's.</summary>
+        [Fact]
+        public void APointAndASystemOnOneTileAreOnePlace()
+        {
+            MapBookmarks one = new MapBookmarks();
+            SetAlone(one, '1', MapBookmark.OfSystem(162, HomeX - 66.2f, HomeY - 26.2f));
+            Assert.Equal(
+                '1',
+                SetAlone(one, '4', MapBookmark.AtPoint(HomeX - 66.0f, HomeY - 26.0f))
+            );
+            Assert.False(one.TryGet('1', out _));
+
+            MapBookmarks two = new MapBookmarks();
+            SetAlone(two, '1', MapBookmark.AtPoint(HomeX - 66.0f, HomeY - 26.0f));
+            Assert.Equal(
+                '1',
+                SetAlone(two, '4', MapBookmark.OfSystem(162, HomeX - 66.2f, HomeY - 26.2f))
+            );
+            Assert.False(two.TryGet('1', out _));
+        }
+
+        /// <summary>The case a tile test alone would get wrong: two DIFFERENT systems close enough to
+        /// round into one spoken tile are two places, and both keep their slots.</summary>
+        [Fact]
+        public void TwoSystemsSharingATileDoNotCollide()
+        {
+            MapBookmarks bookmarks = new MapBookmarks();
+            SetAlone(bookmarks, '1', MapBookmark.OfSystem(162, HomeX + 4.4f, HomeY + 4.4f));
+
+            Assert.Equal(
+                '\0',
+                SetAlone(bookmarks, '5', MapBookmark.OfSystem(505, HomeX + 3.6f, HomeY + 3.6f))
+            );
+            Assert.True(bookmarks.TryGet('1', out _));
+            Assert.True(bookmarks.TryGet('5', out _));
+            Assert.Equal(2, bookmarks.Count);
+        }
+
+        /// <summary>Re-setting the SAME slot is the plain overwrite it always was - a slot does not
+        /// collide with itself, and nothing is reported as emptied.</summary>
+        [Fact]
+        public void ReSettingTheSameSlotIsAPlainOverwrite()
+        {
+            MapBookmarks bookmarks = new MapBookmarks();
+            SetAlone(bookmarks, '6', MapBookmark.OfSystem(162, 2.4f, -48.6f));
+
+            Assert.Equal('\0', SetAlone(bookmarks, '6', MapBookmark.OfSystem(162, 2.4f, -48.6f)));
+            Assert.True(bookmarks.TryGet('6', out _));
+            Assert.Equal(1, bookmarks.Count);
+
+            Assert.Equal('\0', SetAlone(bookmarks, '6', MapBookmark.AtPoint(HomeX, HomeY)));
+            Assert.Equal(1, bookmarks.Count);
+        }
+
+        /// <summary>A place nobody has bookmarked takes its slot and empties nothing.</summary>
+        [Fact]
+        public void SettingSomewhereNewEmptiesNothing()
+        {
+            MapBookmarks bookmarks = new MapBookmarks();
+            SetAlone(bookmarks, '1', MapBookmark.OfSystem(162, 2.4f, -48.6f));
+
+            Assert.Equal('\0', SetAlone(bookmarks, '2', MapBookmark.AtPoint(HomeX + 9f, HomeY)));
+            Assert.Equal(2, bookmarks.Count);
+        }
+
+        /// <summary>A file that already holds a duplicate keeps it until a set touches that place -
+        /// dedupe is a rule about SETTING, not a rewrite of the player's file on load. And when a set
+        /// does touch it, the place is left to one slot.</summary>
+        [Fact]
+        public void ExistingDuplicatesSurviveALoadAndGoOnTheNextSetThere()
+        {
+            MapBookmarks bookmarks = Read("slot2 = 0,1,2", "slot4 = 0,1,2");
+            Assert.Equal(2, bookmarks.Count);
+
+            Assert.Equal('2', SetAlone(bookmarks, '9', MapBookmark.AtPoint(1f, 2f)));
+            Assert.False(bookmarks.TryGet('2', out _));
+            Assert.False(bookmarks.TryGet('4', out _));
+            Assert.Equal(1, bookmarks.Count);
+        }
+
         [Fact]
         public void OnlyTheTenDigitKeysAreSlots()
         {

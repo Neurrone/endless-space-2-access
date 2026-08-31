@@ -194,6 +194,7 @@
   "galaxy.coordinates": "{0}, {1}",
   "galaxy.map-summary": "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}.",
   "galaxy.bookmark.set": "Bookmark {0} set on {1}",
+  "galaxy.bookmark.set-replacing": "Bookmark {0} set on {1}, replacing bookmark {2}",
   "galaxy.bookmark.empty": "No bookmark {0}",
   "galaxy.bookmark.suffix": "bookmark {0}",
   "galaxy.bookmark.point": "Bookmark {0} at {1}",
