@@ -790,13 +790,17 @@ own subject cannot stand in for a position here, because a `Constellation` IS an
 any stop of the page, because coming back to a place is what a player reading the notifications
 wants and making them Tab to the map first is asking them to be where they are trying to go.
 **With the inspect cell driving the map, the set key is made out of the CELL** (owner ruling
-2026-08-31; `GalaxyBookmarks.SetFromCell` ← `GalaxyInspect.CellPlace`): the square holding exactly
-one place bookmarks that place, GUID and all, so a bookmark made from the cell and one made from the
-tree are the same bookmark — "exactly one" being the cell's own rule for the one thing in it, since
-a cursor eleven units across can hold two stars and naming one would be a guess — and every other
-square keeps its own point of galaxy. Which happened is audible: the line names the system or says
-the pair. PARKED it never arises, because the cursor is off the map stop and a set there is already
-silently nothing.
+2026-08-31; `GalaxyBookmarks.SetFromCell` ← `GalaxyInspect.CellPlace` → `CellSubject`), and the
+square answers in one of three ways. **One place in it** bookmarks that place, GUID and all, so a
+bookmark made from the cell and one made from the tree are the same bookmark. **No place in it** —
+empty sky, a lane through it, a fleet crossing it — keeps the square's own point. **Two or more
+places in it REFUSES**, out loud and storing nothing: "Shrink cursor so it contains only one
+system" (`galaxy.bookmark.shrink`, owner's words, owner ruling 2026-08-31). Which star the player
+meant cannot be known at eleven units across, and quietly keeping the point instead is the worst of
+the three — they asked for a star and would be handed a piece of empty sky — so the refusal names
+the one thing that gets them what they asked for, and the size keys are already under their hand.
+The two that DO store are audible apart: the line names the system or says the pair. PARKED none of
+it arises, because the cursor is off the map stop and a set there is already silently nothing.
 
 **A jump is a FOCUS landing and never a click** — an armed targeting cursor is waiting for an Enter
 somewhere, and a jump that confirmed it would send a fleet to the bookmark instead of taking the

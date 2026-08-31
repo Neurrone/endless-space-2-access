@@ -11,6 +11,24 @@ using UnityEngine;
 
 namespace ES2Access.Screens
 {
+    /// <summary>What the square under the inspect cursor is, to a caller making something OUT of it -
+    /// today the bookmark set key (<see cref="GalaxyInspect.CellPlace"/>).</summary>
+    internal enum CellSubject
+    {
+        /// <summary>No cursor is up, so there is no square to ask about.</summary>
+        None,
+
+        /// <summary>The square holds no place at all: it stands for its own point of galaxy.</summary>
+        Point,
+
+        /// <summary>Exactly one place stands in it, and the square stands for that place.</summary>
+        Place,
+
+        /// <summary>More than one place stands in it, so the square stands for neither: which one the
+        /// player meant cannot be known, and the cursor is theirs to shrink.</summary>
+        Crowded,
+    }
+
     /// <summary>
     /// INSPECT MODE: a square of galaxy the player moves about the map and hears the contents of.
     ///
@@ -183,33 +201,42 @@ namespace ES2Access.Screens
         /// standing on, and the one place standing in it where there is exactly one.
         ///
         /// The place is offered by the cell's OWN rule for "the one thing in here"
-        /// (<see cref="Activate"/>): a cursor eleven units across can hold two stars, and naming one
-        /// of them would be a guess. Where it is not exactly one - an empty square, two stars, a fleet
-        /// crossing open space - the square itself is the answer, which is the bookmark's own default
-        /// and is never wrong.
+        /// (<see cref="Activate"/>). A square with NOTHING the tree calls a place in it - empty sky, a
+        /// fleet crossing it, a lane through it - is the square's own point, which is the bookmark's
+        /// default and is never wrong. A square with TWO is neither: naming one of them would be a
+        /// guess, and quietly keeping the point instead would hand the player a bookmark of empty sky
+        /// where they had asked for a star (owner ruling 2026-08-31 - the answer there is a refusal
+        /// naming the way out, <see cref="CellSubject.Crowded"/>).
         ///
         /// <paramref name="at"/> is the cell's centre turned back into a place on the map, the same
         /// way the camera turns it (<see cref="GalaxyCoordinates.Origin"/>): the cursor is held in the
         /// pair the player is told, and a bookmark is kept in the galaxy's own coordinates.
         /// </summary>
-        public bool CellPlace(out GalaxyPosition at, out StarSystemNode place)
+        public CellSubject CellPlace(out GalaxyPosition at, out StarSystemNode place)
         {
             at = default(GalaxyPosition);
             place = null;
             if (!_live)
             {
-                return false;
+                return CellSubject.None;
             }
 
             GalaxyPosition origin = GalaxyCoordinates.Origin();
             at = new GalaxyPosition(origin.X + _x, origin.Y + _y);
             Contents contents = Read();
-            if (contents.Places.Count + contents.Special.Count == 1)
+            int places = contents.Places.Count + contents.Special.Count;
+            if (places > 1)
             {
-                place = contents.Places.Count == 1 ? contents.Places[0] : contents.Special[0];
+                return CellSubject.Crowded;
             }
 
-            return true;
+            if (places == 0)
+            {
+                return CellSubject.Point;
+            }
+
+            place = contents.Places.Count == 1 ? contents.Places[0] : contents.Special[0];
+            return CellSubject.Place;
         }
 
         /// <summary>

@@ -327,11 +327,22 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   **"Dusay, bookmark 5, 1st Defenders Navy, Patrol, Star lane from Rigel to Dusay, …, 0, 0"**, and
   `buffer.first` reads the place line as **"Dusay, bookmark 5"**. Re-reading a cell after setting on
   it needs a step away and back (`ui.right` then `ui.left`) — the sentence is spoken on arrival.
-- **Setting from the cell.** `galaxy.bookmarkSet<n>` with the cursor live on a square holding one
-  system says "Bookmark n set on ⟨system⟩" and writes `slot<n> = <guid>,<x>,<y>`; on any other
-  square it says "Bookmark n set on ⟨pair⟩" and writes `slot<n> = 0,<x>,<y>`, where `<x>,<y>` is
-  `GalaxyCoordinates.Origin()` plus the cell's own pair — an arithmetic check the file can be read
-  against (home `68.884, -22.45`, cell `0, 4` → `0,68.8843002,-18.4499054`).
+- **Setting from the cell, three answers.** `galaxy.bookmarkSet<n>` with the cursor live on a square
+  holding ONE system says "Bookmark n set on ⟨system⟩" and writes `slot<n> = <guid>,<x>,<y>`; on a
+  square holding NO system it says "Bookmark n set on ⟨pair⟩" and writes `slot<n> = 0,<x>,<y>`,
+  where `<x>,<y>` is `GalaxyCoordinates.Origin()` plus the cell's own pair — an arithmetic check the
+  file can be read against (home `68.884, -22.45`, cell `0, 4` → `0,68.8843002,-18.4499054`). A
+  square holding TWO OR MORE refuses: **"Shrink cursor so it contains only one system"**, nothing
+  stored. A lane crossing the square does not make it a place: `-74, -31` at 9×9 names a starlane
+  and still sets a POINT.
+- **Staging a two-system square.** Cell centres are relative to where the cursor stands
+  (`InspectGrid.Step` adds the size), not a fixed grid, so ANY integer pair is a reachable centre —
+  drive one with `mode.JumpTo(x, y)` off the mode's private `_driving` field. On this fixture,
+  **(-65, -31) at 11×11 holds Lors and Idrus** ("Lors, -66, -26, bookmark 3, Idrus, -64, -34, …,
+  -65, -31") and **one `galaxy.inspectShrink` to 9×9 leaves only Idrus** — the refusal and the
+  ordinary set on one square, two key presses apart. The same 11×11 cell is also the check that
+  containment holds at a big cursor: a bookmarked system's suffix and a point bookmark's word are
+  both found from the edge of the square, not only at its centre.
 - **The skip stops at one.** Two adjacent bare squares in the same influence bubble differ only by
   the bookmark, which is the clean test: from `0, 6` southward, `galaxy.inspectSkipSouth` answers
   "Skipped 1 square" and then "bookmark 2, 0, 4". Pick the pair inside ONE bubble — an influence

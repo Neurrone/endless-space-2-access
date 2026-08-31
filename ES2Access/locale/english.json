@@ -197,6 +197,7 @@
   "galaxy.bookmark.empty": "No bookmark {0}",
   "galaxy.bookmark.suffix": "bookmark {0}",
   "galaxy.bookmark.point": "Bookmark {0} at {1}",
+  "galaxy.bookmark.shrink": "Shrink cursor so it contains only one system",
   "galaxy.inspect.entered": "Inspect mode",
   "galaxy.inspect.exited": "Exited inspect mode",
   "galaxy.inspect.cursor-size": "Cursor {0} by {1}",

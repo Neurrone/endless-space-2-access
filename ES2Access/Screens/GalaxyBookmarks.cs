@@ -163,9 +163,15 @@ namespace ES2Access.Screens
         /// tree row underneath it.
         ///
         /// A square holding exactly one place bookmarks that place, GUID and all, so a bookmark set
-        /// from the cell and one set from the tree are the same bookmark; anything else keeps the
-        /// square's own point of galaxy. Which is which is audible: the line says the system's name or
-        /// the pair, the same two answers the tree's own set has.
+        /// from the cell and one set from the tree are the same bookmark; a square holding none keeps
+        /// its own point of galaxy. Which of the two happened is audible: the line says the system's
+        /// name or the pair, the same two answers the tree's own set has.
+        ///
+        /// A square holding TWO OR MORE places REFUSES, out loud (owner ruling 2026-08-31, wording
+        /// his): nothing is stored, and the player is told the one thing that gets them what they
+        /// asked for - "Shrink cursor so it contains only one system". Silently keeping the square's
+        /// point instead would be the worst of the three: the player asked for a star, and would be
+        /// given a piece of empty sky that says nothing about which star they meant.
         ///
         /// PARKED, this is never reached - the cursor is on another stop, and a set off the map stop
         /// is already silently nothing (owner ruling 2026-08-31: focus is not on the map, so there is
@@ -175,22 +181,26 @@ namespace ES2Access.Screens
         {
             GalaxyPosition at;
             StarSystemNode place;
-            if (!_screen.Inspect.CellPlace(out at, out place))
+            switch (_screen.Inspect.CellPlace(out at, out place))
             {
-                return true;
-            }
+                case CellSubject.Place:
+                    GalaxyPosition star = place.GalaxyPosition;
+                    MapBookmarkStore.Set(digit, MapBookmark.OfSystem(place.GUID, star.X, star.Y));
+                    Say(digit, place.LocalizedName);
+                    return true;
 
-            if (place != null)
-            {
-                GalaxyPosition star = place.GalaxyPosition;
-                MapBookmarkStore.Set(digit, MapBookmark.OfSystem(place.GUID, star.X, star.Y));
-                Say(digit, place.LocalizedName);
-                return true;
-            }
+                case CellSubject.Point:
+                    MapBookmarkStore.Set(digit, MapBookmark.AtPoint(at.X, at.Y));
+                    Say(digit, GalaxyCoordinates.Text(at));
+                    return true;
 
-            MapBookmarkStore.Set(digit, MapBookmark.AtPoint(at.X, at.Y));
-            Say(digit, GalaxyCoordinates.Text(at));
-            return true;
+                case CellSubject.Crowded:
+                    Voice.Say(ModStrings.Get(ModStrings.GalaxyBookmarkShrink), true);
+                    return true;
+
+                default:
+                    return true;
+            }
         }
 
         private static void Say(char digit, string where)

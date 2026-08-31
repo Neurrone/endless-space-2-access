@@ -533,6 +533,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyBookmarkSuffix = "galaxy.bookmark.suffix";
         public const string GalaxyBookmarkPoint = "galaxy.bookmark.point";
 
+        // The one refusal the set key has: a cursor big enough to hold two systems cannot say which
+        // of them the player meant. It names the way OUT rather than the problem - the size keys are
+        // right there - and carries no digit, because which slot was asked for is not what went
+        // wrong.
+        public const string GalaxyBookmarkShrink = "galaxy.bookmark.shrink";
+
         public const string GalaxyInspectEntered = "galaxy.inspect.entered";
         public const string GalaxyInspectExited = "galaxy.inspect.exited";
         public const string GalaxyInspectCursorSize = "galaxy.inspect.cursor-size";
@@ -2162,6 +2168,7 @@ namespace ES2Access.Core.Speech
             { GalaxyBookmarkEmpty, "No bookmark {0}" },
             { GalaxyBookmarkSuffix, "bookmark {0}" },
             { GalaxyBookmarkPoint, "Bookmark {0} at {1}" },
+            { GalaxyBookmarkShrink, "Shrink cursor so it contains only one system" },
             { GalaxyInspectEntered, "Inspect mode" },
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
