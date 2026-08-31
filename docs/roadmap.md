@@ -547,8 +547,9 @@ belong in the files above.
   snapping back, speech alive — recipe in `test-recipes/mod-settings.md`), a key CAPTURE
   spoken live as Option/Cmd while the chord builds (same code path as the settled cells, but
   only physical keys drive a capture), and multiplayer chat opening on Option+Tab (the chat
-  binding the mod writes is `Alt+Tab` in the game's registry form there). A
-  macOS release zip and install script (`build_release.ps1` has no Mac path). The drawn
+  binding the mod writes is `Alt+Tab` in the game's registry form there). The
+  release zip and installer shipped 2026-08-31 (`build_release.sh`, `macos/install.sh`; the
+  zip's payload booted the live game end to end). The drawn
   (not spoken) key-cell text still shows the game's spelling on a Mac — cosmetic, sighted
   onlookers only.
 

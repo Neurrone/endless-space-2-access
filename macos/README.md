@@ -45,24 +45,26 @@ Windows build changes.
 
 1. Launch Endless Space 2 once from Steam without the mod. The game installs the Mono
    framework it needs on that first launch and quits; launch it again and quit from the menu.
-2. Download BepInEx 5.4.23.5 for macOS, `BepInEx_macos_universal_5.4.23.5.zip`, from
-   <https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5>, and unzip its contents into the
-   game folder, the one that CONTAINS `EndlessSpace2.app`:
-   `~/Library/Application Support/Steam/steamapps/common/Endless Space 2/`. Afterwards that
-   folder holds `BepInEx/`, `run_bepinex.sh`, `libdoorstop.dylib` and `.doorstop_version` next to
-   the .app.
-3. Copy the mod's `BepInEx/plugins/ES2Access/` folder into `BepInEx/plugins/`, and the mod's
-   `run-modded.sh` and `libprism.dylib` next to the .app (beside `run_bepinex.sh`). The mod
-   brings its own launcher because BepInEx's `run_bepinex.sh` cannot start this game's elderly
-   Mono correctly; the header of `run-modded.sh` explains the three problems it fixes.
-   `libprism.dylib` is the fallback speech backend and the game runs without it, at the cost
-   of speech if the system voice ever fails.
-4. Clear the quarantine flag macOS puts on downloaded libraries, or the game will refuse to
-   load them: in Terminal, `xattr -dr com.apple.quarantine "$HOME/Library/Application Support/Steam/steamapps/common/Endless Space 2"`.
-5. In Steam, open the game's Properties, Launch Options, and enter:
-   `"$HOME/Library/Application Support/Steam/steamapps/common/Endless Space 2/run-modded.sh" %command%`
-   with `$HOME` written out as your home folder (`/Users/yourname`).
-6. Launch from Steam. The mod announces itself once the main menu is up.
+2. Download the mod's macOS release zip (`EndlessSpace2Access-macOS-v<version>.zip`), unzip it
+   anywhere, and in Terminal run `./install.sh` from the unzipped folder. It places the BepInEx
+   runtime, the mod, the launcher and the Prism fallback library next to the .app, clears the
+   quarantine flag macOS puts on downloaded libraries, and prints the exact launch option line.
+   If the game is not in Steam's usual place, pass the game folder (the one that CONTAINS
+   `EndlessSpace2.app`) as the argument.
+3. In Steam, open the game's Properties, Launch Options, and paste the line the installer
+   printed - `"<game folder>/run-modded.sh" %command%`, quotes included.
+4. Launch from Steam. The mod announces itself once the main menu is up.
+
+Installing by hand instead: unzip the BepInEx 5.4.23.5 macOS build
+(`BepInEx_macos_universal_5.4.23.5.zip` from
+<https://github.com/BepInEx/BepInEx/releases/tag/v5.4.23.5>) into the game folder; copy the
+mod's `BepInEx/plugins/ES2Access/` into `BepInEx/plugins/`, and `run-modded.sh` and
+`libprism.dylib` next to the .app; `chmod +x run-modded.sh`; clear quarantine with
+`xattr -dr com.apple.quarantine "<game folder>"`; set the same launch option. The mod brings
+its own launcher because BepInEx's `run_bepinex.sh` cannot start this game's elderly Mono
+correctly - the header of `run-modded.sh` explains the three problems it fixes.
+`libprism.dylib` is the fallback speech backend; the game runs without it, at the cost of
+speech if the system voice ever fails.
 
 Logs: `<game folder>/BepInEx/LogOutput.log` for the mod, `~/Library/Logs/Unity/Player.log` for
 the game. The game's saves live in `~/Library/Application Support/Endless Space 2/`.
@@ -86,5 +88,9 @@ the game. The game's saves live in `~/Library/Application Support/Endless Space 
   voices, and speech would come out in the compact default voice instead of the Spoken Content
   one.
 - `dotnet test ES2Access.Tests/ES2Access.Tests.csproj` runs the offline tests.
+- `./build_release.sh` builds the player-facing macOS zip into `releases/` - the Release
+  build, the pinned BepInEx and Prism downloads (cached in gitignored `bepinex-build/` and
+  `prism-build/`), `install.sh` and this README staged together. Twin of `build_release.ps1`,
+  which keeps building the Windows zip.
 - The dev server's `POST /key` (real OS key events) is Windows-only and answers a refusal on
   macOS; `POST /input` runs actions everywhere.
