@@ -172,12 +172,13 @@ namespace ES2Access
             }
             else
             {
-                // On macOS the mod speaks the system voice itself and loads no Prism
-                // (PrismSpeech.Initialize); the preload is Windows-only.
-                if (
-                    Platform.IsMacOS
-                    || NativeLoader.LoadPrism(Path.Combine(host.GameRootPath, "prism.dll"))
-                )
+                // On macOS the mod speaks the system voice itself and Prism is only the
+                // fallback (PrismSpeech.Initialize), so a preload failure there costs the
+                // fallback, not speech.
+                bool prismLoaded = NativeLoader.LoadPrism(
+                    Path.Combine(host.GameRootPath, Platform.IsMacOS ? "libprism.dylib" : "prism.dll")
+                );
+                if (prismLoaded || Platform.IsMacOS)
                 {
                     Speech.Initialize();
                 }

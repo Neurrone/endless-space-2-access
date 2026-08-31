@@ -1,4 +1,5 @@
 using System;
+using ES2Access.Core.Native;
 using ES2Access.Core.Speech.Mac;
 using ES2Access.Core.Util;
 
@@ -13,10 +14,11 @@ namespace ES2Access.Core.Speech
     /// (the plugin preloads it by full path via NativeLoader), otherwise the first P/Invoke
     /// throws DllNotFoundException.
     ///
-    /// On macOS there is no Prism: the mod speaks the system voice itself
-    /// (<see cref="MacSystemVoice"/>), because VoiceOver's announcement API cannot queue and
-    /// AVSpeech's own queue leaves a gap between every line. The chokepoint and its callers do
-    /// not change; only what is behind <see cref="Initialize"/> does.
+    /// On macOS the mod speaks the system voice itself (<see cref="MacSystemVoice"/>), because
+    /// VoiceOver's announcement API cannot queue and AVSpeech's own queue leaves a gap between
+    /// every line; Prism is the fallback there, taken only when the system voice cannot be
+    /// stood up at all. The chokepoint and its callers do not change; only what is behind
+    /// <see cref="Initialize"/> does.
     /// </summary>
     public sealed class PrismSpeech
     {
@@ -57,16 +59,26 @@ namespace ES2Access.Core.Speech
             if (Platform.IsMacOS)
             {
                 MacSystemVoice mac = new MacSystemVoice();
-                if (!mac.Start())
+                if (mac.Start())
                 {
+                    _mac = mac;
+                    BackendName = "System Voice";
+                    Available = true;
+                    Log.Info("macOS system voice ready: " + mac.Description);
                     return;
                 }
 
-                _mac = mac;
-                BackendName = "System Voice";
-                Available = true;
-                Log.Info("macOS system voice ready: " + mac.Description);
-                return;
+                // The system voice could not be stood up at all: fall through to Prism,
+                // whose create_best picks VoiceOver when it is running. Prism's macOS
+                // backends cannot queue the way the stream does (VoiceOver's announcement
+                // API replaces pending speech), but a cut-off queue beats silence.
+                if (!NativeLoader.PrismLoaded)
+                {
+                    Log.Error("speech: no system voice and no Prism library; speech is unavailable");
+                    return;
+                }
+
+                Log.Info("speech: system voice unavailable; falling back to Prism");
             }
 
             PrismNative.PrismConfig cfg = new PrismNative.PrismConfig

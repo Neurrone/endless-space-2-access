@@ -10,9 +10,13 @@ Windows build changes.
   queued lines (notifications, chat, the save spinner, buffer review) follow each other with no
   gap, and a key press cuts speech at once. The voice and speaking rate are the ones you set
   under System Settings, Accessibility, Spoken Content ("System voice" and "Speaking rate");
-  change them there and restart the game. VoiceOver is not needed and is not used: its
+  change them there and restart the game. VoiceOver is not needed and, normally, not used: its
   announcement API cannot queue, so every queued line would cut off the one before it. You can
-  leave VoiceOver running; the game window has no accessibility tree for it to read.
+  leave VoiceOver running; the game window has no accessibility tree for it to read. Only if
+  the system voice cannot be started at all does the mod fall back to the Prism speech library
+  (`libprism.dylib` next to the .app), which speaks through VoiceOver when it is running —
+  usable, but queued lines will cut each other off there; the log
+  (`BepInEx/LogOutput.log`) says which backend is speaking.
 - **The chord modifiers are Option and Command.** Every key the manual writes as `Ctrl+X` is
   `Option+X` on a Mac, and every `Alt+X` is `Cmd+X`; the letters do not change. So: Option+H
   the empire banners, Option+N the notifications, Option+E the turn controls, Option+T the turn
@@ -40,9 +44,11 @@ Windows build changes.
    folder holds `BepInEx/`, `run_bepinex.sh`, `libdoorstop.dylib` and `.doorstop_version` next to
    the .app.
 3. Copy the mod's `BepInEx/plugins/ES2Access/` folder into `BepInEx/plugins/`, and the mod's
-   `run-modded.sh` next to the .app (beside `run_bepinex.sh`). The mod brings its own launcher
-   because BepInEx's `run_bepinex.sh` cannot start this game's elderly Mono correctly; the
-   header of `run-modded.sh` explains the three problems it fixes.
+   `run-modded.sh` and `libprism.dylib` next to the .app (beside `run_bepinex.sh`). The mod
+   brings its own launcher because BepInEx's `run_bepinex.sh` cannot start this game's elderly
+   Mono correctly; the header of `run-modded.sh` explains the three problems it fixes.
+   `libprism.dylib` is the fallback speech backend and the game runs without it, at the cost
+   of speech if the system voice ever fails.
 4. Clear the quarantine flag macOS puts on downloaded libraries, or the game will refuse to
    load them: in Terminal, `xattr -dr com.apple.quarantine "$HOME/Library/Application Support/Steam/steamapps/common/Endless Space 2"`.
 5. In Steam, open the game's Properties, Launch Options, and enter:
@@ -61,7 +67,9 @@ the game. The game's saves live in `~/Library/Application Support/Endless Space 
   if your install is elsewhere; the Windows block may stay, each side reads only its own.
 - `dotnet build ES2Access/ES2Access.csproj` builds and deploys into the game folder exactly as
   on Windows. Build outputs go to `bin/mac` and `obj/mac` so a checkout shared with a Windows
-  machine keeps the two builds apart.
+  machine keeps the two builds apart. The first build downloads the pinned Prism release into
+  the gitignored `prism-build/` (the one step that needs the network) and deploys
+  `libprism.dylib` next to the .app.
 - `./run-game.sh [--no-build] [--no-speech] [--no-dev] [--no-wait] [--load-save "<title>"]`
   launches the game through the deployed `run-modded.sh` with the dev server on; Steam must be
   running. `./wait-game.sh <menu|ingame|loading|dialog>` blocks until the game is there. Both
