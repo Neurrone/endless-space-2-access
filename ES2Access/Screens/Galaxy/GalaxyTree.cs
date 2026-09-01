@@ -75,7 +75,18 @@ namespace ES2Access.Screens
         {
             public char Digit;
             public GalaxyPosition At;
+
+            /// <summary>The stretch of sky the point falls in, which is what its key is built from -
+            /// a fact about where it is, so the row keeps one identity at every band.</summary>
             public Constellation Sky;
+
+            /// <summary>The group this build hangs the row in, or null for the top level. The same
+            /// thing as <see cref="Sky"/> wherever the map is drawing the systems inside it, and null
+            /// at the two bands where it is not: a bookmark is the player's own annotation and is
+            /// there at every level (owner ruling), so its row cannot be filed inside a group that
+            /// stands shut with nothing in it.</summary>
+            public Constellation Under;
+
             public ControlId Id;
 
             /// <summary>Whether this build is declaring the row at all.</summary>
@@ -210,6 +221,13 @@ namespace ES2Access.Screens
             Constellation sky = ConstellationMap.Classify(east, north);
             point.At = at;
             point.Sky = InGroups(sky) ? sky : null;
+            // From the bands where the map draws no system, every constellation group stands shut and
+            // holds nothing, so a point filed inside one would be unreachable by browsing - and a jump
+            // to it would land on a row this build never declared, which is a jump that says nothing
+            // (measured 2026-09-01). The row goes to the top level instead, walked into the same
+            // reading order the groups themselves are in, and keeps the key it has everywhere else so
+            // the cursor rides across the boundary.
+            point.Under = _showsSystems ? point.Sky : null;
             point.Listed = true;
             point.Emitted = false;
             point.Id = ControlId.Structural(
@@ -280,7 +298,7 @@ namespace ES2Access.Screens
                 BookmarkPoint point = _bookmarkPoints[i];
                 if (
                     point.Emitted
-                    || !ReferenceEquals(point.Sky, sky)
+                    || !ReferenceEquals(point.Under, sky)
                     || ComparePositions(point.At, before) >= 0
                 )
                 {
@@ -298,7 +316,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < _bookmarkPoints.Count; i++)
             {
                 BookmarkPoint point = _bookmarkPoints[i];
-                if (!point.Emitted && ReferenceEquals(point.Sky, sky))
+                if (!point.Emitted && ReferenceEquals(point.Under, sky))
                 {
                     AddBookmarkPoint(builder, point);
                 }

@@ -2549,6 +2549,13 @@ namespace ES2Access.Screens
                 }
 
                 GraphNavigator navigator = ModEntry.Navigator;
+                if (plan.FocusNode)
+                {
+                    // Before the cursor is sent anywhere: the picture has to be drawing the kind of
+                    // thing it is being sent to, or there is no row to land on.
+                    EnsureBand(target);
+                }
+
                 if (plan.FocusNode && target.Id != null && navigator != null)
                 {
                     navigator.FocusNode(target.Id, plan.AnnounceNode);
@@ -2568,6 +2575,80 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: going to a place on the map threw: " + e);
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// A SNAP LANDING FORCES ITS TARGET'S BAND (owner ruling 2026-09-01): before the player is put
+        /// on a thing, the camera comes to the nearest distance at which the map is drawing that kind
+        /// of thing at all - a planet or anything hanging off one to the orbital view, a fleet to the
+        /// lozenges, a system to the band that names the systems - and no closer
+        /// (<see cref="Bands.LowestLevel"/>).
+        ///
+        /// It is not a camera preference and it ignores the caller's own
+        /// (<see cref="MapCamera"/>): a band that draws nothing of the kind declares no row for it, so
+        /// a landing made there would send the cursor to a node that does not exist and the player
+        /// would hear nothing at all - measured at levels 1-2, where a bookmark jump moved the camera
+        /// and said not a word. The camera's own framing afterwards is still the landing's
+        /// (<see cref="Camera"/>).
+        ///
+        /// Never OUT: a player reading the orbital view who goes to a fleet is not asking to be pulled
+        /// back to the fleet band. And never for a thing the mod itself put on the map - a bookmarked
+        /// point is an annotation rather than a rendering and has a row at every level, so a jump to
+        /// one slides exactly as it always has.
+        /// </summary>
+        private void EnsureBand(MapTarget target)
+        {
+            int level = ZoomBands.Level;
+            int need = BandNeeded(target);
+            if (level < Bands.FirstLevel || need < Bands.FirstLevel || level >= need)
+            {
+                return;
+            }
+
+            try
+            {
+                GalaxyLocate.Suppressed = true;
+                GalaxyViewLevels.SetZoomHere(need - 1);
+                GalaxyViewLevels.Settle();
+            }
+            finally
+            {
+                GalaxyLocate.Suppressed = false;
+            }
+
+            // The picture is at a different distance than the page's record of where it sent the
+            // camera was written at (<see cref="GalaxyViewLevels.Moves"/>).
+            GalaxyViewLevels.Moved();
+            _settling = SnapSettleFrames;
+            _binding = ViewBindFrames;
+            _labelCatchUp = ViewBindFrames;
+        }
+
+        /// <summary>The nearest-out level at which this target has a row, read off the one band table.
+        /// A planet and everything drawn at one needs the orbital view, where the map draws the cards
+        /// those rows are; a fleet needs the lozenges; a place needs the band that names the systems;
+        /// and anything else standing out on the map is drawn beside the full nameplate, so it needs
+        /// the same band the nameplate does. A bookmarked point needs nothing.</summary>
+        private int BandNeeded(MapTarget target)
+        {
+            switch (target.Thing)
+            {
+                case MapThing.PlanetBound:
+                    return ZoomBands.LowestLevel(BandKind.Planets, BandFidelity.Full);
+                case MapThing.Place:
+                    return ZoomBands.LowestLevel(BandKind.Systems, BandFidelity.Name);
+                case MapThing.Point:
+                    if (target.Select is Fleet || target.Standing is Fleet)
+                    {
+                        return ZoomBands.LowestLevel(BandKind.Fleets, BandFidelity.Full);
+                    }
+
+                    return BookmarkAt(target.Id) != null
+                        ? -1
+                        : ZoomBands.LowestLevel(BandKind.Planets, BandFidelity.Dot);
+                default:
+                    return -1;
             }
         }
 
@@ -4142,6 +4223,12 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The band first, for the reason every other landing forces one
+            // (<see cref="EnsureBand"/>): from the two furthest-out levels the map names no system, so
+            // the branch this asks for would never open and the jump would move the camera and say
+            // nothing - measured. Beyond that the landing keeps its own framing, which is whatever
+            // walking in with Right would have given at this distance.
+            EnsureBand(MapTarget.Place(node, SystemRow(node), node.GalaxyPosition));
             OpenPlace(node);
             _bookmarkLanding = SystemRow(node);
             _bookmarkLandingFrames = BookmarkLandingFrames;
