@@ -83,9 +83,14 @@ namespace ES2Access.Screens
             };
 
             Seed(builder, id);
+            // From the two furthest-out steps the map names the stretches of sky and draws no system
+            // at all, so the group has nothing to hold and stands CLOSED - the row is still the map's
+            // own organizing concept, and closed is what a group with nothing in it should sound like
+            // rather than an opened branch that answers with silence.
+            bool open = Open(builder, id);
             // Synthetic: a constellation is a place the mod assembled from the galaxy's own model - nothing on the map is drawn as one.
-            builder.BeginGroup(Nodes.Synthetic(id, vtable));
-            if (builder.IsExpanded(id))
+            builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
+            if (open)
             {
                 List<StarSystemNode> members = _members[group.Members];
                 for (int i = 0; i < members.Count; i++)
@@ -130,9 +135,10 @@ namespace ES2Access.Screens
             );
             ControlId id = ControlId.Structural(UnexploredKey);
             Seed(builder, id);
+            bool open = Open(builder, id);
             // Synthetic: the same, for the places the empire has not explored.
-            builder.BeginGroup(Nodes.Synthetic(id, vtable));
-            if (builder.IsExpanded(id))
+            builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
+            if (open)
             {
                 for (int i = 0; i < _unexplored.Count; i++)
                 {
@@ -169,6 +175,15 @@ namespace ES2Access.Screens
             }
 
             expansion.Add(id);
+        }
+
+        /// <summary>Whether a stretch of sky opens onto anything on this build: the player's own
+        /// expansion, and only from the band at which the map draws the systems inside it. A search
+        /// build looks through everything, band or no band, because a search is the player asking what
+        /// exists rather than what is on the screen.</summary>
+        private bool Open(GraphBuilder builder, ControlId id)
+        {
+            return builder.ExpandAll || (_showsSystems && builder.IsExpanded(id));
         }
 
         /// <summary>The groups this session has already offered a starting state to.</summary>

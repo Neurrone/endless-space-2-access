@@ -20,6 +20,27 @@ namespace ES2Access.Screens
     /// into it.</summary>
     public sealed partial class GalaxyHudScreen
     {
+        /// <summary>
+        /// What the map is drawing at the distance the camera is at, taken once for the whole build.
+        ///
+        /// One reading per build rather than one per row: the answer is the same for every row of a
+        /// build by construction - the band is a property of the camera, not of the thing being
+        /// declared - and asking it per row would put two of the engine's service lookups behind every
+        /// system, lane and fleet on the map.
+        /// </summary>
+        private bool _showsSystems;
+
+        private bool _showsFleets;
+
+        private bool _showsDetail;
+
+        /// <summary>The level the last build was made at, so this one can tell a step WITHIN a band
+        /// from a step across one (<see cref="Core.UI.Bands.SameShape"/>). -1 before the first
+        /// build.</summary>
+        private int _builtAtLevel = -1;
+
+        private bool _builtScanning;
+
         /// <summary>Every star the map is naming, in the order it reads - one list, colonies and
         /// everything else together (<see cref="SystemsRegion"/>).</summary>
         private readonly List<StarSystemNode> _systems = new List<StarSystemNode>();
@@ -381,6 +402,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                ReadBand(builder);
                 _systems.Clear();
                 _located.Clear();
                 _colonies.Clear();
@@ -422,6 +444,14 @@ namespace ES2Access.Screens
                 FreeMovingAdrift(_systems, _adrift);
                 _adrift.Sort(FleetReadingOrder);
 
+                if (!_showsFleets)
+                {
+                    _adrift.Clear();
+                }
+
+                // Gathered whatever the band is: the lists are what the inspect cell reads a square's
+                // contents out of as well, and the cell operates below the band the open-space ROWS
+                // begin at.
                 Drifting();
                 // Every probe the map is drawing: they all sit at the top of the open-space region
                 // now (<see cref="AddProbes"/>), so every one of them is a reason to declare it.
@@ -433,8 +463,12 @@ namespace ES2Access.Screens
                 // culled has no label and still has a row, which would have opened a region with
                 // nothing in it or left rows with no region to sit in (owner ruling 2026-08-26,
                 // the same unification the two lookups above got).
-                int drifting =
-                    _drifting.Count + _shots.Count + _sighted.Count + OpenSpaceMarkers(empire);
+                // ...and declared only from the band that draws them: the map stops drawing a probe,
+                // a missile and a quest pin at the same step it stops drawing the full nameplate they
+                // hang beside (<see cref="_showsDetail"/>).
+                int drifting = !_showsDetail
+                    ? 0
+                    : _drifting.Count + _shots.Count + _sighted.Count + OpenSpaceMarkers(empire);
                 // Declared whichever halves the map has: a lone region's jump is swallowed silently,
                 // which is what the key doing nothing here should sound like, and a section that
                 // appears and disappears with the fleet count is a stop that changes shape under the
@@ -492,18 +526,58 @@ namespace ES2Access.Screens
                     builder.SetRegion(OpenSpaceRegion);
                 }
 
-                AddProbes(builder);
-                AddProjectiles(builder);
-                AddPins(builder);
-                // A quest pin planted on a fleet in mid-lane stands at no place at all, so it belongs
-                // here with the other things drifting between the stars rather than under whichever
-                // star happens to be nearest.
-                AddOpenSpaceMarkers(builder, empire);
+                if (_showsDetail)
+                {
+                    AddProbes(builder);
+                    AddProjectiles(builder);
+                    AddPins(builder);
+                    // A quest pin planted on a fleet in mid-lane stands at no place at all, so it
+                    // belongs here with the other things drifting between the stars rather than under
+                    // whichever star happens to be nearest.
+                    AddOpenSpaceMarkers(builder, empire);
+                }
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading the systems threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// Take this build's reading of what the map is drawing, and tell the build whether the
+        /// picture has just CHANGED SHAPE.
+        ///
+        /// The second half is what keeps a cursor inside the tree across a zoom. A step within a band
+        /// takes nothing away and a row that vanishes there is one thing going out of existence -
+        /// recovered, as everywhere else in the mod, by landing on the nearest thing beside it. A step
+        /// ACROSS a band takes whole families away at once, and beside a vanished fleet there is
+        /// another vanished fleet: the only thing the player was reading that is still on the map is
+        /// the place it was standing at, which is the row that CONTAINED it
+        /// (<see cref="GraphBuilder.SeatOnContainer"/>).
+        ///
+        /// Never off a search build: that build is a second, invisible rendering of the same map
+        /// (<see cref="GraphBuilder.ExpandAll"/>) and letting it consume the change would spend it on
+        /// a render the player's cursor is not in.
+        /// </summary>
+        private void ReadBand(GraphBuilder builder)
+        {
+            _showsSystems = ZoomBands.Shows(BandKind.Systems);
+            _showsFleets = ZoomBands.Shows(BandKind.Fleets);
+            _showsDetail = ZoomBands.MapDetail;
+            if (builder.ExpandAll)
+            {
+                return;
+            }
+
+            int level = ZoomBands.Level;
+            bool scanning = ZoomBands.Scanning;
+            builder.SeatOnContainer =
+                _builtAtLevel >= 0
+                && level >= 0
+                && (scanning != _builtScanning
+                    || !Bands.SameShape(_builtAtLevel, level, scanning));
+            _builtAtLevel = level;
+            _builtScanning = scanning;
         }
 
         /// <summary>One stretch of sky the map names, and which of this build's member lists holds the

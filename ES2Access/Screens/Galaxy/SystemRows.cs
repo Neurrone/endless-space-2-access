@@ -83,7 +83,7 @@ namespace ES2Access.Screens
 
             // What is parked here, in the same count phrase every other place on the map uses - so the
             // number the row says and the children it opens onto stay the same answer read two ways.
-            IList<Fleet> fleets = FleetPresence.FleetsAt(node);
+            IList<Fleet> fleets = _showsFleets ? FleetPresence.FleetsAt(node) : NoFleets;
             if (fleets.Count > 0)
             {
                 vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
@@ -243,16 +243,26 @@ namespace ES2Access.Screens
             // What the map draws parked here, in the game's own count phrase. Not watched: the answer
             // costs a walk of the docking-slot repository, and a watched part walks it every frame the
             // system is focused.
-            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
+            //
+            // Silent from a band the map draws no fleet at: the count and the children the branch
+            // opens onto are one answer read two ways, so a number said where no row can be walked to
+            // would be the row promising something the picture is not showing.
+            if (_showsFleets)
+            {
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPresence.At(it), false));
 
-            // ...and how many are under way on the lanes leaving here, which is the second half of the
-            // same answer: the branch opens onto both sets of fleets, so the count has to name both or
-            // the number the player was told and the children they walk stop matching. Worked out from
-            // the same lane list the branch is built from (<see cref="LanesOf"/>), so "nearby" means
-            // exactly the lanes this system offers. Not watched, for the reason above and one more: it
-            // walks the visible-fleet repository once per lane.
-            Empire counting = empire;
-            vtable.Announcements.Add(GraphNodes.ValuePart(() => UnderWayNearby(it, counting), false));
+                // ...and how many are under way on the lanes leaving here, which is the second half of
+                // the same answer: the branch opens onto both sets of fleets, so the count has to name
+                // both or the number the player was told and the children they walk stop matching.
+                // Worked out from the same lane list the branch is built from
+                // (<see cref="LanesOf"/>), so "nearby" means exactly the lanes this system offers. Not
+                // watched, for the reason above and one more: it walks the visible-fleet repository
+                // once per lane.
+                Empire counting = empire;
+                vtable.Announcements.Add(
+                    GraphNodes.ValuePart(() => UnderWayNearby(it, counting), false)
+                );
+            }
 
             // And what it would cost to send the selection here - the picture the map draws for a mouse
             // hovering over this system, in words. Silent while nothing is selected. Emphatically not
@@ -327,18 +337,28 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                object outer = TooltipChildren.Actions(builder, place);
+                // The dossiers hang off the full NAMEPLATE - the deposit icons, the stat block behind
+                // the star. From further out the map draws a name on a coloured bar and none of them,
+                // so the branch opens onto the geometry alone (<see cref="AddInside"/>).
+                bool detail = _showsDetail;
+                object outer = detail ? TooltipChildren.Actions(builder, place) : null;
                 AddInside(builder, place, node, empire, label);
-                TooltipChildren.Emit(
-                    builder,
-                    place,
-                    SystemDossiers(node, empire, label),
-                    outer
-                );
+                if (detail)
+                {
+                    TooltipChildren.Emit(
+                        builder,
+                        place,
+                        SystemDossiers(node, empire, label),
+                        outer
+                    );
+                }
             }
 
             builder.EndGroup();
         }
+
+        /// <summary>What is parked at a place from a band the map draws no fleet lozenges at.</summary>
+        private static readonly Fleet[] NoFleets = new Fleet[0];
 
         /// <summary>One line as a buffer section's list, or nothing where there is no line.</summary>
         private static IList<string> Line(string text)
@@ -679,19 +699,34 @@ namespace ES2Access.Screens
         )
         {
             List<Lane> lanes = LanesOf(node, empire);
-            AddManagementView(builder, key, node, label);
-            AddLabelButtons(builder, key, label);
-            AddPlanets(builder, key, node, empire, label);
-            AddWrecks(builder, key, node);
+            if (_showsDetail)
+            {
+                AddManagementView(builder, key, node, label);
+                AddLabelButtons(builder, key, label);
+                AddPlanets(builder, key, node, empire, label);
+                AddWrecks(builder, key, node);
+            }
+
+            // The lane network is drawn at every band the systems themselves are, so a system whose
+            // band draws nothing else still opens onto the roads out of it - which is what makes the
+            // far bands a way of reading the map's geometry rather than an emptier version of the
+            // near ones.
             AddStarlanes(builder, key, node, empire, lanes);
-            AddFleets(builder, key, FleetPresence.FleetsAt(node));
-            AddEnRoute(builder, key, EnRouteOn(node, lanes));
-            AddFreeMoving(builder, key, node, FreeMovingAt(node));
-            // After the planets, the lanes and the fleets: a quest pin is the last thing the map draws
-            // at a place, and it is a thing about the QUEST rather than about the system.
-            AddQuestMarkers(builder, key, node, empire);
-            AddHangars(builder, key, node);
-            AddProbeDirections(builder, key, node);
+            if (_showsFleets)
+            {
+                AddFleets(builder, key, FleetPresence.FleetsAt(node));
+                AddEnRoute(builder, key, EnRouteOn(node, lanes));
+                AddFreeMoving(builder, key, node, FreeMovingAt(node));
+            }
+
+            if (_showsDetail)
+            {
+                // After the planets, the lanes and the fleets: a quest pin is the last thing the map
+                // draws at a place, and it is a thing about the QUEST rather than about the system.
+                AddQuestMarkers(builder, key, node, empire);
+                AddHangars(builder, key, node);
+                AddProbeDirections(builder, key, node);
+            }
         }
 
         /// <summary>
