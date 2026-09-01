@@ -26,3 +26,9 @@ videos/
 # committed is the table that script builds, ES2Access\descriptions\<language>.json - hence the
 # leading slash, which keeps that folder tracked.
 /descriptions/
+
+# Staged into the template by build_release.ps1; the rest of release-template is the committed skeleton
+release-template/BepInEx/plugins/
+release-template/prism.dll
+release-template/prism-NOTICE.txt
+release-template/prism-LICENSE-MPL-2.0.txt
