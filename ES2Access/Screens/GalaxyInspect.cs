@@ -2195,7 +2195,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Everything the map draws inside the cell.
+        /// Everything the map draws inside the cell, at this distance.
         ///
         /// Nothing here decides for itself what may be seen: the places are the ones the map NAMES
         /// (<see cref="MapVisibility.Perceived"/>, the label window's own gate), the fleets are the
@@ -2204,6 +2204,21 @@ namespace ES2Access.Screens
         /// tree declares its own nodes from - and a lane is offered exactly where the map paints the
         /// line (<see cref="MapVisibility.Drawn"/>). A cell that reported something the map is hiding
         /// would be handing the player the galaxy's own model instead of its picture.
+        ///
+        /// AND AT THIS DISTANCE (owner ruling 2026-09-01): the same band table the tree filters its
+        /// rows with decides which KINDS the cell may hold, out of the same vocabulary
+        /// (<see cref="BandKind"/>) - so a square cannot name a fleet at a rung the tree has no fleet
+        /// row at, and the map is one picture read two ways rather than two pictures. Filtered HERE,
+        /// at the one gathering, so that the reading, Enter, the skip's comparison of two cells and
+        /// the travel keys are all looking at the same square: a filter applied at the sentence would
+        /// leave the keys travelling by lanes nobody was told about.
+        ///
+        /// The two exceptions are the survey's own subject. SYSTEMS are held at every rung, though the
+        /// picture stops naming them at the two furthest out, because the survey was ruled to name the
+        /// known systems a square contains - that is the deviation the survey IS. The player's own
+        /// point BOOKMARKS are the other way round: they are annotations rather than anything the game
+        /// draws, and the survey's ruled reading is territory, systems and constellations alone, so
+        /// they go quiet exactly there.
         /// </summary>
         private Contents Read()
         {
@@ -2215,6 +2230,15 @@ namespace ES2Access.Screens
                 {
                     return contents;
                 }
+
+                // One read of the table per gathering, in the tree's own vocabulary: the lozenges
+                // from level 5, everything the picture only draws beside a full nameplate - probes,
+                // missiles, ally pins, quest pins - from level 7 (<see cref="ZoomBands.MapDetail"/>,
+                // which is the same answer the tree's own detail gate takes), the lines from level 3.
+                bool showsFleets = ZoomBands.Shows(BandKind.Fleets);
+                bool showsDetail = ZoomBands.MapDetail;
+                bool showsLanes = ZoomBands.Shows(BandKind.Lanes);
+                bool showsMarks = !Surveying();
 
                 List<StarSystemNode> perceived = new List<StarSystemNode>();
                 foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
@@ -2240,7 +2264,7 @@ namespace ES2Access.Screens
                     }
                 }
 
-                IList<Fleet> fleets = FleetPresence.Drawing();
+                IList<Fleet> fleets = showsFleets ? FleetPresence.Drawing() : NoFleetsHere;
                 for (int i = 0; i < fleets.Count; i++)
                 {
                     if (Holds(fleets[i].GalaxyPosition))
@@ -2254,56 +2278,65 @@ namespace ES2Access.Screens
                 // words off the dossier hanging on one, so a probe whose mote the map was not
                 // drawing was missing from its own square, and its name was a second composition
                 // that could drift from the one the tree and the scanner say. One list, one name.
-                IList<GalaxyHudScreen.ScannedProbe> probes = _screen.ScannedProbes();
-                for (int i = 0; i < probes.Count; i++)
+                if (showsDetail)
                 {
-                    Probe probe = probes[i].Probe;
-                    if (probe != null && Holds(probe.GalaxyPosition))
+                    IList<GalaxyHudScreen.ScannedProbe> probes = _screen.ScannedProbes();
+                    for (int i = 0; i < probes.Count; i++)
                     {
-                        contents.Probes.Add(probes[i]);
+                        Probe probe = probes[i].Probe;
+                        if (probe != null && Holds(probe.GalaxyPosition))
+                        {
+                            contents.Probes.Add(probes[i]);
+                        }
+                    }
+
+                    IList<GalaxyHudScreen.SightedShot> shots = _screen.SightedProjectiles;
+                    for (int i = 0; i < shots.Count; i++)
+                    {
+                        ObliteratorProjectile shot = shots[i].Shot;
+                        if (Holds(shot.GalaxyPosition))
+                        {
+                            contents.Projectiles.Add(shot);
+                        }
+                    }
+
+                    IList<GalaxyHudScreen.SightedPin> pins = _screen.SightedPins;
+                    for (int i = 0; i < pins.Count; i++)
+                    {
+                        CoordinationRequest pin = pins[i].Request;
+                        if (Holds(pin.GalaxyPosition))
+                        {
+                            contents.Pins.Add(pin);
+                        }
+                    }
+
+                    List<QuestMarkers.Marker> markers = QuestMarkers.Of(empire);
+                    for (int i = 0; i < markers.Count; i++)
+                    {
+                        if (Holds(markers[i].At))
+                        {
+                            contents.Markers.Add(markers[i]);
+                        }
                     }
                 }
 
-                IList<GalaxyHudScreen.SightedShot> shots = _screen.SightedProjectiles;
-                for (int i = 0; i < shots.Count; i++)
+                if (showsMarks)
                 {
-                    ObliteratorProjectile shot = shots[i].Shot;
-                    if (Holds(shot.GalaxyPosition))
+                    char digit;
+                    GalaxyPosition spot;
+                    for (int i = 0; _screen.BookmarkPointAt(i, out digit, out spot); i++)
                     {
-                        contents.Projectiles.Add(shot);
+                        if (Holds(spot))
+                        {
+                            contents.Bookmarks.Add(digit);
+                        }
                     }
                 }
 
-                IList<GalaxyHudScreen.SightedPin> pins = _screen.SightedPins;
-                for (int i = 0; i < pins.Count; i++)
+                if (showsLanes)
                 {
-                    CoordinationRequest pin = pins[i].Request;
-                    if (Holds(pin.GalaxyPosition))
-                    {
-                        contents.Pins.Add(pin);
-                    }
+                    Lanes(contents, perceived, empire);
                 }
-
-                List<QuestMarkers.Marker> markers = QuestMarkers.Of(empire);
-                for (int i = 0; i < markers.Count; i++)
-                {
-                    if (Holds(markers[i].At))
-                    {
-                        contents.Markers.Add(markers[i]);
-                    }
-                }
-
-                char digit;
-                GalaxyPosition spot;
-                for (int i = 0; _screen.BookmarkPointAt(i, out digit, out spot); i++)
-                {
-                    if (Holds(spot))
-                    {
-                        contents.Bookmarks.Add(digit);
-                    }
-                }
-
-                Lanes(contents, perceived, empire);
             }
             catch (Exception e)
             {
@@ -2312,6 +2345,9 @@ namespace ES2Access.Screens
 
             return contents;
         }
+
+        /// <summary>What the drawing fleets are at a band that draws none.</summary>
+        private static readonly Fleet[] NoFleetsHere = new Fleet[0];
 
         /// <summary>Whether a point on the map is inside the cell, measured from home like everything
         /// else the player is told.</summary>
