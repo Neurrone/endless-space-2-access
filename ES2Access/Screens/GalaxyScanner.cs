@@ -1610,6 +1610,15 @@ namespace ES2Access.Screens
         /// the category next door holds anything before it decides to skip it, and that answer only
         /// exists once the other lists have been built.
         /// </summary>
+        /// <summary>Whether the band at <paramref name="level"/> lists a category - the tree's own
+        /// table (<see cref="Bands"/>), asked with the level already in hand. A level with no answer
+        /// (no galaxy camera) hides nothing: a filter that cannot tell what the map is showing must
+        /// withhold none of it.</summary>
+        private static bool Scans(int level, bool scanning, string categoryKey)
+        {
+            return level < 0 || Bands.Scans(level, scanning, categoryKey);
+        }
+
         private Snap Snapshot(out double east, out double north)
         {
             List<Found>[] world = new List<Found>[CategoryCount];
@@ -1619,6 +1628,10 @@ namespace ES2Access.Screens
             }
 
             Reference(out east, out north);
+            // Which band the map is at, read once for the whole press: it is the same answer for every
+            // category by construction, and each reading of it is two of the engine's service lookups.
+            int band = ZoomBands.Level;
+            bool lens = ZoomBands.Scanning;
             ScannerCost.Begin();
             try
             {
@@ -1627,15 +1640,71 @@ namespace ES2Access.Screens
                 {
                     DepartmentOfForeignAffairs foreign =
                         empire.GetAgency<DepartmentOfForeignAffairs>();
-                    Systems(world[CategorySystems], empire, foreign);
-                    Worlds(world, empire);
-                    Unexplored(world[CategoryUnexplored], empire);
-                    Fleets(world[CategoryFleets], empire, foreign);
-                    Probes(world[CategoryProbes], empire, foreign);
-                    Markers(world[CategoryMarkers], empire);
-                    Pins(world[CategoryPins]);
-                    Projectiles(world[CategoryProjectiles]);
-                    ContestedGround(world[CategoryContestedInfluence], empire);
+                    // Only what the map is DRAWING at this distance (<see cref="ZoomBands"/>): a
+                    // category the picture is not showing is not a short list, it is a list of things
+                    // the player has not been shown. Asked here rather than at the cycle, so that the
+                    // ring skips a band-hidden category by exactly the rule it skips an empty one -
+                    // one code path, and no way for the tree and the scanner to disagree about what
+                    // the map holds.
+                    if (Scans(band, lens, ScannerKeys.Systems))
+                    {
+                        Systems(world[CategorySystems], empire, foreign);
+                    }
+
+                    // One call fills the five categories the planet dots are read out of, and they
+                    // share a band in both modes, so one gate answers for all five.
+                    if (Scans(band, lens, ScannerKeys.Colonizable))
+                    {
+                        Worlds(world, empire);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Unexplored))
+                    {
+                        Unexplored(world[CategoryUnexplored], empire);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Fleets))
+                    {
+                        Fleets(world[CategoryFleets], empire, foreign);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Probes))
+                    {
+                        Probes(world[CategoryProbes], empire, foreign);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Markers))
+                    {
+                        Markers(world[CategoryMarkers], empire);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Pins))
+                    {
+                        Pins(world[CategoryPins]);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Projectiles))
+                    {
+                        Projectiles(world[CategoryProjectiles]);
+                    }
+
+                    if (Scans(band, lens, ScannerKeys.Contested))
+                    {
+                        ContestedGround(world[CategoryContestedInfluence], empire);
+                    }
+                }
+
+                // The gates above are also the cost saving; this is the guarantee. Every built-in
+                // category the band hides is emptied whatever route filled it, and it happens BEFORE
+                // the player's own categories are composed - so a custom slot's selectors and its
+                // keywords are answered out of band-declared rows alone, with nothing extra to say
+                // about it (owner ruling 2026-09-01).
+                for (int at = 0; at < BuiltInCount; at++)
+                {
+                    if (!Scans(band, lens, ScannerKeys.Categories[at]))
+                    {
+                        world[at].Clear();
+                    }
                 }
             }
             catch (Exception e)
