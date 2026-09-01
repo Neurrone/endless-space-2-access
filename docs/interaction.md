@@ -570,6 +570,18 @@ descriptor was unmapped) and now speaks like the rest; the two layers that offer
 Same wording from the slider's own value and from the watcher, as before. Scan mode still drops the
 band word and says the lens.
 
+**THE LADDER CARRIES A USAGE HINT** (owner ruling 2026-09-01), because the game's own zoom is two
+keys HELD and nothing about this page suggests an adjustable answers the arrows. A hint line in the
+ladder's review buffer, composed from the LIVE bindings like every other hint, naming BOTH gestures
+at once — an adjustable worked from one end is half a control — and saying what the rung buys on
+the page it is standing on: `{0} or {1} to change zoom` on the map, `{0} or {1} to change lens`
+under a scan lens. `NodeHint` takes an optional second action for this, and a pair sentence with
+only one half renderable contributes nothing.
+
+**A STAR LANE ANNOUNCES ITSELF AS A BUTTON** (owner ruling 2026-09-01), in both views: Enter on a
+lane has gone down it since the travel keys landed, so the row's role says so. Nothing else about
+the lane moves.
+
 **THE TREE IS BAND-FILTERED, AND SO IS THE SCANNER** (owner ruling 2026-09-01; the table is
 `Core/UI/Bands.cs`, read through `UI/ZoomBands.cs`). The rows the map stop offers are the KINDS the
 picture is drawing at that distance — camera-position-independent, per kind, never per frustum:
