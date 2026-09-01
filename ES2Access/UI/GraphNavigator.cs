@@ -844,8 +844,9 @@ namespace ES2Access.UI
                 }
             }
 
-            // A LANDING OF THIS SCREEN'S IS STILL IN FLIGHT, so whatever the cursor is standing on now
-            // is not where the player is going and is not said.
+            // A LANDING OF THIS SCREEN'S IS STILL IN FLIGHT, so a row the cursor is standing on that
+            // nobody asked for is not where the player is going and is not said. A PROMISED row is the
+            // exception and is read at once (below).
             //
             // A landing waits out the frames its target needs - a branch opening a level per build, a
             // camera the page is still moving (<see cref="Screen.LandingSuspended"/>) - and over that
@@ -865,10 +866,21 @@ namespace ES2Access.UI
             bool inFlight = OwnPendingFocus != null;
 
             // A landing somebody PROMISED this node gets read whether or not the cursor moved to
-            // reach it (<see cref="AnnounceLandingAt"/>), and the promise is spent here rather than by
-            // whatever the cursor was standing on while the landing was in flight.
-            bool promised =
-                !inFlight && _announceLandingAt != null && _announceLandingAt.Equals(node.Id);
+            // reach it (<see cref="AnnounceLandingAt"/>), and the promise is spent by the node it
+            // NAMES and by nothing else - which is what makes it survive a landing in flight rather
+            // than be silenced with it.
+            //
+            // The hold above is about a row NOBODY ASKED FOR: the tree re-seated the cursor under a
+            // landing that is on its way somewhere else, and that row is not news. A promised node is
+            // the opposite - it IS where the player was sent, and the promise names it, so standing on
+            // it is the arrival however early the tree got there. Holding this too cost the exit its
+            // reading: measured 2026-09-02 on the inspect cell, the landing back onto the armed-from
+            // row stayed in flight 31 frames while the camera slid home, and one Down inside that
+            // window cancelled the landing (<see cref="CancelPendingFocus"/>) and left the promise
+            // standing forever - "Exited inspect mode" and then the row the Down went to, with the row
+            // the player had left never said at all. Answered from the promise, the arrival is read on
+            // the first frame the cursor is on it, which no later keystroke can take away.
+            bool promised = _announceLandingAt != null && _announceLandingAt.Equals(node.Id);
             if (promised)
             {
                 _announceLandingAt = null;
@@ -877,7 +889,7 @@ namespace ES2Access.UI
             if (
                 (promised || _lastSpokenKey == null || !_lastSpokenKey.Equals(node.Id))
                 && !_screen.BetweenViews
-                && !inFlight
+                && (promised || !inFlight)
             )
             {
                 // A mode of the screen owns the player's attention, so the line is SWALLOWED - and
