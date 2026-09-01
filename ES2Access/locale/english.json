@@ -458,6 +458,7 @@
   "scan.system-outputs": "Outputs",
   "scan.system-rank-region": "System rank",
   "scan.system-rank": "rank {0} of {1}",
+  "scan.system-rank-history": "Rank history",
   "scan.system-info-shown": "System information shown",
   "scan.system-info-hidden": "System information hidden",
   "scan.trade-route-to": "Trade route to {0}",

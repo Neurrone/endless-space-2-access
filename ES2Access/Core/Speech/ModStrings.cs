@@ -1201,6 +1201,12 @@ namespace ES2Access.Core.Speech
         public const string ScanSystemOutputs = "scan.system-outputs";
         public const string ScanSystemRankRegion = "scan.system-rank-region";
         public const string ScanSystemRank = "scan.system-rank";
+
+        /// <summary>The turn-by-turn curves under the rank block, as their own region. The game
+        /// captions the whole block "System's Rank" and captions the curves nothing, so the table
+        /// standing apart from the readouts above it needs a word the game does not supply (owner
+        /// ruling 2026-09-02): the readouts keep the drawn caption and this names the table.</summary>
+        public const string ScanSystemRankHistory = "scan.system-rank-history";
         public const string ScanSystemInfoShown = "scan.system-info-shown";
         public const string ScanSystemInfoHidden = "scan.system-info-hidden";
 
@@ -2466,6 +2472,7 @@ namespace ES2Access.Core.Speech
             { ScanSystemOutputs, "Outputs" },
             { ScanSystemRankRegion, "System rank" },
             { ScanSystemRank, "rank {0} of {1}" },
+            { ScanSystemRankHistory, "Rank history" },
             { ScanSystemInfoShown, "System information shown" },
             { ScanSystemInfoHidden, "System information hidden" },
             { ScanTradeRouteTo, "Trade route to {0}" },

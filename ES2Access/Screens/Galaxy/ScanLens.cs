@@ -390,16 +390,22 @@ namespace ES2Access.Screens
         /// ONLY THE CURVES ARE A TABLE (owner ruling 2026-09-01, playtest). The sentence and the
         /// per-property lines are READOUT ROWS standing above it - cell semantics and a place in a
         /// thirty-row column were being spoken over four lines that are not tabular at all - so they
-        /// are ordinary rows of this region and the sheet holds the curves alone. Region order is the
-        /// panel's own: the sentence, the properties, then the history.
+        /// are ordinary rows and the sheet holds the curves alone. Region order is the panel's own:
+        /// the sentence, the properties, then the history.
         ///
-        /// The region is ONE region and not two, because the game itself draws it as one: the legend
-        /// lists the bars AND the systems curve under the single caption group this takes its name from
+        /// TWO REGIONS AND NOT ONE (owner ruling 2026-09-02, the same playtest a round later). Making
+        /// the readouts ordinary rows of the SHEET's region left every one of them inside a region the
+        /// sheet had declared a table, so the block still announced "System's Rank, table" on the way
+        /// in and there was no jump from the readouts to the history - one region cannot be stepped
+        /// out of. So the readouts are a plain list region under the caption the game draws over the
+        /// whole block, and the curves are a table region of their own, which is what puts the history
+        /// one Alt+Down from the list. The game captions the curves nothing - its legend lists the
+        /// bars AND the systems curve under the single group the readouts take their name from
         /// (measured live - "System's Rank" over "No. of systems in my Empire", "FIDSI", "Defense",
-        /// "Population", "No. of representatives"). So the readouts are declared inside the sheet's own
-        /// region, which is what the <c>economy:history</c> block does with the sentence above its
-        /// table, and the seam between the two kinds of row is stitched by the builder
-        /// (<c>GraphBuilder.StitchModeBoundaries</c>).
+        /// "Population", "No. of representatives") - so the table's name is the mod's own word
+        /// (<see cref="ModStrings.ScanSystemRankHistory"/>). The seam between the last readout and the
+        /// first row of the table is the builder's (<c>GraphBuilder.StitchModeBoundaries</c>), which
+        /// stitches per STOP and so is untouched by the region split.
         ///
         /// The whole region belongs to the panel the tick opens, so it is here exactly while that panel
         /// is drawn - and the bars and the curves are bound only for a colony of the player's own
@@ -436,10 +442,24 @@ namespace ES2Access.Screens
             List<Func<string>> known = new List<Func<string>>();
             RankHistory(colony, turns, ranks, known);
 
+            // The readouts: a plain list under the game's own caption for the block. No column list,
+            // so nothing here is a cell and nothing announces a place in a table.
+            builder.SetRegion("scan:system/rank/readouts");
+            // Position-free, as these rows have been since they stopped being cells: the sentence and
+            // the four bars are a reading and not a list to count through.
+            builder.PushContext(RankCaption(bars), null, false);
+            ControlId last = RankSentence(builder, curves);
+            last = RankProperties(builder, window, bars, colony) ?? last;
+            builder.PopContext();
+            builder.SetRegion(null);
+
+            // The history, its own region and the only table here.
             GraphSheet sheet = new GraphSheet(builder, "scan:system/rank/");
-            sheet.Region(RankCaption(bars), TurnColumns(turns));
-            RankSentence(builder, curves);
-            RankProperties(builder, window, bars, colony);
+            sheet.Region(
+                ModStrings.Get(ModStrings.ScanSystemRankHistory),
+                TurnColumns(turns)
+            );
+            sheet.Follows(last);
             RankCurves(sheet, window, bars, turns, ranks, known);
             sheet.Finish();
             builder.SetRegion(null);
@@ -524,8 +544,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The sentence the game writes under the curves, read as it is drawn. Absent where the
-        /// game hides it - a system discovered this turn has no curve and no line.</summary>
-        private static void RankSentence(
+        /// game hides it - a system discovered this turn has no curve and no line. Answers the row it
+        /// declared, so the region's last row can be handed to the table below as its seam.</summary>
+        private static ControlId RankSentence(
             GraphBuilder builder,
             ScanViewSystemGlobalRankHistogram curves
         )
@@ -541,17 +562,19 @@ namespace ES2Access.Screens
                     : curves.GlobalRankLabel;
             if (label == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
-                return;
+                return null;
             }
 
             AgePrimitiveLabel it = label;
+            ControlId id = ControlId.Structural("scan:system/rank/sentence");
             builder.AddItem(
                 Nodes.Drawn(
-                    ControlId.Structural("scan:system/rank/sentence"),
+                    id,
                     GraphBuilder.Label(() => AgeText.Label(it), it.AgeTransform),
                     it.AgeTransform
                 )
             );
+            return id;
         }
 
         /// <summary>One READOUT ROW per property the game ranks this system by, named with the caption
@@ -559,8 +582,9 @@ namespace ES2Access.Screens
         /// (<c>ScanViewSystemEmpireRankBarGraph.Bind</c> :55-83): the place is one more than the number
         /// of the player's OTHER systems holding more of it, out of all of theirs. A row of the region
         /// and no part of the table below it - four bars in a picture are not a grid, and reading them
-        /// as one said a cell's place in a thirty-row column over every line.</summary>
-        private static void RankProperties(
+        /// as one said a cell's place in a thirty-row column over every line. Answers the LAST row it
+        /// declared, which is the seam the history table hangs under.</summary>
+        private static ControlId RankProperties(
             GraphBuilder builder,
             StarSystemOverviewScanViewWindow window,
             ScanViewSystemEmpireRankBarGraph bars,
@@ -572,6 +596,7 @@ namespace ES2Access.Screens
             StarSystemOverviewScanViewGuiElement element = window.SystemOverviewGuiElement;
             StarSystemOverviewScanViewGuiElement.EmpireRankingProperty[] properties =
                 element == null ? null : element.EmpireRankingProperties;
+            ControlId last = null;
             for (int i = 0; properties != null && i < drawn.Length; i++)
             {
                 ScanViewSystemEmpireRankBar bar = drawn[i];
@@ -607,9 +632,10 @@ namespace ES2Access.Screens
                     place,
                     others + 1
                 );
+                last = ControlId.For(bar, "scan:system/rank/property/" + i);
                 builder.AddItem(
                     Nodes.Drawn(
-                        ControlId.For(bar, "scan:system/rank/property/" + i),
+                        last,
                         new NodeVtable
                         {
                             Announcements = new List<NodeAnnouncement>
@@ -622,6 +648,8 @@ namespace ES2Access.Screens
                     )
                 );
             }
+
+            return last;
         }
 
         /// <summary>Where this system comes among the player's own for one property, and how many of
