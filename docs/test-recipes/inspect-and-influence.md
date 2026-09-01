@@ -170,8 +170,8 @@ zooming out with the cell already live. OPEN owner question (roadmap).
 
 **The cell is band-filtered** (2026-09-01, `ES2Access-r16`): it holds only the kinds the map is
 drawing at that distance, out of the tree's own vocabulary — fleets from level 5, probes/missiles/
-pins/quest pins from 7, lanes from 3 — with systems named at every level and point bookmarks silent
-at 1–2 (the survey's two deliberate exceptions). Route: arm on the Sabel row (its own square,
+pins/quest pins from 7, lanes from 3 — with systems AND the player's own bookmarks named at every
+level (the filter's two exemptions). Route: arm on the Sabel row (its own square,
 (-35,-5), holds the system, `2nd Defenders Navy` and three lanes), then `SetZoomHere(n)` and
 re-read the square with `ui.left` + `ui.right`.
 
@@ -182,7 +182,19 @@ re-read the square with `ui.left` + `ui.right`.
 | 4 | `Sabel, Star lane from Talitha to Sabel, …, -35, -5` — the FLEET is gone |
 | 3 | identical to 4 (lanes are in band from 3) |
 | 1 | `Sabel, -35, -5` — lanes gone too; the neighbour (-36,-5), which said `Star lane from Talitha to Sabel, -36, -5` at every other level, says only `-36, -5` |
-| 1, on a bookmarked point | `Unexplored, -68, 18` — at level 9 the same square says `bookmark 1, Unexplored, -68, 18` |
+| 1, on a bookmarked point | `bookmark 1, Unexplored, -68, 18` — the same words as at level 9 |
+
+**A BOOKMARK IS EXEMPT FROM THE BAND FILTER** (owner ruling 2026-09-02, reversing the 2026-09-01
+line that silenced point bookmarks under the survey). The two halves of "this square is bookmarked"
+had come apart: a bookmarked SYSTEM keeps its word at every rung, because that word rides the
+place's own reading (`GalaxyTree.BookmarkWord`), while a bookmarked POINT went quiet at 1–2, which
+is where a square of empty sky has nothing else to say. Measured on the owner's turn-28 campaign at
+spoken level 2, with a live cell, in BOTH modes: `galaxy.bookmarkGoTo2` → `bookmark 2, -68, -26`
+(before: `-68, -26`); `galaxy.bookmarkGoTo4` → `bookmark 4, Unexplored, -72, -26` (before:
+`Unexplored, -72, -26`); `galaxy.bookmarkGoTo3`, a bookmarked system → `Lors, bookmark 3, -66, -26`,
+unchanged; the neighbouring unbookmarked square (`ui.right` off bookmark 2) → `-67, -26`, unchanged.
+The filter is dropped at the ONE gathering (`GalaxyInspect.Read`), so the skip's cell identity
+(`SignatureAt`) stops at a bookmarked square at 1–2 for the same reason the reading names it.
 
 **Travel-key pairs** (`galaxy.inspectFollowEast` / `…FollowWest`) — there is no leap of any kind on
 these chords (owner ruling 2026-09-01, reversing the border leap):

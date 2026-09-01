@@ -889,13 +889,17 @@ other lens. Two rows then three regions, each here only while the game draws wha
 (`scan:system/output/0..5` — the five outputs and the population percentage, ALWAYS, since those
 labels are their own panel and not inside the box the tick opens: measured tick-off, still visible
 and bound), **System's Rank** — the game's own caption — and **Remains**, both only while the tick is
-on and the lens has a colony of the player's. **System's Rank holds READOUT ROWS and then one table**
-(owner ruling 2026-09-01, playtest — only what the game draws as a table is one): the drawn sentence
-and one line per ranking property are plain rows of the region, no cell semantics and no place in the
-table's count. Measured on the owner's save at Dusay: `System's Rank, table, Overall system rank
-[2/4]` (the game's drawn sentence) · `FIDSI, rank 1 of 2` · `Defense, rank 2 of 2` · `Population,
-rank 1 of 2` · `No. of representatives, rank 1 of 2` — cross-checked against the bars' own ordinals
-(`1st/2nd/1st/1st`). Then **the history table, transposed**: a row per CURVE (`System rank` — the
+on and the lens has a colony of the player's. **The rank block is TWO regions** (owner ruling 2026-09-02, playtest — only what the game draws as a
+table is one, and a table region cannot be stepped out of): `scan:system/rank/readouts`, a plain
+list under the game's drawn caption holding the sentence and one line per ranking property, then
+`scan:system/rank/reg:0`, the history table. Alt+Down goes list → table in one press. Measured on
+the owner's save at Dusay: entering says `System information, System's Rank, Overall system rank
+[2/4]` (the game's drawn sentence, and no "table"), then `FIDSI, rank 1 of 2` · `Defense, rank 2 of
+2` · `Population, rank 1 of 2` · `No. of representatives, rank 1 of 2`, position-free and with no
+cell word — cross-checked against the bars' own ordinals (`1st/2nd/1st/1st`). `ui.regionNext` from
+any of them → `Rank history, table, System rank, 1 of 2`; `ui.regionPrev` back → the sentence. Down
+off the last readout crosses the seam to the same first row (`GraphSheet.Follows`), Up returns.
+Then **the history table, transposed**: a row per CURVE (`System rank` — the
 mod's own word, the game names that curve nowhere — and the game's `No. of systems in my Empire`) and
 a column per TURN, **NEWEST FIRST** (owner ruling 2026-09-02): the turn in progress is the first data
 column, so the reading that is true now is one press from the row and walking right walks back in
@@ -1052,6 +1056,29 @@ panel (`Infinite Supermarkets` / `System Improvement (Approval)` / description /
 Approval` / `Cost: 280 Industry (1 Turn)` / `Political impact: Ecologists` / `Upkeep: 8 Upkeep`),
 which the label promised and offered to nobody before. `DevProbe.Coverage()` loses its
 `QueuedConstructionGroup`, `HomeSystemIconGroup` and `ResourceDepositItem00*` findings with it.
+
+**A CLICKABLE PICTURE'S CHILD IS A BUTTON** (owner ruling 2026-09-02). Three of the label's
+"decorations" are controls, and the sweep that found them is one `/eval`:
+`GetComponentsInChildren<AgeControlButton>(true)` over a `StarSystemLabel` prints every wired click
+with its `OnActivateMethod` — the answer is prefab-level and identical on all 86 labels.
+
+| widget | `OnActivateMethod` | how the mod reaches it |
+|---|---|---|
+| `QueuedConstructionGroup` | `OnRequestManagementView` | tooltip child, now a BUTTON |
+| `ContextualIconBattle` | `OnClickBattleIcon` | tooltip child, now a BUTTON (no instance in this save) |
+| `ContextualIconInvasion` | `OnClickGroundBattleIcon` | tooltip child, now a BUTTON (no instance) |
+| `RequestManagementViewButton` | `OnRequestManagementView` | `…/management`, "Manage system" |
+| `CancelPirateMarkButton` · `ContextualIconConversion` · `ContextualIconAcademyConversion` · `DiplomacyButton` | their own | `SystemLabelReadout.Actions` card actions |
+| `PirateLairIconGroup` · `AcademyIcon` | `OnClickDiplomacyButton` | read as TEXT (`PirateGroup`/`AcademyGroup` readouts); the Diplomacy card action is the same handler |
+| `FriendlyFleetsButton` · `HostileFleetsButton` | `OnClickCb` → `OnGarrisonClicked` | selects a fleet; the fleets have rows of their own |
+| `CancelPirateMarkHoverArea` | hover only | not a click |
+
+Verified live on the owner's turn-28 campaign at spoken level 13, Dusay expanded: the queue child
+reads `Nothing under construction, button, Click to queue up a Construction on this system, 2 of 3`
+(the game's own no-construction sentence kept), and `ui.activate` on it answers `Zoom level 14 of
+15` · `Dusay, System management` — `screen.star-system`. Leave that page with
+`Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(pos)` (`fixtures.md`); `ui.back` is a no-op
+there. The other two dossiers on that system carry no click and stay plain.
 
 **Which picture kinds this fixture draws at all**: the construction queue and the home icon (Dusay),
 the two deposit icons (Heka). Every other kind — the twelve contextual icons, the rest of the

@@ -732,7 +732,14 @@ row, and a landing there sends the cursor to a node that does not exist and says
 at levels 1–2, where a bookmark jump moved the camera and spoke not a word. Beyond the forced band
 each landing keeps its own framing: the scanner's go-to on a system still zooms in on it, and a
 bookmark's `LandInside` still lands on the system's first child, which at level 3 is a lane and no
-zoom. **A bookmarked POINT forces nothing** — a bookmark is the player's own annotation rather than
+zoom. **FOLLOWING A LANE FRAMES NOTHING** (owner ruling 2026-09-02; `MapReach.Local`, set by
+`GalaxyHudScreen.Arrive` and read by `MapLandings.Decide` into `MapLanding.Frame`): Right on a
+starlane, and Backspace back up it, move the player to a NEIGHBOUR of the row they are standing on,
+so the camera does exactly what expanding that system in place would do at this distance and no
+more — a slide at 3–6, the ordinary coming-in at 7 and beyond. It framed before, which took a follow
+at spoken level 5 down to 13 while expanding the very same system stayed put. The forced band is
+untouched (a system still needs level 3), and it is never reached from a follow anyway: at 1–2 the
+map draws no lane, so the tree declares no lane row and there is nothing to press Right on. **A bookmarked POINT forces nothing** — a bookmark is the player's own annotation rather than
 a rendering, and it has a row at every level; at 1–2, where every constellation group stands shut,
 those rows are declared at the TOP level instead, interleaved by position and keyed exactly as they
 are everywhere else so the cursor rides across the boundary. A bookmarked SYSTEM has no row at 1–2

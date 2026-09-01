@@ -31,6 +31,16 @@ belong in the files above.
     systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
     step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
     continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling.
+  - **AWAITING SIGN-OFF (round 4, 2026-09-02)**: `scan.system-rank-history` = "Rank history", the
+    name of the rank block's second region — the game captions its curves nothing, so this is the
+    mod's own word; and the rank readouts staying POSITION-FREE now that they are a list region of
+    their own (the round-2 judgement call, carried across the split rather than quietly reversed).
+  - **UNVERIFIED, code-only (round 4)**: the battle and ground-battle contextual icons are buttons
+    now (`OnClickBattleIcon` / `OnClickGroundBattleIcon`), and no save has ever drawn either — the
+    queue button is the family's one live proof. `PirateLairIconGroup` and `AcademyIcon` are
+    clickable too (`OnClickDiplomacyButton`) and are read as TEXT rather than as nodes, so they get
+    no button; the Diplomacy card action runs the same handler. Both need a ruling if the owner
+    wants the picture itself pressable.
   - **OPEN, for the owner**: unowned space in the survey says NOTHING about ownership (there is no
     phrase for "nobody's territory" and none was invented) — is the bare pair the wanted answer?
     (The arming question this bullet used to carry was RULED 2026-09-01: every diplomacy-band row
