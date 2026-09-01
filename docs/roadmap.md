@@ -12,18 +12,19 @@ belong in the files above.
 
 - **Normal-view zoom bands, the rest of the plan** (stage 1 shipped 2026-09-01: the tree's kind
   filter, the scanner's band filter, the five slider band words, and the container re-seat on band
-  shrink — `scan-modes-design-proposal.md` is the spec). Still to come: the MOTION model (graded
-  expansion, collapse-restore with the level-9 fallback, constellation expand at 1–2, snap landings
-  forcing the target's band, dot-fidelity planet rows at 7–12); inspect's 3–12 gating and the 1–2
+  shrink. Stage 2 shipped 2026-09-01: the MOTION model — graded expansion, collapse-restore with
+  the level-9 fallback, constellation expand at 1–2, snap landings forcing the target's band,
+  dot-fidelity planet rows at 7–12, and both of stage 1's standing bookmark gaps closed —
+  `scan-modes-design-proposal.md` is the spec). Still to come: inspect's 3–12 gating and the 1–2
   territory survey; the passive label icons as tooltip-bearing child nodes; scan mode on the shared
-  components. Two things stage 1 leaves standing and the motion stage must close: a bookmark jump
-  at levels 1–2 slides the camera and says NOTHING (its target has no row in the band — measured),
-  and a point bookmark inside a constellation is unreachable while the 1–2 groups are closed
-  (the bookmark keys are the only way to it there; the type-ahead still finds it). PENDING LIVE
-  (fixture/gate-blocked, stage 1): the game's own PageUp/PageDown zoom — `CheckInputs` refuses all
-  keyboard zoom while `Gui.GuiNotificationService.CurrentGuiNotification != null`, and
-  `NotificationPopulationGained` stood through the whole session, so the physical-key half of the
-  re-seat pairs is MANUAL; and adrift fleets below level 5 (none exist in `[Beginner] access test`).
+  components. OPEN, for the owner: a bookmarked SYSTEM has no row at levels 1–2 (its row is the
+  system's, which the band withholds), so the annotation is unbrowsable there though its jump key
+  works — point bookmarks were moved to the top level at those bands and systems were deliberately
+  not, since no ruling covers a top-level row for one.
+  PENDING LIVE: the physical-key half of the re-seat pairs. The `CheckInputs` gate is no longer the
+  blocker — `NotificationPopulationGained` was cleared 2026-09-01 and a real PageDown moved the rung
+  two steps — but the desktop locked before the fleet-row pair could be driven through it. Also
+  pending: adrift fleets below level 5 (none exist in `[Beginner] access test`).
 - **Coverage-audit tail (2026-08-24 session; owner-directed):** the last screens with no
   Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
   target selection, ground battle — needs a scratch game engaged with a pirate/major fleet

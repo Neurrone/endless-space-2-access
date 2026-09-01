@@ -593,6 +593,51 @@ declares fewer kinds than the one before (`GraphBuilder.SeatOnContainer`), so an
 still lands on the neighbour beside it. A row with no containing row — a probe drifting in open
 space — falls back to the nearest survivor, which is still inside the tree.
 
+**THE ZOOM LEVEL TELLS YOU WHAT AN EXPANSION GIVES** (owner ruling 2026-09-01, the graded model;
+`GalaxyHudScreen.FollowPlace` / `NoteJump` / `CollapseZoom`, `ConstellationRows.ZoomInto`). Right on
+a system at levels 3–6 opens it IN PLACE — the lanes at 3–4, the lanes and the fleets at 5–6 — and
+walking those children moves the camera no closer than the player put it: below the detail band the
+map draws no inside for a system, so there is nothing for the camera to come in on and the far bands
+stay what they are for, reading the map's geometry. At 7–12 the expansion completes the detail and
+so forces the zoom to level 13 exactly, which is the jump it already made; at 13 it is in place.
+A CONSTELLATION opens in place from level 3; at 1–2, where the map names no system, the press first
+brings the picture to level 3 centred on that stretch of sky and then opens — the zoom line is
+announced first and the settled first child after it, the ordinary `BetweenViews` hold. **Closing
+hands back the view you were browsing**: the level the expansion jumped from, or — where nothing was
+written down, which is what a hot reload leaves behind — spoken level 9, the inspect cursor's own
+entry ceiling (`GalaxyInspect.EntryZoomCeiling`), so the mod has one number for "a sane distance to
+be put at" rather than two. The memory is per system and per page instance, and a collapse whose
+camera is not in on that system moves nothing at all. Backslash's own way out is unchanged and still
+goes to the game's default step: a zoom-out by hand is the player choosing to read the same place
+from further off, not undoing an expansion.
+
+**A SNAP LANDING FORCES ITS TARGET'S BAND** (owner ruling 2026-09-01; `GalaxyHudScreen.EnsureBand`,
+off `Bands.LowestLevel`). Before the cursor is sent anywhere, the camera comes to the nearest-out
+level at which the map is drawing that KIND of thing — a planet or anything hanging off one to 13,
+a fleet to 5, a system to 3, anything else standing out in the open to 7 — and no closer, so a
+landing made from the orbital view is never pulled back out. It is not a camera preference and it
+overrides the caller's (`MapCamera.None` included): a band that draws nothing of the kind declares no
+row, and a landing there sends the cursor to a node that does not exist and says nothing — measured
+at levels 1–2, where a bookmark jump moved the camera and spoke not a word. Beyond the forced band
+each landing keeps its own framing: the scanner's go-to on a system still zooms in on it, and a
+bookmark's `LandInside` still lands on the system's first child, which at level 3 is a lane and no
+zoom. **A bookmarked POINT forces nothing** — a bookmark is the player's own annotation rather than
+a rendering, and it has a row at every level; at 1–2, where every constellation group stands shut,
+those rows are declared at the TOP level instead, interleaved by position and keyed exactly as they
+are everywhere else so the cursor rides across the boundary. A bookmarked SYSTEM has no row at 1–2
+(its row is the system's), and its jump is the case the forced band exists for. The type-ahead needs
+no rule of its own: a search finds only what the band's tree holds, so its landings are already in
+band (measured — "sabel i" answers 0 results at level 4).
+
+**A WORLD READS AS THE DOT THE MAP IS DRAWING OF IT** (owner ruling 2026-09-01;
+`PlanetRows.AddPlanetDot`). At levels 7–12 a planet is a coloured circle in the system's nameplate,
+and its row says what hovering that circle gives — the name and the colonisation status in the
+game's own words — plus the marks the circle carries (curiosities in orbit, a mining probe), with the
+circle's own tooltip as the review buffer and no children. Size, type, outputs, anomalies, deposits,
+the dossiers and every action belong to the orbital card, which the map draws one band closer, so
+they are read at 13 and nowhere else. It is the SAME node either side, so a cursor standing on a
+world when the camera pulls back stays on that world and simply hears less.
+
 **ONE landing on the galaxy page** (owner ruling 2026-08-22; `GalaxyHudScreen.GoTo(MapTarget,
 MapCamera)`). Five things used to send the player somewhere on the map — a notification's
 show-location, the scanner's Alt+Home, travelling a road, the go-to key, a seat after a fleet action

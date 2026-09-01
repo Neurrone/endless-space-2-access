@@ -51,6 +51,18 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   (`ModNotifications.Arrived`/`PopsUp`): every notification the player's empire is given is announced
   by its title on arrival — the game's own as well as the mod's — UNLESS a popup of its own is
   coming, which `NotificationScreen` reads out instead.
+- **`CurrentGuiNotification` can STAND with no popup drawn, and it disables the game's keyboard
+  zoom** (measured 2026-09-01). `GalaxyViewCameraController.CheckInputs` gates every keyboard zoom on
+  `Gui.GuiNotificationService.CurrentGuiNotification == null`, so while the field is stale PageUp and
+  PageDown do nothing at all on the galaxy map and the mod looks like the culprit. The session found
+  it holding a `NotificationPopulationGained` that was in no empire's list and had no window shown
+  (every `GuiWindow.Shown` enumerated; only the labels, the HUD and the tutorial were up), and
+  `DismissGuiNotification` on it changed nothing — that call is about the LIST. What clears it is the
+  manager's own property setter, which is `private set` and raises the same Refresh a real close
+  does: `typeof(GuiNotificationManager).GetProperty("CurrentGuiNotification").GetSetMethod(true)
+  .Invoke(manager, new object[] { null })`. With it null, a real `POST /key` PageDown moved the rung
+  9 → 7 and spoke both band words. **Leave it null at the end of a session**: a stale one makes every
+  physical-zoom claim untestable and looks like a mod defect.
 - **A notification that queues behind an open popup is not passed over — the next Dismiss or Minimize
   opens it — so the popup question is about a notification's whole life, not about the frame it
   landed on.** `NotificationWindow.OnDismissCb` (:199-202) and `OnMinimizeCb` (:219-222, which Escape

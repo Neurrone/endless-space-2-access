@@ -19,16 +19,51 @@ member holds `FocusedSystem` runs that system's own zoom-out). The system orderi
 the order WITHIN a group.
 
 **The tree's KINDS change with the zoom band** (2026-09-01, `Core/UI/Bands.cs` via
-`UI/ZoomBands.cs`; the row CONTENT is the same at every band it appears in — fidelity is a later
-stage). Measured on `[Beginner] access test`, one `/gui/graph` per spoken level with one system
-(Sabel) expanded, key shapes counted:
+`UI/ZoomBands.cs`). Measured on `[Beginner] access test`, one `/gui/graph` per spoken level with one
+system (Sabel) expanded, key shapes counted:
 
 | spoken level | top level | a system's children |
 |---|---|---|
-| 1–2 | constellation groups only, CLOSED (`Right` on one answers "Nothing in here") | — no system rows at all |
-| 3–4 | + system rows, + point bookmarks inside their constellation | lanes only |
+| 1–2 | constellation groups only, CLOSED, + EVERY point bookmark, interleaved by position (2026-09-01: they move up out of their shut groups and keep their `…/constellation/#/bookmark/#` keys) | — no system rows at all |
+| 3–4 | + system rows, + point bookmarks back inside their constellation | lanes only |
 | 5–6 | same | lanes + fleets (parked, en-route, free-moving) |
-| 7–13 | + the open-space rows (`galaxy:probe/#` and the rest) | lanes, fleets, planets, the label dossiers (`/tooltip/#`), manage-system, hangars, quest pins, probe directions |
+| 7–12 | + the open-space rows (`galaxy:probe/#` and the rest) | lanes, fleets, planets AT DOT FIDELITY, the label dossiers (`/tooltip/#`), manage-system, hangars, quest pins, probe directions |
+| 13 | same | the same, with the planets at full reading |
+
+**A planet's two readings, either side of 12↔13** (2026-09-01). Expand a system from 13 (or let an
+expansion at 7–12 jump you there), put the cursor on a planet, then `SetZoomHere(11)` and dump
+`/gui/graph?buffers=1`. Measured on Sabel I: at 13 `Sabel I, group, Medium Mediterranean,
+Inhospitable, collapsed, 2 of 10` with the five FIDSI lines, the anomaly and the deposit in the
+buffer and dossier children under it; at 12 `Sabel I, Inhospitable, 2 of 10` — a LEAF, buffer = name,
+status, and the circle's own tooltip sentence ("This planet is too hostile to be colonized by your
+empire"). Same node id both sides (`…/system/476/planet/0`) and the cursor stays on it, which is the
+check that matters. A planet whose circle draws no tooltip (Sabel II) simply has a two-line buffer.
+
+**The motion pairs — expansion, collapse, landings** (2026-09-01). Every one is
+`DevProbe.Camera()` before and after, plus `/speech?since=N`; drive the zoom with
+`GalaxyViewLevels.SetZoomHere(step)` from `/eval` (no flight, camera stays over the same sky) and the
+tree with `/input ui.right` / `ui.left`.
+
+| pair | measured |
+|---|---|
+| expand a system at 3 | camera IDENTICAL (`focus [34.16,0,-27.24]`, step 2), children = 3 lanes, cursor on "Starlane 1 to Rigel, east, 1 of 3", no zoom line |
+| expand at 5 | camera identical (step 4), children = 3 lanes + 2 fleets; stepping onto the fleet row moves the camera not at all (before 2026-09-01 it snapped to 13) |
+| expand at 8 | step 7 → step 12; "Zoom level 13 of 15, Orbital" then "Manage system, button, 1 of 10" |
+| collapse after that | step 12 → step 7; the row's "collapsed" line then "Zoom level 8 of 15, System details" |
+| expand at 13 | step 12 → step 12 (the label offset shifts by 0.4 and nothing else), straight to "Manage system, button, 1 of 10" |
+| collapse with NO memory (after `POST /reload` — which wipes the expansion set too, so re-open the branch first) | step 8 = "Zoom level 9 of 15, System details", the fallback |
+| collapse at 3–6 | camera unmoved: `FocusedSystem` is null off the orbital step, so there is nothing to hand back |
+| expand a constellation at 1 | step 0 → step 2 centred on the constellation's own centroid; "Zoom level 3 of 15, Systems and star lanes" then "Ita, 5, 34, group, outpost, collapsed, 1 of 18" |
+| expand a constellation at 7 | step 6 → step 6; the descend's own camera slide onto the first system and no zoom line |
+| scanner go-to onto a planet from 8 | step 7 → step 12, cursor on `…/system/585/planet/1` at full reading |
+| next-idle-fleet (`ui.nextIdleFleet`) from 3 | step 2 → step 4 — "Zoom level 5 of 15, Systems, star lanes and fleets", and no further; the fleet's row is then landed on |
+| scanner go-to onto a system from 4 | step 3 → step 12 (today's framing landing, unchanged) |
+| bookmark jump onto a POINT at level 1 | zoom UNCHANGED, camera slides, and the row announces ("Bookmark 3 at -66, -26, 6 of 6") — before 2026-09-01 it said nothing |
+| bookmark jump onto a SYSTEM at level 1 | step 0 → step 2 ("Zoom level 3 of 15…"), branch opened, lands on the system's first lane with the whole path announced |
+
+To test a system bookmark the fixture has none of: `MapBookmarkStore.Set('5',
+MapBookmark.OfSystem(guid, x, z))` from `/eval`, and put the fixture back with
+`MapBookmarkStore.Bookmarks.Clear('5')` plus the store's private `Save()`.
 
 Recipe: `GalaxyViewLevels.SetZoom(step, target)` + `Settle()` from `/eval` puts the camera on an
 exact rung with no flight, then `/gui/graph` and count the bracketed ids by shape — never read the
