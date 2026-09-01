@@ -153,6 +153,10 @@ namespace ES2Access
             // and the store answers that for itself from the pump (<see cref="MapBookmarkStore"/>).
             MapBookmarkStore.Start(host.PluginDirectory);
 
+            // Read once per load rather than per video: the setting lives in the BepInEx config
+            // file, which a player edits with the game closed.
+            CutsceneDescriptions.Enabled = host.CutsceneDescriptions;
+
             Speech = new PrismSpeech();
             if (Environment.GetEnvironmentVariable(NoSpeechEnv) == "1")
             {
@@ -320,6 +324,9 @@ namespace ES2Access
             // And the game's own probe cancel, which hands the panel back to whichever fleet is
             // parked first at the slot rather than to the one that armed the mode.
             ProbeCancelSelection.Install();
+            // What the cutscene videos show, which is the one thing in the game with no text
+            // behind it at all: the words are the mod's own, timed against the game's play clock.
+            CutsceneDescriptions.Install();
 
             _routes = new ModRoutes(host);
             _routes.Register();
@@ -1144,6 +1151,7 @@ namespace ES2Access
             Step("battle replay stream", BattleStream.Remove);
             Step("probe cancel selection", ProbeCancelSelection.Remove);
             Step("influence ground watch", InfluenceGroundWatch.Remove);
+            Step("cutscene descriptions", CutsceneDescriptions.Remove);
 
             Step("input", () =>
             {

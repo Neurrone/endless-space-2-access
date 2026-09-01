@@ -307,3 +307,44 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   `EnableModdingTools` (`EndGameSummary.cs:145-151`). Constructing one and then calling
   `SaveEndGameSummary` registers the SAME instance twice — two rows sharing one row object
   throw `Duplicate control id` and empty the journal.
+
+## Cutscene videos
+
+- **`CutsceneModalWindow.PlayTime` IS the subtitle clock** — a private property its `PlayMovie`
+  coroutine advances by `Time.deltaTime`, and the very field it compares each `<Start>`/`<End>`
+  against (:245-280). Anything timed INTO the gaps between spoken lines must read it rather than
+  the media player's own position: under dropped frames PlayTime falls behind the picture, and the
+  subtitles fall behind with it, so a cue timed off anything else drifts into dialogue PlayTime is
+  still holding back. It is zeroed just before `OnPlayStarted()` and never reset by `UnloadVideo`,
+  so the value read between two videos is the PREVIOUS one's — arm off `OnPlayStarted`, not off
+  `ShowWindow`.
+- **A cutscene's `subtitlesSpecifier` is never stored** — `ShowWindow` passes it straight into
+  `Path.ChangeExtension(moviePath, specifier)` inside `InitializeSubtitles` and keeps nothing.
+  Values are `Quest.MetaplotState.ToString()`, so `LostBack` or `LostNotBack`, with `Unfinished`
+  folded into `LostNotBack` at the call site (`VictoryScreen.cs:284`). It is also only READ when
+  the game's own `DisplaySubtitles` is on, so the loaded subtitle array cannot stand in for it: a
+  mod that needs to know which ending is playing must patch `ShowWindow`.
+- **Four call sites play a cutscene**, all building an absolute path under
+  `Application.streamingAssetsPath`, so the movie's BASENAME is a stable key:
+  `GameClientState_Introduction:136` (faction intro, gated on `EnableFactionIntroductionVideos`),
+  `DepartmentOfTheInterior:1609` (colonization, on `ColonizationCutsceneModalWindow`),
+  `QuestCompletedNotificationWindow:172` (metaplot, on quest completion) and `VictoryScreen`
+  :262/:292 (the metaplot-victory video, then the faction outro — the only one passing a
+  specifier).
+- **Movie filenames use affinity codenames, not the names a player sees.** Templars is Nakalim,
+  Terrans is United Empire, Timelords is Riftborn, Vampirilis is Vodyani, Venetians is Lumeris,
+  Hisshos is Hissho. Planet types rename four: Swamp is Toxic, Tropical is Mediterranean, Vedt is
+  Savannah, Steppe is Steppes, and the gas giants are one word (`GasBurning`). `Terrans_Intro` is
+  the ONLY intro for United Empire, Mezari and Sheredyn, while their outros are three distinct
+  files (`Terrans_Outro_UE`, `_Mezari`, `_Sheredyn`) — 12 intros and 14 outros for 26 faction
+  videos in all.
+- **The metaplot has three narrated videos of its own.** `Metaplot_LostBack` (31.2 s) and
+  `Metaplot_LostNotBack` (32.0 s) play when the player OPENS the quest-completed notification
+  for the final metaplot chapter (`QuestCompletedNotificationWindow.OnBeginShow` →
+  `ShowMetaplotMovieIFN`), and the "owes a video" flag is serialized into the save, so it waits
+  as long as that notification goes unopened. `Metaplot_LostBackVictory` (40.0 s) plays on the
+  victory screen BEFORE the faction outro, and only when the Lost returned AND the player's own
+  empire was on the winning team. The branch is a chapter-1 team choice: Rejuvenators restore
+  the quest systems (`MetaplotLostBack`), Defenders destroy them (`MetaplotLostNotBack`), and
+  the tag goes to EVERY player, so both teams watch the same video. None of the three takes a
+  subtitles specifier — each outcome is a separate file, not a second track on one.

@@ -63,6 +63,30 @@ replacement surface announces itself first with an interrupt in the same breath,
 interrupting confirmation eats that landing (measured: a commit word swallowed the page
 announcement the commit caused).
 
+## Content that plays on a clock
+
+Cutscenes, animated sequences and anything else the player WATCHES rather than works needs
+lines emitted against a playback position, not against a state diff. Two rules, both learned
+the hard way:
+
+**Read the clock the game schedules its OWN subtitles against.** Not the media player's true
+position — the game's, whatever accumulator it advances per frame. This looks like the worse
+choice, because under dropped frames that accumulator lags the picture. That is exactly why
+it is right: the game's subtitles lag with it, so a description written to sit in the gap
+between two spoken lines stays in that gap. Time off the real media position instead and the
+description walks into dialogue the game is still holding back. It also stops when the game
+stops, for free.
+
+**Arm on playback START, not on the window opening.** Engines routinely zero the play clock
+just before the first frame and never reset it on unload, so the value read while a video is
+still loading belongs to the PREVIOUS one — enough to empty a whole track into the player's
+ear at once. Find the callback that fires on the frame the clock is zeroed (ES2:
+`OnPlayStarted`) and arm there; use the show/open call only to record WHICH asset is playing.
+That call is often the only place a variant argument exists at all, since games pass such
+things straight into path-building without storing them.
+
+Both hooks obey law 2: they record, the pump speaks.
+
 ## Speech ownership and recovery
 
 Two placements, both shipped by real mods:

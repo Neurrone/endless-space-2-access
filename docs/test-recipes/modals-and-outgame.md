@@ -521,6 +521,27 @@ a walk that asked `Visible` instead of drawn-ness (gui.md).
 `LoadSaveModalWindow` with `LoadSaveMode = LoadFromGame` gives "Ctrl+Alt+Enter to load" on all
 eleven rows, and flipping the same window to `Save` makes every one of them vanish.
 
+## The cutscene modal
+
+**Playing any cutscene video on demand** — the whole family (faction intro, colonization, outro,
+metaplot) is one call, no game state needed, and it works from the MAIN MENU: `Gui.GuiService
+.GetWindow<CutsceneModalWindow>(false).ShowWindow(System.IO.Path.Combine(UnityEngine
+.Application.streamingAssetsPath, "Movies/Colonization/Arctic.mp4"), null)`, and for an outro add
+`, true, null, true, "LostBack"` to pick the ending's own subtitle and description track. Movie
+names are the game's affinity codenames (`docs/notifications.md` §Cutscene videos).
+`Gui.GuiService.HideWindow(…)` cuts it short.
+For the colonization window instead, `GetWindow<ColonizationCutsceneModalWindow>(false)` and
+`Bind(planet)` before showing — any `StarSystemNode.Planets[0]` off `Gui.Game.Galaxy.GameNodes`
+will do; the planet only feeds the card, not the video.
+
+**Proving a description track's TIMING**, not just its content: note `/speech`'s `next`, fire the
+video, then poll `/speech?since=N` once a second against wall clock. Cues arrive at their authored
+offsets plus a constant ~1.2 s of video load, so the DELTAS between them are the oracle — Arctic's
+1.0/4.5/8.5/11.0 landed at 1.2/5.2/9.2/11.9. The variant half needs an A/B on a pair whose timings
+actually differ: `Horatio_Outro` is the sharpest (LostBack speaks at 8.2 s, LostNotBack is silent
+until 26.0 s), while the three `Terrans_Outro_*` pairs differ by 0.2 s and prove nothing.
+`ES2Access.UI.CutsceneDescriptions.Movie/Variant/CueCount/Playing` is the direct probe.
+
 ## Fixture-blocked
 
 - The numeric editables: the Marketplace tab and a negotiation quantity have no fixture

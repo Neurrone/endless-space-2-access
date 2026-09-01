@@ -31,6 +31,15 @@ namespace ES2Access.Loader
         private int _maxFrameRate;
         private int _forcedWidth;
         private int _forcedHeight;
+        private BepInEx.Configuration.ConfigEntry<bool> _cutsceneDescriptions;
+
+        /// <summary>Whether the mod should describe what the game's videos show. Bound here
+        /// because only the loader is a BepInEx plugin; the mod reads it through
+        /// <see cref="ModHost.CutsceneDescriptions"/>.</summary>
+        internal bool CutsceneDescriptions
+        {
+            get { return _cutsceneDescriptions == null || _cutsceneDescriptions.Value; }
+        }
 
         private void Awake()
         {
@@ -67,6 +76,16 @@ namespace ES2Access.Loader
                     + "resolution handling untouched."
             );
             ParseForcedResolution(resolution.Value);
+
+            _cutsceneDescriptions = Config.Bind(
+                "Speech",
+                "cutsceneDescriptions",
+                true,
+                "Describe what the game's cutscene videos show, spoken in the gaps between the "
+                    + "lines of their own dialogue. The timings assume a screen reader reading at "
+                    + "600 words per minute; a slower rate still hears every description, further "
+                    + "behind the picture. Turn off to hear only the game's own subtitles."
+            );
 
             ApplyDisplayOverrides();
 
