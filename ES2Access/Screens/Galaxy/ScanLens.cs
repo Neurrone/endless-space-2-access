@@ -33,7 +33,7 @@ namespace ES2Access.Screens
     /// contributes anything: a lens this mod has never seen still gets its title read, and a lens
     /// mapped to the wrong zoom step cannot make a page describe something that is not on screen.
     /// </summary>
-    public sealed class ScanLensPanels
+    public sealed partial class ScanLensPanels
     {
         /// <summary>The layer descriptor the player has already been told about - the DESCRIPTOR and not
         /// the lens's name, because three of the descriptor boundaries fall inside one name and the

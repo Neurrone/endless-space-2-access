@@ -191,6 +191,10 @@ namespace ES2Access.Screens
             BuildSystemManagement(builder);
             BuildPlanet(builder);
 
+            // The overlay's own panels, drawn over these two rungs as they are over the map's
+            // (<see cref="ScanLensPanels.Hacking"/>): the family reads what is on the screen, so the
+            // rungs where the game stops drawing one of them declare nothing for it.
+            _lens.Hacking(builder);
             builder.BeginStop(ScanLensPanels.LegendStop);
             _lens.Legend(builder);
 

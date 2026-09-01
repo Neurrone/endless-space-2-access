@@ -12,6 +12,13 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 2 | planet
 
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | spoke
 
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | allocation
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | defensive
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | empire
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | offensive
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | operation
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | trace
+
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | output
 
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | planet

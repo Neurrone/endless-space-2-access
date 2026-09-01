@@ -160,6 +160,18 @@ ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | AgeWidgets.Visible(label.AgeTran
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | || !AgeWidgets.Painted(label.BattleLine)
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | || !AgeWidgets.Visible(label.AgeTransform)
 
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | && AgeWidgets.Painted(line.RemainingDurationLabel.AgeTransform)
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (AgeWidgets.Painted(banner.TraceOperationsGroup))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 2 | if (banner == null || !AgeWidgets.Visible(banner.AgeTransform))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (cell == null || !AgeWidgets.Visible(cell.AgeTransform))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (console == null || !AgeWidgets.Visible(console.AgeTransform))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 2 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 2 | if (line == null || !AgeWidgets.Visible(line.AgeTransform))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (panel == null || !panel.Shown || table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 2 | if (widget == null || !AgeWidgets.Painted(widget))
+ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (widget == null || toggle == null || !AgeWidgets.Visible(widget))
+
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (group == null || !AgeWidgets.Visible(group.AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (headers[i] != null && AgeWidgets.Visible(headers[i].AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))

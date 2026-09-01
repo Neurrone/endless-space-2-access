@@ -3431,6 +3431,9 @@ namespace ES2Access.Screens
                 // The clusters the game keeps drawing over the lens are the turn controls and nothing
                 // else - it hides the banners, the pinned quest and the notification strip - and the
                 // fleet panel is not drawn in the mode either.
+                // The overlay's own panels, which belong to no lens at all - the hacking family and the
+                // scan notifications, both a DLC's and both invisible without it.
+                _lens.Hacking(builder);
                 builder.BeginStop(ScanLensPanels.LegendStop);
                 _lens.Legend(builder);
                 _hud.Turn(builder);
