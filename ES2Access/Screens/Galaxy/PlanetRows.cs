@@ -217,6 +217,23 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => PlanetName(system, planet, empire)),
                     GraphNodes.ValuePart(() => PlanetStatus(system, planet, empire)),
+                    // The two marks the dot itself is drawn with, in BOTH views: the circle carries a
+                    // second ring for a world nothing else is like and a tinted one for a Sanctuary
+                    // standing on it, and until now neither dot row said either (owner ruling
+                    // 2026-09-01). BOTH dot prefabs wire both fields - 253 of 253 circles on each,
+                    // measured 2026-09-01 (the scan labels' table and `StarSystemLabelsWindow`'s 86
+                    // labels) - so unlike the curiosity ring and the probe mark below there is no
+                    // mode branch to make: the ordinary prefab wires all five, the scan one only
+                    // these two.
+                    //
+                    // Asked of the PLANET and not of the widget, under the game's own condition for
+                    // drawing either mark (`PlanetCircleItem.Refresh` :118-201 puts both inside the
+                    // Revealed branch, which is <see cref="Surveyed"/>). Reading the overlay's alpha
+                    // instead would have made the row say different things as the camera panned - the
+                    // very camera-dependence the in-mode tree was ruled free of - because a label out
+                    // of frame paints none of its circles.
+                    GraphNodes.ValuePart(() => UniqueMark(system, planet, empire)),
+                    GraphNodes.ValuePart(() => GhostMark(system, planet, empire), false),
                     // THE MARKS ARE THE ORDINARY MAP'S, and the lens's dot does not carry them. The
                     // two prefabs are not the same widget: on every one of the 253 circles the scan
                     // labels were drawing (measured 2026-09-01) `CircleImage`, `UniquePlanetFeedback`
@@ -241,6 +258,27 @@ namespace ES2Access.Screens
 
             // Synthetic: a dot in a system's label is the map's drawing of a world, not a control.
             builder.AddItem(Nodes.Synthetic(id, vtable));
+        }
+
+        /// <summary>The mark the circle wears for a world nothing else in the galaxy is like
+        /// (<c>PlanetCircleItem.UniquePlanetFeedback</c>, shown for <c>Planet.IsUnique</c>), said in
+        /// the game's own title for one - the same words the full planet reading already uses, so a
+        /// world says one thing about itself at every zoom.</summary>
+        private static string UniqueMark(StarSystemNode system, Planet planet, Empire empire)
+        {
+            return planet != null && planet.IsUnique && Surveyed(system, empire)
+                ? Localize("%PlanetScreenUniquePlanetTitle")
+                : null;
+        }
+
+        /// <summary>The mark the circle wears for a Sanctuary standing on the world
+        /// (<c>PlanetCircleItem.GhostFeedback</c>, tinted with the ghost empire's colour), said in the
+        /// game's own sentence for one - the same <see cref="GhostWord"/> the full reading uses.
+        /// Fixture-blocked: no save in this project has ever held a ghost colony, so this path is
+        /// code-verified only.</summary>
+        private static string GhostMark(StarSystemNode system, Planet planet, Empire empire)
+        {
+            return Surveyed(system, empire) ? GhostWord(planet, empire) : null;
         }
 
         // ---- the orbital cards ----
@@ -1117,22 +1155,27 @@ namespace ES2Access.Screens
         /// hidden.</summary>
         private static void AddGhostSignal(List<string> lines, Planet planet, Empire empire)
         {
-            ColonizedPlanet ghost = planet.GhostColonizedPlanet;
+            AddLine(lines, GhostWord(planet, empire));
+        }
+
+        /// <summary>The game's own sentence for a Sanctuary on this world, or nothing where the card's
+        /// gate hides it - shared with the dot row (<see cref="GhostMark"/>) so the two readings can
+        /// never drift into two different words for the one thing.</summary>
+        private static string GhostWord(Planet planet, Empire empire)
+        {
+            ColonizedPlanet ghost = planet == null ? null : planet.GhostColonizedPlanet;
             if (
                 ghost == null
                 || ghost.ColonizedStarSystem == null
                 || (int)ghost.ColonizedStarSystem.Visibility[empire] < 1
             )
             {
-                return;
+                return null;
             }
 
-            AddLine(
-                lines,
-                ghost.Empire == empire
-                    ? Localize("%PlanetStatusGhostDescription")
-                    : Localize("%PlanetStatusGhostByDescription", LeaderName(ghost.Empire))
-            );
+            return ghost.Empire == empire
+                ? Localize("%PlanetStatusGhostDescription")
+                : Localize("%PlanetStatusGhostByDescription", LeaderName(ghost.Empire));
         }
 
         /// <summary>An empire as the game names it to this player - the same leader name its own
