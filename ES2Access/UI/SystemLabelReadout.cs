@@ -118,9 +118,11 @@ namespace ES2Access.UI
                 Say(lines, label.MinorRelationQuestStartedGroup);
                 AddMinorRelation(lines, label);
                 AddGarrisons(lines, label);
-                // The pirate lair's and the Academy's own figures are NOT here: the game draws each of
-                // them on a control it lets the player click, so each is a button child of the system
-                // and says its own numbers (<see cref="Actions"/>). One source per fact.
+                AddAcademy(lines, label);
+                // The pirate LAIR's figures are not here: the game draws them on a control it lets the
+                // player click, so the lair is a button child of the system and says its own numbers
+                // (<see cref="Actions"/>). One source per fact. The Academy is NOT a button (owner
+                // ruling 2026-09-02) and its figures stay lines of this readout.
             }
             catch (Exception e)
             {
@@ -133,8 +135,10 @@ namespace ES2Access.UI
         /// <summary>
         /// The buttons the label draws on a system, in the order it draws them: the two conversions and
         /// the pirate-mark buy-out among the icons beside the name, then the bottom-button row - the
-        /// diplomacy button, the pirate lair, the Academy (measured: <c>BottomButtons</c> lays its
-        /// children out in exactly that order) - and the hacking beacon the game parks there last.
+        /// diplomacy button and the pirate lair (measured: <c>BottomButtons</c> lays its children out
+        /// in exactly that order) - and the hacking beacon the game parks there last. The Academy's
+        /// group is drawn in that row too and is NOT a button (owner ruling 2026-09-02): it is read as
+        /// text by <see cref="AddAcademy"/>.
         ///
         /// Every one of them is a wordless icon that the game explains in a sentence rather than names,
         /// so each is called by a phrase of this mod's and the game's sentence arrives with it - these
@@ -191,7 +195,6 @@ namespace ES2Access.UI
                     true
                 );
                 AddPirateLair(found, label);
-                AddAcademyDiplomacy(found, label);
                 CardActions.AddRefusable(
                     found,
                     HackingBeacon(label),
@@ -277,76 +280,6 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading a system's pirate lair threw: " + e);
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// THE ACADEMY'S OWN BUTTON, the same shape as the lair beside it (owner ruling 2026-09-02):
-        /// the group the label draws for a system the Academy holds, whose icon the game wires to the
-        /// same handler (<c>AcademyIcon</c> → <c>OnClickDiplomacyButton</c>, which opens
-        /// <c>AcademyDiplomacyModalWindow</c> :3160-3165) and which is drawn exactly while the colony
-        /// here is the Academy's and the Academy is reachable (<c>ShowAcademyDiplomacyButton</c> :571).
-        ///
-        /// NOT the Academy badge on the standing-icons line (<c>AcademyIconGroup</c> :2310-2321). That
-        /// picture carries no click at all - measured, no <c>AgeControlButton</c> anywhere under it -
-        /// and stays the text child it already was.
-        /// </summary>
-        private static void AddAcademyDiplomacy(
-            List<CardActions.CardAction> found,
-            StarSystemLabel label
-        )
-        {
-            AcademyGroup academy = label.AcademyGroup;
-            AgeTransform click = academy == null ? null : Clickable(academy.AgeTransform);
-            if (click == null)
-            {
-                return;
-            }
-
-            AcademyGroup it = academy;
-            CardActions.AddRefusable(
-                found,
-                click,
-                Mod(ModStrings.GalaxySystemAcademy),
-                true,
-                () => AcademyReading(it)
-            );
-        }
-
-        /// <summary>What the Academy is at the system it lives on, as the button's own value: the level
-        /// it has reached and how far the next one is - a bare number and a ring with no figure on it,
-        /// so the sentence around both is the mod's - then what it is counting down to, in the game's
-        /// own words. The game writes what the countdown MEANS into the countdown's own tooltip, a
-        /// different sentence per state (<c>AcademyGroup.RefreshTimerLabel</c>), so those words are
-        /// used with the number drawn beside them.</summary>
-        private static string AcademyReading(AcademyGroup academy)
-        {
-            try
-            {
-                MessageBuilder said = new MessageBuilder();
-                if (AgeWidgets.Visible(academy.AcademyPowerTracker))
-                {
-                    said.ListItem(
-                        ModStrings.Format(
-                            ModStrings.GalaxySystemAcademyLevel,
-                            AgeText.Label(academy.AcademyPowerLabel),
-                            Percent(academy.AcademyPowerGauge)
-                        )
-                    );
-                }
-
-                if (AgeWidgets.Visible(academy.AcademyRolesCountdown))
-                {
-                    said.ListItem(First(academy.AcademyRolesCountdown))
-                        .ListItem(AgeText.Label(academy.AcademyRolesCountdownLabel));
-                }
-
-                return said.Build();
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading a system's Academy group threw: " + e);
                 return null;
             }
         }
@@ -1066,6 +999,62 @@ namespace ES2Access.UI
                 int.TryParse(drawn, out count)
                     ? ModStrings.Plural(oneKey, manyKey, count)
                     : ModStrings.Format(manyKey, drawn)
+            );
+        }
+
+        /// <summary>
+        /// What the Academy is at a system it has been given: the level it has reached, how far the
+        /// next one is, and what it is counting down to. THE ACADEMY IS NOT A BUTTON (owner ruling
+        /// 2026-09-02, withdrawing the button round 5 wired onto the clickable icon inside this
+        /// group) - the group is read here as text, as it always was.
+        ///
+        /// The level is a bare number and the progress is a ring with no figure on it at all, so the
+        /// sentence around both is the mod's and the ring is read as the proportion it is drawn at. The
+        /// countdown is the other way round: the game writes what the number MEANS into the
+        /// countdown's own tooltip - a different sentence per state
+        /// (<c>AcademyGroup.RefreshTimerLabel</c>) - so its own words are used, with the number it
+        /// draws beside them.
+        ///
+        /// The group's own tooltip is NOT read: the label binds the whole system's dossier onto it
+        /// (<c>StarSystemLabel</c> :1777), which the system's star tooltip already carries.
+        /// </summary>
+        private static void AddAcademy(List<string> lines, StarSystemLabel label)
+        {
+            AcademyGroup academy = label.AcademyGroup;
+            if (academy == null || !AgeWidgets.Visible(academy.AgeTransform))
+            {
+                return;
+            }
+
+            if (AgeWidgets.Visible(academy.AcademyPowerTracker))
+            {
+                Add(
+                    lines,
+                    ModStrings.Format(
+                        ModStrings.GalaxySystemAcademyLevel,
+                        AgeText.Label(academy.AcademyPowerLabel),
+                        Percent(academy.AcademyPowerGauge)
+                    )
+                );
+            }
+
+            if (!AgeWidgets.Visible(academy.AcademyRolesCountdown))
+            {
+                return;
+            }
+
+            string says = First(academy.AcademyRolesCountdown);
+            if (string.IsNullOrEmpty(says))
+            {
+                return;
+            }
+
+            Add(
+                lines,
+                new MessageBuilder()
+                    .ListItem(says)
+                    .ListItem(AgeText.Label(academy.AcademyRolesCountdownLabel))
+                    .Build()
             );
         }
 

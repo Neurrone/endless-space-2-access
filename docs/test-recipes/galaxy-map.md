@@ -1073,29 +1073,36 @@ with its `OnActivateMethod` — the answer is prefab-level and identical on all 
 | `ContextualIconInvasion` | `OnClickGroundBattleIcon` | tooltip child, now a BUTTON (no instance) |
 | `RequestManagementViewButton` | `OnRequestManagementView` | `…/management`, "Manage system" |
 | `CancelPirateMarkButton` · `ContextualIconConversion` · `ContextualIconAcademyConversion` · `DiplomacyButton` | their own | `SystemLabelReadout.Actions` card actions |
-| `PirateLairIconGroup` (inside `PirateLairGroup`) · `AcademyIcon` (inside `AcademyGroup`) | `OnClickDiplomacyButton` | `SystemLabelReadout.Actions` card actions, "Pirate lair" and "Academy" |
+| `PirateLairIconGroup` (inside `PirateLairGroup`) | `OnClickDiplomacyButton` | `SystemLabelReadout.Actions` card action, "Pirate lair" |
+| `AcademyIcon` (inside `AcademyGroup`) | `OnClickDiplomacyButton` | clickable but NOT a button (owner ruling 2026-09-02): read as TEXT by `SystemLabelReadout.AddAcademy`; the Diplomacy card action is the same handler |
 | `FriendlyFleetsButton` · `HostileFleetsButton` | `OnClickCb` → `OnGarrisonClicked` | selects a fleet; the fleets have rows of their own |
 | `CancelPirateMarkHoverArea` | hover only | not a click |
 
-**THE LAIR AND THE ACADEMY ARE BUTTONS OF THE BOTTOM ROW** (owner ruling 2026-09-02). `BottomButtons`
-lays its children out `DiplomacyButton`, `PirateLairGroup`, `AcademyGroup` (measured), and the mod's
-card actions follow that order, so both land in the actions block at the top of the system's
-children beside "Manage system". The node is the CLICKABLE CHILD and not the group: the group's own
-tooltip is the whole system's dossier (`BindLabelTooltip`, `StarSystemLabel` :1760/:1777) which the
-system's star already carries, while the child carries none — measured, `tip=none` on both. Each
-says its own figures as its VALUE (the lair: the game's fleet-timer sentence, its "-"-when-maxed
-reading, the power level and the gauge's angle; the Academy: level, angle, and the countdown's own
-state sentence), and those lines have left the system row's readout. Availability rides the game's
-own switch, which sits on the GROUP (`PirateGroup.Refresh` :65, `AcademyGroup.Refresh` :110) and is
-reached by `AgeWidgets.Offered`'s ancestor walk. **NOT the Academy badge** on the standing-icons line
-(`StarSystemLabel.AcademyIcon` / `AcademyIconGroup` :2310-2321): measured, no `AgeControlButton`
-anywhere under it — two different widgets share the name `AcademyIcon`.
+**THE LAIR IS A BUTTON OF THE BOTTOM ROW, THE ACADEMY IS NOT** (owner ruling 2026-09-02, withdrawing
+the Academy half of the same day's earlier ruling). `BottomButtons` lays its children out
+`DiplomacyButton`, `PirateLairGroup`, `AcademyGroup` (measured), and the mod's one card action from
+that row lands in the actions block at the top of the system's children beside "Manage system". The
+node is the lair's CLICKABLE CHILD and not the group: the group's own tooltip is the whole system's
+dossier (`BindLabelTooltip`, `StarSystemLabel` :1760/:1777) which the system's star already carries,
+while the child carries none — measured, `tip=none`. It says its own figures as its VALUE (the game's
+fleet-timer sentence, its "-"-when-maxed reading, the power level and the gauge's angle), and those
+lines have left the system row's readout. Availability rides the game's own switch, which sits on the
+GROUP (`PirateGroup.Refresh` :65) and is reached by `AgeWidgets.Offered`'s ancestor walk.
+
+**The Academy is text, both of it.** Its bottom-row group carries a wired `AcademyIcon`
+(`OnClickDiplomacyButton` → `AcademyDiplomacyModalWindow` :3160-3165, drawn while
+`ShowAcademyDiplomacyButton` :571), but the owner has ruled it is not a door the mod opens: level,
+gauge angle and countdown stay lines of the system row's readout (`SystemLabelReadout.AddAcademy`).
+The **badge** on the standing-icons line (`StarSystemLabel.AcademyIcon` / `AcademyIconGroup`
+:2310-2321) is a separate widget of the same name and carries no `AgeControlButton` at all — measured
+— and is text for that reason as well.
 
 **Fixture-blocked on the owner's save**, and the test for it is one `/eval`: all four
 `IPiratesManagementService.Lairs` (Oentho, Nihal, Amosa, Talitha) and the `UniqueStarSystemAcademy`
 node (Leran) answer `MainColonizedStarSystem == null` on their labels, and both groups are drawn
 exactly while that colony is theirs (`CanShowPirateLairGroup` :573, `ShowAcademyDiplomacyButton`
-:571), so neither group is ever `Visible` here. Two further blocks to plan around: under the SCAN
+:571), so neither group is ever `Visible` here — the lair button has never been sighted, and neither
+have the Academy's readout lines. Two further blocks to plan around: under the SCAN
 lens the whole `StarSystemLabelsWindow` is hidden (every `StarSystemLabel` reads `Visible=false`), and
 in normal view the labels draw only at the FAR rungs — measured at Oentho, 14 labels at step 4, one
 at step 6, none at 8 or above.

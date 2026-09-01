@@ -37,21 +37,21 @@ belong in the files above.
     round 2): position-free was the judgement call, and the ordinary list position is back.
   - **UNVERIFIED, code-only (round 4/5)**: the battle and ground-battle contextual icons are buttons
     now (`OnClickBattleIcon` / `OnClickGroundBattleIcon`), and no save has ever drawn either — the
-    queue button is the family's one live proof. The pirate lair and the Academy's seat are buttons
-    of the label's bottom row too (round 5): the wiring is measured on the prefab and the handler
-    read out of the game's own code, but no lair and no Academy colony is perceivable on the
-    owner's save (`MainColonizedStarSystem == null` on all five), so neither node has ever been
-    sighted. A fixture that draws one is what closes them.
-  - **AWAITING SIGN-OFF (round 5, 2026-09-02)**: `galaxy.system-pirate-lair` = "Pirate lair" and
-    `galaxy.system-academy` = "Academy", the names of those two buttons (the game draws each as a
-    wordless picture and names it nowhere); and `galaxy.system-pirate-power` gains the gauge, now
-    "Pirate power level {0}, {1} percent to the next level", the wording the Academy's own level line
-    already used.
-  - **OPEN, for the owner (round 5)**: the Academy BADGE on the standing-icons line — the one the
-    ruling named — carries no click at all (measured, no `AgeControlButton` under it), so it stayed a
-    text child. Its tint means "which major empire holds the Academy's system", which is the system
-    row's own owner word, said one line above; naming the empire on the badge as well would be the
-    one fact twice. Wanted anyway?
+    queue button is the family's one live proof. The pirate lair is a button of the label's bottom
+    row too (round 5): the wiring is measured on the prefab and the handler read out of the game's
+    own code, but no lair is perceivable on the owner's save (`MainColonizedStarSystem == null` on
+    all four), so that node has never been sighted. A fixture that draws one is what closes it.
+    (The Academy's seat was wired the same way in round 5 and WITHDRAWN 2026-09-02 — the Academy is
+    not a button; its figures are back in the system row's readout, themselves unsighted for the
+    same fixture reason.)
+  - **AWAITING SIGN-OFF (round 5, 2026-09-02)**: `galaxy.system-pirate-lair` = "Pirate lair", the
+    name of that button (the game draws it as a wordless picture and names it nowhere); and
+    `galaxy.system-pirate-power` gains the gauge, now "Pirate power level {0}, {1} percent to the
+    next level", the wording the Academy's own level line already used.
+  - **OPEN, for the owner (round 5)**: the Academy BADGE on the standing-icons line carries no click
+    at all (measured, no `AgeControlButton` under it) and is a text child. Its tint means "which
+    major empire holds the Academy's system", which is the system row's own owner word, said one
+    line above; naming the empire on the badge as well would be the one fact twice. Wanted anyway?
   - **OPEN, for the owner**: unowned space in the survey says NOTHING about ownership (there is no
     phrase for "nobody's territory" and none was invented) — is the bare pair the wanted answer?
     (The arming question this bullet used to carry was RULED 2026-09-01: every diplomacy-band row
