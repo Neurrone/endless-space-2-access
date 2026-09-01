@@ -50,8 +50,6 @@ ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 2 | Nodes.Synthetic(
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
 
-ES2Access/Screens/Galaxy/ScanLens.cs | 1 | Nodes.Synthetic(ControlId.For(window, "scan:system/name"), vtable)
-
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/Galaxy/ScanRows.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
 
