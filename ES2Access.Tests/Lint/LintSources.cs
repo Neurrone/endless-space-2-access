@@ -16,9 +16,14 @@ namespace ES2Access.Tests.Lint
     /// counted rather than listed twice, so the count is the thing that has to move when a fifth
     /// appears.
     ///
-    /// The gate is one-directional: a site the allowlist does not cover fails, a covered site that has
-    /// since been deleted does not. Stale entries are harmless and worth pruning when noticed; a new
-    /// site is the thing that must not slip in unremarked.
+    /// The gate runs BOTH WAYS. A site the allowlist does not cover fails, and so does an allowlist
+    /// entry no site answers to any more - because a stale entry is not the harmless leftover it looks
+    /// like: it is a standing pre-authorisation, and the first line of code that happens to match its
+    /// text again is admitted without anybody deciding. That is not hypothetical. A fossil in
+    /// <c>synthetic-nodes.allow</c> outlived the walk it was written for and silently vouched for a
+    /// misdeclared <c>scan:system/name</c>, which reached the player as a logged warning nobody had
+    /// approved. The count is part of the entry, so an entry that allows more occurrences than the
+    /// tree contains is the same fossil in miniature and fails the same way.
     ///
     /// Mechanical half of the remedy, once the why-comment is written:
     /// <c>ES2ACCESS_LINT_REGENERATE=1 dotnet test</c> rewrites the allowlists in place. The entry then
@@ -102,8 +107,9 @@ namespace ES2Access.Tests.Lint
         }
 
         /// <summary>
-        /// The one assertion all three lints end in: every site found in the tree is covered by the
-        /// allowlist, at least as many times as it occurs.
+        /// The one assertion all the source lints end in, and it is a set EQUALITY rather than a
+        /// containment: every site found in the tree is covered by the allowlist at least as many
+        /// times as it occurs, and every entry of the allowlist answers to a site that is still there.
         /// </summary>
         public static void AssertAllowed(
             string allowlist,
@@ -151,6 +157,51 @@ namespace ES2Access.Tests.Lint
                     + "Once the site carries its why-comment, re-run with "
                     + RegenerateVariable
                     + "=1 to record it."
+            );
+
+            // The other direction. An entry standing over nothing is a pre-authorisation waiting for
+            // the next line of code to match its text, and one allowing more occurrences than the tree
+            // has is the same thing for the next copy of a line that is already there.
+            List<string> orphaned = new List<string>();
+            foreach (KeyValuePair<Site, int> entry in allowed)
+            {
+                int occurrences;
+                if (!found.TryGetValue(entry.Key, out occurrences))
+                {
+                    orphaned.Add(entry.Key.File + ": " + entry.Key.Text);
+                }
+                else if (entry.Value > occurrences)
+                {
+                    orphaned.Add(
+                        entry.Key.File
+                            + ": "
+                            + entry.Key.Text
+                            + "   (allows "
+                            + entry.Value
+                            + ", tree has "
+                            + occurrences
+                            + ")"
+                    );
+                }
+            }
+
+            orphaned.Sort(StringComparer.Ordinal);
+            Assert.True(
+                orphaned.Count == 0,
+                "An allowlist entry no source site answers to is a standing pre-authorisation - the next line that matches its text is admitted without anybody deciding. Prune it."
+                    + Environment.NewLine
+                    + Environment.NewLine
+                    + "Stale in ES2Access.Tests/Lint/"
+                    + allowlist
+                    + ":"
+                    + Environment.NewLine
+                    + "  "
+                    + string.Join(Environment.NewLine + "  ", orphaned.ToArray())
+                    + Environment.NewLine
+                    + Environment.NewLine
+                    + "Re-run with "
+                    + RegenerateVariable
+                    + "=1 to rewrite the file from the tree."
             );
         }
 
