@@ -31,14 +31,11 @@ belong in the files above.
     systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
     step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
     continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling.
-  - **OPEN, for the owner**: the diplomacy band's SPOKE and BATTLE rows refuse the inspect cell,
-    Enter, the leap trail and the restore — the inert default, because whether a row at levels 1–2
-    may arm the cell is the question below and nothing was invented for it. At levels 1–2 the tree
-    declares only constellation headings (which refuse arming, 2026-08-31) and point bookmarks, so
-    Ctrl+I can arm the survey only from a bookmark row — should a constellation heading arm the cell
-    at its centroid there, or does entering the survey by zooming out with a live cell suffice? And
-    unowned space in the survey says NOTHING about ownership (there is no phrase for "nobody's
-    territory" and none was invented) — is the bare pair the wanted answer?
+  - **OPEN, for the owner**: unowned space in the survey says NOTHING about ownership (there is no
+    phrase for "nobody's territory" and none was invented) — is the bare pair the wanted answer?
+    (The arming question this bullet used to carry was RULED 2026-09-01: every diplomacy-band row
+    with a place arms the survey; only the placeless Bookmarks heading refuses. What a spoke or a
+    battle row can DO — Enter, the leap trail, the restore — is still the inert default, unruled.)
 - **Coverage-audit tail (2026-08-24 session; owner-directed):** the last screens with no
   Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
   target selection, ground battle — needs a scratch game engaged with a pirate/major fleet
@@ -279,8 +276,10 @@ belong in the files above.
   `GalaxyGarrisonCursor` was already up (seen once; resetting the cursor cleared it) — never
   reproduced, cause unknown.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
-  (geometry-only rating, no tooltip), the empire-rank bar graph + global-rank histogram,
-  the ghost/traitor lines. The governor panel is MODELLED (batch D) but has only ever been
+  (geometry-only rating, no tooltip) and the ghost/traitor lines. (The SYSTEM lens's rank bar graph
+  and global-rank histogram are SHIPPED as of 2026-09-01, in the `scan:system` stop's
+  **System's Rank** region — the drawn sentence, a recomposed place per property, and the two curves
+  as one turn-by-turn sheet.) The governor panel is MODELLED (batch D) but has only ever been
   sighted against a hand-bound hero — a save with a real assigned governor would confirm the
   FIDSI half, which reads "None" for every hero that adds nothing.
 - Planet lens: the remains table is modelled (batch D) and no fixture has a planet with

@@ -573,10 +573,14 @@ band word and says the lens.
 **THE LADDER CARRIES A USAGE HINT** (owner ruling 2026-09-01), because the game's own zoom is two
 keys HELD and nothing about this page suggests an adjustable answers the arrows. A hint line in the
 ladder's review buffer, composed from the LIVE bindings like every other hint, naming BOTH gestures
-at once — an adjustable worked from one end is half a control — and saying what the rung buys on
-the page it is standing on: `{0} or {1} to change zoom` on the map, `{0} or {1} to change lens`
-under a scan lens. `NodeHint` takes an optional second action for this, and a pair sentence with
-only one half renderable contributes nothing.
+at once — an adjustable worked from one end is half a control — and saying what the gesture buys on
+the page it is standing on. **The chords it names are the COARSE pair, Shift+Left/Right** (owner
+ruling 2026-09-01, after playtest, replacing the plain arrows): one rung usually changes nothing the
+player can hear, because the band word and the lens name only move at a boundary, so a hint naming
+the fine step pointed at a key that mostly does nothing. The two sentences are
+`{0} or {1} to change detail level` on the map (`hint.change-detail-level`) and
+`{0} or {1} to change lens` under a scan lens. `NodeHint` takes an optional second action for this,
+and a pair sentence with only one half renderable contributes nothing.
 
 **A STAR LANE ANNOUNCES ITSELF AS A BUTTON** (owner ruling 2026-09-01), in both views: Enter on a
 lane has gone down it since the travel keys landed, so the row's role says so. Nothing else about
@@ -604,7 +608,9 @@ EITHER view (the game's two flags are exact complements outside a battle or a ci
 frames a battle screen is still fading off; `ScanViewScreen` keeps the two rungs the galaxy page does
 not reach, the system-management and planet lenses. **Stops in-mode**: `scan:title` (the lens's own
 strip, then the zoom ladder — the game hides the panel the ordinary view-title cluster is read off),
-the map stop, `scan:legend`, and the turn controls; the banners, the pinned quest, the notification
+the map stop, `scan:system` at the System lens (the panel it draws over one star — its regions and
+its wording are `docs/test-recipes/galaxy-map.md`), `scan:legend`, and the turn controls; the
+banners, the pinned quest, the notification
 strip and the fleet panel are all things the game stops drawing. The lens's ARRIVAL gate — a lens has
 drawn itself — governs that furniture and never the page, because keeping the cursor across the mode
 change is the point; entering says the lens once and leaving says the map, the pair a pushed and
@@ -618,8 +624,14 @@ what hovering the label would (FOCUS IS HOVER, ruled: the lens paints some label
 systems it thinks important). Children: planet dots, lanes, and the scan label's own picture nodes.
 Absent throughout: fleets, probes, missiles, pins, quest markers, deposits, docks, hangars, wrecks.
 **The headings are not in the stars' keys** — every row the cursor could be standing on keeps the key
-it has in the ordinary view, which is what makes the mode change cost the cursor nothing either way;
-the price is that a landing cannot open a heading the player has closed by hand. **Nothing reads the
+it has in the ordinary view, which is what makes the mode change cost the cursor nothing either way.
+**And a landing still opens a heading the player has shut** (owner ruling 2026-09-01, after playtest;
+`ScanRows.NoteGrouping` → `KeyGraph.GroupingAncestor`): landings read their ancestry out of the
+target's key, so the page NAMES this extra level to the engine instead, and the lane hop, the
+scanner's go-to, a bookmark jump, a type-ahead result, a restored leap and the reconciliation of a
+dead row all open it one level per build, exactly as they open a shut constellation in the ordinary
+view. Before it, following a lane into a shut "No owner" did nothing at all — no move, no word.
+**Nothing reads the
 camera**: expansion is in place at every lens and a landing slides and seats (`EnsureBand` and
 `FollowPlace`'s inside-snap both stand down in-mode), because under a lens the rung IS the lens and a
 silent zoom would change what the whole screen means. The scanner filters by the same table
@@ -635,7 +647,14 @@ WATCHED empire's intelligence knows, in the constellations' own reading order, w
 does not place sorting after those it does. A row says who they are, that centre **as a position and
 never as a home** (the game draws the same circle whether the record is their capital or the
 highest-influence colony the watcher can see), and how the watched empire stands with them in the
-game's own word for the state. Under it hangs what the picture puts there: the SWAP TOGGLE wherever
+game's own word for the state. **And the star the lens writes their NAME over** (owner ruling
+2026-09-01, after playtest; `scan.empire-home`, "Home System ⟨star⟩"): that is a second drawing and
+not the centre circle, so the row says it wherever the game paints that line — which is exactly at a
+major's home system the player has explored (`ExplorationState >= 2 && IsMajorHomeSystem`, the same
+gate the swap toggle lives behind). The player's own home always answers; an unexplored foreign
+centre stays a position and nothing more. Reported from the owner's game, where his capital was the
+one place on the band with no row of any kind while a tethered colony had one. Under it hangs what
+the picture puts there: the SWAP TOGGLE wherever
 the game draws one — inside the empire-name line of a label at a major's explored home, and nowhere
 else — named with the game's own word for the gesture; and, for the empire the lens is WATCHING, the
 colonies it tethers to that centre, gated by the WATCHED empire's knowledge rather than the player's
@@ -896,7 +915,19 @@ and nothing else, which is what keeps a planet, a lane, a dossier or a berthed f
 star — none of those has a position of its own, because the map draws them all there. The refuse-list
 measured on the fixture is exactly the constellation headings; by the same rule any other grouping
 row with no place of its own joins it (the unexplored bucket, code-predicted — this fixture declares
-none). Escape and the size
+none).
+**THE DIPLOMACY BAND IS THE ONE PLACE WHERE THE HEADINGS ARE THE PICTURE** (owner ruling
+2026-09-01, after playtest; `GalaxyHudScreen.DiplomacyRowPlace`). At the scan ladder's two
+furthest-out rungs the lens names no star at all, so those rows are not headings over stars the
+player can walk into — they are what is drawn. Every one of them with a place ARMS the survey there:
+an empire row at the centre the watching empire's intelligence has for it (an empire it cannot place
+has no circle and still stands nowhere), a spoke and a battle row at the star at their end, a
+bookmark row as everywhere else. The BOOKMARKS heading has no place and keeps the silent refusal.
+Before this the whole band refused, so the survey — the one reading those rungs exist for — was
+armable from a point bookmark and nowhere else (measured: Ctrl+I on a spoke row consumed, silent,
+`Live` false). It changes where a row IS and nothing about what it can DO: Enter's order, the leap
+trail and the restore are still the registry's (`Core/UI/PlacedRows.cs`).
+Escape and the size
 keys are claimed from the game ONLY while the mode is live AND on the map stop
 (`GalaxyInspect.KeysClaimed` → `Active` through
 `InputAction.ClaimedWhile`, the Space precedent), which is what leaves the game its own KeypadMinus

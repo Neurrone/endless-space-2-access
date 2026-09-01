@@ -780,10 +780,9 @@ apply — with four traps.
   `stack=screen.galaxy:10` on every frame; what changes is the declared node count (66 → 41 at the
   Economy lens on this fixture) and the heading a system sits under. A trace showing a screen push
   is a regression.
-- **Type-ahead can land on the lens's own panel.** At the System lens the `scan:system` centre group
-  is NAMED after the system in the middle of the screen, so `/type "dusay"` may seat on that group
-  rather than on Dusay's map row and `ui.right` then opens the FIDSI figures. Search for a system
-  that is not centred, or walk to the row.
+- **Type-ahead can land on the lens's own panel.** At the System lens `scan:system/name` is NAMED
+  after the system in the middle of the screen, so `/type "dusay"` may seat on that row rather than
+  on Dusay's map row. Search for a system that is not centred, or walk to the row.
 - **The lens changes under an injected zoom.** `SetZoomHere(step)` is the quickest way between
   lenses (0–1 Diplomacy, 2–5 Trade, 6–9 Economy, 10–12 System); give it ~1.2 s to settle before
   dumping, and expect a lens line in `/speech` at every descriptor crossing.
@@ -793,9 +792,12 @@ apply — with four traps.
   chord answers `"⟨category⟩: all, none found"`.
 
 **Working the Diplomacy band (2026-09-01).** On `[Beginner] access test` the list is two rows —
-`Cravers Leaper (AI), -35, 33, COLD WAR` and `Imperials Neurrone, 0, 0, group`, the player's own
-carrying the (disabled) `Swap position` toggle and three spoke rows (Ita, Primus, Sabel: the
-colonies that are not the home system). **Point the lens at the other empire from the REPL** —
+`Cravers Leaper (AI), -35, 33, COLD WAR` and `Imperials Neurrone, 0, 0, Home System ⟨star⟩, group`,
+the player's own carrying the (disabled) `Swap position` toggle and three spoke rows (Ita, Primus,
+Sabel: the colonies that are not the home system). The **Home System** part is there wherever the
+lens paints the empire-name line, which is a major's explored home and nowhere else (2026-09-01) —
+so an unexplored foreign centre is still a bare position, and the foreign case stays
+fixture-blocked here. **Point the lens at the other empire from the REPL** —
 `Gui.GuiService.GetWindow<DiplomacyScanViewWindow>(false).WatchingEmpire = Gui.Game.Empires[1]` —
 and the whole band recomposes in one rebuild: Leaper's row grows FIVE spokes (four of them
 `Unexplored system` — the player has never explored them, and the lens draws the curve over their
@@ -864,15 +866,56 @@ the planet, not the overlay — `docs/galaxy-map.md`).
 **The lane row's role and the ladder's hint** (2026-09-01). A star lane announces `button`
 (`Starlane 1 to Primus, northeast, button, 5 of 8`) and Enter still travels to the far end; the
 zoom ladder's review buffer ends on a chord sentence composed from the LIVE bindings —
-`Left Arrow or Right Arrow to change zoom` on the map, `… to change lens` under the scan lens — so
-a rebind re-words it and a `/gui/graph?buffers=1` on `hud:view-title/zoom` (or `scan:zoom`) is where
-to read it, never the announcement.
+`Shift+Left Arrow or Shift+Right Arrow to change detail level` on the map, `… to change lens` under
+the scan lens (measured on both, 2026-09-01) — so a rebind re-words it and a
+`/gui/graph?buffers=1` on `hud:view-title/zoom` (or `scan:zoom`) is where to read it, never the
+announcement.
+
+**The System lens's "System information" stop (2026-09-01).** A stop of its own right after the map
+stop, about whichever system the lens has bound — the map stop's star rows stay as they are at every
+other lens. Two rows then three regions, each here only while the game draws what it reads:
+`scan:system/name` (the bound system, with the strip's own drawn lines as its buffer),
+`scan:system/info` (the game's tick, named "System information"), then **Outputs**
+(`scan:system/output/0..5` — the five outputs and the population percentage, ALWAYS, since those
+labels are their own panel and not inside the box the tick opens: measured tick-off, still visible
+and bound), **System's Rank** — the game's own caption — and **Remains**, both only while the tick is
+on and the lens has a colony of the player's. Measured on the owner's save at Dusay:
+`Overall system rank [2/4]` (the game's drawn sentence) · `FIDSI, rank 1 of 2` · `Defense, rank 2 of
+2` · `Population, rank 1 of 2` · `No. of representatives, rank 1 of 2` — cross-checked against the
+bars' own ordinals (`1st/2nd/1st/1st`) — then the rank-history sheet, newest first, `Turn 28` /
+`rank 2 of 4` / `4` down to turn 1, cross-checked cell by cell against an `/eval` walk of
+`IGameStatisticsManagementService.TakeSnapshot(turn)`. Crossing right off a turn row says the game's
+own column caption, `No. of systems in my Empire, 4`. **The oracle for the per-property lines** is
+`ScanViewSystemEmpireRankBar.Rank.Text`, but only while the system is in the first four places
+(`Refresh` :38) — past that the game writes nothing and only the recomposed count answers.
+**Toggling the tick** says `System information shown` / `… hidden`; **restore the tick to what you
+found it at**, it is a persistent registry value (`ShowScanViewSystemInfos`).
+**Tab INTO the stop re-centres**: with the tree cursor on one star's row and the camera on another,
+entering slides the camera to the cursor's star and the panel rebinds to it, `zoomStep` unchanged —
+measured cursor on Heka, camera driven to Dusay, panel `Dusay` → `Heka` on the Tab. Where the camera
+already follows the cursor (the ordinary case) nothing moves.
 
 Measured pairs worth re-running: pan the camera at the Economy lens with a system focused
 (`GalaxyViewLevels.CenterOn`) — the `/gui/graph` dump must come back byte-identical and the cursor
 must not move; expand a system at the Trade or Economy lens — `DevProbe.Camera()` unchanged, planet
 DOTS plus lanes as children; expand at the System lens — lanes only; a scanner `galaxy.scanGoTo` —
 the camera focus moves and `zoomStep` does not.
+
+**Landing into a heading the player has SHUT (2026-09-01).** The owner headings seed open, so the
+case has to be made: focus `galaxy:owner/none`, `ui.left`, then land inside it. Both routes were
+measured at the Economy lens on the owner's save — `ui.right` on `Starlane 1 to Primus` under Dusay,
+and `galaxy.scanGoTo` onto Rigel — and both now answer
+`"No owner, group, expanded, …, ⟨star⟩, …"`, with `zoomStep` unchanged on the go-to. Before the fix
+each did nothing at all, which is the shape to watch for: `outcome: consumed` with an empty
+`speech` array and the cursor where it was. **Re-shut what you opened**: the landing leaves the
+heading and the star it opened expanded, and that expansion is shared with the ordinary view,
+since the keys are the same.
+
+**Arming the survey at the Diplomacy band (2026-09-01).** `SetZoomHere(0)` in-mode, focus a row,
+`POST /input galaxy.inspect`. The empire row arms at its centre (`Inspect mode, Cursor 1 by 1` ·
+`Serpens constellation` · `In your influence` · `Dusay, 0, 0`), a spoke row at its own star
+(`… Heka, -1, -9`), and the **Bookmarks heading is consumed and silent** with `GalaxyInspect.Live`
+false — that last is the refusal to check, not the absence of the others.
 
 **Sighting the trade-route weave (2026-09-01).** No save has a trading company
 (`DepartmentOfCommerce.TradingCompanies.Count == 0`, and the fixture cannot build one), so the
