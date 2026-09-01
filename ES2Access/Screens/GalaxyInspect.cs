@@ -2227,12 +2227,18 @@ namespace ES2Access.Screens
         /// the travel keys are all looking at the same square: a filter applied at the sentence would
         /// leave the keys travelling by lanes nobody was told about.
         ///
-        /// The two exceptions are the survey's own subject. SYSTEMS are held at every rung, though the
-        /// picture stops naming them at the two furthest out, because the survey was ruled to name the
-        /// known systems a square contains - that is the deviation the survey IS. The player's own
-        /// point BOOKMARKS are the other way round: they are annotations rather than anything the game
-        /// draws, and the survey's ruled reading is territory, systems and constellations alone, so
-        /// they go quiet exactly there.
+        /// Two kinds are EXEMPT from that filter. SYSTEMS are held at every rung, though the picture
+        /// stops naming them at the two furthest out, because the survey was ruled to name the known
+        /// systems a square contains - that is the deviation the survey IS. And the player's own point
+        /// BOOKMARKS are held at every rung too (owner ruling 2026-09-02, reversing the line of
+        /// 2026-09-01 that silenced them under the survey): a bookmark is an annotation and not a
+        /// rendering, so no band can stop drawing it, and it has a row at every rung of the tree for
+        /// exactly that reason. The two halves of "this square is bookmarked" had come apart - a
+        /// bookmarked SYSTEM kept its word at every rung, because that word rides the place's own
+        /// reading, while a bookmarked POINT went silent at 1-2 - and a square that says nothing about
+        /// the mark the player put on it is the survey's own answer being wrong about the survey's own
+        /// subject: at those two rungs a point bookmark is the only thing in a square of empty sky
+        /// there is to say.
         /// </summary>
         private Contents Read()
         {
@@ -2253,7 +2259,6 @@ namespace ES2Access.Screens
                 bool showsFleets = ZoomBands.Shows(BandKind.Fleets);
                 bool showsDetail = ZoomBands.Shows(BandKind.OpenSpace);
                 bool showsLanes = ZoomBands.Shows(BandKind.Lanes);
-                bool showsMarks = !Surveying();
 
                 List<StarSystemNode> perceived = new List<StarSystemNode>();
                 foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
@@ -2335,16 +2340,14 @@ namespace ES2Access.Screens
                     }
                 }
 
-                if (showsMarks)
+                // No band gate: a bookmark is the player's own annotation and is held at every rung.
+                char digit;
+                GalaxyPosition spot;
+                for (int i = 0; _screen.BookmarkPointAt(i, out digit, out spot); i++)
                 {
-                    char digit;
-                    GalaxyPosition spot;
-                    for (int i = 0; _screen.BookmarkPointAt(i, out digit, out spot); i++)
+                    if (Holds(spot))
                     {
-                        if (Holds(spot))
-                        {
-                            contents.Bookmarks.Add(digit);
-                        }
+                        contents.Bookmarks.Add(digit);
                     }
                 }
 
