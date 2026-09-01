@@ -539,6 +539,32 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   the Economy lens legend captions only two of the three colours. The fixture cannot create a
   trading company (`CreateTradingCompanyPreprocessor` needs the HQ tech AND the improvement
   built — `DepartmentOfCommerce.cs:816-855`).
+  **The drawing has no band term**: the lines are computed from `ViewService_ScanViewSwitched`
+  when the mode goes ON (`TradeRouteRenderer.cs:184-190` into `:204-300`, which asks nothing about
+  zoom, lens or camera), so every lens that draws the map draws the routes.
+  Mod policy (RULED 2026-09-01, shipped 5c): the routes are WOVEN into the map — an end of a route
+  says "Trade route to ⟨other end⟩", a system it crosses "along trade route from ⟨X⟩ to ⟨Y⟩", a
+  lane "carries trade route ⟨X⟩ to ⟨Y⟩" plus the colour the renderer would paint THAT LANE, one
+  line per route and never a merged count (`Core/UI/TradeWeave.cs`). Read from the model, not the
+  renderer, because the renderer never refreshes mid-mode. Naming a path node is knowledge-safe —
+  creating a route raises every node on its path to `Known` and reveals around it
+  (`DepartmentOfCommerce.RevealNodesOnTradingRoutePath` :1943-1959) — but that is a different
+  threshold from exploration, so the weave still falls back to the mod's unexplored word.
+- **The lens's planet dot is a POORER prefab than the map's** (measured live 2026-09-01 over all
+  253 circles the scan labels were drawing): `CircleImage`, `UniquePlanetFeedback` and
+  `GhostFeedback` are wired on every one; `CuriosityAnimatedCircle`, `MiningProbeFeedback`,
+  `TerraformationFeedback` and `AnomalyReductionFeedback` are NULL on every one. So a scan dot can
+  draw colonisation state, a unique mark and a ghost mark, and cannot draw a curiosity ring, a
+  mining probe, a terraformation or an anomaly reduction at all. Mod policy: the in-mode dot row
+  says neither curiosities nor mining probes (5c); the ordinary map's dot, whose prefab wires the
+  curiosity circle, keeps both. Unique and ghost are wired and read by NEITHER dot row — the
+  circle's own tooltip carries the unique sentence — which is an open question, not a decision.
+- **The System lens paints no owner for the surrounding systems** (the flag 5a raised, measured
+  2026-09-01): at step 11 with the camera on Dusay, all 86 `ScanNodeLabel`s are unpainted — no
+  label, no `StarCircle`, no `OwnerCircleTable` — while the same camera at step 8 paints 6 labels,
+  4 star circles and 2 owner circles; the crop pair shows Dusay's nameplate, dots and ring at the
+  Economy lens and only the centre panel's own gauges at the System lens. The owner grouping the
+  scan tree keeps at 11–13 is therefore a deliberate deviation for shape continuity, not parity.
 - **The scan system BAND never draws planets**: `StarSystemManagementScanViewWindow` binds only
   while `FocusedStarSystemNode != null` — the planets belong to the management lens one rung in.
   `StarSystemManagementScanViewPopulationSynergyItem` carries NO AgeTooltip anywhere (the icon

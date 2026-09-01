@@ -848,6 +848,34 @@ must not move; expand a system at the Trade or Economy lens — `DevProbe.Camera
 DOTS plus lanes as children; expand at the System lens — lanes only; a scanner `galaxy.scanGoTo` —
 the camera focus moves and `zoomStep` does not.
 
+**Sighting the trade-route weave (2026-09-01).** No save has a trading company
+(`DepartmentOfCommerce.TradingCompanies.Count == 0`, and the fixture cannot build one), so the
+routes are SYNTHESIZED from the REPL — the whole weave was verified this way, and the same recipe
+re-runs it. With the scan lens up:
+
+1. Find two systems in `ES2Access.UI.GameGalaxy.GameNodes()` by `LocalizedName` (never `foreach` —
+   index the array), then ask the game's own pathfinder for the route's path:
+   `Services.GetService<IPathfindingService>().FindPath(new PathfindingData(pe.BaseWarpSpeed, 0f, pe.BaseWormholeSpeed, 0f, 0f, pe.Index), from.NodePosition, to.NodePosition, new PathfindingRequestSettings(PathfindingFlags.TradeRoutes, 0L))`
+   — measured Dusay → Rigel → Sabel, which gives two ends, one waypoint and two lanes.
+2. `new TradingRoute(path.PathPositions, GameEntityGUID.Zero, GameEntityGUID.Zero)` (the ctor
+   builds an all-clear `Blockade` of the right length), `new TradingCompany()`, add the route to
+   `company.TradingRoutes`, and add the company to the department's PRIVATE `tradingCompanies`
+   list by reflection — `TradingCompanies` is `AsReadOnly()` over it, so the read-only view sees it.
+3. A second route on the same path in `ExternalTradingRoutes`, with
+   `typeof(TradingRouteBlockade).GetProperty("IsBeingSoftBlockadedOnHQ").SetValue(r.Blockade, true, null)`,
+   makes every shared lane MIXED and proves the multiplicity ruling in one dump.
+4. **Restore** by clearing the private list (`companies=0`) and `POST /loadsave`. Nothing else is
+   touched: no order is posted, and `RevealNodesOnTradingRoutePath` is never called, so no
+   exploration state moves. Zero `Warning` lines in `/log` across the whole injection.
+
+Measured with that fixture: `Dusay … Trade route to Sabel` / `Sabel … Trade route to Dusay` /
+`Rigel … along trade route from Dusay to Sabel`, Rigel's lane children
+`Starlane 1 to Dusay, east, carries trade route Dusay to Sabel, open` and
+`Starlane 3 to Sabel, west, …, open` with `Starlane 2 to Heka` silent; after the blockaded second
+route, every one of those lines DOUBLES and both lanes read `mixed`. Toggle the lens off with the
+company still injected and every route line is gone from systems and lanes alike — the weave is
+gated on the mode, as the drawing is.
+
 ## The fog-off smoke pattern
 
 **Galaxy: the fog-off smoke pattern.** Forcing a world-state predicate TRUE in code, rebuilding,
@@ -1245,6 +1273,15 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
 ## Fixture-blocked
 
 - A merged fleet lozenge (**Fog, labels and map marks**).
+- **A "???" system, anywhere.** The exploration census of `[Beginner] access test` (2026-09-01,
+  86 star systems by `node.Exploration[player]`) is 65 Unrevealed, 17 Revealed, 4 Owned and
+  **nothing at Localized, Identified or PartiallyRevealed** — so `_located` is empty galaxy-wide,
+  the scan tree's `Unexplored` heading never appears, and the ordinary map's located-star rows are
+  unsighted too. It is a fixture fact, not a camera one: no framing can produce one.
+- **The DRAWN trade-route lines.** The weave's readings are proved by synthesis (**Working the
+  in-mode map**) and by the offline `TradeWeaveTests`; what a synthetic company cannot show is the
+  renderer's own picture — the three materials on the map, the legend beside them, and whether a
+  real blockade reaches the reading the same turn it lands.
 - An orbiting fleet of the player's own, an obliterator projectile and an ally coordination
   pin (**Map coordinates**).
 - The hero detailed card's four-symbol row, the construction line's festival badge and the

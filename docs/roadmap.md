@@ -32,8 +32,39 @@ belong in the files above.
   EXIT-SCAN-FIRST landings off a new `BandKind.OpenSpace` column, and the inspect cell's in-mode
   range (1–10, the survey at 1–2, arming from the System lens pulling out to Economy), and — the
   word approved mid-stage — the **"Bookmarks"** group the in-mode tree gathers the player's own
-  POINT bookmarks under, which closes 5a's last named hole. Still to
-  come: **5c** — the trade-route weave and the pinned null-probe sweep of the scan dot's overlays.
+  POINT bookmarks under, which closes 5a's last named hole. Stage 5c shipped 2026-09-01: the
+  TRADE-ROUTE WEAVE (ends, waypoints and lanes each saying one line per route, the lane carrying
+  the colour the renderer would paint it, gated on the mode exactly as the drawing is — the flat
+  `scan:routes` group and its four counted phrases retired with it), and the pinned null-probe
+  SWEEP of the scan dot, which found the lens's circle wires no `CuriosityAnimatedCircle`,
+  `MiningProbeFeedback`, `TerraformationFeedback` or `AnomalyReductionFeedback` on any of the 253
+  drawn circles, so the in-mode dot row stopped claiming curiosities and mining probes. Still to
+  come: **stage 6** — closure (manual test, doc landings, walk baselines).
+  PINNED, fixture-blocked (5c): the DRAWN route lines — the weave was proved live against
+  SYNTHETIC routes injected into the department (recipe in `test-recipes/galaxy-map.md`) and by
+  `TradeWeaveTests`, so what a save with a real trading company still has to show is the renderer's
+  own three materials on the map, the legend beside them, and a real blockade reaching the reading
+  the turn it lands. Also pinned: the `UniquePlanetFeedback` and `GhostFeedback` marks, which ARE
+  wired on both dot prefabs and are read by neither dot row (the circle's tooltip carries the
+  unique sentence) — nothing was invented; and a "???" system anywhere, the whole galaxy of
+  `[Beginner] access test` being 65 Unrevealed / 17 Revealed / 4 Owned with nothing between.
+  FLAGGED by 5c, for the owner: the System lens (levels 11–13) paints NO owner for the surrounding
+  systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
+  step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
+  continuity rather than parity. Left as shipped; the alternative (a flat system list at 11–13)
+  needs a ruling. Also flagged: on a lane carrying several routes every route's line says that
+  LANE's colour, so two routes over one blockaded hop both say "mixed"; the per-route alternative
+  ("open"/"blockaded" per line) would lose the third material the picture actually shows.
+  UNEXPLAINED, for stage 6: the running game's log ring holds ~100 warnings from BEFORE the 5c
+  build — `galaxy: reading the systems threw: NotSupportedException: Collection is read-only` at
+  `NodeAnnouncement[]::Add` in `AddSpokes` ← `AddEmpireRow` ← `BuildEmpireList` — i.e. a spoke row
+  whose vtable came with an ARRAY of announcements. NOT reproducible on the 5c build (the
+  Diplomacy band rebuilt clean, three spokes, zero warnings since the reload), so either a stale
+  intermediate build or a state 5b's own probing reached (the `WatchingEmpire` swap is the
+  suspect). One attempt to reproduce failed for a second reason worth knowing: the
+  `WatchingEmpire = Gui.Game.Empires[1]` write REVERTED before the next build (the window read back
+  `watching = 0`, the player, with the window shown), so 5b's swap recipe needs a re-check of its
+  own before the spoke path under a foreign watcher can be re-driven.
   PINNED, fixture-blocked (5b): battle rows and the swap toggle's own UI (no save has a fight in
   orbit while the lens is up, and Leaper's home is unexplored so its label draws no name line);
   every hacking table's per-row content, the program costs and the in-map hacking icons (a
