@@ -137,6 +137,28 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
+        public void OpenSpaceArrivesWithTheNameplateAndAtNoScanLens()
+        {
+            for (int level = 1; level <= 6; level++)
+            {
+                Assert.Equal(BandFidelity.None, Bands.Shows(level, false, BandKind.OpenSpace));
+            }
+
+            for (int level = 7; level <= Bands.LastLevel; level++)
+            {
+                Assert.Equal(BandFidelity.Full, Bands.Shows(level, false, BandKind.OpenSpace));
+            }
+
+            // The scan lenses hide every one of those windows, which is what keeps the inspect cell
+            // from naming a probe under a lens that draws none - and what sends a landing on one out
+            // of the lens first.
+            for (int level = Bands.FirstLevel; level <= Bands.LastLevel; level++)
+            {
+                Assert.Equal(BandFidelity.None, Bands.Shows(level, true, BandKind.OpenSpace));
+            }
+        }
+
+        [Fact]
         public void EmpiresAreAScanKindOnly()
         {
             for (int level = Bands.FirstLevel; level <= Bands.LastLevel; level++)

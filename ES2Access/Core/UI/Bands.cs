@@ -32,6 +32,15 @@ namespace ES2Access.Core.UI
         /// <summary>The empires the diplomacy lens draws - a kind that exists in the scan view and
         /// nowhere else, because nothing on the ordinary map is a row about an empire.</summary>
         Empires = 5,
+
+        /// <summary>The things the picture draws out BETWEEN the stars: a probe on its way, an
+        /// obliterator missile in flight, an ally's pin, a quest marker planted in open space. In the
+        /// ordinary map they arrive with the full nameplate they are drawn beside; under a scan lens
+        /// the game hides every one of their windows, at every lens
+        /// (<c>GuiManager</c> :1555-1567), which is a fact the table has to be able to say in its own
+        /// right - "the planets are dots" is not the same question, and standing in for it made the
+        /// inspect cell name a probe under a lens that draws none.</summary>
+        OpenSpace = 6,
     }
 
     /// <summary>Which scan overlay a spoken level sits under. <see cref="None"/> is the ordinary map:
@@ -76,7 +85,7 @@ namespace ES2Access.Core.UI
 
         public const int LastLevel = 15;
 
-        private const int Kinds = 6;
+        private const int Kinds = 7;
 
         // One row per level, one column per BandKind, in that enum's order.
         //
@@ -89,11 +98,11 @@ namespace ES2Access.Core.UI
         private static readonly BandFidelity[][] Normal = Ladder(
             new Band[]
             {
-                Row(1, 2, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None),
-                Row(3, 4, BandFidelity.Full, BandFidelity.Name, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None),
-                Row(5, 6, BandFidelity.Full, BandFidelity.Name, BandFidelity.Full, BandFidelity.Full, BandFidelity.None, BandFidelity.None),
-                Row(7, 12, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Dot, BandFidelity.None),
-                Row(13, 15, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.None),
+                Row(1, 2, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None),
+                Row(3, 4, BandFidelity.Full, BandFidelity.Name, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None),
+                Row(5, 6, BandFidelity.Full, BandFidelity.Name, BandFidelity.Full, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None),
+                Row(7, 12, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Dot, BandFidelity.None, BandFidelity.Full),
+                Row(13, 15, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.Full, BandFidelity.None, BandFidelity.Full),
             }
         );
 
@@ -106,10 +115,10 @@ namespace ES2Access.Core.UI
         private static readonly BandFidelity[][] Scan = Ladder(
             new Band[]
             {
-                Row(1, 2, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.Full),
-                Row(3, 10, BandFidelity.None, BandFidelity.Full, BandFidelity.Full, BandFidelity.None, BandFidelity.Dot, BandFidelity.None),
-                Row(11, 13, BandFidelity.None, BandFidelity.Name, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None),
-                Row(14, 15, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None),
+                Row(1, 2, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.Full, BandFidelity.None),
+                Row(3, 10, BandFidelity.None, BandFidelity.Full, BandFidelity.Full, BandFidelity.None, BandFidelity.Dot, BandFidelity.None, BandFidelity.None),
+                Row(11, 13, BandFidelity.None, BandFidelity.Name, BandFidelity.Full, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None),
+                Row(14, 15, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None, BandFidelity.None),
             }
         );
 
@@ -267,7 +276,8 @@ namespace ES2Access.Core.UI
             BandFidelity lanes,
             BandFidelity fleets,
             BandFidelity planets,
-            BandFidelity empires
+            BandFidelity empires,
+            BandFidelity openSpace
         )
         {
             return new Band(
@@ -278,7 +288,8 @@ namespace ES2Access.Core.UI
                 lanes,
                 fleets,
                 planets,
-                empires
+                empires,
+                openSpace
             );
         }
 

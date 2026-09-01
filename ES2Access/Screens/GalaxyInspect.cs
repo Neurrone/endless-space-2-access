@@ -2233,10 +2233,11 @@ namespace ES2Access.Screens
 
                 // One read of the table per gathering, in the tree's own vocabulary: the lozenges
                 // from level 5, everything the picture only draws beside a full nameplate - probes,
-                // missiles, ally pins, quest pins - from level 7 (<see cref="ZoomBands.MapDetail"/>,
-                // which is the same answer the tree's own detail gate takes), the lines from level 3.
+                // missiles, ally pins, quest pins - from level 7 and under NO scan lens at all
+                // (<see cref="BandKind.OpenSpace"/>, the tree's own gate for the same rows), the lines
+                // from level 3.
                 bool showsFleets = ZoomBands.Shows(BandKind.Fleets);
-                bool showsDetail = ZoomBands.MapDetail;
+                bool showsDetail = ZoomBands.Shows(BandKind.OpenSpace);
                 bool showsLanes = ZoomBands.Shows(BandKind.Lanes);
                 bool showsMarks = !Surveying();
 

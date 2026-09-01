@@ -34,6 +34,13 @@ namespace ES2Access.Screens
 
         private bool _showsDetail;
 
+        /// <summary>Whether the picture is drawing the things that stand out BETWEEN the stars - a
+        /// probe, a missile, an ally pin, a quest marker in open space. Its own column of the band
+        /// table rather than the nameplate detail gate they arrive with: under a scan lens the game
+        /// hides their windows at every lens while the planet dots go on being drawn, so the two
+        /// questions have different answers there (<see cref="BandKind.OpenSpace"/>).</summary>
+        private bool _showsOpenSpace;
+
         /// <summary>The level the last build was made at, so this one can tell a step WITHIN a band
         /// from a step across one (<see cref="Core.UI.Bands.SameShape"/>). -1 before the first
         /// build.</summary>
@@ -494,7 +501,7 @@ namespace ES2Access.Screens
                 // ...and declared only from the band that draws them: the map stops drawing a probe,
                 // a missile and a quest pin at the same step it stops drawing the full nameplate they
                 // hang beside (<see cref="_showsDetail"/>).
-                int drifting = !_showsDetail
+                int drifting = !_showsOpenSpace
                     ? 0
                     : _drifting.Count + _shots.Count + _sighted.Count + OpenSpaceMarkers(empire);
                 // Declared whichever halves the map has: a lone region's jump is swallowed silently,
@@ -554,7 +561,7 @@ namespace ES2Access.Screens
                     builder.SetRegion(OpenSpaceRegion);
                 }
 
-                if (_showsDetail)
+                if (_showsOpenSpace)
                 {
                     AddProbes(builder);
                     AddProjectiles(builder);
@@ -592,6 +599,7 @@ namespace ES2Access.Screens
             _showsSystems = ZoomBands.Shows(BandKind.Systems);
             _showsFleets = ZoomBands.Shows(BandKind.Fleets);
             _showsDetail = ZoomBands.MapDetail;
+            _showsOpenSpace = ZoomBands.Shows(BandKind.OpenSpace);
             if (builder.ExpandAll)
             {
                 return;

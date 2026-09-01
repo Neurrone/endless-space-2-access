@@ -2579,6 +2579,14 @@ namespace ES2Access.Screens
                     return false;
                 }
 
+                // A LANDING ON SOMETHING THE LENS DOES NOT DRAW LEAVES THE LENS FIRST (owner ruling
+                // 2026-09-01), and only then lands the ordinary way (<see cref="LeaveTheLens"/>).
+                bool leaving = Scanning && !DrawnByTheLens(target);
+                if (leaving)
+                {
+                    LeaveTheLens();
+                }
+
                 if (plan.ExitInspect)
                 {
                     GalaxyInspect.Dismiss();
@@ -2598,7 +2606,7 @@ namespace ES2Access.Screens
                 {
                     // Before the cursor is sent anywhere: the picture has to be drawing the kind of
                     // thing it is being sent to, or there is no row to land on.
-                    EnsureBand(target);
+                    EnsureBand(target, leaving);
                 }
 
                 if (plan.FocusNode && target.Id != null && navigator != null)
@@ -2642,19 +2650,22 @@ namespace ES2Access.Screens
         /// point is an annotation rather than a rendering and has a row at every level, so a jump to
         /// one slides exactly as it always has.
         /// </summary>
-        private void EnsureBand(MapTarget target)
+        private void EnsureBand(MapTarget target, bool leaving)
         {
             // Not under a lens: there the rung IS the lens, so forcing a band would answer "take me to
             // that system" by changing what the whole screen means (owner ruling 2026-09-01). The
             // lens's own parity filter is what makes that safe - a landing is only ever sent to a kind
-            // the lens is drawing, so there is a row waiting wherever the camera already is.
-            if (Scanning)
+            // the lens is drawing, so there is a row waiting wherever the camera already is; a landing
+            // on anything else has just LEFT the lens, and then the ordinary rule applies again. The
+            // caller's own answer to that is taken rather than re-asked, because the game's flag has
+            // not necessarily turned over by this line.
+            if (Scanning && !leaving)
             {
                 return;
             }
 
             int level = ZoomBands.Level;
-            int need = BandNeeded(target);
+            int need = BandNeeded(target, false);
             if (level < Bands.FirstLevel || need < Bands.FirstLevel || level >= need)
             {
                 return;
@@ -2684,25 +2695,78 @@ namespace ES2Access.Screens
         /// those rows are; a fleet needs the lozenges; a place needs the band that names the systems;
         /// and anything else standing out on the map is drawn beside the full nameplate, so it needs
         /// the same band the nameplate does. A bookmarked point needs nothing.</summary>
-        private int BandNeeded(MapTarget target)
+        private int BandNeeded(MapTarget target, bool scanning)
         {
             switch (target.Thing)
             {
                 case MapThing.PlanetBound:
-                    return ZoomBands.LowestLevel(BandKind.Planets, BandFidelity.Full);
+                    return Bands.LowestLevel(BandKind.Planets, scanning, BandFidelity.Full);
                 case MapThing.Place:
-                    return ZoomBands.LowestLevel(BandKind.Systems, BandFidelity.Name);
+                    return Bands.LowestLevel(BandKind.Systems, scanning, BandFidelity.Name);
                 case MapThing.Point:
                     if (target.Select is Fleet || target.Standing is Fleet)
                     {
-                        return ZoomBands.LowestLevel(BandKind.Fleets, BandFidelity.Full);
+                        return Bands.LowestLevel(BandKind.Fleets, scanning, BandFidelity.Full);
                     }
 
                     return BookmarkAt(target.Id) != null
                         ? -1
-                        : ZoomBands.LowestLevel(BandKind.Planets, BandFidelity.Dot);
+                        : Bands.LowestLevel(BandKind.OpenSpace, scanning, BandFidelity.Full);
                 default:
                     return -1;
+            }
+        }
+
+        /// <summary>
+        /// WHETHER THE LENS IS DRAWING THIS KIND OF THING AT ALL, here.
+        ///
+        /// The same table and the same question the tree filters its rows with, asked of the scan
+        /// ladder: a landing sent to a kind the lens hides would put the cursor on a node that does not
+        /// exist and say nothing at all. It is asked of the KIND and not of the level, because "the
+        /// System lens draws no planet dots" and "no lens draws a fleet" are the same fact written once
+        /// (<see cref="Bands"/>).
+        ///
+        /// A bookmarked POINT is always drawn: it is the player's own annotation rather than a
+        /// rendering, and it has a row at every rung of both ladders.
+        /// </summary>
+        private bool DrawnByTheLens(MapTarget target)
+        {
+            switch (target.Thing)
+            {
+                case MapThing.PlanetBound:
+                    // A world has a row in the mode wherever the lens rings its star with circles -
+                    // at the DOT fidelity the tree already reads it at, which is all a landing needs.
+                    return ZoomBands.Shows(BandKind.Planets);
+                case MapThing.Place:
+                    return ZoomBands.Shows(BandKind.Systems);
+                case MapThing.Point:
+                    if (BookmarkAt(target.Id) != null)
+                    {
+                        return true;
+                    }
+
+                    return target.Select is Fleet || target.Standing is Fleet
+                        ? ZoomBands.Shows(BandKind.Fleets)
+                        : ZoomBands.Shows(BandKind.OpenSpace);
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>Leave the lens through the game's own toggle - the very call its own close button
+        /// makes (<c>GuiManager.ToggleScanView</c>, which refuses by itself while a modal or a ground
+        /// battle is up). The page says its own name on the way out, as it does for any other exit, so
+        /// the player is told the light has changed before they are told where they have been
+        /// sent.</summary>
+        private static void LeaveTheLens()
+        {
+            try
+            {
+                Gui.GuiGameWindowService.ToggleScanView();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: leaving the scan lens for a landing threw: " + e);
             }
         }
 
@@ -4318,7 +4382,16 @@ namespace ES2Access.Screens
             // the branch this asks for would never open and the jump would move the camera and say
             // nothing - measured. Beyond that the landing keeps its own framing, which is whatever
             // walking in with Right would have given at this distance.
-            EnsureBand(MapTarget.Place(node, SystemRow(node), node.GalaxyPosition));
+            MapTarget place = MapTarget.Place(node, SystemRow(node), node.GalaxyPosition);
+            // And, under a lens that draws no star at all, out of the lens first - the same rule the
+            // one landing follows, for the same reason (<see cref="DrawnByTheLens"/>).
+            bool leaving = Scanning && !DrawnByTheLens(place);
+            if (leaving)
+            {
+                LeaveTheLens();
+            }
+
+            EnsureBand(place, leaving);
             OpenPlace(node);
             _bookmarkLanding = SystemRow(node);
             _bookmarkLandingFrames = BookmarkLandingFrames;
