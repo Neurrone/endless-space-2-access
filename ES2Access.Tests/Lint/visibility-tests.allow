@@ -317,6 +317,7 @@ ES2Access/Screens/NotificationScreen.cs | 1 | title || (drawn != null && Visible
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(button.AgeTransform, Root(window))
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(control.AgeTransform, root)
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(line.Owner, root)
+ES2Access/Screens/NotificationScreen.cs | 1 | && Painted(line.Owner, root)
 
 ES2Access/Screens/OptionsScreen.cs | 1 | if (button == null || !Visible(button.AgeTransform))
 ES2Access/Screens/OptionsScreen.cs | 1 | if (item != null && Visible(AgeTransformOf(item)))
