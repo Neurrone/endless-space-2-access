@@ -37,9 +37,17 @@ namespace ES2Access.Tests.Lint
 
         // A screen that wraps the helper in a file-private predicate of its own is still testing
         // visibility at the walk, so its call sites count too - otherwise a local shim is a way out of
-        // the rule. Only files that declare such a predicate are scanned for the bare name.
+        // the rule. Only files that declare such a predicate are scanned for the bare name - or, for a
+        // class split across several files, any file declaring that same class: the predicate is the
+        // TYPE's, and a partial's other halves call it by the same bare name.
         private static readonly Regex LocalPredicate = new Regex(
             @"private\s+static\s+bool\s+(Visible|Paints|Painted)\s*\("
+        );
+
+        // Top level in its namespace - four spaces then a modifier - so that a nested helper class
+        // does not lend its name to an unrelated file that happens to reuse it.
+        private static readonly Regex TypeName = new Regex(
+            @"^ {4}\S[\w ]*\b(?:class|struct)\s+(\w+)"
         );
 
         private static readonly Regex LocalCall = new Regex(
@@ -82,6 +90,7 @@ namespace ES2Access.Tests.Lint
         internal static Dictionary<Site, int> Sites()
         {
             Dictionary<Site, int> found = new Dictionary<Site, int>();
+            Dictionary<string, bool> shims = Shims();
             foreach (string file in LintSources.ModSources())
             {
                 if (Skipped(file))
@@ -93,7 +102,7 @@ namespace ES2Access.Tests.Lint
                 bool local = false;
                 foreach (string line in lines)
                 {
-                    if (LocalPredicate.IsMatch(line))
+                    if (LocalPredicate.IsMatch(line) || Declares(shims, line))
                     {
                         local = true;
                         break;
@@ -114,6 +123,53 @@ namespace ES2Access.Tests.Lint
             }
 
             return found;
+        }
+
+        /// <summary>The classes that declare a visibility shim of their own, so that every file of a
+        /// partial one is scanned for the bare call the shim's own file would be.</summary>
+        private static Dictionary<string, bool> Shims()
+        {
+            Dictionary<string, bool> names = new Dictionary<string, bool>(StringComparer.Ordinal);
+            foreach (string file in LintSources.ModSources())
+            {
+                if (Skipped(file))
+                {
+                    continue;
+                }
+
+                string[] lines = LintSources.Lines(file);
+                bool declares = false;
+                foreach (string line in lines)
+                {
+                    if (LocalPredicate.IsMatch(line))
+                    {
+                        declares = true;
+                        break;
+                    }
+                }
+
+                if (!declares)
+                {
+                    continue;
+                }
+
+                foreach (string line in lines)
+                {
+                    Match type = TypeName.Match(line);
+                    if (type.Success)
+                    {
+                        names[type.Groups[1].Value] = true;
+                    }
+                }
+            }
+
+            return names;
+        }
+
+        private static bool Declares(Dictionary<string, bool> shims, string line)
+        {
+            Match type = TypeName.Match(line);
+            return type.Success && shims.ContainsKey(type.Groups[1].Value);
         }
 
         private static bool Tests(string line, bool local)
