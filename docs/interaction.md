@@ -561,6 +561,38 @@ owner-ruled 2026-08-18, Escape closes screens); its
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
 ten of the camera's thirteen steps would be the whole range.
 
+**THE BAND WORD NAMES WHAT THE LEVEL GIVES** (owner ruling 2026-09-01, replacing the engine-jargon
+words). Five words over the camera's ladder, at the game's own layer boundaries and no others:
+levels 1–2 **Constellations**, 3–4 **Systems and star lanes**, 5–6 **Systems, star lanes and
+fleets**, 7–12 **System details**, 13 **Orbital**. Level 1 was SILENT before (its `PaintingLayer`
+descriptor was unmapped) and now speaks like the rest; the two layers that offer the same thing
+(`SystemsLayer` 7–10, `SystemLayer` 11–12) share one word, so the cadence is still boundary-only.
+Same wording from the slider's own value and from the watcher, as before. Scan mode still drops the
+band word and says the lens.
+
+**THE TREE IS BAND-FILTERED, AND SO IS THE SCANNER** (owner ruling 2026-09-01; the table is
+`Core/UI/Bands.cs`, read through `UI/ZoomBands.cs`). The rows the map stop offers are the KINDS the
+picture is drawing at that distance — camera-position-independent, per kind, never per frustum:
+1–2 constellation groups alone (closed, since nothing inside them is drawn); 3–4 adds system rows
+with their lane children; 5–6 adds fleets; 7+ adds everything else (planets, deposits and the other
+label dossiers, the manage-system button, quest pins, hangars, probe directions, and the probes,
+missiles and pins out in open space). A system's spoken fleet counts go with the fleet rows, so the
+number it says and the children it opens onto stay one answer. The scanner's category ring skips a
+band-hidden category by the same rule it skips an empty one, and a custom slot's selectors and
+keywords see only band-declared rows. **At levels 1–2 every category is hidden and a scanner press
+answers the existing none-found line** ("Luxury Resources: all, none found" — whichever category the
+cursor was parked in), never silence.
+
+**A ZOOM THAT SHRINKS THE BAND NEVER TAKES THE CURSOR OUT OF THE TREE** (owner ruling 2026-09-01).
+When the level change takes the focused row's whole kind away, the cursor lands on the row that
+CONTAINED it — a fleet or a lane's fleet on its system row, a deposit dossier or the manage button on
+its system row, a system on its constellation row — and the map stop's remembered position is
+repaired the same way, so Tab back after zooming from the slider lands there too. It is the graph
+engine's own seat choice, one tier above the nearest-survivor walk and taken only on a build that
+declares fewer kinds than the one before (`GraphBuilder.SeatOnContainer`), so an ordinary row dying
+still lands on the neighbour beside it. A row with no containing row — a probe drifting in open
+space — falls back to the nearest survivor, which is still inside the tree.
+
 **ONE landing on the galaxy page** (owner ruling 2026-08-22; `GalaxyHudScreen.GoTo(MapTarget,
 MapCamera)`). Five things used to send the player somewhere on the map — a notification's
 show-location, the scanner's Alt+Home, travelling a road, the go-to key, a seat after a fleet action

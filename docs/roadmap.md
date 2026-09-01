@@ -10,6 +10,20 @@ belong in the files above.
 
 ## To build
 
+- **Normal-view zoom bands, the rest of the plan** (stage 1 shipped 2026-09-01: the tree's kind
+  filter, the scanner's band filter, the five slider band words, and the container re-seat on band
+  shrink — `scan-modes-design-proposal.md` is the spec). Still to come: the MOTION model (graded
+  expansion, collapse-restore with the level-9 fallback, constellation expand at 1–2, snap landings
+  forcing the target's band, dot-fidelity planet rows at 7–12); inspect's 3–12 gating and the 1–2
+  territory survey; the passive label icons as tooltip-bearing child nodes; scan mode on the shared
+  components. Two things stage 1 leaves standing and the motion stage must close: a bookmark jump
+  at levels 1–2 slides the camera and says NOTHING (its target has no row in the band — measured),
+  and a point bookmark inside a constellation is unreachable while the 1–2 groups are closed
+  (the bookmark keys are the only way to it there; the type-ahead still finds it). PENDING LIVE
+  (fixture/gate-blocked, stage 1): the game's own PageUp/PageDown zoom — `CheckInputs` refuses all
+  keyboard zoom while `Gui.GuiNotificationService.CurrentGuiNotification != null`, and
+  `NotificationPopulationGained` stood through the whole session, so the physical-key half of the
+  re-seat pairs is MANUAL; and adrift fleets below level 5 (none exist in `[Beginner] access test`).
 - **Coverage-audit tail (2026-08-24 session; owner-directed):** the last screens with no
   Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
   target selection, ground battle — needs a scratch game engaged with a pirate/major fleet

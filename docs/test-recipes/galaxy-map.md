@@ -18,6 +18,33 @@ collapse-un-zoom rule exists at TWO levels (`ZoomOutOf`: collapsing a constellat
 member holds `FocusedSystem` runs that system's own zoom-out). The system ordering below is
 the order WITHIN a group.
 
+**The tree's KINDS change with the zoom band** (2026-09-01, `Core/UI/Bands.cs` via
+`UI/ZoomBands.cs`; the row CONTENT is the same at every band it appears in — fidelity is a later
+stage). Measured on `[Beginner] access test`, one `/gui/graph` per spoken level with one system
+(Sabel) expanded, key shapes counted:
+
+| spoken level | top level | a system's children |
+|---|---|---|
+| 1–2 | constellation groups only, CLOSED (`Right` on one answers "Nothing in here") | — no system rows at all |
+| 3–4 | + system rows, + point bookmarks inside their constellation | lanes only |
+| 5–6 | same | lanes + fleets (parked, en-route, free-moving) |
+| 7–13 | + the open-space rows (`galaxy:probe/#` and the rest) | lanes, fleets, planets, the label dossiers (`/tooltip/#`), manage-system, hangars, quest pins, probe directions |
+
+Recipe: `GalaxyViewLevels.SetZoom(step, target)` + `Settle()` from `/eval` puts the camera on an
+exact rung with no flight, then `/gui/graph` and count the bracketed ids by shape — never read the
+dump itself into context. Two things that look like band filtering and are NOT: the manage-system
+button is absent at 11–13 (the game stops drawing that label button — the existence gate), and
+`galaxy:constellation/unexplored` is absent whenever no perceived system stands in an unnamed
+constellation. A system's spoken "n Fleet / n fleet under way nearby" goes silent below level 5 with
+the fleet rows themselves.
+
+**The scanner's ring per band** — seat the cursor on the map stop first (`ui.focusMap`), then
+`galaxy.scanCategoryNext` repeatedly and read each press's own `speech` (a fast `/speech` sweep
+loses presses). Measured: level 1 answers "…: all, none found" to every scanner chord and never
+moves; level 3 cycles explorer(custom) → Systems → Unexplored; level 5 adds Fleets; level 7 and 13
+reach all ten the fixture fills. A custom slot is band-aware through its constituents, not by its own
+rule — "explorer" answered `1 of 20` at level 3 and `1 of 54` at level 7.
+
 **The galaxy view names its four PANELS** (2026-08-19) with `GraphBuilder.PushContext` levels, said
 once on arrival and never repeated while walking inside: Galactic Map (`galaxy.map-panel` — renamed
 from "Map" 2026-08-22, owner ruling: the panel Ctrl+G goes to says what it is), Quest
