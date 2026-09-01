@@ -39,6 +39,15 @@ namespace ES2Access.Core.UI
         /// <summary>A drop-list popup ITEM: the tooltip the engine wrote onto the item when the list
         /// was filled, which is where both of its per-item tables end up.</summary>
         ListEntry = 16,
+
+        /// <summary>A modifier on <see cref="Descendants"/>: only the pieces the renderer is actually
+        /// DRAWING. A piece a POOLED table retired by fading it keeps the tooltip of whatever it last
+        /// held, so a line gathered by visibility alone hands the player the previous binding's
+        /// sentence - and, since callers aim at the LAST tooltip found, aims the pointer at it too.
+        /// The widget's own alpha is not asked: a caller reaching a widget through a drawn-child walk
+        /// has already settled that, and asking it again reads a container fading ITSELF in as
+        /// empty.</summary>
+        Painted = 32,
     }
 
     /// <summary>

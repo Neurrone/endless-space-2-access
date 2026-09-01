@@ -402,13 +402,39 @@ namespace ES2Access.UI
         /// </summary>
         public static Cell Readout(AgeTransform widget, string key)
         {
-            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget));
+            return Readout(widget, key, false);
+        }
+
+        /// <summary>
+        /// The same line for a walk whose widgets come out of POOLS - the side panels, where a strip
+        /// keeps a row per thing it has EVER shown and retires the surplus by fading it.
+        ///
+        /// Everything the line says is read off the pieces the renderer is DRAWING: the words
+        /// (<see cref="AgeWidgets.PaintedPartsText"/>) and the explanations
+        /// (<see cref="AgeWidgets.PaintedTooltips"/>) alike. The reading is asked again at announce
+        /// time, so the build gate and the reader have to agree - a line with one drawn piece and one
+        /// retired piece must say the drawn one and only the drawn one, and a line whose only words are
+        /// on a retired piece must not become a cell at all. The widget's own alpha is not asked: the
+        /// walk reached it through <see cref="AgeWidgets.DrawnChild"/>, which settled that.
+        /// </summary>
+        public static Cell PaintedReadout(AgeTransform widget, string key)
+        {
+            return Readout(widget, key, true);
+        }
+
+        private static Cell Readout(AgeTransform widget, string key, bool painted)
+        {
+            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget, painted));
             AgeTransform at = widget;
+            bool drawnOnly = painted;
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
+                    GraphNodes.LabelPart(
+                        () =>
+                            drawnOnly ? AgeWidgets.PaintedPartsText(at) : AgeWidgets.TextOf(at)
+                    ),
                 },
             };
             vtable.Sections = GraphNodes.SectionsFor(vtable, carried.Own);
@@ -425,7 +451,32 @@ namespace ES2Access.UI
             string key
         )
         {
-            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget));
+            return Control(widget, button, text, key, false);
+        }
+
+        /// <summary>The clickable form of <see cref="PaintedReadout"/>: the caption is the caller's,
+        /// which a pooled walk has already read off the drawn pieces, so what this adds is the
+        /// explanations - a retired piece must not hand the line its sentence, nor take the pointer's
+        /// aim as the last tooltip found.</summary>
+        public static Cell PaintedControl(
+            AgeTransform widget,
+            AgeControlButton button,
+            string text,
+            string key
+        )
+        {
+            return Control(widget, button, text, key, true);
+        }
+
+        private static Cell Control(
+            AgeTransform widget,
+            AgeControlButton button,
+            string text,
+            string key,
+            bool painted
+        )
+        {
+            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget, painted));
             AgeTooltip last = carried.Own;
             AgeControlButton it = button;
             AgeTransform at = widget;
@@ -476,10 +527,18 @@ namespace ES2Access.UI
         // capture the tooltips, never the list.
         private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(4);
 
-        private static List<AgeTooltip> Gathered(AgeTransform widget)
+        private static List<AgeTooltip> Gathered(AgeTransform widget, bool painted)
         {
             Scratch.Clear();
-            AgeWidgets.Tooltips(widget, Scratch);
+            if (painted)
+            {
+                AgeWidgets.PaintedTooltips(widget, Scratch);
+            }
+            else
+            {
+                AgeWidgets.Tooltips(widget, Scratch);
+            }
+
             return Scratch;
         }
 
@@ -621,12 +680,34 @@ namespace ES2Access.UI
         /// </summary>
         public static Cell Readout(AgeTransform widget, AgeTooltip tooltip, string key)
         {
+            return Readout(widget, tooltip, key, false);
+        }
+
+        /// <summary>The same line for a widget whose words may come off pieces the game retired by fading
+        /// them - <see cref="PaintedReadout(AgeTransform,string)"/>, for the caller that names the tooltip
+        /// itself. Only the READING changes: the tooltip is the caller's choice, not something gathered off
+        /// the pieces, so a retired one cannot reach the line through it.</summary>
+        public static Cell PaintedReadout(AgeTransform widget, AgeTooltip tooltip, string key)
+        {
+            return Readout(widget, tooltip, key, true);
+        }
+
+        private static Cell Readout(
+            AgeTransform widget,
+            AgeTooltip tooltip,
+            string key,
+            bool painted
+        )
+        {
             AgeTransform at = widget;
+            bool drawnOnly = painted;
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(at)),
+                    GraphNodes.LabelPart(
+                        () => drawnOnly ? AgeWidgets.PaintedPartsText(at) : AgeWidgets.TextOf(at)
+                    ),
                 },
             };
             vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);

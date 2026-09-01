@@ -496,6 +496,24 @@ namespace ES2Access.UI
             EffectiveTooltips(widget, into, TooltipReach.Own | TooltipReach.Descendants, maxDepth);
         }
 
+        /// <summary>The same gathering for a line whose pieces come out of a POOL, leaving out the
+        /// pieces the game retired by fading them (<see cref="TooltipReach.Painted"/>) - the ship
+        /// design costs box, where the group kept for a strategic-resource row still carries the
+        /// Adamantian banner of a design that costs no strategic resource.</summary>
+        public static void PaintedTooltips(
+            AgeTransform widget,
+            List<AgeTooltip> into,
+            int maxDepth = 4
+        )
+        {
+            EffectiveTooltips(
+                widget,
+                into,
+                TooltipReach.Own | TooltipReach.Descendants | TooltipReach.Painted,
+                maxDepth
+            );
+        }
+
         /// <summary>
         /// THE tooltip resolver: every tooltip that belongs to this widget, in the directions the
         /// caller asks for and in the order the player reads them - the block it was drawn in, the
@@ -559,7 +577,14 @@ namespace ES2Access.UI
 
             if ((reach & TooltipReach.Descendants) != 0)
             {
-                Descend(widget, into, 0, maxDepth, (reach & TooltipReach.Own) != 0);
+                Descend(
+                    widget,
+                    into,
+                    0,
+                    maxDepth,
+                    (reach & TooltipReach.Own) != 0,
+                    (reach & TooltipReach.Painted) != 0
+                );
                 return;
             }
 
@@ -629,7 +654,8 @@ namespace ES2Access.UI
             List<AgeTooltip> into,
             int depth,
             int maxDepth,
-            bool includeSelf
+            bool includeSelf,
+            bool paintedOnly
         )
         {
             if (widget == null || depth > maxDepth || !Visible(widget))
@@ -645,7 +671,11 @@ namespace ES2Access.UI
             IList<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                Descend(children[i], into, depth + 1, maxDepth, true);
+                AgeTransform child = paintedOnly ? DrawnChild(children, i) : children[i];
+                if (child != null)
+                {
+                    Descend(child, into, depth + 1, maxDepth, true, paintedOnly);
+                }
             }
         }
 
@@ -1578,13 +1608,7 @@ namespace ES2Access.UI
         {
             List<string> parts = new List<string>();
             Collect(widget, parts, maxDepth);
-            Core.Speech.MessageBuilder message = new Core.Speech.MessageBuilder();
-            for (int i = 0; i < parts.Count; i++)
-            {
-                message.Fragment(parts[i]);
-            }
-
-            return message.Build();
+            return Phrase(parts);
         }
 
         /// <summary>The same reading, for a widget whose words come out of a POOLED table: the rows the
@@ -1595,6 +1619,43 @@ namespace ES2Access.UI
         {
             List<string> parts = new List<string>();
             Collect(widget, parts, maxDepth, true);
+            return Phrase(parts);
+        }
+
+        /// <summary>
+        /// The same reading for a widget a walk has ALREADY vouched for, asking the painted question
+        /// only of the pieces BELOW it.
+        ///
+        /// <see cref="PaintedText"/> also asks the widget's OWN alpha, which a walk that came down
+        /// through <see cref="DrawnChild"/> has already settled - and which would read a container
+        /// fading ITSELF in as wordless, the failure <see cref="Paints"/> exists to avoid. What is left
+        /// is the case a leaf reading hits: a group at full alpha whose only words are on a POOLED row
+        /// the game retired by fading it - the ship design costs box, where the group kept for a
+        /// strategic-resource row still holds "1 Adamantian" for a design that costs no strategic
+        /// resource. Such a widget reads as nothing, and the caller's empty-text early-out drops it.
+        /// </summary>
+        public static string PaintedPartsText(AgeTransform widget, int maxDepth = 6)
+        {
+            List<string> parts = new List<string>();
+            try
+            {
+                if (widget != null && widget.Visible)
+                {
+                    AddLabel(widget, parts);
+                    IList<AgeTransform> children = widget.Children;
+                    for (int i = 0; children != null && i < children.Count; i++)
+                    {
+                        Collect(children[i], parts, maxDepth - 1, true);
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return Phrase(parts);
+        }
+
+        private static string Phrase(List<string> parts)
+        {
             Core.Speech.MessageBuilder message = new Core.Speech.MessageBuilder();
             for (int i = 0; i < parts.Count; i++)
             {
@@ -1707,16 +1768,7 @@ namespace ES2Access.UI
                     return;
                 }
 
-                AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
-                if (label != null)
-                {
-                    string text = AgeText.Label(label);
-                    if (!string.IsNullOrEmpty(text) && !parts.Contains(text))
-                    {
-                        parts.Add(text);
-                    }
-                }
-
+                AddLabel(widget, parts);
                 IList<AgeTransform> children = widget.Children;
                 if (children == null)
                 {
@@ -1729,6 +1781,21 @@ namespace ES2Access.UI
                 }
             }
             catch (Exception) { }
+        }
+
+        private static void AddLabel(AgeTransform widget, List<string> parts)
+        {
+            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+            if (label == null)
+            {
+                return;
+            }
+
+            string text = AgeText.Label(label);
+            if (!string.IsNullOrEmpty(text) && !parts.Contains(text))
+            {
+                parts.Add(text);
+            }
         }
 
         /// <summary>

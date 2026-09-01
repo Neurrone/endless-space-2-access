@@ -334,7 +334,14 @@ namespace ES2Access.UI
                 }
 
                 AgeControlButton button = AgeWidgets.Button(widget);
-                string text = AgeWidgets.TextOf(widget);
+                // Only the words the game is DRAWING inside this line. A strip whose rows come out of
+                // a pool keeps a group per row it has EVER filled and retires the surplus by fading
+                // the row while the group around it stays at full alpha - so a line read by text alone
+                // says the previous binding's figure: the ship design costs box announced "1
+                // Adamantian" for a design that costs no strategic resource at all
+                // (<see cref="AgeWidgets.PaintedPartsText"/>). A line left with nothing to say then
+                // falls out at the empty-text early-out below.
+                string text = AgeWidgets.PaintedPartsText(widget);
                 bool activatable =
                     button != null
                     && !string.IsNullOrEmpty(button.OnActivateMethod)
@@ -377,12 +384,15 @@ namespace ES2Access.UI
 
                 // Read with every tooltip the game hung on the PIECES of the line, not just the one on
                 // the group: these panels caption a line with an icon and put the description on the
-                // label, and the line is the only node either is reachable from.
+                // label, and the line is the only node either is reachable from. In the PAINTED forms,
+                // so the cell announces what the gate above measured: the reading is asked again every
+                // frame, and a leaf that passed on its one drawn piece would otherwise go on to speak
+                // the retired pieces beside it and to carry their tooltips.
                 string key = PathKey(keyPrefix, widget, panel);
                 cells.Add(
                     activatable
-                        ? Cells.Control(widget, button, text, key)
-                        : Cells.Readout(widget, key)
+                        ? Cells.PaintedControl(widget, button, text, key)
+                        : Cells.PaintedReadout(widget, key)
                 );
             }
             catch (Exception e)
