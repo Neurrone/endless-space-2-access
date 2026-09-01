@@ -841,17 +841,21 @@ Alt+Right is silent. Every landing is the scanner-style arrival on the target's 
 camera, square, cell reading — and NO refusal ever exits the mode. The four arrow KeyCodes are
 already claimed from the game outright, so none of the six chords needed a new claim (measured with
 `DevProbe.Chord`); off the map, and with no cursor up, all six are unconsumed and do nothing.
-**On an EMPTY square the travel pair leaps to the next BORDER instead** (owner ruling 2026-09-01;
-`GalaxyInspect.LeapToOwnershipChange`): with no lane in the cell — and, eastward, no fleet
-destination either — the key walks the same cells the plain arrow would and lands on the first whose
-influence reading differs from the one being left, announcing it with the cell's ordinary reading.
-It LAYERS under every existing answer and displaces none: one lane still travels the lane, fleets
-under way still win, and an AMBIGUOUS cell (two lanes, fleets bound for different places) keeps its
-silent refusal, because that is a deliberate refusal rather than an empty square. The comparison is
-the crossing announcement's own (`InfluenceReading.Equals` — who holds it, how much, who is reaching)
-so the leap cannot land where the arrival then declines to call a crossing; nothing different all the
-way to the map edge is the same silence the pair already refuses with; and the landing is a LEAP, so
-Backspace comes back from it. It is live at every rung the cell is, not only at the survey.
+**An EMPTY square is taken and does nothing** — there is no leap of any kind on these chords
+(owner ruling 2026-09-01: Alt+Left/Right are for star lanes and fleets only).
+
+**THE CELL HOLDS WHAT THE BAND DRAWS** (owner ruling 2026-09-01; filtered in `GalaxyInspect.Read`).
+The cursor reads the same band table the tree filters its rows with, in the same kind vocabulary
+(`Core/UI/Bands.cs`, `BandKind`), so a square can never name a thing at a distance the tree has no
+row for: fleets from spoken level **5**, the things the picture only draws beside a full nameplate —
+probes, obliterator missiles, ally pins, quest pins — from **7** (`ZoomBands.MapDetail`, the tree's
+own detail gate), star lanes from **3**. Filtered at the one gathering, so the reading, Enter, the
+Shift+arrow skip's comparison of two cells and the Alt+arrow travel keys all look at the same
+square — which is also why the travel keys simply have nothing to follow at levels 1–2. Two
+deliberate exceptions, both the survey's: SYSTEMS are named at every level although the picture
+stops naming them at 1–2 (that deviation is what the survey IS), and the player's own point
+BOOKMARKS go quiet at 1–2 because the survey's ruled reading is territory, systems and
+constellations alone.
 
 **THE MODE IS ZOOM-AWARE** (owner ruling 2026-09-01, corrected; `GalaxyInspect.ShowsTheGalaxy`).
 The cell operates at spoken levels **1–12**. ARMING is unchanged: allowed from anywhere, and a camera

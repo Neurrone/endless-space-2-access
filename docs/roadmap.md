@@ -16,9 +16,20 @@ belong in the files above.
   the level-9 fallback, constellation expand at 1–2, snap landings forcing the target's band,
   dot-fidelity planet rows at 7–12, and both of stage 1's standing bookmark gaps closed —
   `scan-modes-design-proposal.md` is the spec. Stage 3 shipped 2026-09-01: the inspect cell's zoom
-  contract — 1–12, exit on crossing into 13 by any route, the entry ceiling unchanged — the 1–2
-  TERRITORY SURVEY, and the border leap layered onto the travel keys' empty-cell case). Still to
-  come: the passive label icons as tooltip-bearing child nodes; scan mode on the shared components.
+  contract — 1–12, exit on crossing into 13 by any route, the entry ceiling unchanged — and the 1–2
+  TERRITORY SURVEY. Stage 4 shipped 2026-09-01: the system label's passive PICTURES as
+  tooltip-bearing child nodes of the system row (which fixed the promised-and-never-offered
+  construction-queue dossier), the constellation ownership bonus on the row at levels 1–2, and the
+  owner's two stage-3 corrections — the border leap on the travel keys WITHDRAWN, and the inspect
+  cell band-filtered off the same table the tree reads. Still to
+  come: scan mode on the shared components.
+  OPEN, for the owner (stage 4): expanding a system from levels 7–12 lands the camera at 13, and 13
+  is exactly where the game fades every nameplate line to nothing — so the new picture nodes exist
+  at levels ≤12 and the route to them is "expand, then zoom back out". That collides with stage 2's
+  flagged deviation ("the 7–12-only information stays in the row at 13"), which this stage took OUT
+  of the row. Parity with the picture was the tie-break; if the convenience was meant to win, the
+  answer is to hold the label's lines drawn while the branch is open, which is a mechanism nobody
+  has ruled on.
   OPEN, for the owner (stage 3): at levels 1–2 the tree declares only constellation headings (which
   refuse arming, 2026-08-31) and point bookmarks, so Ctrl+I can arm the survey only from a bookmark
   row — should a constellation heading arm the cell at its centroid there, or does entering the

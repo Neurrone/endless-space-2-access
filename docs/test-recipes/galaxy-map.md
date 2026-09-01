@@ -24,7 +24,7 @@ system (Sabel) expanded, key shapes counted:
 
 | spoken level | top level | a system's children |
 |---|---|---|
-| 1–2 | constellation groups only, CLOSED, + EVERY point bookmark, interleaved by position (2026-09-01: they move up out of their shut groups and keep their `…/constellation/#/bookmark/#` keys) | — no system rows at all |
+| 1–2 | constellation groups only, CLOSED, + EVERY point bookmark, interleaved by position (2026-09-01: they move up out of their shut groups and keep their `…/constellation/#/bookmark/#` keys). Each constellation row also SAYS its ownership bonus here — "Serpens, group, +15% Food" — because those are the two levels the map writes it beside the name; from 3 on the row's own dossier carries it ("Constellation control bonus: +15% Food") and the row is silent about it | — no system rows at all |
 | 3–4 | + system rows, + point bookmarks back inside their constellation | lanes only |
 | 5–6 | same | lanes + fleets (parked, en-route, free-moving) |
 | 7–12 | + the open-space rows (`galaxy:probe/#` and the rest) | lanes, fleets, planets AT DOT FIDELITY, the label dossiers (`/tooltip/#`), manage-system, hangars, quest pins, probe directions |
@@ -812,6 +812,36 @@ second region with **Alt+Down** (`ui.regionNext`), and read the dossier nodes th
   three lanes and a fleet; the Tooltips region holds `Osulo` (the system dossier — its header reads
   "Osulo - Niris" off the LABEL and just "Osulo" off the orbital window the camera swaps to) then
   `Hyperium`, `Titanium`, `Transvine`. Dusay has the system dossier and no deposits.
+  **A deposit node names its state** — "Transvine, exploited" — off the drawn icon, so the name is
+  the bare kind wherever the label is drawing no strip.
+
+**The system label's pictures are nodes of that same region**, one per DRAWN picture, in the
+label's own order (2026-09-01). Two catches, both measured on this fixture:
+- **The label's lines are painted only to spoken level 12.** At 13 the map keeps every nameplate
+  bound and fades its body lines to alpha 0 (`PopulationAndQueueLine`, `HomeAndTradingLine`,
+  `DepositsMainLine` — all alpha 0 at camera step 12, all alpha 1 at step 11), so the picture nodes
+  exist at levels ≤12 and vanish at 13. Expanding a system from 7–12 lands the camera at 13
+  (stage 2's graded expansion), so the route to them is: expand, then zoom back out to ≤12 with the
+  branch open. `AgeWidgets.Painted`, never `Visible` — the latter says yes to every faded line.
+- **Type-ahead cannot be the landing.** A snap landing on a Tooltips child forces level 13
+  (`EnsureBand`), which is exactly where the pictures are not drawn — land on the row and walk in
+  with `ui.regionNext` + `ui.down` instead.
+
+Route that works: `ui.focusMap`, `POST /type "dusay"`, `ui.back`, `ui.right`,
+`SetZoomHere(10)`, then `ui.regionNext`/`ui.down`. Measured there: the Tooltips region is
+`Dusay - Imperials Neurrone` · `Building Infinite Supermarkets, 1 turns` · `This is a faction's
+home system`, and focusing the middle one raises class `Constructible` — the whole constructible
+panel (`Infinite Supermarkets` / `System Improvement (Approval)` / description / `Effects: +10
+Approval` / `Cost: 280 Industry (1 Turn)` / `Political impact: Ecologists` / `Upkeep: 8 Upkeep`),
+which the label promised and offered to nobody before. `DevProbe.Coverage()` loses its
+`QueuedConstructionGroup`, `HomeSystemIconGroup` and `ResourceDepositItem00*` findings with it.
+
+**Which picture kinds this fixture draws at all**: the construction queue and the home icon (Dusay),
+the two deposit icons (Heka). Every other kind — the twelve contextual icons, the rest of the
+standing strip, haunt circles, exploration-winner badges, king-of-the-hill rows, the rebellion pair,
+given-to-academy, the traitor count — is code-only here: the prefab carries each one's tooltip
+(measured on Dusay's own hidden widgets), and the game fills the empty ones in at bind
+(`StarSystemLabel.RefreshContextualIcons` and its neighbours write `AgeTooltip.Content` per icon).
 - **System-management planet card.** Route: open Dusay's management page
   (`Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(node.GUID)`), End to `Dusay I`,
   Right twice.

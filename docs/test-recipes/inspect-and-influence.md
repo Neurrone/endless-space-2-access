@@ -168,15 +168,30 @@ constellation headings (which refuse arming, the 2026-08-31 ruling) plus the poi
 moved to the top level — so on this fixture the survey is armed from a bookmark row, or entered by
 zooming out with the cell already live. OPEN owner question (roadmap).
 
-**Border leap pairs** (`galaxy.inspectFollowEast` / `…FollowWest`, level 1):
+**The cell is band-filtered** (2026-09-01, `ES2Access-r16`): it holds only the kinds the map is
+drawing at that distance, out of the tree's own vocabulary — fleets from level 5, probes/missiles/
+pins/quest pins from 7, lanes from 3 — with systems named at every level and point bookmarks silent
+at 1–2 (the survey's two deliberate exceptions). Route: arm on the Sabel row (its own square,
+(-35,-5), holds the system, `2nd Defenders Navy` and three lanes), then `SetZoomHere(n)` and
+re-read the square with `ui.left` + `ui.right`.
+
+| level | the same square says |
+|---|---|
+| 9 | `Sabel, 2nd Defenders Navy, hero Hadri Lenko, Flag, Corvette, Escort, Star lane from Talitha to Sabel, Star lane from Dyl to Sabel, Star lane from Sabel to Rigel, -35, -5` |
+| 7 | identical (fleets and lanes both in band) |
+| 4 | `Sabel, Star lane from Talitha to Sabel, …, -35, -5` — the FLEET is gone |
+| 3 | identical to 4 (lanes are in band from 3) |
+| 1 | `Sabel, -35, -5` — lanes gone too; the neighbour (-36,-5), which said `Star lane from Talitha to Sabel, -36, -5` at every other level, says only `-36, -5` |
+| 1, on a bookmarked point | `Unexplored, -68, 18` — at level 9 the same square says `bookmark 1, Unexplored, -68, 18` |
+
+**Travel-key pairs** (`galaxy.inspectFollowEast` / `…FollowWest`) — there is no leap of any kind on
+these chords (owner ruling 2026-09-01, reversing the border leap):
 
 | pair | measured |
 |---|---|
-| empty cell inside own territory, east | from (4,0) → "Edge of your influence" · "7, 0" — the first square the oracle's rim falls in |
-| and back west | from (7,0) → "In your influence" · "6, 0" |
-| one lane in the cell (regression) | (-1,0) holds `Star lane from Rigel to Dusay`: east travels to Dusay (0,0), west travels to Rigel (-16,-5) — today's semantics, untouched |
-| ambiguous cell (regression) | Dusay (0,0) holds three lanes: both keys silent, no leap |
-| no change to the map edge | from (10,0) east: silent, `Centre()` still `10,0` — the existing "nothing to travel to" answer, unchanged |
+| one lane in the cell, level 9 | (-36,-5) holds `Star lane from Talitha to Sabel`: Alt+Left travels to Talitha, "Edge of PirateEmpire#0's influence" · `Talitha, Star lane from Talitha to Sabel, -46, -10` |
+| empty square, both keys | (-46,-7): Alt+Right and Alt+Left each say NOTHING and move nothing — `ui.left`+`ui.right` afterwards still reads `-46, -7` |
+| ambiguous cell (regression) | Dusay (0,0) holds three lanes: both keys silent |
 
 ## Inspect mode
 
