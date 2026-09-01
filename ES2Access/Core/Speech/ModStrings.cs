@@ -1136,6 +1136,11 @@ namespace ES2Access.Core.Speech
         public const string ScanLegend = "scan.legend";
         public const string ScanOutput = "scan.output";
 
+        /// <summary>What the legend's own Tab stop is called (owner's word, 2026-09-01). The panel's
+        /// tick carries the game's word for the box - "Caption" - and a stop needs a name of its own or
+        /// Tabbing into it announces the tick and nothing about where the player has arrived.</summary>
+        public const string ScanLegendStop = "scan.legend-stop";
+
         /// <summary>How much of a governor's dial the system management lens has filled in. The game
         /// draws the value as a pie and writes no number anywhere, and its own caption over the dial
         /// already says what is being measured, so this is the bare proportion.</summary>
@@ -2444,6 +2449,7 @@ namespace ES2Access.Core.Speech
             { ScreenScanView, "Scan view" },
             { ScanSystemInfo, "System information" },
             { ScanLegend, "Legend" },
+            { ScanLegendStop, "Captions" },
             { ScanOutput, "{0} {1}" },
             { ScanHeroEfficiency, "{0}%" },
             { Zoom, "Zoom" },

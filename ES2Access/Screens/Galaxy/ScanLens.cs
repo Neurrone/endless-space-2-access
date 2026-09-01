@@ -1022,6 +1022,11 @@ namespace ES2Access.Screens
         /// One panel serves every lens: the live lens points it at its own captions
         /// (<c>GuiLayeredScanViewWindow</c>), which is also why nothing here says which lens it belongs
         /// to. It is not shown at all over a lens with no legend.
+        ///
+        /// The stop NAMES itself (owner's word, 2026-09-01): the game writes "Caption" on the tick and
+        /// nothing anywhere else, so Tabbing in used to announce a checkbox and leave the player to work
+        /// out what they had arrived at. The word is the mod's, because the panel has no heading of its
+        /// own to take one from.
         /// </summary>
         public void Legend(GraphBuilder builder)
         {
@@ -1038,6 +1043,7 @@ namespace ES2Access.Screens
                 return;
             }
 
+            bool named = false;
             try
             {
                 AgeControlToggle toggle = panel.CaptionsToggle;
@@ -1047,6 +1053,11 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                // Pushed only once there is something to put under it: a level opened over an empty
+                // stop is a name for nothing, and the pop below is what every exit path from here goes
+                // out through.
+                builder.PushContext(ModStrings.Get(ModStrings.ScanLegendStop));
+                named = true;
                 AgeControlToggle it = toggle;
                 NodeVtable vtable = GraphNodes.Checkbox(
                     () => LegendName(panel),
@@ -1068,6 +1079,13 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("scan: reading the legend threw: " + e);
+            }
+            finally
+            {
+                if (named)
+                {
+                    builder.PopContext();
+                }
             }
         }
 

@@ -441,6 +441,7 @@
   "screen.scan-view": "Scan view",
   "scan.system-info": "System information",
   "scan.legend": "Legend",
+  "scan.legend-stop": "Captions",
   "scan.output": "{0} {1}",
   "scan.hero-efficiency": "{0}%",
   "zoom": "Zoom",
