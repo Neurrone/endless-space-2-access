@@ -107,9 +107,9 @@ ES2Access/UI/ShipDesignRows.cs | 1 | return CardActions.FirstLine(tooltip);
 ES2Access/UI/SidePanels.cs | 1 | string described = CardActions.FirstLine(HeaderTooltip(panel));
 ES2Access/UI/SidePanels.cs | 1 | || !string.IsNullOrEmpty(CardActions.FirstLine(tooltip));
 
-ES2Access/UI/SystemLabelReadout.cs | 1 | AddWords(lines, AgeText.Lines(AgeText.Tooltip(AgeWidgets.Readable(badge.Tooltip))));
 ES2Access/UI/SystemLabelReadout.cs | 2 | AddWords(lines, AgeText.Lines(AgeText.Tooltip(tooltip)));
-ES2Access/UI/SystemLabelReadout.cs | 2 | tooltip == null ? null : AgeText.Lines(AgeText.Tooltip(tooltip));
+ES2Access/UI/SystemLabelReadout.cs | 1 | IList<string> words = AgeText.Lines(AgeText.Tooltip(tooltip));
+ES2Access/UI/SystemLabelReadout.cs | 1 | tooltip == null ? null : AgeText.Lines(AgeText.Tooltip(tooltip));
 
 ES2Access/UI/SystemPanels.cs | 1 | () => CardActions.FirstLine(tooltip),
 ES2Access/UI/SystemPanels.cs | 1 | Func<IList<string>> drawn = GraphNodes.TooltipDetails(tooltip);

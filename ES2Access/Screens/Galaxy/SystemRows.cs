@@ -402,7 +402,11 @@ namespace ES2Access.Screens
                     // the same way now, or the node reads a system the camera has moved on from.
                     () => StarAim(it, looking, LabelFor(it, SystemLabels()))
                 );
+                // Then every picture the label is drawing, in its own order, with the deposits back in
+                // the place the label draws them (<see cref="SystemLabelReadout.IconsAboveDeposits"/>).
+                SystemLabelReadout.IconsAboveDeposits(found, label);
                 AddDeposits(found, node, empire, label);
+                SystemLabelReadout.IconsBelowDeposits(found, label);
             }
             catch (Exception e)
             {
@@ -448,6 +452,7 @@ namespace ES2Access.Screens
                 ResourceDepositDefinition definition = kinds[i];
                 ResourceDepositDefinition kind = definition;
                 AgeTooltip tooltip = DepositAim(node, definition, label, owner);
+                int at = found.Count;
                 TooltipChildren.Add(
                     found,
                     tooltip,
@@ -465,7 +470,35 @@ namespace ES2Access.Screens
                             DepositOwner(it, looking)
                         )
                 );
+                if (found.Count > at)
+                {
+                    ExploitedName(found, at, it, kind);
+                }
             }
+        }
+
+        /// <summary>Put the state the label paints a deposit's picture in onto that deposit's own node -
+        /// exploited or idle, read off the drawn icon at every read, because whether the map is drawing
+        /// one at all is a question about where the camera is
+        /// (<see cref="SystemLabelReadout.DepositName"/>). The naming ladder underneath is kept: it is
+        /// what a sibling entry reads to find out whether the two answer to the same word.</summary>
+        private static void ExploitedName(
+            List<TooltipChildren.Dossier> found,
+            int at,
+            StarSystemNode node,
+            ResourceDepositDefinition definition
+        )
+        {
+            TooltipChildren.Dossier entry = found[at];
+            Func<string> named = entry.Name;
+            StarSystemNode it = node;
+            ResourceDepositDefinition kind = definition;
+            entry.Name = () =>
+                SystemLabelReadout.DepositName(
+                    named(),
+                    DrawnDeposit(LabelFor(it, SystemLabels()), kind)
+                );
+            found[at] = entry;
         }
 
         /// <summary>The widget a kind of deposit's dossier is drawn through right now: the label's own
@@ -545,6 +578,11 @@ namespace ES2Access.Screens
             ResourceDepositDefinition definition
         )
         {
+            if (label == null)
+            {
+                return null;
+            }
+
             AgeTooltip found = DrawnDeposit(label.DepositsMainTable, definition);
             return found ?? DrawnDeposit(label.DepositsSecondaryTable, definition);
         }
