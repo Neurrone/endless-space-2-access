@@ -105,7 +105,13 @@ namespace ES2Access.Core.UI
 
         /// <summary>A grouping: never a place, whatever the entity behind it happens to carry. Its key
         /// is a name the map wrote across the sky and nothing travels between two of them, so it is
-        /// never anchored - the entity a heading happens to hold is not identity here.</summary>
+        /// never anchored - the entity a heading happens to hold is not identity here.
+        ///
+        /// ONE BAND OVERRIDES WHERE such a row STANDS, and only that (owner ruling 2026-09-01, after
+        /// playtest): at the scan ladder's two furthest-out rungs the lens names no star, so the empire
+        /// headings and the drawn lines under them are the whole picture and the inspect cell is armed
+        /// from them (<c>GalaxyHudScreen.DiplomacyRowPlace</c>). What a row can DO - Enter's order, the
+        /// leap trail, the restore - is still exactly what is declared here.</summary>
         public static PlacedRow Grouping(string segment)
         {
             return new PlacedRow(segment, false, 0, false, false, true, false);

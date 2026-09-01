@@ -576,6 +576,79 @@ namespace ES2Access.Screens
             }
         }
 
+        // ---- where a diplomacy-band row stands ----
+
+        /// <summary>The key words the band's own rows are named by. The empire heading shares
+        /// <c>owner</c> with the closer lenses' groups, which is what makes a system seat on its owner's
+        /// row when the camera crosses in; the other two are this band's alone.</summary>
+        private const string EmpireSegment = "owner";
+
+        private const string SpokeSegment = "spoke";
+
+        private const string BattleSegment = "battle";
+
+        /// <summary>
+        /// WHERE A DIPLOMACY-BAND ROW STANDS (owner ruling 2026-09-01, after playtest).
+        ///
+        /// At every other rung the map draws stars, and a heading is a word written over some of them:
+        /// it is not a place, the rows inside it are, and refusing to arm the inspect cell from one is
+        /// what stops a constellation lending its centroid to a cursor (<c>PlacedRows</c>). At the two
+        /// furthest-out rungs of the scan ladder the lens names no star AT ALL, so that reasoning
+        /// inverts - the empire rows, their tethered colonies and the fights are the whole picture, each
+        /// drawn at a position, and refusing all of them left the TERRITORY SURVEY - the one reading
+        /// that band exists for - armable from a point bookmark and nowhere else. Measured: Ctrl+I on a
+        /// spoke row was consumed, said nothing and armed nothing.
+        ///
+        /// So at this band a row answers with what the lens draws it AT: an empire with the centre the
+        /// watching empire's intelligence has for it (an empire it cannot place has no circle drawn and
+        /// still stands nowhere), a spoke and a battle with the star at the end of them. A row with no
+        /// place of its own - the Bookmarks heading - keeps the silent refusal, and so does every row of
+        /// every other band, because the question is asked only while the lens is drawing empires.
+        ///
+        /// The three questions besides arming (Enter's order, the leap trail, the restore) are the
+        /// registry's as before: what changes here is where a row IS, and the table goes on saying what
+        /// a row can DO.
+        /// </summary>
+        private bool DiplomacyRowPlace(ControlId id, out GalaxyPosition at)
+        {
+            at = default(GalaxyPosition);
+            if (id == null || !Scanning || !ZoomBands.Shows(BandKind.Empires))
+            {
+                return false;
+            }
+
+            string segment = PlacedRows.SegmentOf(id.StructuralKey);
+            if (segment == SpokeSegment || segment == BattleSegment)
+            {
+                IGameEntityWithGalaxyPosition drawn = id.Subject as IGameEntityWithGalaxyPosition;
+                if (drawn == null)
+                {
+                    return false;
+                }
+
+                at = drawn.GalaxyPosition;
+                return true;
+            }
+
+            if (segment != EmpireSegment)
+            {
+                return false;
+            }
+
+            string key = id.StructuralKey as string;
+            for (int i = 0; key != null && i < _empireList.Count; i++)
+            {
+                EmpireRow row = _empireList[i];
+                if (row.Placed && OwnerKey(ScanBucket.Empire, row.Empire) == key)
+                {
+                    at = row.Centre;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static readonly ScanViewDiplomacyLabel[] NoDiplomacyLabels =
             new ScanViewDiplomacyLabel[0];
 

@@ -4277,7 +4277,11 @@ namespace ES2Access.Screens
             PlacedRow kind = id == null ? null : PlacedRows.Of(id.StructuralKey);
             if (kind == null || kind.Refuses)
             {
-                return false;
+                // THE DIPLOMACY BAND IS THE ONE PLACE WHERE THE HEADINGS ARE THE PICTURE
+                // (<see cref="DiplomacyRowPlace"/>): there is no star row anywhere at those two rungs,
+                // so the table's refusal - written for a heading that gathers rows the player can walk
+                // into - would leave the survey armable from nothing at all.
+                return DiplomacyRowPlace(id, out at);
             }
 
             StarSystemNode star = id.Subject as StarSystemNode;
