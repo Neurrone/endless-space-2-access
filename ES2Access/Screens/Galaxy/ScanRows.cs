@@ -563,6 +563,9 @@ namespace ES2Access.Screens
             vtable.Announcements.Add(GalaxyCoordinates.Part(node.GalaxyPosition));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => SystemOwner(it, looking), false));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => HomeSystemWord(it, looking), false));
+            // What the lens's own lines make of the place: one line per trade route that ends here or
+            // runs through (<see cref="WeaveInto"/>). Nothing at all where none does.
+            WeaveInto(vtable, node, empire);
             // Last of everything, as it is on the ordinary map: the player's own note about the place.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => BookmarkWord(it), false));
 

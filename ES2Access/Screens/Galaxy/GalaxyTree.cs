@@ -478,6 +478,11 @@ namespace ES2Access.Screens
                 // contents out of as well, and the cell operates below the band the open-space ROWS
                 // begin at.
                 Drifting();
+                // Gathered here for the same reason and with the same reach: the lines the lens draws
+                // over the map are read onto the systems and lanes below
+                // (<see cref="GatherTradeRoutes"/>), which both modes build, and the gather is what
+                // empties them again when the mode ends.
+                GatherTradeRoutes(empire);
                 // Under a lens the map is the same map read by whose the stars are, so the whole of
                 // the rest of this - the constellations, the open-space region, the things the lens
                 // hides - is a different shape (<see cref="BuildScanTree"/>). The gathering above is

@@ -181,6 +181,10 @@ namespace ES2Access.Screens
                             NodeSection.Buffer(() => FleetRoute.PreviewLines(lane))
                         ),
                     };
+                    // What the lens is drawing ALONG this line: one line per trade route riding it,
+                    // with the colour the renderer paints the line (<see cref="WeaveAlong"/>). Empty
+                    // in the ordinary view, where the routes are not drawn at all.
+                    WeaveAlong(vtable, node, destination, empire);
                     // A lane is a destination in its own right, not just a road to one: the game
                     // accepts a link as a move target and flies the fleet out onto it
                     // (`GalaxyGarrisonCursor.GetGalaxyPathToTargets` resolves either a node or a
