@@ -556,9 +556,17 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   `TerraformationFeedback` and `AnomalyReductionFeedback` are NULL on every one. So a scan dot can
   draw colonisation state, a unique mark and a ghost mark, and cannot draw a curiosity ring, a
   mining probe, a terraformation or an anomaly reduction at all. Mod policy: the in-mode dot row
-  says neither curiosities nor mining probes (5c); the ordinary map's dot, whose prefab wires the
-  curiosity circle, keeps both. Unique and ghost are wired and read by NEITHER dot row — the
-  circle's own tooltip carries the unique sentence — which is an open question, not a decision.
+  says neither curiosities nor mining probes (5c); the ordinary map's dot, whose prefab wires all
+  five (measured the same way: `StarSystemLabelsWindow`'s 86 labels, 253 circles, every field
+  non-null), keeps both.
+- **Both marks the two prefabs share are gated on the SURVEY** (owner ruling 2026-09-01, shipped):
+  `PlanetCircleItem.Refresh` puts `UniquePlanetFeedback` and `GhostFeedback` inside the branch it
+  takes at exploration state `Revealed` or better (`:118-201`), which is the mod's `Surveyed` — so
+  the dot row says the game's own unique title and its own Sanctuary sentence under exactly that
+  condition, in both views, and says them from the PLANET rather than from the overlay's alpha. The
+  alpha is not usable here: a label the camera has culled paints none of its circles, so a row read
+  off the widget would gain and lose the mark as the camera panned, which is the very
+  camera-dependence the in-mode tree is ruled free of.
 - **The System lens paints no owner for the surrounding systems** (the flag 5a raised, measured
   2026-09-01): at step 11 with the camera on Dusay, all 86 `ScanNodeLabel`s are unpainted — no
   label, no `StarCircle`, no `OwnerCircleTable` — while the same camera at step 8 paints 6 labels,

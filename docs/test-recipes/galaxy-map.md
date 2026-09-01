@@ -852,6 +852,22 @@ the ordinary normal-view landing with its own framing. Wrap the call in
 `GalaxyLocate.Suppressed = true` to watch what the GAME does alone — measured: it slides and stays
 in the lens, which is why the mod has to leave for it.
 
+**Reaching a DOT row at all** (both views). At levels 7–12 opening a system takes the camera to 13,
+where planets are full orbital cards — so the dot reading is reached by expanding and then zooming
+back OUT with the branch open (`SetZoomHere(8)`), which is also the only route to the label's
+picture children. In scan mode the expansion is in place, so the dots are simply the children.
+Measured 2026-09-01 on Dusay: at level 9 `Raia, Colonized, Unique Planet` beside
+`Dusay I, Inhospitable, 2 curiosities`; under the Economy lens the same row minus the curiosity
+count, and the unique mark survives panning the camera away from Dusay entirely (it is read from
+the planet, not the overlay — `docs/galaxy-map.md`).
+
+**The lane row's role and the ladder's hint** (2026-09-01). A star lane announces `button`
+(`Starlane 1 to Primus, northeast, button, 5 of 8`) and Enter still travels to the far end; the
+zoom ladder's review buffer ends on a chord sentence composed from the LIVE bindings —
+`Left Arrow or Right Arrow to change zoom` on the map, `… to change lens` under the scan lens — so
+a rebind re-words it and a `/gui/graph?buffers=1` on `hud:view-title/zoom` (or `scan:zoom`) is where
+to read it, never the announcement.
+
 Measured pairs worth re-running: pan the camera at the Economy lens with a system focused
 (`GalaxyViewLevels.CenterOn`) — the `/gui/graph` dump must come back byte-identical and the cursor
 must not move; expand a system at the Trade or Economy lens — `DevProbe.Camera()` unchanged, planet

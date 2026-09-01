@@ -75,14 +75,14 @@ upgrade on live sighting — baseline ships today, so these stay SUPPORTED.
 | DLCModalWindow | floor (roadmap minimum-pass row) | MenuDestinationScreens.cs |
 | DeedCompletedNotificationWindow | NS (variant row) | NotificationScreen.cs |
 | DefenseHackingProgramEncounteredNotificationWindow | NS (content Penumbra; sighting DLC-blocked) | NotificationScreen.cs |
-| DiplomacyScanViewWindow | own | ScanViewScreen.cs |
+| DiplomacyScanViewWindow | own | Screens/Galaxy/ScanDiplomacy.cs |
 | DiplomacyScreen | own | DiplomacyScreen.cs |
 | DiplomaticInteractionNotificationWindow | NS (variant row names it: MoodMessageLabel etc.) | NotificationScreen.cs |
 | DiplomaticRelationChangeNotificationWindow | NS (variant row) | NotificationScreen.cs |
 | DisplacementReportNotificationWindow | NS (breakdown-toggle variant row) | NotificationScreen.cs |
 | DockLabelsWindow | read | GalaxyHudScreen.cs, UI/FleetPresence.cs |
 | DragDropWindow | read (drag ghost; deterministic drag model) | UI/ShipDesignRows.cs |
-| EconomyScanViewWindow | own | ScanViewScreen.cs |
+| EconomyScanViewWindow | own | Screens/Galaxy/ScanRows.cs |
 | EconomyScreen | own | EconomyScreen.cs |
 | ElectionModalWindow | own | ElectionScreen.cs |
 | ElectionSurveyNotificationWindow | NS (variant row: "election survey") | NotificationScreen.cs |
@@ -177,8 +177,8 @@ upgrade on live sighting — baseline ships today, so these stay SUPPORTED.
 | RelicsCollectionCompletedNotificationWindow | NS (variant row) | NotificationScreen.cs |
 | RenameModalWindow | own | RenameModalScreen.cs |
 | ResourcesExportScreen | floor (roadmap minimum-pass row: export) | MenuDestinationScreens.cs |
-| ScanNodeLabelsWindow | own | ScanViewScreen.cs |
-| ScanOverlayWindow | own | ScanViewScreen.cs |
+| ScanNodeLabelsWindow | own | Screens/Galaxy/ScanRows.cs |
+| ScanOverlayWindow | own | Screens/Galaxy/ScanLens.cs (legend), Screens/Galaxy/ScanHacking.cs (the hacking family) |
 | ScanViewInformationNotificationWindow | NS | NotificationScreen.cs |
 | SenateScreen | own | SenateScreen.cs |
 | ShipDesignModalWindow | own | ShipDesignScreen.cs, UI/ShipDesignRows.cs |
@@ -186,7 +186,7 @@ upgrade on live sighting — baseline ships today, so these stay SUPPORTED.
 | SpecialNodeEventNotificationWindow | NS | NotificationScreen.cs |
 | StarSystemLabelsWindow | read | GalaxyHudScreen.cs |
 | StarSystemManagementScanViewWindow | own | ScanViewScreen.cs |
-| StarSystemOverviewScanViewWindow | own | ScanViewScreen.cs |
+| StarSystemOverviewScanViewWindow | own | Screens/Galaxy/ScanLens.cs |
 | StarSystemPopulationModalWindow | own (roadmap: tutorial-locked verification outstanding) | SystemPoliticsScreen.cs |
 | StarSystemScreen | own | SystemManagementScreen.cs |
 | SystemSelectionModalWindow | own | SystemSelectionScreen.cs |
@@ -195,7 +195,7 @@ upgrade on live sighting — baseline ships today, so these stay SUPPORTED.
 | TechnologyScreen | own | ResearchScreen.cs |
 | TechnologyStageUnlockedNotificationWindow | NS | NotificationScreen.cs |
 | TechnologyUnlockedNotificationWindow | NS | NotificationScreen.cs |
-| TradeScanViewWindow | own | ScanViewScreen.cs |
+| TradeScanViewWindow | own | Screens/Galaxy/ScanRows.cs |
 | TradingBlockadeNotificationWindow | NS (variant row) | NotificationScreen.cs |
 | TradingNotificationWindow | NS | NotificationScreen.cs |
 | TreatiesCancelledNotificationWindow | NS (variant row) | NotificationScreen.cs |

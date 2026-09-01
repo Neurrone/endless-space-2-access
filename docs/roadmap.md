@@ -10,86 +10,38 @@ belong in the files above.
 
 ## To build
 
-- **Normal-view zoom bands, the rest of the plan** (stage 1 shipped 2026-09-01: the tree's kind
-  filter, the scanner's band filter, the five slider band words, and the container re-seat on band
-  shrink. Stage 2 shipped 2026-09-01: the MOTION model — graded expansion, collapse-restore with
-  the level-9 fallback, constellation expand at 1–2, snap landings forcing the target's band,
-  dot-fidelity planet rows at 7–12, and both of stage 1's standing bookmark gaps closed —
-  `scan-modes-design-proposal.md` is the spec. Stage 3 shipped 2026-09-01: the inspect cell's zoom
-  contract — 1–12, exit on crossing into 13 by any route, the entry ceiling unchanged — and the 1–2
-  TERRITORY SURVEY. Stage 4 shipped 2026-09-01: the system label's passive PICTURES as
-  tooltip-bearing child nodes of the system row (which fixed the promised-and-never-offered
-  construction-queue dossier), the constellation ownership bonus on the row at levels 1–2, and the
-  owner's two stage-3 corrections — the border leap on the travel keys WITHDRAWN, and the inspect
-  cell band-filtered off the same table the tree reads. Stage 5a shipped 2026-09-01: the GALAXY
-  PAGE WEARS THE SCAN LENS (gate, `ScanLensPanels` composition, `ScanViewScreen` slimmed to the
-  system/planet rungs), the owner-grouped in-mode tree with dot planets and lane children, the
-  scanner's lens filter, expansion and landings that never move the camera in-mode, and the
-  level-13 icon children restored to the ruled option (a). Stage 5b shipped 2026-09-01: the
-  DIPLOMACY BAND (the empire list with its centres, relations, swap toggle and the watched empire's
-  spokes; battle rows; the same reading on the owner headings from level 3, which closes 5a's
-  reconciliation hole), the HACKING FAMILY as four lens-independent stops read off drawn widgets,
-  EXIT-SCAN-FIRST landings off a new `BandKind.OpenSpace` column, and the inspect cell's in-mode
-  range (1–10, the survey at 1–2, arming from the System lens pulling out to Economy), and — the
-  word approved mid-stage — the **"Bookmarks"** group the in-mode tree gathers the player's own
-  POINT bookmarks under, which closes 5a's last named hole. Stage 5c shipped 2026-09-01: the
-  TRADE-ROUTE WEAVE (ends, waypoints and lanes each saying one line per route, the lane carrying
-  the colour the renderer would paint it, gated on the mode exactly as the drawing is — the flat
-  `scan:routes` group and its four counted phrases retired with it), and the pinned null-probe
-  SWEEP of the scan dot, which found the lens's circle wires no `CuriosityAnimatedCircle`,
-  `MiningProbeFeedback`, `TerraformationFeedback` or `AnomalyReductionFeedback` on any of the 253
-  drawn circles, so the in-mode dot row stopped claiming curiosities and mining probes. Still to
-  come: **stage 6** — closure (manual test, doc landings, walk baselines).
-  PINNED, fixture-blocked (5c): the DRAWN route lines — the weave was proved live against
-  SYNTHETIC routes injected into the department (recipe in `test-recipes/galaxy-map.md`) and by
-  `TradeWeaveTests`, so what a save with a real trading company still has to show is the renderer's
-  own three materials on the map, the legend beside them, and a real blockade reaching the reading
-  the turn it lands. Also pinned: the `UniquePlanetFeedback` and `GhostFeedback` marks, which ARE
-  wired on both dot prefabs and are read by neither dot row (the circle's tooltip carries the
-  unique sentence) — nothing was invented; and a "???" system anywhere, the whole galaxy of
-  `[Beginner] access test` being 65 Unrevealed / 17 Revealed / 4 Owned with nothing between.
-  FLAGGED by 5c, for the owner: the System lens (levels 11–13) paints NO owner for the surrounding
-  systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
-  step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
-  continuity rather than parity. Left as shipped; the alternative (a flat system list at 11–13)
-  needs a ruling. Also flagged: on a lane carrying several routes every route's line says that
-  LANE's colour, so two routes over one blockaded hop both say "mixed"; the per-route alternative
-  ("open"/"blockaded" per line) would lose the third material the picture actually shows.
-  UNEXPLAINED, for stage 6: the running game's log ring holds ~100 warnings from BEFORE the 5c
-  build — `galaxy: reading the systems threw: NotSupportedException: Collection is read-only` at
-  `NodeAnnouncement[]::Add` in `AddSpokes` ← `AddEmpireRow` ← `BuildEmpireList` — i.e. a spoke row
-  whose vtable came with an ARRAY of announcements. NOT reproducible on the 5c build (the
-  Diplomacy band rebuilt clean, three spokes, zero warnings since the reload), so either a stale
-  intermediate build or a state 5b's own probing reached (the `WatchingEmpire` swap is the
-  suspect). One attempt to reproduce failed for a second reason worth knowing: the
-  `WatchingEmpire = Gui.Game.Empires[1]` write REVERTED before the next build (the window read back
-  `watching = 0`, the player, with the window shown), so 5b's swap recipe needs a re-check of its
-  own before the spoke path under a foreign watcher can be re-driven.
-  PINNED, fixture-blocked (5b): battle rows and the swap toggle's own UI (no save has a fight in
-  orbit while the lens is up, and Leaper's home is unexplored so its label draws no name line);
-  every hacking table's per-row content, the program costs and the in-map hacking icons (a
-  DLC-owning session); the empire ordering beyond n = 2; and the `[traitor]` glyph in the
-  repartition toggle's failure sentence, which reads as nothing.
-  OPEN, for the owner (stage 5b): the diplomacy band's SPOKE rows and BATTLE rows refuse the
-  inspect cell, Enter, the leap trail and the restore — the inert default, because whether a row at
-  levels 1–2 may arm the cell is the open question below and nothing was invented for it.
-  CLOSED by 5b: at the Diplomacy band a system under the cursor used to land on the ZOOM SLIDER.
-  The empire list is the fix by construction — the system's own empire group is the container, and
-  it wears the same key at every lens — measured 2026-09-01: Kais focused at level 4, zoom to 1,
-  cursor on `galaxy:owner/1`.
-  OPEN, for the owner (stage 3): at levels 1–2 the tree declares only constellation headings (which
-  refuse arming, 2026-08-31) and point bookmarks, so Ctrl+I can arm the survey only from a bookmark
-  row — should a constellation heading arm the cell at its centroid there, or does entering the
-  survey by zooming out with a live cell suffice? And unowned space in the survey says NOTHING about
-  ownership (there is no phrase for "nobody's territory" and none was invented) — is the bare pair
-  the wanted answer? RULED (owner, 2026-09-01): a bookmarked SYSTEM keeps no row at levels 1–2 — its jump
-  key and type-ahead access suffice (point bookmarks stay top-level at those bands). Also ratified
-  as shipped: collapse at 13 with no jump memory falls back to level 9 (the in-place case
-  included), and a bookmark jump to a system from 1–2 lands at level 3, not the framing zoom.
-  PENDING LIVE: the physical-key half of the re-seat pairs. The `CheckInputs` gate is no longer the
-  blocker — `NotificationPopulationGained` was cleared 2026-09-01 and a real PageDown moved the rung
-  two steps — but the desktop locked before the fleet-row pair could be driven through it. Also
-  pending: adrift fleets below level 5 (none exist in `[Beginner] access test`).
+- **Zoom bands and scan lenses — what the plan left open.** The plan itself shipped whole
+  2026-09-01 (six stages; the spec is `scan-modes-design-proposal.md`, the pointer row is in
+  Shipped, the per-screen recipes are in `test-recipes/galaxy-map.md` and
+  `.../inspect-and-influence.md`). What is left:
+  - **MANUAL, at the machine**: `scan-modes-manual-test.md` — every step only a human can run,
+    chiefly the physical PageUp/PageDown re-seat pair, and a FIXTURE-BLOCKED section naming the
+    save each blocked item needs.
+  - **PINNED, fixture-blocked**: the DRAWN trade-route lines with a real trading company (the
+    weave was proved against SYNTHETIC routes and by `TradeWeaveTests` — what a real company still
+    has to show is the renderer's three materials, the legend beside them, and a blockade reaching
+    the reading the turn it lands); a `GhostFeedback` world, so the dot row's Sanctuary sentence is
+    code-only; a "???" system anywhere (the galaxy is 65 Unrevealed / 17 Revealed / 4 Owned with
+    nothing between, so no framing can sight one); battle rows and the swap toggle's own UI; every
+    hacking table's per-row content, the program costs and the in-map hacking icons (a DLC-owning
+    session); empire ordering beyond n = 2; contested-influence RENDERING, whose band placement in
+    both modes is still provisional; adrift fleets below level 5; and the `[traitor]` glyph in the
+    repartition toggle's failure sentence, which reads as nothing.
+  - **FLAGGED, for the owner**: the System lens (levels 11–13) paints NO owner for the surrounding
+    systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
+    step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
+    continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling. And
+    on a lane carrying several routes every route's line says that LANE's colour, so two routes over
+    one blockaded hop both say "mixed"; the per-route alternative would lose the third material the
+    picture actually shows.
+  - **OPEN, for the owner**: the diplomacy band's SPOKE and BATTLE rows refuse the inspect cell,
+    Enter, the leap trail and the restore — the inert default, because whether a row at levels 1–2
+    may arm the cell is the question below and nothing was invented for it. At levels 1–2 the tree
+    declares only constellation headings (which refuse arming, 2026-08-31) and point bookmarks, so
+    Ctrl+I can arm the survey only from a bookmark row — should a constellation heading arm the cell
+    at its centroid there, or does entering the survey by zooming out with a live cell suffice? And
+    unowned space in the survey says NOTHING about ownership (there is no phrase for "nobody's
+    territory" and none was invented) — is the bare pair the wanted answer?
 - **Coverage-audit tail (2026-08-24 session; owner-directed):** the last screens with no
   Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
   target selection, ground battle — needs a scratch game engaged with a pirate/major fleet
@@ -257,7 +209,7 @@ belong in the files above.
   space-battle popups, the two ground-battle popups and the hacking popup — their own
   show-location handlers are code-verified against the decompiled overrides only, and no
   fixture raises the windows.
-- Galaxy-label gaps: constellation ownership bonus; pin-message editing.
+- Galaxy-label gaps: pin-message editing (the constellation ownership bonus shipped 2026-09-01).
 - Input batch (code landed 2026-08-22, LIVE-VERIFIED 2026-08-22 on `[Beginner] test` — recipes in
   `test-recipes/galaxy-map.md`): single-press tree arrows, the six place keys incl.
   Ctrl+Alt+E, Alt+Left/Right paging on four screens, the star-system pair as nodes, chord labels,
@@ -606,3 +558,4 @@ belong in the files above.
 | A line clipped by its scrolling window is measured at the window | `UI/AgeWidgets.Clipped` |
 | Docked fleets in the scanner and the inspect cursor; minor/Academy fleets read by standing | GalaxyScanner, `UI/FleetPresence` |
 | Map bookmarks: ten per campaign, set/jump/home, tree rows and inspect cells, per-campaign file | GalaxyBookmarks, GalaxyHudScreen, GalaxyInspect, `UI/Bookmarks/MapBookmarkStore`, `Core/Bookmarks/` |
+| Zoom bands and scan lenses: kind parity per band in both views (tree, scanner, inspect cell), the motion model, the label pictures as child nodes, the galaxy page wearing the lens, the diplomacy band, the hacking family, the trade-route weave | GalaxyHudScreen + `Screens/Galaxy/*`, `Core/UI/Bands.cs`, `UI/ZoomBands.cs`, ScanViewScreen |

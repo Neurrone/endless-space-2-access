@@ -41,8 +41,10 @@ namespace ES2Access.Screens
     /// <c>ToggleScanView</c>), but there it means something else entirely: an overlay of per-ship stats
     /// on the fight the player is already watching, not a lens over the map. So this screen stands down
     /// for the duration of a battle (<see cref="ScanLensPanels.BattleEnding"/>) and the battle screen
-    /// keeps the player and the narration. The hacking dashboard and its banners are not modelled: the
-    /// game switches all three off outright for a session without that content
+    /// keeps the player and the narration. The hacking dashboard and its banners ARE modelled now, as
+    /// stops both pages wear (<c>ScanHacking</c> on <see cref="GalaxyHudScreen"/>); they read off
+    /// drawn widgets, so a session without that content declares none of them - which is the game's
+    /// own shape, since it switches all three off outright there
     /// (<c>ScanOverlayWindow.OnGameCreated</c>).
     ///
     /// <b>Why every drawn test in this file stays.</b> A lens row stands for a GAME ENTITY - a planet,

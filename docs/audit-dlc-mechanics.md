@@ -173,11 +173,20 @@ Gate sites: `ScanOverlayWindow.cs:242-253` (dashboard + both banners hard-hidden
 `GuiNotificationOptionsManager.cs:2153-2218` (15 notifications), plus 4 XML
 `DownloadableContentPrerequisite` entries in `Gui/GuiElements[ScanView].xml:98,137,203,242`.
 
+**Correction, 2026-09-01 (scan-modes stage 5b).** Three of this table's `NONE` verdicts are out of
+date: the dashboard, the hacking banner and the traitors banner are now modelled as four
+lens-independent stops in `ES2Access/Screens/Galaxy/ScanHacking.cs` (`scan:hacking`,
+`scan:traitors`, `scan:console`, `scan:notifications`), read off drawn widgets so they declare
+nothing on an install without the content. What stays unmodelled here is the per-node program panel
+and keyboard route-building for the operation cursor, and every table's CONTENT is still
+fixture-blocked — see `docs/roadmap.md` and `docs/test-recipes/galaxy-map.md` ("Sighting the
+hacking family") for what a forced show could and could not prove.
+
 | Surface | Host screen | Gate | Mod coverage | Severity | Fixture |
 |---|---|---|---|---|---|
-| **`ScanViewWindowHackingDashboard`** — title, mode toggles (`HackingOperation` / `DefensiveProgram` / `OffensiveProgram`), two program menus cloned from `{Defensive,Offensive}ProgramLinePrefab`, selected-program state | Scan view overlay (`ScanOverlayWindow.HackingDashboard`) | DLC18 (`ScanOverlayWindow.cs:242`) | **NONE** — `Screens/ScanViewScreen.cs:46-47` states it outright: "The hacking dashboard and its banners are not modelled" | **critical** — this is where every hacking operation and program starts | Penumbra owned |
-| **`ScanViewWindowHackingBanner`** — processing-power stock/allocation cells, overcap warning, hacking speed, live operation lines, trace lines | Scan view overlay | DLC18 | **NONE** (same note) | **critical** — the only place ongoing operations and traces against you are listed | Penumbra owned |
-| **`ScanViewWindowTraitorsBanner`** — traitor total, revenue, details toggle, per-empire table | Scan view overlay | DLC18 | **NONE** (same note) | high — traitor economics | Penumbra owned |
+| **`ScanViewWindowHackingDashboard`** — title, mode toggles (`HackingOperation` / `DefensiveProgram` / `OffensiveProgram`), two program menus cloned from `{Defensive,Offensive}ProgramLinePrefab`, selected-program state | Scan view overlay (`ScanOverlayWindow.HackingDashboard`) | DLC18 (`ScanOverlayWindow.cs:242`) | **structure modelled 2026-09-01** — `Screens/Galaxy/ScanHacking.cs` (`scan:console`), read off the drawn toggles and program menus; every row's CONTENT is fixture-blocked | **critical** — this is where every hacking operation and program starts | Penumbra owned |
+| **`ScanViewWindowHackingBanner`** — processing-power stock/allocation cells, overcap warning, hacking speed, live operation lines, trace lines | Scan view overlay | DLC18 | **structure modelled 2026-09-01** (same file; `scan:hacking` / `scan:traitors`), content fixture-blocked | **critical** — the only place ongoing operations and traces against you are listed | Penumbra owned |
+| **`ScanViewWindowTraitorsBanner`** — traitor total, revenue, details toggle, per-empire table | Scan view overlay | DLC18 | **structure modelled 2026-09-01** (same file; `scan:hacking` / `scan:traitors`), content fixture-blocked | high — traitor economics | Penumbra owned |
 | Scan-view legend groups `HackingCaption` / `TraceCaption` (4 items each) | Scan view legend | DLC18 XML prerequisite | **full** — `ScanViewScreen.AddCaptionGroups`/`Declared`/`Allowed` (`:962-1027`) filters caption groups by the game's own prerequisites, so these appear exactly when owned. **This is the one place the mod is already DLC-correct by construction.** | — | Penumbra owned |
 | **`ScanNodeLabelHackingProgramPanel`** — the ring of `HackingProgramItem`s around a scan node | Scan view node labels | DLC18 + hover (`IconGroupHoverArea`) | **NONE** — `ScanViewScreen.BuildNodes` (:393-443) reads `TraitorAndTradeLine` + `ContentTable` only | high — per-node program placement | Penumbra owned |
 | Hacking-operation cursor modes: **`HackingOperationCursor`** (start point, waypoints, target — `ScanNodeLabel.cs:756-760` shows waypoint/start icons) and **`HackingProgramCursor`** (place a program on a node) | scan view, cursor modes | DLC18 | **partial** — mode announced (`GlobalHud.cs:161-185`); **no keyboard route-building or target confirm** (§6) | **critical** — an operation is a multi-node *route*, so this is the hardest cursor mode in the game | Penumbra owned |
