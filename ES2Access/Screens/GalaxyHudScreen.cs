@@ -2624,6 +2624,12 @@ namespace ES2Access.Screens
         /// (<see cref="Arrive"/>), the go-to-location key, and a bookmark jump made with the inspect
         /// cell live (<see cref="GalaxyBookmarks"/> - the one bookmark shape this landing can express).
         ///
+        /// <paramref name="reach"/> is how far the landing goes, and it decides one thing: whether the
+        /// camera FRAMES the destination or merely follows the cursor there
+        /// (<see cref="MapReach"/>). Travelling a starlane is the one LOCAL caller - the destination is
+        /// the neighbour of the row the player is standing on - and it keeps the picture at the
+        /// distance they put it.
+        ///
         /// Under a live cell every one of them arrives the same way: ONLY THE CELL MOVES (owner
         /// rulings 2026-08-31). The zoom is not touched - the cell's own slide is the whole camera
         /// move - and neither is the tree cursor, so leaving the mode puts the player back on the row
@@ -2640,11 +2646,15 @@ namespace ES2Access.Screens
         /// and for a point the map draws nothing at, both of which leave the caller to say its own
         /// piece.
         /// </summary>
-        internal bool GoTo(MapTarget target, MapCamera camera)
+        internal bool GoTo(
+            MapTarget target,
+            MapCamera camera,
+            MapReach reach = MapReach.Elsewhere
+        )
         {
             try
             {
-                MapLanding plan = MapLandings.Decide(target.Thing, GalaxyInspect.Live);
+                MapLanding plan = MapLandings.Decide(target.Thing, GalaxyInspect.Live, reach);
                 if (plan.Unplaced || (target.Id == null && target.Select == null))
                 {
                     // Owner ruling 2026-08-22: everything the game can point the player at is supposed
@@ -2857,7 +2867,12 @@ namespace ES2Access.Screens
         /// camera rule, so the landed node's own focus adds nothing on top (<see cref="FollowPlace"/>)
         /// - and a slide onto a bare point. Where the cell is driving, the cell has already slid and
         /// only a place's zoom is added on top - so the picture is the same whichever way the player is
-        /// reading the map.</summary>
+        /// reading the map.
+        ///
+        /// WHETHER the move is made as a thing asked for out loud is the plan's
+        /// (<see cref="MapLanding.Frame"/>): a landing that frames overrides the distance the player
+        /// chose, and a LOCAL hop asks the camera rule for exactly what walking onto the row asks for
+        /// - which at the far bands is a slide and nothing more.</summary>
         private void Camera(MapTarget target, MapCamera wanted, MapLanding plan)
         {
             MapCameraMove move = plan.Camera;
@@ -2886,7 +2901,7 @@ namespace ES2Access.Screens
                 // walking there asks for, and the rule then has nothing left to do when the landed
                 // node's focus commits. That is also what makes the game's own show-location compose -
                 // the record says the camera is already there.
-                FollowPlace(target.System, true, true);
+                FollowPlace(target.System, true, plan.Frame);
                 return;
             }
 
@@ -2918,7 +2933,7 @@ namespace ES2Access.Screens
                     target.System != null ? target.System : Orbited(carried);
                 if (berthed != null)
                 {
-                    FollowPlace(berthed, true, true);
+                    FollowPlace(berthed, true, plan.Frame);
                     return;
                 }
 
@@ -2932,7 +2947,7 @@ namespace ES2Access.Screens
 
             if (drawn != null)
             {
-                FollowPlace(drawn, false, true);
+                FollowPlace(drawn, false, plan.Frame);
                 return;
             }
 
@@ -4387,14 +4402,27 @@ namespace ES2Access.Screens
             return RowStands(armedFrom) ? armedFrom : NearestPlacedRow(at);
         }
 
-        /// <summary>Ask for the branch, then hand the rest to the page's one landing
+        /// <summary>
+        /// Ask for the branch, then hand the rest to the page's one landing
         /// (<see cref="GoTo"/>): the cursor, the camera, and the free cell where one is up. The
         /// expansion belongs to the next build (<see cref="ApplyPendingExpansions"/>) and the cursor to
-        /// the tick after that, so the node the player lands on exists by the time they land.</summary>
+        /// the tick after that, so the node the player lands on exists by the time they land.
+        ///
+        /// A LOCAL HOP (<see cref="MapReach.Local"/>): both callers - travelling a lane and backing up
+        /// the one just travelled - move the player to a neighbour of the row they are standing on,
+        /// not to somewhere they asked to be shown, so the camera does what an in-place expansion of
+        /// the destination would do and nothing more (owner ruling 2026-09-02). It was framing before,
+        /// which took a follow at spoken level 5 down to 13 while expanding the very same system in
+        /// the very same breath stayed put.
+        /// </summary>
         private void Arrive(ControlId id, StarSystemNode where)
         {
             OpenPlace(where);
-            GoTo(MapTarget.Place(where, id, where.GalaxyPosition), MapCamera.Zoom);
+            GoTo(
+                MapTarget.Place(where, id, where.GalaxyPosition),
+                MapCamera.Zoom,
+                MapReach.Local
+            );
         }
 
         /// <summary>Close a system again where this trail is the only reason it is open. The trail's last

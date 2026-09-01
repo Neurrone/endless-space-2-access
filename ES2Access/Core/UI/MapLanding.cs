@@ -32,6 +32,23 @@ namespace ES2Access.Core.UI
         Slide,
     }
 
+    /// <summary>How far a landing reaches - the one thing that decides whether it FRAMES what it
+    /// lands on.</summary>
+    public enum MapReach
+    {
+        /// <summary>Somewhere else on the map: a go-to, a bookmark jump, a quest pin, the game's own
+        /// show-location. The player asked to be taken there, so the picture is composed around the
+        /// destination.</summary>
+        Elsewhere,
+
+        /// <summary>One step from where the player already stands - following a starlane to the star
+        /// at its far end, and backing up the lane again. It is a walk and not a journey: the
+        /// destination is a neighbour of the row the cursor was already on, so the picture stays at
+        /// the distance the player put it and moves only as far as reading the next row moves it.
+        /// </summary>
+        Local,
+    }
+
     /// <summary>The plan for one "go and look at this" - what to do to the inspect cell, the tree
     /// cursor and the camera.</summary>
     public struct MapLanding
@@ -57,6 +74,12 @@ namespace ES2Access.Core.UI
         /// <summary>Nothing on the map answers for the point: say so and leave the cursor alone.
         /// </summary>
         public bool Unplaced;
+
+        /// <summary>The camera move FRAMES the destination - it is made as a thing asked for out loud
+        /// rather than as the camera following the cursor, so it overrides whatever the player had
+        /// set the picture to. False for a local hop, whose camera does exactly what walking into
+        /// that place would have done at this distance and no more.</summary>
+        public bool Frame;
     }
 
     /// <summary>
@@ -87,6 +110,16 @@ namespace ES2Access.Core.UI
     /// and let the cell's slide be the whole camera move. Leaving the mode then puts the cursor on
     /// what was landed on, and stepping INSIDE it zooms as any tree walk does - the ordinary machinery,
     /// unchanged.</item>
+    /// <item>A LOCAL HOP DOES NOT FRAME (owner ruling 2026-09-02, <see cref="MapReach.Local"/>).
+    /// Following a starlane is a walk to the next row along, not a request to be shown a place, so
+    /// its camera is the camera an in-place expansion of that system would have given: at the far
+    /// bands, where the map draws no inside for a system, a slide and nothing more; at the detail
+    /// bands, the same coming-in that walking into the place makes. Measured at spoken level 5, where
+    /// expanding a system correctly stayed put and following a lane out of it dived to 13 - the same
+    /// gesture, one row apart, answering two different questions. The MINIMUM BAND is untouched: a
+    /// landing still forces the band its target needs a row at (<c>GalaxyHudScreen.EnsureBand</c>),
+    /// which for a system is the band that names the systems, so a hop can never land where there is
+    /// no row.</item>
     /// <item>Out of the free cursor the landing's own announcement is the whole utterance, once.
     /// </item>
     /// <item>A point with NOTHING on it is a defect, not a behaviour (owner ruling, 2026-08-22):
@@ -96,13 +129,19 @@ namespace ES2Access.Core.UI
     /// </summary>
     public static class MapLandings
     {
-        public static MapLanding Decide(MapThing thing, bool inspectLive)
+        public static MapLanding Decide(
+            MapThing thing,
+            bool inspectLive,
+            MapReach reach = MapReach.Elsewhere
+        )
         {
+            bool frame = reach == MapReach.Elsewhere;
             switch (thing)
             {
                 case MapThing.Place:
                     return new MapLanding
                     {
+                        Frame = frame,
                         MoveCell = inspectLive,
                         // Under the cell the TREE CURSOR DOES NOT MOVE AT ALL (owner ruling
                         // 2026-08-31, reversing the reseat ruling of the same day): the cell is the
@@ -117,6 +156,7 @@ namespace ES2Access.Core.UI
                 case MapThing.Point:
                     return new MapLanding
                     {
+                        Frame = frame,
                         MoveCell = inspectLive,
                         FocusNode = !inspectLive,
                         AnnounceNode = !inspectLive,
@@ -127,6 +167,7 @@ namespace ES2Access.Core.UI
                 case MapThing.PlanetBound:
                     return new MapLanding
                     {
+                        Frame = frame,
                         ExitInspect = inspectLive,
                         FocusNode = true,
                         AnnounceNode = true,

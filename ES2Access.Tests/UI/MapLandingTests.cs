@@ -148,6 +148,42 @@ namespace ES2Access.Tests.UI
             }
         }
 
+        // ---- how far the landing reaches ----
+
+        /// Owner ruling 2026-09-02: a LOCAL hop - travelling a starlane to the star at its far end -
+        /// does not frame what it lands on. Everything else about the plan is unchanged: the reach
+        /// decides the camera's authority over the picture and nothing else.
+        [Fact]
+        public void ALocalHopDoesNotFrameWhatItLandsOn()
+        {
+            foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
+            {
+                foreach (bool inspecting in new[] { false, true })
+                {
+                    MapLanding far = MapLandings.Decide(thing, inspecting, MapReach.Elsewhere);
+                    MapLanding near = MapLandings.Decide(thing, inspecting, MapReach.Local);
+                    Assert.True(far.Frame);
+                    Assert.False(near.Frame);
+                    Assert.Equal(far.Camera, near.Camera);
+                    Assert.Equal(far.MoveCell, near.MoveCell);
+                    Assert.Equal(far.FocusNode, near.FocusNode);
+                    Assert.Equal(far.AnnounceNode, near.AnnounceNode);
+                    Assert.Equal(far.ExitInspect, near.ExitInspect);
+                }
+            }
+        }
+
+        /// A landing whose reach nobody states frames, which is what every caller but the lane hop
+        /// wants and what each of them did before the reach existed.
+        [Fact]
+        public void ALandingFramesUnlessItSaysOtherwise()
+        {
+            foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
+            {
+                Assert.True(MapLandings.Decide(thing, false).Frame);
+            }
+        }
+
         [Fact]
         public void NothingTouchesTheFreeCursorWhileItIsDown()
         {
