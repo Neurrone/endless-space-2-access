@@ -539,6 +539,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyBookmarkSuffix = "galaxy.bookmark.suffix";
         public const string GalaxyBookmarkPoint = "galaxy.bookmark.point";
 
+        // The heading the scan tree gathers the player's own POINT bookmarks under (owner-approved
+        // 2026-09-01). A heading and not a sentence: it is the one branch of that tree the lens is
+        // not drawing, so it is named rather than left as loose rows among the empires and their
+        // holdings. A bookmarked SYSTEM has no row here - its annotation rides the system's own row.
+        public const string GalaxyBookmarksGroup = "galaxy.bookmark.group";
+
         // The one refusal the set key has: a cursor big enough to hold two systems cannot say which
         // of them the player meant. It names the way OUT rather than the problem - the size keys are
         // right there - and carries no digit, because which slot was asked for is not what went
@@ -2193,6 +2199,7 @@ namespace ES2Access.Core.Speech
             { GalaxyBookmarkEmpty, "No bookmark {0}" },
             { GalaxyBookmarkSuffix, "bookmark {0}" },
             { GalaxyBookmarkPoint, "Bookmark {0} at {1}" },
+            { GalaxyBookmarksGroup, "Bookmarks" },
             { GalaxyBookmarkShrink, "Shrink cursor so it contains only one system" },
             { GalaxyBookmarkNoHome, "No home system" },
             { GalaxyBookmarkFileHeader, "{0}, {1}, turn {2}" },

@@ -412,7 +412,7 @@ namespace ES2Access.Screens
                     BuildEmpireList(builder, empire);
                 }
 
-                EmitBookmarksAfter(builder, null);
+                EmitScanBookmarks(builder);
                 return;
             }
 
@@ -422,10 +422,61 @@ namespace ES2Access.Screens
                 AddOwnerGroup(builder, _owners[i], empire, labels);
             }
 
-            // Last, and at the top level: a bookmark is the player's own note rather than something
-            // the lens is drawing, so it belongs to no empire's holdings.
-            EmitBookmarksAfter(builder, null);
+            // Last, and under a heading of its own: a bookmark is the player's own note rather than
+            // something the lens is drawing, so it belongs to no empire's holdings.
+            EmitScanBookmarks(builder);
         }
+
+        /// <summary>
+        /// THE PLAYER'S OWN POINT BOOKMARKS, UNDER THEIR OWN HEADING (owner ruling 2026-09-01, the
+        /// word approved 2026-09-01).
+        ///
+        /// The in-mode tree is otherwise a picture of what the lens is painting - empires and their
+        /// holdings - and a handful of annotations loose among them would read as places the lens had
+        /// drawn. So they are gathered, in position order as everywhere else, behind one word.
+        ///
+        /// Only POINTS. A bookmarked SYSTEM's annotation rides that system's own row, which the tree
+        /// already holds wherever the lens names the stars.
+        ///
+        /// The heading is not in the rows' keys, for the reason the owner headings are not in the
+        /// stars' (<see cref="OwnerKeyHead"/>): a bookmark keeps the key it has in the ordinary view,
+        /// so the cursor rides across the mode change. It seeds open, so the group has to be shut by
+        /// hand before a landing could fail to reach inside it.
+        /// </summary>
+        private void EmitScanBookmarks(GraphBuilder builder)
+        {
+            int points = 0;
+            for (int i = 0; i < _bookmarkPoints.Count; i++)
+            {
+                if (!_bookmarkPoints[i].Emitted && _bookmarkPoints[i].Under == null)
+                {
+                    points++;
+                }
+            }
+
+            if (points == 0)
+            {
+                return;
+            }
+
+            ControlId id = ControlId.Structural(ScanBookmarksKey);
+            Seed(builder, id);
+            bool open = builder.ExpandAll || builder.IsExpanded(id);
+            NodeVtable vtable = GraphNodes.Group(
+                () => ModStrings.Get(ModStrings.GalaxyBookmarksGroup)
+            );
+            // Synthetic: a heading over the mod's own rows - there is no widget anywhere for a
+            // bookmark, let alone for a list of them.
+            builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
+            if (open)
+            {
+                EmitBookmarksAfter(builder, null);
+            }
+
+            builder.EndGroup();
+        }
+
+        private const string ScanBookmarksKey = "galaxy:bookmarks";
 
         private void AddOwnerGroup(
             GraphBuilder builder,

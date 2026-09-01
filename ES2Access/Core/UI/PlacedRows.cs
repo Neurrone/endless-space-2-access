@@ -188,6 +188,9 @@ namespace ES2Access.Core.UI
             PlacedRow.Grouping("constellation"),
             PlacedRow.Grouping("unexplored"),
             PlacedRow.Grouping("owner"),
+            // The heading the scan tree gathers the player's own point bookmarks under. A word over
+            // a list, not a place: the rows inside it are the places, and they keep their own keys.
+            PlacedRow.Grouping("bookmarks"),
             // The one row the diplomacy lens draws that is neither a heading nor a place.
             PlacedRow.Drawing("battle"),
         };

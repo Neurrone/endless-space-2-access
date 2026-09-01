@@ -53,7 +53,7 @@ ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | builder.BeginGroup(Nodes.Synthet
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
-ES2Access/Screens/Galaxy/ScanRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
+ES2Access/Screens/Galaxy/ScanRows.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
 
 ES2Access/Screens/Galaxy/SystemRows.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/management"), vtable));
 ES2Access/Screens/Galaxy/SystemRows.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));

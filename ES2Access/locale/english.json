@@ -198,6 +198,7 @@
   "galaxy.bookmark.empty": "No bookmark {0}",
   "galaxy.bookmark.suffix": "bookmark {0}",
   "galaxy.bookmark.point": "Bookmark {0} at {1}",
+  "galaxy.bookmark.group": "Bookmarks",
   "galaxy.bookmark.shrink": "Shrink cursor so it contains only one system",
   "galaxy.bookmark.no-home": "No home system",
   "galaxy.bookmark.file-header": "{0}, {1}, turn {2}",
