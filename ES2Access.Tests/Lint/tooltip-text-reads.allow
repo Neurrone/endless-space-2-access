@@ -68,8 +68,6 @@ ES2Access/Screens/RecipeCreationScreen.cs | 1 | () => named ? AgeWidgets.Tooltip
 
 ES2Access/Screens/ResearchScreen.cs | 1 | : AgeText.Clean(marker.Tooltip.Content);
 
-ES2Access/Screens/ScanViewScreen.cs | 1 | readable == null ? null : AgeText.Lines(AgeText.Tooltip(readable));
-
 ES2Access/Screens/SettingRows.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
 
 ES2Access/Screens/SystemManagementScreen.cs | 1 | () => FirstLine(kind) ?? AgeText.Label(it.NextPopulationLabel)

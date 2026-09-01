@@ -46,6 +46,11 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 2 | builder.AddItem(Nodes.Synthetic(id,
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, readout));
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
+ES2Access/Screens/Galaxy/ScanLens.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
+
+ES2Access/Screens/Galaxy/ScanRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
+ES2Access/Screens/Galaxy/ScanRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
+
 ES2Access/Screens/Galaxy/SystemRows.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/management"), vtable));
 ES2Access/Screens/Galaxy/SystemRows.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/Galaxy/SystemRows.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
@@ -77,13 +82,10 @@ ES2Access/Screens/ResearchScreen.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id,
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(
 
 ES2Access/Screens/ScanViewScreen.cs | 1 | Nodes.Synthetic(
-ES2Access/Screens/ScanViewScreen.cs | 3 | builder.AddItem(Nodes.Synthetic(
+ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:hero"), vtable));
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:remains/" + i), vtable));
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/" + i), vtable));
-ES2Access/Screens/ScanViewScreen.cs | 2 | builder.AddItem(Nodes.Synthetic(id, vtable));
-ES2Access/Screens/ScanViewScreen.cs | 1 | builder.BeginGroup(Nodes.Synthetic(
-ES2Access/Screens/ScanViewScreen.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));

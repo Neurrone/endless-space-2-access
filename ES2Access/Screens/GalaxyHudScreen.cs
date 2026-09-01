@@ -127,6 +127,11 @@ namespace ES2Access.Screens
         /// system's own and then a planet's, which is exactly what the map's own wheel does.</summary>
         private readonly ZoomLadder _zoom = new ZoomLadder();
 
+        /// <summary>The scan overlay's own furniture - its title strip, its legend, its announcement and
+        /// the centre panel the System lens draws - worn by this page while the galaxy scan lens is up
+        /// (<see cref="ScanLensPanels"/>).</summary>
+        private readonly ScanLensPanels _lens = new ScanLensPanels();
+
         /// <summary>The strip the game slides over the bottom of the map while a fleet is selected.
         /// It is drawn OVER this page rather than instead of it, so it contributes stops here rather
         /// than being a page of its own - selecting a fleet is how a player starts sending one
@@ -265,15 +270,38 @@ namespace ES2Access.Screens
         /// "normal view" true while putting a completely different set of things in front of the
         /// player, so this page has to give the keyboard up there rather than go on describing systems
         /// that are no longer on the screen.
+        ///
+        /// AND WHILE THE GALAXY SCAN LENS IS UP (owner ruling 2026-09-01). Scan view is the same map
+        /// wearing a different light: the stars are where they were, the lanes run where they ran, and
+        /// what the lens adds is a reading per system and its own furniture over the top. So the page
+        /// keeps the keyboard rather than handing it to a second screen with a second tree - which is
+        /// what makes the inspect cursor, the scanner, the bookmarks, the type-ahead and the map
+        /// summary work in-mode with no copies at all. The two flags are exact complements outside a
+        /// battle or a cinematic (<c>GuiManager</c> :353, :355), so there is no frame in which neither
+        /// answers and the cursor is never dropped on the way in.
+        ///
+        /// The one thing borrowed from the page that used to own the mode is the BATTLE STANDDOWN
+        /// (<see cref="ScanLensPanels.BattleEnding"/>): a player who left the battle's own Scan toggle
+        /// checked is still in the game's scan mode for the frames the battle screen takes to fade,
+        /// and the galaxy's lens is genuinely up underneath it. The lens's ARRIVAL gate is not in here
+        /// - it governs the lens's own furniture and rows rather than the page
+        /// (<see cref="Scanning"/>), because the page keeping the cursor across the mode change is the
+        /// whole point of the ruling.
         /// </summary>
         public override bool IsActive()
         {
             try
             {
                 GuiManager gui = GuiService();
-                return gui != null
-                    && gui.IsInNormalView
-                    && GalaxyViewLevels.Overview
+                if (gui == null || !GalaxyViewLevels.Overview)
+                {
+                    return false;
+                }
+
+                bool showing =
+                    gui.IsInNormalView
+                    || (gui.IsInGalaxyScanView && !ScanLensPanels.BattleEnding());
+                return showing
                     && !gui.IsAnyScreenVisible
                     && !gui.IsAnyModalVisible
                     && !gui.IsInLoadingWindow;
@@ -366,6 +394,8 @@ namespace ES2Access.Screens
         public override void OnPush()
         {
             _hud.Baseline();
+            _lens.Baseline();
+            _scanWas = false;
             _fleetPanel.Baseline();
             // Arrived at because the GAME took the player here, rather than because a screen drawn over
             // the map was closed: the tree has to be told which system the picture is of
@@ -393,6 +423,8 @@ namespace ES2Access.Screens
         {
             _zoom.Forget();
             _hud.Forget();
+            _lens.Forget();
+            _scanWas = false;
             // The panel's release, caught here because on this path it is never handed over: the page
             // goes away with the panel still up, so the close frame the watch would have answered on
             // never happens under this screen (<see cref="_releasedAcross"/>).
@@ -602,6 +634,7 @@ namespace ES2Access.Screens
             }
 
             _hud.Update();
+            WatchTheLens();
             FollowSelectionEnd(_fleetPanel.Update());
             // Beside it and not before it: the two answer the same handover by different routes, and a
             // release the page itself saw is the fresher of the two.
@@ -1841,6 +1874,18 @@ namespace ES2Access.Screens
                 inside = false;
             }
 
+            // AND NEVER UNDER A LENS (owner ruling 2026-09-01). In scan mode the zoom ladder does not
+            // choose how much is drawn, it chooses WHAT THE PICTURE MEANS - a step is a different
+            // lens - so a camera move made as a side effect of reading a row would silently change the
+            // subject of everything on the screen. Expansion is in place at every lens and a landing
+            // slides and seats; the player's own ladder is the only thing that picks a lens. The
+            // spoken landing is no exception here, which is why this is asked after
+            // <paramref name="asked"/> rather than beside it.
+            if (inside && Scanning)
+            {
+                inside = false;
+            }
+
             if (place == null || (!asked && Showing(place, inside)))
             {
                 return;
@@ -2599,6 +2644,15 @@ namespace ES2Access.Screens
         /// </summary>
         private void EnsureBand(MapTarget target)
         {
+            // Not under a lens: there the rung IS the lens, so forcing a band would answer "take me to
+            // that system" by changing what the whole screen means (owner ruling 2026-09-01). The
+            // lens's own parity filter is what makes that safe - a landing is only ever sent to a kind
+            // the lens is drawing, so there is a row waiting wherever the camera already is.
+            if (Scanning)
+            {
+                return;
+            }
+
             int level = ZoomBands.Level;
             int need = BandNeeded(target);
             if (level < Bands.FirstLevel || need < Bands.FirstLevel || level >= need)
@@ -3338,17 +3392,50 @@ namespace ES2Access.Screens
         public override void Build(GraphBuilder builder)
         {
             ApplyPendingExpansions(builder);
-            _hud.Empire(builder);
-            // The map's own ladder, handed to the cluster that names the view rather than appended
-            // after it: the two are one control per row and the ladder comes first, which is the
-            // cluster's ordering to make.
-            _hud.ViewTitle(builder, _zoom);
+            bool lens = Scanning;
+            if (lens)
+            {
+                // The lens's own strip stands where the view's name goes, and the ladder goes under
+                // it: the game HIDES the panel the ordinary view-title cluster is read off while the
+                // overlay is up, so the ladder needs a home of its own here - and it is needed more in
+                // this mode than out of it, since the rung is what selects the lens.
+                builder.BeginStop(ScanLensPanels.TitleStop);
+                _lens.Title(builder);
+                _zoom.Build(builder, "scan:zoom");
+            }
+            else
+            {
+                _hud.Empire(builder);
+                // The map's own ladder, handed to the cluster that names the view rather than appended
+                // after it: the two are one control per row and the ladder comes first, which is the
+                // cluster's ordering to make.
+                _hud.ViewTitle(builder, _zoom);
+            }
 
             builder.BeginStop(SystemStop);
             builder.PushContext(MapContext());
+            if (lens)
+            {
+                // The one panel a lens draws over the MAP rather than round its edges: the System lens
+                // inspects whichever system is nearest the middle of the screen. Its own window
+                // decides whether it is there, so no lens is named here.
+                _lens.SystemOverview(builder);
+            }
+
             BuildSystems(builder);
             // Popped before the fleet panel, which is a stop of its own.
             builder.PopContext();
+
+            if (lens)
+            {
+                // The clusters the game keeps drawing over the lens are the turn controls and nothing
+                // else - it hides the banners, the pinned quest and the notification strip - and the
+                // fleet panel is not drawn in the mode either.
+                builder.BeginStop(ScanLensPanels.LegendStop);
+                _lens.Legend(builder);
+                _hud.Turn(builder);
+                return;
+            }
 
             // The selected-fleet panel, where the game draws it: over the bottom of the map, between
             // what the map shows and the clusters down its right-hand edge. Nothing at all while no

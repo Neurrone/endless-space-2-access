@@ -162,10 +162,18 @@ namespace ES2Access.Core.UI
             // empties a slot, that row is meant to die under the cursor and the restore is meant to
             // find the replacing slot's row - an anchor would be a thing to follow where nothing moved.
             PlacedRow.Placed("bookmark", TierBookmark, true, true, false),
-            // The two groupings. Both are keyed under the same head as the systems they gather, and
-            // neither is anywhere the player can be standing.
+            // The three groupings. None of them is anywhere the player can be standing.
+            //
+            // The first two are keyed under the same head as the systems they gather. The THIRD is
+            // not, and deliberately: an owner heading is what the scan lens groups the map by (owner
+            // ruling 2026-09-01), and it stands over stars whose keys are unchanged from the ordinary
+            // view - so entering and leaving the mode costs the cursor nothing, since every row it
+            // could be standing on is the same row. An empire is not a place either: the position the
+            // watching empire's intelligence has for it is where a CIRCLE is drawn, in the same way a
+            // constellation's centroid is where its name is written.
             PlacedRow.Grouping("constellation"),
             PlacedRow.Grouping("unexplored"),
+            PlacedRow.Grouping("owner"),
         };
 
         /// <summary>Every declaration, in the order they are written.</summary>

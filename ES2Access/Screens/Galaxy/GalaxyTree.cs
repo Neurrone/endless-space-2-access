@@ -471,6 +471,16 @@ namespace ES2Access.Screens
                 // contents out of as well, and the cell operates below the band the open-space ROWS
                 // begin at.
                 Drifting();
+                // Under a lens the map is the same map read by whose the stars are, so the whole of
+                // the rest of this - the constellations, the open-space region, the things the lens
+                // hides - is a different shape (<see cref="BuildScanTree"/>). The gathering above is
+                // shared because the lists are also what the inspect cell reads a square out of.
+                if (Scanning)
+                {
+                    BuildScanTree(builder, empire, ScanLabels());
+                    return;
+                }
+
                 // Every probe the map is drawing: they all sit at the top of the open-space region
                 // now (<see cref="AddProbes"/>), so every one of them is a reason to declare it.
                 //
