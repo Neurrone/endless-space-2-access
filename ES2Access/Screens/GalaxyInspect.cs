@@ -1255,6 +1255,9 @@ namespace ES2Access.Screens
         /// the cell make no difference to it, because a fleet has no exposed origin at all - the map
         /// draws where a fleet is going and never where it came from - so there is nothing here for
         /// the westward key to compete with.
+        ///
+        /// With NO lane in the cell at all the key has nothing of the map's own geometry to follow, and
+        /// that empty case is where the border leap lives instead (<see cref="LeapToOwnershipChange"/>).
         /// </summary>
         private bool FollowWest()
         {
@@ -1262,9 +1265,10 @@ namespace ES2Access.Screens
             if (contents.Links.Count == 1)
             {
                 GoTo(LaneEnd(contents.Links[0], true));
+                return true;
             }
 
-            return true;
+            return contents.Links.Count == 0 ? LeapToOwnershipChange(-1, 0) : true;
         }
 
         /// <summary>
@@ -1282,6 +1286,9 @@ namespace ES2Access.Screens
         /// heading for different places are, so the key is taken and nothing happens. With no fleet
         /// destination to be had the key falls back to the lane, the mirror of the westward one: the
         /// eastmost end, the one the cell's sentence names second.
+        ///
+        /// With neither a destination nor a lane the cell is offering nothing to follow, and that empty
+        /// case is the border leap's (<see cref="LeapToOwnershipChange"/>).
         /// </summary>
         private bool FollowEast()
         {
@@ -1309,13 +1316,87 @@ namespace ES2Access.Screens
             if (goal != null)
             {
                 GoTo(goal);
-            }
-            else if (contents.Links.Count == 1)
-            {
-                GoTo(LaneEnd(contents.Links[0], false));
+                return true;
             }
 
-            return true;
+            if (contents.Links.Count == 1)
+            {
+                GoTo(LaneEnd(contents.Links[0], false));
+                return true;
+            }
+
+            return contents.Links.Count == 0 ? LeapToOwnershipChange(1, 0) : true;
+        }
+
+        /// <summary>
+        /// GO TO THE NEXT BORDER in this direction - what the travel key means on a square with
+        /// nothing in it to travel by (owner ruling 2026-09-01).
+        ///
+        /// The travel keys ask "where does what is here go", and on empty sky the honest answer used
+        /// to be nothing at all. But empty sky is not featureless: the map paints whose territory it
+        /// is, and at the furthest rungs that painting is the ONLY thing drawn - so the question a
+        /// player sweeping it has is "how far to the next border", which is the same question the
+        /// eastward key asks about a lane. This layers UNDER the existing answers and displaces none
+        /// of them: a lane in the cell still travels the lane, fleets under way still win, and a cell
+        /// whose contents are AMBIGUOUS keeps its silent refusal, because two lanes disagreeing is a
+        /// deliberate refusal rather than an empty square.
+        ///
+        /// What counts as the next border is the very comparison the crossing announcement makes
+        /// (<see cref="InfluenceReading"/>'s own equality, via <see cref="Influence"/>) - who holds the
+        /// square, how much of it, and who is reaching into it - so the leap can never land somewhere
+        /// the arrival then declines to announce as a crossing. Reading a candidate is the mode's own
+        /// cell influence asked at that square and nowhere else, so the walk and the landing cannot
+        /// disagree about whose it is.
+        ///
+        /// Nothing different all the way to the map's edge is the silent refusal every one of these
+        /// keys makes, and the mode stays up. The landing is a LEAP, so the square being left goes on
+        /// the mode's own stack and Backspace comes back to it.
+        /// </summary>
+        private bool LeapToOwnershipChange(int east, int north)
+        {
+            InfluenceReading here = CellNow().Reading;
+            int x = _x;
+            int y = _y;
+            while (true)
+            {
+                int nextX = InspectGrid.Step(x, _size, east);
+                int nextY = InspectGrid.Step(y, _size, north);
+                if (!CellInBounds(nextX, nextY))
+                {
+                    return true;
+                }
+
+                x = nextX;
+                y = nextY;
+                if (!ReadingAt(x, y).Equals(here))
+                {
+                    PushCell();
+                    _x = x;
+                    _y = y;
+                    Settle(true);
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>Whose influence stands over another square, asked the way the cell asks it about
+        /// itself: the cursor is moved there, the mode's own reading is taken, and the cursor is put
+        /// back - the same borrowing the skip's signature makes, and for the same reason.</summary>
+        private InfluenceReading ReadingAt(int x, int y)
+        {
+            int wasX = _x;
+            int wasY = _y;
+            _x = x;
+            _y = y;
+            try
+            {
+                return CellNow().Reading;
+            }
+            finally
+            {
+                _x = wasX;
+                _y = wasY;
+            }
         }
 
         /// <summary>
