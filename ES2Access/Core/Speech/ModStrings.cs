@@ -1203,17 +1203,17 @@ namespace ES2Access.Core.Speech
         /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.Core.UI.TradeWeave"/>):
         /// a system at either END of a route says where the route goes, a system the route merely
         /// crosses says whose road is passing through, and a star LANE says which route it carries and
-        /// the colour the renderer paints that line - open, blockaded, or the third material where the
-        /// lane carries both. One phrase per route, never a merged count. The game writes no words on
-        /// any of it - the lines carry a colour and nothing else - so all six phrases are the mod's, and
-        /// mixed keeps its own sentence because the lane really is a third colour on the screen and
-        /// "blockaded" alone would hide the traffic still getting through.</summary>
+        /// how THAT route is running over it - open or blockaded. One phrase per route, never a merged
+        /// count. The game writes no words on any of it - the lines carry a colour and nothing else -
+        /// so all five phrases are the mod's. There is no "mixed" phrase (owner ruling 2026-09-01,
+        /// after playtest): the renderer has a third MATERIAL for a lane carrying both, but a lane is
+        /// heard one route at a time, and the two sentences together say which route is blockaded where
+        /// the colour could only say that one of them was.</summary>
         public const string ScanTradeRouteTo = "scan.trade-route-to";
         public const string ScanTradeRouteToBlockaded = "scan.trade-route-to-blockaded";
         public const string ScanTradeRouteThrough = "scan.trade-route-through";
         public const string ScanTradeLaneOpen = "scan.trade-lane-open";
         public const string ScanTradeLaneBlockaded = "scan.trade-lane-blockaded";
-        public const string ScanTradeLaneMixed = "scan.trade-lane-mixed";
 
         // The star system management page. The panel names are the mod's, because the game draws the
         // panels as unlabelled boxes with an icon in the corner; everything a panel CONTAINS is read
@@ -2467,7 +2467,6 @@ namespace ES2Access.Core.Speech
             { ScanTradeRouteThrough, "along trade route from {0} to {1}" },
             { ScanTradeLaneOpen, "carries trade route {0} to {1}, open" },
             { ScanTradeLaneBlockaded, "carries trade route {0} to {1}, blockaded" },
-            { ScanTradeLaneMixed, "carries trade route {0} to {1}, mixed" },
             { ScreenStarSystem, "Star system" },
             { ScreenStarSystemNamed, "{0}, {1}" },
             { ScreenPlanet, "Planet" },

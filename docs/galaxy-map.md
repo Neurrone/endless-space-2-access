@@ -544,8 +544,12 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   zoom, lens or camera), so every lens that draws the map draws the routes.
   Mod policy (RULED 2026-09-01, shipped 5c): the routes are WOVEN into the map — an end of a route
   says "Trade route to ⟨other end⟩", a system it crosses "along trade route from ⟨X⟩ to ⟨Y⟩", a
-  lane "carries trade route ⟨X⟩ to ⟨Y⟩" plus the colour the renderer would paint THAT LANE, one
-  line per route and never a merged count (`Core/UI/TradeWeave.cs`). Read from the model, not the
+  lane "carries trade route ⟨X⟩ to ⟨Y⟩" plus how THAT ROUTE is running over it — open or
+  blockaded — one line per route and never a merged count (`Core/UI/TradeWeave.cs`).
+  **The renderer's third material has no word** (owner ruling 2026-09-01, replacing the
+  paint-parity reading): a lane carrying both kinds is one mixed-coloured line to the eye and two
+  sentences to the ear, and "mixed" on both lines said less than the pair does — a player hearing
+  them one at a time needs to know WHICH route is blocked. Read from the model, not the
   renderer, because the renderer never refreshes mid-mode. Naming a path node is knowledge-safe —
   creating a route raises every node on its path to `Known` and reveals around it
   (`DepartmentOfCommerce.RevealNodesOnTradingRoutePath` :1943-1959) — but that is a different

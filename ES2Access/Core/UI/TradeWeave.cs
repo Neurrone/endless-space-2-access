@@ -15,13 +15,17 @@ namespace ES2Access.Core.UI
     /// ONE LINE PER ROUTE, never a merged summary (RULED): a lane carrying three routes names three,
     /// and a system that is the end of one and the middle of another says both things.
     ///
-    /// What the game DRAWS is the merge, though, and the merge is what colours the picture: the
-    /// renderer walks each route's path pairwise and merges the legs under an undirected key - the two
-    /// node indices, smaller first - so several routes over one hop are ONE line, painted from one of
-    /// three materials: open, blockaded, or mixed where the hop carries both
-    /// (<c>TradeRouteRenderer.UpdatePlayerEmpireDependantData</c> :229-283). So the traffic word a lane
-    /// says with each route is the material the renderer would paint that lane with - what the player
-    /// would see - and not a per-route recomputation that would disagree with the picture.
+    /// EVERY LINE IS ITS OWN ROUTE'S STATE (RULED 2026-09-01, replacing the painted-colour reading):
+    /// a lane carrying an open route and a blockaded one says "carries trade route A to B, open" and
+    /// "carries trade route C to D, blockaded", and the word "mixed" is gone from the mod altogether -
+    /// a mixed lane is simply those two sentences heard together, which is more than the colour said
+    /// and never less. The renderer's own merge is why the colour exists at all: it walks each route's
+    /// path pairwise and merges the legs under an undirected key - the two node indices, smaller first
+    /// - so several routes over one hop are ONE line painted from one of three materials
+    /// (<c>TradeRouteRenderer.UpdatePlayerEmpireDependantData</c> :229-283). The mod keeps the merge
+    /// for finding which routes share a lane and drops it for the reading, because a keyboard player
+    /// hears the lines one at a time and a colour that means "one of these is blockaded" leaves them
+    /// asking which.
     ///
     /// The blockade flag is the renderer's, including the part of it that looks like an accident: the
     /// flag ACCUMULATES along the path (<c>flag |=</c> :233), so once a route is blockaded at one node
@@ -33,13 +37,13 @@ namespace ES2Access.Core.UI
     /// </summary>
     public sealed class TradeWeave
     {
-        /// <summary>The three materials the renderer paints a lane with, in the order it asks them
-        /// (:272-283): both kinds of traffic first, then blockaded, then plain.</summary>
+        /// <summary>How one route's traffic over one lane is running. There is no third state: the
+        /// renderer has a mixed MATERIAL for a lane carrying both, but a lane is read one route at a
+        /// time and each of them is one thing or the other (owner ruling 2026-09-01).</summary>
         public enum Traffic
         {
             Open = 0,
             Blockaded = 1,
-            Mixed = 2,
         }
 
         /// <summary>What one route is to one place on the map: either an END of it, which names the
@@ -59,8 +63,8 @@ namespace ES2Access.Core.UI
             public bool Blockaded;
         }
 
-        /// <summary>What one route is to one lane: it rides it, and the lane is painted whatever the
-        /// traffic over it comes to.</summary>
+        /// <summary>What one route is to one lane: it rides it, and it is running open or blockaded
+        /// over that leg - its own state, never the line's merged colour.</summary>
         public struct Ride
         {
             public int Route;
@@ -79,15 +83,13 @@ namespace ES2Access.Core.UI
             public bool Blockaded;
         }
 
-        /// <summary>One line on the screen: which routes run over it, and how many legs of them are
-        /// painted each way - the renderer's own two counters (<c>LinkInfo.AddTradeRoute</c>).</summary>
+        /// <summary>One line on the screen: which routes run over it and how each of them is running
+        /// there. The renderer keeps two counters instead (<c>LinkInfo.AddTradeRoute</c>) because all
+        /// it has to choose is a material; the reading names the routes, so it keeps them apart.
+        /// </summary>
         private struct LaneTraffic
         {
-            public List<int> Routes;
-
-            public int Open;
-
-            public int Blockaded;
+            public List<Ride> Rides;
         }
 
         private readonly List<Route> _routes = new List<Route>();
@@ -169,9 +171,9 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>
-        /// What rides one lane, each route with the colour the renderer would paint that lane - so two
-        /// routes over one hop, one of them blockaded, both say "mixed", because mixed is the one line
-        /// the player is looking at.
+        /// What rides one lane, each route with ITS OWN traffic over that leg - so two routes over one
+        /// hop, one of them blockaded, are one open line and one blockaded line, said one after the
+        /// other.
         ///
         /// Nothing where no route runs over it, which is every lane on a map with no trading company.
         /// </summary>
@@ -183,17 +185,7 @@ namespace ES2Access.Core.UI
                 return null;
             }
 
-            Traffic state =
-                lane.Blockaded > 0 && lane.Open > 0
-                    ? Traffic.Mixed
-                    : (lane.Blockaded > 0 ? Traffic.Blockaded : Traffic.Open);
-            List<Ride> rides = new List<Ride>(lane.Routes.Count);
-            for (int i = 0; i < lane.Routes.Count; i++)
-            {
-                rides.Add(new Ride { Route = lane.Routes[i], State = state });
-            }
-
-            return rides;
+            return new List<Ride>(lane.Rides);
         }
 
         /// <summary>The renderer's own key: the pair of node indices with the smaller one in the low
@@ -211,25 +203,30 @@ namespace ES2Access.Core.UI
             LaneTraffic lane;
             if (!_lanes.TryGetValue(key, out lane))
             {
-                lane = new LaneTraffic { Routes = new List<int>(1) };
+                lane = new LaneTraffic { Rides = new List<Ride>(1) };
             }
 
-            if (blockaded)
+            Traffic state = blockaded ? Traffic.Blockaded : Traffic.Open;
+            // Walked per LEG as the renderer walks it, but named once: a route that doubled back over
+            // its own hop is still one route to say, and the blockade wins, because the flag only ever
+            // rises along a path and the later crossing is the one still true at the end of it.
+            for (int i = 0; i < lane.Rides.Count; i++)
             {
-                lane.Blockaded++;
-            }
-            else
-            {
-                lane.Open++;
+                if (lane.Rides[i].Route != route)
+                {
+                    continue;
+                }
+
+                if (state == Traffic.Blockaded)
+                {
+                    lane.Rides[i] = new Ride { Route = route, State = state };
+                }
+
+                _lanes[key] = lane;
+                return;
             }
 
-            // Counted per LEG as the renderer counts it, but named once: a route that somehow doubled
-            // back over its own hop would colour the line twice and still be one route to say.
-            if (!lane.Routes.Contains(route))
-            {
-                lane.Routes.Add(route);
-            }
-
+            lane.Rides.Add(new Ride { Route = route, State = state });
             _lanes[key] = lane;
         }
 
@@ -269,27 +266,19 @@ namespace ES2Access.Core.UI
                 : ModStrings.Format(ModStrings.ScanTradeRouteThrough, from, to);
         }
 
-        /// <summary>What a LANE says about one of the routes riding it: which route, and the colour
-        /// the renderer paints this line - open, blockaded, or the third material where the lane
-        /// carries both.</summary>
+        /// <summary>What a LANE says about ONE of the routes riding it: which route, and how that
+        /// route is running here. A lane carrying both kinds says both sentences.</summary>
         public static string LaneText(string from, string to, Traffic state)
         {
-            if (from == null || to == null)
-            {
-                return null;
-            }
-
-            string template = ModStrings.ScanTradeLaneOpen;
-            if (state == Traffic.Blockaded)
-            {
-                template = ModStrings.ScanTradeLaneBlockaded;
-            }
-            else if (state == Traffic.Mixed)
-            {
-                template = ModStrings.ScanTradeLaneMixed;
-            }
-
-            return ModStrings.Format(template, from, to);
+            return from == null || to == null
+                ? null
+                : ModStrings.Format(
+                    state == Traffic.Blockaded
+                        ? ModStrings.ScanTradeLaneBlockaded
+                        : ModStrings.ScanTradeLaneOpen,
+                    from,
+                    to
+                );
         }
     }
 }

@@ -889,7 +889,8 @@ re-runs it. With the scan lens up:
    list by reflection — `TradingCompanies` is `AsReadOnly()` over it, so the read-only view sees it.
 3. A second route on the same path in `ExternalTradingRoutes`, with
    `typeof(TradingRouteBlockade).GetProperty("IsBeingSoftBlockadedOnHQ").SetValue(r.Blockade, true, null)`,
-   makes every shared lane MIXED and proves the multiplicity ruling in one dump.
+   makes every shared lane carry one open route and one blockaded one, which proves the
+   multiplicity ruling and the per-route lane reading in one dump.
 4. **Restore** by clearing the private list (`companies=0`) and `POST /loadsave`. Nothing else is
    touched: no order is posted, and `RevealNodesOnTradingRoutePath` is never called, so no
    exploration state moves. Zero `Warning` lines in `/log` across the whole injection.
@@ -905,7 +906,9 @@ Measured with that fixture: `Dusay … Trade route to Sabel` / `Sabel … Trade 
 `Rigel … along trade route from Dusay to Sabel`, Rigel's lane children
 `Starlane 1 to Dusay, east, carries trade route Dusay to Sabel, open` and
 `Starlane 3 to Sabel, west, …, open` with `Starlane 2 to Heka` silent; after the blockaded second
-route, every one of those lines DOUBLES and both lanes read `mixed`. Toggle the lens off with the
+route, every one of those lines DOUBLES — and since the 2026-09-01 per-route ruling the second line
+of each pair reads `blockaded` where the first reads `open` (both read `mixed` before it; that
+wording is gone from the mod, and this measurement predates the change). Toggle the lens off with the
 company still injected and every route line is gone from systems and lanes alike — the weave is
 gated on the mode, as the drawing is.
 

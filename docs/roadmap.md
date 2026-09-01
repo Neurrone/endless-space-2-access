@@ -30,10 +30,7 @@ belong in the files above.
   - **FLAGGED, for the owner**: the System lens (levels 11–13) paints NO owner for the surrounding
     systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
     step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
-    continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling. And
-    on a lane carrying several routes every route's line says that LANE's colour, so two routes over
-    one blockaded hop both say "mixed"; the per-route alternative would lose the third material the
-    picture actually shows.
+    continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling.
   - **OPEN, for the owner**: the diplomacy band's SPOKE and BATTLE rows refuse the inspect cell,
     Enter, the leap trail and the restore — the inert default, because whether a row at levels 1–2
     may arm the cell is the question below and nothing was invented for it. At levels 1–2 the tree

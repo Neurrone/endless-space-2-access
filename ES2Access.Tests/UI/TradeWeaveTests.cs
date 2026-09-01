@@ -127,10 +127,12 @@ namespace ES2Access.Tests.UI
             Assert.Equal(TradeWeave.Traffic.Blockaded, weave.On(3, 4)[0].State);
         }
 
-        /// <summary>A lane carrying one open route and one blockaded one is the third material, and
-        /// both of its lines say so - it is one line on the screen and one colour.</summary>
+        /// <summary>A lane carrying one open route and one blockaded one says BOTH, each line with its
+        /// own route's state (owner ruling 2026-09-01, replacing the painted-colour reading): the
+        /// renderer merges them into one mixed-material line, and a player hearing the lines one at a
+        /// time needs to know which of the two is the blockaded one.</summary>
         [Fact]
-        public void ALaneCarryingBothIsMixedForEveryRouteOnIt()
+        public void ALaneCarryingBothSaysEachRoutesOwnState()
         {
             TradeWeave weave = new TradeWeave();
             weave.Add(new[] { 1, 2 }, false, null);
@@ -138,11 +140,27 @@ namespace ES2Access.Tests.UI
 
             IList<TradeWeave.Ride> rides = weave.On(1, 2);
             Assert.Equal(2, rides.Count);
-            Assert.Equal(TradeWeave.Traffic.Mixed, rides[0].State);
-            Assert.Equal(TradeWeave.Traffic.Mixed, rides[1].State);
-            // The route's own state is still its own: one of them is the blockaded one.
+            Assert.Equal(0, rides[0].Route);
+            Assert.Equal(TradeWeave.Traffic.Open, rides[0].State);
+            Assert.Equal(1, rides[1].Route);
+            Assert.Equal(TradeWeave.Traffic.Blockaded, rides[1].State);
+            // The route's own state is the same answer from the other side.
             Assert.False(weave[0].Blockaded);
             Assert.True(weave[1].Blockaded);
+        }
+
+        /// <summary>A route crossing its own hop twice is one line on that lane, and the blockade wins:
+        /// the flag only rises along a path, so the later crossing is the one still true at the end of
+        /// it.</summary>
+        [Fact]
+        public void ARouteDoublingBackOverItsOwnHopIsSaidOnce()
+        {
+            TradeWeave weave = new TradeWeave();
+            weave.Add(new[] { 1, 2, 1, 2 }, false, new[] { false, true, false, false });
+
+            IList<TradeWeave.Ride> rides = weave.On(1, 2);
+            Assert.Single(rides);
+            Assert.Equal(TradeWeave.Traffic.Blockaded, rides[0].State);
         }
 
         /// <summary>A path with no leg in it draws no line and is not a route.</summary>
@@ -202,10 +220,6 @@ namespace ES2Access.Tests.UI
             Assert.Equal(
                 "carries trade route Dusay to Leo, blockaded",
                 TradeWeave.LaneText("Dusay", "Leo", TradeWeave.Traffic.Blockaded)
-            );
-            Assert.Equal(
-                "carries trade route Dusay to Leo, mixed",
-                TradeWeave.LaneText("Dusay", "Leo", TradeWeave.Traffic.Mixed)
             );
             Assert.Null(TradeWeave.LaneText(null, "Leo", TradeWeave.Traffic.Open));
         }

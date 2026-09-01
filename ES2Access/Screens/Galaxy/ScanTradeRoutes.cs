@@ -147,9 +147,9 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// What the routes make of one star lane, said on the lane's own row: one line per route
-        /// riding it, each carrying the colour the renderer paints THAT LINE with - so a lane carrying
-        /// an open route and a blockaded one says "mixed" on both, which is the one line the player is
-        /// looking at (<see cref="Core.UI.TradeWeave"/>).
+        /// riding it, each with THAT ROUTE's own traffic - so a lane carrying an open route and a
+        /// blockaded one says both, and the player hears which of the two is blocked rather than the
+        /// merged colour's "one of these is" (owner ruling 2026-09-01, <see cref="Core.UI.TradeWeave"/>).
         /// </summary>
         private void WeaveAlong(NodeVtable vtable, StarSystemNode node, GameNode far, Empire empire)
         {
