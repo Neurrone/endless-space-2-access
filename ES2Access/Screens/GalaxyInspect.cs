@@ -89,8 +89,14 @@ namespace ES2Access.Screens
         /// 2026-08-17). A ceiling, not a framing: entering pulls a closer camera out to here so
         /// enough of the map is visible around the square, and a player who has already zoomed
         /// further OUT keeps their view. Entry only: the wheel still works inside the mode, and
-        /// leaving keeps whatever the player zoomed to.</summary>
-        private const int EntryZoomCeiling = 8;
+        /// leaving keeps whatever the player zoomed to.
+        ///
+        /// Shared with the map's own collapse-restore fallback
+        /// (<see cref="GalaxyHudScreen.CollapseZoom"/>, owner ruling 2026-09-01): where a branch is
+        /// shut and nothing was written down about the view its expansion took the camera from, the
+        /// camera goes here, so the two "a sane distance to be put at" numbers in the mod are one
+        /// number.</summary>
+        internal const int EntryZoomCeiling = 8;
 
         public GalaxyInspect(GalaxyHudScreen screen)
         {

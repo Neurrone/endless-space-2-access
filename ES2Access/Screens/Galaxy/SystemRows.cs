@@ -644,9 +644,11 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Closing a system's branch takes the camera back out, because opening it brought the camera in -
-        /// one gesture, undone by its opposite, which is what makes going in and looking closer the same
-        /// key in the first place.
+        /// Closing a system's branch hands back the view the expansion took the camera away from
+        /// (<see cref="CollapseZoom"/>) - one gesture, undone by its opposite, which is what makes going
+        /// in and looking closer the same key in the first place. Where the expansion moved nothing -
+        /// the far bands, where a system opens in place - there is nothing to give back and the camera
+        /// stays where the player has it.
         ///
         /// Only while the camera is still looking at THIS system. Focus moves the camera about the map
         /// freely, so by the time a branch is closed the player may be reading somewhere else entirely,
@@ -664,10 +666,7 @@ namespace ES2Access.Screens
                 expansion.Remove(group);
             }
 
-            if (ReferenceEquals(GalaxyViewLevels.FocusedSystem, node))
-            {
-                ZoomOut(node);
-            }
+            CollapseZoom(node);
 
             // Whether or not there was a zoom to undo, the branch is shut: the camera is no longer
             // reading the inside of this system, so opening it again brings the camera back in

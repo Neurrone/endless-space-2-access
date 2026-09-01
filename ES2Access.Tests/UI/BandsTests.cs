@@ -315,6 +315,46 @@ namespace ES2Access.Tests.UI
             Assert.Equal(BandFidelity.Full, Bands.Shows(5, false, BandKind.Fleets));
         }
 
+        /// <summary>The minimum band a snap landing forces, per kind of target. These four numbers ARE
+        /// the landing rule: a planet or anything hanging off one to the orbital view, a fleet to the
+        /// lozenges, a system to the band that names them, and everything else the map draws out in the
+        /// open to the band that draws the full nameplate beside it.</summary>
+        [Fact]
+        public void ALandingsMinimumBandIsWhereItsKindIsFirstDrawn()
+        {
+            Assert.Equal(13, Bands.LowestLevel(BandKind.Planets, false, BandFidelity.Full));
+            Assert.Equal(7, Bands.LowestLevel(BandKind.Planets, false, BandFidelity.Dot));
+            Assert.Equal(5, Bands.LowestLevel(BandKind.Fleets, false, BandFidelity.Full));
+            Assert.Equal(3, Bands.LowestLevel(BandKind.Systems, false, BandFidelity.Name));
+        }
+
+        [Fact]
+        public void AKindTheLadderNeverDrawsHasNoBandToForce()
+        {
+            // Nothing on the ordinary map is a row about an empire, and no lens draws a fleet.
+            Assert.Equal(-1, Bands.LowestLevel(BandKind.Empires, false, BandFidelity.Name));
+            Assert.Equal(-1, Bands.LowestLevel(BandKind.Fleets, true, BandFidelity.Name));
+        }
+
+        [Fact]
+        public void AskingForNothingIsAnsweredByTheFurthestOutLevel()
+        {
+            Assert.Equal(
+                Bands.FirstLevel,
+                Bands.LowestLevel(BandKind.Planets, false, BandFidelity.None)
+            );
+        }
+
+        /// <summary>A lens's own minimum is the lens ladder's, not the ordinary map's: the scan tree
+        /// draws systems from the Trade lens and planet dots with them, which is a different pair of
+        /// numbers from the ones the normal view answers with.</summary>
+        [Fact]
+        public void TheMinimumBandIsReadOffTheLadderTheModeIsOn()
+        {
+            Assert.Equal(3, Bands.LowestLevel(BandKind.Planets, true, BandFidelity.Dot));
+            Assert.Equal(-1, Bands.LowestLevel(BandKind.Planets, true, BandFidelity.Full));
+        }
+
         [Fact]
         public void AKeyNoBuildEverHadScansNothing()
         {

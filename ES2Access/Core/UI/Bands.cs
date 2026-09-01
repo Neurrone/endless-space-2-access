@@ -174,6 +174,41 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>
+        /// The nearest-out level at which the picture holds <paramref name="kind"/> at
+        /// <paramref name="least"/> or better - the MINIMUM BAND a thing of that kind needs before the
+        /// tree has a row for it and the player can be put on one.
+        ///
+        /// This is what a snap landing forces (owner ruling 2026-09-01). Being sent to a place is a
+        /// promise that the player arrives standing on it, and a band that draws nothing of the kind
+        /// has no row to stand on - so the landing takes the camera to the nearest distance at which
+        /// the thing it is about is part of the picture, and no closer. "No closer" is the whole point
+        /// of asking the table rather than writing a number down: a fleet needs the lozenges and
+        /// nothing more, a planet's own card needs the orbital view, and the two answers move with the
+        /// table if it is ever re-cut.
+        ///
+        /// <see cref="BandFidelity.None"/> asks for nothing and answers <see cref="FirstLevel"/>. -1
+        /// where no level of the ladder shows that much of the kind, which is the caller's signal that
+        /// there is no band to force.
+        /// </summary>
+        public static int LowestLevel(BandKind kind, bool scanning, BandFidelity least)
+        {
+            if (least == BandFidelity.None)
+            {
+                return FirstLevel;
+            }
+
+            for (int level = FirstLevel; level <= LastLevel; level++)
+            {
+                if (Shows(level, scanning, kind) >= least)
+                {
+                    return level;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>
         /// Whether two levels draw the same picture as far as this table is concerned - every kind at
         /// the same fidelity.
         ///

@@ -68,6 +68,15 @@ namespace ES2Access.UI
             get { return Shows(BandKind.Planets); }
         }
 
+        /// <summary>The nearest-out level at which the picture holds this kind at
+        /// <paramref name="least"/> - what a landing on such a thing has to bring the camera to before
+        /// the tree has a row for it (<see cref="Bands.LowestLevel"/>). Read against whichever ladder
+        /// is up, so a lens's own minimum answers while the scan view is on.</summary>
+        public static int LowestLevel(BandKind kind, BandFidelity least)
+        {
+            return Bands.LowestLevel(kind, Scanning, least);
+        }
+
         /// <summary>Whether the scanner lists a category here - the same table, so the list the player
         /// walks and the tree they browse cannot disagree about what the map is showing.</summary>
         public static bool Scans(string categoryKey)

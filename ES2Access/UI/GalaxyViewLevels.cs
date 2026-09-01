@@ -203,6 +203,25 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Put the camera on one exact rung WITHOUT moving it sideways - the wheel's own
+        /// no-hover branch, which recentres on whatever the camera is already looking at. For the
+        /// band a landing or an expansion has to reach when the thing it is about is not a place the
+        /// camera could be aimed at: the picture changes what it draws and stays over the same sky.
+        /// Clamped to the ladder; false where there is no galaxy camera to ask.</summary>
+        public static bool SetZoomHere(int step)
+        {
+            try
+            {
+                GalaxyViewCameraController camera = GalaxyCamera();
+                return camera != null && SetZoom(step, camera.TargetPositionCurrent);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: setting the zoom where the camera stands threw: " + e);
+                return false;
+            }
+        }
+
         /// <summary>
         /// What the map is DRAWING at the rung the game is on, in a word - null where the question has
         /// no answer.

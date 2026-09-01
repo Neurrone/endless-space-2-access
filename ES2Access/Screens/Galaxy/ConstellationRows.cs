@@ -36,9 +36,9 @@ namespace ES2Access.Screens
         /// Closing the group takes the camera back out, exactly as closing a system does and for the
         /// same reason: it is the one gesture that means "I am done reading in there". Only while the
         /// camera is still inside THIS constellation - a player who has since read their way somewhere
-        /// else has a camera that is not this group's to move. Opening moves no camera: there is
-        /// nothing at a constellation's centre to fly to, and the group's own children are what opening
-        /// it is for.
+        /// else has a camera that is not this group's to move. Opening moves no camera either, except
+        /// at the two bands where the map draws no system to open onto: there the press brings the
+        /// picture to the systems band first (<see cref="ZoomInto"/>).
         /// </summary>
         private void AddConstellation(
             GraphBuilder builder,
@@ -72,6 +72,15 @@ namespace ES2Access.Screens
             HashSet<ControlId> expansion = builder.Expansion;
             ControlId closing = id;
             Constellation leaving = it;
+            vtable.OnExpand = () =>
+            {
+                if (expansion != null)
+                {
+                    expansion.Add(closing);
+                }
+
+                ZoomInto(leaving);
+            };
             vtable.OnCollapse = () =>
             {
                 if (expansion != null)
@@ -189,17 +198,68 @@ namespace ES2Access.Screens
         /// <summary>The groups this session has already offered a starting state to.</summary>
         private readonly HashSet<object> _seeded = new HashSet<object>();
 
-        /// <summary>Put the camera back out at the default view when a constellation's branch is
-        /// closed - but only while it is a system of THIS constellation the camera is in on, which is
-        /// the same test closing a system makes (<see cref="Collapse"/>) one level up. The way out is
-        /// the system's own, so the camera lands exactly where collapsing that system would have put
-        /// it, and a camera already out moves not at all.</summary>
+        /// <summary>
+        /// Opening a stretch of sky from the two furthest-out bands brings the camera to the distance
+        /// at which the map names the systems inside it, and centres it on the region
+        /// (owner ruling 2026-09-01, the graded model).
+        ///
+        /// The rows stand CLOSED at those bands so that the gesture is discoverable - a group that says
+        /// "collapsed" is a group the player will press Right on - and the press then has to make the
+        /// picture hold what it is about to read out, because a constellation whose systems the map is
+        /// not drawing has nothing to open onto. It is the one expansion on this page that moves the
+        /// camera OUT of its own accord in the sense that matters: it changes what the map is showing,
+        /// which is why the announcement is held until the new view has bound and the first child is
+        /// then read from the build that settled (<see cref="BetweenViews"/>).
+        ///
+        /// Nothing at all from the systems band inward: there a constellation opens in place, like
+        /// everything else at a band that already draws what the branch holds.
+        /// </summary>
+        private void ZoomInto(Constellation constellation)
+        {
+            if (_showsSystems || constellation == null)
+            {
+                return;
+            }
+
+            int level = ZoomBands.LowestLevel(BandKind.Systems, BandFidelity.Name);
+            if (level < Bands.FirstLevel)
+            {
+                return;
+            }
+
+            try
+            {
+                // Marked as the mod's own, like every other camera move it makes: the mod pans through
+                // the same calls the game leads the player with, and an unmarked one comes straight
+                // back round as a fresh locate request.
+                GalaxyLocate.Suppressed = true;
+                GalaxyViewLevels.SetZoom(level - 1, (Vector3)constellation.GalaxyPosition);
+                GalaxyViewLevels.Settle();
+            }
+            finally
+            {
+                GalaxyLocate.Suppressed = false;
+            }
+
+            // Somewhere else entirely, so the page's record of where it sent the camera stops being
+            // believed (<see cref="GalaxyViewLevels.Moves"/>).
+            GalaxyViewLevels.Moved();
+            _settling = SnapSettleFrames;
+            _binding = ViewBindFrames;
+            _labelCatchUp = ViewBindFrames;
+        }
+
+        /// <summary>Hand back the view when a constellation's branch is closed - but only while it is a
+        /// system of THIS constellation the camera is in on, which is the same test closing a system
+        /// makes (<see cref="Collapse"/>) one level up. The way out is the system's own
+        /// (<see cref="CollapseZoom"/>), so the camera lands exactly where collapsing that system would
+        /// have put it, and a camera already out moves not at all.</summary>
         private void ZoomOutOf(Constellation constellation)
         {
             StarSystemNode inside = GalaxyViewLevels.FocusedSystem;
             if (inside != null && ReferenceEquals(inside.Constellation, constellation))
             {
-                ZoomOut(inside);
+                CollapseZoom(inside);
                 LeftPlace(inside);
             }
         }

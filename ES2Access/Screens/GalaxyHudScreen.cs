@@ -1826,6 +1826,21 @@ namespace ES2Access.Screens
         /// </summary>
         private void FollowPlace(object place, bool inside, bool asked = false)
         {
+            // THE ZOOM LEVEL TELLS YOU WHAT AN EXPANSION GIVES (owner ruling 2026-09-01, the graded
+            // model). Below the detail band the map draws no inside for a system - no planet dots, no
+            // orbital cards - so there is nothing for the camera to come in on, and the far bands stay
+            // what they are for: reading the map's geometry, which lane runs where and what is standing
+            // on it. A system opened at those distances therefore opens IN PLACE, and walking its lanes
+            // and fleets moves the picture no closer than the player put it.
+            //
+            // Only for the cursor. A landing SAID OUT LOUD keeps its own framing
+            // (<paramref name="asked"/>): it has already forced the band its target needs
+            // (<see cref="EnsureBand"/>), and going to a place is a request to be taken there.
+            if (inside && !asked && !ZoomBands.MapDetail)
+            {
+                inside = false;
+            }
+
             if (place == null || (!asked && Showing(place, inside)))
             {
                 return;
@@ -1839,6 +1854,9 @@ namespace ES2Access.Screens
                 // (<see cref="GalaxyLocate.Suppressed"/>). PanTo marks its own.
                 if (inside && system != null)
                 {
+                    // Where the camera was when the inside took it in, so that closing the branch can
+                    // hand it back (<see cref="CollapseZoom"/>).
+                    NoteJump(system);
                     GalaxyLocate.Suppressed = true;
                     GalaxyViewLevels.SnapTo(system);
                     _settling = SnapSettleFrames;
@@ -1937,6 +1955,74 @@ namespace ES2Access.Screens
                 _cameraIn = false;
             }
         }
+
+        /// <summary>
+        /// Write down the view a system's inside is about to take the camera away from, so that
+        /// closing the branch can give it back (owner ruling 2026-09-01: COLLAPSE ALWAYS HANDS BACK THE
+        /// VIEW YOU WERE BROWSING).
+        ///
+        /// Only a real jump is remembered - a camera already at the orbital view is not going anywhere
+        /// and has nothing to restore, and a second step among the same system's children must not
+        /// overwrite the level the first one came from.
+        ///
+        /// Kept per system, because a player can be in and out of several: opening one at level 8 and
+        /// then walking into another from the orbital view leaves the first with a view to go back to
+        /// and the second with none, which is exactly what each of them should do when it is shut.
+        ///
+        /// An INSTANCE field, deliberately: a hot reload builds this page afresh and the memory goes
+        /// with it, which is the case the fallback exists for (<see cref="CollapseZoom"/>).
+        /// </summary>
+        private void NoteJump(StarSystemNode system)
+        {
+            int level = ZoomBands.Level;
+            int inside = ZoomBands.LowestLevel(BandKind.Planets, BandFidelity.Full);
+            if (system == null || level < Bands.FirstLevel || level >= inside)
+            {
+                return;
+            }
+
+            if (!_jumpedFrom.ContainsKey(system))
+            {
+                _jumpedFrom[system] = level;
+            }
+        }
+
+        /// <summary>
+        /// Take the camera back out of a system whose branch has just been closed.
+        ///
+        /// The view the expansion jumped from where one was written down (<see cref="NoteJump"/>), and
+        /// otherwise SPOKEN LEVEL 9 - the inspect cursor's own entry ceiling, so the two "a sane
+        /// distance to be put at" cameras in the mod are one number (owner ruling 2026-09-01, revised).
+        /// The fallback is not a defensive branch: a hot reload wipes the memory while the player is
+        /// standing inside an open system, and the first thing they do afterwards is close it.
+        ///
+        /// Only while the camera is still looking INTO this system, which is the same gate the old
+        /// unzoom had: focus moves the camera about the map freely, so by the time a branch is closed
+        /// the player may be reading somewhere else entirely, and flying the camera home from over
+        /// there would move a view nobody asked about.
+        ///
+        /// Silent, like the expansion: the rung it lands on is announced by the one watcher that
+        /// reports every zoom change however it was made (<see cref="ZoomWatch"/>).
+        /// </summary>
+        private void CollapseZoom(StarSystemNode node)
+        {
+            if (node == null || !ReferenceEquals(GalaxyViewLevels.FocusedSystem, node))
+            {
+                return;
+            }
+
+            int level;
+            int step = _jumpedFrom.TryGetValue(node, out level)
+                ? level - 1
+                : GalaxyInspect.EntryZoomCeiling;
+            _jumpedFrom.Remove(node);
+            GalaxyViewLevels.ZoomToStep(node, step);
+        }
+
+        /// <summary>The view each open system's inside took the camera away from
+        /// (<see cref="NoteJump"/>), in spoken levels.</summary>
+        private readonly Dictionary<StarSystemNode, int> _jumpedFrom =
+            new Dictionary<StarSystemNode, int>();
 
         /// <summary>Where the camera has been sent and how close - the whole of what the rule above
         /// compares against. Not read off the camera: the game's own answer for "which system is the
