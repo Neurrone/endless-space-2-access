@@ -197,7 +197,9 @@ belong in the files above.
   sighting): election survey; SimpleDescription-family
   members with own fields (alliance update, diplomatic relation change, constellation
   event, deed completed); the 9 header-less line-class tables (bailiff + its totals
-  footer, law cancelled, population change, trading blockade, treaty cancelled, relics ×2,
+  footer, law cancelled, population change (SIGHTED 2026-09-01 and its own parity check has a
+  finding: `PopulationChangeNotificationWindow` "says a figure with no caption" on a table row —
+  the first of these nine to be seen live, and the finding is the work), trading blockade, treaty cancelled, relics ×2,
   queue-empty, lost-roots connectivity); one-of-N semantics for the hacking outcome
   picker — these walks, plus the narrative-event
   choice, now ALSO double as regression checks for the 2026-08-25 choice-card split (title

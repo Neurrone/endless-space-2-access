@@ -893,6 +893,13 @@ re-runs it. With the scan lens up:
 4. **Restore** by clearing the private list (`companies=0`) and `POST /loadsave`. Nothing else is
    touched: no order is posted, and `RevealNodesOnTradingRoutePath` is never called, so no
    exploration state moves. Zero `Warning` lines in `/log` across the whole injection.
+   **But not zero ERRORS, and this is the recipe's real cost** (found 2026-09-01, one session
+   later): the GAME's own `DepartmentOfCommerce.UpdateTradingRoutes` threw
+   `NullReferenceException` **1314 times** afterwards — a burst that outlived the restore and
+   stopped only later in the session. The mod logs nothing and the department reads
+   `tradingCompanies.Count == 0`, so the injection looks clean from every mod-side probe. Check
+   `GET /log?since=0&grep=UpdateTradingRoutes` after any run of this recipe, and if it is
+   throwing, LOAD THE SAVE AGAIN before trusting anything else the session measures.
 
 Measured with that fixture: `Dusay … Trade route to Sabel` / `Sabel … Trade route to Dusay` /
 `Rigel … along trade route from Dusay to Sabel`, Rigel's lane children
