@@ -894,9 +894,13 @@ table is one, and a table region cannot be stepped out of): `scan:system/rank/re
 list under the game's drawn caption holding the sentence and one line per ranking property, then
 `scan:system/rank/reg:0`, the history table. Alt+Down goes list → table in one press. Measured on
 the owner's save at Dusay: entering says `System information, System's Rank, Overall system rank
-[2/4]` (the game's drawn sentence, and no "table"), then `FIDSI, rank 1 of 2` · `Defense, rank 2 of
-2` · `Population, rank 1 of 2` · `No. of representatives, rank 1 of 2`, position-free and with no
-cell word — cross-checked against the bars' own ordinals (`1st/2nd/1st/1st`). `ui.regionNext` from
+[2/4], 1 of 5` (the game's drawn sentence, and no "table"), then `FIDSI, rank 1 of 2, 2 of 5` ·
+`Defense, rank 2 of 2, 3 of 5` · `Population, rank 1 of 2, 4 of 5` · `No. of representatives, rank 1
+of 2, 5 of 5` — COUNTED like any other list (owner ruling 2026-09-02, overturning round 2's
+position-free judgement) and with no cell word, cross-checked against the bars' own ordinals
+(`1st/2nd/1st/1st`). Each row's REVIEW BUFFER carries both lines (`Defense` / `rank 2 of 2`): the
+place is the row's VALUE, so a readout declared as two label parts loses it - the buffer takes the
+head and skips every other label (`NodeBuffer`). `ui.regionNext` from
 any of them → `Rank history, table, System rank, 1 of 2`; `ui.regionPrev` back → the sentence. Down
 off the last readout crosses the seam to the same first row (`GraphSheet.Follows`), Up returns.
 Then **the history table, transposed**: a row per CURVE (`System rank` — the

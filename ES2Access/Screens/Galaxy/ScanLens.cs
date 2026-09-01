@@ -445,9 +445,11 @@ namespace ES2Access.Screens
             // The readouts: a plain list under the game's own caption for the block. No column list,
             // so nothing here is a cell and nothing announces a place in a table.
             builder.SetRegion("scan:system/rank/readouts");
-            // Position-free, as these rows have been since they stopped being cells: the sentence and
-            // the four bars are a reading and not a list to count through.
-            builder.PushContext(RankCaption(bars), null, false);
+            // COUNTED like every other list of rows (owner ruling 2026-09-02, overturning the
+            // position-free declaration the de-tabling left behind): what these rows lost with the
+            // table was the CELL's place in a thirty-turn column, not the ordinary "which of these
+            // readouts am I on" that the Outputs region beside them has always said.
+            builder.PushContext(RankCaption(bars));
             ControlId last = RankSentence(builder, curves);
             last = RankProperties(builder, window, bars, colony) ?? last;
             builder.PopContext();
@@ -636,14 +638,14 @@ namespace ES2Access.Screens
                 builder.AddItem(
                     Nodes.Drawn(
                         last,
-                        new NodeVtable
-                        {
-                            Announcements = new List<NodeAnnouncement>
-                            {
-                                GraphNodes.LabelPart(() => name),
-                                GraphNodes.LabelPart(() => reading),
-                            },
-                        },
+                        // The mod's ordinary readout: the property NAMES the row and the place is its
+                        // VALUE. Declared as two labels the reading was spoken and then dropped from
+                        // the review buffer, which takes the head and no other label part
+                        // (<see cref="NodeBuffer"/>) - owner-reported, "Defense" reviewing with no
+                        // rank at all. Unwatched: the place is worked out once per build, off a walk
+                        // of the empire's systems, and asking it again every frame would run that walk
+                        // at 60 Hz for a number that only a rebuild can change.
+                        GraphNodes.Readout(() => name, () => reading, null, null, false),
                         bar.AgeTransform
                     )
                 );

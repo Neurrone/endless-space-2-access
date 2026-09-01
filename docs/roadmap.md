@@ -33,8 +33,8 @@ belong in the files above.
     continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling.
   - **AWAITING SIGN-OFF (round 4, 2026-09-02)**: `scan.system-rank-history` = "Rank history", the
     name of the rank block's second region — the game captions its curves nothing, so this is the
-    mod's own word; and the rank readouts staying POSITION-FREE now that they are a list region of
-    their own (the round-2 judgement call, carried across the split rather than quietly reversed).
+    mod's own word. The rank readouts are now COUNTED (owner ruling 2026-09-02, overturning
+    round 2): position-free was the judgement call, and the ordinary list position is back.
   - **UNVERIFIED, code-only (round 4)**: the battle and ground-battle contextual icons are buttons
     now (`OnClickBattleIcon` / `OnClickGroundBattleIcon`), and no save has ever drawn either — the
     queue button is the family's one live proof. `PirateLairIconGroup` and `AcademyIcon` are
