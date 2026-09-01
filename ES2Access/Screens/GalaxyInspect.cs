@@ -1423,9 +1423,12 @@ namespace ES2Access.Screens
         /// cell collapse into one line rather than one apiece. Stepping out into space nobody reaches
         /// names what was LEFT, for the same reason the constellation crossing does.
         ///
-        /// The contested line rides along with all three: an empire whose circle reaches into the cell
-        /// without holding any of it is the overlap the map draws as colour on colour, and it is the
-        /// same sentence a system's own row says it in.
+        /// The contested line rides along on top of HELD GROUND: an empire whose circle reaches into a
+        /// cell somebody else holds is the overlap the map draws as colour on colour, and it is the
+        /// same sentence a system's own row says it in. Where nobody holds any of the cell there is
+        /// nothing to contest, and a lone circle reaching into it is read as its edge instead
+        /// (<see cref="Core.UI.InfluenceReading.EdgeWhereNobodyHolds"/>) - so a rim too thin for any
+        /// sample to land in still says "edge of", and says it once for the whole rim.
         ///
         /// The comparison is on the whole SET - who holds it, how much, and who is reaching - so a
         /// crossing that only changes the contest still speaks, and a sweep along a border does not

@@ -260,6 +260,49 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        [Fact]
+        public void AReachIntoGroundNobodyHoldsIsItsEdgeAndNotAContest()
+        {
+            // The rim thinner than the sample spacing: every point query answers nobody and the
+            // circle is still overhead. From inside the cell there is no held ground to contest.
+            InfluenceReading contested = new InfluenceReading(
+                InfluenceCover.None,
+                null,
+                new[] { 2, 5 }
+            );
+            InfluenceReading standing = contested.EdgeWhereNobodyHolds();
+
+            Assert.Equal(InfluenceCover.Edge, standing.Cover);
+            Assert.Equal(new[] { 2, 5 }, standing.Empires);
+            Assert.Empty(standing.Contesters);
+            Assert.False(standing.Silent);
+        }
+
+        [Fact]
+        public void AContestOverHeldGroundIsLeftExactlyAsItWas()
+        {
+            List<InfluenceSource> sources = new List<InfluenceSource>
+            {
+                Source(0, 0, 8.0, 1),
+                Source(6, 0, 6.0, 2),
+            };
+            InfluenceReading reading = Read(-0.5, -0.5, 0.5, 0.5, sources);
+
+            Assert.Same(reading, reading.EdgeWhereNobodyHolds());
+            Assert.Equal(new[] { 1 }, reading.Empires);
+            Assert.Equal(new[] { 2 }, reading.Contesters);
+        }
+
+        [Fact]
+        public void EmptySkyIsStillEmptySkyWhenNobodyIsReaching()
+        {
+            Assert.Same(
+                InfluenceReading.Nothing,
+                InfluenceReading.Nothing.EdgeWhereNobodyHolds()
+            );
+            Assert.True(InfluenceReading.Nothing.EdgeWhereNobodyHolds().Silent);
+        }
+
         private static List<string> Tokens(InfluenceReading reading)
         {
             List<string> tokens = new List<string>();
