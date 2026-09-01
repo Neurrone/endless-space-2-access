@@ -102,6 +102,18 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   `AgeTransform.GetChildren`-style text scrapes ignore the caption's own alpha, which is what makes
   an icon-only row still answer with its word. Reading the caption's alpha instead would silence
   every trait on every collapsed card.
+- **The management card's anomaly and curiosity tables are retired WHOLESALE by the table's
+  `Visible` flag, and only the table's flag tells a stale caption from a collapsed one.**
+  `RefreshPlanetAnomalies` (:1259) sets `PlanetAnomaliesTable.Visible = Anomalies.Count > 0` (the
+  curiosities refresh does the same), and a hidden table's pooled item keeps `Alpha == 1` — so
+  `AgeWidgets.Paints` says yes — with only its `Title` label faded to 0, still holding the previous
+  binding's name (measured 2026-09-02: Raia, zero anomalies, item answering "Strange Fossils" from
+  Ingris III's binding). That faded-`Title` shape is byte-identical to the collapsed-card styling
+  above, so the item level cannot distinguish them: the table's own `Visible` is the first gate and
+  the only correct one for these two tables. The game also never unbinds a retired anomaly item —
+  `RefreshPlanetAnomalies` (:1255) unbinds the children of `PlanetCuriositiesTable` instead (a
+  copy-paste slip), so a stale anomaly item keeps its old tooltip `Target` where a curiosity's is
+  released.
 - **`PlanetAnomalyItem` hangs its dossier on its `Icon` child and wires its CLICK on the row.** The
   row's own `AgeTooltip` is null, so pointing at the row draws nothing; `OnActivateMethod=OnHintCb`
   is on the row while `Gui.FormatButtonHint` puts the hint STATE on the separate `HintButton`, and
