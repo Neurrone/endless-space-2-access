@@ -30,7 +30,9 @@ belong in the files above.
   spokes; battle rows; the same reading on the owner headings from level 3, which closes 5a's
   reconciliation hole), the HACKING FAMILY as four lens-independent stops read off drawn widgets,
   EXIT-SCAN-FIRST landings off a new `BandKind.OpenSpace` column, and the inspect cell's in-mode
-  range (1–10, the survey at 1–2, arming from the System lens pulling out to Economy). Still to
+  range (1–10, the survey at 1–2, arming from the System lens pulling out to Economy), and — the
+  word approved mid-stage — the **"Bookmarks"** group the in-mode tree gathers the player's own
+  POINT bookmarks under, which closes 5a's last named hole. Still to
   come: **5c** — the trade-route weave and the pinned null-probe sweep of the scan dot's overlays.
   PINNED, fixture-blocked (5b): battle rows and the swap toggle's own UI (no save has a fight in
   orbit while the lens is up, and Leaper's home is unexplored so its label draws no name line);
@@ -40,11 +42,6 @@ belong in the files above.
   OPEN, for the owner (stage 5b): the diplomacy band's SPOKE rows and BATTLE rows refuse the
   inspect cell, Enter, the leap trail and the restore — the inert default, because whether a row at
   levels 1–2 may arm the cell is the open question below and nothing was invented for it.
-  OPEN, for the owner (stage 5a): **the "Bookmarks" group in the scan tree is NOT shipped.** The
-  ruling gives point bookmarks a group of their own there, but the mod has no word for "Bookmarks"
-  as a heading and none was invented — the rows are declared at the TOP level of the map stop in
-  position order instead, which is exactly what they do in the ordinary view at levels 1–2. One
-  approved phrase closes it.
   CLOSED by 5b: at the Diplomacy band a system under the cursor used to land on the ZOOM SLIDER.
   The empire list is the fix by construction — the system's own empire group is the container, and
   it wears the same key at every lens — measured 2026-09-01: Kais focused at level 4, zoom to 1,

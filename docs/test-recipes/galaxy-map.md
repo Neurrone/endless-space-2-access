@@ -806,6 +806,12 @@ for a foreign empire (Leaper is known through the colony Kais and its home is un
 has ever had a battle in orbit while the lens was up, and n = 2 says nothing about ordering with
 three or more empires.
 
+**The bookmark group in-mode**: the four point bookmarks of `[Beginner] access test` are gathered
+under `Bookmarks` (`galaxy:bookmarks`), last in the map stop and in position order, at every lens —
+measured `Bookmarks, group, expanded, 3 of 3` at the Diplomacy band and `6 of 6` at Trade, with the
+rows keyed `galaxy:bookmark/N` exactly as in the ordinary view. A bookmarked SYSTEM has no row
+there; its annotation is on the system's own row (`Heka, -1, -9, group, No owner, bookmark 5`).
+
 **The reconciliation into the band**: focus a system at level 4 (`ui.focusMap`, `ui.down`,
 `ui.right`, `ui.left` lands on Kais), then `SetZoomHere(0)` — the cursor lands on `galaxy:owner/1`,
 its owner's row, and says it. From a system the player owns it lands on that system's SPOKE row

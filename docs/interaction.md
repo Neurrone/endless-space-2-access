@@ -643,6 +643,14 @@ band — have no row anywhere in the mode, so the landing leaves through the gam
 (`ToggleScanView`) and then lands the ordinary way, forced band included. A bookmarked POINT is
 always drawn: it is the player's own annotation rather than a rendering.
 
+**THE IN-MODE TREE ENDS WITH "BOOKMARKS"** (owner ruling 2026-09-01, the word approved the same
+day): the player's own POINT bookmarks are a group of their own at the end of the map stop, in
+position order, because everything else in that tree is a picture of what the lens is painting and
+loose annotations among the empires would read as places the lens had drawn. A bookmarked SYSTEM
+has no row there — its annotation rides the system's own row. The heading is not in the rows' keys,
+so a bookmark keeps the key it has in the ordinary view and the cursor rides across the mode
+change; it seeds open, and an empty group is not declared.
+
 **THE HACKING FAMILY IS FOUR LENS-INDEPENDENT STOPS** (owner ruling 2026-09-01;
 `Screens/Galaxy/ScanHacking.cs`): `scan:hacking` (bandwidth, its allocations, speed, operations),
 `scan:traitors` (the sleeper count and the repartition toggle), `scan:console` (the three mode
