@@ -42,7 +42,7 @@ ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | builder.AddItem(Nodes.Synthetic(
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.AddItem(Nodes.Synthetic(id, readout));
-ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
+ES2Access/Screens/Galaxy/PlanetRows.cs | 2 | builder.AddItem(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, readout));
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 

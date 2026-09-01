@@ -113,6 +113,12 @@ namespace ES2Access.Screens
                     // the pointer goes to a carrier of the mod's, which is what makes the dossier
                     // readable with the camera anywhere (<see cref="PlanetCarrier"/>).
                     AgeTransform circle = Circle(table, i);
+                    if (ZoomBands.Fidelity(BandKind.Planets) == BandFidelity.Dot)
+                    {
+                        AddPlanetDot(builder, id, system, planet, looking, circle);
+                        continue;
+                    }
+
                     AgeTooltip onTheCircle = Raw(circle);
                     AgeTooltip dossier = AgeWidgets.Draws(onTheCircle)
                         ? onTheCircle
@@ -174,6 +180,59 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: reading a system's planets threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// A world as the map's own DOT, which is all the picture is drawing of it from the system
+        /// nameplate's band (owner ruling 2026-09-01).
+        ///
+        /// A sighted player at that distance sees a coloured circle in the system's label, and hovering
+        /// it gives the world's name and what the colour means - whether anybody has settled it,
+        /// whether anybody could - and nothing else. So that is what the row says, plus the marks the
+        /// circle itself is drawn with: the curiosities waiting in orbit and a mining probe standing
+        /// over it. What the world PRODUCES, what has been found on it, what could be done to it and
+        /// the dossiers behind all of that are the orbital card's, and the card is drawn one band
+        /// closer - so they are read there and nowhere else.
+        ///
+        /// The SAME node as the full reading (<paramref name="id"/> is the planet's own), so a cursor
+        /// standing on a world when the camera pulls back stays on that world and simply hears less.
+        ///
+        /// The review buffer is the circle's own tooltip where the map is drawing one - the player's
+        /// hover, exactly. Never the mod's carrier, which assembles the whole planet panel: that is a
+        /// truthful reading of the world and an untruthful reading of the dot.
+        /// </summary>
+        private static void AddPlanetDot(
+            GraphBuilder builder,
+            ControlId id,
+            StarSystemNode system,
+            Planet planet,
+            Empire empire,
+            AgeTransform circle
+        )
+        {
+            AgeTooltip drawn = Raw(circle);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => PlanetName(system, planet, empire)),
+                    GraphNodes.ValuePart(() => PlanetStatus(system, planet, empire)),
+                    GraphNodes.ValuePart(() => CuriosityCount(planet, empire)),
+                    GraphNodes.ValuePart(() => MiningProbes.Line(planet), false),
+                },
+            };
+            if (AgeWidgets.Draws(drawn))
+            {
+                vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(drawn));
+            }
+
+            if (circle != null)
+            {
+                PointAt(vtable, circle);
+            }
+
+            // Synthetic: a dot in a system's label is the map's drawing of a world, not a control.
+            builder.AddItem(Nodes.Synthetic(id, vtable));
         }
 
         // ---- the orbital cards ----
