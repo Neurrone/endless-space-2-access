@@ -1494,6 +1494,13 @@ namespace ES2Access.Screens
         /// A cell wholly under the fog says nothing about influence at all, and contributes nothing to
         /// the cell's identity for the skip: the fog's own reading is the whole answer there, exactly
         /// as it is for the constellation.
+        ///
+        /// THE SURVEY IS THE ONE EXCEPTION (owner ruling 2026-09-01). At the two furthest rungs the
+        /// map names nothing and paints only the territory, so whose the square is stops being news
+        /// about a crossing and becomes the answer the cell is being asked for: there it is said on
+        /// EVERY square (<see cref="Surveying"/>). Space nobody holds is still the bare pair - a word
+        /// for "nobody's" would be most of what a sweep of the empty half of a galaxy said, and there
+        /// is none to say (owner question, open).
         /// </summary>
         private IList<string> Influence()
         {
@@ -1515,12 +1522,13 @@ namespace ES2Access.Screens
                 CellInfluence now = CellNow();
                 CellInfluence was = _bubbles;
                 bool known = _bubblesKnown;
+                bool survey = Surveying();
                 _bubbles = now;
                 _bubblesKnown = true;
                 _bubblesX = _x;
                 _bubblesY = _y;
                 _bubblesSize = _size;
-                if (known && now.Reading.Equals(was.Reading))
+                if (!survey && known && now.Reading.Equals(was.Reading))
                 {
                     return null;
                 }
