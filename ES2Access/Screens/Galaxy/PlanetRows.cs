@@ -217,8 +217,16 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => PlanetName(system, planet, empire)),
                     GraphNodes.ValuePart(() => PlanetStatus(system, planet, empire)),
-                    GraphNodes.ValuePart(() => CuriosityCount(planet, empire)),
-                    GraphNodes.ValuePart(() => MiningProbes.Line(planet), false),
+                    // THE MARKS ARE THE ORDINARY MAP'S, and the lens's dot does not carry them. The
+                    // two prefabs are not the same widget: on every one of the 253 circles the scan
+                    // labels were drawing (measured 2026-09-01) `CircleImage`, `UniquePlanetFeedback`
+                    // and `GhostFeedback` are wired and `CuriosityAnimatedCircle`,
+                    // `MiningProbeFeedback`, `TerraformationFeedback` and `AnomalyReductionFeedback`
+                    // are all NULL - the lens's dot cannot draw a curiosity ring or a probe mark at
+                    // all. So the row stops claiming them under a lens, exactly as the scan
+                    // Curiosities scanner category was dropped for the same measurement.
+                    GraphNodes.ValuePart(() => Scanning ? null : CuriosityCount(planet, empire)),
+                    GraphNodes.ValuePart(() => Scanning ? null : MiningProbes.Line(planet), false),
                 },
             };
             if (AgeWidgets.Draws(drawn))
