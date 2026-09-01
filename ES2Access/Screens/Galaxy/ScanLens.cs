@@ -385,8 +385,7 @@ namespace ES2Access.Screens
         /// is in the first four (<c>ScanViewSystemEmpireRankBar.Refresh</c> :35-38), so the rank is
         /// recomposed the way the game counts it - one place per other system of the player's holding
         /// more of that property (:55-83). And TWO CURVES over the turns, which are geometry and no
-        /// words at all: those become one sheet, a row per turn, newest first, because a curve read
-        /// aloud is a table.
+        /// words at all: those become a table, because a curve read aloud is a table.
         ///
         /// ONLY THE CURVES ARE A TABLE (owner ruling 2026-09-01, playtest). The sentence and the
         /// per-property lines are READOUT ROWS standing above it - cell semantics and a place in a
@@ -430,11 +429,18 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The turns are read BEFORE the region is opened because they ARE the columns: a sheet is
+            // told its whole header list once, in front of its rows.
+            List<string> turns = new List<string>();
+            List<Func<string>> ranks = new List<Func<string>>();
+            List<Func<string>> known = new List<Func<string>>();
+            RankHistory(colony, turns, ranks, known);
+
             GraphSheet sheet = new GraphSheet(builder, "scan:system/rank/");
-            sheet.Region(RankCaption(bars), RankColumns(window, bars));
+            sheet.Region(RankCaption(bars), TurnColumns(turns));
             RankSentence(builder, curves);
             RankProperties(builder, window, bars, colony);
-            RankHistory(sheet, colony);
+            RankCurves(sheet, window, bars, turns, ranks, known);
             sheet.Finish();
             builder.SetRegion(null);
         }
@@ -457,15 +463,19 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The table's headings: the turn column names itself in every cell, the rank column's
-        /// cells are whole sentences, and the third is the game's own caption for the curve it is
-        /// reading (the legend's "No. of systems in my Empire").</summary>
-        private static string[] RankColumns(
-            StarSystemOverviewScanViewWindow window,
-            ScanViewSystemEmpireRankBarGraph bars
-        )
+        /// <summary>THE COLUMNS ARE THE TURNS (owner ruling 2026-09-01, playtest), in the order the
+        /// curves are drawn in - oldest at the left, so walking right walks time exactly as reading the
+        /// picture left to right does. The primary column names the curve rather than anything the game
+        /// captions, so its own header is empty.</summary>
+        private static string[] TurnColumns(List<string> turns)
         {
-            return new string[] { null, null, KnownSystemsCaption(window, bars) };
+            string[] headers = new string[turns.Count + 1];
+            for (int i = 0; i < turns.Count; i++)
+            {
+                headers[i + 1] = turns[i];
+            }
+
+            return headers;
         }
 
         /// <summary>
@@ -659,16 +669,28 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// THE TWO CURVES AS ONE SHEET - a row per turn, newest first, from the very snapshots the
-        /// histogram draws them from (<c>ScanViewSystemGlobalRankHistogram</c> :139-165).
+        /// THE TWO CURVES AS ONE TABLE - a ROW PER CURVE and a COLUMN PER TURN (owner ruling
+        /// 2026-09-01, playtest), read from the very snapshots the histogram draws them from
+        /// (<c>ScanViewSystemGlobalRankHistogram</c> :139-165).
         ///
         /// One curve is how many systems the player knew that turn and the other is where this system
-        /// stood among them, so they share an axis and belong in one table rather than two. Newest
-        /// first for the reason the marketplace's price history is: what is true NOW is the question the
-        /// table is opened with. A turn before the system was ever ranked has no rank cell at all, which
-        /// is where the curve itself starts.
+        /// stood among them, so they share an axis and belong in one table rather than two. A curve is
+        /// a line along time, so time is the axis the walk runs along: the columns are the turns in the
+        /// order the picture draws them, left to right, and walking right walks the curve. (The first
+        /// cut had it the other way about - a row per turn - which made twenty-eight rows of two
+        /// figures and no way to read either line as a line.)
+        ///
+        /// A turn before the system was ever ranked has no rank of its own and its cell is blank rather
+        /// than absent, so the two curves stay under the same turn all the way across - the rule the
+        /// marketplace's price history keeps for the same reason. A turn neither curve has a reading
+        /// for is no column at all.
         /// </summary>
-        private static void RankHistory(GraphSheet sheet, ColonizedStarSystem colony)
+        private static void RankHistory(
+            ColonizedStarSystem colony,
+            List<string> turns,
+            List<Func<string>> ranks,
+            List<Func<string>> known
+        )
         {
             try
             {
@@ -681,51 +703,86 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                for (int turn = game.Turn; turn >= 0; turn--)
+                for (int turn = 0; turn <= game.Turn; turn++)
                 {
-                    string known;
+                    string count;
                     string rank;
                     if (turn == game.Turn)
                     {
                         // The turn in progress has no snapshot yet; the histogram appends the LIVE
                         // readings for it, and so does this.
-                        known = Figure(
+                        count = Figure(
                             player.GetPropertyValue(SimulationProperties.Empire.KnownSystemCount)
                         );
-                        rank = Ranked(colony.GetScoreRank(player.Index) + 1, known);
+                        rank = Ranked(colony.GetScoreRank(player.Index) + 1, count);
                     }
                     else
                     {
-                        known = KnownAt(stats, player, turn);
-                        rank = Ranked(RankAt(stats, player, colony, turn), known);
+                        count = KnownAt(stats, player, turn);
+                        rank = Ranked(RankAt(stats, player, colony, turn), count);
                     }
 
-                    if (known == null && rank == null)
+                    if (count == null && rank == null)
                     {
                         continue;
                     }
 
-                    int at = turn;
-                    string turnName = ModStrings.Format(ModStrings.HudTurnLogTurn, turn + 1);
-                    sheet.Row(
-                        new NodeVtable
-                        {
-                            Announcements = new List<NodeAnnouncement>
-                            {
-                                GraphNodes.LabelPart(() => turnName),
-                            },
-                        },
-                        "scan:system/rank/turn/" + at,
-                        null,
-                        rank == null ? null : new Func<string>(() => rank),
-                        known == null ? null : new Func<string>(() => known)
-                    );
+                    // Copied per column: a cell reads its own turn's figure, and a loop variable read
+                    // later would hand every one of them the last turn's.
+                    string rankHere = rank;
+                    string countHere = count;
+                    turns.Add(ModStrings.Format(ModStrings.HudTurnLogTurn, turn + 1));
+                    ranks.Add(() => rankHere);
+                    known.Add(() => countHere);
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("scan: reading a system's rank history threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// The two curves as the table's two rows, in the order the block reads: where this system
+        /// stands, then how many systems there were to stand among.
+        ///
+        /// The systems row takes the game's own caption for its curve (the legend's "No. of systems in
+        /// my Empire", found the way the bar graph finds its own). The rank curve has no caption
+        /// anywhere - the game names it only inside the sentence above, which is a whole sentence and
+        /// not a word - so it takes the mod's own name for this reading, the one the region falls back
+        /// on when the caption group is re-cut.
+        /// </summary>
+        private static void RankCurves(
+            GraphSheet sheet,
+            StarSystemOverviewScanViewWindow window,
+            ScanViewSystemEmpireRankBarGraph bars,
+            List<string> turns,
+            List<Func<string>> ranks,
+            List<Func<string>> known
+        )
+        {
+            // Flow control: whether there is a table at all. A game on turn zero has no curve to draw
+            // and the game hides the whole block, so the readouts stand alone.
+            if (turns.Count == 0)
+            {
+                return;
+            }
+
+            sheet.Row(
+                CurveName(ModStrings.Get(ModStrings.ScanSystemRankRegion)),
+                null,
+                null,
+                ranks.ToArray()
+            );
+            sheet.Row(CurveName(KnownSystemsCaption(window, bars)), null, null, known.ToArray());
+        }
+
+        private static NodeVtable CurveName(string name)
+        {
+            return new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(() => name) },
+            };
         }
 
         private static string Ranked(int place, string known)
