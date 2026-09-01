@@ -161,12 +161,23 @@ namespace ES2Access.Screens
                             // Whatever the map is drawing out on this lane, said the way the map's own
                             // lozenge tooltip heads it. Read on focus rather than watched, for the same
                             // reason a system's is.
-                            GraphNodes.ValuePart(() => FleetPresence.On(lane), false),
+                            //
+                            // Silent from a band that draws no fleet at all - the far steps of the
+                            // ordinary map, and every scan lens - for the reason a SYSTEM's own count
+                            // is: the number a row says and the rows the player can walk to are one
+                            // answer, and a count with no lozenge behind it names something the
+                            // picture is not showing.
+                            GraphNodes.ValuePart(
+                                () => _showsFleets ? FleetPresence.On(lane) : null,
+                                false
+                            ),
                             // A lane is a destination in its own right, so it previews like one.
                             GraphNodes.ValuePart(() => FleetRoute.Preview(lane), false),
                         },
                         Sections = GraphNodes.Sections(
-                            NodeSection.Buffer(() => FleetPresence.LinesOn(lane)),
+                            NodeSection.Buffer(
+                                () => _showsFleets ? FleetPresence.LinesOn(lane) : null
+                            ),
                             NodeSection.Buffer(() => FleetRoute.PreviewLines(lane))
                         ),
                     };
