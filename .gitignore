@@ -16,3 +16,9 @@ obj/
 # Release zips and the rendered player docs
 releases/
 docs_src/book/
+
+# Staged into the template by build_release.ps1; the rest of release-template is the committed skeleton
+release-template/BepInEx/plugins/
+release-template/prism.dll
+release-template/prism-NOTICE.txt
+release-template/prism-LICENSE-MPL-2.0.txt
