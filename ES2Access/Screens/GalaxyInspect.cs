@@ -134,6 +134,50 @@ namespace ES2Access.Screens
             return GalaxyHudScreen.CursorOnMap();
         }
 
+        /// <summary>
+        /// WHETHER THE PICTURE IS STILL THE GALAXY THIS CELL IS A CELL OF (owner ruling 2026-09-01).
+        ///
+        /// The mode is a square of GALAXY, and at the closest rung the game stops drawing one: the
+        /// system nameplates go and per-planet orbital cards take their place, so a square of sky is
+        /// no longer a thing the picture has anything to say about. That rung is asked of the band
+        /// table rather than written down as a number (<see cref="Bands"/>), because "the planets have
+        /// become full cards" IS the boundary, and a table that is ever re-cut moves this with it.
+        ///
+        /// Entering from closer is a different question and is not answered here: arming pulls the
+        /// camera OUT to the ceiling first (<see cref="EntryZoomCeiling"/>), so the mode never opens
+        /// past this line. What this answers is the LIVE cell being carried across it by a later zoom.
+        ///
+        /// Far out is not a limit at all: at the two furthest rungs the map paints territory and
+        /// names nothing, and reading that painting is the one thing a sighted player can do there and
+        /// a reader of the tree cannot - the survey (<see cref="Surveying"/>).
+        ///
+        /// A rung there is no answer for - a battle, the system-discovery view, a level the game is
+        /// still flying between - keeps the mode: a gate that cannot tell what is being drawn must not
+        /// take a cursor down on the strength of not knowing.
+        /// </summary>
+        private static bool ShowsTheGalaxy()
+        {
+            int level = ZoomBands.Level;
+            return level < 0 || ZoomBands.Fidelity(BandKind.Planets) != BandFidelity.Full;
+        }
+
+        /// <summary>
+        /// WHETHER THE CELL IS READING THE TERRITORY SURVEY (owner ruling 2026-09-01).
+        ///
+        /// At the two furthest rungs the map names nothing at all - it paints the empires' territory
+        /// over the art and writes the constellations across it - so the question a player has there
+        /// is not "what is standing here" but "whose is this". The cell answers it by saying whose
+        /// territory every square is, rather than only saying so when it changes (<see cref="Influence"/>).
+        ///
+        /// Asked of the band table as "the picture is not naming the systems", which is the same two
+        /// rungs and is the fact the survey exists because of.
+        /// </summary>
+        private static bool Surveying()
+        {
+            int level = ZoomBands.Level;
+            return level >= 0 && !ZoomBands.Shows(BandKind.Systems);
+        }
+
         /// <summary>Where the cell is, in the pair the map is spoken in - false while the mode is not
         /// up. What the SCANNER measures from while this mode owns the map: the cursor is where the
         /// player is standing, so "nearest" has to mean nearest to it.</summary>
@@ -681,6 +725,16 @@ namespace ES2Access.Screens
         /// </summary>
         public void Update()
         {
+            if (_live && !ShowsTheGalaxy())
+            {
+                // The camera has gone past the map this mode reads. Every route in is the same
+                // frame's answer - the slider, the mod's own zoom keys, the game's held PageUp,
+                // the wheel - because the question asked here is where the camera IS and never
+                // which key moved it.
+                Leave();
+                return;
+            }
+
             bool onMap = Active;
             if (onMap && !_wasOnMap)
             {
