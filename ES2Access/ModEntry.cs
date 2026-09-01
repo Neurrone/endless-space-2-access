@@ -908,9 +908,10 @@ namespace ES2Access
             // actions, which are dead behind an accessibility gate no shipped build opens
             // (measured 2026-08-31), and it binds nothing at all to C. The mod's type-ahead takes
             // letters and space and drops every other character, so Shift and a digit is never
-            // typing. Claimed only while the galaxy page is up and the game's scan lens is off
-            // (<see cref="ES2Access.Screens.GalaxyBookmarks.KeysClaimed"/>) - under the lens the
-            // digits go back to the game whole.
+            // typing. Claimed while the galaxy page is up
+            // (<see cref="ES2Access.Screens.GalaxyBookmarks.KeysClaimed"/>), the game's scan lens
+            // included: the mode draws every bookmark and lands the same way, so the keys work there
+            // exactly as they do in the ordinary view (owner ruling 2026-09-02).
             //
             // Not repeating: every press is a jump, or a place being written down.
             for (int slot = 0; slot < MapActions.BookmarkSet.Length; slot++)

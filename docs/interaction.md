@@ -1116,12 +1116,16 @@ a spoken refusal, "No home system"** (`galaxy.bookmark.no-home`, owner's wording
 (`FactionTraitManualHomeSystem`), so it is a state a player can really be in, and a key that answers
 nothing is indistinguishable from a key that does not work. Top-row digits only; the keypad's are a
 different key and nothing asks for them. None of the twenty-one repeats.
-**All twenty-one are claimed while the galaxy page is up AND the game's scan lens is off**
-(`GalaxyBookmarks.KeysClaimed` → `GraphNavigator.DeclaresStop(galaxy:systems)` +
-`GalaxyViewLevels.Scanning`, through `InputAction.ClaimedWhile`; the handler asks the scan half
-again, because an unclaimed key still reaches `Screen.AnyKey`). Under the lens the digits go back to
-the game whole (measured 2026-08-31: `Claims("Alpha1,Alpha3")` reads true on the galaxy page and
-false with the lens up). The chords are free: the game's only digit bindings are its
+**All twenty-one are claimed while the galaxy page is up**
+(`GalaxyBookmarks.KeysClaimed` → `GraphNavigator.DeclaresStop(galaxy:systems)`, through
+`InputAction.ClaimedWhile`), **the game's scan lens included** (owner ruling 2026-09-02, replacing
+the stand-down that shipped with the feature). A bookmark is the player's own annotation rather than
+something a lens paints, the in-mode tree draws every one of them — a system's on its own row, a
+point's under the "Bookmarks" heading — and the landings underneath are already the mode's own, so
+there was nothing left for the keys to hand back. A SYSTEM jump in-mode is `LandInside`, which
+opens the owner heading on the way in through `KeyGraph.GroupingAncestor` and speaks once; a POINT
+jump is what it is in the ordinary view — the cell where the cell is driving, otherwise the
+bookmark's own row, at the System lens as everywhere else. The chords are free: the game's only digit bindings are its
 `DebugSwitchToEmpire*` actions, dead behind the `Accessibility<=Internal || EnableModdingTools` gate
 (`GuiManager.cs:2131`, measured Public/False), it binds nothing at all to C, and the type-ahead takes
 A–Z and space and drops every other character, so Shift+digit is never typing (measured 2026-08-31:

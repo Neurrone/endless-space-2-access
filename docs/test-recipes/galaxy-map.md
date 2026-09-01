@@ -818,6 +818,16 @@ for a foreign empire (Leaper is known through the colony Kais and its home is un
 has ever had a battle in orbit while the lens was up, and n = 2 says nothing about ordering with
 three or more empires.
 
+**Bookmark jumps in-mode** (2026-09-02): `galaxy.bookmarkGoToN` is consumed under the lens as it is
+outside it. A SYSTEM slot lands inside the system — measured at the System lens on the owner's save:
+one entry, `No owner, group, expanded, 3 of 4, Lors, -66, -26, group, No owner, bookmark 3, expanded,
+8 of 12, Starlane 1 to an unexplored system, west, button, 1 of 2`, the owner heading opened on the
+way in, `zoomStep` 12 on both sides and `Scanning` still true. A POINT slot with no cell up lands on
+the bookmark's own row under the in-mode heading (`Bookmarks, group, expanded, 4 of 4, Bookmark 1 at
+-68, 18, 1 of 3`), which is the ordinary view's no-cell answer. Compare against the same two chords
+with the lens off: the system slot lands on the system's first child at that band (a planet at level
+13), the point slot on its row under the constellation.
+
 **The bookmark group in-mode**: the four point bookmarks of `[Beginner] access test` are gathered
 under `Bookmarks` (`galaxy:bookmarks`), last in the map stop and in position order, at every lens —
 measured `Bookmarks, group, expanded, 3 of 3` at the Diplomacy band and `6 of 6` at Trade, with the

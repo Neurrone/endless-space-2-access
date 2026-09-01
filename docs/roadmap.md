@@ -477,7 +477,10 @@ belong in the files above.
   out as player steps in `bookmarks-manual-test.md`: a point-bookmark SET from a free fleet or
   probe (no fixture draws one), the first-save flush on a never-saved campaign, and the physical
   Shift+digit set made with the inspect cell live (the desktop was locked for stage C's `/key`
-  pass — the injected path is proven, the real keypress is not).
+  pass — the injected path is proven, the real keypress is not). The scan-mode stand-down is gone
+  (2026-09-02, owner ruling): jumps are proven in-mode by injection on the owner's save; SETTING a
+  bookmark under the lens is code-shared with the ordinary view and untested live, because his
+  store was not to be written to.
 
 - The balance-bar captions in a tooltip's ship/fleet stat block (`TooltipFeatures.Balance`) are
   sighted on the `ShipDesignHeroRecruitement`, `ShipDesign` and `Ship` classes only. Still to

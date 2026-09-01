@@ -27,8 +27,13 @@ namespace ES2Access.Screens
     /// exactly what a player reading the notifications or the turn log wants, and making them Tab to
     /// the map first would be asking them to be where they are trying to go.
     ///
-    /// Both are claimed from the game only while the galaxy page is up AND the game's own scan mode
-    /// is off (<see cref="KeysClaimed"/>). Under the scan lens the digits are left entirely alone.
+    /// Both are claimed from the game whenever the galaxy page is the one being read
+    /// (<see cref="KeysClaimed"/>) - under the game's scan lens exactly as in the ordinary view
+    /// (owner ruling 2026-09-02). A bookmark is the player's own annotation rather than something a
+    /// lens paints, the mode draws every one of them (a system's on its own row, a point's under the
+    /// in-mode "Bookmarks" heading), and the landings underneath are the mode's own
+    /// (<c>GalaxyHudScreen.LandInside</c> leaves the lens only for a target no lens draws), so there
+    /// is nothing left for the keys to stand down for.
     ///
     /// WHAT A SLOT HOLDS is decided when it is SET and resolved again when it is used
     /// (<see cref="MapBookmark"/>): a system by its GUID, so its bookmark follows it through
@@ -47,30 +52,21 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What the input layer's conditional claim asks: the digit chords and Ctrl+C are the
-        /// mod's while the galaxy page is the one being read and the game is not wearing its scan
-        /// lens. Under the lens they stay the game's, whatever it does with them - the same
-        /// deliberate hand-back the zoom band's silence under that mode is
-        /// (<c>GalaxyViewLevels.Scanning</c>).</summary>
+        /// mod's while the galaxy page is the one being read - the game's scan lens included, which is
+        /// the one thing this used to hand back (owner ruling 2026-09-02).</summary>
         public static bool KeysClaimed()
         {
             GraphNavigator navigator = ModEntry.Navigator;
-            return navigator != null
-                && navigator.DeclaresStop(GalaxyHudScreen.SystemStop)
-                && !GalaxyViewLevels.Scanning;
+            return navigator != null && navigator.DeclaresStop(GalaxyHudScreen.SystemStop);
         }
 
-        /// <summary>
-        /// One key, offered by the page after the inspect cursor and the scanner have passed on it.
-        /// True when a bookmark chord took it.
-        ///
-        /// The scan-mode gate is asked here as well as in the claim, because an UNCLAIMED key still
-        /// reaches <c>Screen.AnyKey</c> - the same reason the scanner asks its own gate twice.
-        /// </summary>
+        /// <summary>One key, offered by the page after the inspect cursor and the scanner have passed
+        /// on it. True when a bookmark chord took it.</summary>
         public bool HandleKey(string actionKey)
         {
             try
             {
-                if (actionKey == null || GalaxyViewLevels.Scanning)
+                if (actionKey == null)
                 {
                     return false;
                 }
