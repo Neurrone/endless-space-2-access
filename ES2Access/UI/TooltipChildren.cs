@@ -24,8 +24,13 @@ namespace ES2Access.UI
     /// (<see cref="Emit"/>) holding one node per dossier. A node with no actions has only the second
     /// region, which is a lone region whose jump is silently consumed - by design.
     ///
-    /// A dossier node is NOT a button: Enter on it is consumed and says nothing, because there is
-    /// nothing there to do. It is named after the widget a MOUSE would hover to raise it
+    /// A dossier node is not a button UNLESS THE GAME WIRED A CLICK ON THE VERY WIDGET IT WAS READ
+    /// OFF (<see cref="Dossier.Clicks"/>, owner ruling 2026-09-02): several pictures a label draws as
+    /// decoration are clickable, and their tooltips say so in as many words - "Click to queue up a
+    /// Construction on this system" was being read out to a player with no way to do it. Where there
+    /// is a click the node announces itself a button and Enter runs the control's own handler; where
+    /// there is not, Enter is consumed and says nothing, which is what a thing there is nothing to do
+    /// to should answer. It is named after the widget a MOUSE would hover to raise it
     /// (<see cref="HoverName"/>) - never a phrase this mod invented - and focusing it points the
     /// pointer at the dossier's own carrier, so the game draws that dossier in place of the parent's
     /// and the buffer holds exactly the drawn lines.
@@ -96,6 +101,12 @@ namespace ES2Access.UI
             /// Null where the carrier is fixed for the life of the thing, which is most of them.
             /// </summary>
             public Func<AgeTooltip> LiveAim;
+
+            /// <summary>The click the GAME wired on the widget this dossier was read off, where it
+            /// wired one - what turns the node from a thing to read into a button. Read off the
+            /// control rather than named by the mod, so a picture the game makes clickable is
+            /// pressable here and one it does not is not, with no list to keep in step.</summary>
+            public AgeControlButton Clicks;
 
             /// <summary>What this entry's NAME already says - the words its sections then leave out
             /// (<see cref="Unrepeat"/>). Set only by a caller that named the entry out of the very
@@ -229,9 +240,12 @@ namespace ES2Access.UI
                 : Nodes.Drawn(id, vtable, dossier.Carrier);
         }
 
-        /// <summary>One dossier as a node. No <c>OnActivate</c>: the engine consumes Enter on a node
-        /// that wires none and says nothing, which is exactly what a thing there is nothing to do to
-        /// should answer.</summary>
+        /// <summary>One dossier as a node. <c>OnActivate</c> only where the game wired a click on the
+        /// widget (<see cref="Dossier.Clicks"/>): then the node is a button and Enter sends the
+        /// control's own handler, the way every other control this mod presses is pressed
+        /// (<see cref="AgeWidgets.Press"/>). With no click there is no <c>OnActivate</c> at all - the
+        /// engine consumes Enter on a node that wires none and says nothing, which is exactly what a
+        /// thing there is nothing to do to should answer.</summary>
         public static NodeVtable Node(Dossier dossier)
         {
             Dossier it = dossier;
@@ -239,6 +253,13 @@ namespace ES2Access.UI
             {
                 Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(it.Name) },
             };
+
+            if (it.Clicks != null)
+            {
+                AgeControlButton click = it.Clicks;
+                vtable.ControlType = ControlTypes.Button;
+                vtable.OnActivate = () => AgeWidgets.Press(click);
+            }
 
             if (it.Lines != null && it.Tooltip != null)
             {

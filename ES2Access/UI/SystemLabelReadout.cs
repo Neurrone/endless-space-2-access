@@ -438,27 +438,65 @@ namespace ES2Access.UI
             }
 
             Unvouched(found, at);
-            if (name == null)
+            if (name != null)
             {
-                return;
-            }
-
-            if (found.Count > at)
-            {
-                Rename(found, at, name);
-                return;
-            }
-
-            // A picture with words of the mod's own and no tooltip behind them at all - the cross the
-            // game draws over an empty construction slot. The row would otherwise lose the one thing
-            // the label is saying there.
-            found.Add(
-                new TooltipChildren.Dossier
+                if (found.Count > at)
                 {
-                    Name = name,
-                    Anchor = widget,
+                    Rename(found, at, name);
                 }
-            );
+                else
+                {
+                    // A picture with words of the mod's own and no tooltip behind them at all - the
+                    // cross the game draws over an empty construction slot. The row would otherwise
+                    // lose the one thing the label is saying there.
+                    found.Add(
+                        new TooltipChildren.Dossier
+                        {
+                            Name = name,
+                            Anchor = widget,
+                        }
+                    );
+                }
+            }
+
+            Clickable(found, at, widget);
+        }
+
+        /// <summary>
+        /// WHERE THE GAME WIRED A CLICK ON THE PICTURE, the child node is a BUTTON (owner ruling
+        /// 2026-09-02).
+        ///
+        /// Several of this label's "decorative" pictures are controls: the construction slot opens the
+        /// system's management page (<c>StarSystemLabel.OnRequestManagementView</c> :3002, the same
+        /// handler the name-line button sends - so the queue and <c>AddManagementView</c> are two of
+        /// the game's own doors into one page), the battle mark and the invasion mark each open their
+        /// own notification (<c>OnClickBattleIcon</c> :3007, <c>OnClickGroundBattleIcon</c> :3024).
+        /// Their tooltips say so out loud - the empty slot's is "Click to queue up a Construction on
+        /// this system" (:2044-2049) - which was being read to a player who had no way to do it.
+        ///
+        /// Asked of the CONTROL and never of a list of widget names: whatever the prefab wires is
+        /// pressable and whatever it does not is not, so a picture that becomes clickable in a patch
+        /// needs nothing here. Every entry the walk collected from this picture is marked, because
+        /// they are all readings OF that one clickable picture.
+        /// </summary>
+        private static void Clickable(
+            List<TooltipChildren.Dossier> found,
+            int from,
+            AgeTransform widget
+        )
+        {
+            AgeControlButton click = AgeWidgets.Button(widget);
+            if (click == null || string.IsNullOrEmpty(click.OnActivateMethod))
+            {
+                return;
+            }
+
+            for (int i = from; i < found.Count; i++)
+            {
+                TooltipChildren.Dossier entry = found[i];
+                entry.Clicks = click;
+                found[i] = entry;
+            }
         }
 
         /// <summary>
