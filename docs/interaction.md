@@ -615,6 +615,44 @@ silent zoom would change what the whole screen means. The scanner filters by the
 Economy, Systems / Unexplored at the System lens, nothing at Diplomacy — **Curiosities appear at no
 scan lens at all** (the scan dot prefab does not wire the curiosity circle).
 
+**THE DIPLOMACY BAND IS A LIST OF EMPIRES** (owner ruling 2026-09-01;
+`Screens/Galaxy/ScanDiplomacy.cs`). At the two furthest-out rungs the lens names no star at all, so
+the map stop holds every MAJOR the player has met plus their own — always at least one, which is
+what makes the reconciliation into this band always land somewhere — ordered by the centre the
+WATCHED empire's intelligence knows, in the constellations' own reading order, with an empire it
+does not place sorting after those it does. A row says who they are, that centre **as a position and
+never as a home** (the game draws the same circle whether the record is their capital or the
+highest-influence colony the watcher can see), and how the watched empire stands with them in the
+game's own word for the state. Under it hangs what the picture puts there: the SWAP TOGGLE wherever
+the game draws one — inside the empire-name line of a label at a major's explored home, and nowhere
+else — named with the game's own word for the gesture; and, for the empire the lens is WATCHING, the
+colonies it tethers to that centre, gated by the WATCHED empire's knowledge rather than the player's
+and named only where the player's own knowledge names them. BATTLE rows are a level of their own,
+one per fight the lens has planted a label over, since two empires are fighting there and filing the
+row under either would say the fight was one of theirs. **The empire headings from level 3 carry the
+same reading**, which is what makes the whole ladder one shape — and, because both wear the one key,
+a system under the cursor when the camera crosses into this band seats on its OWNER's row.
+
+**A LANDING ON SOMETHING THE LENS DOES NOT DRAW LEAVES THE LENS FIRST** (owner ruling 2026-09-01;
+`GalaxyHudScreen.DrawnByTheLens`). Measured first: the game's own reveal flow run in-mode does
+nothing about the mode — it slides the camera to the fleet and leaves the player in a lens that
+draws no fleet. So before a landing is performed the target's KIND is asked of the scan ladder. A
+system and a world have rows under the map lenses and the landing slides and seats in-mode as
+before; a fleet, a probe, a missile, an ally's pin, a quest marker — and a system at the Diplomacy
+band — have no row anywhere in the mode, so the landing leaves through the game's own toggle
+(`ToggleScanView`) and then lands the ordinary way, forced band included. A bookmarked POINT is
+always drawn: it is the player's own annotation rather than a rendering.
+
+**THE HACKING FAMILY IS FOUR LENS-INDEPENDENT STOPS** (owner ruling 2026-09-01;
+`Screens/Galaxy/ScanHacking.cs`): `scan:hacking` (bandwidth, its allocations, speed, operations),
+`scan:traitors` (the sleeper count and the repartition toggle), `scan:console` (the three mode
+switches and each program menu's rows) and `scan:notifications` (a row per chip), declared between
+the map and the legend on both scan pages. All four read DRAWN widgets, so on an install without
+the Awakening DLC — where the game hides the transforms outright — they declare nothing and need no
+gate of their own. Three labels are excluded as measured placeholders (`%TracingSpeedTitle`,
+`%TraceOperationsCountTitle`, the traitors banner's prefab revenue line). A program's Enter is the
+game's own click, so it arms the hacking targeting cursor the mod already models.
+
 **A ZOOM THAT SHRINKS THE BAND NEVER TAKES THE CURSOR OUT OF THE TREE** (owner ruling 2026-09-01).
 When the level change takes the focused row's whole kind away, the cursor lands on the row that
 CONTAINED it — a fleet or a lane's fleet on its system row, a deposit dossier or the manage button on
@@ -889,8 +927,21 @@ stops naming them at 1–2 (that deviation is what the survey IS), and the playe
 BOOKMARKS go quiet at 1–2 because the survey's ruled reading is territory, systems and
 constellations alone.
 
+**UNDER A LENS THE CELL TOPS OUT AT 10** (owner ruling 2026-09-01). The map lenses are a galaxy of
+worlds and the Diplomacy band is a galaxy of painted TERRITORY — which is the survey's whole subject
+— but the System lens (11–13) turns the node labels off and puts one system's panel on the screen
+instead, so there are no squares of galaxy left to read and a live cell carried into it ends with
+the ordinary "Exited inspect mode", moving no camera. ARMING there needs nothing new: the entry
+ceiling the mode has always had is internal rung 8, which under a lens IS the Economy band, so
+Ctrl+I from the System lens pulls out to it and arms, and the lens change announces itself.
+Crossings between 2 and 3 continue the mode as any within-range crossing does. The cell is band
+filtered off the same table in-mode, so a lens that draws no probes, missiles or ally pins names
+none — the kinds the picture draws out BETWEEN the stars are their own column of the table
+(`BandKind.OpenSpace`) rather than riding on the planet dots, because those two answers part company
+under a lens.
+
 **THE MODE IS ZOOM-AWARE** (owner ruling 2026-09-01, corrected; `GalaxyInspect.ShowsTheGalaxy`).
-The cell operates at spoken levels **1–12**. ARMING is unchanged: allowed from anywhere, and a camera
+In the ordinary view the cell operates at spoken levels **1–12**. ARMING is unchanged: allowed from anywhere, and a camera
 closer than level 9 is pulled OUT to the entry ceiling first (`EntryZoomCeiling`, internal rung 8),
 so the mode never opens past the top of its range; a camera already further out is the player's own
 and stays. A LIVE cell carried into **level 13** by ANY route — the zoom slider's fine or coarse

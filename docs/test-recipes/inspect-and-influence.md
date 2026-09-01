@@ -193,6 +193,17 @@ these chords (owner ruling 2026-09-01, reversing the border leap):
 | empty square, both keys | (-46,-7): Alt+Right and Alt+Left each say NOTHING and move nothing — `ui.left`+`ui.right` afterwards still reads `-46, -7` |
 | ambiguous cell (regression) | Dusay (0,0) holds three lanes: both keys silent |
 
+**The cell under a scan lens** (2026-09-01). Range is 1–10 there, not 1–12. Measured pairs on
+`[Beginner] access test`, with `Gui.GuiGameWindowService.ToggleScanView()` as the lever both ways:
+
+| pair | measured |
+|---|---|
+| survey at the Diplomacy band | armed on a point bookmark at level 1 (`ui.focusMap`, `ui.end`, `galaxy.inspect`): "Inspect mode, Cursor 1 by 1" · "Corvus constellation" · "Unexplored, -66, -26". Swept east with `ui.coarseIncrease`: "Serpens constellation", "Influence contested by Epistis", "Edge of Epistis's influence", "In Epistis's influence", "Out of Epistis's influence" — territory, contained known systems and crossings, and no lane, bookmark, fleet or probe |
+| 2 ↔ 3 with a live cell | `SetZoomHere(3)` from level 1 keeps the mode (`Live` true); the same square then names its star lane, which it withheld at 1 |
+| open space, lens vs no lens | the SAME square (-79, 4) at the SAME level 8 says `Probe, -79, 4` in the ordinary view and `-79, 4` under the Economy lens — the fix for the kinds the lens hides (`BandKind.OpenSpace`) |
+| 10 → 11 by the slider | walk the zoom node right from 8: "9 of 15", "10 of 15", then at 11 "System scan" · **"Exited inspect mode"** · "Zoom level 11 of 15"; `Live` false, camera untouched |
+| arming at 12 | `galaxy.inspect` on a map row at the System lens: "Inspect mode, Cursor 1 by 1", the cell reads, then "Economy scan" · "Zoom level 9 of 15" — the entry ceiling is internal rung 8, which under a lens IS the Economy band |
+
 ## Inspect mode
 
 **Inspect mode** (`galaxy.inspect` / `galaxy.inspectGrow` / `galaxy.inspectShrink` + the ordinary

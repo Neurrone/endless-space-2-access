@@ -69,6 +69,41 @@ Index and charter: `README.md`.
   contact (or an elimination) changes what the card says without waiting for a rebuild.
   `AgeWidgets.Visible` still ignores alpha deliberately: the gate here is the game's own predicate,
   not a transparency test.
+- **"Met" is one flag on the diplomatic relation**: `DiplomaticRelation.HasAbility(
+  DiplomaticAbilityDefinition.Names.IsKnown)`, which is what `DepartmentOfForeignAffairs`'s own
+  `HasMetAnyMajorEmpire` counts (`:194-205`). The mod's diplomacy-band empire list is that flag
+  over the MAJOR empires plus the player, minus the eliminated (an eliminated empire holds no
+  colony, so the lens has neither centre nor line to draw for it).
+- **The diplomacy scan lens draws from ONE empire's records at a time.** `WatchingEmpire` is reset
+  to the player every time the scan view opens (`DiplomacyScanViewWindow.OnBeginShow`) and is
+  changed only by the swap toggle; every centre, link, relation icon and spoke on that band is then
+  composed against THAT empire's intelligence rather than the player's. It persists across lenses
+  within one scan session (the window is `Shown` at every rung), so the closer lenses — which draw
+  no diplomacy at all — ask about the player instead. **Mod policy**: the diplomacy band's rows are
+  composed against the watched empire; the owner headings at the closer lenses against the player.
+- **An empire's CENTRE is `DepartmentOfIntelligence.GetEmpirePosition(e)`, `Known`-gated** — the
+  home system where the watching empire has discovered it, else that empire's highest-influence
+  colony they can see (`RefreshEmpirePosition` :479-535). The game draws the identical circle and
+  link in both cases, so **the mod speaks a POSITION and never "home"** (owner ruling 2026-09-01):
+  naming the case would hand a keyboard player a fact the picture withholds.
+- **The band's curved SPOKES belong to the WATCHED empire and are gated by THAT empire's
+  knowledge** (`GalaxyStarSystem.UpdateDiplomaticScanView` :900-983): one curve per colonized
+  system of the watched empire where the colony is visible to them (`Visibility >= 1`) and the node
+  is `Revealed` to them (`Exploration >= 4`), and never at their own home system, whose curve would
+  have no length and is never shown. Verified live and optically 2026-09-01: pointed at Leaper the
+  lens drew five curves, four of them at systems the PLAYER has never explored. So it is genuinely
+  an intelligence tool for locating a watched empire's holdings, and the mod mirrors it exactly —
+  naming a star only where the player's own knowledge names it.
+- **The swap toggle is drawn in exactly one place**: inside the empire-name line of a diplomacy
+  label standing at a MAJOR's home system, gated `ExplorationState >= 2 && IsMajorHomeSystem`
+  (`ScanViewDiplomacyLabel.RefreshEmpireNameLine` :304-312); a battle-only label draws no line at
+  all, and the toggle is switched OFF for the player's own empire and for whoever is already being
+  watched (:310-311). The underlying mechanism works for any met empire (REPL-verified), and the
+  mod still offers the swap only where the game draws it — parity, not caution.
+- **The battle line is the encounter repository's**, not the node's fleet list:
+  `RefreshBattles` walks `Encounters` for one in progress at this node whose group leaders have
+  joined, and tints two emblems from `Groups[0]`/`Groups[1]`. `CollectFightingEmpires` (the docked,
+  alive, in-encounter fleets) is what decides the label is drawn at all.
 - **Closing an unsigned negotiation still posts an order**, and `EvaluationAnnotation` is
   discarded on the way.
 - `AcademyModalWindow`'s Bind can WEDGE the window (recovery in test-recipes), and

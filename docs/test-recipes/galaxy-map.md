@@ -787,9 +787,54 @@ apply — with four traps.
 - **The lens changes under an injected zoom.** `SetZoomHere(step)` is the quickest way between
   lenses (0–1 Diplomacy, 2–5 Trade, 6–9 Economy, 10–12 System); give it ~1.2 s to settle before
   dumping, and expect a lens line in `/speech` at every descriptor crossing.
-- **At the Diplomacy band the map stop holds only point bookmarks** until the empire list lands, so
-  a scanner press made with the cursor anywhere else is unclaimed and silent. Press `ui.focusMap`
-  first: with the cursor really on the map stop, every chord answers `"⟨category⟩: all, none found"`.
+- **At the Diplomacy band the map stop is the EMPIRE LIST** (5b) plus the point bookmarks, and the
+  scanner still finds nothing there, so a scanner press made with the cursor anywhere else is
+  unclaimed and silent. Press `ui.focusMap` first: with the cursor really on the map stop, every
+  chord answers `"⟨category⟩: all, none found"`.
+
+**Working the Diplomacy band (2026-09-01).** On `[Beginner] access test` the list is two rows —
+`Cravers Leaper (AI), -35, 33, COLD WAR` and `Imperials Neurrone, 0, 0, group`, the player's own
+carrying the (disabled) `Swap position` toggle and three spoke rows (Ita, Primus, Sabel: the
+colonies that are not the home system). **Point the lens at the other empire from the REPL** —
+`Gui.GuiService.GetWindow<DiplomacyScanViewWindow>(false).WatchingEmpire = Gui.Game.Empires[1]` —
+and the whole band recomposes in one rebuild: Leaper's row grows FIVE spokes (four of them
+`Unexplored system` — the player has never explored them, and the lens draws the curve over their
+fog), Leaper's centre becomes its own home (`-83, 24`), Neurrone loses its centre entirely (Leaper's
+intelligence does not place it) and picks up the `COLD WAR` word. Put it back with
+`WatchingEmpire = Gui.PlayerEmpire`. **Fixture-blocked here**: the swap toggle's own UI never draws
+for a foreign empire (Leaper is known through the colony Kais and its home is unexplored), no save
+has ever had a battle in orbit while the lens was up, and n = 2 says nothing about ordering with
+three or more empires.
+
+**The reconciliation into the band**: focus a system at level 4 (`ui.focusMap`, `ui.down`,
+`ui.right`, `ui.left` lands on Kais), then `SetZoomHere(0)` — the cursor lands on `galaxy:owner/1`,
+its owner's row, and says it. From a system the player owns it lands on that system's SPOKE row
+under their own empire instead; either way it never reaches the zoom slider, which is what it did
+before 5b.
+
+**Sighting the hacking family** (it is a DLC gate, `IsShared("DLCUC")`, false on this install).
+Reflect `hackingEnabled = true` on `ScanOverlayWindow`, set `HackingBanner`/`TraitorsBanner`/
+`HackingDashboard`'s `AgeTransform.Visible = true`, append each one's `LabelMetaModifier` to the
+window's private `metaModifiers` list and `AnimateToLayer(CurrentLayerDescriptor)`, call each
+section's `OnShow(true)`, then `Dirty = true`. `StaticString` is `Amplitude.StaticString` in the
+REPL, not `Amplitude.Unity.Framework`. The stops then declare real readouts — `Bandwidth Allocated:
+0/55`, `Hacking Speed: 100`, `Hacking Operations: 0/1`, `Sleepers: 0`, the repartition toggle
+`unavailable` with the game's `You have no Sleepers` tooltip, and the three console switches; Enter
+on `scan:console/defensive` opens the eleven defensive programs. **Restore with `POST /loadsave` of
+the same save** and re-check `hackingEnabled == False`, `metaModifiers.Count == 2` and all three
+transforms invisible — nothing else puts them back. The caption prerequisites need no bypass unless
+the LEGEND's DLC groups are what is being tested. What a forced show cannot prove: every table is
+empty because no such object exists, so allocation cells, operation lines, traitor-empire rows and
+program costs are code-verified only.
+
+**The in-mode landing pairs.** Drive the game's own reveal from the REPL —
+`Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(thing)` — which is the call every
+show-location button ends in. At the Economy lens with a SYSTEM: `scanning` stays true, `zoomStep`
+does not change, the camera slides and the cursor seats on that system under its owner heading. With
+a FLEET, or with a system while the Diplomacy band is up: one `"Galaxy"` line, `scanning` false, and
+the ordinary normal-view landing with its own framing. Wrap the call in
+`GalaxyLocate.Suppressed = true` to watch what the GAME does alone — measured: it slides and stays
+in the lens, which is why the mod has to leave for it.
 
 Measured pairs worth re-running: pan the camera at the Economy lens with a system focused
 (`GalaxyViewLevels.CenterOn`) — the `/gui/graph` dump must come back byte-identical and the cursor

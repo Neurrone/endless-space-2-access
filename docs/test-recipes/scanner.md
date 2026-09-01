@@ -31,7 +31,12 @@ A custom slot inherits the filter with no rule of its own: the same slot measure
 Trade and Economy and `1 of 20` at the System lens. **Curiosities are listed at no scan lens at
 all** — the scan dot prefab does not wire the curiosity circle. And **`galaxy.scanGoTo` in-mode
 SLIDES**: `DevProbe.Camera()` before and after shows the focus moving and `zoomStep` unchanged,
-because under a lens the rung selects the lens and a landing must not change it.
+because under a lens the rung selects the lens and a landing must not change it — **so long as the
+lens draws that KIND of thing**. A go-to whose target the lens hides (any fleet or probe, and a
+system at the Diplomacy band) now LEAVES the lens first and then lands the ordinary way, forced band
+included; the transcript's tell is one `"Galaxy"` line before the landing (2026-09-01,
+`docs/interaction.md`, "A landing on something the lens does not draw"). The Diplomacy row above is
+unchanged by 5b's empire list: the ring is still empty there, and the map stop simply has rows now.
 
 ## What each tier says
 

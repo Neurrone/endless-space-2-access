@@ -25,20 +25,30 @@ belong in the files above.
   PAGE WEARS THE SCAN LENS (gate, `ScanLensPanels` composition, `ScanViewScreen` slimmed to the
   system/planet rungs), the owner-grouped in-mode tree with dot planets and lane children, the
   scanner's lens filter, expansion and landings that never move the camera in-mode, and the
-  level-13 icon children restored to the ruled option (a). Still to come: **5b** — the Diplomacy
-  band's own content (the empire list, the spokes, the battle rows, the centre links), the hacking
-  family's stops, exit-scan-first landings, and the scan reconciliation pairs; **5c** — the
-  trade-route weave and the pinned null-probe sweep of the scan dot's overlays.
+  level-13 icon children restored to the ruled option (a). Stage 5b shipped 2026-09-01: the
+  DIPLOMACY BAND (the empire list with its centres, relations, swap toggle and the watched empire's
+  spokes; battle rows; the same reading on the owner headings from level 3, which closes 5a's
+  reconciliation hole), the HACKING FAMILY as four lens-independent stops read off drawn widgets,
+  EXIT-SCAN-FIRST landings off a new `BandKind.OpenSpace` column, and the inspect cell's in-mode
+  range (1–10, the survey at 1–2, arming from the System lens pulling out to Economy). Still to
+  come: **5c** — the trade-route weave and the pinned null-probe sweep of the scan dot's overlays.
+  PINNED, fixture-blocked (5b): battle rows and the swap toggle's own UI (no save has a fight in
+  orbit while the lens is up, and Leaper's home is unexplored so its label draws no name line);
+  every hacking table's per-row content, the program costs and the in-map hacking icons (a
+  DLC-owning session); the empire ordering beyond n = 2; and the `[traitor]` glyph in the
+  repartition toggle's failure sentence, which reads as nothing.
+  OPEN, for the owner (stage 5b): the diplomacy band's SPOKE rows and BATTLE rows refuse the
+  inspect cell, Enter, the leap trail and the restore — the inert default, because whether a row at
+  levels 1–2 may arm the cell is the open question below and nothing was invented for it.
   OPEN, for the owner (stage 5a): **the "Bookmarks" group in the scan tree is NOT shipped.** The
   ruling gives point bookmarks a group of their own there, but the mod has no word for "Bookmarks"
   as a heading and none was invented — the rows are declared at the TOP level of the map stop in
   position order instead, which is exactly what they do in the ordinary view at levels 1–2. One
   approved phrase closes it.
-  OPEN, for the owner (stage 5a): **at the Diplomacy band a system under the cursor lands on the
-  ZOOM SLIDER**, outside the tree. Those two rungs declare only point bookmarks, and none of them
-  precedes the dying row in the previous order, so neither the container tier nor the
-  nearest-survivor walk has anything to fall to. 5b's empire list is the fix by construction — the
-  system's own empire group becomes the container — so it is named rather than patched here.
+  CLOSED by 5b: at the Diplomacy band a system under the cursor used to land on the ZOOM SLIDER.
+  The empire list is the fix by construction — the system's own empire group is the container, and
+  it wears the same key at every lens — measured 2026-09-01: Kais focused at level 4, zoom to 1,
+  cursor on `galaxy:owner/1`.
   OPEN, for the owner (stage 3): at levels 1–2 the tree declares only constellation headings (which
   refuse arming, 2026-08-31) and point bookmarks, so Ctrl+I can arm the survey only from a bookmark
   row — should a constellation heading arm the cell at its centroid there, or does entering the
@@ -383,9 +393,9 @@ belong in the files above.
   the last of those is known to carry a tooltip); `ElectionScreen`'s `PanelTitleLabel` is the step's
   own question, which is content. `LawsScreen`, `PlanetOverviewScreen` and
   `HeroInspectionScreen`'s `TitleLabel` reads are the THING's name, not a caption.
-- `ScanNotificationItemsPanel`/`ScanNotificationItem` — the hacking/scan chip row in Scan
-  View is uncovered by the mod (found during the notifications session; not part of the
-  main notification strip or its stops).
+- ~~`ScanNotificationItemsPanel`/`ScanNotificationItem`~~ — the hacking/scan chip row in Scan View
+  is a stop of its own as of 5b (`scan:notifications`, a row per drawn chip). Its per-chip content
+  stays unverified: nothing has ever put a chip in it.
 - The map fleet lozenge's two ship-kind badges (`ExplorationShipIcon`/`ColonyShipIcon`, "One of
   these ships is an exploration/colony ship.") are drawn beside the `GuiFleetGroup` dossier the
   fleet row already carries in full, and neither sentence is anywhere in the mod. The fix is the
@@ -545,7 +555,7 @@ belong in the files above.
 | Star system / improvements / system-selection / politics / rename | SystemManagementScreen, ImprovementsModalScreen, SystemSelectionScreen, SystemPoliticsScreen, RenameModalScreen |
 | Planet / planet constructibles / discovery cutscene | PlanetOverviewScreen, PlanetConstructiblesScreen, SystemDiscoveryScreen |
 | Research / quest journal | ResearchScreen, QuestJournalScreen |
-| Scan view: the galaxy lenses / the system and planet lenses | GalaxyHudScreen (+`Screens/Galaxy/ScanRows.cs`, ScanLensPanels), ScanViewScreen |
+| Scan view: the galaxy lenses / the system and planet lenses | GalaxyHudScreen (+`Screens/Galaxy/ScanRows.cs`, `ScanDiplomacy.cs`, `ScanHacking.cs`, ScanLensPanels), ScanViewScreen |
 | Senate / government / laws / population / election | SenateScreen, GovernmentScreen, LawsScreen, PopulationScreen, ElectionScreen |
 | Empire / economy / recipe | EmpireScreen, EconomyScreen, RecipeCreationScreen |
 | Military / fleet-selection / ship designer / troops / tactics deck | MilitaryScreen, FleetSelectionScreen, ShipDesignScreen, TroopManagementScreen, BattleTacticsScreen |
