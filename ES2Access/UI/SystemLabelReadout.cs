@@ -368,17 +368,55 @@ namespace ES2Access.UI
             Picture(found, widget, null);
         }
 
+        /// <summary>
+        /// The pictures a SCAN label draws round a star's name, one child node each - the same one
+        /// door the ordinary map label's icons go through (<see cref="Picture"/>), so they are named,
+        /// aimed and deduped by the same rules.
+        ///
+        /// Two of them on an install without the hacking content: the blackout mark and the
+        /// best-system star, which are the only icons the scan prefab wires that carry words of their
+        /// own. The hacking icons beside them are a DLC gate the game switches off outright for a
+        /// session without it, and the waypoint and starting-point marks belong to an operation being
+        /// plotted; both wait for a fixture that has them (roadmap).
+        /// </summary>
+        public static void ScanIcons(List<TooltipChildren.Dossier> found, ScanNodeLabel label)
+        {
+            if (found == null || label == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Picture(found, label.BlackoutIcon);
+                Picture(found, label.BestSystemIcon);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("scan: reading a lens label's icons threw: " + e);
+            }
+        }
+
         private static void Picture(
             List<TooltipChildren.Dossier> found,
             AgeTransform widget,
             Func<string> name
         )
         {
-            // Flow control, and the whole of the collection's own existence test: a picture that is
-            // not painted contributes NO entry, and an entry that was never collected is not a node
+            // Flow control, and the whole of the collection's own existence test: a picture the label
+            // is not showing contributes NO entry, and an entry that was never collected is not a node
             // the gate could have dropped. It is also a content read - which tooltip a pooled strip
             // item is holding depends on it being this system's.
-            if (!AgeWidgets.Painted(widget))
+            //
+            // BOUND, not painted (owner ruling 2026-09-01, option (a) re-ratified). The map fades the
+            // whole nameplate away at the orbital view - the population line, the trading line and the
+            // deposits line all sit at alpha 0 at spoken level 13 while staying bound to the system -
+            // and a painted test therefore took a system's queue, its deposits and every one of its
+            // icon children away exactly where the player has come in to look at them. The ANCESTOR
+            // alpha is what that animation moves; a pooled strip item the game has retired sets its
+            // OWN alpha to nought, and that is still the test, so a leftover holding the previous
+            // system's tooltip is kept out as it always was.
+            if (!AgeWidgets.Visible(widget) || widget.Alpha <= 0f)
             {
                 return;
             }
@@ -399,6 +437,7 @@ namespace ES2Access.UI
                 }
             }
 
+            Unvouched(found, at);
             if (name == null)
             {
                 return;
@@ -418,9 +457,36 @@ namespace ES2Access.UI
                 {
                     Name = name,
                     Anchor = widget,
-                    Carrier = widget,
                 }
             );
+        }
+
+        /// <summary>
+        /// Take the CARRIER off the entries this walk has just collected, so they stand on the walk's
+        /// own existence test and the central gate has nothing to ask
+        /// (<c>TooltipChildren.Stands</c> declares a carrier-less dossier
+        /// <see cref="Nodes.Synthetic"/>, the same shape <c>AddRevealed</c> uses for a
+        /// reveal-on-hover strip).
+        ///
+        /// The gate asks the RENDERER, and the renderer's answer here is the wrong one: at the orbital
+        /// view the map fades the whole nameplate to nothing while leaving it bound to the system, so
+        /// every picture on it reads "not drawn" exactly where the player has come in to read the
+        /// place (measured: the gate dropped the construction queue and the home icon at spoken level
+        /// 13, "ancestor faded to nothing and settled"). Existence is ruled to follow the BOUND label
+        /// rather than the paint (owner ruling 2026-09-01, option (a)), and the test above is what
+        /// says so - it is a per-widget question the gate's ancestor walk cannot express.
+        ///
+        /// The POINTER is untouched: the node still aims at the picture, so the game draws the dossier
+        /// exactly where a mouse would raise it.
+        /// </summary>
+        private static void Unvouched(List<TooltipChildren.Dossier> found, int from)
+        {
+            for (int i = from; i < found.Count; i++)
+            {
+                TooltipChildren.Dossier entry = found[i];
+                entry.Carrier = null;
+                found[i] = entry;
+            }
         }
 
         /// <summary>The third kind: a tooltip the renderer assembles whose target is not a wrapper, so
