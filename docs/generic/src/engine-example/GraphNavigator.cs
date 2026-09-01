@@ -844,10 +844,31 @@ namespace ES2Access.UI
                 }
             }
 
+            // A LANDING OF THIS SCREEN'S IS STILL IN FLIGHT, so whatever the cursor is standing on now
+            // is not where the player is going and is not said.
+            //
+            // A landing waits out the frames its target needs - a branch opening a level per build, a
+            // camera the page is still moving (<see cref="Screen.LandingSuspended"/>) - and over that
+            // window the tree can re-seat the cursor underneath it, because the row it was standing on
+            // has gone. Measured 2026-09-01 on a lane hop whose origin the trail closed behind it: the
+            // cursor fell back onto the origin's own row for the three frames the camera slid, and the
+            // player heard the place they had just left and then the place they had gone to, two
+            // utterances for one press. The same shape belongs to every landing that comes through here
+            // - the scanner's go-to, a bookmark jump, a restored leap - so the answer is here and not at
+            // the hop.
+            //
+            // HELD rather than stamped, which is the opposite of the mode case below and deliberately
+            // so: a landing that gives up (its budget spent, its target never declared) leaves the
+            // player standing somewhere they were not told about, and not stamping is what makes the
+            // first frame after the request dies read that row out. The line is late by the frames the
+            // landing was in flight, never lost.
+            bool inFlight = OwnPendingFocus != null;
+
             // A landing somebody PROMISED this node gets read whether or not the cursor moved to
             // reach it (<see cref="AnnounceLandingAt"/>), and the promise is spent here rather than by
             // whatever the cursor was standing on while the landing was in flight.
-            bool promised = _announceLandingAt != null && _announceLandingAt.Equals(node.Id);
+            bool promised =
+                !inFlight && _announceLandingAt != null && _announceLandingAt.Equals(node.Id);
             if (promised)
             {
                 _announceLandingAt = null;
@@ -856,6 +877,7 @@ namespace ES2Access.UI
             if (
                 (promised || _lastSpokenKey == null || !_lastSpokenKey.Equals(node.Id))
                 && !_screen.BetweenViews
+                && !inFlight
             )
             {
                 // A mode of the screen owns the player's attention, so the line is SWALLOWED - and
