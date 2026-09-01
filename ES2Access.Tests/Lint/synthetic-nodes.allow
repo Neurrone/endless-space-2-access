@@ -105,4 +105,4 @@ ES2Access/UI/SystemPanels.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable
 
 ES2Access/UI/TooltipChildren.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
 
-ES2Access/UI/ZoomLadder.cs | 1 | builder.AddItem(Nodes.Synthetic(
+ES2Access/UI/ZoomLadder.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));

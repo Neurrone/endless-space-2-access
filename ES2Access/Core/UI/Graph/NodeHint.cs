@@ -28,13 +28,17 @@ namespace ES2Access.Core.UI.Graph
             string templateKey,
             string actionKey,
             int bindingIndex = 0,
-            Func<bool> when = null
+            Func<bool> when = null,
+            string secondActionKey = null,
+            int secondBindingIndex = 0
         )
         {
             TemplateKey = templateKey;
             ActionKey = actionKey;
             BindingIndex = bindingIndex;
             When = when;
+            SecondActionKey = secondActionKey;
+            SecondBindingIndex = secondBindingIndex;
         }
 
         /// <summary>The <see cref="ModStrings"/> key of the whole sentence, whose <c>{0}</c> the
@@ -52,6 +56,16 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Whether the gesture is really available here, asked when the buffer is read.
         /// Null = always.</summary>
         public readonly Func<bool> When;
+
+        /// <summary>A SECOND chord the sentence names, filling its <c>{1}</c> - null for the ordinary
+        /// one-chord hint. Some gestures only exist as a pair and are useless said one at a time: an
+        /// adjustable is worked with the key that lowers it and the key that raises it, and a sentence
+        /// naming one of them describes half a control. Both are rendered from the live bindings, so
+        /// re-binding either re-words the sentence.</summary>
+        public readonly string SecondActionKey;
+
+        /// <summary>Which of the second action's bindings the sentence means.</summary>
+        public readonly int SecondBindingIndex;
     }
 
     /// <summary>
@@ -84,7 +98,9 @@ namespace ES2Access.Core.UI.Graph
             string templateKey,
             string actionKey,
             int bindingIndex = 0,
-            Func<bool> when = null
+            Func<bool> when = null,
+            string secondActionKey = null,
+            int secondBindingIndex = 0
         )
         {
             if (vtable == null || string.IsNullOrEmpty(templateKey) || string.IsNullOrEmpty(actionKey))
@@ -97,7 +113,16 @@ namespace ES2Access.Core.UI.Graph
                 vtable.Hints = new List<NodeHint>();
             }
 
-            vtable.Hints.Add(new NodeHint(templateKey, actionKey, bindingIndex, when));
+            vtable.Hints.Add(
+                new NodeHint(
+                    templateKey,
+                    actionKey,
+                    bindingIndex,
+                    when,
+                    secondActionKey,
+                    secondBindingIndex
+                )
+            );
         }
 
         /// <summary>Append the control's hint lines - one per line, in declared order - to
@@ -133,7 +158,21 @@ namespace ES2Access.Core.UI.Graph
                         continue;
                     }
 
-                    into.Add(ModStrings.Format(hint.TemplateKey, chord));
+                    if (string.IsNullOrEmpty(hint.SecondActionKey))
+                    {
+                        into.Add(ModStrings.Format(hint.TemplateKey, chord));
+                        continue;
+                    }
+
+                    // A pair sentence needs BOTH halves: one chord in a sentence written for two
+                    // leaves a hole where the other one goes.
+                    string second = render(hint.SecondActionKey, hint.SecondBindingIndex);
+                    if (string.IsNullOrEmpty(second))
+                    {
+                        continue;
+                    }
+
+                    into.Add(ModStrings.Format(hint.TemplateKey, chord, second));
                 }
                 catch (Exception)
                 {

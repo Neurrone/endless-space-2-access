@@ -87,6 +87,13 @@ namespace ES2Access.Core.Speech
         public const string HintMarketFive = "hint.market-five";
         public const string HintMarketAll = "hint.market-all";
 
+        /// <summary>The zoom ladder, whose two gestures are the whole of the control and are worth
+        /// nothing said one at a time. What a rung BUYS differs between the two views - on the map it
+        /// is distance, in the scan view it is which lens the galaxy is being read through - so there
+        /// are two sentences and the ladder picks the one its page is on.</summary>
+        public const string HintChangeZoom = "hint.change-zoom";
+        public const string HintChangeLens = "hint.change-lens";
+
         private static readonly Dictionary<string, string> HintDefaults = new Dictionary<
             string,
             string
@@ -114,6 +121,8 @@ namespace ES2Access.Core.Speech
             { HintLockShip, "{0} to lock or unlock this ship in its flotilla" },
             { HintMarketFive, "{0} to change the quantity by five units" },
             { HintMarketAll, "{0} to change the quantity by all available stock" },
+            { HintChangeZoom, "{0} or {1} to change zoom" },
+            { HintChangeLens, "{0} or {1} to change lens" },
             // --- input batch (2026-08-22) ---
             { LabelWithChord, "{0} ({1})" },
             { SystemPrevious, "Previous system" },

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
+using ES2Access.UI.Input;
 
 namespace ES2Access.UI
 {
@@ -93,12 +94,28 @@ namespace ES2Access.UI
                 }
             }
 
+            NodeVtable vtable = GraphNodes.Slider(
+                () => ModStrings.Get(ModStrings.Zoom),
+                Text,
+                Step
+            );
+            // The one control on this page whose gestures nothing else suggests: the game's own zoom is
+            // two keys HELD, so a player who has never met an adjustable here has no reason to try the
+            // arrows. The sentence names both of them at once - a ladder worked from one end is half a
+            // control - and says what the rung BUYS on the page it is standing on, which is distance on
+            // the map and the lens in the scan view. Rendered from the live bindings like every other
+            // hint, so re-binding either arrow re-words it.
+            NodeHints.Add(
+                vtable,
+                GalaxyViewLevels.Scanning ? ModStrings.HintChangeLens : ModStrings.HintChangeZoom,
+                UiActions.Left,
+                0,
+                null,
+                UiActions.Right
+            );
             // Synthetic: mod-authored - the zoom ladder is the mod's own control over the camera,
             // and the game draws nothing for it.
-            builder.AddItem(Nodes.Synthetic(
-                id,
-                GraphNodes.Slider(() => ModStrings.Get(ModStrings.Zoom), Text, Step)
-            ));
+            builder.AddItem(Nodes.Synthetic(id, vtable));
         }
 
         /// <summary>Counts the wait down, and ends it the moment the rung moves - so the value speaks
