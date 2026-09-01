@@ -87,11 +87,19 @@ namespace ES2Access.Core.Speech
         public const string HintMarketFive = "hint.market-five";
         public const string HintMarketAll = "hint.market-all";
 
-        /// <summary>The zoom ladder, whose two gestures are the whole of the control and are worth
-        /// nothing said one at a time. What a rung BUYS differs between the two views - on the map it
-        /// is distance, in the scan view it is which lens the galaxy is being read through - so there
-        /// are two sentences and the ladder picks the one its page is on.</summary>
-        public const string HintChangeZoom = "hint.change-zoom";
+        /// <summary>
+        /// The zoom ladder, whose two gestures are the whole of the control and are worth nothing said
+        /// one at a time. What a rung BUYS differs between the two views - on the map it is how much
+        /// detail the picture is drawing, in the scan view it is which lens the galaxy is being read
+        /// through - so there are two sentences and the ladder picks the one its page is on.
+        ///
+        /// The chords they name are the COARSE pair (owner ruling 2026-09-01, after playtest): one
+        /// rung of the ladder changes nothing the player can hear until a band boundary is crossed, so
+        /// a hint naming the fine step told them to press a key that usually does nothing. The coarse
+        /// step jumps a whole band - a detail level on the map, a lens under the overlay - which is
+        /// exactly what these two sentences promise.
+        /// </summary>
+        public const string HintChangeDetailLevel = "hint.change-detail-level";
         public const string HintChangeLens = "hint.change-lens";
 
         private static readonly Dictionary<string, string> HintDefaults = new Dictionary<
@@ -121,7 +129,7 @@ namespace ES2Access.Core.Speech
             { HintLockShip, "{0} to lock or unlock this ship in its flotilla" },
             { HintMarketFive, "{0} to change the quantity by five units" },
             { HintMarketAll, "{0} to change the quantity by all available stock" },
-            { HintChangeZoom, "{0} or {1} to change zoom" },
+            { HintChangeDetailLevel, "{0} or {1} to change detail level" },
             { HintChangeLens, "{0} or {1} to change lens" },
             // --- input batch (2026-08-22) ---
             { LabelWithChord, "{0} ({1})" },

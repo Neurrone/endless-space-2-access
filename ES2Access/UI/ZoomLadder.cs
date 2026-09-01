@@ -102,16 +102,24 @@ namespace ES2Access.UI
             // The one control on this page whose gestures nothing else suggests: the game's own zoom is
             // two keys HELD, so a player who has never met an adjustable here has no reason to try the
             // arrows. The sentence names both of them at once - a ladder worked from one end is half a
-            // control - and says what the rung BUYS on the page it is standing on, which is distance on
-            // the map and the lens in the scan view. Rendered from the live bindings like every other
-            // hint, so re-binding either arrow re-words it.
+            // control - and says what the gesture BUYS on the page it is standing on, which is how much
+            // detail the map draws and which lens the scan view is read through.
+            //
+            // It names the COARSE pair and not the plain arrows (owner ruling 2026-09-01, after
+            // playtest): a single rung usually changes nothing the player can hear - the band words and
+            // the lens names only move at a boundary - so a hint naming the fine step was pointing at a
+            // key that mostly does nothing. Shift and an arrow jumps the whole band, which is what these
+            // two sentences promise. Rendered from the live bindings like every other hint, so
+            // re-binding either chord re-words it.
             NodeHints.Add(
                 vtable,
-                GalaxyViewLevels.Scanning ? ModStrings.HintChangeLens : ModStrings.HintChangeZoom,
-                UiActions.Left,
+                GalaxyViewLevels.Scanning
+                    ? ModStrings.HintChangeLens
+                    : ModStrings.HintChangeDetailLevel,
+                UiActions.CoarseDecrease,
                 0,
                 null,
-                UiActions.Right
+                UiActions.CoarseIncrease
             );
             // Synthetic: mod-authored - the zoom ladder is the mod's own control over the camera,
             // and the game draws nothing for it.

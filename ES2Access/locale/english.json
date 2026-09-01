@@ -411,7 +411,7 @@
   "hint.lock-ship": "{0} to lock or unlock this ship in its flotilla",
   "hint.market-five": "{0} to change the quantity by five units",
   "hint.market-all": "{0} to change the quantity by all available stock",
-  "hint.change-zoom": "{0} or {1} to change zoom",
+  "hint.change-detail-level": "{0} or {1} to change detail level",
   "hint.change-lens": "{0} or {1} to change lens",
   "label.with-chord": "{0} ({1})",
   "system.previous": "Previous system",
