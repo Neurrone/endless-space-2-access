@@ -412,7 +412,13 @@ namespace ES2Access.UI
                 return;
             }
 
-            string caption = AgeWidgets.TextOf(widget);
+            // Painted because the scan reaches every control the window OWNS, pooled prefabs included, and
+            // a control whose caption is spread over sub-labels the game retired by fading them would
+            // otherwise be called by the words the last binding left in them. The widget's own alpha is
+            // deliberately not asked here - the gate settles that when the cell is declared - so this
+            // drops the retired PIECES of a live control and nothing else. The tooltip needs no such
+            // question: it is the widget's OWN, not one gathered off the pieces below it.
+            string caption = AgeWidgets.PaintedPartsText(widget);
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
             if (string.IsNullOrEmpty(caption) && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))
             {
@@ -435,7 +441,9 @@ namespace ES2Access.UI
             AgeControlToggle it = toggle;
             Func<string> label = string.IsNullOrEmpty(caption)
                 ? CardActions.NameFromTooltip(tooltip)
-                : () => AgeWidgets.TextOf(widget);
+                // The same reading the caption was built from, so the build-time test and the announce-time
+                // words cannot disagree about a retired piece.
+                : () => AgeWidgets.PaintedPartsText(widget);
             NodeVtable vtable = InRadioGroup(toggle)
                 ? GraphNodes.Radio(
                     label,

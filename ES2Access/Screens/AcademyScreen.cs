@@ -338,8 +338,11 @@ namespace ES2Access.Screens
 
             if (ReferenceEquals(widget, Bar(gauge)))
             {
+                // Painted because the gauge item is a POOLED row of the side-panel strip
+                // (HeroUnlockGaugeItem also fills a ReserveChildren table of its own), and a line whose
+                // words came off a piece the game retired by fading it must not be said.
                 cells.Add(
-                    Cells.Readout(widget, AgeWidgets.Raw(widget), keyPrefix + widget.name)
+                    Cells.PaintedReadout(widget, AgeWidgets.Raw(widget), keyPrefix + widget.name)
                 );
                 return true;
             }

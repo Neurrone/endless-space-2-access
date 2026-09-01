@@ -115,9 +115,13 @@ namespace ES2Access.Screens
             builder.BeginStop(HeadingStop);
             _cells.Clear();
             AgeTransform title = AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 2);
-            if (title != null && !string.IsNullOrEmpty(AgeWidgets.TextOf(title)))
+            // Read off the pieces the renderer is DRAWING, and gated on the same reading: the group is
+            // reached by name rather than through a field, so nothing here vouches for what is inside it,
+            // and a heading whose only words sat on a faded-out piece would be a sentence about a window
+            // that has moved on.
+            if (title != null && !string.IsNullOrEmpty(AgeWidgets.PaintedPartsText(title)))
             {
-                _cells.Add(Cells.Readout(title, "government:title"));
+                _cells.Add(Cells.PaintedReadout(title, "government:title"));
             }
 
             Cells.EmitLinear(builder, _cells);
