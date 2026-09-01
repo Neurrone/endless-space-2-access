@@ -154,11 +154,25 @@ namespace ES2Access.Screens
         /// A rung there is no answer for - a battle, the system-discovery view, a level the game is
         /// still flying between - keeps the mode: a gate that cannot tell what is being drawn must not
         /// take a cursor down on the strength of not knowing.
+        ///
+        /// UNDER A LENS the line falls at the other end of the ladder (RULED 2026-09-01: the mode tops
+        /// out at spoken level 10). The map lenses are a galaxy of worlds - the lens rings each star
+        /// with its planet circles - and the diplomacy band is a galaxy of painted TERRITORY, which is
+        /// the survey's whole subject; the System lens turns the node labels off altogether and puts
+        /// one system's panel on the screen instead, so there are no squares of galaxy left to read.
+        /// Asked of the table in the same two kinds rather than written down as an 11.
         /// </summary>
         private static bool ShowsTheGalaxy()
         {
             int level = ZoomBands.Level;
-            return level < 0 || ZoomBands.Fidelity(BandKind.Planets) != BandFidelity.Full;
+            if (level < 0)
+            {
+                return true;
+            }
+
+            return ZoomBands.Scanning
+                ? ZoomBands.Shows(BandKind.Planets) || ZoomBands.Shows(BandKind.Empires)
+                : ZoomBands.Fidelity(BandKind.Planets) != BandFidelity.Full;
         }
 
         /// <summary>
