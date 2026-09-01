@@ -609,7 +609,9 @@ frames a battle screen is still fading off; `ScanViewScreen` keeps the two rungs
 not reach, the system-management and planet lenses. **Stops in-mode**: `scan:title` (the lens's own
 strip, then the zoom ladder — the game hides the panel the ordinary view-title cluster is read off),
 the map stop, `scan:system` at the System lens (the panel it draws over one star — its regions and
-its wording are `docs/test-recipes/galaxy-map.md`), `scan:legend`, and the turn controls; the
+its wording are `docs/test-recipes/galaxy-map.md`), `scan:legend` (named **Captions**, the mod's own
+word — the panel has no heading and its tick carries only the game's "Caption"), and the turn
+controls; the
 banners, the pinned quest, the notification
 strip and the fleet panel are all things the game stops drawing. The lens's ARRIVAL gate — a lens has
 drawn itself — governs that furniture and never the page, because keeping the cursor across the mode

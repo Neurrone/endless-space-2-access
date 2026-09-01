@@ -278,8 +278,8 @@ belong in the files above.
 - Scan management-lens remainder (unverifiable at turn 1): the trade-quality dial
   (geometry-only rating, no tooltip) and the ghost/traitor lines. (The SYSTEM lens's rank bar graph
   and global-rank histogram are SHIPPED as of 2026-09-01, in the `scan:system` stop's
-  **System's Rank** region — the drawn sentence, a recomposed place per property, and the two curves
-  as one turn-by-turn sheet.) The governor panel is MODELLED (batch D) but has only ever been
+  **System's Rank** region — the drawn sentence and a recomposed place per property as readout rows,
+  then the two curves as one table, a row per curve and a column per turn.) The governor panel is MODELLED (batch D) but has only ever been
   sighted against a hand-bound hero — a save with a real assigned governor would confirm the
   FIDSI half, which reads "None" for every hero that adds nothing.
 - Planet lens: the remains table is modelled (batch D) and no fixture has a planet with

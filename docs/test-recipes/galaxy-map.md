@@ -879,13 +879,21 @@ other lens. Two rows then three regions, each here only while the game draws wha
 (`scan:system/output/0..5` — the five outputs and the population percentage, ALWAYS, since those
 labels are their own panel and not inside the box the tick opens: measured tick-off, still visible
 and bound), **System's Rank** — the game's own caption — and **Remains**, both only while the tick is
-on and the lens has a colony of the player's. Measured on the owner's save at Dusay:
-`Overall system rank [2/4]` (the game's drawn sentence) · `FIDSI, rank 1 of 2` · `Defense, rank 2 of
-2` · `Population, rank 1 of 2` · `No. of representatives, rank 1 of 2` — cross-checked against the
-bars' own ordinals (`1st/2nd/1st/1st`) — then the rank-history sheet, newest first, `Turn 28` /
-`rank 2 of 4` / `4` down to turn 1, cross-checked cell by cell against an `/eval` walk of
-`IGameStatisticsManagementService.TakeSnapshot(turn)`. Crossing right off a turn row says the game's
-own column caption, `No. of systems in my Empire, 4`. **The oracle for the per-property lines** is
+on and the lens has a colony of the player's. **System's Rank holds READOUT ROWS and then one table**
+(owner ruling 2026-09-01, playtest — only what the game draws as a table is one): the drawn sentence
+and one line per ranking property are plain rows of the region, no cell semantics and no place in the
+table's count. Measured on the owner's save at Dusay: `System's Rank, table, Overall system rank
+[2/4]` (the game's drawn sentence) · `FIDSI, rank 1 of 2` · `Defense, rank 2 of 2` · `Population,
+rank 1 of 2` · `No. of representatives, rank 1 of 2` — cross-checked against the bars' own ordinals
+(`1st/2nd/1st/1st`). Then **the history table, transposed**: a row per CURVE (`System rank` — the
+mod's own word, the game names that curve nowhere — and the game's `No. of systems in my Empire`) and
+a column per TURN, chronological, so walking right walks time as the picture reads left to right.
+`System rank, 1 of 2` → `Turn 1, rank 1 of 1` → `Turn 2, rank 1 of 1`; Down → `No. of systems in my
+Empire, 1, 2 of 2`; the last column is the turn in progress (`Turn 28, rank 2 of 4` / `4`). Cells
+cross-checked against an `/eval` walk of `IGameStatisticsManagementService.TakeSnapshot(turn)` (turn
+index 21 → `known=3`, `rank=0` → `rank 1 of 3` and `3`; the live turn off `GetScoreRank` +
+`KnownSystemCount` → `rank 2 of 4` and `4`). A turn one curve has no reading for keeps its cell and
+says the blank word. **The oracle for the per-property lines** is
 `ScanViewSystemEmpireRankBar.Rank.Text`, but only while the system is in the first four places
 (`Refresh` :38) — past that the game writes nothing and only the recomposed count answers.
 **Toggling the tick** says `System information shown` / `… hidden`; **restore the tick to what you
@@ -910,6 +918,17 @@ each did nothing at all, which is the shape to watch for: `outcome: consumed` wi
 `speech` array and the cursor where it was. **Re-shut what you opened**: the landing leaves the
 heading and the star it opened expanded, and that expansion is shared with the ordinary view,
 since the keys are the same.
+
+**A lane hop says ONE thing, and it is the destination (2026-09-01, playtest fix).** The trail closes
+the origin again where its own earlier hop is the only reason that system was open, so the lane row
+the cursor is standing on stops being declared and the tree re-seats it onto the origin's row — while
+the landing is still held for the frames the camera slides (`Screen.LandingSuspended`). That gap used
+to be spoken: `"Dusay, 0, 0, group, Home System, collapsed, 1 of 2"` and then the destination, two
+utterances for one press, visible as three frames of the origin in a
+`DevProbe.RowTrace` recording before the destination's frame. The check is a single-entry `speech`
+array after `ui.right` on a named lane, run twice — into an OPEN heading and into one shut by hand —
+and the same after `galaxy.scanGoTo`. Bookmark chords cannot be checked in-mode: `GalaxyBookmarks.HandleKey`
+answers false while `GalaxyViewLevels.Scanning`, so a jump has to be tried in the ordinary view.
 
 **Arming the survey at the Diplomacy band (2026-09-01).** `SetZoomHere(0)` in-mode, focus a row,
 `POST /input galaxy.inspect`. The empire row arms at its centre (`Inspect mode, Cursor 1 by 1` ·
