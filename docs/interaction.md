@@ -841,6 +841,35 @@ Alt+Right is silent. Every landing is the scanner-style arrival on the target's 
 camera, square, cell reading — and NO refusal ever exits the mode. The four arrow KeyCodes are
 already claimed from the game outright, so none of the six chords needed a new claim (measured with
 `DevProbe.Chord`); off the map, and with no cursor up, all six are unconsumed and do nothing.
+**On an EMPTY square the travel pair leaps to the next BORDER instead** (owner ruling 2026-09-01;
+`GalaxyInspect.LeapToOwnershipChange`): with no lane in the cell — and, eastward, no fleet
+destination either — the key walks the same cells the plain arrow would and lands on the first whose
+influence reading differs from the one being left, announcing it with the cell's ordinary reading.
+It LAYERS under every existing answer and displaces none: one lane still travels the lane, fleets
+under way still win, and an AMBIGUOUS cell (two lanes, fleets bound for different places) keeps its
+silent refusal, because that is a deliberate refusal rather than an empty square. The comparison is
+the crossing announcement's own (`InfluenceReading.Equals` — who holds it, how much, who is reaching)
+so the leap cannot land where the arrival then declines to call a crossing; nothing different all the
+way to the map edge is the same silence the pair already refuses with; and the landing is a LEAP, so
+Backspace comes back from it. It is live at every rung the cell is, not only at the survey.
+
+**THE MODE IS ZOOM-AWARE** (owner ruling 2026-09-01, corrected; `GalaxyInspect.ShowsTheGalaxy`).
+The cell operates at spoken levels **1–12**. ARMING is unchanged: allowed from anywhere, and a camera
+closer than level 9 is pulled OUT to the entry ceiling first (`EntryZoomCeiling`, internal rung 8),
+so the mode never opens past the top of its range; a camera already further out is the player's own
+and stays. A LIVE cell carried into **level 13** by ANY route — the zoom slider's fine or coarse
+step, the game's own held PageUp, the wheel — ends the mode with the existing "Exited inspect mode"
+line, and **the exit itself moves no camera** (it is `Leave`, not the Escape path: no recentre, no
+re-seat, the tree cursor left exactly where it stands). The question is asked once a frame as "where
+is the camera", never per key, so a route nobody thought of is covered by construction; the boundary
+itself is read off the band table (`Bands`) as "the planets have become full cards" rather than
+written down as a 13. A rung the game has no answer for — a battle, a level it is still flying
+between — keeps the mode, on the standing rule that a filter which cannot tell what is drawn must
+withhold nothing. **Crossing the other way does NOT exit**: at levels 1–2 the cell continues as the
+TERRITORY SURVEY, saying whose territory every square is rather than only saying so on a crossing
+(`docs/test-recipes/inspect-and-influence.md`, **The territory survey**). ARMING at 1–2 is allowed by
+the zoom rule but still needs a row that stands somewhere, and those bands declare only constellation
+headings (which refuse) and point bookmarks (which arm) — an OPEN owner question, on the roadmap.
 
 What the mode SAYS — the constellation and influence crossings it names ahead of the cell, which of
 the two is part of cell identity for Shift+arrows, the lane it names only where the fog draws it, and

@@ -15,12 +15,19 @@ belong in the files above.
   shrink. Stage 2 shipped 2026-09-01: the MOTION model — graded expansion, collapse-restore with
   the level-9 fallback, constellation expand at 1–2, snap landings forcing the target's band,
   dot-fidelity planet rows at 7–12, and both of stage 1's standing bookmark gaps closed —
-  `scan-modes-design-proposal.md` is the spec). Still to come: inspect's 3–12 gating and the 1–2
-  territory survey; the passive label icons as tooltip-bearing child nodes; scan mode on the shared
-  components. OPEN, for the owner: a bookmarked SYSTEM has no row at levels 1–2 (its row is the
-  system's, which the band withholds), so the annotation is unbrowsable there though its jump key
-  works — point bookmarks were moved to the top level at those bands and systems were deliberately
-  not, since no ruling covers a top-level row for one.
+  `scan-modes-design-proposal.md` is the spec. Stage 3 shipped 2026-09-01: the inspect cell's zoom
+  contract — 1–12, exit on crossing into 13 by any route, the entry ceiling unchanged — the 1–2
+  TERRITORY SURVEY, and the border leap layered onto the travel keys' empty-cell case). Still to
+  come: the passive label icons as tooltip-bearing child nodes; scan mode on the shared components.
+  OPEN, for the owner (stage 3): at levels 1–2 the tree declares only constellation headings (which
+  refuse arming, 2026-08-31) and point bookmarks, so Ctrl+I can arm the survey only from a bookmark
+  row — should a constellation heading arm the cell at its centroid there, or does entering the
+  survey by zooming out with a live cell suffice? And unowned space in the survey says NOTHING about
+  ownership (there is no phrase for "nobody's territory" and none was invented) — is the bare pair
+  the wanted answer? RULED (owner, 2026-09-01): a bookmarked SYSTEM keeps no row at levels 1–2 — its jump
+  key and type-ahead access suffice (point bookmarks stay top-level at those bands). Also ratified
+  as shipped: collapse at 13 with no jump memory falls back to level 9 (the in-place case
+  included), and a bookmark jump to a system from 1–2 lands at level 3, not the framing zoom.
   PENDING LIVE: the physical-key half of the re-seat pairs. The `CheckInputs` gate is no longer the
   blocker — `NotificationPopulationGained` was cleared 2026-09-01 and a real PageDown moved the rung
   two steps — but the desktop locked before the fleet-row pair could be driven through it. Also

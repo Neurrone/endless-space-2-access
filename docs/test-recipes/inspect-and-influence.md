@@ -132,6 +132,52 @@ in flight would not carry it (`!ended` guard). Pump-order caveat: a request made
 runs in the same frame is invisible to it — the guard works because deferred landings into collapsed
 branches outlive their frame (owner rulings 2026-08-20).
 
+## The zoom contract and the territory survey
+
+Rules: `docs/interaction.md`, **Inspect-mode keys**. Driving the cell to a chosen square without
+twenty arrow presses: the mode's `JumpTo` is public, so reflect `_driving` out of `GalaxyInspect`
+and invoke it — `typeof(ES2Access.Screens.GalaxyInspect).GetField("_driving", NonPublic|Static)`,
+then `GetMethod("JumpTo").Invoke(m, new object[] { x, y })` with `?settle=900`. Zoom is set with
+`ES2Access.UI.GalaxyViewLevels.SetZoomHere(step)` (step = spoken level − 1), which lands
+immediately — the rung is readable in the same `/eval`.
+
+**On `[Beginner] access test`, home (the cell's own 0,0) is Dusay**, and the player's influence
+sources are `r=7.15` at (0,0), `r=4.50` at (16,20) and an outpost at (-34,-4) projecting nothing
+(outposts force `SystemInfluenceRadius` to zero). So the y=0 line through home is the boundary walk:
+the game's own oracle, `IInfluenceService.TryGetInfluence` at each square centre, answers Neurrone
+from x=-7 to x=+7 and nobody outside — and the cell says "Edge of your influence" at ±7 (the 1×1
+square straddles the rim), "In your influence" from -6 to +6, and nothing at ±8 and beyond. That is
+the oracle pair for the survey; it is the game's point resolution, the same field the disk is
+painted from, not the mod's own classification.
+
+Measured pairs (2026-09-01, `ES2Access-r10`):
+
+| pair | measured |
+|---|---|
+| arm at 13 | camera step 12 → 8, mode armed, "Inspect mode, Cursor 1 by 1" … "Zoom level 9 of 15, System details" — the entry ceiling still holds after the stage-2 zoom machinery |
+| arm at 5 | step 4 → 4, armed, no zoom line |
+| arm at 1 | step 0 → 0, armed; first reading "Inspect mode, Cursor 1 by 1" · "Corvus constellation" · "bookmark 1, Unexplored, -68, 18" |
+| live at 12 → slider fine step in | "13 of 15, Orbital" then "Exited inspect mode"; camera focus `[34.352, 0, 10.188]` unchanged either side — only the zoom the player asked for moved |
+| live at 12 → slider COARSE step in | same two lines, focus unchanged |
+| live at 12 → physical `POST /key PageUp` | "Exited inspect mode" then "Zoom level 13 of 15, Orbital" (the game's own camera update lands before the mod's zoom watch, so this route says them the other way round — both are heard) |
+| live at 3 → zoom to 2 → back to 3 | at 3: `-8,0` silent, `-7,0` "Edge of your influence", `-6,0` "In your influence", `-5,0` silent. At 2: every square says "In your influence". Back at 3: silent again |
+| survey walk at level 1, -12 → +12 on y=0 | matches the oracle square for square (above); "Out of Serpens constellation" announced where crossed; unowned squares say nothing about ownership |
+
+**Arming at 1–2 needs a placed row and those bands have almost none**: the tree there is
+constellation headings (which refuse arming, the 2026-08-31 ruling) plus the point bookmarks stage 2
+moved to the top level — so on this fixture the survey is armed from a bookmark row, or entered by
+zooming out with the cell already live. OPEN owner question (roadmap).
+
+**Border leap pairs** (`galaxy.inspectFollowEast` / `…FollowWest`, level 1):
+
+| pair | measured |
+|---|---|
+| empty cell inside own territory, east | from (4,0) → "Edge of your influence" · "7, 0" — the first square the oracle's rim falls in |
+| and back west | from (7,0) → "In your influence" · "6, 0" |
+| one lane in the cell (regression) | (-1,0) holds `Star lane from Rigel to Dusay`: east travels to Dusay (0,0), west travels to Rigel (-16,-5) — today's semantics, untouched |
+| ambiguous cell (regression) | Dusay (0,0) holds three lanes: both keys silent, no leap |
+| no change to the map edge | from (10,0) east: silent, `Centre()` still `10,0` — the existing "nothing to travel to" answer, unchanged |
+
 ## Inspect mode
 
 **Inspect mode** (`galaxy.inspect` / `galaxy.inspectGrow` / `galaxy.inspectShrink` + the ordinary
