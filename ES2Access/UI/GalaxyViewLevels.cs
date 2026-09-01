@@ -214,11 +214,17 @@ namespace ES2Access.UI
         /// re-cuts the bands moves this with it), and the words are the mod's, because the table holds
         /// asset names and the game writes none of them anywhere a player can read.
         ///
-        /// Three silences, all of them the same rule - say nothing rather than invent a name:
-        /// the furthest-out step, whose layer is the painted backdrop and not a map of anything; the
-        /// two rungs above the camera's own ladder, which are a system's page and a planet's and
-        /// announce themselves as pages; and a layer name this mod has no word for, which is what a
-        /// patch adding a band looks like from here.
+        /// The words name WHAT THE LEVEL GIVES rather than which asset the layer is drawn from (owner
+        /// ruling 2026-09-01), because that is the only thing about a rung a player can act on: the
+        /// same table the tree and the scanner read their band from (<see cref="Core.UI.Bands"/>)
+        /// decides what a level offers, and the word is that answer said out loud. So the boundaries
+        /// the word changes at are the game's own layer boundaries, and two layers that offer the same
+        /// thing share a word.
+        ///
+        /// Two silences, both of them the same rule - say nothing rather than invent a name: the two
+        /// rungs above the camera's own ladder, which are a system's page and a planet's and announce
+        /// themselves as pages; and a layer name this mod has no word for, which is what a patch adding
+        /// a band looks like from here.
         ///
         /// A FOURTH while the game's own scan mode is up (<see cref="Scanning"/>, owner ruling
         /// 2026-08-20): what the rung buys in that mode is the LENS, and the mod already announces
@@ -259,25 +265,33 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The mod's word for one of the map's layers, or null for the ones with nothing to
-        /// say. Measured on the shipped table: thirteen steps over seven layers, the first of them the
-        /// backdrop.</summary>
+        /// <summary>
+        /// The mod's word for one of the map's layers, or null for the ones with nothing to say.
+        ///
+        /// Measured on the shipped table (2026-09-01): thirteen steps over seven layers - Painting at
+        /// step 0, GalaxyMap at 1, InformativeGalaxy over 2-3, Constellation over 4-5, Systems over
+        /// 6-9, System over 10-11, SystemOverview at 12. The asset names are not what the layers show:
+        /// the layer CALLED Constellation is the one that adds the fleet lozenges, and the painted
+        /// backdrop at step 0 is where the constellation names are read. So the words come from the
+        /// band table rather than from the names, and the two layers that offer system detail share
+        /// one.
+        /// </summary>
         private static string BandKey(string layer)
         {
             switch (layer)
             {
+                case "PaintingLayer":
                 case "GalaxyMapLayer":
-                    return ModStrings.ZoomBandGalaxyMap;
+                    return ModStrings.ZoomBandConstellations;
                 case "InformativeGalaxyLayer":
-                    return ModStrings.ZoomBandInformativeGalaxy;
+                    return ModStrings.ZoomBandSystemsAndLanes;
                 case "ConstellationLayer":
-                    return ModStrings.ZoomBandConstellation;
+                    return ModStrings.ZoomBandSystemsLanesFleets;
                 case "SystemsLayer":
-                    return ModStrings.ZoomBandSystems;
                 case "SystemLayer":
-                    return ModStrings.ZoomBandSystem;
+                    return ModStrings.ZoomBandSystemDetails;
                 case "SystemOverviewLayer":
-                    return ModStrings.ZoomBandSystemOverview;
+                    return ModStrings.ZoomBandOrbital;
                 default:
                     return null;
             }

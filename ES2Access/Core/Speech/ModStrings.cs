@@ -1148,17 +1148,18 @@ namespace ES2Access.Core.Speech
         public const string ZoomLevel = "zoom.level";
 
         // What the map is DRAWING at a rung, which is the thing a rung number does not say: the game
-        // groups its thirteen zoom steps into layers and swaps whole map at each boundary. The
+        // groups its thirteen zoom steps into layers and swaps the whole map at each boundary. The
         // grouping is the game's (`GalaxyViewCameraController.LayerDescriptorNamesByZoomIndex`); the
         // words are the mod's, because that table holds asset names - "InformativeGalaxyLayer" - and
-        // the game shows the player none of them. Owner wordings, 2026-08-20. The furthest-out step
-        // is the painted backdrop rather than a map and is deliberately given no word at all.
-        public const string ZoomBandGalaxyMap = "zoom.band.galaxy-map";
-        public const string ZoomBandInformativeGalaxy = "zoom.band.informative-galaxy";
-        public const string ZoomBandConstellation = "zoom.band.constellation";
-        public const string ZoomBandSystems = "zoom.band.systems";
-        public const string ZoomBandSystem = "zoom.band.system";
-        public const string ZoomBandSystemOverview = "zoom.band.system-overview";
+        // the game shows the player none of them. Owner wordings, 2026-09-01: each names what the
+        // level GIVES - the kinds of thing the map draws there and the tree therefore offers - rather
+        // than which layer asset draws it, so the word and the rows the player can walk are one
+        // answer. The two rungs above the camera's ladder announce themselves as pages and have none.
+        public const string ZoomBandConstellations = "zoom.band.constellations";
+        public const string ZoomBandSystemsAndLanes = "zoom.band.systems-and-lanes";
+        public const string ZoomBandSystemsLanesFleets = "zoom.band.systems-lanes-fleets";
+        public const string ZoomBandSystemDetails = "zoom.band.system-details";
+        public const string ZoomBandOrbital = "zoom.band.orbital";
 
         /// <summary>One of the icon pairs a planet's card lines up under its ring: which of the empire's
         /// populations does well on that planet, and what they get out of it. The game draws two pictures
@@ -2418,12 +2419,11 @@ namespace ES2Access.Core.Speech
             { ScanHeroEfficiency, "{0}%" },
             { Zoom, "Zoom" },
             { ZoomLevel, "Zoom level {0} of {1}" },
-            { ZoomBandGalaxyMap, "Galaxy map" },
-            { ZoomBandInformativeGalaxy, "Informative galaxy" },
-            { ZoomBandConstellation, "Constellation" },
-            { ZoomBandSystems, "Systems" },
-            { ZoomBandSystem, "System" },
-            { ZoomBandSystemOverview, "System Overview" },
+            { ZoomBandConstellations, "Constellations" },
+            { ZoomBandSystemsAndLanes, "Systems and star lanes" },
+            { ZoomBandSystemsLanesFleets, "Systems, star lanes and fleets" },
+            { ZoomBandSystemDetails, "System details" },
+            { ZoomBandOrbital, "Orbital" },
             { ScanSynergy, "{0} for {1}" },
             { ScanBattle, "Battle between {0}" },
             { ScanBattleHere, "Battle" },
