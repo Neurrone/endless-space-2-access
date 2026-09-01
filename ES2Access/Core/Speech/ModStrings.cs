@@ -1185,6 +1185,20 @@ namespace ES2Access.Core.Speech
         /// name there and never the word for what the place is.</summary>
         public const string ScanEmpireHome = "scan.empire-home";
 
+        /// <summary>The System lens's own panel, read as a stop of its own. The lens rings the star
+        /// with six figures under no caption at all, so the region naming them is the mod's word; the
+        /// rank block and the remains take the captions the game draws over them, and the fall-back
+        /// here is only for a build where the rank block's caption group has been re-cut. The place is
+        /// composed because the game writes an ordinal on the bar only while the system is in the first
+        /// four, so a fifth-placed system was drawn a bar and no words. And the panel says when it is
+        /// opened and closed, the way the fleet panel and the empire page's slide-outs do: a whole
+        /// stop's worth of content arrives and goes with nothing else on the screen to hear.</summary>
+        public const string ScanSystemOutputs = "scan.system-outputs";
+        public const string ScanSystemRankRegion = "scan.system-rank-region";
+        public const string ScanSystemRank = "scan.system-rank";
+        public const string ScanSystemInfoShown = "scan.system-info-shown";
+        public const string ScanSystemInfoHidden = "scan.system-info-hidden";
+
         /// <summary>The trade routes the scan view draws as lines across the map, woven into the places
         /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.Core.UI.TradeWeave"/>):
         /// a system at either END of a route says where the route goes, a system the route merely
@@ -2443,6 +2457,11 @@ namespace ES2Access.Core.Speech
             { ScanBattle, "Battle between {0}" },
             { ScanBattleHere, "Battle" },
             { ScanEmpireHome, "Home System {0}" },
+            { ScanSystemOutputs, "Outputs" },
+            { ScanSystemRankRegion, "System rank" },
+            { ScanSystemRank, "rank {0} of {1}" },
+            { ScanSystemInfoShown, "System information shown" },
+            { ScanSystemInfoHidden, "System information hidden" },
             { ScanTradeRouteTo, "Trade route to {0}" },
             { ScanTradeRouteToBlockaded, "Trade route to {0}, blockaded" },
             { ScanTradeRouteThrough, "along trade route from {0} to {1}" },

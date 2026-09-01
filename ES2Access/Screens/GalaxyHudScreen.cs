@@ -1569,11 +1569,23 @@ namespace ES2Access.Screens
         /// </summary>
         public override void OnFocusVisual(GraphNode node)
         {
-            if (!CursorMoved() || node == null || !SystemStop.Equals(node.StopKey))
+            if (!CursorMoved() || node == null)
             {
                 return;
             }
 
+            if (Scanning && ScanLensPanels.SystemInfoStop.Equals(node.StopKey))
+            {
+                CentreOnScanSystem();
+                return;
+            }
+
+            if (!SystemStop.Equals(node.StopKey))
+            {
+                return;
+            }
+
+            NoteScanSystem(node);
             object place;
             bool inside;
             if (Place(node, out place, out inside))
@@ -1581,6 +1593,74 @@ namespace ES2Access.Screens
                 FollowPlace(place, inside);
             }
         }
+
+        /// <summary>The last star the tree cursor stood on inside the map stop - kept so that stepping
+        /// into the System lens's own stop can ask for THAT system rather than whichever one the camera
+        /// happens to be nearest (<see cref="CentreOnScanSystem"/>).</summary>
+        private StarSystemNode _scanRow;
+
+        private void NoteScanSystem(GraphNode node)
+        {
+            for (GraphNode walk = node; walk != null; walk = walk.Parent)
+            {
+                StarSystemNode star = walk.Id == null ? null : walk.Id.Subject as StarSystemNode;
+                if (star != null)
+                {
+                    _scanRow = star;
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// TAB INTO THE SYSTEM LENS'S PANEL ASKS ABOUT THE STAR THE CURSOR WAS ON (owner ruling
+        /// 2026-09-01; a judgement call the owner allowed to move the camera).
+        ///
+        /// The panel is bound to whichever system is nearest the middle of the screen and to nothing
+        /// else - the game gives no way to point it at a system - so a player who has walked the map
+        /// stop to a star and then tabs across for its figures would be read a different star's. Tabbing
+        /// in is a deliberate gesture, so it slides the camera onto the row the cursor was on and the
+        /// game's own choice then agrees with the player's. It is a SLIDE and never a zoom: the rung is
+        /// the lens, and changing it here would change what the whole screen means.
+        ///
+        /// Only where the two disagree, so tabbing back and forth over the same star moves nothing.
+        /// </summary>
+        private void CentreOnScanSystem()
+        {
+            try
+            {
+                StarSystemNode star = _scanRow;
+                if (star == null)
+                {
+                    return;
+                }
+
+                GalaxyPosition at = star.GalaxyPosition;
+                Vector3 focus;
+                if (GalaxyViewLevels.CameraTarget(out focus))
+                {
+                    double dx = focus.x - at.X;
+                    double dy = focus.z - at.Y;
+                    if (dx * dx + dy * dy < CentredEnough)
+                    {
+                        return;
+                    }
+                }
+
+                // The game's own "show me this" pan, which slides and leaves the rung alone - and is
+                // already marked as the mod's own camera move, so it does not come back round as a
+                // fresh locate request.
+                GalaxyViewLevels.PanTo(star);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("scan: centring the lens on the focused system threw: " + e);
+            }
+        }
+
+        /// <summary>How near the camera has to be to a star before it counts as already looking at it -
+        /// squared galaxy units, well under the map's closest neighbour spacing.</summary>
+        private const double CentredEnough = 0.25;
 
         /// <summary>
         /// Where a node on the map stop stands, and whether the cursor is inside that place or on its
@@ -3481,20 +3561,19 @@ namespace ES2Access.Screens
 
             builder.BeginStop(SystemStop);
             builder.PushContext(MapContext());
-            if (lens)
-            {
-                // The one panel a lens draws over the MAP rather than round its edges: the System lens
-                // inspects whichever system is nearest the middle of the screen. Its own window
-                // decides whether it is there, so no lens is named here.
-                _lens.SystemOverview(builder);
-            }
-
             BuildSystems(builder);
             // Popped before the fleet panel, which is a stop of its own.
             builder.PopContext();
 
             if (lens)
             {
+                // The one panel a lens draws over the MAP rather than round its edges: the System lens
+                // inspects whichever system is nearest the middle of the screen. A stop of its own,
+                // right after the map (owner ruling 2026-09-01) - it is a page about one system, and
+                // inside the map stop it made the star rows themselves read as a list with a document
+                // at the top of it. Its own window decides whether it is there, so no lens is named
+                // here.
+                _lens.SystemInformation(builder);
                 // The clusters the game keeps drawing over the lens are the turn controls and nothing
                 // else - it hides the banners, the pinned quest and the notification strip - and the
                 // fleet panel is not drawn in the mode either.

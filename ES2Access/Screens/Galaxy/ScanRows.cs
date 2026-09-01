@@ -69,6 +69,10 @@ namespace ES2Access.Screens
                 {
                     Voice.Say(_lens.Name(), false);
                 }
+
+                // And the System lens's own panel, which the player opens and closes with a tick and
+                // which nothing else would say (<see cref="ScanLensPanels.WatchSystemInfo"/>).
+                _lens.WatchSystemInfo();
             }
             else if (_scanWas)
             {
