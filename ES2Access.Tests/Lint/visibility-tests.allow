@@ -128,6 +128,9 @@ ES2Access/Screens/FleetPanel.cs | 1 | owner.AssignIcon != null && owner.AssignIc
 ES2Access/Screens/FleetPanel.cs | 1 | || !AgeWidgets.Visible(panel.AgeTransform)
 ES2Access/Screens/FleetPanel.cs | 1 | || !AgeWidgets.Visible(window.HeroAndShipsPanel.AgeTransform)
 
+ES2Access/Screens/Galaxy/ConstellationRows.cs | 1 | !AgeWidgets.Visible(group)
+ES2Access/Screens/Galaxy/ConstellationRows.cs | 1 | || !AgeWidgets.Visible(mapper.AgeTransform)
+
 ES2Access/Screens/Galaxy/FleetRows.cs | 2 | && Visible(label.AgeTransform)
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (buttons == null || !Visible(group.AgeTransform))
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (dock.DockingSlot == null || !Visible(dock.AgeTransform))

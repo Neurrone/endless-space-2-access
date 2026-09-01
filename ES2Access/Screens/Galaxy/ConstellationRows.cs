@@ -54,6 +54,15 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Group(() => it.LocalizedName, tooltip: tooltip);
             AgeTooltip tip = tooltip;
             ConstellationLabel showing = drawn;
+            // What holding the whole stretch is worth, where the map writes it beside the name. It is
+            // the one thing the label draws that the row was not saying, and it only reads as part of
+            // the name at the two bands the map draws it at (<see cref="ConstellationBonus"/>) - from
+            // the systems band in, the row's own tooltip is where it reaches the player, and saying it
+            // twice on the way past every stretch of sky is what a review buffer exists to avoid. Not
+            // watched: a constellation's bonus settles at the turn's end.
+            vtable.Announcements.Add(
+                GraphNodes.ValuePart(() => ConstellationBonus(showing), false)
+            );
             vtable.OnFocusVisual = () =>
             {
                 // The label the name and the dossier both live on is one the map CULLS at every
@@ -114,6 +123,47 @@ namespace ES2Access.Screens
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>
+        /// The bonus a constellation's own colonies earn its owner, in the words the map writes beside
+        /// the constellation's name ("+15% Food") - and only at the two bands where the map writes
+        /// them.
+        ///
+        /// The label draws the bonus in a group under the name whenever the stretch has one
+        /// (<c>ConstellationLabel.Refresh</c> shows it from the ownership status's colony-bonus
+        /// descriptors), and the game itself only draws those labels at the two furthest-out steps.
+        /// From the systems band in, the same figure reaches the player through the row's own
+        /// constellation dossier, which spells it out at greater length ("Constellation control bonus:
+        /// +15% Food", measured live) - so this is a spoken part exactly where the picture puts the
+        /// bonus in front of the player, and nowhere else.
+        ///
+        /// Read off the drawn group rather than recomposed from the descriptors: the game has already
+        /// written the effect out in the player's language, and there is nothing here the mod could
+        /// phrase better.
+        /// </summary>
+        private string ConstellationBonus(ConstellationLabel label)
+        {
+            if (_showsSystems || label == null)
+            {
+                return null;
+            }
+
+            AgeTransform group = label.OwnershipBonusGroup;
+            GuiEffectMapper mapper = label.OwnershipBonus;
+            // A content read: the group is how the game says this stretch HAS a bonus at all, and a
+            // mapper the game switched off is still holding the last constellation's effect lines.
+            // Nothing here decides whether a node exists - the row exists either way.
+            if (
+                !AgeWidgets.Visible(group)
+                || mapper == null
+                || !AgeWidgets.Visible(mapper.AgeTransform)
+            )
+            {
+                return null;
+            }
+
+            return AgeText.Clean(AgeWidgets.PaintedText(mapper.AgeTransform));
         }
 
         /// <summary>
