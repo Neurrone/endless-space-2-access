@@ -402,6 +402,10 @@ namespace ES2Access.Screens
             // ordinary build's, which would file a point bookmark inside a group nothing declares.
             _groups.Clear();
             _unexplored.Clear();
+            // The headings this build files the stars under, gathered from scratch: a landing opens
+            // them through it (<see cref="NoteGrouping"/>) and a stale entry would open a heading the
+            // tree has stopped declaring.
+            ForgetGrouping();
             GatherBookmarks(empire);
             if (!_showsSystems)
             {
@@ -506,15 +510,23 @@ namespace ES2Access.Screens
                 }
             }
 
-            ControlId id = ControlId.Structural(OwnerKey(group.Bucket, group.Empire));
+            string key = OwnerKey(group.Bucket, group.Empire);
+            ControlId id = ControlId.Structural(key);
             Seed(builder, id);
             bool open = builder.ExpandAll || builder.IsExpanded(id);
+            List<StarSystemNode> members = _ownerMembers[group.Members];
+            // Whether or not the heading is open: a landing has to be able to open it, and a shut one
+            // is exactly the case that needs the ancestry (<see cref="NoteGrouping"/>).
+            for (int i = 0; i < members.Count; i++)
+            {
+                _scanGrouping[SystemKey(members[i], empire)] = key;
+            }
+
             // Synthetic: a heading the mod assembled from whose the stars are - the lens paints the
             // ownership and draws no list of it.
             builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
             if (open)
             {
-                List<StarSystemNode> members = _ownerMembers[group.Members];
                 for (int i = 0; i < members.Count; i++)
                 {
                     AddScanSystem(builder, members[i], empire, labels);
@@ -522,6 +534,51 @@ namespace ES2Access.Screens
             }
 
             builder.EndGroup();
+        }
+
+        // ---- the heading a landing has to open on its way in ----
+
+        /// <summary>Which heading each star is filed under, keyed by the star's own key. Rebuilt on
+        /// every in-mode build and emptied on every other one, so it can only ever name headings the
+        /// tree is really declaring. Static because the engine's ancestry question has no page to ask
+        /// and there is exactly one map, the same reason the inspect mode's own state is.</summary>
+        private static readonly Dictionary<string, string> _scanGrouping =
+            new Dictionary<string, string>();
+
+        /// <summary>
+        /// THE OWNER HEADING IS A REAL ANCESTOR TO EVERY LANDING (owner ruling 2026-09-01, after
+        /// playtest), although it is not in its members' keys.
+        ///
+        /// Measured: following a star lane to a system inside a shut "No owner" heading did nothing at
+        /// all - the row the landing was aimed at is not declared, the ancestry read out of its key
+        /// names a constellation the mode never declares, and so nothing was opened and nothing was
+        /// said. The headings seed open, which is why only a player who had shut one by hand met it.
+        ///
+        /// The heading stays out of the keys - that is what lets the cursor ride the mode change
+        /// (<see cref="OwnerKeyHead"/>) - so the page NAMES it instead, through the engine's one
+        /// ancestry question (<c>KeyGraph.GroupingAncestor</c>). Every landing there is goes through
+        /// that question, so this is one mechanism rather than a patch per caller: the lane hop, the
+        /// scanner's go-to, a bookmark jump, a type-ahead result, a leap being restored and the
+        /// reconciliation of a dead row all open the heading on the way in, one level per build,
+        /// exactly as they open a shut constellation in the ordinary view.
+        /// </summary>
+        internal static object NoteGrouping(object structuralKey)
+        {
+            string key = structuralKey as string;
+            if (key == null || !Scanning || _scanGrouping.Count == 0)
+            {
+                return null;
+            }
+
+            string heading;
+            return _scanGrouping.TryGetValue(key, out heading) ? heading : null;
+        }
+
+        /// <summary>Given back with the page, and emptied by any build that is not the lens's own.
+        /// </summary>
+        internal static void ForgetGrouping()
+        {
+            _scanGrouping.Clear();
         }
 
         /// <summary>

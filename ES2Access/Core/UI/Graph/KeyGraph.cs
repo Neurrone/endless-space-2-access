@@ -848,7 +848,57 @@ namespace ES2Access.Core.UI.Graph
                 keys.Add(path.Substring(0, cut));
             }
 
+            AddGrouping(keys, structuralKey);
             return keys;
+        }
+
+        /// <summary>
+        /// A LEVEL OF THE TREE THAT IS NOT IN THE KEY, declared by the page that builds it.
+        ///
+        /// The path rule above is what lets every programmatic landing - a lane hop, a scanner go-to, a
+        /// bookmark jump, a type-ahead result, a leap restored - open the branches it is aimed inside,
+        /// one level per build. It fails for exactly one shape: a group whose members deliberately KEEP
+        /// the keys they have elsewhere, so that the cursor costs nothing when the page re-groups them
+        /// (the scan lens's owner headings, whose stars are keyed as the ordinary map keys them). Such a
+        /// heading is nowhere in its members' ancestry, so a landing inside a shut one is aimed at a
+        /// node nothing declares and does nothing at all - silently.
+        ///
+        /// So a page may name the extra parent itself. The hook is asked about the key AND about each
+        /// of its path ancestors, so a row deep inside such a member - a planet, a lane, a dossier -
+        /// gets the same heading as its star; the answer is added OUTERMOST, since a level the key does
+        /// not mention is by construction above everything the key does. One hook rather than a call at
+        /// every landing site: they all come through the ancestry, which is why the ancestry is where
+        /// the fix belongs.
+        ///
+        /// Injected the way the announcer's and the sheet's wording is (<see cref="Reset"/> clears it),
+        /// because this is a fact about one page's tree and the engine has no page to ask.
+        /// </summary>
+        public static Func<object, object> GroupingAncestor;
+
+        /// <summary>Drop the injected hook - mod teardown, and test isolation.</summary>
+        public static void Reset()
+        {
+            GroupingAncestor = null;
+        }
+
+        private static void AddGrouping(List<object> keys, object structuralKey)
+        {
+            Func<object, object> ask = GroupingAncestor;
+            if (ask == null)
+            {
+                return;
+            }
+
+            object grouping = ask(structuralKey);
+            for (int i = 0; grouping == null && i < keys.Count; i++)
+            {
+                grouping = ask(keys[i]);
+            }
+
+            if (grouping != null && !keys.Contains(grouping))
+            {
+                keys.Add(grouping);
+            }
         }
 
         // Change a group's expansion: through its vtable override when declared (an adapter driving a

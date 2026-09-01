@@ -43,6 +43,49 @@ namespace ES2Access.Tests.UI
             Assert.Empty(KeyGraph.AncestorKeys(null));
         }
 
+        /// <summary>A level of the tree the keys do not mention - the scan lens's owner headings, whose
+        /// stars keep the keys the ordinary map gives them - is named by the page and lands OUTERMOST,
+        /// so a landing opens it after everything the key does say.</summary>
+        [Fact]
+        public void APageMayNameAGroupingTheKeysDoNotMention()
+        {
+            try
+            {
+                KeyGraph.GroupingAncestor = key =>
+                    (string)key == "galaxy:constellation/1/system/162"
+                        ? "galaxy:owner/none"
+                        : null;
+
+                Assert.Equal(
+                    new object[]
+                    {
+                        "galaxy:constellation/1/system",
+                        "galaxy:constellation/1",
+                        "galaxy:constellation",
+                        "galaxy:owner/none",
+                    },
+                    KeyGraph.AncestorKeys("galaxy:constellation/1/system/162")
+                );
+
+                // Asked about the path ancestors too, so a row deep inside such a member gets the same
+                // heading as its star.
+                Assert.Contains(
+                    "galaxy:owner/none",
+                    KeyGraph.AncestorKeys("galaxy:constellation/1/system/162/planet/0")
+                );
+
+                // And nothing at all for a key it does not name.
+                Assert.DoesNotContain(
+                    "galaxy:owner/none",
+                    KeyGraph.AncestorKeys("galaxy:constellation/2/system/9")
+                );
+            }
+            finally
+            {
+                KeyGraph.Reset();
+            }
+        }
+
         [Fact]
         public void ASiblingWhoseKeyStartsTheSameIsNotAnAncestor()
         {

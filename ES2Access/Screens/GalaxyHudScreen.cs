@@ -425,6 +425,9 @@ namespace ES2Access.Screens
             _hud.Forget();
             _lens.Forget();
             _scanWas = false;
+            // The lens's owner headings are this page's tree, and the engine asks about them from
+            // outside it (<see cref="NoteGrouping"/>).
+            ForgetGrouping();
             // The panel's release, caught here because on this path it is never handed over: the page
             // goes away with the panel still up, so the close frame the watch would have answered on
             // never happens under this screen (<see cref="_releasedAcross"/>).

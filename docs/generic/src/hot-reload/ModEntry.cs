@@ -998,6 +998,12 @@ namespace ES2Access
             GraphSheet.BlankText = () => ModStrings.Get(ModStrings.NavCellEmpty);
             GraphSheet.TableRoleText = () => ModStrings.Get(ModStrings.NavTable);
             GraphSheet.TextCellType = ControlTypes.Text;
+
+            // The one level of a tree that is not written in its members' keys: the scan lens's owner
+            // headings, whose stars keep the keys the ordinary map gives them so the cursor rides the
+            // mode change. Landings read ancestry out of the key, so the page names that level here
+            // (<c>GalaxyHudScreen.NoteGrouping</c>) and every landing opens it on the way in.
+            KeyGraph.GroupingAncestor = GalaxyHudScreen.NoteGrouping;
         }
 
         /// <summary>
@@ -1176,6 +1182,7 @@ namespace ES2Access
             // installed, they would keep calling into an assembly nobody can reach any more.
             Step("announcer wording", GraphAnnouncer.Reset);
             Step("sheet wording", GraphSheet.Reset);
+            Step("tree grouping ancestry", KeyGraph.Reset);
             Step("hint wording", NodeHints.Reset);
 
             // After the input layer has gone, because the binding store reads it: what the player

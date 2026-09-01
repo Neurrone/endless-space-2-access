@@ -493,6 +493,11 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                // The lens's own headings go with the lens: nothing in the ordinary tree hangs under
+                // one, and an entry left behind would name a heading nothing is declaring
+                // (<see cref="NoteGrouping"/>).
+                ForgetGrouping();
+
                 // Every probe the map is drawing: they all sit at the top of the open-space region
                 // now (<see cref="AddProbes"/>), so every one of them is a reason to declare it.
                 //
