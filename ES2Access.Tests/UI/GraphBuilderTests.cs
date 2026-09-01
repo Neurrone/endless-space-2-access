@@ -543,5 +543,18 @@ namespace ES2Access.Tests.UI
             Assert.Equal("inner", Node(r, "inside").RegionKey);
             Assert.Equal("outer", Node(r, "after").RegionKey);
         }
+
+        // A factory's vtable is a starting point, not a finished thing: a row that wants one more part
+        // than the factory knew about adds it. Backed by an array the list advertised Add and threw
+        // NotSupportedException from it, at run time and nowhere else - which is how a whole screen's
+        // tree read silently died mid-build with only a log line to show for it.
+        [Fact]
+        public void ALabelsPartsCanBeExtended()
+        {
+            NodeVtable vtable = GraphBuilder.Label(() => "Leaper");
+            vtable.Announcements.Add(NodeAnnouncement.Static("-83, 24"));
+            Assert.Equal(2, vtable.Announcements.Count);
+            Assert.False(vtable.Announcements.IsReadOnly);
+        }
     }
 }

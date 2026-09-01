@@ -420,12 +420,19 @@ namespace ES2Access.Core.UI.Graph
         /// a jump to the end of a long one left the cursor below the viewport
         /// (<see cref="NodeVtable.ScrollAnchor"/>). Object-typed because this assembly knows nothing of
         /// the game's toolkit — and NOT evidence: what a line is drawn as is a rectangle to scroll to,
-        /// not a claim that the line is that widget.</summary>
+        /// not a claim that the line is that widget.
+        ///
+        /// The parts come back in a MUTABLE list, and that is a contract rather than an
+        /// implementation detail: <see cref="NodeVtable.Announcements"/> is an <c>IList</c>, every
+        /// other vtable factory hands back one a caller can extend, and extending a returned vtable
+        /// with one more part is the ordinary way a row says something the factory knew nothing of.
+        /// Backed by an array it advertised <c>Add</c> and threw <c>NotSupportedException</c> from it
+        /// at run time only - a defect no compiler and no test off this path can see.</summary>
         public static NodeVtable Label(Func<string> label, object scrollAnchor = null)
         {
             return new NodeVtable
             {
-                Announcements = new[] { new NodeAnnouncement(label) },
+                Announcements = new List<NodeAnnouncement> { new NodeAnnouncement(label) },
                 ScrollAnchor = scrollAnchor,
             };
         }

@@ -801,7 +801,17 @@ and the whole band recomposes in one rebuild: Leaper's row grows FIVE spokes (fo
 `Unexplored system` — the player has never explored them, and the lens draws the curve over their
 fog), Leaper's centre becomes its own home (`-83, 24`), Neurrone loses its centre entirely (Leaper's
 intelligence does not place it) and picks up the `COLD WAR` word. Put it back with
-`WatchingEmpire = Gui.PlayerEmpire`. **Fixture-blocked here**: the swap toggle's own UI never draws
+`WatchingEmpire = Gui.PlayerEmpire`.
+
+**What resets the watch, and what does not (re-derived 2026-09-01 after a report that it "reverts
+between frames").** It does not decay: measured holding across frames, across `SetZoomHere` lens
+changes (Diplomacy → Trade → Diplomacy) and across the mod's own rebuilds. The ONE thing that puts
+it back is `DiplomacyScanViewWindow.OnBeginShow` (`:163-167`, `WatchingEmpire = Gui.PlayerEmpire`),
+which fires when the window is shown — so **leaving and re-entering scan mode resets it**, as does
+`POST /loadsave`. Set it AFTER the last `ToggleScanView()` of the run, and re-read it before
+believing a dump; a swap that "reverted" is a scan-mode round trip somewhere in the route.
+
+**Fixture-blocked here**: the swap toggle's own UI never draws
 for a foreign empire (Leaper is known through the colony Kais and its home is unexplored), no save
 has ever had a battle in orbit while the lens was up, and n = 2 says nothing about ordering with
 three or more empires.

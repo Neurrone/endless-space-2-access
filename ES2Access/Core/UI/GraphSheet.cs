@@ -196,7 +196,9 @@ namespace ES2Access.Core.UI
                     EmitCell(new NodeVtable
                     {
                         ControlType = TextCellType,
-                        Announcements = new[] { new NodeAnnouncement(() => Blank(v())) },
+                        // Mutable for the same reason every other vtable factory's list is: a caller
+                        // extending the parts must not meet an IList that refuses Add at run time.
+                        Announcements = new List<NodeAnnouncement> { new NodeAnnouncement(() => Blank(v())) },
                         // Type-ahead matches the row's name from any cell - unless the row has no name,
                         // where the cell's own words are the only thing there is to type at.
                         SearchText = NamedRows ? _rowName : null,
