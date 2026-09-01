@@ -20,7 +20,7 @@ ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | operation
 ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | trace
 
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | output
-ES2Access/Screens/Galaxy/ScanLens.cs | 2 | rank
+ES2Access/Screens/Galaxy/ScanLens.cs | 4 | rank
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | remains
 
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | planet

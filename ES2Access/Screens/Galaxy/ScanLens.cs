@@ -388,6 +388,20 @@ namespace ES2Access.Screens
         /// words at all: those become one sheet, a row per turn, newest first, because a curve read
         /// aloud is a table.
         ///
+        /// ONLY THE CURVES ARE A TABLE (owner ruling 2026-09-01, playtest). The sentence and the
+        /// per-property lines are READOUT ROWS standing above it - cell semantics and a place in a
+        /// thirty-row column were being spoken over four lines that are not tabular at all - so they
+        /// are ordinary rows of this region and the sheet holds the curves alone. Region order is the
+        /// panel's own: the sentence, the properties, then the history.
+        ///
+        /// The region is ONE region and not two, because the game itself draws it as one: the legend
+        /// lists the bars AND the systems curve under the single caption group this takes its name from
+        /// (measured live - "System's Rank" over "No. of systems in my Empire", "FIDSI", "Defense",
+        /// "Population", "No. of representatives"). So the readouts are declared inside the sheet's own
+        /// region, which is what the <c>economy:history</c> block does with the sentence above its
+        /// table, and the seam between the two kinds of row is stitched by the builder
+        /// (<c>GraphBuilder.StitchModeBoundaries</c>).
+        ///
         /// The whole region belongs to the panel the tick opens, so it is here exactly while that panel
         /// is drawn - and the bars and the curves are bound only for a colony of the player's own
         /// (<c>ScanViewSystemOverviewInfoPanel.Bind</c> :63-68), which is the game's own answer to
@@ -418,8 +432,8 @@ namespace ES2Access.Screens
 
             GraphSheet sheet = new GraphSheet(builder, "scan:system/rank/");
             sheet.Region(RankCaption(bars), RankColumns(window, bars));
-            RankSentence(sheet, curves);
-            RankProperties(sheet, window, bars, colony);
+            RankSentence(builder, curves);
+            RankProperties(builder, window, bars, colony);
             RankHistory(sheet, colony);
             sheet.Finish();
             builder.SetRegion(null);
@@ -500,7 +514,10 @@ namespace ES2Access.Screens
 
         /// <summary>The sentence the game writes under the curves, read as it is drawn. Absent where the
         /// game hides it - a system discovered this turn has no curve and no line.</summary>
-        private static void RankSentence(GraphSheet sheet, ScanViewSystemGlobalRankHistogram curves)
+        private static void RankSentence(
+            GraphBuilder builder,
+            ScanViewSystemGlobalRankHistogram curves
+        )
         {
             // Flow control: whether the sentence is read at all. The game hides the whole curve block
             // for a system whose axes it could not set up - a game on turn zero, a system found this
@@ -517,15 +534,23 @@ namespace ES2Access.Screens
             }
 
             AgePrimitiveLabel it = label;
-            sheet.Line(GraphBuilder.Label(() => AgeText.Label(it), it.AgeTransform), it.AgeTransform);
+            builder.AddItem(
+                Nodes.Drawn(
+                    ControlId.Structural("scan:system/rank/sentence"),
+                    GraphBuilder.Label(() => AgeText.Label(it), it.AgeTransform),
+                    it.AgeTransform
+                )
+            );
         }
 
-        /// <summary>One line per property the game ranks this system by, named with the caption the bar
-        /// carries and counted the way the bar graph counts (<c>ScanViewSystemEmpireRankBarGraph.Bind</c>
-        /// :55-83): the place is one more than the number of the player's OTHER systems holding more of
-        /// it, out of all of theirs.</summary>
+        /// <summary>One READOUT ROW per property the game ranks this system by, named with the caption
+        /// the bar carries and counted the way the bar graph counts
+        /// (<c>ScanViewSystemEmpireRankBarGraph.Bind</c> :55-83): the place is one more than the number
+        /// of the player's OTHER systems holding more of it, out of all of theirs. A row of the region
+        /// and no part of the table below it - four bars in a picture are not a grid, and reading them
+        /// as one said a cell's place in a thirty-row column over every line.</summary>
         private static void RankProperties(
-            GraphSheet sheet,
+            GraphBuilder builder,
             StarSystemOverviewScanViewWindow window,
             ScanViewSystemEmpireRankBarGraph bars,
             ColonizedStarSystem colony
@@ -571,16 +596,19 @@ namespace ES2Access.Screens
                     place,
                     others + 1
                 );
-                sheet.Line(
-                    new NodeVtable
-                    {
-                        Announcements = new List<NodeAnnouncement>
+                builder.AddItem(
+                    Nodes.Drawn(
+                        ControlId.For(bar, "scan:system/rank/property/" + i),
+                        new NodeVtable
                         {
-                            GraphNodes.LabelPart(() => name),
-                            GraphNodes.LabelPart(() => reading),
+                            Announcements = new List<NodeAnnouncement>
+                            {
+                                GraphNodes.LabelPart(() => name),
+                                GraphNodes.LabelPart(() => reading),
+                            },
                         },
-                    },
-                    bar.AgeTransform
+                        bar.AgeTransform
+                    )
                 );
             }
         }
