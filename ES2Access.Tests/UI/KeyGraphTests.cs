@@ -971,6 +971,88 @@ namespace ES2Access.Tests.UI
             Assert.Equal("system/585/fleet/1", Focused(g)); // its sibling, not "system/585" the stop's first node
         }
 
+        /// <summary>The map's own case: a zoom step stops the picture drawing fleets at all, so the
+        /// fleet row the cursor was on dies together with every other fleet row. The survivor beside it
+        /// is a lane - a different thing - while the system it was parked at is the same thing read
+        /// from further off, which is where the cursor belongs.</summary>
+        private static KeyGraph BandedMap(GraphState state, Func<bool> fleets)
+        {
+            return new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.SeatOnContainer = !fleets();
+                b.BeginGroup(new SyntheticNode(Id("sky/1"), Vt("Serpens")), expanded: true);
+                b.BeginGroup(new SyntheticNode(Id("sky/1/system/5"), Vt("Osulo")), expanded: true);
+                b.AddItem(new SyntheticNode(Id("sky/1/system/5/lane/0"), Vt("Lane to Kais")));
+                if (fleets())
+                {
+                    b.AddItem(new SyntheticNode(Id("sky/1/system/5/fleet/0"), Vt("Scout")));
+                }
+
+                b.EndGroup();
+                b.EndGroup();
+                return b.Build();
+            }, state);
+        }
+
+        [Fact]
+        public void ABuildShowingFewerKindsSeatsALostCursorOnWhatContainedIt()
+        {
+            GraphState state = new GraphState();
+            bool fleets = true;
+            KeyGraph g = BandedMap(state, () => fleets);
+            g.Rerender();
+            Assert.True(g.Focus(Id("sky/1/system/5/fleet/0")));
+
+            fleets = false;
+            g.Rerender();
+            Assert.Equal("sky/1/system/5", Focused(g));
+        }
+
+        [Fact]
+        public void OneRowGoingAwayStillLandsOnTheNeighbourBesideIt()
+        {
+            GraphState state = new GraphState();
+            bool fleets = true;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.BeginGroup(new SyntheticNode(Id("sky/1"), Vt("Serpens")), expanded: true);
+                b.BeginGroup(new SyntheticNode(Id("sky/1/system/5"), Vt("Osulo")), expanded: true);
+                b.AddItem(new SyntheticNode(Id("sky/1/system/5/lane/0"), Vt("Lane to Kais")));
+                if (fleets)
+                {
+                    b.AddItem(new SyntheticNode(Id("sky/1/system/5/fleet/0"), Vt("Scout")));
+                }
+
+                b.EndGroup();
+                b.EndGroup();
+                return b.Build();
+            }, state);
+            g.Rerender();
+            Assert.True(g.Focus(Id("sky/1/system/5/fleet/0")));
+
+            // The same row dying with the shape UNCHANGED - a fleet disbanded - keeps the old answer.
+            fleets = false;
+            g.Rerender();
+            Assert.Equal("sky/1/system/5/lane/0", Focused(g));
+        }
+
+        [Fact]
+        public void AStopMemoryOfALostRowComesBackOnWhatContainedIt()
+        {
+            GraphState state = new GraphState();
+            bool fleets = true;
+            KeyGraph g = BandedMap(state, () => fleets);
+            g.Rerender();
+            Assert.True(g.Focus(Id("sky/1/system/5/fleet/0")));
+            object stop = g.CurrentNode.StopKey;
+
+            fleets = false;
+            g.Rerender();
+            Assert.Equal(Id("sky/1/system/5"), state.StopMemory[stop]);
+        }
+
         [Fact]
         public void RepairingAStopMemorySkipsSurvivorsFromOtherStops()
         {

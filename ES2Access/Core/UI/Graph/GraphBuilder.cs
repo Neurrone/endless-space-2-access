@@ -42,6 +42,24 @@ namespace ES2Access.Core.UI.Graph
         public bool ExpandAll;
 
         /// <summary>
+        /// This build offers FEWER KINDS of thing than the one before it - the surface it mirrors has
+        /// stopped showing whole families of rows at once, rather than losing one of them.
+        ///
+        /// It changes where a cursor whose control has died lands. The ordinary answer is the nearest
+        /// thing BESIDE it, which is right when one control went away and everything around it stayed:
+        /// the neighbour is what the player would have reached next. When a whole family goes, the
+        /// neighbour is another member of the same family and is just as gone, and the nearest survivor
+        /// in reading order is some unrelated row - or, at the top of a stop, another stop entirely. So
+        /// a build that says this seats such a cursor on the row that CONTAINED it instead
+        /// (<see cref="KeyGraph.DeepestDeclaredAncestor"/>), which is the same thing the player was
+        /// reading, read less closely.
+        ///
+        /// Set by the screen during the build, because only the screen knows what it just stopped
+        /// declaring and why.
+        /// </summary>
+        public bool SeatOnContainer;
+
+        /// <summary>
         /// <paramref name="drops"/> is the EXISTENCE gate: asked of every node this builder is about to
         /// make, and a node it answers true for is never declared — the same no-op a collapsed group's
         /// subtree gets, so an emptied row is suppressed rather than a failure and a dropped group
@@ -480,6 +498,7 @@ namespace ES2Access.Core.UI.Graph
             if (_rawNodes.Count == 0 && _rows.Count == 0) return null;
 
             GraphRender render = new GraphRender();
+            render.SeatOnContainer = SeatOnContainer;
             foreach (GraphNode node in _declared) AddNodeTo(render, node);
 
             WireMenuEdges(render);

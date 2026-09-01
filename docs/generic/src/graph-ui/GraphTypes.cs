@@ -696,6 +696,10 @@ namespace ES2Access.Core.UI.Graph
         /// first node as before.</summary>
         public readonly Dictionary<object, ControlId> StopLandings = new Dictionary<object, ControlId>();
 
+        /// <summary>This build offers FEWER KINDS of thing than the one before it - see
+        /// <see cref="GraphBuilder.SeatOnContainer"/>.</summary>
+        public bool SeatOnContainer;
+
         public GraphNode NodeAt(ControlId key)
         {
             if (key == null) return null;

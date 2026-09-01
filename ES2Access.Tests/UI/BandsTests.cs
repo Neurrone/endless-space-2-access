@@ -287,6 +287,35 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
+        public void StepsInsideOneBandDrawTheSamePicture()
+        {
+            Assert.True(Bands.SameShape(7, 12, false));
+            Assert.True(Bands.SameShape(1, 2, false));
+            Assert.True(Bands.SameShape(3, 4, false));
+            Assert.True(Bands.SameShape(13, 15, false));
+            Assert.True(Bands.SameShape(3, 10, true));
+        }
+
+        [Fact]
+        public void CrossingABandBoundaryChangesTheShape()
+        {
+            Assert.False(Bands.SameShape(2, 3, false));
+            Assert.False(Bands.SameShape(4, 5, false));
+            Assert.False(Bands.SameShape(6, 7, false));
+            Assert.False(Bands.SameShape(12, 13, false));
+            Assert.False(Bands.SameShape(2, 3, true));
+        }
+
+        [Fact]
+        public void AShapeIsAskedOfTheLadderTheModeIsOn()
+        {
+            // Level 3 draws fleets under no lens and never under one, so the two ladders' rows at the
+            // same level are not the same row.
+            Assert.Equal(BandFidelity.None, Bands.Shows(5, true, BandKind.Fleets));
+            Assert.Equal(BandFidelity.Full, Bands.Shows(5, false, BandKind.Fleets));
+        }
+
+        [Fact]
         public void AKeyNoBuildEverHadScansNothing()
         {
             Assert.False(Bands.Scans(9, false, "wormholes"));

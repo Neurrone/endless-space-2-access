@@ -117,6 +117,15 @@ namespace ES2Access.Core.UI.Graph
                     if (render.Nodes.TryGetValue(old, out structural)) resolved = structural.Id;
                 }
 
+                // Tier 3: the row that CONTAINED it, when this build has stopped showing whole families
+                // of rows rather than losing one (<see cref="GraphBuilder.SeatOnContainer"/>) — the
+                // same thing the player was reading, read less closely.
+                if (resolved == null && render.SeatOnContainer)
+                {
+                    GraphNode container = DeepestDeclaredAncestor(render, old);
+                    if (container != null && container.Focusable) resolved = container.Id;
+                }
+
                 // Fallback: nearest survivor walking the previous order backward.
                 if (resolved == null)
                 {
@@ -220,7 +229,19 @@ namespace ES2Access.Core.UI.Graph
                 GraphNode remembered = render.NodeAt(memory.Value);
                 if (remembered != null && Equals(remembered.StopKey, memory.Key)) continue;
 
-                GraphNode survivor = SurvivorBefore(render, state.KeyOrder, memory.Value, memory.Key);
+                // The same container rule the focused cursor gets: a stop whose rows went away by the
+                // family has to be returned to on the thing that held them, or Tab back into it lands
+                // wherever the reading order happens to have left a survivor.
+                GraphNode survivor = null;
+                if (render.SeatOnContainer)
+                {
+                    GraphNode container = DeepestDeclaredAncestor(render, memory.Value);
+                    if (container != null && container.Focusable && Equals(container.StopKey, memory.Key))
+                        survivor = container;
+                }
+
+                if (survivor == null)
+                    survivor = SurvivorBefore(render, state.KeyOrder, memory.Value, memory.Key);
                 if (survivor == null) continue;
 
                 if (stops == null) { stops = new List<object>(); landings = new List<ControlId>(); }

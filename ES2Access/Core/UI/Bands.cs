@@ -173,6 +173,23 @@ namespace ES2Access.Core.UI
             }
         }
 
+        /// <summary>
+        /// Whether two levels draw the same picture as far as this table is concerned - every kind at
+        /// the same fidelity.
+        ///
+        /// The question a tree asks itself on the build after the camera moved: a step WITHIN a band
+        /// changes nothing it offers, and a step ACROSS one takes whole families of rows away, which
+        /// is a different thing to recover a cursor from than one row going out of existence.
+        /// </summary>
+        public static bool SameShape(int left, int right, bool scanning)
+        {
+            BandFidelity[][] ladder = scanning ? Scan : Normal;
+            return ReferenceEquals(
+                ladder[Clamp(left) - FirstLevel],
+                ladder[Clamp(right) - FirstLevel]
+            );
+        }
+
         /// <summary>Which overlay a spoken level shows while the scan view is up. Never
         /// <see cref="ScanLens.None"/>: every rung of the ladder has a lens under it, and the ordinary
         /// map is said by passing <c>scanning: false</c> to the queries above rather than by asking
