@@ -897,9 +897,10 @@ table's count. Measured on the owner's save at Dusay: `System's Rank, table, Ove
 rank 1 of 2` · `No. of representatives, rank 1 of 2` — cross-checked against the bars' own ordinals
 (`1st/2nd/1st/1st`). Then **the history table, transposed**: a row per CURVE (`System rank` — the
 mod's own word, the game names that curve nowhere — and the game's `No. of systems in my Empire`) and
-a column per TURN, chronological, so walking right walks time as the picture reads left to right.
-`System rank, 1 of 2` → `Turn 1, rank 1 of 1` → `Turn 2, rank 1 of 1`; Down → `No. of systems in my
-Empire, 1, 2 of 2`; the last column is the turn in progress (`Turn 28, rank 2 of 4` / `4`). Cells
+a column per TURN, **NEWEST FIRST** (owner ruling 2026-09-02): the turn in progress is the first data
+column, so the reading that is true now is one press from the row and walking right walks back in
+time. Measured on the owner's turn-28 save: `System rank, 1 of 2` → `Turn 28, rank 2 of 4` →
+`Turn 27, rank 2 of 4`; Down → `No. of systems in my Empire, …`. Cells
 cross-checked against an `/eval` walk of `IGameStatisticsManagementService.TakeSnapshot(turn)` (turn
 index 21 → `known=3`, `rank=0` → `rank 1 of 3` and `3`; the live turn off `GetScoreRank` +
 `KnownSystemCount` → `rank 2 of 4` and `4`). A turn one curve has no reading for keeps its cell and

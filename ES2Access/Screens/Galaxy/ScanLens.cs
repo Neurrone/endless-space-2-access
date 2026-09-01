@@ -463,10 +463,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>THE COLUMNS ARE THE TURNS (owner ruling 2026-09-01, playtest), in the order the
-        /// curves are drawn in - oldest at the left, so walking right walks time exactly as reading the
-        /// picture left to right does. The primary column names the curve rather than anything the game
-        /// captions, so its own header is empty.</summary>
+        /// <summary>THE COLUMNS ARE THE TURNS, NEWEST FIRST (owner ruling 2026-09-02, restoring the
+        /// ordering the rows-to-columns pivot lost): the turn being played is the first data column, so
+        /// entering a row reaches the reading that is true NOW in one press and walking right walks
+        /// back in time. The primary column names the curve rather than anything the game captions, so
+        /// its own header is empty.</summary>
         private static string[] TurnColumns(List<string> turns)
         {
             string[] headers = new string[turns.Count + 1];
@@ -675,10 +676,15 @@ namespace ES2Access.Screens
         ///
         /// One curve is how many systems the player knew that turn and the other is where this system
         /// stood among them, so they share an axis and belong in one table rather than two. A curve is
-        /// a line along time, so time is the axis the walk runs along: the columns are the turns in the
-        /// order the picture draws them, left to right, and walking right walks the curve. (The first
-        /// cut had it the other way about - a row per turn - which made twenty-eight rows of two
-        /// figures and no way to read either line as a line.)
+        /// a line along time, so time is the axis the walk runs along and walking right walks the
+        /// curve. (The first cut had it the other way about - a row per turn - which made twenty-eight
+        /// rows of two figures and no way to read either line as a line.)
+        ///
+        /// TIME RUNS BACKWARDS ALONG IT (owner ruling 2026-09-02): the turn being played is the FIRST
+        /// column, the one before it the second, and so on back to turn one. The picture draws the
+        /// oldest reading at the left, but a player asking a curve a question is asking where this
+        /// system stands NOW, and that answer must not be twenty-eight presses away; walking right is
+        /// then walking back through the history, which is the order the reading is wanted in.
         ///
         /// A turn before the system was ever ranked has no rank of its own and its cell is blank rather
         /// than absent, so the two curves stay under the same turn all the way across - the rule the
@@ -703,7 +709,9 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                for (int turn = 0; turn <= game.Turn; turn++)
+                // Newest first: the loop runs back from the turn in progress, so the first column
+                // added is the live reading and the last is turn one.
+                for (int turn = game.Turn; turn >= 0; turn--)
                 {
                     string count;
                     string rank;
