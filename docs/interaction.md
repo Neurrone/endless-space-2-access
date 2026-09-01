@@ -583,6 +583,38 @@ keywords see only band-declared rows. **At levels 1–2 every category is hidden
 answers the existing none-found line** ("Luxury Resources: all, none found" — whichever category the
 cursor was parked in), never silence.
 
+**THE GALAXY PAGE WEARS THE SCAN LENS, AND THE MAP THEN GROUPS BY OWNER** (owner ruling 2026-09-01;
+`GalaxyHudScreen.IsActive`/`Scanning`, `Screens/Galaxy/ScanRows.cs`, `ScanLensPanels`). Scan view is
+the same map under a different light, so the page that models the map keeps the keyboard in-mode and
+the inspect cursor, the scanner, the bookmarks, the type-ahead and the map summary are the same code
+paths — no second screen, no second tree. `GalaxyHudScreen` is active at the galaxy overview in
+EITHER view (the game's two flags are exact complements outside a battle or a cinematic), minus the
+frames a battle screen is still fading off; `ScanViewScreen` keeps the two rungs the galaxy page does
+not reach, the system-management and planet lenses. **Stops in-mode**: `scan:title` (the lens's own
+strip, then the zoom ladder — the game hides the panel the ordinary view-title cluster is read off),
+the map stop, `scan:legend`, and the turn controls; the banners, the pinned quest, the notification
+strip and the fleet panel are all things the game stops drawing. The lens's ARRIVAL gate — a lens has
+drawn itself — governs that furniture and never the page, because keeping the cursor across the mode
+change is the point; entering says the lens once and leaving says the map, the pair a pushed and
+popped screen used to say. **The tree**, from the band that names the systems: one heading per
+empire, ordered by the centre the watching empire's intelligence knows
+(`DepartmentOfIntelligence.GetEmpirePosition`, `Known`-gated, in the constellations' own reading
+order; an empire with no known centre sorts after those that have one), then minor factions, pirates,
+No owner and **Unexplored** — a "???" system's owner is unknown rather than none — with empty
+headings undeclared and no constellations at all. Rows read from the MODEL, so focusing one gives
+what hovering the label would (FOCUS IS HOVER, ruled: the lens paints some label content only for the
+systems it thinks important). Children: planet dots, lanes, and the scan label's own picture nodes.
+Absent throughout: fleets, probes, missiles, pins, quest markers, deposits, docks, hangars, wrecks.
+**The headings are not in the stars' keys** — every row the cursor could be standing on keeps the key
+it has in the ordinary view, which is what makes the mode change cost the cursor nothing either way;
+the price is that a landing cannot open a heading the player has closed by hand. **Nothing reads the
+camera**: expansion is in place at every lens and a landing slides and seats (`EnsureBand` and
+`FollowPlace`'s inside-snap both stand down in-mode), because under a lens the rung IS the lens and a
+silent zoom would change what the whole screen means. The scanner filters by the same table
+(`Bands.Scans`): Systems / Colonizable Planets / Unexplored at Trade, the same plus Contested at
+Economy, Systems / Unexplored at the System lens, nothing at Diplomacy — **Curiosities appear at no
+scan lens at all** (the scan dot prefab does not wire the curiosity circle).
+
 **A ZOOM THAT SHRINKS THE BAND NEVER TAKES THE CURSOR OUT OF THE TREE** (owner ruling 2026-09-01).
 When the level change takes the focused row's whole kind away, the cursor lands on the row that
 CONTAINED it — a fleet or a lane's fleet on its system row, a deposit dossier or the manage button on

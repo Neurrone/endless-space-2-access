@@ -21,15 +21,24 @@ belong in the files above.
   tooltip-bearing child nodes of the system row (which fixed the promised-and-never-offered
   construction-queue dossier), the constellation ownership bonus on the row at levels 1–2, and the
   owner's two stage-3 corrections — the border leap on the travel keys WITHDRAWN, and the inspect
-  cell band-filtered off the same table the tree reads. Still to
-  come: scan mode on the shared components.
-  OPEN, for the owner (stage 4): expanding a system from levels 7–12 lands the camera at 13, and 13
-  is exactly where the game fades every nameplate line to nothing — so the new picture nodes exist
-  at levels ≤12 and the route to them is "expand, then zoom back out". That collides with stage 2's
-  flagged deviation ("the 7–12-only information stays in the row at 13"), which this stage took OUT
-  of the row. Parity with the picture was the tie-break; if the convenience was meant to win, the
-  answer is to hold the label's lines drawn while the branch is open, which is a mechanism nobody
-  has ruled on.
+  cell band-filtered off the same table the tree reads. Stage 5a shipped 2026-09-01: the GALAXY
+  PAGE WEARS THE SCAN LENS (gate, `ScanLensPanels` composition, `ScanViewScreen` slimmed to the
+  system/planet rungs), the owner-grouped in-mode tree with dot planets and lane children, the
+  scanner's lens filter, expansion and landings that never move the camera in-mode, and the
+  level-13 icon children restored to the ruled option (a). Still to come: **5b** — the Diplomacy
+  band's own content (the empire list, the spokes, the battle rows, the centre links), the hacking
+  family's stops, exit-scan-first landings, and the scan reconciliation pairs; **5c** — the
+  trade-route weave and the pinned null-probe sweep of the scan dot's overlays.
+  OPEN, for the owner (stage 5a): **the "Bookmarks" group in the scan tree is NOT shipped.** The
+  ruling gives point bookmarks a group of their own there, but the mod has no word for "Bookmarks"
+  as a heading and none was invented — the rows are declared at the TOP level of the map stop in
+  position order instead, which is exactly what they do in the ordinary view at levels 1–2. One
+  approved phrase closes it.
+  OPEN, for the owner (stage 5a): **at the Diplomacy band a system under the cursor lands on the
+  ZOOM SLIDER**, outside the tree. Those two rungs declare only point bookmarks, and none of them
+  precedes the dying row in the previous order, so neither the container tier nor the
+  nearest-survivor walk has anything to fall to. 5b's empire list is the fix by construction — the
+  system's own empire group becomes the container — so it is named rather than patched here.
   OPEN, for the owner (stage 3): at levels 1–2 the tree declares only constellation headings (which
   refuse arming, 2026-08-31) and point bookmarks, so Ctrl+I can arm the survey only from a bookmark
   row — should a constellation heading arm the cell at its centroid there, or does entering the
@@ -536,7 +545,7 @@ belong in the files above.
 | Star system / improvements / system-selection / politics / rename | SystemManagementScreen, ImprovementsModalScreen, SystemSelectionScreen, SystemPoliticsScreen, RenameModalScreen |
 | Planet / planet constructibles / discovery cutscene | PlanetOverviewScreen, PlanetConstructiblesScreen, SystemDiscoveryScreen |
 | Research / quest journal | ResearchScreen, QuestJournalScreen |
-| Scan view | ScanViewScreen |
+| Scan view: the galaxy lenses / the system and planet lenses | GalaxyHudScreen (+`Screens/Galaxy/ScanRows.cs`, ScanLensPanels), ScanViewScreen |
 | Senate / government / laws / population / election | SenateScreen, GovernmentScreen, LawsScreen, PopulationScreen, ElectionScreen |
 | Empire / economy / recipe | EmpireScreen, EconomyScreen, RecipeCreationScreen |
 | Military / fleet-selection / ship designer / troops / tactics deck | MilitaryScreen, FleetSelectionScreen, ShipDesignScreen, TroopManagementScreen, BattleTacticsScreen |

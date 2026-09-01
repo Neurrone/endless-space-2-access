@@ -765,8 +765,37 @@ pooled child stays in the pool and the window's next `OnBeginShow` re-reserves t
 
 **Leaving scan mode from `/eval` is not obvious.** `IGuiGameWindowService` has no `RequestScanView`,
 and pressing `GameOverlayWindow.TopTitlePanel.ScanButton` through `AgeWidgets.Press` did nothing.
-`POST /loadsave` of the fixture is the reliable way out (and then re-minimize the tutorial and
-`POST /reload` before any sheet-keyed comparison).
+**`((GuiManager)Gui.GuiGameWindowService).ToggleScanView()` is the lever both ways** (measured
+2026-09-01; `CanToggleScanView` is its own refusal), and it settles in ~8 frames — trace it with
+`POST /wait` on `DevProbe.Trace(tag)` rather than polling. `POST /loadsave` of the fixture is the
+heavier way out (and then re-minimize the tutorial and `POST /reload` before any sheet-keyed
+comparison).
+
+### Working the in-mode map (2026-09-01, the galaxy page wears the lens)
+
+The tree, the scanner and the bookmarks are the galaxy page's own in-mode, so the ordinary recipes
+apply — with four traps.
+
+- **The cursor does not move on the way in or out.** Both transitions read
+  `stack=screen.galaxy:10` on every frame; what changes is the declared node count (66 → 41 at the
+  Economy lens on this fixture) and the heading a system sits under. A trace showing a screen push
+  is a regression.
+- **Type-ahead can land on the lens's own panel.** At the System lens the `scan:system` centre group
+  is NAMED after the system in the middle of the screen, so `/type "dusay"` may seat on that group
+  rather than on Dusay's map row and `ui.right` then opens the FIDSI figures. Search for a system
+  that is not centred, or walk to the row.
+- **The lens changes under an injected zoom.** `SetZoomHere(step)` is the quickest way between
+  lenses (0–1 Diplomacy, 2–5 Trade, 6–9 Economy, 10–12 System); give it ~1.2 s to settle before
+  dumping, and expect a lens line in `/speech` at every descriptor crossing.
+- **At the Diplomacy band the map stop holds only point bookmarks** until the empire list lands, so
+  a scanner press made with the cursor anywhere else is unclaimed and silent. Press `ui.focusMap`
+  first: with the cursor really on the map stop, every chord answers `"⟨category⟩: all, none found"`.
+
+Measured pairs worth re-running: pan the camera at the Economy lens with a system focused
+(`GalaxyViewLevels.CenterOn`) — the `/gui/graph` dump must come back byte-identical and the cursor
+must not move; expand a system at the Trade or Economy lens — `DevProbe.Camera()` unchanged, planet
+DOTS plus lanes as children; expand at the System lens — lanes only; a scanner `galaxy.scanGoTo` —
+the camera focus moves and `zoomStep` does not.
 
 ## The fog-off smoke pattern
 

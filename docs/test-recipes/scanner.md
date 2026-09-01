@@ -15,6 +15,24 @@ stop is where a fresh session sits — every scanner key answers `unconsumed` an
 spoken, which reads exactly like the scanner being broken. Seat the cursor on the tree first
 (`Navigator.FocusNode(ControlId.Structural("galaxy:constellation/<c>/system/<s>"))`), then press.
 
+**The chords work under a SCAN LENS too** (2026-09-01), because the galaxy page keeps the map stop
+in-mode — and the ring is filtered by the same band table the tree reads, so what the walk finds
+and what the tree holds cannot disagree. Measured on `[Beginner] access test`, cycling
+`galaxy.scanCategoryNext` with the cursor on the map stop:
+
+| lens (camera step) | ring |
+|---|---|
+| Diplomacy (0–1) | nothing listed; every chord answers the none-found line for whichever category the cursor is parked in |
+| Trade (2–5) | Systems, Colonizable Planets, Unexplored, then the configured custom slots |
+| Economy (6–9) | the same (Contested Influence is band-allowed here and EMPTY on this fixture, so it is skipped as empty rather than as hidden) |
+| System (10–12) | Systems, Unexplored, then the slots — Colonizable Planets drops out |
+
+A custom slot inherits the filter with no rule of its own: the same slot measured `1 of 28` at
+Trade and Economy and `1 of 20` at the System lens. **Curiosities are listed at no scan lens at
+all** — the scan dot prefab does not wire the curiosity circle. And **`galaxy.scanGoTo` in-mode
+SLIDES**: `DevProbe.Camera()` before and after shows the focus moving and `zoomStep` unchanged,
+because under a lens the rung selects the lens and a landing must not change it.
+
 ## What each tier says
 
 No count appears anywhere in a scope line — the instance line's "N of M" carries the size. **No press that lands on something is silent about the landing**: the
