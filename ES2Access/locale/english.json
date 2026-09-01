@@ -453,6 +453,7 @@
   "scan.synergy": "{0} for {1}",
   "scan.battle": "Battle between {0}",
   "scan.battle-here": "Battle",
+  "scan.empire-home": "Home System {0}",
   "scan.trade-route-to": "Trade route to {0}",
   "scan.trade-route-to-blockaded": "Trade route to {0}, blockaded",
   "scan.trade-route-through": "along trade route from {0} to {1}",

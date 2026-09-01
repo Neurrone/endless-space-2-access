@@ -1178,6 +1178,13 @@ namespace ES2Access.Core.Speech
         public const string ScanBattle = "scan.battle";
         public const string ScanBattleHere = "scan.battle-here";
 
+        /// <summary>The star the diplomacy lens writes an empire's name over, which is its home system.
+        /// The row's coordinate pair is the CENTRE the watching empire's intelligence has, and that is
+        /// deliberately never called a home; this is the other drawing, the one the lens paints only at
+        /// a major's explored home, and it is the mod's own phrase because the game writes the empire's
+        /// name there and never the word for what the place is.</summary>
+        public const string ScanEmpireHome = "scan.empire-home";
+
         /// <summary>The trade routes the scan view draws as lines across the map, woven into the places
         /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.Core.UI.TradeWeave"/>):
         /// a system at either END of a route says where the route goes, a system the route merely
@@ -2435,6 +2442,7 @@ namespace ES2Access.Core.Speech
             { ScanSynergy, "{0} for {1}" },
             { ScanBattle, "Battle between {0}" },
             { ScanBattleHere, "Battle" },
+            { ScanEmpireHome, "Home System {0}" },
             { ScanTradeRouteTo, "Trade route to {0}" },
             { ScanTradeRouteToBlockaded, "Trade route to {0}, blockaded" },
             { ScanTradeRouteThrough, "along trade route from {0} to {1}" },

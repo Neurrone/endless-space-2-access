@@ -208,6 +208,14 @@ namespace ES2Access.Screens
                 vtable.Announcements.Add(GalaxyCoordinates.Part(row.Centre));
             }
 
+            string home = HomeLabelled(swap);
+            if (home != null)
+            {
+                vtable.Announcements.Add(
+                    GraphNodes.LabelPart(() => ModStrings.Format(ModStrings.ScanEmpireHome, home))
+                );
+            }
+
             vtable.Announcements.Add(
                 GraphNodes.ValuePart(() => RelationWord(it, against), false)
             );
@@ -369,6 +377,38 @@ namespace ES2Access.Screens
         }
 
         private const string SwapModeTitle = "%DiplomacyScreenSwapModeTitle";
+
+        /// <summary>
+        /// THE STAR THE LENS WRITES THIS EMPIRE'S NAME OVER (owner ruling 2026-09-01, after playtest).
+        ///
+        /// The centre a row says is a POSITION and never a home, because the circle the lens draws
+        /// there is the same circle whether the record is a capital or the highest-influence colony the
+        /// watcher can see (RULED). But the lens ALSO writes the empire's name, in its own colours, AT
+        /// its home system - and the mod said nothing about that at all, so the player's capital was
+        /// the one thing on the band with no row of any kind while a tethered colony had one. Reported
+        /// from the owner's own game: Dusay gone, Heka present.
+        ///
+        /// The gate is the drawing's own, not a second copy of it: this is the label whose empire-name
+        /// LINE the game is painting for this empire (<see cref="SwapLabelFor"/>), and the game paints
+        /// that line exactly at a MAJOR's home system the player has explored
+        /// (<c>ScanViewDiplomacyLabel.RefreshEmpireNameLine</c> :303 - <c>ExplorationState >= 2</c> and
+        /// <c>IsMajorHomeSystem</c>). So the player's own home always answers, a foreign home answers
+        /// once it has been explored, and an unexplored foreign centre stays a position and nothing
+        /// more. The name needs no knowledge gate of its own for the same reason: the line the mod is
+        /// reading is drawn only where the player has explored the place.
+        /// </summary>
+        private static string HomeLabelled(ScanViewDiplomacyLabel label)
+        {
+            try
+            {
+                StarSystemNode node = label == null ? null : label.StarSystemNode;
+                return node == null ? null : node.LocalizedName;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         // ---- the spokes ----
 
