@@ -110,6 +110,20 @@ namespace ES2Access.Core.UI
         {
             return new PlacedRow(segment, false, 0, false, false, true, false);
         }
+
+        /// <summary>
+        /// A row a LENS draws that is not somewhere the player stands: the diplomacy band's battle
+        /// line, which is two tinted emblems planted over a node, and nothing the tree can be sent to.
+        ///
+        /// It answers no to all four on purpose. Whether the inspect cell may be armed from a row at
+        /// the two furthest-out rungs is an open owner question (roadmap), and the inert answer is the
+        /// one to ship until it is settled - a refusal is silent and costs the player nothing, while
+        /// an invented arming would put them on a square nobody chose.
+        /// </summary>
+        public static PlacedRow Drawing(string segment)
+        {
+            return new PlacedRow(segment, false, 0, false, false, true, false);
+        }
     }
 
     /// <summary>
@@ -174,6 +188,8 @@ namespace ES2Access.Core.UI
             PlacedRow.Grouping("constellation"),
             PlacedRow.Grouping("unexplored"),
             PlacedRow.Grouping("owner"),
+            // The one row the diplomacy lens draws that is neither a heading nor a place.
+            PlacedRow.Drawing("battle"),
         };
 
         /// <summary>Every declaration, in the order they are written.</summary>

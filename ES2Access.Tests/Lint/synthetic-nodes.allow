@@ -46,6 +46,10 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 2 | builder.AddItem(Nodes.Synthetic(id,
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, readout));
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 2 | Nodes.Synthetic(
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
+
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));

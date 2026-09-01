@@ -405,6 +405,13 @@ namespace ES2Access.Screens
             GatherBookmarks(empire);
             if (!_showsSystems)
             {
+                // The lens names no star at these two rungs - it draws the EMPIRES, their centres and
+                // the curves tethering the watched one's colonies (<see cref="BuildEmpireList"/>).
+                if (ZoomBands.Shows(BandKind.Empires))
+                {
+                    BuildEmpireList(builder, empire);
+                }
+
                 EmitBookmarksAfter(builder, null);
                 return;
             }
@@ -430,6 +437,24 @@ namespace ES2Access.Screens
             OwnerGroup it = group;
             Empire looking = empire;
             NodeVtable vtable = GraphNodes.Group(() => OwnerHeading(it, looking));
+            if (group.Bucket == ScanBucket.Empire)
+            {
+                // The heading carries the diplomacy band's own reading (RULED 2026-09-01), so zooming
+                // out of the stars into the empire list is one continuous shape rather than two
+                // different things that happen to be called the same: how the player stands with them,
+                // and where their centre is. Asked of the PLAYER and never of whoever the diplomacy
+                // band was last pointed at - these lenses draw no diplomacy, so there is no watched
+                // empire in the picture to compose against (<see cref="Watching"/>).
+                Empire held = group.Empire;
+                vtable.Announcements.Add(
+                    GraphNodes.ValuePart(() => RelationWord(held, looking), false)
+                );
+                if (group.Placed)
+                {
+                    vtable.Announcements.Add(GalaxyCoordinates.Part(group.Centre));
+                }
+            }
+
             ControlId id = ControlId.Structural(OwnerKey(group.Bucket, group.Empire));
             Seed(builder, id);
             bool open = builder.ExpandAll || builder.IsExpanded(id);

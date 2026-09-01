@@ -155,6 +155,11 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | if (table == null || !Visible(table
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | return card.OutpostTimer != null && Visible(card.OutpostTimer.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | return circle != null && circle.Visible ? circle : null;
 
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | && AgeWidgets.Painted(label.EmpireNameLine)
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | AgeWidgets.Visible(label.AgeTransform)
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | || !AgeWidgets.Painted(label.BattleLine)
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | || !AgeWidgets.Visible(label.AgeTransform)
+
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (group == null || !AgeWidgets.Visible(group.AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (headers[i] != null && AgeWidgets.Visible(headers[i].AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
