@@ -354,6 +354,14 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemPiratePower = "galaxy.system-pirate-power";
         public const string GalaxySystemMinorRelation = "galaxy.system-minor-relation";
 
+        // What the label's bottom row calls the two groups the game draws there as pictures and names
+        // nowhere: the lair the pirates keep at this system, and the Academy's seat. Each is the door
+        // into that party's diplomacy - the game wires both icons to the one handler that opens
+        // whichever window the empire living here calls for - so the name is the PLACE and the sentence
+        // it carries says what is happening there.
+        public const string GalaxySystemPirateLair = "galaxy.system-pirate-lair";
+        public const string GalaxySystemAcademy = "galaxy.system-academy";
+
         // Who holds a colony at a system several empires share. The label draws this as a row of
         // little bars tinted with each empire's colour and writes nothing at all on them - no
         // number, no name, not even a tooltip - so the caption is the mod's and the names inside it
@@ -2161,8 +2169,10 @@ namespace ES2Access.Core.Speech
             { GalaxySystemBuilding, "Building {0}, {1} turns" },
             { GalaxySystemNothingBuilding, "Nothing under construction" },
             { GalaxySystemRebellion, "Rebellion at {0} percent, {1} to go" },
-            { GalaxySystemPiratePower, "Pirate power level {0}" },
+            { GalaxySystemPiratePower, "Pirate power level {0}, {1} percent to the next level" },
             { GalaxySystemMinorRelation, "Relations {0} percent" },
+            { GalaxySystemPirateLair, "Pirate lair" },
+            { GalaxySystemAcademy, "Academy" },
             { GalaxySystemEmpireBars, "Colonies here: {0}" },
             { GalaxySystemDepositExploited, "{0}, exploited" },
             { GalaxySystemDepositIdle, "{0}, not exploited" },

@@ -118,8 +118,9 @@ namespace ES2Access.UI
                 Say(lines, label.MinorRelationQuestStartedGroup);
                 AddMinorRelation(lines, label);
                 AddGarrisons(lines, label);
-                AddPirates(lines, label);
-                AddAcademy(lines, label);
+                // The pirate lair's and the Academy's own figures are NOT here: the game draws each of
+                // them on a control it lets the player click, so each is a button child of the system
+                // and says its own numbers (<see cref="Actions"/>). One source per fact.
             }
             catch (Exception e)
             {
@@ -131,8 +132,9 @@ namespace ES2Access.UI
 
         /// <summary>
         /// The buttons the label draws on a system, in the order it draws them: the two conversions and
-        /// the pirate-mark buy-out among the icons beside the name, then the diplomacy button and the
-        /// hacking beacon underneath.
+        /// the pirate-mark buy-out among the icons beside the name, then the bottom-button row - the
+        /// diplomacy button, the pirate lair, the Academy (measured: <c>BottomButtons</c> lays its
+        /// children out in exactly that order) - and the hacking beacon the game parks there last.
         ///
         /// Every one of them is a wordless icon that the game explains in a sentence rather than names,
         /// so each is called by a phrase of this mod's and the game's sentence arrives with it - these
@@ -188,6 +190,8 @@ namespace ES2Access.UI
                     Mod(ModStrings.GalaxySystemDiplomacy),
                     true
                 );
+                AddPirateLair(found, label);
+                AddAcademyDiplomacy(found, label);
                 CardActions.AddRefusable(
                     found,
                     HackingBeacon(label),
@@ -198,6 +202,175 @@ namespace ES2Access.UI
             {
                 Log.Warn("galaxy: reading a system label's buttons threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// THE PIRATE LAIR IS A BUTTON (owner ruling 2026-09-02), and what it is doing is its own
+        /// announcement rather than three lines of the system's readout.
+        ///
+        /// The game draws the lair as a group in the label's bottom-button row and wires a click on the
+        /// icon inside it (<c>PirateLairIconGroup</c> → <c>StarSystemLabel.OnClickDiplomacyButton</c>
+        /// :3138, which opens <c>PirateDiplomacyModalWindow</c> for a system the pirates hold :3155-3159
+        /// - measured on the prefab, all 86 labels, and the group is drawn exactly while
+        /// <c>CanShowPirateLairGroup</c> :573 says the colony here IS a lair, so the branch the click
+        /// takes is never in doubt).
+        ///
+        /// The NODE is the clickable child and not the group: the group's own tooltip is the whole
+        /// system's dossier (<c>BindLabelTooltip</c> :1760), which the system's star already carries,
+        /// and the child carries none at all - so the button says its own words and repeats nothing.
+        /// Availability rides the game's own switch, which sits on the GROUP
+        /// (<c>PirateGroup.Refresh</c> :65 - the pirate content shared, and this empire not a pirate
+        /// hater) and is reached by the ancestor walk <see cref="AgeWidgets.Offered"/> already makes.
+        /// </summary>
+        private static void AddPirateLair(List<CardActions.CardAction> found, StarSystemLabel label)
+        {
+            PirateGroup pirates = label.PirateGroup;
+            AgeTransform click = pirates == null ? null : Clickable(pirates.AgeTransform);
+            if (click == null)
+            {
+                return;
+            }
+
+            PirateGroup it = pirates;
+            CardActions.AddRefusable(
+                found,
+                click,
+                Mod(ModStrings.GalaxySystemPirateLair),
+                true,
+                () => PirateReading(it)
+            );
+        }
+
+        /// <summary>What the lair is doing, as the button's own value: how long until it sends its next
+        /// fleet - the game's own sentence for the timer, with the timer's own reading, which is "-"
+        /// where the lair is already holding as many fleets as it may - and how strong the pirates have
+        /// grown, with how far they are through the level they are on (the gauge's angle, which is the
+        /// only place that progress is drawn).</summary>
+        private static string PirateReading(PirateGroup pirates)
+        {
+            try
+            {
+                MessageBuilder said = new MessageBuilder();
+                if (AgeWidgets.Visible(pirates.PirateFleetTimerGroup))
+                {
+                    said.ListItem(First(pirates.PirateFleetTimerGroup))
+                        .ListItem(AgeText.Label(pirates.PirateFleetTimerLabel));
+                }
+
+                string power = AgeWidgets.DrawnLabel(
+                    pirates.PiratePowerGroup,
+                    pirates.PiratePowerLabel
+                );
+                if (power != null)
+                {
+                    said.ListItem(
+                        ModStrings.Format(
+                            ModStrings.GalaxySystemPiratePower,
+                            power,
+                            Percent(pirates.PiratePowerGauge)
+                        )
+                    );
+                }
+
+                return said.Build();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's pirate lair threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// THE ACADEMY'S OWN BUTTON, the same shape as the lair beside it (owner ruling 2026-09-02):
+        /// the group the label draws for a system the Academy holds, whose icon the game wires to the
+        /// same handler (<c>AcademyIcon</c> → <c>OnClickDiplomacyButton</c>, which opens
+        /// <c>AcademyDiplomacyModalWindow</c> :3160-3165) and which is drawn exactly while the colony
+        /// here is the Academy's and the Academy is reachable (<c>ShowAcademyDiplomacyButton</c> :571).
+        ///
+        /// NOT the Academy badge on the standing-icons line (<c>AcademyIconGroup</c> :2310-2321). That
+        /// picture carries no click at all - measured, no <c>AgeControlButton</c> anywhere under it -
+        /// and stays the text child it already was.
+        /// </summary>
+        private static void AddAcademyDiplomacy(
+            List<CardActions.CardAction> found,
+            StarSystemLabel label
+        )
+        {
+            AcademyGroup academy = label.AcademyGroup;
+            AgeTransform click = academy == null ? null : Clickable(academy.AgeTransform);
+            if (click == null)
+            {
+                return;
+            }
+
+            AcademyGroup it = academy;
+            CardActions.AddRefusable(
+                found,
+                click,
+                Mod(ModStrings.GalaxySystemAcademy),
+                true,
+                () => AcademyReading(it)
+            );
+        }
+
+        /// <summary>What the Academy is at the system it lives on, as the button's own value: the level
+        /// it has reached and how far the next one is - a bare number and a ring with no figure on it,
+        /// so the sentence around both is the mod's - then what it is counting down to, in the game's
+        /// own words. The game writes what the countdown MEANS into the countdown's own tooltip, a
+        /// different sentence per state (<c>AcademyGroup.RefreshTimerLabel</c>), so those words are
+        /// used with the number drawn beside them.</summary>
+        private static string AcademyReading(AcademyGroup academy)
+        {
+            try
+            {
+                MessageBuilder said = new MessageBuilder();
+                if (AgeWidgets.Visible(academy.AcademyPowerTracker))
+                {
+                    said.ListItem(
+                        ModStrings.Format(
+                            ModStrings.GalaxySystemAcademyLevel,
+                            AgeText.Label(academy.AcademyPowerLabel),
+                            Percent(academy.AcademyPowerGauge)
+                        )
+                    );
+                }
+
+                if (AgeWidgets.Visible(academy.AcademyRolesCountdown))
+                {
+                    said.ListItem(First(academy.AcademyRolesCountdown))
+                        .ListItem(AgeText.Label(academy.AcademyRolesCountdownLabel));
+                }
+
+                return said.Build();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading a system's Academy group threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>The transform of the one control a drawn GROUP wires a click on - asked of the
+        /// control the prefab really carries, never of a name, so a group whose clickable piece is
+        /// re-cut needs nothing here. Null where the group wires none.</summary>
+        private static AgeTransform Clickable(AgeTransform group)
+        {
+            try
+            {
+                AgeControlButton[] buttons =
+                    group == null ? null : group.GetComponentsInChildren<AgeControlButton>(true);
+                for (int i = 0; buttons != null && i < buttons.Length; i++)
+                {
+                    if (!string.IsNullOrEmpty(buttons[i].OnActivateMethod))
+                    {
+                        return buttons[i].AgeTransform;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
         }
 
         /// <summary>The beacon button is not a field of the label's: the game makes one and parks it
@@ -896,60 +1069,6 @@ namespace ES2Access.UI
             );
         }
 
-        /// <summary>
-        /// What the Academy is at a system it has been given: the level it has reached, how far the
-        /// next one is, and what it is counting down to.
-        ///
-        /// The level is a bare number and the progress is a ring with no figure on it at all, so the
-        /// sentence around both is the mod's and the ring is read as the proportion it is drawn at. The
-        /// countdown is the other way round: the game writes what the number MEANS into the
-        /// countdown's own tooltip - a different sentence per state
-        /// (<c>AcademyGroup.RefreshTimerLabel</c>) - so its own words are used, with the number it
-        /// draws beside them.
-        ///
-        /// The group's own tooltip is NOT read: the label binds the whole system's dossier onto it
-        /// (<c>StarSystemLabel</c> :1777), which the system's star tooltip already carries.
-        /// </summary>
-        private static void AddAcademy(List<string> lines, StarSystemLabel label)
-        {
-            AcademyGroup academy = label.AcademyGroup;
-            if (academy == null || !AgeWidgets.Visible(academy.AgeTransform))
-            {
-                return;
-            }
-
-            if (AgeWidgets.Visible(academy.AcademyPowerTracker))
-            {
-                Add(
-                    lines,
-                    ModStrings.Format(
-                        ModStrings.GalaxySystemAcademyLevel,
-                        AgeText.Label(academy.AcademyPowerLabel),
-                        Percent(academy.AcademyPowerGauge)
-                    )
-                );
-            }
-
-            if (!AgeWidgets.Visible(academy.AcademyRolesCountdown))
-            {
-                return;
-            }
-
-            string says = First(academy.AcademyRolesCountdown);
-            if (string.IsNullOrEmpty(says))
-            {
-                return;
-            }
-
-            Add(
-                lines,
-                new MessageBuilder()
-                    .ListItem(says)
-                    .ListItem(AgeText.Label(academy.AcademyRolesCountdownLabel))
-                    .Build()
-            );
-        }
-
         /// <summary>How the player stands with the civilization living here - the ring the label draws
         /// around the diplomacy button, read as the proportion it is drawn at.</summary>
         private static void AddMinorRelation(List<string> lines, StarSystemLabel label)
@@ -961,38 +1080,6 @@ namespace ES2Access.UI
             }
 
             Add(lines, ModStrings.Format(ModStrings.GalaxySystemMinorRelation, Percent(gauge)));
-        }
-
-        /// <summary>What a pirate lair is doing: how long until it sends out its next fleet - the game's
-        /// own sentence for the timer, with the timer's own value - and how strong the pirates have
-        /// grown.</summary>
-        private static void AddPirates(List<string> lines, StarSystemLabel label)
-        {
-            PirateGroup pirates = label.PirateGroup;
-            if (pirates == null || !AgeWidgets.Visible(pirates.AgeTransform))
-            {
-                return;
-            }
-
-            if (AgeWidgets.Visible(pirates.PirateFleetTimerGroup))
-            {
-                Add(
-                    lines,
-                    new MessageBuilder()
-                        .ListItem(First(pirates.PirateFleetTimerGroup))
-                        .ListItem(AgeText.Label(pirates.PirateFleetTimerLabel))
-                        .Build()
-                );
-            }
-
-            string power = AgeWidgets.DrawnLabel(
-                pirates.PiratePowerGroup,
-                pirates.PiratePowerLabel
-            );
-            if (power != null)
-            {
-                Add(lines, ModStrings.Format(ModStrings.GalaxySystemPiratePower, power));
-            }
         }
 
         /// <summary>Every drawn item of a row of icons, one child node each, in the order the row
