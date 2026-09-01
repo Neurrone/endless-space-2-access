@@ -155,6 +155,12 @@ namespace ES2Access.Screens
                     Link lane = link;
                     NodeVtable vtable = new NodeVtable
                     {
+                        // A BUTTON (owner ruling 2026-09-01), in both views. The row has always had an
+                        // activation - Enter goes down the lane, or lets go of a held fleet - and a row
+                        // that acts while announcing itself as a bare line tells the player to walk
+                        // past it. The role word is the whole of the change: nothing else about the
+                        // lane, its keys or its readings moves.
+                        ControlType = ControlTypes.Button,
                         Announcements = new List<NodeAnnouncement>
                         {
                             GraphNodes.LabelPart(text),
