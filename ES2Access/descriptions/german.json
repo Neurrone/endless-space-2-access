@@ -439,31 +439,31 @@
   ],
   "Vaulters_Outro.LostBack": [
     { "at": 8.21, "end": 8.84, "text": "Vaulters sehen einem startenden Schiff zu." },
-    { "at": 11.554, "end": 12.189, "text": "Alles blendet zu Schwarz ab." },
+    { "at": 11.554, "end": 12.189, "text": "Alles verblasst zu Schwarz." },
     { "at": 23.124, "end": 27.882, "text": "Im All schwebt ein gewaltiger Ring in der Umlaufbahn über Auriga. Eine gleißende Sonne bricht hinter dem dunklen Horizont des Planeten hervor und wirft helle Strahlen in die sternenübersäte Leere." }
   ],
   "Vaulters_Outro.LostNotBack": [
     { "at": 8.515, "end": 9.36, "text": "Das Ringschiff steigt auf." },
-    { "at": 25.679, "end": 27.882, "text": "Alles blendet zu Schwarz ab." }
+    { "at": 25.679, "end": 27.882, "text": "Alles verblasst zu Schwarz." }
   ],
   "Vedt": [
     { "at": 0.5, "end": 3.5, "text": "In einer goldenen Savanne raschelt hohes, trockenes Gras um dunkle, zerklüftete Felsblöcke." },
     { "at": 3.5, "end": 7, "text": "Auf einem Felsen ruht ein Wesen mit schlankem Katzenkörper, langem dünnem Schwanz und bestacheltem Kopf und blickt über die Ebene." },
-    { "at": 7, "end": 12.693, "text": "Hoch über fremdartigen Bäumen mit dicken, knolligen Stämmen und kahlen Ästen rast ein strahlend weißes Landungsschiff durch den blassblauen Himmel herab." }
+    { "at": 7, "end": 12.693, "text": "Hoch über fremdartigen Bäumen mit dicken, knolligen Stämmen und kahlen Ästen rast ein strahlend weißer Lander durch den blassblauen Himmel herab." }
   ],
   "Venetians_Intro": [
     { "at": 11.952, "end": 12.84, "text": "Eine Frau sitzt im Gegenlicht eines blauen Fensters." },
     { "at": 27.39, "end": 28.386, "text": "Er schlägt auf einen Tisch, sodass leuchtende Chips davonfliegen." },
     { "at": 40.123, "end": 42.379, "text": "Er reißt die Arme zurück, während goldene Energie aus ihm hervorbricht und seine Augen hell leuchten." },
     { "at": 50.473, "end": 51.959, "text": "In Kampfpanzerung springt er durch eine Explosion und feuert eine Waffe ab." },
-    { "at": 62.326, "end": 66, "text": "Die Frau grinst süffisant. Alles blendet zu Schwarz ab." }
+    { "at": 62.326, "end": 66, "text": "Die Frau grinst süffisant. Alles verblasst zu Schwarz." }
   ],
   "Venetians_Outro.LostBack": [
     { "at": 0, "end": 2.137, "text": "Eine blasse Frau in einem hochgeschlossenen Gewand sitzt auf einer glatten Kugel und hält eine leuchtende goldene Sphäre." },
-    { "at": 21.114, "end": 28, "text": "Das leuchtende goldene Gitter unter ihr erstreckt sich endlos in den Raum. Hinter ihr wirbelt ein riesiger Sternennebel in leuchtendem Grün. Aufragende Lichtsäulen steigen vom Gitter in den Kosmos und lassen sie vor der unendlichen Weite winzig wirken. Alles blendet zu Schwarz ab." }
+    { "at": 21.114, "end": 28, "text": "Das leuchtende goldene Gitter unter ihr erstreckt sich endlos in den Raum. Hinter ihr wirbelt ein riesiger Sternennebel in leuchtendem Grün. Aufragende Lichtsäulen steigen vom Gitter in den Kosmos und lassen sie vor der unendlichen Weite winzig wirken. Alles verblasst zu Schwarz." }
   ],
   "Venetians_Outro.LostNotBack": [
     { "at": 0, "end": 2.318, "text": "Eine blasse Frau in einem hochgeschlossenen Gewand sitzt auf einer glatten Kugel und hält eine leuchtende goldene Sphäre." },
-    { "at": 21.114, "end": 28, "text": "Das leuchtende goldene Gitter unter ihr erstreckt sich endlos in den Raum. Hinter ihr wirbelt ein riesiger Sternennebel in leuchtendem Grün. Aufragende Lichtsäulen steigen vom Gitter in den Kosmos und lassen sie vor der unendlichen Weite winzig wirken. Alles blendet zu Schwarz ab." }
+    { "at": 21.114, "end": 28, "text": "Das leuchtende goldene Gitter unter ihr erstreckt sich endlos in den Raum. Hinter ihr wirbelt ein riesiger Sternennebel in leuchtendem Grün. Aufragende Lichtsäulen steigen vom Gitter in den Kosmos und lassen sie vor der unendlichen Weite winzig wirken. Alles verblasst zu Schwarz." }
   ]
 }
