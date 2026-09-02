@@ -107,6 +107,50 @@ namespace ES2Access.UI.Bookmarks
             }
         }
 
+        /// <summary>
+        /// The folder every campaign's file is kept in, or null while the mod has not been told
+        /// where the plugin lives.
+        ///
+        /// It is answered whether or not the folder exists: nothing creates it until the first
+        /// write, so a fresh install has a path here and nothing on disk under it.
+        /// </summary>
+        public static string Folder
+        {
+            get
+            {
+                return string.IsNullOrEmpty(_directory)
+                    ? null
+                    : System.IO.Path.Combine(_directory, FolderName);
+            }
+        }
+
+        /// <summary>Whether THIS campaign's file is on disk - false for a campaign the player has
+        /// never saved, and false for one whose bookmarks have never been written.</summary>
+        public static bool Saved
+        {
+            get { return Exists(Path); }
+        }
+
+        /// <summary>Whether the folder holds a bookmark file of ANY campaign - which is what decides
+        /// whether there is anything in it for a player to be sent to.</summary>
+        public static bool FolderHoldsBookmarks
+        {
+            get
+            {
+                try
+                {
+                    string folder = Folder;
+                    return folder != null
+                        && Directory.Exists(folder)
+                        && Directory.GetFiles(folder, "*.cfg").Length > 0;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
         /// <summary>How much of the faction's internal name the file's own name may carry. Long
         /// enough for any name a person would recognise it by, short enough that the whole path
         /// stays comfortable beside a plugin directory that is already deep.</summary>

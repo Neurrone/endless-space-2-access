@@ -1,7 +1,7 @@
 # The mod's own settings window
 
-The clone of the game's options window: getting there, the key-binding table, the Scanner tab
-and the physical key paths.
+The clone of the game's options window: getting there, the key-binding table, the Scanner and
+Bookmarks tabs, and the physical key paths.
 
 ## Screen model: a DRAWN menu entry over a cloned options window
 
@@ -41,11 +41,11 @@ not the game's "Options", because the two are the same window class and a player
 be told they are in the game's settings. Categories are a data-driven list (`ModOptions.Categories`)
 drawn in list order.
 
-**THE WINDOW HAS EXACTLY THREE TABS — "General", "Scanner" and "Controls", in that order —
-EVERYWHERE**, main menu included (owner rulings 2026-08-24 and 2026-09-02;
+**THE WINDOW HAS EXACTLY FOUR TABS — "General", "Scanner", "Controls" and "Bookmarks", in that
+order — EVERYWHERE**, main menu included (owner rulings 2026-08-24 and 2026-09-02;
 `ES2Access/UI/ModOptions/`). Their panels are named by index, so node ids read
-`options:0TabPanel/…` (General), `options:1TabPanel/…` (Scanner) and `options:2TabPanel/…`
-(Controls). The Scanner tab was in-game only for as long as its columns were a snapshot of the
+`options:0TabPanel/…` (General), `options:1TabPanel/…` (Scanner), `options:2TabPanel/…`
+(Controls) and `options:3TabPanel/…` (Bookmarks). The Scanner tab was in-game only for as long as its columns were a snapshot of the
 galaxy being played; they come from the game's DATABASES now, so no page needs a game and the
 window is never rebuilt for crossing that line. The key-binding category is CALLED "Controls" —
 the game's own key for its own key-binding page — which is what makes the game's own window logic
@@ -59,7 +59,7 @@ other. The binding rows' own key semantics are `docs/interaction.md`, **The mod'
 **The tab itself carries no tooltip** (owner ruling 2026-09-02): its name says what it holds. A
 category with a null description is how a tab asks for that (`ModCategory.Description`,
 `ModOptionsWindow`'s Relabel writes an empty `AgeTooltip.Content`, which `AgeWidgets.Draws` answers
-false for) - "General, tab, selected, 1 of 3" and `DevProbe.Tooltip()` `shown:false`.
+false for) - "General, tab, selected, 1 of 4" and `DevProbe.Tooltip()` `shown:false`.
 
 One row: **"Video descriptions in cut scenes"** (`options:0TabPanel/cutsceneDescriptions`),
 **checked by default**. It is the player's way into a setting that already lives in the BepInEx
@@ -80,7 +80,7 @@ flag still moves, and the FILE write is only provable after a game restart.
 menu (`Gui.GuiService.ShowWindow(Gui.GuiService.GetWindow<GameMenuModalWindow>())` from `/eval`
 is the same thing Escape does), then `/input ui.down` five times from Save Game and
 `/input ui.activate` — "Mod Settings, button, Endless Space 2 accessibility mod settings, 6 of 9", then "Mod settings" +
-"General, tab, selected, 1 of 3" - the General tab carries NO tooltip (owner ruling 2026-09-02). On the MAIN MENU the entry sits after Options as **"Mod Settings, button, Endless Space 2
+"General, tab, selected, 1 of 4" - the General tab carries NO tooltip (owner ruling 2026-09-02). On the MAIN MENU the entry sits after Options as **"Mod Settings, button, Endless Space 2
 accessibility mod settings, 8 of 10"**
 (measured 2026-09-02 out-game; the tenth stop is the news banner). The main-menu route is **not
 checkable from inside a running game**: `GET /gui/graph?screen=screen.main-menu` answers
@@ -92,7 +92,7 @@ build to declare. Walk it from an OUT-GAME session instead
 **From there, one route serves every tab and both buttons bars.** The window opens on **General**
 the first time and on whichever tab was last selected afterwards (the game's own radio group keeps
 its selection across shows — measured 2026-09-02, so re-read the tabs stop before counting
-`ui.down` presses). `ui.down` on the tabs stop walks General → Scanner → Controls. `ui.next` from
+`ui.down` presses). `ui.down` on the tabs stop walks General → Scanner → Controls → Bookmarks. `ui.next` from
 the tabs stop reaches
 `options:rows`, `ui.next` again `options:buttons` (`ui.home` = Cancel, `ui.end` = Apply; on the
 Controls tab a third button, Reset to Defaults, sits between them at
@@ -106,8 +106,9 @@ own confirmation (`ui.end` then `ui.activate` confirms) and lands back on the pa
 ## Reading it
 
 **Reading it.** `GET /gui/graph` on the mod window gives three stops exactly as the game's options
-window does: `options:tabs` (three tabs, "General", "Scanner" and "Controls"; only the last two carry a
-tooltip), `options:rows`, and
+window does: `options:tabs` (four tabs, "General", "Scanner", "Controls" and "Bookmarks"; only the
+last three carry a tooltip), `options:rows` (absent altogether on an EMPTY page - see **The
+Bookmarks tab**), and
 `options:buttons` (Cancel, Apply — Apply "unavailable, No modification detected." until something
 changes, which is also the proof that the option getter's instance is stable; on the Controls tab a
 third button, "Reset to Defaults", sits between them). The Controls tab is `2TabPanel`, and its row ids are
@@ -399,6 +400,67 @@ Two ways out, and both were measured: Apply hides the window and DROPS every `ke
 puts every rebind back. Restoring a wiped rebind afterwards is one eval:
 `ModBindings.Set("<action>", new Amplitude.Unity.Input.InputBinding("<registry string>"));
 ModBindings.Persist(); ModSettings.Save();`.
+
+## The Bookmarks tab
+
+**The window's LAST tab, and it holds no setting** (owner design 2026-09-02;
+`ES2Access/UI/ModOptions/BookmarkRows.cs`). Map bookmarks are set on the map and written the
+moment they are set; what this page adds is where they are and how to hand them to somebody else -
+"Bookmarks, tab, Share this game's map bookmarks, 4 of 4". Its rows are built when the window
+OPENS (`BookmarkRows.Refill` from `ModOptionsWindow.OnBeginShow`, before the base call, exactly
+like the Scanner tab's), because everything it says depends on state that changes while the window
+is shut.
+
+**FOUR STATES, one caption row over the buttons that make sense under it.** Node ids are
+`options:3TabPanel/bookmarksState` (the caption - a region name and the context word on the rows
+under it, never a stop), `.../bookmarksCopy` and `.../bookmarksOpenFolder`. Measured 2026-09-02,
+one `/input` walk each:
+
+| State | How it was reached | What `options:rows` said |
+|---|---|---|
+| No game | main menu, after leaving the session | `Bookmarks, Open bookmarks folder, button` - no caption, no message |
+| No game, folder empty | main menu + `MapBookmarkStore.Start("<scratch>/fakeempty")` | NOTHING: the page has no rows, so `options:rows` does not exist and `ui.next` from the tabs goes straight to `options:buttons` |
+| Never saved | `MapBookmarkStore._campaign` forced null by reflection, plugin directory left alone | `Bookmarks, Bookmarks are written to disk when this game is first saved., Open bookmarks folder, button` |
+| Saved, no file | `MapBookmarkStore.Start("<scratch>/fakeplugin")`, whose `bookmarks` folder holds one file of another campaign | `Bookmarks, No bookmarks set for this game, Open bookmarks folder, button` |
+| File on disk | the snapshot campaign as it stands | `Bookmarks, Bookmarks are saved to <full path>, Copy bookmarks to clipboard, button, 1 of 2` then `Open bookmarks folder, button, 2 of 2` |
+
+**Forcing a state costs no file of the owner's.** The store answers `Path`, `Saved`, `Folder` and
+`FolderHoldsBookmarks` off one private directory it is handed at mod start, so pointing it
+somewhere else - `MapBookmarkStore.Start(@"<scratch dir>")` - moves every one of those answers
+without touching a byte on disk, and `Start(<the real plugin directory>)` puts them all back on the
+next tick (the campaign is re-read from its own file, slots and all). "This campaign has never been
+saved" is the one state `Start` cannot express, because the directory is not what makes it: force
+it by writing null into the private static `_campaign` and leave the rest alone - `Tick` compares
+the raw GUID, finds nothing changed and never rebuilds it. **Restore etiquette**: copy the whole
+`bookmarks` folder to the scratchpad before anything, `diff -r` it afterwards, and never hide,
+rename or delete a file in it.
+
+**Neither button can light Apply** - both are `ModRows.Button`, whose option nothing reads, so
+`ApplyButton.AgeTransform.Enable` was false after each press and the row still read "unavailable,
+No modification detected.". `DevProbe.Ghosts()` `synthetic: 0`, `shippedUnpainted: 0`;
+`DevProbe.TooltipParity()` clean (`root: null`, so declaration-side only); two `POST /reload`s with
+the tab open rebuilt the window and the page came back on state 4.
+
+**Copy bookmarks to clipboard** puts the file's own text on the system clipboard with one comment
+line in front of it, and says "Bookmarks copied to the clipboard" from the pump. Read it back in
+the same session with `/eval UnityEngine.GUIUtility.systemCopyBuffer` - measured byte for byte
+against the file, `#` line plus `#!` header plus the four `slotN` lines, the file's UTF-8 BOM the
+only difference (`File.ReadAllText` eats it).
+
+**Open bookmarks folder** really opens one - `System.Diagnostics.Process.Start(folder)`, an
+Explorer window on the tester's own desktop. Press it ONCE and confirm from
+`/log?grep=bookmarks:` ("bookmarks: opening the bookmarks folder <path>") rather than a
+screenshot; the window it opened is left for whoever is at the machine to close. Windows only:
+what the call does on Mac or Linux is unverified.
+
+**The caption's drawn half is truncated on state 4** and its spoken half is not. The row is the
+checkbox prefab's 28 px row with a 292 px title label; a full Windows path measures 1074 px, so it
+wraps to four lines the row has no height for, and the drawn text stops mid-word
+(`…\bookmarks\FactionTer`) while the announcement carries the whole path. Growing the row
+(`label.Height`, `TitleGroup.Height`, `row.Height`, then `ArrangeChildren()` and
+`label.ComputeText()`) stops it overlapping the tab bar but does NOT restore the missing text: the
+file name is one unbreakable token wider than the label, and the renderer cuts rather than breaks
+inside it.
 
 ## The physical key paths, and what Escape means where
 

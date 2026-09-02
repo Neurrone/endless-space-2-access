@@ -427,8 +427,8 @@ belong in the files above.
   `Documents\Endless Space 2\Temporary Files\Diagnostics - *.html`.
 - Custom scanner categories: SHIPPED whole 2026-08-23, and DRAWN 2026-08-24 - the model, the
   synthesis and the six quick keys (stage 3); the editor (stage 4); and the rebuild that made it a
-  page a sighted player can see (stage 5), then folded onto ONE page (stage 6): the window has three tabs
-  — General, Scanner and Controls (General added 2026-09-02) — and the Scanner tab holds three drawn
+  page a sighted player can see (stage 5), then folded onto ONE page (stage 6): the window has four tabs
+  — General, Scanner, Controls and Bookmarks (General and Bookmarks added 2026-09-02) — and the Scanner tab holds three drawn
   headers that open and shut in
   place, every row the game's own widget, under the window's own Apply/Cancel. The columns come from
   the game's DATABASES, so the tab exists on the main menu too (stage 6). The
@@ -447,6 +447,15 @@ belong in the files above.
   What is left is MANUAL: a real MOUSE PICK on either entry (the wiring is replay-proved, the
   engine's hit test is not). Open question: whether the pause-menu entry should keep the Options
   gear icon it was cloned from.
+- The Bookmarks tab: SHIPPED 2026-09-02 - the window's fourth and last tab, holding no setting,
+  saying where this campaign's map bookmarks are kept and offering "Copy bookmarks to clipboard"
+  and "Open bookmarks folder" (`docs/test-recipes/mod-settings.md`, **The Bookmarks tab**). What is
+  left is MANUAL: `Process.Start` on a folder is Windows-verified only (Mac and Linux unproven),
+  and pasting the clipboard into another application was never tried - only read back inside the
+  game. Open questions: the tab's own tooltip wording ("Share this game's map bookmarks") and the
+  after-press line ("Bookmarks copied to the clipboard"), both proposed rather than ruled; whether
+  a failed copy should say anything (it logs and is silent today); and what the caption should say
+  on state 4, where the drawn label truncates a full Windows path the announcement reads whole.
 - Rebindable mod keys: SHIPPED 2026-08-23 - the mod's own Controls tab (stage 2a), the
   three-column binding table with Delete-to-clear, the Escape cancel and the two-way mod/game
   overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls tab alike; and, from stage

@@ -304,6 +304,10 @@ namespace ES2Access.UI.ModOptions
             // slot pages are rebuilt from what is SAVED, so no row is backed up already-changed.
             ScannerEditor.Begin();
             ScannerRows.Refill();
+            // The Bookmarks page is read from disk and from whichever campaign is being played, and
+            // both change while the window is shut - so it is built again here, for the same reason
+            // and at the same moment: before the backup, so nothing on it is backed up as changed.
+            BookmarkRows.Refill();
             base.OnBeginShow(instant);
         }
 

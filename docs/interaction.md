@@ -1414,8 +1414,8 @@ default takes the line out again, so a later build changing a default reaches ev
 never touched that key.
 
 The rest of the mod's settings window — how a player reaches it (a DRAWN entry titled "Mod Settings",
-tooltipped "Endless Space 2 accessibility mod settings", on both menus - owner rulings 2026-09-02), the three tabs (General,
-Scanner, Controls) and the Scanner tab's slot editor — is `docs/test-recipes/mod-settings.md`.
+tooltipped "Endless Space 2 accessibility mod settings", on both menus - owner rulings 2026-09-02), the four tabs (General,
+Scanner, Controls, Bookmarks), the Scanner tab's slot editor and the Bookmarks tab — is `docs/test-recipes/mod-settings.md`.
 
 Game-mechanism findings (window gates, pool slots, tooltip internals, fleet and quest
 mechanics, the icon numbers) live in the game-facts topic files ([README.md](README.md)) — a new

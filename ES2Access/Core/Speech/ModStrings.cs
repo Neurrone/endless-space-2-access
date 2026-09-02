@@ -241,6 +241,33 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsKeysScanner = "mod-settings.keys.scanner";
         public const string ModSettingsKeysBookmarks = "mod-settings.keys.bookmarks";
 
+        // --- the Bookmarks tab, the window's last (owner ruling 2026-09-02) ---
+
+        /// <summary>What the tab is called, and what it says about itself. The tab holds no setting:
+        /// it says where this campaign's map bookmarks are kept and offers the two ways of reaching
+        /// them, which is what a player needs when a save changes hands.</summary>
+        public const string ModSettingsBookmarks = "mod-settings.bookmarks";
+        public const string ModSettingsBookmarksDescription = "mod-settings.bookmarks-description";
+
+        /// <summary>The three sentences about where this campaign stands. A campaign nobody has
+        /// saved has no identity to name a file after, so its bookmarks are held in memory until the
+        /// first save; a saved campaign with no bookmarks has no file yet; and one with a file says
+        /// the whole path, because the path is the thing the player came here for.</summary>
+        public const string ModSettingsBookmarksUnsaved = "mod-settings.bookmarks.unsaved";
+        public const string ModSettingsBookmarksNone = "mod-settings.bookmarks.none";
+        public const string ModSettingsBookmarksSavedTo = "mod-settings.bookmarks.saved-to";
+
+        /// <summary>The two buttons, and what the copy leaves in front of the file's own text - the
+        /// name to save it under, which carries the campaign's GUID and is the one thing whoever
+        /// receives it cannot work out.</summary>
+        public const string ModSettingsBookmarksCopy = "mod-settings.bookmarks.copy";
+        public const string ModSettingsBookmarksOpenFolder = "mod-settings.bookmarks.open-folder";
+        public const string ModSettingsBookmarksCopyHeader = "mod-settings.bookmarks.copy-header";
+
+        /// <summary>What the mod says after the copy. A clipboard changes nothing the player can
+        /// see or hear, so the press has to say it landed.</summary>
+        public const string ModSettingsBookmarksCopied = "mod-settings.bookmarks.copied";
+
         public const string ScreenLoading = "screen.loading";
         public const string ScreenNotification = "screen.notification";
         public const string ScreenTutorial = "screen.tutorial";
@@ -2225,6 +2252,21 @@ namespace ES2Access.Core.Speech
             { ModSettingsKeysInspect, "Inspect mode" },
             { ModSettingsKeysScanner, "Scanner" },
             { ModSettingsKeysBookmarks, "Bookmarks" },
+            { ModSettingsBookmarks, "Bookmarks" },
+            { ModSettingsBookmarksDescription, "Share this game's map bookmarks" },
+            {
+                ModSettingsBookmarksUnsaved,
+                "Bookmarks are written to disk when this game is first saved."
+            },
+            { ModSettingsBookmarksNone, "No bookmarks set for this game" },
+            { ModSettingsBookmarksSavedTo, "Bookmarks are saved to {0}" },
+            { ModSettingsBookmarksCopy, "Copy bookmarks to clipboard" },
+            { ModSettingsBookmarksOpenFolder, "Open bookmarks folder" },
+            {
+                ModSettingsBookmarksCopyHeader,
+                "Save this text as {0} in the mod's bookmarks folder"
+            },
+            { ModSettingsBookmarksCopied, "Bookmarks copied to the clipboard" },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },
             { ScreenTutorial, "Tutorial" },

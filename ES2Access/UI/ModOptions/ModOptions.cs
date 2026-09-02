@@ -57,11 +57,13 @@ namespace ES2Access.UI.ModOptions
         private static bool _stopped;
 
         /// <summary>
-        /// The window's three tabs, in the order they are drawn - General first, then the player's
-        /// own scanner categories, then the mod's key bindings. General is where a setting that
-        /// belongs to no other tab lives, and it is first because that is where a player looks for
-        /// one; being first also makes it the tab the window OPENS on
-        /// (<see cref="ModOptionsWindow.Load"/> shows the first panel).
+        /// The window's four tabs, in the order they are drawn - General first, then the player's
+        /// own scanner categories, then the mod's key bindings, then Bookmarks. General is where a
+        /// setting that belongs to no other tab lives, and it is first because that is where a
+        /// player looks for one; being first also makes it the tab the window OPENS on
+        /// (<see cref="ModOptionsWindow.Load"/> shows the first panel). Bookmarks is LAST because it
+        /// holds no setting at all (<see cref="BookmarkRows"/>): it says where this campaign's map
+        /// bookmarks are kept and offers the two ways of reaching them.
         ///
         /// ALL EXIST EVERYWHERE, main menu included (owner ruling 2026-08-24). The Scanner tab was
         /// in-game only for as long as its columns were a snapshot of the galaxy being played; they
@@ -120,6 +122,17 @@ namespace ES2Access.UI.ModOptions
                             KeybindRows.Fill
                         )
                     );
+
+                    _categories.Add(
+                        new ModCategory(
+                            BookmarksCategory,
+                            typeof(IModBookmarksService),
+                            new ModBookmarksService(),
+                            () => ModStrings.Get(ModStrings.ModSettingsBookmarks),
+                            () => ModStrings.Get(ModStrings.ModSettingsBookmarksDescription),
+                            BookmarkRows.Fill
+                        )
+                    );
                 }
 
                 return _categories;
@@ -134,6 +147,10 @@ namespace ES2Access.UI.ModOptions
         /// toggles by, never a spoken word (the words are <see cref="ModStrings.ModSettingsGeneral"/>,
         /// written over the tab by <see cref="ModOptionsWindow"/>).</summary>
         public const string GeneralCategory = "General";
+
+        /// <summary>The Bookmarks tab's category key - an identifier, like
+        /// <see cref="GeneralCategory"/>, never a spoken word.</summary>
+        public const string BookmarksCategory = "Bookmarks";
 
         /// <summary>What the game names that page in the player's language, and what its own options
         /// window says about it - the mod's key-binding tab is the game's Controls tab and reads as
@@ -178,6 +195,12 @@ namespace ES2Access.UI.ModOptions
             {
                 return;
             }
+
+            // Before the build guard below, which returns as soon as the window exists: this is the
+            // pump the Bookmarks tab says a press's result from, and a press can only happen once
+            // the window is built (ScannerEditor has a tick of its own in ModEntry for the same
+            // job; a tab that only needs a line said borrows this one rather than adding another).
+            BookmarkRows.Tick();
 
             if (_window != null || _attempts >= BuildAttempts || !Ready())
             {
@@ -246,6 +269,7 @@ namespace ES2Access.UI.ModOptions
             ScannerEditor.Forget();
             ScannerRows.Forget();
             GeneralRows.Forget();
+            BookmarkRows.Forget();
             ModRows.Forget();
             RemoveServices();
             DestroyLeftovers();

@@ -17,6 +17,13 @@ how to reach one save file by name. (Chartered 2026-08-31; grew out of the bookm
   question answers both, and a new game, a load and a first save are the same event to it. The
   poll compares the raw `Guid` and only mints the string form on a change, so the once-a-frame
   question allocates nothing.
+- **A save changing hands leaves its bookmarks behind, and two engine calls are what hand them
+  over** (2026-09-02, the mod's Bookmarks tab). The file is named after the campaign GUID, so the
+  receiver cannot work its name out - the text is copied with that name in a `#` comment line in
+  front of it. `UnityEngine.GUIUtility.systemCopyBuffer` WORKS from the game's main thread in Unity
+  5.5: written from `/eval` and read straight back, byte for byte what `File.ReadAllText` gave
+  (which eats the file's UTF-8 BOM). `System.Diagnostics.Process.Start(<folder path>)` opens a real
+  Explorer window from inside the game on Windows and returns at once; Mac and Linux are unverified.
 - **`GameManager.RetrieveGameSaveDescriptor(path)` reads a save's descriptor off disk without
   loading it**, and `Session.GameClient.Disconnect(GameDisconnectionReason.ClientLoadSave, 0,
   descriptor)` is the in-game load route `POST /loadsave` itself takes — together they load ONE
