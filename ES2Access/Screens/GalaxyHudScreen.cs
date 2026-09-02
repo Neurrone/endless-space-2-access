@@ -4545,15 +4545,25 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The first thing declared inside a group in this render - declaration order is the
-        /// reading order, so the first is the one an arrow key would reach first.</summary>
+        /// reading order, so the first is the one an arrow key would reach first.
+        ///
+        /// Asked of ANCESTRY rather than of the direct parent, because a group is free to sort its
+        /// children under named levels of its own - a system's are seven regions
+        /// (<see cref="AddInside"/>), and a region is a pushed context, so nothing inside an opened
+        /// system has the system itself for a parent any more. The direct-parent test answered
+        /// nothing there, which left the one landing that reads this - the bookmark jump - on the
+        /// system's row instead of inside it, and so left the camera outside.</summary>
         private static ControlId FirstChild(GraphRender render, GraphNode group)
         {
             for (int i = 0; i < render.Order.Count; i++)
             {
                 GraphNode node = render.Order[i];
-                if (ReferenceEquals(node.Parent, group))
+                for (GraphNode walk = node.Parent; walk != null; walk = walk.Parent)
                 {
-                    return node.Id;
+                    if (ReferenceEquals(walk, group))
+                    {
+                        return node.Id;
+                    }
                 }
             }
 
