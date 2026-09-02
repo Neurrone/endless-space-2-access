@@ -66,6 +66,13 @@ namespace ES2Access.Dev
     /// and is NEVER counted a defect: every galaxy node used to land in <c>promised</c> for this
     /// reason alone, over dossiers that demonstrably draw.
     ///
+    /// A node aimed at one of the mod's own tooltip carriers (<see cref="ES2Access.UI.ScratchTooltips"/>)
+    /// is exempt from <c>promised</c>: a carrier is deliberately outside the widget tree, so no walk of
+    /// the node's own widget can ever find it, and judging it there reported every carrier in the mod
+    /// as an empty promise over a dossier that demonstrably draws (measured 2026-09-02 on the hero
+    /// overview's skill children). The other buckets still judge it, because the carrier itself answers
+    /// <see cref="AgeWidgets.Draws"/> like any other tooltip.
+    ///
     /// The painted half needs <see cref="Screen.RootTransform"/>; with none, the check is
     /// declaration-side only.
     ///
@@ -623,8 +630,14 @@ namespace ES2Access.Dev
                         continue;
                     }
                 }
-                else if (!NotificationAudit.AnyDrawing(node.Widget))
+                else if (!NotificationAudit.AnyDrawing(node.Widget) && !ScratchTooltips.Owns(aimed))
                 {
+                    // A carrier is never in the widget tree - that is the whole of how it works
+                    // (<see cref="ScratchTooltips"/>: parented under a GameObject with no
+                    // AgeTransform so nothing lays it out or draws it) - so the walk of the node's
+                    // own widget cannot find it however well it draws. A node aimed at one has a
+                    // dossier that demonstrably appears; judging it by what hangs on the widget
+                    // beneath would report every carrier the mod owns as an empty promise.
                     result.Promised.Add(
                         NotificationAudit.Made(
                             node.Widget,
