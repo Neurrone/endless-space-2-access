@@ -121,7 +121,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("DiplomacyScreen");
                 return string.IsNullOrEmpty(title)
                     ? ModStrings.Get(ModStrings.ScreenDiplomacy)
                     : title;
@@ -809,18 +809,6 @@ namespace ES2Access.Screens
             try
             {
                 return AgeWidgets.DrawnLabel(label);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("DiplomacyScreen"));
             }
             catch (Exception)
             {

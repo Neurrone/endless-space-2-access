@@ -159,7 +159,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("EconomyScreen");
                 return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.ScreenEconomy) : title;
             }
         }
@@ -2697,46 +2697,17 @@ namespace ES2Access.Screens
         /// <summary>The thing a market row stands for. The wrapper the table binds is rebuilt whenever
         /// the section refreshes and the line widget is pooled, so it is the tradable underneath that
         /// identifies the row.</summary>
-        private static object TradableOf(GuiTableLine line)
-        {
-            try
+        private static readonly TableSheet.RowObject TradableOf = TableSheet.Model<IGuiTradable>(
+            tradable =>
             {
-                IGuiTradable tradable =
-                    line == null ? null : line.Data as IGuiTradable;
                 GuiBuyable buyable = tradable as GuiBuyable;
                 return buyable != null ? (object)buyable.Tradable : tradable;
             }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        );
 
         /// <summary>What a market row is called when its name column draws nothing.</summary>
-        private static string TradableName(GuiTableLine line)
-        {
-            try
-            {
-                IGuiTradable tradable = line == null ? null : line.Data as IGuiTradable;
-                return tradable == null ? null : AgeText.Clean(tradable.Title);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("EconomyScreen"));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel TradableName =
+            TableSheet.Name<IGuiTradable>(tradable => tradable.Title);
 
         private static global::EconomyScreen Window()
         {

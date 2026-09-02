@@ -111,18 +111,10 @@ namespace ES2Access.Screens
             BuildActions(builder, window);
         }
 
-        /// <summary>
-        /// The automation policy column, where the game draws a DROP LIST rather than a readout - and
-        /// so, where the game leaves it operable, the cell is a combo box and Enter opens the list
-        /// instead of selecting the row.
-        ///
-        /// Null for every other column, and for a policy the game has switched off: an empire without
-        /// system automation gets the list drawn disabled, and a disabled list is a readout of what the
-        /// system is doing instead.
-        ///
-        /// Like every other cell it does not say its own heading - the crossed edge does - but the list
-        /// it opens is still TITLED with it, because that window is somewhere the player has been taken.
-        /// </summary>
+        /// <summary>The automation policy column, read as the same column of the Empire page's table is
+        /// (<see cref="TableSheet.PolicyCell"/>): where the game leaves the drop list operable the cell
+        /// is a combo box and Enter opens the list instead of selecting the row, and a policy the game
+        /// has switched off is a readout of what the system is doing instead.</summary>
         private NodeVtable Policy(
             GuiTableLine line,
             AgeTransform cell,
@@ -130,23 +122,7 @@ namespace ES2Access.Screens
             Func<bool> enabled
         )
         {
-            AgeControlDropList list = DropList(cell);
-            if (list == null || !AgeWidgets.Operable(list.AgeTransform) || !enabled())
-            {
-                return null;
-            }
-
-            AgeControlDropList it = list;
-            AgeTransform widget = cell;
-            GuiTableHeader heading = header;
-            return GraphNodes.ComboBox(
-                null,
-                () => _table.CellText(widget),
-                () => SettingRows.OpenList(it, TableSheet.HeaderName(heading)),
-                () => AgeWidgets.Operable(it.AgeTransform),
-                TableSheet.TooltipOf(widget),
-                () => _table.CellFacts(heading, widget)
-            );
+            return _table.PolicyCell(cell, header, enabled);
         }
 
         // ---- the bottom band ----
@@ -203,49 +179,15 @@ namespace ES2Access.Screens
 
         // ---- reading the window ----
 
-        private static AgeControlDropList DropList(AgeTransform cell)
-        {
-            try
-            {
-                return cell == null ? null : cell.GetComponentInChildren<AgeControlDropList>();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>The system a row stands for. The wrapper the table binds is rebuilt on every
         /// refresh, so it is the system underneath it that identifies the row.</summary>
-        private static ColonizedStarSystem SystemOf(GuiTableLine line)
-        {
-            try
-            {
-                GuiColonizedStarSystem wrapper =
-                    line == null ? null : line.Data as GuiColonizedStarSystem;
-                return wrapper == null ? null : wrapper.ColonizedStarSystem;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowObject SystemOf =
+            TableSheet.Model<GuiColonizedStarSystem>(wrapper => wrapper.ColonizedStarSystem);
 
         /// <summary>What the row is called when the name column draws nothing - the system's own
         /// name.</summary>
-        private static string SystemName(GuiTableLine line)
-        {
-            try
-            {
-                GuiColonizedStarSystem wrapper =
-                    line == null ? null : line.Data as GuiColonizedStarSystem;
-                return wrapper == null ? null : AgeText.Clean(wrapper.LocalizedName);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel SystemName =
+            TableSheet.Name<GuiColonizedStarSystem>(wrapper => wrapper.LocalizedName);
 
         private static string NameOf(AgeTransform widget)
         {

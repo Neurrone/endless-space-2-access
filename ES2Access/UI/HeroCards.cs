@@ -109,22 +109,18 @@ namespace ES2Access.UI
         /// the card's readout rather than leaving it to the tooltip rule; null on every card whose
         /// <c>DisplayDescription</c> is off, which is most of them.
         /// </summary>
-        public static Func<string> Description(HeroDetailedCard card)
+        public static string Description(HeroDetailedCard card)
         {
-            HeroDetailedCard it = card;
-            return () =>
+            try
             {
-                try
-                {
-                    return it == null || !it.DisplayDescription
-                        ? null
-                        : AgeText.Label(it.DescriptionLabel);
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-            };
+                return card == null || !card.DisplayDescription
+                    ? null
+                    : AgeText.Label(card.DescriptionLabel);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The card's declared content: its whole drawn face as buffer lines, then the card's
@@ -460,23 +456,7 @@ namespace ES2Access.UI
             string key
         )
         {
-            AgeControlButton button = Wired(card, handler);
-            AgeTransform widget = AgeWidgets.Transform(button);
-            if (widget == null || !AgeWidgets.Operable(widget))
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Button(
-                () => AgeText.Title(titleKey),
-                () => AgeWidgets.PressPropagating(it),
-                () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                tooltip
-            );
-            AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.For(button, keyPrefix + "/" + key), vtable);
+            PanelButtons.Add(cells, Wired(card, handler), titleKey, keyPrefix, key, true);
         }
 
         /// <summary>A tooltip only where the card is keeping its tooltips at all: <c>HasTooltips</c> off

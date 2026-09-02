@@ -99,17 +99,14 @@ ES2Access/Screens/ElectionScreen.cs | 1 | || !AgeWidgets.Visible(child)
 
 ES2Access/Screens/EmpireScreen.cs | 1 | && AgeWidgets.Visible(item)
 ES2Access/Screens/EmpireScreen.cs | 1 | && AgeWidgets.Visible(window.VictoryAndPerformancePanel.AgeTransform);
-ES2Access/Screens/EmpireScreen.cs | 1 | && button.AgeTransform.Visible
 ES2Access/Screens/EmpireScreen.cs | 1 | AgeWidgets.Visible(slot.RemoveRelicsImage)
 ES2Access/Screens/EmpireScreen.cs | 1 | if (all[i] != null && AgeWidgets.Visible(all[i].AgeTransform) && all[i].Planet != null)
 ES2Access/Screens/EmpireScreen.cs | 1 | if (button == null || !AgeWidgets.Visible(button))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (cards != null && AgeWidgets.Visible(cards.AgeTransform))
-ES2Access/Screens/EmpireScreen.cs | 1 | if (child == null || !child.Visible)
 ES2Access/Screens/EmpireScreen.cs | 1 | if (constructibles != null && AgeWidgets.Visible(constructibles.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (hangar != null && AgeWidgets.Visible(hangar.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (queue != null && AgeWidgets.Visible(queue.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(panel.AgeTransform))
-ES2Access/Screens/EmpireScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/EmpireScreen.cs | 1 | return container == null || !AgeWidgets.Visible(container)
 ES2Access/Screens/EmpireScreen.cs | 1 | return sector.VictoryRankGroup == null || !sector.VictoryRankGroup.Visible
 
@@ -296,7 +293,6 @@ ES2Access/Screens/MenuDestinationScreens.cs | 1 | item == null || !item.Visible 
 
 ES2Access/Screens/MessageBoxScreen.cs | 1 | !AgeWidgets.Visible(AgeWidgets.Transform(button))
 
-ES2Access/Screens/MilitaryScreen.cs | 1 | && button.AgeTransform.Visible
 ES2Access/Screens/MilitaryScreen.cs | 1 | if (band == null || !AgeWidgets.Visible(band))
 ES2Access/Screens/MilitaryScreen.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 
@@ -448,11 +444,10 @@ ES2Access/Screens/SpaceBattleScreen.cs | 1 | if (table == null || !AgeWidgets.Vi
 ES2Access/Screens/SystemManagementScreen.cs | 1 | && AgeWidgets.Visible(panel.ExperienceGauge.AgeTransform)
 ES2Access/Screens/SystemManagementScreen.cs | 1 | bool ghost = AgeWidgets.Visible(label.GhostGroup);
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (!AgeWidgets.Visible(label.GhostGroup))
-ES2Access/Screens/SystemManagementScreen.cs | 1 | if (AgeWidgets.Paints(children[i]) && (skip == null || !skip(children[i])))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (AgeWidgets.Visible(label.ImprovementStatus))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (children[i] != null && AgeWidgets.Visible(children[i]))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (count != null && AgeWidgets.Visible(count.AgeTransform))
-ES2Access/Screens/SystemManagementScreen.cs | 6 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/SystemManagementScreen.cs | 5 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (group == null || fidsi.FidsiProperties == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (improvements != null && AgeWidgets.Visible(improvements))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
@@ -463,7 +458,7 @@ ES2Access/Screens/SystemManagementScreen.cs | 1 | if (list == null || group == n
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (rename != null && AgeWidgets.Visible(AgeWidgets.Transform(rename)))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (resource == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(banner.AgeTransform))
-ES2Access/Screens/SystemManagementScreen.cs | 6 | if (widget == null || !AgeWidgets.Visible(widget))
+ES2Access/Screens/SystemManagementScreen.cs | 5 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | if (widget == null || tooltip == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SystemManagementScreen.cs | 1 | return item.DurationGroup != null && item.DurationGroup.Visible
 ES2Access/Screens/SystemManagementScreen.cs | 1 | || !AgeWidgets.Visible(panel.MothershipGroup)
@@ -533,8 +528,12 @@ ES2Access/UI/NegotiationTerms.cs | 1 | || !AgeWidgets.Visible(line.QuantityGroup
 
 ES2Access/UI/NotificationStrip.cs | 1 | bool shown = strict ? child.Visible : child.Alpha > 0f;
 
+ES2Access/UI/PlanetCardLines.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+
 ES2Access/UI/PoliticsExperience.cs | 1 | return AgeWidgets.Paints(marker) ? marker : null;
 ES2Access/UI/PoliticsExperience.cs | 1 | || !AgeWidgets.Paints(group)
+
+ES2Access/UI/PopulationMoves.cs | 1 | return sector.AgeTransform.Visible;
 
 ES2Access/UI/SessionChat.cs | 1 | return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
 
@@ -584,8 +583,10 @@ ES2Access/UI/SystemPanels.cs | 1 | if (line.Progress != null && line.Progress.Vi
 ES2Access/UI/SystemPanels.cs | 1 | if (line.RemainingTurnLabel != null && line.RemainingTurnLabel.Visible)
 ES2Access/UI/SystemPanels.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 
+ES2Access/UI/TableSheet.cs | 1 | && button.AgeTransform.Visible
 ES2Access/UI/TableSheet.cs | 1 | && child.Alpha > 0f
 ES2Access/UI/TableSheet.cs | 1 | && child.Visible
+ES2Access/UI/TableSheet.cs | 1 | if (child == null || !child.Visible)
 ES2Access/UI/TableSheet.cs | 1 | if (header != null && AgeWidgets.Visible(child))
 ES2Access/UI/TableSheet.cs | 1 | if (paintedOnly && widget.Alpha <= 0f)
 ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > MaxCellDepth || !widget.Visible)

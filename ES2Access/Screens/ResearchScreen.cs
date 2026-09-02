@@ -97,7 +97,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("TechnologyScreen");
                 return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.ScreenResearch) : title;
             }
         }
@@ -1804,21 +1804,22 @@ namespace ES2Access.Screens
             player.PostOrder(new OrderMoveResearch(player.Empire.Index, construction.GUID, index));
         }
 
-        /// <summary>Where the technology is in the queue the game is showing, or -1 for one that is
-        /// not in it.</summary>
+        /// <summary>Where the technology is in the QUEUE, or -1 for one that is not in it - the game's
+        /// own research queue, asked the same way this file's drop and its move-to-head ask it
+        /// (:456, :1808). The list the screen draws is a different thing: it holds what the player has
+        /// asked for the moment they ask, frames before the order the game posts comes back, which is
+        /// exactly the disagreement <see cref="FinishMoveToHead"/> exists to cover.</summary>
         private static int QueuePosition(GuiTechnology2 technology)
         {
             try
             {
-                TechnologyScreen window = Window();
-                List<GuiTechnology2> queue = window == null ? null : window.GuiTechnologiesQueue;
-                for (int i = 0; queue != null && i < queue.Count; i++)
-                {
-                    if (ReferenceEquals(queue[i], technology))
-                    {
-                        return i;
-                    }
-                }
+                DepartmentOfScience science = Science();
+                ConstructionQueue queue = science == null ? null : science.ResearchQueue;
+                Construction construction =
+                    queue == null || technology == null
+                        ? null
+                        : queue.Get(technology.TechnologyDefinition);
+                return construction == null ? -1 : queue.IndexOf(construction);
             }
             catch (Exception) { }
 
@@ -2460,18 +2461,6 @@ namespace ES2Access.Screens
         {
             AgeTransform widget = AgeWidgets.Transform(label);
             return widget == null ? null : widget.Parent;
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("TechnologyScreen"));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static DepartmentOfScience Science()

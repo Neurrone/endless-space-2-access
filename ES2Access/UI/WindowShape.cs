@@ -58,6 +58,23 @@ namespace ES2Access.UI
             return AgeWidgets.TextOf(TitleWidget(root, alsoNamed));
         }
 
+        /// <summary>What the GAME calls a screen, off its own registered name rather than off anything
+        /// drawn - the title the mod announces on arriving at a page, and the same words the game
+        /// writes as the first line of the tooltip on the icon that opens it. Every page whose window
+        /// class the game registers under its own name answers here, so the name is a parameter and not
+        /// a copy per screen.</summary>
+        public static string ScreenTitle(string guiElementName)
+        {
+            try
+            {
+                return AgeText.Clean(Gui.GetLocalizedTitle(guiElementName));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>The widget that heading is written in - the same search, answered as the thing
         /// rather than as its words, for a page that has to declare the heading as a node: a window
         /// title the game hung an explanation on has nowhere else to put those words, since a screen's

@@ -911,7 +911,7 @@ namespace ES2Access.Screens
             if (
                 story == null
                 || !AgeWidgets.Visible(story)
-                || string.IsNullOrEmpty(HeroCards.Description(card)())
+                || string.IsNullOrEmpty(HeroCards.Description(card))
             )
             {
                 return;

@@ -77,7 +77,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("SenateScreen");
                 return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.ScreenSenate) : title;
             }
         }
@@ -841,18 +841,6 @@ namespace ES2Access.Screens
                 AgeWidgets.ChildNamed(panel.AgeTransform, "Title", 2),
                 key
             );
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("SenateScreen"));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static global::SenateScreen Window()

@@ -500,20 +500,9 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeTooltip tooltip = Meaningful(unit.Tooltip);
-            AgePrimitiveLabel count = unit.Count;
-            // The entry is a BUTTON, not a readout: its own click opens the empire's population window
-            // (<c>PopulationCount.OnClickCb</c>), which is the only route into what these people are
-            // beyond the sentence on their symbol - and it is the same window the senate's census
-            // button opens (<see cref="PopulationScreen"/>). It had no opener node anywhere.
-            AgeTransform at = widget;
-            NodeVtable vtable = GraphNodes.Button(
-                () => AgeWidgets.TooltipTitle(tooltip),
-                () => AgeWidgets.Press(at),
-                () => AgeWidgets.Operable(at),
-                tooltip
-            );
-            vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
+            // Read as every panel that lists these entries reads one, with this page's own stub filter
+            // on the tooltip.
+            NodeVtable vtable = PopulationRows.Count(widget, unit, Meaningful(unit.Tooltip));
 
             Add(
                 cells,

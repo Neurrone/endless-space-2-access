@@ -189,33 +189,13 @@ namespace ES2Access.Screens
 
         /// <summary>The hero a row stands for. The wrapper the table binds is rebuilt on every refresh
         /// (<c>Refresh</c> :66-77), so it is the hero underneath it that identifies the row.</summary>
-        private static Hero HeroOf(GuiTableLine line)
-        {
-            try
-            {
-                GuiHero wrapper = line == null ? null : line.Data as GuiHero;
-                return wrapper == null ? null : wrapper.Hero;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowObject HeroOf =
+            TableSheet.Model<GuiHero>(wrapper => wrapper.Hero);
 
         /// <summary>What the row is called when the name column draws nothing - the hero's own name.
         /// </summary>
-        private static string HeroName(GuiTableLine line)
-        {
-            try
-            {
-                GuiHero wrapper = line == null ? null : line.Data as GuiHero;
-                return wrapper == null ? null : AgeText.Clean(wrapper.Title);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel HeroName =
+            TableSheet.Name<GuiHero>(wrapper => wrapper.Title);
 
         private static GuiTable Table(HeroCompleteListModalWindow window)
         {

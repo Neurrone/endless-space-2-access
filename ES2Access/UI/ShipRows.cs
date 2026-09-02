@@ -298,25 +298,7 @@ namespace ES2Access.UI
             string key
         )
         {
-            AgeTransform widget = AgeWidgets.Transform(button);
-            if (button == null)
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            Func<bool> enabled = () => AgeWidgets.Operable(AgeWidgets.Transform(it));
-            NodeVtable vtable = GraphNodes.Button(
-                () => AgeText.Title(titleKey),
-                () => AgeWidgets.Press(it),
-                enabled,
-                tooltip
-            );
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
-
-            AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.For(button, keyPrefix + "/" + key), vtable);
+            PanelButtons.Add(cells, button, titleKey, keyPrefix, key, false);
         }
     }
 }

@@ -124,7 +124,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("MilitaryScreen");
                 return string.IsNullOrEmpty(title)
                     ? ModStrings.Get(ModStrings.ScreenMilitary)
                     : title;
@@ -468,18 +468,12 @@ namespace ES2Access.Screens
             _table.Rows(builder, table, GroupTitle(table));
         }
 
-        /// <summary>
-        /// The Hero column, where the game draws a BUTTON rather than a figure - the one cell of this
-        /// table that is a control.
-        ///
-        /// Null for every other column, which is the shared value cell. Enter here is the cell's own
-        /// click carried on to the row's toggle, which is the two-step the mouse makes: the cell button
-        /// records which cell was hit and the row's own handler reads that and opens either the hero
-        /// picker or the assigned hero's dossier.
-        ///
-        /// The cell is still a cell - it says the hero it is showing, or the word for showing nothing,
-        /// and not its heading, which the sheet speaks as the edge crossed to reach it.
-        /// </summary>
+        /// <summary>The Hero column, where the game draws a BUTTON rather than a figure - the one cell
+        /// of this table that is a control, read as every table's button cell is
+        /// (<see cref="TableSheet.ButtonCell"/>). Enter here is the cell's own click carried on to the
+        /// row's toggle, which is the two-step the mouse makes: the cell button records which cell was
+        /// hit and the row's own handler reads that and opens either the hero picker or the assigned
+        /// hero's dossier.</summary>
         private NodeVtable HeroCell(
             GuiTableLine line,
             AgeTransform cell,
@@ -487,66 +481,7 @@ namespace ES2Access.Screens
             Func<bool> enabled
         )
         {
-            AgeControlButton button = CellButton(cell);
-            if (button == null)
-            {
-                return null;
-            }
-
-            AgeTransform it = cell;
-            AgeControlButton press = button;
-            GuiTableHeader heading = header;
-            Func<bool> rowEnabled = enabled;
-            Func<bool> operable = () =>
-                rowEnabled() && AgeWidgets.Operable(press.AgeTransform) && AgeWidgets.Enabled(it);
-            AgeTooltip tooltip = TableSheet.TooltipOf(cell);
-            NodeVtable vtable = new NodeVtable
-            {
-                // Named as the button it is, unlike the figures beside it: the whole point of the column
-                // is what pressing it opens, and the role word is the only thing that says it can be
-                // pressed at all.
-                ControlType = ControlTypes.Button,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.ValuePart(() => _table.CellText(it)),
-                    GraphNodes.DisabledPart(operable),
-                },
-                Sections = GraphNodes.Sections(() => _table.CellFacts(heading, it), tooltip),
-                OnActivate = () =>
-                {
-                    if (operable())
-                    {
-                        AgeWidgets.PressPropagating(press);
-                    }
-                },
-            };
-            GraphNodes.AddRefusal(vtable, tooltip, operable);
-
-            // Its own "unavailable" already covers the row's, since the row's own answer is one of the
-            // three this cell asks - so the sheet leaves the shared one off (TableSheet.SaysRowRefusal).
-            return _table.SaysRowRefusal(vtable);
-        }
-
-        private static AgeControlButton CellButton(AgeTransform cell)
-        {
-            try
-            {
-                if (cell == null)
-                {
-                    return null;
-                }
-
-                AgeControlButton button = cell.GetComponentInChildren<AgeControlButton>(true);
-                return button != null
-                    && !string.IsNullOrEmpty(button.OnActivateMethod)
-                    && button.AgeTransform.Visible
-                    ? button
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return _table.ButtonCell(cell, header, enabled);
         }
 
         // ---- what can be done to the picked fleet ----
@@ -893,51 +828,19 @@ namespace ES2Access.Screens
 
         /// <summary>The fleet a row stands for. The wrapper the table binds is rebuilt on every refresh,
         /// so it is the fleet underneath it that identifies the row.</summary>
-        private static Fleet FleetOf(GuiTableLine line)
-        {
-            try
-            {
-                GuiGarrison wrapper = line == null ? null : line.Data as GuiGarrison;
-                return wrapper == null ? null : wrapper.Fleet;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowObject FleetOf =
+            TableSheet.Model<GuiGarrison>(wrapper => wrapper.Fleet);
 
         /// <summary>What the row is called when the name column draws nothing - the fleet's own name.
         /// </summary>
-        private static string FleetName(GuiTableLine line)
-        {
-            try
-            {
-                GuiGarrison wrapper = line == null ? null : line.Data as GuiGarrison;
-                return wrapper == null ? null : AgeText.Clean(wrapper.LocalizedName);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel FleetName =
+            TableSheet.Name<GuiGarrison>(wrapper => wrapper.LocalizedName);
 
         private static GuiTable Table(global::MilitaryScreen window)
         {
             try
             {
                 return window == null ? null : window.FleetsTable;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("MilitaryScreen"));
             }
             catch (Exception)
             {

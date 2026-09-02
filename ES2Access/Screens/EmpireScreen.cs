@@ -116,7 +116,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("EmpireScreen");
                 return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.ScreenEmpire) : title;
             }
         }
@@ -548,9 +548,12 @@ namespace ES2Access.Screens
         /// records which cell was hit and the toggle's handler reads it and opens the matching panel.
         ///
         /// The cell is still a cell - it says the figure it is drawing and not its heading, which the
-        /// sheet speaks as the edge - and it is read here rather than by the sheet only because a
+        /// sheet speaks as the edge - and it is read as a control rather than as a value only because a
         /// REFUSAL lives on the cell: the construction column of an outpost or a ghost is switched off
         /// with the game's own sentence about why, while the row it sits in is perfectly available.
+        /// Both shapes are the sheet's (<see cref="TableSheet.PolicyCell"/>,
+        /// <see cref="TableSheet.ButtonCell"/>); what is this page's own is the DROP the population
+        /// column takes.
         /// </summary>
         private NodeVtable ActionCell(
             GuiTableLine line,
@@ -559,50 +562,21 @@ namespace ES2Access.Screens
             Func<bool> enabled
         )
         {
-            NodeVtable policy = Policy(cell, header, enabled);
+            NodeVtable policy = _table.PolicyCell(cell, header, enabled);
             if (policy != null)
             {
                 return policy;
             }
 
-            AgeControlButton button = ActionButton(cell);
-            if (button == null)
+            NodeVtable vtable = _table.ButtonCell(cell, header, enabled);
+            if (vtable == null)
             {
                 return null;
             }
 
-            AgeTransform it = cell;
-            AgeControlButton press = button;
-            GuiTableHeader heading = header;
-            Func<bool> rowEnabled = enabled;
-            Func<bool> operable = () =>
-                rowEnabled() && AgeWidgets.Operable(press.AgeTransform) && AgeWidgets.Enabled(it);
-            AgeTooltip tooltip = TableSheet.TooltipOf(cell);
-            AgeTooltip reason = RefusalTooltip(cell) ?? tooltip;
-            GuiTableCellSystemPopulation population = PopulationCell(cell);
-            NodeVtable vtable = new NodeVtable
-            {
-                // Named as the button it is, unlike the figures beside it: the game draws a click target
-                // in these five columns and the whole point of the column is what pressing it opens, so
-                // the role word is the only thing that says the cell can be pressed at all.
-                ControlType = ControlTypes.Button,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.ValuePart(() => _table.CellText(it)),
-                    GraphNodes.DisabledPart(operable),
-                },
-                Sections = GraphNodes.Sections(() => _table.CellFacts(heading, it), tooltip),
-                OnActivate = () =>
-                {
-                    if (operable())
-                    {
-                        AgeWidgets.PressPropagating(press);
-                    }
-                },
-            };
-            GraphNodes.AddRefusal(vtable, reason, operable);
             // The population column of another system is where a carried unit is SENT: the game's own
             // drag drops it here and the source system's spaceport ships it over.
+            GuiTableCellSystemPopulation population = PopulationCell(cell);
             if (population != null)
             {
                 GuiTableCellSystemPopulation at = population;
@@ -611,9 +585,7 @@ namespace ES2Access.Screens
                 vtable.OnDrop = held => Ship(at, held);
             }
 
-            // Its own "unavailable" already covers the row's, since the row's own answer is one of the
-            // three this cell asks - so the sheet leaves the shared one off (TableSheet.SaysRowRefusal).
-            return _table.SaysRowRefusal(vtable);
+            return vtable;
         }
 
         private static GuiTableCellSystemPopulation PopulationCell(AgeTransform cell)
@@ -626,101 +598,6 @@ namespace ES2Access.Screens
             {
                 return null;
             }
-        }
-
-        /// <summary>
-        /// The automation policy column, where the game draws a DROP LIST rather than a readout - the
-        /// same cell the system-selection window's table draws, and the same treatment: where the game
-        /// leaves it operable the cell is a combo box and Enter opens the list, and a policy the game has
-        /// switched off is a readout of what the system is doing instead.
-        ///
-        /// The list it opens is TITLED with the column, because that window is somewhere the player has
-        /// been taken; the cell itself still does not say its own heading, which the crossed edge does.
-        /// </summary>
-        private NodeVtable Policy(AgeTransform cell, GuiTableHeader header, Func<bool> enabled)
-        {
-            AgeControlDropList list = DropList(cell);
-            if (list == null || !AgeWidgets.Operable(list.AgeTransform) || !enabled())
-            {
-                return null;
-            }
-
-            AgeControlDropList it = list;
-            AgeTransform widget = cell;
-            GuiTableHeader heading = header;
-            return GraphNodes.ComboBox(
-                null,
-                () => _table.CellText(widget),
-                () => SettingRows.OpenList(it, TableSheet.HeaderName(heading)),
-                () => AgeWidgets.Operable(it.AgeTransform),
-                TableSheet.TooltipOf(widget),
-                () => _table.CellFacts(heading, widget)
-            );
-        }
-
-        private static AgeControlDropList DropList(AgeTransform cell)
-        {
-            try
-            {
-                return cell == null ? null : cell.GetComponentInChildren<AgeControlDropList>();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>The button a cell of this table carries, where it has one the game is drawing. The
-        /// resources column carries a dummy with no handler at all, which is not one of these: pressing
-        /// it does what a click on any plain cell does, and that is the sheet's own job.</summary>
-        private static AgeControlButton ActionButton(AgeTransform cell)
-        {
-            try
-            {
-                if (cell == null)
-                {
-                    return null;
-                }
-
-                AgeControlButton button = cell.GetComponentInChildren<AgeControlButton>(true);
-                return button != null
-                    && !string.IsNullOrEmpty(button.OnActivateMethod)
-                    && button.AgeTransform.Visible
-                    ? button
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>Where a refused cell's reason is written. The construction column puts its sentence
-        /// on the label it draws INSTEAD of the construction ("this system is an outpost"), not on the
-        /// cell, so the first tooltip with words in it under the cell is the one that answers.</summary>
-        private static AgeTooltip RefusalTooltip(AgeTransform cell)
-        {
-            try
-            {
-                IList<AgeTransform> children = cell == null ? null : cell.Children;
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    AgeTransform child = children[i];
-                    if (child == null || !child.Visible)
-                    {
-                        continue;
-                    }
-
-                    AgeTooltip tooltip = AgeWidgets.Raw(child);
-                    if (tooltip != null && AgeWidgets.Readable(tooltip) != null)
-                    {
-                        return tooltip;
-                    }
-                }
-            }
-            catch (Exception) { }
-
-            return null;
         }
 
         // ---- the panels a cell slides out ----
@@ -1160,7 +1037,8 @@ namespace ES2Access.Screens
                 return PopulationMoves.Slots(
                     card.Planet,
                     card.ColonizedPlanet,
-                    DrawnMarkers(card),
+                    card.PlanetCardPopulationEnumerator,
+                    AgeWidgets.DrawnCount(MarkerContainer(card)),
                     units
                 );
             }
@@ -1171,33 +1049,33 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>How many markers the ring the card is DRAWING is showing. The ring retires a marker
-        /// by HIDING it rather than by fading it
-        /// (<c>PopulationEnumerator.HideAllPopulationMarkers</c>), which the shared child test covers as
-        /// well: it asks the visibility flag first.</summary>
-        private static int DrawnMarkers(PlanetCard card)
+        /// <summary>The container the card draws its population ring in - the card has a single ring,
+        /// unlike the star system page's card, which swaps between a simple one and a detailed one.
+        /// Whether the game is drawing it at all is not asked here: the readers this is handed to ask
+        /// it of the container themselves (<see cref="AgeWidgets.DrawnCount"/>,
+        /// <see cref="AgeWidgets.DrawnChildren"/>).</summary>
+        private static AgeTransform MarkerContainer(PlanetCard card)
         {
-            PlanetPopulationEnumerator enumerator = card.PlanetCardPopulationEnumerator;
+            PlanetPopulationEnumerator enumerator =
+                card == null ? null : card.PlanetCardPopulationEnumerator;
             return enumerator == null
-                ? 0
-                : AgeWidgets.DrawnCount(
-                    enumerator.PopMarkersContainer ?? enumerator.AgeTransform
-                );
+                ? null
+                : enumerator.PopMarkersContainer ?? enumerator.AgeTransform;
         }
 
         /// <summary>
-        /// A row per SLOT of the ring the card draws, in the three bands it draws them in - the same
-        /// model the star system page's cards use, off the same shared arithmetic
-        /// (<see cref="PopulationMoves.Slots"/>).
+        /// A row per SLOT of the ring the card draws, in the three bands it draws them in
+        /// (<see cref="PopulationRings.Add"/>) - the same rows the star system page's cards offer,
+        /// off the same walk, so a ring reads the same way wherever the game draws it. This page
+        /// supplies only what is its own: which container the ring is drawn in, whose people fill it,
+        /// where a drop lands, and what its own drop does.
         ///
         /// It was a row per AFFINITY until 2026-08-29, which said who lived on the world and nothing
         /// about how much room there was - the question the ring is on the card to answer - and gave a
         /// player no way to hear that the first marker of a run carries five people and the last one.
         ///
         /// <paramref name="canCarry"/> is where the game would let a drag start off this card AND this
-        /// page has somewhere to put the unit down. One press carries what the game's own drag would
-        /// carry from that marker, and what is carried is captured then, because the row is rebuilt
-        /// every frame.
+        /// page has somewhere to put the unit down.
         /// </summary>
         private static void AddPopulations(
             GraphBuilder builder,
@@ -1208,131 +1086,30 @@ namespace ES2Access.Screens
             bool canCarry
         )
         {
-            if (slots.Count == 0)
-            {
-                return;
-            }
-
-            ColonizedPlanet colony = Settled(card);
-            object outer = builder.Region;
-            int total = slots.Count;
-            bool inBand = false;
-            PopulationSlots.Band band = PopulationSlots.Band.Population;
-            try
-            {
-                for (int i = 0; i < slots.Count; i++)
+            PlanetCard it = card;
+            PopulationRings.Add(
+                builder,
+                new PopulationRings.Ring
                 {
-                    PopulationSlots.Slot slot = slots[i];
-                    if (!inBand || band != slot.Kind)
-                    {
-                        if (inBand)
-                        {
-                            builder.PopContext();
-                        }
-
-                        band = slot.Kind;
-                        inBand = true;
-                        builder.SetRegion(keyPrefix + "/population/" + band);
-                        builder.PushContext(PopulationMoves.BandName(band));
-                    }
-
-                    AddPopulationSlot(builder, keyPrefix, card, colony, units, slot, total, canCarry);
-                }
-            }
-            finally
-            {
-                if (inBand)
-                {
-                    builder.PopContext();
-                }
-
-                builder.SetRegion(outer);
-            }
-        }
-
-        /// <summary>One slot of the card's ring: where it is, who is in it, and - on a filled slot of
-        /// the player's own colony - the carry and the SWAP the game puts on that marker.</summary>
-        private static void AddPopulationSlot(
-            GraphBuilder builder,
-            string keyPrefix,
-            PlanetCard card,
-            ColonizedPlanet colony,
-            List<Population> units,
-            PopulationSlots.Slot slot,
-            int total,
-            bool canCarry
-        )
-        {
-            Population unit = slot.Unit >= 0 && slot.Unit < units.Count ? units[slot.Unit] : null;
-            bool empty = unit == null && slot.Kind != PopulationSlots.Band.Locked;
-            bool vacant = colony == null && empty;
-            int rank = slot.Rank;
-            int outOf = total;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(
-                        () =>
-                            vacant
-                                ? ModStrings.Get(ModStrings.SystemPopulationSlotVacant)
-                                : ModStrings.Format(
-                                    empty
-                                        ? ModStrings.SystemPopulationSlotEmpty
-                                        : ModStrings.SystemPopulationSlot,
-                                    rank,
-                                    outOf
-                                )
-                    ),
-                    GraphNodes.ValuePart(() => unit == null ? null : PopulationName(unit)),
+                    Planet = card == null ? null : card.Planet,
+                    Colony = card == null ? null : card.ColonizedPlanet,
+                    Destination = Settled(card),
+                    Markers = MarkerContainer(card),
+                    Key = keyPrefix + "/population",
+                    // A namespace of this page's own: the star system page parks a carrier per slot
+                    // of the same world's ring, and one key for both pages would hand this card's
+                    // slot 1 whatever that page's slot 1 was last bound with.
+                    Scratch = "empire/",
+                    Accepts = cargo => Accepts(it, cargo),
+                    Drop = (cargo, replaced) => DropOnCard(it, cargo, replaced),
                 },
-            };
-
-            // Every non-locked slot of the player's own ring takes a drop, and who is standing in it
-            // decides which kind: an occupied slot is the game's SWAP, an empty one the plain add the
-            // card itself takes. Same rule and same reason as the star system page's ring - the free
-            // place is where a player carrying somebody aims.
-            if (colony != null && slot.Kind != PopulationSlots.Band.Locked)
-            {
-                if (canCarry && unit != null)
-                {
-                    ColonizedPlanet source = colony;
-                    Population held = unit;
-                    int carried = PopulationMoves.Carried(units, slot.Unit);
-                    vtable.OnPickUp = () => PopulationMoves.Pick(source, held, carried);
-                }
-
-                PlanetCard it = card;
-                StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
-                vtable.DropKind = PopulationMoves.Kind;
-                vtable.DropAccepts = cargo => Accepts(it, cargo);
-                vtable.OnDrop = cargo => DropOnCard(it, cargo, replaced);
-            }
-
-            // Synthetic: a slot is read out of the colony's own model - the ring draws a marker per
-            // unit and nothing per empty slot - so the enumeration is the honesty here.
-            builder.AddItem(
-                Nodes.Synthetic(
-                    ControlId.Structural(keyPrefix + "/population/" + slot.Rank),
-                    vtable
-                )
+                units,
+                slots,
+                canCarry
             );
         }
 
         // ---- moving a population unit ----
-
-        /// <summary>The game's own word for an affinity.</summary>
-        private static string PopulationName(Population population)
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle(population.Affinity));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
 
         /// <summary>The colony this card is for, or null - the card of an unsettled world, or of somebody
         /// else's colony, is neither a source nor a target.</summary>
@@ -1340,8 +1117,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                ColonizedPlanet colony = card == null ? null : card.ColonizedPlanet;
-                return colony != null && colony.Empire == Gui.PlayerEmpire ? colony : null;
+                return PopulationRings.Settled(card == null ? null : card.ColonizedPlanet);
             }
             catch (Exception)
             {
@@ -1915,67 +1691,25 @@ namespace ES2Access.Screens
 
         private static readonly string[] PanelTitleNames = { "Title" };
 
+        /// <summary>One line per thing a card's table is drawing, the way both pages that draw a planet
+        /// card read one (<see cref="PlanetCardLines.Add"/>). This page read the whole subtree's text
+        /// instead until stage 6a, which announced a pooled table's retired items and read a deposit as
+        /// a bare number.</summary>
         private static void AddWidgetLines(List<string> lines, AgeTransform widget)
         {
             // Content: which drawn lines are gathered into a reading.
-            if (widget == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            IList<string> drawn = AgeWidgets.DrawnLines(widget);
-            for (int i = 0; drawn != null && i < drawn.Count; i++)
-            {
-                if (!string.IsNullOrEmpty(drawn[i]) && !lines.Contains(drawn[i]))
-                {
-                    lines.Add(drawn[i]);
-                }
-            }
+            PlanetCardLines.Add(lines, widget);
         }
 
         /// <summary>The system a row stands for. The wrapper the table binds is rebuilt on every
         /// refresh, so it is the system underneath it that identifies the row.</summary>
-        private static ColonizedStarSystem SystemOf(GuiTableLine line)
-        {
-            try
-            {
-                GuiColonizedStarSystem wrapper =
-                    line == null ? null : line.Data as GuiColonizedStarSystem;
-                return wrapper == null ? null : wrapper.ColonizedStarSystem;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowObject SystemOf =
+            TableSheet.Model<GuiColonizedStarSystem>(wrapper => wrapper.ColonizedStarSystem);
 
         /// <summary>What the row is called when the name column draws nothing - the system's own name.
         /// </summary>
-        private static string SystemName(GuiTableLine line)
-        {
-            try
-            {
-                GuiColonizedStarSystem wrapper =
-                    line == null ? null : line.Data as GuiColonizedStarSystem;
-                return wrapper == null ? null : AgeText.Clean(wrapper.LocalizedName);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("EmpireScreen"));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel SystemName =
+            TableSheet.Name<GuiColonizedStarSystem>(wrapper => wrapper.LocalizedName);
 
         private static global::EmpireScreen Window()
         {

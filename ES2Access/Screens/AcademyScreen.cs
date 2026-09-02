@@ -97,7 +97,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("AcademyScreen");
                 return string.IsNullOrEmpty(title)
                     ? ModStrings.Get(ModStrings.ScreenAcademy)
                     : title;
@@ -906,18 +906,6 @@ namespace ES2Access.Screens
             try
             {
                 return card.HasTooltips ? card.HeroTooltip : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("AcademyScreen"));
             }
             catch (Exception)
             {
