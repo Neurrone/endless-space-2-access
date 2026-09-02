@@ -167,7 +167,7 @@ namespace ES2Access.UI
                     ? ModStrings.Get(ModStrings.GalaxySystemInfluencedByYou)
                     : ModStrings.Format(
                         ModStrings.GalaxySystemInfluencedBy,
-                        AgeText.Clean(influencer.LocalizedName)
+                        EmpireNames.Named(influencer)
                     );
             }
             catch (Exception e)
@@ -579,7 +579,7 @@ namespace ES2Access.UI
 
         private static string Named(Empire empire)
         {
-            return AgeText.Clean(empire.LocalizedName);
+            return EmpireNames.Named(empire);
         }
 
         /// <summary>The empires holding this place. Asked through the same visibility gate the rest of

@@ -284,19 +284,11 @@ namespace ES2Access.UI
             return node == null ? null : FleetRoute.Named(node);
         }
 
+        /// <summary>What an empire is called, to the player - the shared answer every spoken empire
+        /// name in the mod comes from (<see cref="EmpireNames.Named"/>).</summary>
         protected static string EmpireName(Amplitude.Unity.Game.Empire empire)
         {
-            try
-            {
-                // The bus types an event's empires as the engine's base class; the name lives on the
-                // game's own subclass, which every empire in a running game is.
-                global::Empire named = empire as global::Empire;
-                return named == null ? null : AgeText.Clean(named.LocalizedName);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return EmpireNames.Named(empire);
         }
 
         /// <summary>The node a path's destination stands at - a path carries a position, and a

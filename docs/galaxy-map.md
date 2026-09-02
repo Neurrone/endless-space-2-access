@@ -7,6 +7,26 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 
 ## Galaxy labels and what an empire may know
 
+- **Visibility is recomputed on every animation tick and reaches the client in BATCHES, so a layer
+  write is not a thing the player saw.** `Fleet.UpdateMovement` (:1657-1664) dirties visibility
+  every frame a fleet moves, and the refresh sweeps the whole segment from the fleet's previous
+  position to its current one (`VisibilityController` :1072-1081) — so a fleet passing THROUGH
+  somebody's detection range goes Visible and then Known on consecutive refreshes, with nothing
+  drawn for either. The client hears about it at most every 0.5 s, as one accumulated
+  `OrderUpdateVisibility` (`VisibilityController` :74, :823-841), and posting is held entirely from
+  `GameServerState_Turn_End` :55 (`AllowSendOrders(false)`) until clients are in Turn_Main
+  (`GameServerState_Turn_AI_Begin` :51); `GameClient` (:5004-5024) then applies a whole batch in ONE
+  frame, no yield, through `EntityVisibility.SetLayer`. Measured live 2026-09-02: a fleet's rise into
+  sight and its fall out of it arrived 41 frames (~1 s) apart mid-lane; three visibility changes
+  landed in a single frame as Turn_Main began; and across a real turn boundary the batch did not land
+  until 1.2 s after `GameClientState_Turn_Begin`, carrying a rise, a fall 0.3 s later and another rise
+  0.3 s after that, all for one fleet. Movement animation carries on well into Turn_Main, and
+  `Fleet.IsInMovement` does not mean "still animating" — a fleet at REST mid-lane reads its
+  `Position` as `Movement: NodeIndex:80-(43%)->NodeIndex:92`, so only a per-frame `GalaxyPosition`
+  diff answers whether the map is still moving. **Mod policy** (the settle window, the frozen
+  sighting payload and the deferred turn diff): `notifications.md`, "The notification pipeline and
+  its events".
+
 - **The map's NAME gate is `StarSystemLabel`'s, and it is looser than the mouse's.** The label
   shows at exploration ≥ 2 AND (visibility Known or ≥ 3) (`ShowOrHideIfVisibleByEmpire`
   :1514-1522), draws `GameNode.LocalizedName` at ≥ 2 and the literal `"???"` below it

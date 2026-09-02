@@ -34,7 +34,43 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   (`Fleet.cs` :1216, raised from the fleet's own `Visibility_OnLayerChanged`, routed to the
   OBSERVER) and a foreign COLONIZED SYSTEM (`ColonizedStarSystem` :4822) — told apart by the
   entity. The five-step `Layer` ladder re-raises it on Visible→Exposed, so a consumer needs
-  its own dedupe. Loading a save raises NO sighting burst.
+  its own dedupe. Loading a save raises NO sighting burst. **Mod policy** (owner ruling
+  2026-09-02, `EmpireSightedNotification`): only the COLONY half is answered from this event. A
+  colony does not move, so the event fires when the player really has discovered one; a FLEET's
+  copy fires on the server's every recomputation and routinely announces a ship that was never
+  drawn (`galaxy-map.md`, "Galaxy labels and what an empire may know"). Fleet sightings are the
+  watch's (below).
+- **A foreign fleet is only news once the map has HELD it, and the mod's own settle window is what
+  decides that** (owner ruling 2026-09-02, `Core/UI/SettledSight`, driven by `ForeignFleetWatch`).
+  Every crossing of the sight boundary — in or out, seen at the `EntityVisibility.SetLayer` write —
+  becomes a candidate with a timestamp, and commits only after **2 seconds** with no crossing back;
+  a reverse crossing inside the window cancels it silently, so a flash into sight is no sighting and
+  a flicker out of it is no loss. One rule covers a same-frame Visible+Known pair in an applied
+  batch, a one-second pass through detection range, and a Known→Visible round trip; the window is
+  longer than the server's 0.5 s batching cadence on purpose, because the question is what a player
+  could have READ off the map rather than what the wire carried. A committed rise raises
+  `EventModForeignFleetSighted` (`ForeignFleetSightedNotification`), a committed fall the existing
+  `EventModForeignFleetLost` — and a loss can only be committed for a fleet that was committed in
+  sight or was in the baseline, so the mod can never report losing something it never reported
+  seeing. Measured before/after on the same one-eval Visible+Known pair: the old path produced a
+  sighting line plus two lost-sight lines and spoke one of them; the new path produces nothing at
+  all, `settling` returning to 0 in the same frame.
+- **A sighting line is FROZEN at the moment it was earned** (`ForeignFleetSightedNotification`).
+  Owner standing, fleet name, the composition phrase (`FleetPhrase.Full(fleet, false)`) and the
+  place all travel on the event, read at the commit; neither the log line nor the popup body ever
+  re-reads the fleet. What the player was allowed to count aboard a ship at the moment they saw it
+  is what the line says forever — a line that re-read the fleet would quietly rewrite itself as the
+  fleet grew, moved or vanished. Verified live: title and body identical either side of the fleet
+  dropping to `Known`.
+- **The turn's moved-fleet diff is armed at the boundary and RUN later** (`ForeignFleetWatch`).
+  `GameClientState_Turn_Begin` is too early to diff on — the turn's visibility operations are still
+  held server-side and the fleets are still animating — so the sweep waits for the client to reach
+  `GameClientState_Turn_Main` AND for 2 seconds in which no watched fleet crosses the sight boundary
+  or changes `GalaxyPosition`, capped at 15 seconds after Turn_Main so a galaxy that never settles
+  still gets its turn. Measured live 2026-09-02 with a per-frame recorder: the sweep armed at
+  Turn_Begin, the batch landed 1.2 s later, a crossing flashed and cancelled inside it, and the
+  sweep ran at **+3.8 s / 146 frames** — where the old code diffed in the Turn_Begin frame itself,
+  against layers that were still last turn's.
 - **The turn number the player reads is `Game.Turn + 1`**; `FleetRoute.DisplayedTurn()` is
   the one shared answer — never a fresh copy of the sum.
 - **Whether an arrival opens a popup is decided AFTER the arrival event, in the same call — so it can
@@ -258,6 +294,19 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   `GroundBattleNotificationWindow` (:153-163) at `GroundBattle.DefenderNode`; and
   `DefenseHackingProgramEncounteredNotificationWindow` (:27-33) does the ordinary thing and then
   `ToggleScanView()`.
+- **Show Location on a foreign-fleet line goes to the last place the fleet was SEEN, never to blank
+  sky** (owner ruling 2026-09-02). The sighting line offers the fleet itself only while the player's
+  client is still drawing it (`ForeignFleetWatch.Drawn`, the layer of the moment rather than the
+  settled answer); once it is not, the button flies to the last node the watch observed the fleet
+  standing at while in sight (`ForeignFleetWatch.LastSeen`, refreshed at the commit, at each settled
+  sweep and at each quiet-window poll, and never re-read after the fleet goes dark). A fleet only
+  ever seen out on a starlane has no such node, and a null location hides the button
+  (`NotificationWindow.OnBeginShow` :138-140) rather than offering a pan to nowhere. The moved line
+  follows the same rule with its own destination node first; the lost line already did. Measured:
+  under the old code the sighting's location was the FLEET while its layer read `Known` — Ctrl+L
+  panned to a ship the player could not see; now it answers `StarSystemNode Graffias`, and a
+  mid-lane-only sighting answers null and `ui.goToLocation` comes back `unconsumed` with the camera
+  unmoved.
 - **A notification names its own window in its constructor.** Every `GuiNotification` subclass sets
   `base.NotificationWindow = Gui.GuiService.GetWindow<...>()`, so "would this notification's popup
   draw a show-location button" is a field read away and needs no hand-maintained table of the 28 that

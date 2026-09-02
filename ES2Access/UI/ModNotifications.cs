@@ -20,11 +20,11 @@ namespace ES2Access.UI
     /// <c>Bind</c> - which is where a mod type refuses events that are not for the player - inserts
     /// it by priority and raises <c>PlayerEmpireNotificationsCollectionChanged</c>. Eight of the
     /// events are the GAME's own, already flowing through the bus with no notification bound to
-    /// them. The other five are the MOD's, defined below and raised through the same public
+    /// them. The other six are the MOD's, defined below and raised through the same public
     /// <c>IEventService.Notify</c> by the watchers that notice things the game puts on no bus at all
     /// (<see cref="FleetArrivals"/>, <see cref="ForeignFleetWatch"/>, <see cref="FleetRouteWatch"/>,
     /// <see cref="InfluenceGroundWatch"/>) -
-    /// so those five cost a detection point each and nothing else: one pipeline, one set of
+    /// so those six cost a detection point each and nothing else: one pipeline, one set of
     /// behaviours, one place the wording lives.
     ///
     /// The manager is per-GAME (its constructor's field initialiser plus <c>BindServices</c>'s
@@ -60,6 +60,7 @@ namespace ES2Access.UI
             typeof(EventObliteratorFireObserved),
             typeof(EventModFleetArrived),
             typeof(EventModFleetStopped),
+            typeof(EventModForeignFleetSighted),
             typeof(EventModForeignFleetLost),
             typeof(EventModForeignFleetMoved),
             typeof(EventModInfluenceGroundLost),
@@ -77,6 +78,7 @@ namespace ES2Access.UI
             typeof(ObliteratorFireObservedNotification),
             typeof(FleetArrivedNotification),
             typeof(FleetStoppedNotification),
+            typeof(ForeignFleetSightedNotification),
             typeof(ForeignFleetLostNotification),
             typeof(ForeignFleetMovedNotification),
             typeof(InfluenceGroundLostNotification),
@@ -128,11 +130,12 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Put one of the MOD's OWN events on the game's bus, so that the four things the game
+        /// Put one of the MOD's OWN events on the game's bus, so that the five things the game
         /// notices but never mentions - a fleet reaching its destination, a fleet stopped short, a
-        /// foreign fleet going out of sight, a foreign fleet standing somewhere else this turn - come
-        /// out the same pipeline as the eight the game already raises. The bus is the production
-        /// path, and safe for these four because no game code has ever heard of the types: every
+        /// foreign fleet coming into sight, one going out of it, one standing somewhere else this
+        /// turn - come out the same pipeline as the eight the game already raises. The bus is the
+        /// production path, and safe for these five because no game code has ever heard of the types:
+        /// every
         /// subscriber that switches on an event type simply does not match (the quest manager, the
         /// one that could have been surprised, asks a set for the type and falls through -
         /// <c>QuestManager.HandleEvent</c> :5391-5418).
@@ -649,21 +652,24 @@ namespace ES2Access.UI
     }
 
     /// <summary>
-    /// Somebody else's fleet or colony coming into sight. The game raises one event for both
-    /// (<c>Fleet.Visibility_OnLayerChanged</c> :1213-1221 and
-    /// <c>ColonizedStarSystem.UpdateEmpireSeen</c> :4816-4824) and tells them apart only by what it
-    /// puts in <c>Entity</c>, so one notification type answers for both and picks its wording from
-    /// that.
+    /// Somebody else's COLONY coming into sight.
     ///
-    /// It is the one family here that has to refuse REPEATS. Visibility has five steps and the
-    /// event fires on every change at or above Visible, so a fleet that becomes Exposed a moment
-    /// after becoming Visible is seen twice; the subject makes the second refuse itself while the
-    /// first is still in the list.
+    /// The game raises one event for two different sightings (<c>Fleet.Visibility_OnLayerChanged</c>
+    /// :1213-1221 and <c>ColonizedStarSystem.UpdateEmpireSeen</c> :4816-4824) and tells them apart
+    /// only by what it puts in <c>Entity</c>. Only the colony half is answered here: a colony does
+    /// not move, so the event fires when the player really has discovered one, while a FLEET's
+    /// sighting fires on the server's every recomputation and routinely announces a ship that was
+    /// never drawn on the player's screen at all. Fleets are watched instead
+    /// (<see cref="ForeignFleetWatch"/>, <see cref="ForeignFleetSightedNotification"/>), where a
+    /// crossing has to hold before it is news.
+    ///
+    /// It still has to refuse REPEATS: visibility has five steps and the event fires on every change
+    /// at or above Visible, so a colony that becomes Exposed a moment after becoming Visible is seen
+    /// twice; the subject makes the second refuse itself while the first is still in the list.
     /// </summary>
     public sealed class EmpireSightedNotification : ModNotification
     {
         private Amplitude.Unity.Game.Empire _seen;
-        private Fleet _fleet;
         private ColonizedStarSystem _colony;
 
         protected override bool Accept(GameEvent gameEvent)
@@ -680,101 +686,36 @@ namespace ES2Access.UI
                 return false;
             }
 
-            _fleet = seen.Entity as Fleet;
             _colony = seen.Entity as ColonizedStarSystem;
-            return _fleet != null || _colony != null;
+            return _colony != null;
         }
 
         protected override object Subject()
         {
-            return (object)_fleet ?? _colony;
+            return _colony;
         }
 
         protected override string Title()
         {
-            if (_colony != null)
-            {
-                return ModStrings.Format(
-                    ModStrings.NotificationColonySighted,
-                    EmpireName(_seen),
-                    _colony.LocalizedName
-                );
-            }
-
-            string where = PlaceName(_fleet.GetGameNode());
-            string owner = Owner();
-            return where == null
-                ? ModStrings.Format(ModStrings.NotificationFleetSightedNowhere, owner)
-                : ModStrings.Format(ModStrings.NotificationFleetSighted, owner, where);
-        }
-
-        /// <summary>Whose fleet has been sighted, said the way every other surface says it - which way
-        /// the player stands to them in front of their name (<see cref="FleetPhrase.Owned(Fleet)"/>),
-        /// so "enemy Leaper (AI) fleet sighted at Heka". The bare name is the fallback for the empire
-        /// the phrase cannot place, which is also the only form the colony sighting has.</summary>
-        private string Owner()
-        {
-            return FleetPhrase.Owned(_fleet) ?? EmpireName(_seen);
+            return ModStrings.Format(
+                ModStrings.NotificationColonySighted,
+                EmpireName(_seen),
+                _colony.LocalizedName
+            );
         }
 
         protected override string Body()
         {
-            if (_colony != null)
-            {
-                return ModStrings.Format(
-                    ModStrings.NotificationColonySightedBody,
-                    EmpireName(_seen),
-                    _colony.LocalizedName
-                );
-            }
-
-            string where = PlaceName(_fleet.GetGameNode());
-            string owner = Owner();
-            string named = Named();
-            return where == null
-                ? ModStrings.Format(ModStrings.NotificationFleetSightedBodyNowhere, owner, named)
-                : ModStrings.Format(
-                    ModStrings.NotificationFleetSightedBody,
-                    owner,
-                    named,
-                    where
-                );
-        }
-
-        /// <summary>
-        /// The sighted fleet as the sentence's own subject - its name, then who is commanding it and
-        /// what it is made of, read INSIDE the sentence rather than as sentences trailing after it
-        /// (owner ruling 2026-08-26): "The enemy Leaper (AI) fleet 1st Ravaging Horde, Scavenger, was
-        /// sighted at Heka."
-        ///
-        /// Whose it is is left out here - the sentence has already said it in its own slot, and
-        /// saying it twice would be the mod stammering.
-        ///
-        /// The trailing comma is the far side of that appositive, and it is the mod's own list
-        /// separator rather than a punctuation mark written into the code, so a language that
-        /// separates a list some other way separates this too. It is only added where there IS an
-        /// appositive: a fleet the player may not count and that carries no hero is nothing but its
-        /// name, and a name needs no comma after it.
-        /// </summary>
-        private string Named()
-        {
-            string named = FleetPhrase.Full(_fleet, false);
-            if (string.IsNullOrEmpty(named) || named == _fleet.LocalizedName)
-            {
-                return named;
-            }
-
-            return named + ModStrings.Get(ModStrings.ListSeparator).TrimEnd();
+            return ModStrings.Format(
+                ModStrings.NotificationColonySightedBody,
+                EmpireName(_seen),
+                _colony.LocalizedName
+            );
         }
 
         protected override IGameEntityWithGalaxyPosition Location()
         {
-            if (_colony != null)
-            {
-                return _colony.Node;
-            }
-
-            return _fleet == null || _fleet.IsDestroyed ? null : _fleet;
+            return _colony.Node;
         }
     }
 
@@ -1139,6 +1080,54 @@ namespace ES2Access.UI
         }
     }
 
+    /// <summary>
+    /// Somebody else's fleet the player can see, and has been able to see steadily long enough to
+    /// have read it off the map (<see cref="ForeignFleetWatch"/> is what notices, and what decides
+    /// how long that is).
+    ///
+    /// EVERYTHING the sentence says travels on the event, read at the moment the sighting was
+    /// earned: what the player was allowed to count aboard the fleet at that instant is what the
+    /// line says forever, and the fleet may be out of sight again by the time anybody reads it.
+    /// </summary>
+    public sealed class EventModForeignFleetSighted : EmpireEvent
+    {
+        public Fleet Fleet { get; private set; }
+
+        public Amplitude.Unity.Game.Empire Owner { get; private set; }
+
+        /// <summary>Which way the player stood to the owner - "enemy Leaper (AI)" - or null for an
+        /// empire the phrase cannot place, which leaves the bare name.</summary>
+        public string OwnerStanding { get; private set; }
+
+        public string FleetName { get; private set; }
+
+        /// <summary>The fleet's name and whatever the player was allowed to know was aboard it, as
+        /// <c>FleetPhrase.Full(fleet, false)</c> composed it at the sighting.</summary>
+        public string Composition { get; private set; }
+
+        /// <summary>Where it was standing, or null for one sighted out on a starlane.</summary>
+        public GameNode Where { get; private set; }
+
+        public EventModForeignFleetSighted(
+            Amplitude.Unity.Game.Empire empire,
+            Fleet fleet,
+            Amplitude.Unity.Game.Empire owner,
+            string ownerStanding,
+            string fleetName,
+            string composition,
+            GameNode where
+        )
+            : base(empire)
+        {
+            Fleet = fleet;
+            Owner = owner;
+            OwnerStanding = ownerStanding;
+            FleetName = fleetName;
+            Composition = composition;
+            Where = where;
+        }
+    }
+
     /// <summary>Somebody else's fleet that the player could see and now cannot.</summary>
     public sealed class EventModForeignFleetLost : EmpireEvent
     {
@@ -1298,6 +1287,125 @@ namespace ES2Access.UI
     }
 
     /// <summary>
+    /// Somebody else's fleet coming into sight (<see cref="ForeignFleetWatch"/> is what notices).
+    ///
+    /// The whole line is FROZEN at the moment the sighting was earned - the owner's standing, the
+    /// fleet's name, what was aboard it, and where it was standing - and nothing here ever reads the
+    /// fleet again for a word of it. A turn log is a record of what the player was shown, and a line
+    /// that re-read the fleet would quietly rewrite itself as the fleet grew, moved or vanished.
+    ///
+    /// Show Location is the one thing that does look at the fleet, and only to ask whether the
+    /// player's client is still DRAWING it: while it is, the button flies to the fleet, and once it
+    /// is not, it flies to the last node the fleet was seen standing at instead (owner ruling
+    /// 2026-09-02 - the map never pans to blank sky). A fleet only ever seen out on a starlane has
+    /// no such node and gets no button at all, which is what a null location does
+    /// (<c>NotificationWindow.OnBeginShow</c> :138-140).
+    ///
+    /// No repeat refusal: a fleet sighted again after really having been lost is news again, and a
+    /// <c>Subject</c> would have refused it while the first line was still in the log. What stops
+    /// the same fleet being announced twice is the settle window, not this.
+    /// </summary>
+    public sealed class ForeignFleetSightedNotification : ModNotification
+    {
+        private Fleet _fleet;
+        private Amplitude.Unity.Game.Empire _owner;
+        private string _standing;
+        private string _name;
+        private string _composition;
+        private GameNode _where;
+
+        protected override bool Accept(GameEvent gameEvent)
+        {
+            EventModForeignFleetSighted sighted = gameEvent as EventModForeignFleetSighted;
+            if (sighted == null || !IsPlayer(sighted.Empire) || sighted.Owner == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(EmpireName(sighted.Owner)))
+            {
+                return false;
+            }
+
+            _fleet = sighted.Fleet;
+            _owner = sighted.Owner;
+            _standing = sighted.OwnerStanding;
+            _name = sighted.FleetName;
+            _composition = sighted.Composition;
+            _where = sighted.Where;
+            return true;
+        }
+
+        /// <summary>Whose fleet has been sighted, said the way every other surface says it - which way
+        /// the player stands to them in front of their name (<see cref="FleetPhrase.Owned(Fleet)"/>),
+        /// so "enemy Leaper (AI) fleet sighted at Heka". The bare name is the fallback for the empire
+        /// the phrase cannot place.</summary>
+        private string Owner()
+        {
+            return _standing ?? EmpireName(_owner);
+        }
+
+        protected override string Title()
+        {
+            string where = PlaceName(_where);
+            string owner = Owner();
+            return where == null
+                ? ModStrings.Format(ModStrings.NotificationFleetSightedNowhere, owner)
+                : ModStrings.Format(ModStrings.NotificationFleetSighted, owner, where);
+        }
+
+        protected override string Body()
+        {
+            string where = PlaceName(_where);
+            string owner = Owner();
+            string named = Named();
+            return where == null
+                ? ModStrings.Format(ModStrings.NotificationFleetSightedBodyNowhere, owner, named)
+                : ModStrings.Format(
+                    ModStrings.NotificationFleetSightedBody,
+                    owner,
+                    named,
+                    where
+                );
+        }
+
+        /// <summary>
+        /// The sighted fleet as the sentence's own subject - its name, then who is commanding it and
+        /// what it is made of, read INSIDE the sentence rather than as sentences trailing after it
+        /// (owner ruling 2026-08-26): "The enemy Leaper (AI) fleet 1st Ravaging Horde, Scavenger, was
+        /// sighted at Heka."
+        ///
+        /// Whose it is is left out here - the sentence has already said it in its own slot, and
+        /// saying it twice would be the mod stammering.
+        ///
+        /// The trailing comma is the far side of that appositive, and it is the mod's own list
+        /// separator rather than a punctuation mark written into the code, so a language that
+        /// separates a list some other way separates this too. It is only added where there IS an
+        /// appositive: a fleet the player may not count and that carries no hero is nothing but its
+        /// name, and a name needs no comma after it.
+        /// </summary>
+        private string Named()
+        {
+            if (string.IsNullOrEmpty(_composition) || _composition == _name)
+            {
+                return _composition;
+            }
+
+            return _composition + ModStrings.Get(ModStrings.ListSeparator).TrimEnd();
+        }
+
+        protected override IGameEntityWithGalaxyPosition Location()
+        {
+            if (ForeignFleetWatch.Drawn(_fleet))
+            {
+                return _fleet;
+            }
+
+            return (IGameEntityWithGalaxyPosition)ForeignFleetWatch.LastSeen(_fleet) ?? _where;
+        }
+    }
+
+    /// <summary>
     /// Somebody else's fleet going out of sight (<see cref="ForeignFleetWatch"/> is what notices).
     /// It says only that sight was lost, never WHY: the game's own downgrade does not say whether the
     /// fleet flew away, cloaked, or the thing that was watching it died, and a mod that guessed would
@@ -1421,10 +1529,14 @@ namespace ES2Access.UI
                 : ModStrings.Format(ModStrings.NotificationForeignFleetMoved, owner, from, to);
         }
 
+        /// <summary>Where it was standing when the turn came round, and never the fleet itself: by
+        /// the time anybody presses this the fleet may have moved on or gone out of sight, and the
+        /// map would fly to somewhere the player is not allowed to look. A fleet whose new place was
+        /// a starlane falls back on the last node it was seen at, which is the same rule the sighting
+        /// line follows.</summary>
         protected override IGameEntityWithGalaxyPosition Location()
         {
-            return (IGameEntityWithGalaxyPosition)_to
-                ?? (_fleet == null || _fleet.IsDestroyed ? null : _fleet);
+            return (IGameEntityWithGalaxyPosition)_to ?? ForeignFleetWatch.LastSeen(_fleet);
         }
     }
 
