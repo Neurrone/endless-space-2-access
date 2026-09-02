@@ -26,7 +26,7 @@ namespace ES2Access.Core.Speech.Mac
         private string _systemVoiceIdentifier; // the Spoken Content voice, what the default setting means
         private readonly List<VoiceInfo> _voices = new List<VoiceInfo>(); // installed voices, disambiguated
         private float _rate = 0.5f; // AVSpeech's [0, 1] scale
-        private float _volume = 1f;
+        private float _volume = 1f; // gain; 1 is the voice's own loudness, up to MaxVolume
         private MacSpeechStream _stream;
 
         private static readonly IntPtr SelSetVolume = ObjC.Sel("setVolume:");
@@ -128,11 +128,16 @@ namespace ES2Access.Core.Speech.Mac
             _rate = SpeechAudio.Clamp(rate, 0f, 1f);
         }
 
-        /// <summary>Speak at <paramref name="volume"/>, 0 to 1, from here on - lines already
-        /// scheduled included.</summary>
-        public void SetVolume01(float volume)
+        /// <summary>The loudest the voice can be asked for, as a multiple of its own loudness.
+        /// Peaks that the amplification pushes past full scale clip, so this stays modest.</summary>
+        public const float MaxVolume = 1.5f;
+
+        /// <summary>Speak at <paramref name="volume"/> from here on: 1 is the voice's own loudness,
+        /// up to <see cref="MaxVolume"/> amplifies it. The streamed queue applies it to the lines
+        /// rendered from now on; AVSpeech's own queue, the fallback, cannot go above 1.</summary>
+        public void SetVolume(float volume)
         {
-            _volume = SpeechAudio.Clamp(volume, 0f, 1f);
+            _volume = SpeechAudio.Clamp(volume, 0f, MaxVolume);
             if (_stream != null)
             {
                 _stream.SetVolume(_volume);
@@ -327,7 +332,7 @@ namespace ES2Access.Core.Speech.Mac
                 return;
             }
 
-            ObjC.SendFloat(utterance, SelSetVolume, _volume);
+            ObjC.SendFloat(utterance, SelSetVolume, SpeechAudio.Clamp(_volume, 0f, 1f));
             ObjC.Send(_synth, SelSpeak, utterance);
         }
     }

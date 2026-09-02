@@ -65,7 +65,6 @@ namespace ES2Access.Core.Speech.Mac
         private static readonly IntPtr SelAlloc = ObjC.Sel("alloc");
         private static readonly IntPtr SelInitBuffer = ObjC.Sel("initWithPCMFormat:frameCapacity:");
         private static readonly IntPtr SelIsKindOfClass = ObjC.Sel("isKindOfClass:");
-        private static readonly IntPtr SelSetVolume = ObjC.Sel("setVolume:");
         private static readonly IntPtr ClassUtterance = ObjC.Class("AVSpeechUtterance");
         private static readonly IntPtr ClassVoice = ObjC.Class("AVSpeechSynthesisVoice");
 
@@ -73,6 +72,7 @@ namespace ES2Access.Core.Speech.Mac
         private IntPtr _player; // owned (+1)
         private IntPtr _format; // owned (+1): float32, mono, at _formatRate; the player's connection to the mixer
         private double _formatRate;
+        private float _volume = 1f; // gain on the rendered samples; 1 is the voice's own loudness
 
         private IntPtr _synth; // owned (+1): the AVSpeechSynthesizer rendering now, or Zero until the next render needs one; never speaks aloud
         private IntPtr _block; // the callback block for _synth, or Zero; see MakeBlock
@@ -122,10 +122,12 @@ namespace ES2Access.Core.Speech.Mac
             }
         }
 
-        /// <summary>Playback volume, 0 to 1.</summary>
+        /// <summary>Playback volume for the lines rendered from here on: 1 is the voice's own
+        /// loudness, above it the samples are amplified (<see cref="SpeechAudio.Scale"/>). The
+        /// samples are scaled rather than the player node, whose volume stops at 1.</summary>
         public void SetVolume(float volume)
         {
-            ObjC.SendFloat(_player, SelSetVolume, SpeechAudio.Clamp(volume, 0f, 1f));
+            _volume = SpeechAudio.Clamp(volume, 0f, MacSystemVoice.MaxVolume);
         }
 
         /// <summary>
@@ -507,6 +509,7 @@ namespace ES2Access.Core.Speech.Mac
             }
 
             IntPtr channel = Marshal.ReadIntPtr(channels);
+            SpeechAudio.Scale(trimmed, _volume);
             Marshal.Copy(trimmed, 0, channel, trimmed.Length);
             int gap = frames - trimmed.Length;
             Marshal.Copy(
