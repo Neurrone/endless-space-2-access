@@ -624,6 +624,15 @@ namespace ES2Access.Screens
         /// overview draws of a branch is a pie with an arc for progress and no words anywhere, so a
         /// branch here is its name and the game's own sentence about what it contains, and how far along
         /// it is belongs to the page that draws the figures.
+        ///
+        /// <b>Except for the skills the hero already has</b> (owner ruling 2026-09-02). The pie is not
+        /// blank: the overview binds a dot per skill and shows exactly the ones this hero has unlocked
+        /// (<c>HeroSkillTreeSkillItemBase.Refresh</c> :30-33 sets
+        /// <c>Visible = GetHeroSkillLevel(definition) >= 0</c>), which is a picture of what the hero can
+        /// do that a player had to open the skill page to read. So a branch holding at least one of them
+        /// is a GROUP whose children are those skills, in the branch's own order, and a branch holding
+        /// none stays the leaf it was. The children are READ-ONLY - spending a point is the skill page's,
+        /// and the pencil above is the way there.
         /// </summary>
         private void BuildSkillsBox(GraphBuilder builder, HeroOverviewPanel panel)
         {
@@ -650,7 +659,6 @@ namespace ES2Access.Screens
             // slice happens to fall - so they read as the list of three they are, in the order the game
             // slices the circle up in. That order, and not where the icons landed, is also the order the
             // skill page's own branches and the figures beside them are in.
-            _cells.Clear();
             try
             {
                 HeroSkillTreeItem[] trees =
@@ -679,12 +687,22 @@ namespace ES2Access.Screens
                     // on: the two pages draw the same three branches, and a shared backing object is
                     // what the graph's focus recovery follows first, so a page change would drag the
                     // cursor onto the other page's node and announce it on the way.
-                    Cells.Add(
-                        _cells,
-                        icon,
-                        ControlId.For(icon, Keys + "overview/branch/" + i),
-                        vtable
-                    );
+                    ControlId id = ControlId.For(icon, Keys + "overview/branch/" + i);
+                    List<AgeTransform> owned = OwnedSkillDots(tree);
+                    if (owned.Count == 0)
+                    {
+                        builder.AddItem(Nodes.Drawn(id, vtable, icon));
+                        continue;
+                    }
+
+                    vtable.ControlType = ControlTypes.Group;
+                    builder.BeginGroup(Nodes.Drawn(id, vtable, icon));
+                    if (builder.IsExpanded(id))
+                    {
+                        BuildOwnedSkills(builder, box, owned, i);
+                    }
+
+                    builder.EndGroup();
                 }
             }
             catch (Exception e)
@@ -692,14 +710,189 @@ namespace ES2Access.Screens
                 Log.Warn("hero inspection: reading the overview's branches threw: " + e);
             }
 
-            for (int i = 0; i < _cells.Count; i++)
-            {
-                builder.AddItem(Nodes.Drawn(_cells[i].Id, _cells[i].Vtable, _cells[i].Widget));
-            }
-
             if (named)
             {
                 builder.PopContext();
+            }
+        }
+
+        /// <summary>
+        /// The dots one branch of the OVERVIEW's wheel is drawing, which are exactly the skills this hero
+        /// has unlocked in it - rings inner-first, and within a ring the order the branch's own definition
+        /// lists the skills in, which is the order the skill page walks too.
+        ///
+        /// The test is what is PAINTED rather than the hero's skill level, because that is the same
+        /// question: the overview's dot prefab carries a bare <c>HeroSkillTreeSkillItemBase</c> (no
+        /// tooltip, no toggle, no level arcs - the skill page's <c>HeroSkillTreeSkillItem</c> is the one
+        /// with those) and its <c>Refresh</c> shows the dot if and only if the hero owns the skill. A
+        /// locked ring fades its whole table to a quarter rather than hiding it, so a dot in one is still
+        /// drawn and still counts.
+        /// </summary>
+        private static List<AgeTransform> OwnedSkillDots(HeroSkillTreeItem tree)
+        {
+            List<AgeTransform> dots = new List<AgeTransform>();
+            try
+            {
+                IList<AgeTransform> stages = tree.SkillTreeStagesTable == null
+                    ? null
+                    : tree.SkillTreeStagesTable.Children;
+                for (int i = 0; stages != null && i < stages.Count; i++)
+                {
+                    HeroSkillTreeStageItem stage =
+                        stages[i] == null ? null : stages[i].GetComponent<HeroSkillTreeStageItem>();
+                    IList<AgeTransform> skills =
+                        stage == null || stage.SkillTreeSkillsTable == null
+                            ? null
+                            : stage.SkillTreeSkillsTable.Children;
+                    for (int k = 0; skills != null && k < skills.Count; k++)
+                    {
+                        AgeTransform dot = skills[k];
+                        HeroSkillTreeSkillItemBase item =
+                            dot == null ? null : dot.GetComponent<HeroSkillTreeSkillItemBase>();
+                        // Content and flow control, not existence: this dot's paint IS the answer
+                        // to "has the hero unlocked this skill", and the count of them is what
+                        // decides whether the branch above is a group at all. The gate can only
+                        // ever withhold a node it is handed, so it cannot answer either question.
+                        if (item != null && item.HeroSkillDefinition != null && Painted(dot))
+                        {
+                            dots.Add(dot);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hero inspection: reading a branch's own skills threw: " + e);
+            }
+
+            return dots;
+        }
+
+        /// <summary>The skills the hero has in one branch, as the overview can tell them: what each is
+        /// called, how far along it is, and the dossier the skill page hangs on its own dot for it.
+        /// </summary>
+        private void BuildOwnedSkills(
+            GraphBuilder builder,
+            SkillTreeBasePanel box,
+            List<AgeTransform> dots,
+            int branch
+        )
+        {
+            for (int i = 0; i < dots.Count; i++)
+            {
+                AgeTransform dot = dots[i];
+                HeroSkillTreeSkillItemBase item = dot.GetComponent<HeroSkillTreeSkillItemBase>();
+                HeroSkillDefinition definition = item.HeroSkillDefinition;
+                AgeTooltip carrier = OwnedSkillCarrier(dot, item);
+                SkillTreeBasePanel owner = box;
+                NodeVtable vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => OwnedSkillName(carrier, definition)),
+                        GraphNodes.ValuePart(() => OwnedSkillLevel(owner, definition)),
+                    },
+                    Sections = GraphNodes.Sections(null, carrier),
+                };
+                AgeWidgets.PointAt(vtable, dot, carrier);
+                builder.AddItem(Nodes.Drawn(
+                    ControlId.For(dot, Keys + "overview/branch/" + branch + "/skill/" + i),
+                    vtable,
+                    dot
+                ));
+            }
+        }
+
+        /// <summary>
+        /// The dossier for a skill the overview is drawing a dot for.
+        ///
+        /// The dot itself carries no tooltip at all (measured 2026-09-02: every one of them answers
+        /// <c>AgeTooltip</c> null), so there is nothing on this page to aim at - the words exist only as
+        /// data, in the same <c>GuiHeroSkill</c> wrapper the skill page's dot builds and hands the
+        /// tooltip window (<c>HeroSkillTreeSkillItem.Refresh</c> :159-161 writes Content, Class and
+        /// Target off one). A carrier bound with the same three therefore assembles the same panel, and
+        /// is parked over the dot so the panel opens where the picture is.
+        ///
+        /// The wrapper needs the SKILL PAGE's panel (<c>GuiHeroSkill</c> asks it for the levels), and
+        /// that panel is bound to this same hero the whole time the window is open, side page shown or
+        /// not (measured). Where it is not bound there is no carrier and the child is its name and its
+        /// level with nothing to review - the skill page is where the dossier lives.
+        /// </summary>
+        private static AgeTooltip OwnedSkillCarrier(
+            AgeTransform dot,
+            HeroSkillTreeSkillItemBase item
+        )
+        {
+            try
+            {
+                HeroInspectionModalWindow window = Window();
+                SkillTreeEditionPanel page =
+                    window == null ? null : window.SkillTreeEditionPanel;
+                if (page == null || page.GuiHero == null)
+                {
+                    return null;
+                }
+
+                HeroSkillDefinition definition = item.HeroSkillDefinition;
+                AgeTooltip carrier;
+                bool rebind = ScratchTooltips.Rebind(
+                    "hero-overview-skill/" + dot.GetInstanceID(),
+                    definition.Name.GetHashCode(),
+                    out carrier
+                );
+                if (rebind && carrier != null)
+                {
+                    GuiHeroSkill wrapper =
+                        new GuiHeroSkill(definition, item.SkillTreeName, page);
+                    carrier.Class = wrapper.TooltipClass;
+                    carrier.Content = wrapper.Name;
+                    carrier.Target = wrapper;
+                }
+
+                ScratchTooltips.PlaceOver(carrier, dot);
+                return carrier;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hero inspection: binding a hero skill's dossier threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What the game calls a skill, off the same wrapper the skill page names its dot from
+        /// (<see cref="SkillName"/>) and with the same fallback - which for a BRANCH skill answers the
+        /// same words either way (measured on all three of this hero's branches).</summary>
+        private static string OwnedSkillName(AgeTooltip carrier, HeroSkillDefinition definition)
+        {
+            try
+            {
+                string named = AgeWidgets.TooltipTitle(carrier);
+                return string.IsNullOrEmpty(named)
+                    ? AgeText.Clean(Gui.Localize(Gui.GetTitle(definition.Name)))
+                    : named;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>How far along a skill the hero HAS is, in the same words the skill page's dot uses
+        /// for it. Only the owned level: a pending pick belongs to the page that can make one.</summary>
+        private static string OwnedSkillLevel(
+            SkillTreeBasePanel box,
+            HeroSkillDefinition definition
+        )
+        {
+            try
+            {
+                int levels = definition.SkillLevels.Length;
+                int owned = box.GuiHero.GetHeroSkillLevel(definition) + 1;
+                return ModStrings.Format(ModStrings.HeroSkillLevel, owned, levels);
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

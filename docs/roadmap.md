@@ -325,8 +325,9 @@ belong in the files above.
   is `Visible = false` in every single-player load (`LoadingWindow.OnBeginShow`), so their
   place in the reading order (top of the screen, above the status lines) is code-measured only.
 - Skill-tree type-ahead: EVERY screen now searches what its collapsed branches would declare
-  (`GraphBuilder.ExpandAll`), so this should be covered by construction - it is unverified
-  live because no fixture reaches a hero with a skill tree.
+  (`GraphBuilder.ExpandAll`), so this should be covered by construction - it is still unverified
+  live, but no longer for want of a fixture: the stage snapshot's Dmitri Lenko has all three
+  branches and the skill page walks them (2026-09-02). The `POST /type` run is simply not yet made.
 - Galaxy-map audit remainder (2026-08-20): `StarSystemLabel`'s 32 public widget fields are
   now fully covered (bars wording awaits owner approval; exploration-winner and shared-system
   readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn

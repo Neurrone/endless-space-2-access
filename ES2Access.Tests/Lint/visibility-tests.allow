@@ -263,6 +263,7 @@ ES2Access/Screens/HeroInspectionScreen.cs | 2 | if (box == null || !AgeWidgets.V
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(card.AgeTransform))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (child == null || !AgeWidgets.Visible(child))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (item != null && item.HeroSkillDefinition != null && Painted(dot))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (item == null || !Painted(widget))
 ES2Access/Screens/HeroInspectionScreen.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (tree.SkillTreeDefinition == null || !AgeWidgets.Visible(icon))
@@ -337,6 +338,7 @@ ES2Access/Screens/NegotiationScreen.cs | 1 | if (table != null && AgeWidgets.Vis
 
 ES2Access/Screens/NotificationScreen.cs | 1 | !Painted(expander.AgeTransform, root)
 ES2Access/Screens/NotificationScreen.cs | 1 | && Painted(button.AgeTransform, Root(window))
+ES2Access/Screens/NotificationScreen.cs | 1 | && Painted(line.Owner, root)
 ES2Access/Screens/NotificationScreen.cs | 1 | if (!AgeWidgets.Paints(at))
 ES2Access/Screens/NotificationScreen.cs | 2 | if (!Painted(controls[i].Widget, root))
 ES2Access/Screens/NotificationScreen.cs | 1 | if (!at.Visible)
@@ -362,7 +364,6 @@ ES2Access/Screens/NotificationScreen.cs | 1 | title || (drawn != null && Visible
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(button.AgeTransform, Root(window))
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(control.AgeTransform, root)
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(line.Owner, root)
-ES2Access/Screens/NotificationScreen.cs | 1 | && Painted(line.Owner, root)
 
 ES2Access/Screens/OptionsScreen.cs | 1 | if (button == null || !Visible(button.AgeTransform))
 ES2Access/Screens/OptionsScreen.cs | 1 | if (item != null && Visible(AgeTransformOf(item)))

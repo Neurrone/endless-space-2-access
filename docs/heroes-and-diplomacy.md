@@ -47,6 +47,26 @@ Index and charter: `README.md`.
 - **`%SkillTreeStageLevelTitle` + `RequiredLevel` is a per-RING unlock threshold**, drawn as a
   leader-line legend beside the ring — not a skill's name and not a per-branch total. Read as either
   it says the wrong thing about every skill on the ring.
+- **The OVERVIEW's wheel is not wordless: it draws a dot per skill the hero has.** Both wheels bind
+  the same `HeroSkillTreeItem` → `HeroSkillTreeStageItem` chain, but the overview's dot prefab carries
+  a bare `HeroSkillTreeSkillItemBase` (no toggle, no level arcs, and — measured 2026-09-02 on all 21
+  of Dmitri Lenko's — **no `AgeTooltip` at all**), while the skill page's carries the
+  `HeroSkillTreeSkillItem` subclass with all three. The base class's `Refresh` (:30-33) is the whole
+  of the overview's content rule: `Visible = InspectedHero.GetHeroSkillLevel(definition) >= 0`, so a
+  painted dot means "unlocked" and nothing else. A LOCKED ring fades its skills table to Alpha 0.25
+  rather than hiding it (`HeroSkillTreeStageItem.Disable`), so a dot inside one is still drawn.
+- **A hero's STARTING skills are in no branch.** `Hero.UnlockedSkills` mixes them with the spent ones
+  (starting skills carry `UnlockedTurn = -1`), but their definitions are not in any
+  `HeroSkillTreeDefinition.Stages[*].Skills`, so nothing in either wheel draws them — the skill page's
+  own `StartingSkillItemsTable` is the only place they appear. Dmitri Lenko at turn 28 of the stage
+  snapshot: 2 unlocked skills, both starting (`HeroSkill01Terrans04`, `HeroSkill02Terrans04`), and
+  `GetSkillLevel` answering −1 for every one of the 21 branch skills.
+- **`GuiHeroSkill` needs the SKILL PAGE's panel**, not the overview's: its `Level`,
+  `CurrentSkillLevel` and `NextSkillLevel` all delegate to the `SkillTreeEditionPanel` handed to its
+  constructor, and `SkillTreeBasePanel` will not do. The window's own `SkillTreeEditionPanel` stays
+  bound to the hero the whole time the window is open, side page shown or not (measured 2026-09-02
+  with the overview up: `editionVisible=False`, `GuiHero=Dmitri Lenko`), so it is available to build
+  a wrapper from wherever in the window one is wanted.
 
 
 ## Diplomacy and the sweep

@@ -640,6 +640,28 @@ reset with `window.gameObject.SendMessage("OnResetSkillsCb", DontRequireReceiver
 `IsSkillsModified == false` and points back to 0. `unlocked` has no relic-skill hero, no
 two-mastery starting skill, and no natural skill point.
 
+**A hero with BRANCH skills is a fixture nothing ships with** — a starting skill is in no branch
+(ES2 facts), so a fresh hero's wheel draws no dots and every overview branch reads as the plain node
+it always did. Make one from `/eval` and undo it with `POST /loadsave`:
+`h.UnlockSkill(h.SkillTrees[t].Stages[s].Skills[k].GetSkillDefinitionForHero(h), level, true, false, turn)`
+(the `true` is `forFree`, so no point is spent and no order is posted), then
+`window.OverviewPanel.SkillTreeOverviewPanel.Dirty = true` and the same on `SkillTreeEditionPanel`.
+The hero is `Gui.PlayerEmpire.GetAgency<DepartmentOfEducation>().ActiveHeroes[0]`; bind the list as
+`System.Collections.IList` (a `foreach` poisons the REPL session). Measured on the stage snapshot
+with trees 0/0/0 at level 0, 0/0/1 at level 1, 0/1/0 at level 0 and 2/0/0 at level 0, the overview's
+`hero:skills` stop reads *"Universal skills, group, collapsed"*, *"United Empire Skills"* (a plain
+node — nothing unlocked there), *"Counselor skills, group, collapsed"*, and Universal expands to
+*"Optimal Operations Expert, level 1 of 2, 1 of 3"*, *"Cosmic Castaway, level 2 of 2, 2 of 3"*,
+*"Transformational Leadership, level 1 of 2, 3 of 3"* — rings inner-first. `ui.right` on a branch
+expands it AND steps onto the first child; `ui.left` collapses back onto the branch.
+
+**The overview's skill children are read through a scratch carrier**, because the overview's dot
+carries no tooltip of its own (ES2 facts). So `DevProbe.Tooltip()` on a focused child is the only
+proof the dossier draws — it answers class `HeroSkill` with the same `PanelFeatureHeader` /
+`PanelFeatureDescription` / `PanelFeatureSkillEffectsSets` the skill page's dot answers — and the
+crop for it comes off `GetWindow<GuiTooltipWindow>().AgeTransform.GetGlobalPosition()`, since the
+panel is anchored over whichever 16×16 dot is focused.
+
 ## Troops and the tactics deck
 
 **Troops and the tactics deck** are both non-committing until Confirm, which makes them safe to walk
