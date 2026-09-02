@@ -29,6 +29,17 @@ regenerate with `.\decompile.ps1`. GUI specifics are in `gui.md`.
   Unity `Update`.
 - Per-frame simulation pump while a game is active: `Session.Update()` →
   `GameClient.Update()` (`Assembly-CSharp/Session.cs`).
+- **`IEndTurnService` is `GameManager`, and it OUTLIVES a galaxy; `Gui.Game` is what changes.**
+  Measured 2026-09-02: loading a save from a running session handed back the same
+  `IEndTurnService` instance either side (`GameManager#1110861312`) while `Gui.Game` became a
+  different object (`Game#-1902150656` → `Game#-1543507712`). So a watcher that re-baselines on
+  "my service instance changed" never notices a load at all, and keeps a table keyed by entity
+  GUIDs the new galaxy has already re-used (measured: three stale foreign-fleet rows survived a
+  load). The rule the mod follows (`ForeignFleetWatch.Follow`): the SUBSCRIPTION follows the
+  service, the TABLE follows the `Game`. And a galaxy does not finish arriving in the frame its
+  `Game` does — a load restores the client's visibility layers by a path that is not
+  `EntityVisibility.SetLayer`, so a baseline taken then sees fleets the watch never saw a crossing
+  for. A baseline is a WINDOW, not a snapshot (`ForeignFleetWatch.Arriving`).
 
 ## Deterministic player actions: the Order system
 

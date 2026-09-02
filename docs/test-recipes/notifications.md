@@ -70,6 +70,56 @@ above. End-of-turn news is stamped with the turn that ENDED, not the one you wak
 "Turn {n}" region one lower than the HUD reads after the boundary. The fixture tools that undo a
 probe are in `docs/test-recipes/fixtures.md`.
 
+## Driving a foreign fleet's sight window (`[Beginner] access test`)
+
+**Driving the settle window by hand** is how the sighting/lost family is tested without waiting for
+a transit: `f.Visibility.SetLayer(player, EntityVisibility.Layer.Visible)` / `.Known` writes the
+CLIENT layer through the very method `ForeignFleetWatch` prefixes. On the host it also writes
+`serverLayers`, and the next server refresh may put its own answer back — that is fine for a test
+and `POST /loadsave` undoes it. Pick the fleet by GUID with an IIFE over the empires'
+`DepartmentOfDefense.Fleets` bound as `System.Collections.IList` (a `foreign` fleet listing with
+layer and node is the same walk). On `[Beginner] access test` (turn 36) exactly ONE foreign fleet is
+in sight — `8th Greedy Pirates` at Sabel — so `ForeignFleetWatch.InSight` reads 1 at rest;
+`2nd Thrashing Horde` (GUID 1580, Leaper, parked at Graffias) is the out-of-sight fleet with a NODE
+and `1st Liquidation Venture` (GUID 996, Doria) the one out on a starlane. Driving a Leaper or Doria
+fleet visible for the first time also fires the game's own first-contact notification — expect
+`NotificationMajorEmpireMet` and a diplomacy popup, and reload afterwards.
+
+The four cases, read off `ForeignFleetWatch.Pending` / `.InSight` / `.Watching` (all three are in
+`DevProbe.Notifications()` as `foreignFleetsSettling` / `InSight` / `Watched`) plus
+`/speech?since=N` and the player's notification list:
+
+- Visible then Known **in one `/eval`** → `settling` back to 0 in the same body, no mod notification,
+  no speech. (The game's first-contact line may still arrive; it is not the mod's.)
+- Visible, then wait → the sighting commits at ~2.1 s (measured end to end, 42 frames of
+  `POST /wait` on `ForeignFleetWatch.InSight >= N`), one `ForeignFleetSightedNotification`, spoken.
+- Known after a committed sighting → the loss commits at ~2.1 s the same way.
+- Known then Visible again within 2 s → `settling` 1 → 0, `InSight` unchanged, notification count
+  unchanged, silence over the whole window.
+
+Time the two commits with a REPL `var T0 = 0f;` assigned in the same IIFE that writes the layer,
+then `POST /wait` on the count changing and read `UnityEngine.Time.realtimeSinceStartup - T0`; the
+wait's own `elapsedMs` starts a round trip late and reads ~0.9 s short.
+
+**The frozen payload and the location rule** are read off the notification, not the transcript:
+`GetTitle()`/`GetDescription()` before and after the fleet drops to `Known` must be identical, and
+`Location()` (protected — reach it by reflection) must answer the FLEET while it is drawn and the
+`StarSystemNode` afterwards. For the mid-lane fleet the same probe answers `null`, `HasLocation`
+false, and `/input ui.goToLocation` on its turn-log line comes back `unconsumed` with
+`DevProbe.Camera()` unmoved — the node-backed line moves the camera to the node's own
+`GalaxyPosition`.
+
+**Ending a turn on this fixture needs the battle fought first.** The save is parked with
+`NotificationBattleSetup` for Pirates at Sabel: `ui.endTurn` re-pops that window instead of ending
+the turn, and the "Construction Queue empty" notification eats a press after it. The route that
+works: minimize every shown `NotificationWindow` (iterate
+`((GuiManager)Gui.GuiService).gameObject.GetComponentsInChildren<NotificationWindow>(true)` and
+invoke the private `OnMinimizeCb` on each `Shown` one — the singular version stops at the first),
+then on the battle popup `ui.end` → `ui.activate` on `battle-setup/start` ("Fight", Watch
+unchecked, so it resolves immediately), clear the AFTERMATH tutorial and the battle report, and
+`ui.endTurn` once. It mutates the running game only — the save on disk is untouched and
+`POST /loadsave` restores it.
+
 ## Working a popup that draws its own content
 
 **Working a popup that draws its own content** (the research family: "Research Complete",

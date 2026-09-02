@@ -430,6 +430,14 @@ namespace ES2Access.Dev
                 json.WriteValue(ForeignFleetWatch.Subscribed);
                 json.WritePropertyName("foreignFleetsWatched");
                 json.WriteValue(ForeignFleetWatch.Watching);
+                // The settle window's two figures: how many foreign fleets the player has been TOLD
+                // are in sight, and how many crossings are still waiting to see whether they held.
+                json.WritePropertyName("foreignFleetsInSight");
+                json.WriteValue(ForeignFleetWatch.InSight);
+                json.WritePropertyName("foreignFleetsSettling");
+                json.WriteValue(ForeignFleetWatch.Pending);
+                json.WritePropertyName("foreignFleetSweepPending");
+                json.WriteValue(ForeignFleetWatch.SweepPending);
 
                 // The third detection point: the turn-end influence sweep. Its subscription and its
                 // table are what a teardown has to have let go, and its last pass's cost is the one
