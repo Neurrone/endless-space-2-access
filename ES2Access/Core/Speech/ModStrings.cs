@@ -3051,15 +3051,29 @@ namespace ES2Access.Core.Speech
         private static readonly Dictionary<string, bool> Warned = new Dictionary<string, bool>();
 
         private static Dictionary<string, string> _overrides;
+        private static string _language;
 
         /// <summary>
-        /// Make <paramref name="overrides"/> the active translation overlay. Null or empty clears
-        /// back to the English defaults, which is also the right result for a language with no
-        /// translation file.
+        /// Make <paramref name="overrides"/> the active translation overlay for a language whose
+        /// plural rule is English's. Null or empty clears the overlay back to the English defaults.
         /// </summary>
         public static void Install(IDictionary<string, string> overrides)
         {
+            Install(overrides, null);
+        }
+
+        /// <summary>
+        /// Make <paramref name="overrides"/> the active translation overlay, spoken as
+        /// <paramref name="language"/> - the game's own language name, which is also the name of
+        /// the translation file. Null or empty overrides clear back to the English defaults, which
+        /// is also the right result for a language with no translation file; the language is still
+        /// recorded, because <see cref="Plural"/>'s rule belongs to the language rather than to the
+        /// file.
+        /// </summary>
+        public static void Install(IDictionary<string, string> overrides, string language)
+        {
             Warned.Clear();
+            _language = language;
             if (overrides == null || overrides.Count == 0)
             {
                 _overrides = null;
@@ -3075,10 +3089,11 @@ namespace ES2Access.Core.Speech
             _overrides = copy;
         }
 
-        /// <summary>Drop the overlay, returning to English defaults.</summary>
+        /// <summary>Drop the overlay, returning to English defaults and English's plural rule.</summary>
         public static void Reset()
         {
             _overrides = null;
+            _language = null;
             Warned.Clear();
         }
 
@@ -3144,13 +3159,29 @@ namespace ES2Access.Core.Speech
         /// Each form is a WHOLE sentence of its own rather than a number glued to a noun, because the
         /// noun agrees with the number in most languages and no template can inflect a fragment handed
         /// to it. Two forms is what English needs and what a translator can always fill in - a language
-        /// with a single form writes the same sentence twice. A language that wants THREE or more
-        /// (Russian, Polish, Arabic) is the trigger for real plural rules carried by the locale file;
-        /// nothing here anticipates them, which is deliberate.
+        /// with a single form writes the same sentence twice.
+        ///
+        /// The THIRD form is real, and it lives in the locale file rather than in a call site: where
+        /// <see cref="PluralRules"/> says the installed language wants the Slavic paucal (Polish and
+        /// Russian, of the languages the game ships), the template is looked up under
+        /// <c>&lt;manyKey&gt;.few</c> and falls back to <paramref name="manyKey"/> when the file does
+        /// not carry one. English needs no such key and ships none, so no caller passes a third key
+        /// and adding a language costs no code.
         /// </summary>
         public static string Plural(string oneKey, string manyKey, int count)
         {
-            return Format(count == 1 ? oneKey : manyKey, count);
+            switch (PluralRules.For(_language, count))
+            {
+                case PluralForm.One:
+                    return Format(oneKey, count);
+
+                case PluralForm.Few:
+                    string fewKey = manyKey + PluralRules.FewSuffix;
+                    return Format(Has(fewKey) ? fewKey : manyKey, count);
+
+                default:
+                    return Format(manyKey, count);
+            }
         }
 
         /// <summary>

@@ -171,5 +171,92 @@ namespace ES2Access.Tests.Speech
                 )
             );
         }
+
+        /// <summary>
+        /// The third form is carried by the locale file, not by a call site: a Russian translation
+        /// adds "&lt;manyKey&gt;.few" and the same two-key call starts picking it up.
+        /// </summary>
+        [Fact]
+        public void AThreeFormLanguageTakesItsPaucalFromTheLocaleFile()
+        {
+            InstallRussian(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one {0}" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                    { ModStrings.SystemSupplyingOutposts + PluralRules.FewSuffix, "few {0}" },
+                }
+            );
+
+            Assert.Equal("one 1", Supplying(1));
+            Assert.Equal("one 21", Supplying(21));
+            Assert.Equal("few 2", Supplying(2));
+            Assert.Equal("few 22", Supplying(22));
+            Assert.Equal("many 5", Supplying(5));
+            Assert.Equal("many 12", Supplying(12));
+            Assert.Empty(_warnings);
+        }
+
+        /// <summary>A three-form language whose file has not been given the paucal yet is
+        /// grammatically wrong, not silent - it hears the MANY sentence.</summary>
+        [Fact]
+        public void AMissingPaucalFallsBackToTheManyForm()
+        {
+            InstallRussian(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one {0}" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                }
+            );
+
+            Assert.Equal("many 2", Supplying(2));
+            Assert.Equal("one 21", Supplying(21));
+            Assert.Empty(_warnings);
+        }
+
+        /// <summary>A two-form language never asks for the paucal, so a ".few" key sitting in its
+        /// file changes nothing.</summary>
+        [Fact]
+        public void ATwoFormLanguageIgnoresAPaucalKey()
+        {
+            ModStrings.Install(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one {0}" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                    { ModStrings.SystemSupplyingOutposts + PluralRules.FewSuffix, "few {0}" },
+                },
+                "french"
+            );
+
+            Assert.Equal("many 2", Supplying(2));
+            Assert.Equal("one 0", Supplying(0));
+        }
+
+        /// <summary>The plural rule follows the LANGUAGE, so a language with no file of its own
+        /// still counts its own way over the English sentences.</summary>
+        [Fact]
+        public void ALanguageWithNoFileKeepsItsOwnPluralRule()
+        {
+            ModStrings.Install(null, "russian");
+
+            Assert.Equal("Supplying 21 outpost", Supplying(21));
+            Assert.Equal("Supplying 22 outposts", Supplying(22));
+        }
+
+        private static void InstallRussian(Dictionary<string, string> table)
+        {
+            ModStrings.Install(table, "russian");
+        }
+
+        private static string Supplying(int count)
+        {
+            return ModStrings.Plural(
+                ModStrings.SystemSupplyingOutpost,
+                ModStrings.SystemSupplyingOutposts,
+                count
+            );
+        }
     }
 }

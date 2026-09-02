@@ -115,7 +115,7 @@ namespace ES2Access.Localization
                         + language
                         + "', using built-in English strings"
                 );
-                ModStrings.Install(null);
+                ModStrings.Install(null, language);
                 return;
             }
 
@@ -131,7 +131,7 @@ namespace ES2Access.Localization
             }
 
             Log.Info("locale: loaded " + table.Count + " strings for language '" + language + "'");
-            ModStrings.Install(table);
+            ModStrings.Install(table, language);
         }
 
         private static string LocalePath(string language)
