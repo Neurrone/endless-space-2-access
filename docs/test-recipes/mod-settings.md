@@ -455,10 +455,11 @@ what the call does on Mac or Linux is unverified.
 
 **A caption takes the whole row and as many lines as it needs** (`ModRows.Fit`, 2026-09-02): the
 checkbox prefab gives its title only the left half of a 28 px row, which cut state 4's path
-mid-word at `…ookmarksactionter`; a caption now hides the tick's half, stretches the title across
-the row, lets the label grow to its text and makes the row that tall (measured: the path draws in
-full over two lines in a 38 px row; one-line captions on the scanner tab stay 28 px). widths are
-written up front because the layout pass that would set them runs a frame after the table arranges.
+mid-word at `…\bookmarks\FactionTer`; a caption now hides the tick's half, stretches the title
+across the row, lets the label grow to its text and makes the row that tall (measured: the path
+draws in full over two lines in a 38 px row; one-line captions on the Scanner tab stay 28 px).
+Widths are written up front because the layout pass that would set them runs a frame after the
+table arranges.
 
 ## The physical key paths, and what Escape means where
 
