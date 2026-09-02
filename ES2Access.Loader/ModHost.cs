@@ -64,6 +64,14 @@ namespace ES2Access.Loader
             set { _plugin.CutsceneDescriptions = value; }
         }
 
+        /// <summary>Whether the dev server is up, so a dev-only feature the mod ships can ask
+        /// whether it is wanted. The config setting and the environment override both land inside
+        /// <c>DevServer.Start</c>, and this is where they end up: the listener existing.</summary>
+        public bool DevServerUp
+        {
+            get { return _dev != null && _dev.Listening; }
+        }
+
         /// <summary>Hands work from HTTP handler threads to the Unity main thread; the loader
         /// drains it once per frame. Route handlers that touch the game must go through it.</summary>
         public MainThreadQueue MainThread

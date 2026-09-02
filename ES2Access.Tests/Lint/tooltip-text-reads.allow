@@ -11,8 +11,6 @@ ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | Prose(vtable, () => AgeTex
 
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | string hinted = CardActions.FirstLine(tip);
 
-ES2Access/Screens/BattleNotifications.cs | 1 | return TooltipFeatures.FlotillaRange(flotilla, CardActions.FirstLine(tip));
-
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | ? CardActions.FirstLine(card.Tooltip ?? AgeWidgets.Raw(card.AgeTransform))
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | Add(lines, CardActions.FirstLine(AgeWidgets.Raw(rows[i])));
 
@@ -81,6 +79,8 @@ ES2Access/Screens/TroopManagementScreen.cs | 1 | () => named ? name : CardAction
 ES2Access/Screens/TroopManagementScreen.cs | 1 | string label = CardActions.FirstLine(tooltip);
 
 ES2Access/Screens/VictoryScreen.cs | 1 | return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
+
+ES2Access/UI/BattlePlans.cs | 1 | return TooltipFeatures.FlotillaRange(flotilla, CardActions.FirstLine(tip));
 
 ES2Access/UI/BattleRosters.cs | 1 | : AgeText.Clean(tooltip.Content);
 ES2Access/UI/BattleRosters.cs | 1 | name.ListItem(CardActions.FirstLine(AgeWidgets.Raw(invisibility)));

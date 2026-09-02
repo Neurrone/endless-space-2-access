@@ -8,8 +8,8 @@ using ES2Access.Screens;
 using ES2Access.UI;
 using Newtonsoft.Json;
 using UnityEngine;
-using Breach = ES2Access.Dev.NotificationAudit.Breach;
-using Declared = ES2Access.Dev.NotificationAudit.Declared;
+using Breach = ES2Access.Dev.AuditModel.Breach;
+using Declared = ES2Access.Dev.AuditModel.Declared;
 using Screen = ES2Access.Screens.Screen;
 
 namespace ES2Access.Dev
@@ -71,8 +71,6 @@ namespace ES2Access.Dev
         /// <summary>How many entries of each bucket are written out; the rest are counted as
         /// <c>more</c>. A finding list is read by a person, and the counts are the headline.</summary>
         private const int MaxListed = 40;
-
-        private const int MaxPathSegments = 10;
 
         /// <summary>One control the player may not be able to work, in the terms a fix needs.</summary>
         private sealed class Finding
@@ -259,7 +257,7 @@ namespace ES2Access.Dev
                 return;
             }
 
-            List<Declared> covering = NotificationAudit.Covering(
+            List<Declared> covering = AuditModel.Covering(
                 declared,
                 widget,
                 AgeWidgets.Raw(widget) ?? Inside(widget)
@@ -381,10 +379,10 @@ namespace ES2Access.Dev
                 List<string> reduced = new List<string>();
                 for (int j = 0; j < declared[i].Spoken.Count; j++)
                 {
-                    reduced.Add(NotificationAudit.Reduce(declared[i].Spoken[j]));
+                    reduced.Add(AuditModel.Reduce(declared[i].Spoken[j]));
                 }
 
-                if (NotificationAudit.Contains(reduced, text))
+                if (AuditModel.Contains(reduced, text))
                 {
                     return declared[i].Key;
                 }
@@ -602,7 +600,7 @@ namespace ES2Access.Dev
         private static Finding Made(AgeTransform widget, string component, string why)
         {
             Finding finding = new Finding();
-            finding.Path = Path(widget);
+            finding.Path = DrawnBy.Path(widget);
             finding.Component = component;
             finding.Why = why;
             try
@@ -613,7 +611,7 @@ namespace ES2Access.Dev
                 {
                     string cls = tooltip.Class;
                     finding.Tooltip = string.IsNullOrEmpty(cls)
-                        ? NotificationAudit.Excerpt(AgeText.Tooltip(tooltip))
+                        ? AuditModel.Excerpt(AgeText.Tooltip(tooltip))
                         : cls;
                 }
 
@@ -624,33 +622,6 @@ namespace ES2Access.Dev
             catch (Exception) { }
 
             return finding;
-        }
-
-        private static string Path(AgeTransform widget)
-        {
-            StringBuilder path = new StringBuilder();
-            List<string> names = new List<string>();
-            try
-            {
-                AgeTransform at = widget;
-                for (int i = 0; at != null && i < MaxPathSegments; i++)
-                {
-                    names.Add(at.name);
-                    at = at.Parent;
-                }
-            }
-            catch (Exception) { }
-
-            for (int i = names.Count - 1; i >= 0; i--)
-            {
-                path.Append(names[i]);
-                if (i > 0)
-                {
-                    path.Append('/');
-                }
-            }
-
-            return path.ToString();
         }
 
         private static string Write(Result result, TooltipAudit.Result tooltips)
@@ -691,13 +662,10 @@ namespace ES2Access.Dev
                 json.WriteValue(result.BudgetHit);
                 json.WriteEndObject();
 
-                Breaches(json, "uncovered", tooltips.Uncovered);
-                Breaches(json, "unread", tooltips.Unread);
-                Breaches(json, "promised", tooltips.Promised);
-                Breaches(json, "misaimed", tooltips.Misaimed);
-                Breaches(json, "decoration", tooltips.Decoration);
-                Breaches(json, "hidden", tooltips.Hidden);
-                Breaches(json, "undescribed", tooltips.Undescribed);
+                // Every bucket the tooltip check fills, through its own writer: this file used to list
+                // seven of the eleven by hand and reported a screen clean that the tooltip check
+                // called dirty.
+                tooltips.WriteBuckets(json, MaxListed);
                 Findings(json, "actionsUncovered", result.Uncovered);
                 Findings(json, "handlerGroups", result.HandlerGroups);
                 json.WriteEndObject();
@@ -708,32 +676,6 @@ namespace ES2Access.Dev
         {
             json.WritePropertyName(name);
             json.WriteValue(value);
-        }
-
-        private static void Breaches(JsonTextWriter json, string name, List<Breach> breaches)
-        {
-            json.WritePropertyName(name);
-            json.WriteStartArray();
-            for (int i = 0; i < breaches.Count && i < MaxListed; i++)
-            {
-                Breach breach = breaches[i];
-                json.WriteStartObject();
-                json.WritePropertyName("where");
-                json.WriteValue(breach.Where);
-                json.WritePropertyName("what");
-                json.WriteValue(breach.What);
-                if (!string.IsNullOrEmpty(breach.Detail))
-                {
-                    json.WritePropertyName("text");
-                    json.WriteValue(breach.Detail);
-                }
-
-                WriteRect(json, breach.Rect, breach.HasRect);
-                json.WriteEndObject();
-            }
-
-            More(json, breaches.Count);
-            json.WriteEndArray();
         }
 
         private static void Findings(JsonTextWriter json, string name, List<Finding> findings)
@@ -763,7 +705,7 @@ namespace ES2Access.Dev
                 if (!string.IsNullOrEmpty(finding.Text))
                 {
                     json.WritePropertyName("text");
-                    json.WriteValue(NotificationAudit.Excerpt(finding.Text));
+                    json.WriteValue(AuditModel.Excerpt(finding.Text));
                 }
 
                 if (!string.IsNullOrEmpty(finding.Tooltip))

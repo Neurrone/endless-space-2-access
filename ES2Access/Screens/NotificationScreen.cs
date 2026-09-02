@@ -134,10 +134,12 @@ namespace ES2Access.Screens
 
         // The four bands Alt+Up/Down jump between, top to bottom as the popup draws them: the first
         // two belong to the content stop and the last two to the controls stop.
-        private static readonly object TopRegion = "notification:top";
-        private static readonly object InfoRegion = "notification:empire-info";
-        private static readonly object BodyRegion = "notification:body";
-        private static readonly object BottomRegion = "notification:bottom";
+        // Internal because the family's self-check sorts nodes by these (NotificationAudit): a band
+        // renamed here and re-spelled there would leave the check reporting every popup clean.
+        internal const string TopRegion = "notification:top";
+        internal const string InfoRegion = "notification:empire-info";
+        private const string BodyRegion = "notification:body";
+        internal const string BottomRegion = "notification:bottom";
 
         private GuiManager _gui;
         private NotificationWindow[] _windows;
@@ -670,10 +672,12 @@ namespace ES2Access.Screens
 
         /// <summary>The rails themselves, by name: a control the base window owns is its strip's
         /// whatever the popup did with it - one that parks Dismiss in a box of its own still dismisses
-        /// from the bottom.</summary>
-        private static readonly string[] TopKeys = { "next", "previous", "auto-popup" };
+        /// from the bottom. Internal because the family's self-check tells a rail from a popup's own
+        /// control by these names, and a second spelling of them would make every popup read clean.
+        /// </summary>
+        internal static readonly string[] TopKeys = { "next", "previous", "auto-popup" };
 
-        private static readonly string[] BottomKeys = { "dismiss", MinimizeKey, "show-location" };
+        internal static readonly string[] BottomKeys = { "dismiss", MinimizeKey, "show-location" };
 
         /// <summary>The bar the title is drawn across, which is the one the browsing arrows and the
         /// pop-up-again box are drawn in: the game lays both of them out as groups inside it.</summary>
@@ -739,92 +743,27 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What marks the top of the popup, for one with no words in the middle to measure from: the
-        /// title, which is drawn across the whole of the bar the browsing arrows and the pop-up-again
-        /// box sit in. The controls themselves are rails too, because the arrows are drawn one above
-        /// the other rather than side by side - either of them alone would put the other in the wrong
-        /// band - and because a popup with no title still has them.
+        /// Whether a widget is part of the popup's own CONTENT rather than of one of the two strips
+        /// the base window draws around it.
+        ///
+        /// The containers answer it, exactly as <see cref="Sort"/> answers the same question for
+        /// controls: the title bar and the button bar are real widgets the game lays its own rails out
+        /// inside, and everything a popup adds of its own it adds somewhere else. There used to be a
+        /// second, rectangle-based answer here - a widget level with or above the title rails was the
+        /// top strip, level with or below the buttons the bottom - and it decided this for the drawn
+        /// body, the two table readers and the table containers while <see cref="Sort"/> decided it
+        /// for controls. Two models for one question is two chances to disagree, and it is the
+        /// rectangles that <see cref="Sort"/>'s own measurement had already ruled out: a survey draws
+        /// its party lines level with nothing in particular, and measuring swept all four of them into
+        /// the top strip.
         /// </summary>
-        private static List<AgeTransform> TopRails(
-            NotificationWindow window,
-            List<Control> controls
-        )
-        {
-            List<AgeTransform> rails = new List<AgeTransform>();
-            AgePrimitiveLabel title = Value(window, NotificationTitle) as AgePrimitiveLabel;
-            if (title != null && AgeWidgets.Visible(title.AgeTransform))
-            {
-                rails.Add(title.AgeTransform);
-            }
-
-            Rails(rails, controls, TopKeys);
-            return rails;
-        }
-
-        /// <summary>The row of buttons along the bottom: dismissing the popup, putting it aside,
-        /// showing where it happened.</summary>
-        private static List<AgeTransform> BottomRails(List<Control> controls)
-        {
-            List<AgeTransform> rails = new List<AgeTransform>();
-            Rails(rails, controls, BottomKeys);
-            return rails;
-        }
-
-        private static void Rails(
-            List<AgeTransform> rails,
-            List<Control> controls,
-            params string[] keys
-        )
-        {
-            foreach (Control control in controls)
-            {
-                if (Array.IndexOf(keys, control.Key) >= 0)
-                {
-                    rails.Add(control.Widget);
-                }
-            }
-        }
-
-        /// <summary>Whether the widget is drawn level with one of the top rails or clear above them -
-        /// which is what puts it in the top strip rather than in the content below it.</summary>
-        private static bool AtOrAbove(AgeTransform widget, List<AgeTransform> rails)
-        {
-            foreach (AgeTransform rail in rails ?? Empty)
-            {
-                if (AgeLayout.Band(widget, rail) <= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>The same for the bottom strip.</summary>
-        private static bool AtOrBelow(AgeTransform widget, List<AgeTransform> rails)
-        {
-            foreach (AgeTransform rail in rails ?? Empty)
-            {
-                if (AgeLayout.Band(widget, rail) >= 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static readonly List<AgeTransform> Empty = new List<AgeTransform>();
-
-        /// <summary>Whether a widget is drawn between the two strips - which is where the popup's own
-        /// content is.</summary>
         private static bool InBody(
             AgeTransform widget,
-            List<AgeTransform> top,
-            List<AgeTransform> bottom
+            List<AgeTransform> title,
+            List<AgeTransform> buttons
         )
         {
-            return !AtOrAbove(widget, top) && !AtOrBelow(widget, bottom);
+            return !Within(widget, title) && !Within(widget, buttons);
         }
 
         // ---- what a popup that draws its own content says ----
@@ -1200,8 +1139,8 @@ namespace ES2Access.Screens
             List<Line> lines = new List<Line>();
             Read(root, lines, null, 0);
 
-            List<AgeTransform> top = TopRails(window, controls);
-            List<AgeTransform> bottom = BottomRails(controls);
+            List<AgeTransform> title = TitleBar(window, controls);
+            List<AgeTransform> buttons = ButtonBar(controls);
             AgeTransform dossier = Dossier(window);
             List<Line> loose = new List<Line>();
             List<AgeTooltip> explained = new List<AgeTooltip>();
@@ -1213,7 +1152,7 @@ namespace ES2Access.Screens
             foreach (Line line in lines)
             {
                 if (
-                    !InBody(line.Widget, top, bottom)
+                    !InBody(line.Widget, title, buttons)
                     // A line inside a panel the popup has folded away is not a line: the detail of a
                     // damage report sits behind a "+" at alpha 0 and keeps every word it last held.
                     // Asked of the label itself rather than of where it is measured, since a clipped
@@ -1497,20 +1436,10 @@ namespace ES2Access.Screens
         /// popup is not showing, so calling the game's handler there would open the popup rather than
         /// go anywhere: the toggle is what is left out here, and everything before it is replayed.
         ///
-        /// Five window families override the callback and each is answered from the NOTIFICATION
-        /// rather than from the window, because the window is shared and bound to whichever
-        /// notification is currently up:
-        /// <list type="bullet">
-        /// <item>the quest-begun popup asks for the quest's own marker
-        /// (<c>ShowQuestLocation</c>, which cycles between a step's markers) - and its notification
-        /// answers <c>HasLocation</c> true while overriding no <c>ShowLocation</c>, so the default
-        /// route would move nothing at all;</item>
-        /// <item>the two space-battle popups aim at the encounter's orbit;</item>
-        /// <item>the two ground-battle popups at the defending node;</item>
-        /// <item>the hacking popup does the ordinary thing and then opens the scan view.</item>
-        /// </list>
-        /// Everything else is <c>GuiNotification.ShowLocation()</c>, which each notification overrides
-        /// for itself.
+        /// The window families that override the callback are answered from the NOTIFICATION rather
+        /// than from the window, because the window is shared and bound to whichever notification is
+        /// currently up - which kind does what is <see cref="Routes"/>. Everything else is
+        /// <c>GuiNotification.ShowLocation()</c>, which each notification overrides for itself.
         /// </summary>
         internal static void GoToLocation(GuiNotification notification)
         {
@@ -1521,45 +1450,14 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                NotificationQuestBegun quest = notification as NotificationQuestBegun;
-                if (quest != null && quest.Quest != null)
+                Action<GuiNotification> route = RouteOf(notification);
+                if (route != null)
                 {
-                    Gui.GuiGameWindowService.ShowQuestLocation(
-                        quest.Quest,
-                        quest.Quest.GetCurrentStep()
-                    );
-                    return;
-                }
-
-                NotificationBattleSetup setup = notification as NotificationBattleSetup;
-                if (setup != null)
-                {
-                    Orbit(setup.GetEncounter());
-                    return;
-                }
-
-                NotificationGroundBattleReport ground = notification as NotificationGroundBattleReport;
-                if (ground != null)
-                {
-                    Defender(ground.GroundBattle);
-                    return;
-                }
-
-                NotificationGroundBattleSetup groundSetup =
-                    notification as NotificationGroundBattleSetup;
-                if (groundSetup != null)
-                {
-                    Defender(groundSetup.GroundBattle);
+                    route(notification);
                     return;
                 }
 
                 notification.ShowLocation();
-                if (notification is NotificationDefenseHackingProgramEncountered)
-                {
-                    // The hacking popup's own second half: the operation is drawn in the scan view and
-                    // nowhere else, so the button opens it.
-                    Gui.GuiGameWindowService.ToggleScanView();
-                }
             }
             catch (Exception e)
             {
@@ -1567,8 +1465,88 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Where a space battle is: the orbit the encounter is being fought in, which is what
-        /// both battle popups aim at.</summary>
+        /// <summary>
+        /// The notification kinds whose Show Location is not the notification's own.
+        ///
+        /// A table rather than a chain of casts, walked base-type-first the way
+        /// <see cref="VariantOf"/> walks its own (<see cref="RouteOf"/>): the same file already
+        /// answers "what does this popup kind do" that way, and a route registered against a base
+        /// notification serves every notification built on it, which a chain of casts only does by
+        /// the order the casts happen to be written in.
+        /// </summary>
+        private static readonly Dictionary<Type, Action<GuiNotification>> Routes = new Dictionary<
+            Type,
+            Action<GuiNotification>
+        >
+        {
+            // The quest's own marker, which cycles between a step's markers. Its notification answers
+            // HasLocation true while overriding no ShowLocation, so the default route would move
+            // nothing at all - and a quest-begun notification with no quest on it falls back to that
+            // default rather than going nowhere.
+            {
+                typeof(NotificationQuestBegun),
+                it =>
+                {
+                    NotificationQuestBegun quest = (NotificationQuestBegun)it;
+                    if (quest.Quest == null)
+                    {
+                        it.ShowLocation();
+                        return;
+                    }
+
+                    Gui.GuiGameWindowService.ShowQuestLocation(
+                        quest.Quest,
+                        quest.Quest.GetCurrentStep()
+                    );
+                }
+            },
+            // The orbit the encounter is being fought in.
+            {
+                typeof(NotificationBattleSetup),
+                it => Orbit(((NotificationBattleSetup)it).GetEncounter())
+            },
+            // The node being defended, for both ground-battle popups.
+            {
+                typeof(NotificationGroundBattleReport),
+                it => Defender(((NotificationGroundBattleReport)it).GroundBattle)
+            },
+            {
+                typeof(NotificationGroundBattleSetup),
+                it => Defender(((NotificationGroundBattleSetup)it).GroundBattle)
+            },
+            // The ordinary thing, and then the scan view: the hacking operation is drawn there and
+            // nowhere else, so the button opens it.
+            {
+                typeof(NotificationDefenseHackingProgramEncountered),
+                it =>
+                {
+                    it.ShowLocation();
+                    Gui.GuiGameWindowService.ToggleScanView();
+                }
+            },
+        };
+
+        /// <summary>What this notification's Show Location does, its own kind first - a route
+        /// registered against a base notification serves every notification built on it.</summary>
+        private static Action<GuiNotification> RouteOf(GuiNotification notification)
+        {
+            for (
+                Type type = notification.GetType();
+                type != null && type != typeof(GuiNotification);
+                type = type.BaseType
+            )
+            {
+                Action<GuiNotification> route;
+                if (Routes.TryGetValue(type, out route))
+                {
+                    return route;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Where a space battle is: the orbit the encounter is being fought in.</summary>
         private static void Orbit(Encounter encounter)
         {
             if (encounter != null && encounter.Groups != null && encounter.Groups.Length >= 2)
@@ -1676,13 +1654,13 @@ namespace ES2Access.Screens
                 List<Line> drawn = new List<Line>();
                 Read(root, drawn, null, 0);
 
-                List<AgeTransform> top = TopRails(window, controls);
-                List<AgeTransform> bottom = BottomRails(controls);
+                List<AgeTransform> title = TitleBar(window, controls);
+                List<AgeTransform> buttons = ButtonBar(controls);
                 List<Line> body = new List<Line>();
                 foreach (Line line in drawn)
                 {
                     if (
-                        InBody(line.Widget, top, bottom)
+                        InBody(line.Widget, title, buttons)
                         // The same folded-panel test DrawnRows applies: a line the popup keeps at
                         // alpha 0 still holds its last words, and a stale one admitted here would
                         // be spoken as a column name on every row of the sheet.
@@ -1701,7 +1679,7 @@ namespace ES2Access.Screens
                     if (
                         widget == null
                         || !AgeWidgets.Visible(widget)
-                        || !InBody(widget, top, bottom)
+                        || !InBody(widget, title, buttons)
                     )
                     {
                         continue;
@@ -2410,13 +2388,13 @@ namespace ES2Access.Screens
             List<Line> drawn = new List<Line>();
             Read(root, drawn, null, 0);
 
-            List<AgeTransform> top = TopRails(window, controls);
-            List<AgeTransform> bottom = BottomRails(controls);
+            List<AgeTransform> title = TitleBar(window, controls);
+            List<AgeTransform> buttons = ButtonBar(controls);
             AgeTransform dossier = Dossier(window);
             foreach (Line line in drawn)
             {
                 if (
-                    InBody(line.Widget, top, bottom)
+                    InBody(line.Widget, title, buttons)
                     && !PartOf(line.Widget, controls)
                     && !IsWords(line, words)
                     && !AgeWidgets.Under(line.Widget, table)
@@ -2485,8 +2463,8 @@ namespace ES2Access.Screens
             }
 
             List<AgeTransform> tables = new List<AgeTransform>();
-            List<AgeTransform> top = controls == null ? null : TopRails(window, controls);
-            List<AgeTransform> bottom = controls == null ? null : BottomRails(controls);
+            List<AgeTransform> title = controls == null ? null : TitleBar(window, controls);
+            List<AgeTransform> buttons = controls == null ? null : ButtonBar(controls);
             AgeTransform root = Root(window);
             foreach (AgeTransform table in variant.Tables(window))
             {
@@ -2495,7 +2473,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                if (controls != null && !InBody(table, top, bottom))
+                if (controls != null && !InBody(table, title, buttons))
                 {
                     continue;
                 }
@@ -2617,7 +2595,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What the words block and anything hanging under it are keyed by.</summary>
-        private const string WordsKey = "notification:words";
+        /// <summary>The node the popup's own words are read as. Internal for the same reason the bands
+        /// are: the self-check singles this node out by key.</summary>
+        internal const string WordsKey = "notification:words";
 
         private static ControlId WordsId(AgePrimitiveLabel label)
         {
@@ -2752,10 +2732,14 @@ namespace ES2Access.Screens
                 vtable.Sections = it.Details;
             }
 
-            if ((it.Radio || it.Acts) && it.Toggle != null)
+            if (it.Toggle != null)
             {
-                // A card has no button to light up: its own toggle carries the hover - and hovering it is
-                // also what makes the game show what the card unlocks, exactly as it does for a mouse.
+                // A control the game drew as a TOGGLE has no button to light up: its own toggle carries
+                // the hover - and hovering it is also what makes the game show what a choice card
+                // unlocks, exactly as it does for a mouse. Asked of the toggle rather than of what the
+                // control DOES with it, because the pop-up-again box and every expander are toggles the
+                // mod does not call a card, and they used to hover through the null-button overload:
+                // nothing lit, and nothing the game only draws under the pointer appeared.
                 AgeWidgets.Point(vtable, it.Toggle, explains, it.Widget);
             }
             else

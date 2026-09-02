@@ -95,6 +95,15 @@ namespace ES2Access.Dev
             for (int i = 0; i < steps.Count; i++)
             {
                 Step step = steps[i];
+                // A step that neither presses nor releases sends nothing, so it is not reported as
+                // sent: a hold-only token (+Ctrl+I) and a release-only one (-Ctrl+I) each give their
+                // modifier one such step, and reporting them had the answer claiming key events the
+                // game never saw.
+                if (!step.Down && !step.Up)
+                {
+                    continue;
+                }
+
                 // Re-checked before every step, not once for the batch: a modal the game raises
                 // mid-sequence could take the foreground with it, and the rest of the sequence would
                 // land somewhere else entirely.

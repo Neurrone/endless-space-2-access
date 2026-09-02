@@ -10,8 +10,8 @@ using Screen = ES2Access.Screens.Screen;
 using ES2Access.UI;
 using Newtonsoft.Json;
 using UnityEngine;
-using Breach = ES2Access.Dev.NotificationAudit.Breach;
-using Declared = ES2Access.Dev.NotificationAudit.Declared;
+using Breach = ES2Access.Dev.AuditModel.Breach;
+using Declared = ES2Access.Dev.AuditModel.Declared;
 
 namespace ES2Access.Dev
 {
@@ -235,6 +235,33 @@ namespace ES2Access.Dev
                         + Misclassed.Count;
                 }
             }
+
+            /// <summary>
+            /// Every bucket this check fills, written out.
+            ///
+            /// One writer, because there are two readers: this check's own answer and the coverage
+            /// audit's, which carries the same tooltip result inside it. The coverage audit used to
+            /// hand-list SEVEN of the eleven, and the three it left out are three of the seven
+            /// <see cref="Findings"/> count - so a screen with nothing but unraised, unaimed or
+            /// misclassed tooltips read clean there and dirty here, out of the same object.
+            ///
+            /// <paramref name="max"/> is the caller's own list cap (zero for none): how much of an
+            /// answer to print is the caller's business, which buckets there are is not.
+            /// </summary>
+            public void WriteBuckets(JsonTextWriter json, int max = 0)
+            {
+                AuditModel.WriteBreaches(json, "promised", Promised, max);
+                AuditModel.WriteBreaches(json, "misaimed", Misaimed, max);
+                AuditModel.WriteBreaches(json, "unraised", Unraised, max);
+                AuditModel.WriteBreaches(json, "unaimed", Unaimed, max);
+                AuditModel.WriteBreaches(json, "uncovered", Uncovered, max);
+                AuditModel.WriteBreaches(json, "decoration", Decoration, max);
+                AuditModel.WriteBreaches(json, "unread", Unread, max);
+                AuditModel.WriteBreaches(json, "misclassed", Misclassed, max);
+                AuditModel.WriteBreaches(json, "hidden", Hidden, max);
+                AuditModel.WriteBreaches(json, "undescribed", Undescribed, max);
+                AuditModel.WriteBreaches(json, "unknown", Unknown, max);
+            }
         }
 
         private sealed class Tip
@@ -292,7 +319,7 @@ namespace ES2Access.Dev
             result.ScreenName = Named(screen);
 
             List<Breach> unlocatable = new List<Breach>();
-            List<Declared> declared = NotificationAudit.DeclaredNodes(screen, unlocatable, ownOnly);
+            List<Declared> declared = AuditModel.DeclaredNodes(screen, unlocatable, ownOnly);
             result.Nodes = declared.Count;
             result.DeclaredNodes = declared;
 
@@ -394,7 +421,7 @@ namespace ES2Access.Dev
                 }
 
                 result.Unraised.Add(
-                    NotificationAudit.Made(
+                    AuditModel.Made(
                         node.Widget,
                         node.Key,
                         "points at a tooltip and never moves the pointer to it - it can be reviewed but the game will not draw it",
@@ -435,7 +462,7 @@ namespace ES2Access.Dev
                 }
 
                 result.Unaimed.Add(
-                    NotificationAudit.Made(
+                    AuditModel.Made(
                         node.Widget,
                         node.Key,
                         "declares a tooltip's words and aims at nothing - nothing moves the pointer there, so the buffer promises what the game will never draw",
@@ -489,11 +516,11 @@ namespace ES2Access.Dev
                     if (missing != null)
                     {
                         result.Misclassed.Add(
-                            NotificationAudit.Made(
+                            AuditModel.Made(
                                 node.Widget,
                                 node.Key,
                                 "points at a tooltip the game wrote words for and announces none of it - a content-backed tooltip is announced whole",
-                                NotificationAudit.Excerpt(missing)
+                                AuditModel.Excerpt(missing)
                             )
                         );
                         return;
@@ -504,11 +531,11 @@ namespace ES2Access.Dev
                 if (leaked != null)
                 {
                     result.Misclassed.Add(
-                        NotificationAudit.Made(
+                        AuditModel.Made(
                             node.Widget,
                             node.Key,
                             "says the words of a tooltip the game assembles on hover - a class-backed tooltip is reviewed, never announced",
-                            NotificationAudit.Excerpt(leaked)
+                            AuditModel.Excerpt(leaked)
                         )
                     );
                 }
@@ -606,12 +633,12 @@ namespace ES2Access.Dev
                 Unraised(node, result);
                 Unaimed(node, result);
                 Misclassed(node, result);
-                if (!NotificationAudit.Promises(node))
+                if (!AuditModel.Promises(node))
                 {
                     continue;
                 }
 
-                AgeTooltip aimed = NotificationAudit.AimOf(node);
+                AgeTooltip aimed = AuditModel.AimOf(node);
                 if (node.Widget == null)
                 {
                     // Nothing to walk: this node is read off a place on the map rather than off a
@@ -620,7 +647,7 @@ namespace ES2Access.Dev
                     if (aimed == null)
                     {
                         result.Unknown.Add(
-                            NotificationAudit.Made(
+                            AuditModel.Made(
                                 null,
                                 node.Key,
                                 "declares a tooltip on something that is not a widget - cannot tell",
@@ -639,7 +666,7 @@ namespace ES2Access.Dev
                     // dossier that demonstrably appears; judging it by what hangs on the widget
                     // beneath would report every carrier the mod owns as an empty promise.
                     result.Promised.Add(
-                        NotificationAudit.Made(
+                        AuditModel.Made(
                             node.Widget,
                             node.Key,
                             "declares a tooltip to review with nothing that draws",
@@ -652,7 +679,7 @@ namespace ES2Access.Dev
                 if (aimed != null && !AgeWidgets.Draws(aimed))
                 {
                     result.Misaimed.Add(
-                        NotificationAudit.Made(
+                        AuditModel.Made(
                             node.Widget,
                             node.Key,
                             "declares a tooltip to review and points at one that draws nothing",
@@ -678,19 +705,19 @@ namespace ES2Access.Dev
                 if (!Describes(tip.Tooltip))
                 {
                     result.Undescribed.Add(
-                        NotificationAudit.Made(
+                        AuditModel.Made(
                             tip.Owner,
-                            NotificationAudit.Name(tip.Owner),
+                            AuditModel.Name(tip.Owner),
                             "the game has no description for tooltip class '"
                                 + Class(tip.Tooltip)
                                 + "'",
-                            NotificationAudit.Excerpt(AgeText.Tooltip(tip.Tooltip))
+                            AuditModel.Excerpt(AgeText.Tooltip(tip.Tooltip))
                         )
                     );
                     continue;
                 }
 
-                List<Declared> covering = NotificationAudit.Covering(
+                List<Declared> covering = AuditModel.Covering(
                     declared,
                     tip.Owner,
                     tip.Tooltip
@@ -702,11 +729,11 @@ namespace ES2Access.Dev
                         continue;
                     }
 
-                    Breach breach = NotificationAudit.Made(
+                    Breach breach = AuditModel.Made(
                         tip.Owner,
-                        NotificationAudit.Name(tip.Owner),
+                        AuditModel.Name(tip.Owner),
                         "the game would draw a tooltip here and no node covers it",
-                        NotificationAudit.Excerpt(AgeText.Tooltip(tip.Tooltip))
+                        AuditModel.Excerpt(AgeText.Tooltip(tip.Tooltip))
                     );
                     (
                         hidden ? result.Hidden
@@ -733,14 +760,14 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                if (!NotificationAudit.CarriedBy(covering, content))
+                if (!AuditModel.CarriedBy(covering, content))
                 {
                     result.Unread.Add(
-                        NotificationAudit.Made(
+                        AuditModel.Made(
                             tip.Owner,
-                            NotificationAudit.Name(tip.Owner) + " (" + covering[0].Key + ")",
+                            AuditModel.Name(tip.Owner) + " (" + covering[0].Key + ")",
                             "the tooltip's words are not in what that node carries",
-                            NotificationAudit.Excerpt(content)
+                            AuditModel.Excerpt(content)
                         )
                     );
                 }
@@ -935,17 +962,7 @@ namespace ES2Access.Dev
                 json.WriteValue(result.PaintedTooltips);
                 json.WritePropertyName("hiddenTooltips");
                 json.WriteValue(result.HiddenTooltips);
-                NotificationAudit.WriteBreaches(json, "promised", result.Promised);
-                NotificationAudit.WriteBreaches(json, "misaimed", result.Misaimed);
-                NotificationAudit.WriteBreaches(json, "unraised", result.Unraised);
-                NotificationAudit.WriteBreaches(json, "unaimed", result.Unaimed);
-                NotificationAudit.WriteBreaches(json, "uncovered", result.Uncovered);
-                NotificationAudit.WriteBreaches(json, "decoration", result.Decoration);
-                NotificationAudit.WriteBreaches(json, "unread", result.Unread);
-                NotificationAudit.WriteBreaches(json, "misclassed", result.Misclassed);
-                NotificationAudit.WriteBreaches(json, "hidden", result.Hidden);
-                NotificationAudit.WriteBreaches(json, "undescribed", result.Undescribed);
-                NotificationAudit.WriteBreaches(json, "unknown", result.Unknown);
+                result.WriteBuckets(json);
                 json.WriteEndObject();
             });
         }

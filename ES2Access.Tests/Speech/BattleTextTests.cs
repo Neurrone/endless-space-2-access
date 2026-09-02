@@ -6,10 +6,11 @@ using Xunit;
 namespace ES2Access.Tests.Speech
 {
     /// <summary>
-    /// What a battle says in the mod's own words. The load-bearing rule is the SILENCE: a narrator
-    /// written against a phrase the build does not carry must say nothing rather than read the key
-    /// aloud, because a battle cinematic gives the player no way to go back and work out what they
-    /// just heard.
+    /// What a battle says in the mod's own words. Every one of these phrases is asked for optionally
+    /// (<see cref="OptionalText.Phrase"/>, whose own silence rule is tested beside it), because a
+    /// narrator written against a phrase the build does not carry must say nothing rather than read the
+    /// key aloud: a battle cinematic gives the player no way to go back and work out what they just
+    /// heard.
     /// </summary>
     [Collection(ModStringsCollection.Name)]
     public class BattleTextTests
@@ -17,23 +18,6 @@ namespace ES2Access.Tests.Speech
         public BattleTextTests()
         {
             ModStrings.Reset();
-        }
-
-        [Fact]
-        public void APhraseTheBuildDoesNotCarryIsSilent()
-        {
-            Assert.Null(BattleText.Optional("battle.no-such-phrase"));
-            Assert.Null(BattleText.Optional("battle.no-such-phrase", 3));
-            Assert.Null(BattleText.Optional(null));
-            Assert.Null(BattleText.Optional(""));
-        }
-
-        [Fact]
-        public void APhraseTheBuildCarriesSpeaks()
-        {
-            Install("battle.progress", "Battle {0} percent fought");
-
-            Assert.Equal("Battle 50 percent fought", BattleText.Optional("battle.progress", 50));
         }
 
         [Fact]

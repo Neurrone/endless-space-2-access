@@ -115,10 +115,6 @@ namespace ES2Access.Screens
         private static readonly object FiguresRegion = "advanced-play:figures";
 
         /// <summary>The game's own titles for the things it draws as pictures.</summary>
-        private const string PlanTitleKey = "%NotificationBattleSetupSelectedPlayTitle";
-        private const string StartTitleKey = "%NotificationBattleSetupStartButtonTitle";
-        private const string RetreatTitleKey = "%NotificationBattleSetupRetreatButtonTitle";
-        private const string WatchToggleTitleKey = "%NotificationBattleSetupWatchToggleTitle";
 
         /// <summary>The game's own sentence for a range, which it writes as "{0} Range" over the bare
         /// name a range localizes to.</summary>
@@ -242,20 +238,20 @@ namespace ES2Access.Screens
         /// </summary>
         private void Heading(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
-            Note(builder, window.WindowTitleLabel, "advanced-play/title");
-            Note(
+            BattleRows.NoteBeside(builder, window.WindowTitleLabel, "advanced-play/title");
+            BattleRows.NoteBeside(
                 builder,
                 window.LocationLabel,
                 "advanced-play/location",
                 Beside(window.LocationLabel)
             );
-            Note(
+            BattleRows.NoteBeside(
                 builder,
                 window.ArenaNameLabel,
                 "advanced-play/arena",
                 Beside(window.ArenaNameLabel)
             );
-            Note(builder, window.ProtectedByCitadelLabel, "advanced-play/citadel");
+            BattleRows.NoteBeside(builder, window.ProtectedByCitadelLabel, "advanced-play/citadel");
         }
 
         /// <summary>The icon the game draws beside a heading label, inside the little box it draws the
@@ -291,14 +287,14 @@ namespace ES2Access.Screens
         private void Tactics(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(TacticsRegion);
-            bool named = Context(builder, ModStrings.BattleTactics, true);
+            bool named = BattleRows.Context(builder, ModStrings.BattleTactics, true);
             try
             {
                 Plans(builder, window.PlayerPlaySelectionTable, "advanced-play/plan");
             }
             finally
             {
-                Close(builder, named);
+                BattleRows.Close(builder, named);
             }
         }
 
@@ -308,10 +304,10 @@ namespace ES2Access.Screens
         private void Yours(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(YoursRegion);
-            bool named = Context(builder, ModStrings.BattleYourFleets);
+            bool named = BattleRows.Context(builder, ModStrings.BattleYourFleets);
             try
             {
-                Leader(builder, window.PlayerBattleGroupInfoPanel, "advanced-play/yours");
+                BattleRows.Leader(builder, window.PlayerBattleGroupInfoPanel, "advanced-play/yours");
                 Roster(
                     builder,
                     window.PlayerBattleGroupSetupPanel,
@@ -321,7 +317,7 @@ namespace ES2Access.Screens
             }
             finally
             {
-                Close(builder, named);
+                BattleRows.Close(builder, named);
             }
         }
 
@@ -330,10 +326,10 @@ namespace ES2Access.Screens
         private void Theirs(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(TheirsRegion);
-            bool named = Context(builder, ModStrings.BattleEnemyFleets);
+            bool named = BattleRows.Context(builder, ModStrings.BattleEnemyFleets);
             try
             {
-                Leader(builder, window.EnemyBattleGroupInfoPanel, "advanced-play/theirs");
+                BattleRows.Leader(builder, window.EnemyBattleGroupInfoPanel, "advanced-play/theirs");
                 // Flow control: the history table is walked card by card, and the switch that hides
                 // the deck hides the whole of it.
                 if (AgeWidgets.Visible(window.EnemyDeckGroup))
@@ -348,7 +344,7 @@ namespace ES2Access.Screens
             }
             finally
             {
-                Close(builder, named);
+                BattleRows.Close(builder, named);
             }
         }
 
@@ -361,10 +357,10 @@ namespace ES2Access.Screens
         ///
         /// A card is not a title: it PRINTS the effects the plan applies, and the window draws all
         /// three cards at once, each permanently on its own plan - so those lines are always-drawn text
-        /// and belong in what the row says (<see cref="BattleNotifications.PlanEffects(BattlePlayCard)"/>).
+        /// and belong in what the row says (<see cref="BattlePlans.PlanEffects(BattlePlayCard)"/>).
         /// The family badge and the three range diagrams drawn on the card are hover surfaces of their
         /// own and become child entries, exactly as they do behind the setup popup's chooser
-        /// (<see cref="BattleNotifications.PlanDossiers"/>), with nothing to turn first.
+        /// (<see cref="BattlePlans.PlanDossiers"/>), with nothing to turn first.
         /// </summary>
         private void Plans(GraphBuilder builder, AgeTransform table, string prefix)
         {
@@ -391,13 +387,13 @@ namespace ES2Access.Screens
                     tooltip
                 );
                 vtable.Announcements.Add(
-                    GraphNodes.ValuePart(() => BattleNotifications.PlanEffects(it), false)
+                    GraphNodes.ValuePart(() => BattlePlans.PlanEffects(it), false)
                 );
                 GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Operable(at));
                 AgeWidgets.Point(vtable, it.Toggle, tooltip, at);
                 string key = prefix + "/" + i;
                 Cell cell = Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
-                cell.Dossiers = BattleNotifications.PlanDossiers(it, null);
+                cell.Dossiers = BattlePlans.PlanDossiers(it, null);
                 cell.Key = key;
             }
 
@@ -426,7 +422,7 @@ namespace ES2Access.Screens
                     ControlType = ControlTypes.Text,
                     Announcements = new List<NodeAnnouncement>
                     {
-                        GraphNodes.LabelPart(() => AgeText.Clean(PlanTitleKey)),
+                        GraphNodes.LabelPart(() => AgeText.Clean(BattleRows.SetupPlanTitleKey)),
                         GraphNodes.ValuePart(() => PlanName(it), false),
                     },
                     Sections = GraphNodes.Sections(null, card.Tooltip),
@@ -726,15 +722,19 @@ namespace ES2Access.Screens
         private void Figures(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(FiguresRegion);
-            bool named = Context(builder, ModStrings.BattleStats, true);
+            bool named = BattleRows.Context(builder, ModStrings.BattleStats, true);
             try
             {
                 Pages(builder, window);
-                Note(builder, window.FightersStanceRatioLabel, "advanced-play/fighters");
+                BattleRows.NoteBeside(
+                    builder,
+                    window.FightersStanceRatioLabel,
+                    "advanced-play/fighters"
+                );
             }
             finally
             {
-                Close(builder, named);
+                BattleRows.Close(builder, named);
             }
 
             builder.SetRegion(null);
@@ -1269,7 +1269,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                return BattleNotifications.BalanceText(
+                return BattleBalance.BalanceText(
                     window.PlayerEncounterGroup,
                     window.EnemyEncounterGroup,
                     true
@@ -1307,9 +1307,14 @@ namespace ES2Access.Screens
                 "advanced-play:show-theirs"
             );
             Sorting(window);
-            Checkbox(window.WatchBattleToggle, null, WatchToggleTitleKey, "advanced-play:watch");
-            Command(window.StartBattleButton, StartTitleKey, "advanced-play:start");
-            Command(window.RetreatButton, RetreatTitleKey, "advanced-play:retreat");
+            Checkbox(
+                window.WatchBattleToggle,
+                null,
+                BattleRows.WatchToggleTitleKey,
+                "advanced-play:watch"
+            );
+            Command(window.StartBattleButton, BattleRows.StartTitleKey, "advanced-play:start");
+            Command(window.RetreatButton, BattleRows.RetreatTitleKey, "advanced-play:retreat");
             Countdown(window, "advanced-play:timer");
             Cells.AddControl(_cells, ByHandler(window, "OnBackCb"), "advanced-play:back");
             Cells.EmitLinear(builder, _cells);
@@ -1374,7 +1379,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>A box the player ticks, named by the mod where the game names it nowhere and by the
-        /// game everywhere else.</summary>
+        /// game everywhere else (<see cref="BattleRows.Checkbox"/>).</summary>
         private void Checkbox(
             AgeControlToggle toggle,
             string modKey,
@@ -1383,93 +1388,35 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null)
-            {
-                return;
-            }
-
-            AgeControlToggle it = toggle;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Checkbox(
-                Name(widget, modKey, gameKey, null),
-                () => it.State,
-                () => AgeWidgets.Toggle(it),
-                () => AgeWidgets.Offered(widget),
-                tooltip
-            );
-            AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(_cells, widget, ControlId.For(toggle, key), vtable);
+            BattleRows.Checkbox(_cells, toggle, Name(widget, modKey, gameKey, null), key);
         }
 
         /// <summary>A button the window drew as an icon, under the game's own title for it, refusing with
         /// the game's own reason - the retreat button carries the failure infos for a fleet that cannot
-        /// run.</summary>
+        /// run (<see cref="BattleRows.Command"/>).</summary>
         private void Command(AgeTransform widget, string titleKey, string key)
         {
-            if (widget == null)
-            {
-                return;
-            }
-
-            AgeTransform it = widget;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            Func<bool> enabled = () => AgeWidgets.Offered(it);
-            NodeVtable vtable = GraphNodes.Button(
-                Name(it, null, titleKey, tooltip),
-                () => AgeWidgets.Press(it),
-                enabled,
-                tooltip
+            BattleRows.Command(
+                _cells,
+                widget,
+                Name(widget, null, titleKey, AgeWidgets.Raw(widget)),
+                key
             );
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
-            AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.For(widget, key), vtable);
         }
 
-        /// <summary>How long is left, for a battle the game is timing. Never watched - a countdown that
-        /// announced itself under a standing cursor would talk over the plan the player is choosing - so it
-        /// is there to be asked.</summary>
+        /// <summary>How long is left, for a battle the game is timing
+        /// (<see cref="BattleRows.Countdown"/>): this window's clock is the notification's own, which
+        /// it is only worth asking for once the window has one.</summary>
         private void Countdown(AdvancedEncounterPlayModalWindow window, string key)
         {
-            AgeTransform gauge = window.TimerGauge;
             NotificationBattleSetup notification = window.NotificationBattleSetup;
-            if (
-                gauge == null
-                || notification == null
-                || OptionalText.Phrase(ModStrings.BattleTimeLeft, 0) == null
-            )
+            if (notification == null)
             {
                 return;
             }
 
             NotificationBattleSetup it = notification;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => TimeLeft(it)),
-                },
-                OnFocusVisual = AgeWidgets.ReleasePointer,
-            };
-            Cells.Add(_cells, gauge, ControlId.Structural(key), vtable);
-        }
-
-        private static string TimeLeft(NotificationBattleSetup notification)
-        {
-            try
-            {
-                return OptionalText.Phrase(
-                    ModStrings.BattleTimeLeft,
-                    UnityEngine.Mathf.Clamp(
-                        UnityEngine.Mathf.RoundToInt(notification.GetTimeLeftRatio() * 100f),
-                        0,
-                        100
-                    )
-                );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            BattleRows.Countdown(_cells, window.TimerGauge, () => it.GetTimeLeftRatio(), key);
         }
 
         /// <summary>A button the window keeps in no field of its own - the way out, and the reset beside
@@ -1482,98 +1429,6 @@ namespace ES2Access.Screens
         {
             return AgeWidgets.Transform(
                 AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, method)
-            );
-        }
-
-        /// <summary>Who is leading this side, and the hero commanding it where there is one - the portrait
-        /// carries the hero's whole dossier, so the row indicates having one and the buffer holds it.
-        /// </summary>
-        private static void Leader(GraphBuilder builder, BattleGroupInfoPanel panel, string prefix)
-        {
-            if (panel == null)
-            {
-                return;
-            }
-
-            Note(builder, panel.MainLeaderName, prefix + "/leader");
-            AgePrimitiveImage portrait = panel.MainHeroPortrait;
-            AgeTransform widget = portrait == null ? null : portrait.AgeTransform;
-            if (widget == null)
-            {
-                return;
-            }
-
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = new NodeVtable
-            {
-                ControlType = ControlTypes.Text,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
-        }
-
-        /// <summary>
-        /// A line the game wrote and is showing: read as it stands, with whatever it explains itself
-        /// with carried along.
-        ///
-        /// <paramref name="beside"/> is the wordless icon the game drew next to the label
-        /// (<see cref="Beside"/>), and the two of them are TWO HOVER SURFACES: the row points at the
-        /// one the engine would really draw - its own where it has one, the icon's where it has not -
-        /// and whichever it is not pointing at becomes a nested entry of its own, which is what every
-        /// second hover surface in the mod does. A row pointing at nothing releases the pointer rather
-        /// than leaving a neighbour's tooltip standing over it.
-        /// </summary>
-        private static void Note(
-            GraphBuilder builder,
-            AgePrimitiveLabel label,
-            string key,
-            AgeTransform beside = null
-        )
-        {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
-            {
-                return;
-            }
-
-            AgePrimitiveLabel it = label;
-            AgeTooltip own = AgeWidgets.Raw(widget);
-            AgeTooltip badge = AgeWidgets.Raw(beside);
-            bool drawn = AgeWidgets.Draws(own);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Label(it)),
-                },
-            };
-            AgeTooltip aimed = drawn ? own : badge;
-            vtable.Sections = GraphNodes.SectionsFor(vtable, aimed);
-            if (aimed == null)
-            {
-                vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
-            }
-
-            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
-            if (drawn)
-            {
-                // Both kinds through one sink, exactly as the nesting sink itself asks: only one of
-                // the two tests can pass for a given tooltip, and asking both is what makes the icon
-                // an entry whichever kind the prefab hung on it.
-                TooltipChildren.Add(dossiers, badge, beside);
-                TooltipChildren.AddPlain(dossiers, badge, beside);
-            }
-
-            TooltipChildren.Declare(
-                builder,
-                Nodes.Drawn(ControlId.For(label, key), vtable, label),
-                key,
-                dossiers
             );
         }
 
@@ -1606,36 +1461,6 @@ namespace ES2Access.Screens
                 string hinted = CardActions.FirstLine(tip);
                 return string.IsNullOrEmpty(hinted) ? OptionalText.Phrase(modKey) : hinted;
             };
-        }
-
-        /// <summary>
-        /// Which band the rows that follow belong to - announced once as focus enters, so a roster is
-        /// audibly yours or theirs without every row saying so. A build with no such phrase opens no
-        /// level at all, which is why every caller closes with <see cref="Close"/>.
-        ///
-        /// <paramref name="positions"/> is off by default because most of these bands are not one
-        /// numbered set: a side's leader line, its plans and its flotilla rows share a level, and a
-        /// stamp across all of them would count things that are not peers. A band whose rows ARE a set
-        /// (<see cref="Tactics"/>, <see cref="Figures"/>) asks for it.
-        /// </summary>
-        private static bool Context(GraphBuilder builder, string nameKey, bool positions = false)
-        {
-            string name = OptionalText.Phrase(nameKey);
-            if (string.IsNullOrEmpty(name))
-            {
-                return false;
-            }
-
-            builder.PushContext(name, null, positions);
-            return true;
-        }
-
-        private static void Close(GraphBuilder builder, bool opened)
-        {
-            if (opened)
-            {
-                builder.PopContext();
-            }
         }
 
         private static BattlePlayCard Card(AgeTransform widget)

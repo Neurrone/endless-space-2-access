@@ -548,25 +548,6 @@ namespace ES2Access.Dev
             });
         }
 
-        /// <summary>
-        /// Whether the game's key scans are still standing down for the mod's keys. A stripped patch
-        /// costs the mod nothing visible - navigation keeps working - while every key it acts on ALSO
-        /// fires the game's binding on it, so Tab opens the chat box and Enter ends the turn. That is a
-        /// wrong-looking test result with no error anywhere, which is why the count is worth watching
-        /// on every /status.
-        ///
-        /// The owner id is per load (see <see cref="GameKeyStandDown"/>), so a changed id after a
-        /// reload is proof the new load's patches are the ones installed.
-        /// </summary>
-        public static string Patches()
-        {
-            return Guarded(json =>
-            {
-                json.WritePropertyName("patches");
-                WritePatches(json);
-            });
-        }
-
         // Shared with /status, which must stay cheap: the target lookup is reflection over the six
         // signatures - three key scans, AgeControlTextField.KeyDown, InGameChatPanel.HandleInput and
         // AgeManager.set_FocusedControl - and is done once.

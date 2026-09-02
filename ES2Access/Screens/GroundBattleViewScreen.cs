@@ -83,7 +83,7 @@ namespace ES2Access.Screens
                         ? null
                         : AgeText.Label(window.IntroductionLocationLabel);
                     return string.IsNullOrEmpty(where)
-                        ? BattleText.Optional(ModStrings.ScreenGroundBattle)
+                        ? OptionalText.Phrase(ModStrings.ScreenGroundBattle)
                         : where;
                 }
                 catch (Exception)
@@ -240,11 +240,11 @@ namespace ES2Access.Screens
             string said = null;
             if (phase == GroundBattleViewer.PhaseType.BombardmentPhase)
             {
-                said = BattleText.Optional(ModStrings.GroundBattleBombardment);
+                said = OptionalText.Phrase(ModStrings.GroundBattleBombardment);
             }
             else if (phase == GroundBattleViewer.PhaseType.AttackPhase)
             {
-                said = BattleText.Optional(ModStrings.GroundBattleAssault);
+                said = OptionalText.Phrase(ModStrings.GroundBattleAssault);
             }
 
             _phase.Told(step);
@@ -276,7 +276,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string said = BattleText.Optional(ModStrings.GroundBattleRound, round + 1);
+            string said = OptionalText.Phrase(ModStrings.GroundBattleRound, round + 1);
             if (string.IsNullOrEmpty(said))
             {
                 return;
@@ -409,22 +409,14 @@ namespace ES2Access.Screens
         /// sentence it explains itself with, which is what a sighted player reads on hover.</summary>
         private void Command(AgeTransform widget, string titleKey, string key)
         {
-            if (widget == null)
-            {
-                return;
-            }
-
-            AgeTransform it = widget;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
             string named = string.IsNullOrEmpty(titleKey) ? null : AgeText.Clean(titleKey);
-            NodeVtable vtable = GraphNodes.Button(
+            BattleRows.Command(
+                _cells,
+                widget,
                 () => named ?? CardActions.FirstLine(tooltip),
-                () => AgeWidgets.Press(it),
-                () => AgeWidgets.Offered(it),
-                tooltip
+                key
             );
-            AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(_cells, widget, ControlId.For(widget, key), vtable);
         }
 
         /// <summary>The reset button, which is also the only place the speed multiplier is written: the

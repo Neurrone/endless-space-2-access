@@ -201,6 +201,22 @@ namespace ES2Access.Dev
             );
         }
 
+        /// <summary>One off-by-default query flag, or the 400 that says the value made no sense.
+        /// Null means it parsed.</summary>
+        private static DevResponse Flag(DevRequest request, string name, out bool value)
+        {
+            string text = request.QueryValue(name);
+            if (ParseFlag(text, false, out value))
+            {
+                return null;
+            }
+
+            return DevResponse.Json(
+                400,
+                DevJson.Error(name + "= expects 1/0 or true/false, not '" + text + "'")
+            );
+        }
+
         /// <summary>A query flag written either way callers write one: 1/0 or true/false. False for
         /// a value that is neither, so the route can say so rather than quietly using its default.
         /// </summary>
@@ -241,9 +257,20 @@ namespace ES2Access.Dev
         /// one builder's predicate.</summary>
         private DevResponse Graph(DevRequest request)
         {
-            bool edges = request.QueryInt("edges", 0) != 0;
-            bool buffers = request.QueryInt("buffers", 0) != 0;
-            bool ungated = request.QueryInt("ungated", 0) != 0;
+            // ParseFlag, not QueryInt: these are flags, and QueryInt read "edges=true" as 0 and
+            // answered a tree with no edges in it rather than saying the value made no sense.
+            bool edges;
+            bool buffers;
+            bool ungated;
+            DevResponse bad = Flag(request, "edges", out edges);
+            DevResponse badBuffers = Flag(request, "buffers", out buffers);
+            DevResponse badUngated = Flag(request, "ungated", out ungated);
+            bad = bad ?? badBuffers ?? badUngated;
+            if (bad != null)
+            {
+                return bad;
+            }
+
             string wanted = request.QueryValue("screen");
             if (string.IsNullOrEmpty(wanted))
             {
@@ -581,31 +608,16 @@ namespace ES2Access.Dev
         }
 
         // The speech an action provoked usually lands a frame or two later, so the answer waits for
-        // quiet the way POST /eval does - from this thread, never the main one, since the game has to
-        // keep running frames for anything to be said at all.
+        // quiet the way POST /eval does (the same poll, on the same ring) - from this thread, never
+        // the main one, since the game has to keep running frames for anything to be said at all.
         private List<SpeechLog.Entry> Settled(long since)
         {
-            Stopwatch total = Stopwatch.StartNew();
-            Stopwatch quiet = Stopwatch.StartNew();
-            long cursor = since;
-
-            while (
-                quiet.ElapsedMilliseconds < SettleMilliseconds
-                && total.ElapsedMilliseconds < MaxSpeechWaitMilliseconds
-            )
-            {
-                Thread.Sleep(SpeechPollMilliseconds);
-                long now = _speech.Cursor;
-                if (now != cursor)
-                {
-                    cursor = now;
-                    quiet.Reset();
-                    quiet.Start();
-                }
-            }
-
-            long next;
-            return _speech.Since(since, out next);
+            return _speech.Settled(
+                since,
+                SettleMilliseconds,
+                SpeechPollMilliseconds,
+                MaxSpeechWaitMilliseconds
+            );
         }
 
         /// <summary>

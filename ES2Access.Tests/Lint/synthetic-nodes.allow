@@ -7,9 +7,6 @@
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 
-ES2Access/Screens/BattleNotifications.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
-ES2Access/Screens/BattleNotifications.cs | 2 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
-
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("tactics:remove-target"), vtable));
 
 ES2Access/Screens/ChatScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.For(message, "chat:message/" + i), vtable));
@@ -92,6 +89,10 @@ ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(Contro
 ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/SystemManagementScreen.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
+
+ES2Access/UI/BattleBalance.cs | 2 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
+
+ES2Access/UI/BattlePlans.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
 
 ES2Access/UI/CardActions.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
 

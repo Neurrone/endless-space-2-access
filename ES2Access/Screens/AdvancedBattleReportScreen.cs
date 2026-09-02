@@ -70,8 +70,6 @@ namespace ES2Access.Screens
         private const string CommandPointsTitleKey = "%ShipStatCommandPointsTitle";
         private const string MissedDamageTitleKey =
             "%AdvancedReportModalWindowShowMissedDamageTitle";
-        private const string FlotillaNameKey = "%FlotillaNameTitle";
-        private const string PlanTitleKey = "%NotificationBattleReportSelectedPlayTitle";
 
         private readonly List<Cell> _cells = new List<Cell>();
 
@@ -98,7 +96,7 @@ namespace ES2Access.Screens
                     AdvancedEncounterReportModalWindow window = Window();
                     string title = window == null ? null : AgeText.Label(window.BattleTitle);
                     return string.IsNullOrEmpty(title)
-                        ? BattleText.Optional(ModStrings.ScreenAdvancedBattleReport)
+                        ? OptionalText.Phrase(ModStrings.ScreenAdvancedBattleReport)
                         : title;
                 }
                 catch (Exception)
@@ -169,8 +167,8 @@ namespace ES2Access.Screens
             AdvancedEncounterReportModalWindow window
         )
         {
-            Note(builder, window.BattleTitle, "battle-advanced/outcome");
-            BattleNotifications.Balance(
+            BattleRows.Note(builder, window.BattleTitle, "battle-advanced/outcome");
+            BattleBalance.Balance(
                 builder,
                 AgeWidgets.Transform(window.BattlePowerGauge),
                 window.PlayerEncounterGroup,
@@ -180,7 +178,7 @@ namespace ES2Access.Screens
             );
 
             builder.SetRegion(YoursRegion);
-            Leader(builder, window.PlayerBattleGroupInfoPanel, "battle-advanced/yours");
+            BattleRows.Leader(builder, window.PlayerBattleGroupInfoPanel, "battle-advanced/yours");
             Value(builder, window.PlayerCPLabel, CommandPointsTitleKey, "battle-advanced/your-cp");
             Morale(
                 builder,
@@ -192,7 +190,7 @@ namespace ES2Access.Screens
             Squadrons(builder, window, true, "battle-advanced/your-squadrons");
 
             builder.SetRegion(TheirsRegion);
-            Leader(builder, window.EnemyBattleGroupInfoPanel, "battle-advanced/theirs");
+            BattleRows.Leader(builder, window.EnemyBattleGroupInfoPanel, "battle-advanced/theirs");
             Value(builder, window.EnemyCPLabel, CommandPointsTitleKey, "battle-advanced/their-cp");
             Morale(
                 builder,
@@ -259,9 +257,7 @@ namespace ES2Access.Screens
                 EncounterFighterBomberCard2D card = cards[i];
                 string flotilla =
                     cards.Count > 1
-                        ? AgeText.Clean(
-                            Gui.Localize(FlotillaNameKey, (Index(group, card) + 1).ToString())
-                        )
+                        ? BattleRosters.FlotillaName(Index(group, card) + 1)
                         : null;
                 AgePrimitiveLabel[] counts = card.FighterBombersCounts;
                 for (int j = 0; counts != null && j < counts.Length; j++)
@@ -413,7 +409,7 @@ namespace ES2Access.Screens
                 ControlType = ControlTypes.Text,
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => BattleText.Optional(phrase)),
+                    GraphNodes.LabelPart(() => OptionalText.Phrase(phrase)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
@@ -504,14 +500,14 @@ namespace ES2Access.Screens
 
                 // The game numbers the flotillas from one where it writes them down and from zero
                 // where it binds them.
-                string number = (card.Index + 1).ToString();
+                int number = card.Index + 1;
                 NodeVtable vtable = new NodeVtable
                 {
                     ControlType = ControlTypes.Text,
                     Announcements = new List<NodeAnnouncement>
                     {
                         GraphNodes.LabelPart(
-                            () => AgeText.Clean(Gui.Localize(FlotillaNameKey, number))
+                            () => BattleRosters.FlotillaName(number)
                         ),
                     },
                     Sections = GraphNodes.Sections(null, AgeWidgets.Raw(widget)),
@@ -626,12 +622,7 @@ namespace ES2Access.Screens
             // The same word the advanced SETUP window names its own hand of plans with, from the same
             // key: a stop the player lands in says what it is, and the two windows say the same thing
             // the same way.
-            string name = BattleText.Optional(ModStrings.BattleTactics);
-            bool named = !string.IsNullOrEmpty(name);
-            if (named)
-            {
-                builder.PushContext(name, null, false);
-            }
+            bool named = BattleRows.Context(builder, ModStrings.BattleTactics);
 
             Plan(
                 builder,
@@ -647,10 +638,7 @@ namespace ES2Access.Screens
                 window.EnemyPlayCardContainer,
                 "battle-advanced/their-plan"
             );
-            if (named)
-            {
-                builder.PopContext();
-            }
+            BattleRows.Close(builder, named);
 
             builder.SetRegion(null);
         }
@@ -672,12 +660,7 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(region);
-            string name = BattleText.Optional(nameKey);
-            bool named = !string.IsNullOrEmpty(name);
-            if (named)
-            {
-                builder.PushContext(name, null, false);
-            }
+            bool named = BattleRows.Context(builder, nameKey);
 
             BattlePlayCard it = card;
             NodeVtable vtable = new NodeVtable
@@ -685,9 +668,9 @@ namespace ES2Access.Screens
                 ControlType = ControlTypes.Text,
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => AgeText.Clean(PlanTitleKey)),
+                    GraphNodes.LabelPart(() => AgeText.Clean(BattleRows.ReportPlanTitleKey)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlayTitle), false),
-                    GraphNodes.ValuePart(() => BattleNotifications.PlanEffects(it), false),
+                    GraphNodes.ValuePart(() => BattlePlans.PlanEffects(it), false),
                 },
                 Sections = GraphNodes.Sections(null, card.Tooltip),
             };
@@ -696,12 +679,9 @@ namespace ES2Access.Screens
                 builder,
                 Nodes.Drawn(ControlId.For(card, key), vtable, card),
                 key,
-                BattleNotifications.PlanDossiers(it, null)
+                BattlePlans.PlanDossiers(it, null)
             );
-            if (named)
-            {
-                builder.PopContext();
-            }
+            BattleRows.Close(builder, named);
         }
 
         /// <summary>The card the window instantiated into a side's slot - the report draws exactly one
@@ -867,7 +847,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(
-                        () => AgeText.Clean(Gui.Localize(FlotillaNameKey, number.ToString()))
+                        () => BattleRosters.FlotillaName(number)
                     ),
                 },
                 OnFocusVisual = AgeWidgets.ReleasePointer,
@@ -1036,19 +1016,11 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(region);
-            string name = BattleText.Optional(nameKey);
-            bool named = !string.IsNullOrEmpty(name);
-            if (named)
-            {
-                builder.PushContext(name, null, false);
-            }
+            bool named = BattleRows.Context(builder, nameKey);
 
             BattleRosters.Roster(builder, panel, prefix, extras);
             BattleNotifications.Rewards(builder, rewards, prefix);
-            if (named)
-            {
-                builder.PopContext();
-            }
+            BattleRows.Close(builder, named);
         }
 
         /// <summary>
@@ -1102,21 +1074,13 @@ namespace ES2Access.Screens
             }
 
             builder.SetRegion(region);
-            string name = BattleText.Optional(nameKey);
-            bool named = !string.IsNullOrEmpty(name);
-            if (named)
-            {
-                builder.PushContext(name, null, false);
-            }
+            bool named = BattleRows.Context(builder, nameKey);
 
             Bars(builder, gauge.EffectiveDamageCells, prefix + "/effective");
             Bars(builder, gauge.AbsorbedDamageCells, prefix + "/absorbed");
             Missed(builder, gauge.MissedDamageGroup, group, prefix + "/missed");
             Total(builder, total, totalTooltip, prefix + "/total");
-            if (named)
-            {
-                builder.PopContext();
-            }
+            BattleRows.Close(builder, named);
         }
 
         private static void Bars(GraphBuilder builder, AgeTransform table, string prefix)
@@ -1233,7 +1197,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                return BattleText.Optional(
+                return OptionalText.Phrase(
                     ModStrings.BattleShotsMissed,
                     UnityEngine.Mathf.RoundToInt(
                         UnityEngine.Mathf.Clamp01(1f - hits / shots) * 100f
@@ -1429,6 +1393,8 @@ namespace ES2Access.Screens
 
         private const string BackHandler = "OnBackCb";
 
+        /// <summary>A battle box (<see cref="BattleRows.Checkbox"/>) under this window's own naming
+        /// rule.</summary>
         private static void Checkbox(
             List<Cell> cells,
             AgeControlToggle toggle,
@@ -1438,22 +1404,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null)
-            {
-                return;
-            }
-
-            AgeControlToggle it = toggle;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Checkbox(
-                () => Name(widget, modKey, gameKey),
-                () => it.State,
-                () => AgeWidgets.Toggle(it),
-                () => AgeWidgets.Offered(widget),
-                tooltip
-            );
-            AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(cells, widget, ControlId.For(toggle, key), vtable);
+            BattleRows.Checkbox(cells, toggle, () => Name(widget, modKey, gameKey), key);
         }
 
         /// <summary>What a control is called: the words the game drew on it, else the game's own title
@@ -1468,33 +1419,14 @@ namespace ES2Access.Screens
             }
 
             string game = string.IsNullOrEmpty(gameKey) ? null : AgeText.Clean(gameKey);
-            return string.IsNullOrEmpty(game) ? BattleText.Optional(modKey) : game;
-        }
-
-        private static void Note(GraphBuilder builder, AgePrimitiveLabel label, string key)
-        {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
-            {
-                return;
-            }
-
-            AgePrimitiveLabel it = label;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Label(it)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
+            return string.IsNullOrEmpty(game) ? OptionalText.Phrase(modKey) : game;
         }
 
         /// <summary>A figure the game wrote as its own sentence ("18 &gt;&gt; 11 CP"), under the game's
-        /// name for what it counts.</summary>
+        /// name for what it counts (<see cref="BattleRows.Value"/> - this window draws these two on
+        /// their own rather than inside a captioned row, so there is no drawn caption to prefer). The
+        /// emptiness test is this window's own: a command-point label the game left blank is a figure
+        /// that has not been written yet, not a row worth a stop.</summary>
         private static void Value(
             GraphBuilder builder,
             AgePrimitiveLabel label,
@@ -1502,58 +1434,12 @@ namespace ES2Access.Screens
             string key
         )
         {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
+            if (label == null || string.IsNullOrEmpty(AgeText.Label(label)))
             {
                 return;
             }
 
-            AgePrimitiveLabel it = label;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Clean(titleKey)),
-                    GraphNodes.ValuePart(() => AgeText.Label(it), false),
-                },
-                Sections = GraphNodes.Sections(null, AgeWidgets.Raw(widget)),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
-        }
-
-        /// <summary>Who is leading this side, and the hero commanding it where there is one.</summary>
-        private static void Leader(
-            GraphBuilder builder,
-            BattleGroupInfoPanel panel,
-            string prefix
-        )
-        {
-            if (panel == null)
-            {
-                return;
-            }
-
-            Note(builder, panel.MainLeaderName, prefix + "/leader");
-            AgePrimitiveImage portrait = panel.MainHeroPortrait;
-            AgeTransform widget = portrait == null ? null : portrait.AgeTransform;
-            if (widget == null)
-            {
-                return;
-            }
-
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = new NodeVtable
-            {
-                ControlType = ControlTypes.Text,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
+            BattleRows.Value(builder, null, label, titleKey, key);
         }
 
         private static AdvancedEncounterReportModalWindow Window()

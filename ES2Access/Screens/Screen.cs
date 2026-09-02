@@ -1,3 +1,4 @@
+using System;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
@@ -120,16 +121,75 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (!builder.DeclaredStop(GlobalHud.TutorialStop))
+            for (int i = 0; i < Shared.Length; i++)
             {
-                builder.BeginStop(GlobalHud.TutorialStop);
-                TutorialScreen.BuildCollapsedBar(builder);
+                Contribution it = Shared[i];
+                if (!builder.DeclaredStop(it.Stop))
+                {
+                    it.Declare(builder);
+                }
+            }
+        }
+
+        /// <summary>One thing every page is given: the stop it is declared into, and the declaring.
+        /// </summary>
+        private sealed class Contribution
+        {
+            public object Stop;
+            public Action<GraphBuilder> Declare;
+        }
+
+        /// <summary>What <see cref="BuildShared"/> adds, as a list rather than as a run of ifs -
+        /// because "did this node come from the page or from the contributions" is asked from outside
+        /// (<c>NotificationAudit</c>), and an audit that hand-copied the answer counted the next
+        /// contribution added here as the page's own. <see cref="SharedStops"/> is that answer.
+        /// </summary>
+        private static readonly Contribution[] Shared =
+        {
+            new Contribution
+            {
+                Stop = GlobalHud.TutorialStop,
+                Declare = builder =>
+                {
+                    builder.BeginStop(GlobalHud.TutorialStop);
+                    TutorialScreen.BuildCollapsedBar(builder);
+                },
+            },
+            new Contribution
+            {
+                Stop = ChatScreen.AlertStop,
+                Declare = ChatScreen.BuildNewMessages,
+            },
+        };
+
+        /// <summary>Whether a stop is one every page is given rather than one the page declared for
+        /// itself - the structural answer to "whose node is this", which the audits ask of the stop a
+        /// node was declared into.</summary>
+        public static bool IsSharedStop(object stop)
+        {
+            if (stop == null)
+            {
+                return false;
             }
 
-            if (!builder.DeclaredStop(ChatScreen.AlertStop))
+            for (int i = 0; i < Shared.Length; i++)
             {
-                ChatScreen.BuildNewMessages(builder);
+                if (stop.Equals(Shared[i].Stop))
+                {
+                    return true;
+                }
             }
+
+            return false;
+        }
+
+        /// <summary>The screen's whole render: what the page declares of its own, then what every page
+        /// is given. The two halves are never written apart - a build that ran only the first loses
+        /// the collapsed tutorial bar and the chat alert on that page alone.</summary>
+        public void Render(GraphBuilder builder)
+        {
+            Build(builder);
+            BuildShared(builder);
         }
 
         /// <summary>Spoken when the player arrives on the screen, before the focused control reads.

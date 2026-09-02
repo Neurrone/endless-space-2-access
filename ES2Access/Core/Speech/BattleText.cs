@@ -18,18 +18,11 @@ namespace ES2Access.Core.Speech
     /// </summary>
     public static class BattleText
     {
-        /// <summary>The battle narration's name for <see cref="OptionalText.Phrase"/> - the phrase for
-        /// <paramref name="key"/>, or null where this build has no such phrase.</summary>
-        public static string Optional(string key, params object[] args)
-        {
-            return OptionalText.Phrase(key, args);
-        }
-
         /// <summary>A counted phrase in the form its number calls for (see
         /// <see cref="ModStrings.Plural"/>), or null where the build has no such phrase.</summary>
         public static string Counted(string oneKey, string manyKey, int count)
         {
-            return Optional(count == 1 ? oneKey : manyKey, count);
+            return OptionalText.Phrase(count == 1 ? oneKey : manyKey, count);
         }
 
         /// <summary>
@@ -50,10 +43,12 @@ namespace ES2Access.Core.Speech
 
             if (names.Count == 1)
             {
-                return string.IsNullOrEmpty(names[0]) ? null : Optional(oneKey, names[0]);
+                return string.IsNullOrEmpty(names[0])
+                    ? null
+                    : OptionalText.Phrase(oneKey, names[0]);
             }
 
-            return Optional(manyKey, names.Count);
+            return OptionalText.Phrase(manyKey, names.Count);
         }
 
         /// <summary>
@@ -101,7 +96,7 @@ namespace ES2Access.Core.Speech
             int absorbed = Whole(volley.Absorbed);
             if (absorbed > 0 && Whole(volley.Damage) > 0)
             {
-                said.ListItem(Optional(ModStrings.BattleFireShieldClause, absorbed));
+                said.ListItem(OptionalText.Phrase(ModStrings.BattleFireShieldClause, absorbed));
             }
 
             return said.Build();
@@ -114,16 +109,26 @@ namespace ES2Access.Core.Speech
             if (volley.Hits <= 0)
             {
                 return volley.Misses == 1
-                    ? Optional(ModStrings.BattleFireMissed, attacker, target)
-                    : Optional(ModStrings.BattleFireMissedMany, attacker, target, volley.Misses);
+                    ? OptionalText.Phrase(ModStrings.BattleFireMissed, attacker, target)
+                    : OptionalText.Phrase(
+                        ModStrings.BattleFireMissedMany,
+                        attacker,
+                        target,
+                        volley.Misses
+                    );
             }
 
             int damage = Whole(volley.Damage);
             if (damage <= 0 && Whole(volley.Absorbed) > 0)
             {
                 return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireAbsorbed, attacker, target)
-                    : Optional(ModStrings.BattleFireAbsorbedMany, attacker, target, volley.Hits);
+                    ? OptionalText.Phrase(ModStrings.BattleFireAbsorbed, attacker, target)
+                    : OptionalText.Phrase(
+                        ModStrings.BattleFireAbsorbedMany,
+                        attacker,
+                        target,
+                        volley.Hits
+                    );
             }
 
             int energy = Whole(volley.Energy);
@@ -132,8 +137,14 @@ namespace ES2Access.Core.Speech
             if (typed && energy > 0 && projectile > 0)
             {
                 return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireMixed, attacker, target, energy, projectile)
-                    : Optional(
+                    ? OptionalText.Phrase(
+                        ModStrings.BattleFireMixed,
+                        attacker,
+                        target,
+                        energy,
+                        projectile
+                    )
+                    : OptionalText.Phrase(
                         ModStrings.BattleFireMixedMany,
                         attacker,
                         target,
@@ -146,15 +157,26 @@ namespace ES2Access.Core.Speech
             if (typed && energy > 0)
             {
                 return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireEnergy, attacker, target, energy)
-                    : Optional(ModStrings.BattleFireEnergyMany, attacker, target, volley.Hits, energy);
+                    ? OptionalText.Phrase(ModStrings.BattleFireEnergy, attacker, target, energy)
+                    : OptionalText.Phrase(
+                        ModStrings.BattleFireEnergyMany,
+                        attacker,
+                        target,
+                        volley.Hits,
+                        energy
+                    );
             }
 
             if (typed && projectile > 0)
             {
                 return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireProjectile, attacker, target, projectile)
-                    : Optional(
+                    ? OptionalText.Phrase(
+                        ModStrings.BattleFireProjectile,
+                        attacker,
+                        target,
+                        projectile
+                    )
+                    : OptionalText.Phrase(
                         ModStrings.BattleFireProjectileMany,
                         attacker,
                         target,
@@ -164,8 +186,14 @@ namespace ES2Access.Core.Speech
             }
 
             return volley.Hits == 1
-                ? Optional(ModStrings.BattleFirePlain, attacker, target, damage)
-                : Optional(ModStrings.BattleFirePlainMany, attacker, target, volley.Hits, damage);
+                ? OptionalText.Phrase(ModStrings.BattleFirePlain, attacker, target, damage)
+                : OptionalText.Phrase(
+                    ModStrings.BattleFirePlainMany,
+                    attacker,
+                    target,
+                    volley.Hits,
+                    damage
+                );
         }
 
         /// <summary>A damage figure as a listener wants it: whole points, never a decimal tail. The

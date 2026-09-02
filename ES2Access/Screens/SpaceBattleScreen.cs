@@ -100,7 +100,6 @@ namespace ES2Access.Screens
         private const double Rewound = 0.25;
 
         private const string PhaseTitleKey = "%AdvancedReportModalWindowPhaseTitle";
-        private const string FlotillaNameKey = "%FlotillaNameTitle";
         private const string SkipTitleKey = "%BattleScreenSkipPhaseTitle";
         private const string ScanTitleKey = "%BattleScreenScanTitle";
         private static readonly string[] CameraTitleKeys = new string[]
@@ -182,7 +181,7 @@ namespace ES2Access.Screens
                         }
                     }
 
-                    return BattleText.Optional(ModStrings.ScreenBattle);
+                    return OptionalText.Phrase(ModStrings.ScreenBattle);
                 }
                 catch (Exception)
                 {
@@ -306,10 +305,14 @@ namespace ES2Access.Screens
             Act(window, encounter);
             if (Playing(encounter))
             {
+                // One clock for the whole tick: the burst windows all measure from the same instant,
+                // and four reads of the frame clock inside one narration could put a loss and the
+                // flotilla it was in on either side of a window boundary.
+                float now = Time.realtimeSinceStartup;
                 Phase(encounter);
-                Losses(window, encounter);
-                Flotillas(encounter);
-                Fighting();
+                Losses(window, now);
+                Flotillas(encounter, now);
+                Fighting(now);
             }
             else
             {
@@ -520,15 +523,14 @@ namespace ES2Access.Screens
         /// the way the panel asks it. The LEFT panel is always the player's side - the battle screen binds
         /// it to the player's own group - which is what makes "yours" and "theirs" answerable at all.
         /// </summary>
-        private void Losses(global::BattleScreen window, GalaxyEncounter encounter)
+        private void Losses(global::BattleScreen window, float now)
         {
             if (window != null)
             {
-                Lost(window.BattleStateGroupPanelLeft, _yourShips);
-                Lost(window.BattleStateGroupPanelRight, _enemyShips);
+                Lost(window.BattleStateGroupPanelLeft, _yourShips, now);
+                Lost(window.BattleStateGroupPanelRight, _enemyShips, now);
             }
 
-            float now = Time.realtimeSinceStartup;
             Voice.Say(
                 BattleText.Losses(
                     _yourShips.Due(now),
@@ -547,7 +549,7 @@ namespace ES2Access.Screens
             );
         }
 
-        private static void Lost(BattleStateGroupPanel panel, BurstWatch watch)
+        private static void Lost(BattleStateGroupPanel panel, BurstWatch watch, float now)
         {
             AgeTransform root = panel == null ? null : panel.AgeTransform;
             if (root == null)
@@ -557,7 +559,6 @@ namespace ES2Access.Screens
 
             try
             {
-                float now = Time.realtimeSinceStartup;
                 BattleStateShipItem[] items = root.GetComponentsInChildren<BattleStateShipItem>(true);
                 for (int i = 0; i < items.Length; i++)
                 {
@@ -582,7 +583,7 @@ namespace ES2Access.Screens
 
         /// <summary>A whole flotilla wiped out - which the game marks on the model rather than on any
         /// label, and which is the shape of a battle turning.</summary>
-        private void Flotillas(GalaxyEncounter encounter)
+        private void Flotillas(GalaxyEncounter encounter, float now)
         {
             Encounter battle = Battle(encounter);
             if (battle == null)
@@ -592,7 +593,6 @@ namespace ES2Access.Screens
 
             try
             {
-                float now = Time.realtimeSinceStartup;
                 EncounterGroup mine = battle.GetGroupByEmpireIndex(Gui.PlayerEmpire.Index);
                 for (int g = 0; g < battle.Groups.Length; g++)
                 {
@@ -627,9 +627,7 @@ namespace ES2Access.Screens
 
                         watch.Note(
                             g + "/" + f,
-                            AgeText.Clean(
-                                Gui.Localize(FlotillaNameKey, (flotilla.Index + 1).ToString())
-                            ),
+                            BattleRosters.FlotillaName(flotilla.Index + 1),
                             now
                         );
                     }
@@ -640,10 +638,9 @@ namespace ES2Access.Screens
                 Log.Warn("battle: reading the flotillas that have gone threw: " + e);
             }
 
-            float when = Time.realtimeSinceStartup;
             Voice.Say(
                 BattleText.Losses(
-                    _yourFlotillas.Due(when),
+                    _yourFlotillas.Due(now),
                     ModStrings.BattleYourFlotillaLost,
                     ModStrings.BattleYourFlotillasLost
                 ),
@@ -651,7 +648,7 @@ namespace ES2Access.Screens
             );
             Voice.Say(
                 BattleText.Losses(
-                    _enemyFlotillas.Due(when),
+                    _enemyFlotillas.Due(now),
                     ModStrings.BattleEnemyFlotillaLost,
                     ModStrings.BattleEnemyFlotillasLost
                 ),
@@ -672,11 +669,10 @@ namespace ES2Access.Screens
         /// needs told immediately, and holding it for the length of a volley summary would land it
         /// after the fight had moved on.
         /// </summary>
-        private void Fighting()
+        private void Fighting(float now)
         {
             try
             {
-                float now = Time.realtimeSinceStartup;
 
                 List<BattleStream.Shot> shots = BattleStream.TakeShots();
                 if (shots != null)
@@ -742,7 +738,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < arrivals.Count; i++)
             {
                 Voice.Say(
-                    BattleText.Optional(
+                    OptionalText.Phrase(
                         arrivals[i].Mine
                             ? ModStrings.BattleReinforcements
                             : ModStrings.BattleEnemyReinforcements,
@@ -777,7 +773,7 @@ namespace ES2Access.Screens
                 if (amount > 0)
                 {
                     Voice.Say(
-                        BattleText.Optional(ModStrings.BattleRepaired, mend.Key, amount),
+                        OptionalText.Phrase(ModStrings.BattleRepaired, mend.Key, amount),
                         false
                     );
                 }
@@ -796,7 +792,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < effects.Count; i++)
             {
                 Voice.Say(
-                    BattleText.Optional(
+                    OptionalText.Phrase(
                         ModStrings.BattleEffectApplied,
                         effects[i].Initiator,
                         effects[i].Name,
@@ -820,7 +816,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < awards.Count; i++)
             {
                 Voice.Say(
-                    BattleText.Optional(
+                    OptionalText.Phrase(
                         ModStrings.BattleMedalEarned,
                         awards[i].Ship,
                         awards[i].Medal
@@ -860,7 +856,7 @@ namespace ES2Access.Screens
 
             _milestone = milestone;
             Voice.Say(
-                BattleText.Optional(ModStrings.BattleProgress, milestone * 100 / Milestones),
+                OptionalText.Phrase(ModStrings.BattleProgress, milestone * 100 / Milestones),
                 false
             );
         }
@@ -881,7 +877,7 @@ namespace ES2Access.Screens
                 EncounterGroup theirs = ReferenceEquals(battle.Groups[0], mine)
                     ? battle.Groups[1]
                     : battle.Groups[0];
-                return BattleNotifications.BalanceText(mine, theirs, false);
+                return BattleBalance.BalanceText(mine, theirs, false);
             }
             catch (Exception)
             {

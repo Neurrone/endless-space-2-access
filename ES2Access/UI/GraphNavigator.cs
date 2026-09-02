@@ -288,8 +288,7 @@ namespace ES2Access.UI
                 ? new GraphBuilder(state.Expanded, NodeGate.For(screen.Key))
                 : new GraphBuilder(state.Expanded);
             NodeGate.BuildingIs(screen.Key);
-            screen.Build(builder);
-            screen.BuildShared(builder);
+            screen.Render(builder);
             return builder.Build();
         }
 
@@ -1327,8 +1326,7 @@ namespace ES2Access.UI
             try
             {
                 GraphBuilder builder = new GraphBuilder(state.Expanded, NodeGate.For(screen.Key));
-                screen.Build(builder);
-                screen.BuildShared(builder);
+                screen.Render(builder);
                 return builder.Build();
             }
             catch (Exception e)
@@ -2221,8 +2219,7 @@ namespace ES2Access.UI
                 int start = Environment.TickCount;
                 GraphBuilder builder = new GraphBuilder(_state.Expanded, NodeGate.For(_screen.Key));
                 builder.ExpandAll = true;
-                _screen.Build(builder);
-                _screen.BuildShared(builder);
+                _screen.Render(builder);
                 GraphRender render = builder.Build();
                 SearchBuildMs = Environment.TickCount - start;
                 SearchBuildNodes = render == null ? 0 : render.Order.Count;

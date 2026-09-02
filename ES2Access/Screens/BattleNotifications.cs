@@ -48,24 +48,11 @@ namespace ES2Access.Screens
         private static readonly object OutcomesRegion = "battle:outcomes";
         private static readonly object ControlsRegion = "battle:controls";
 
-        /// <summary>Whether the balance of power is declared as a node of its own.
-        ///
-        /// It is a number the game draws NOWHERE - two arcs, one per side, sized by military power - so
-        /// a sighted player reads the ratio and a listener gets nothing at all. Declaring it is
-        /// therefore new information rather than a re-reading; the cost is that it is the one line here
-        /// with no counterpart on screen. OWNER CALL: set false to leave it out.</summary>
-        private const bool DeclareBalance = true;
-
         // The game's own words. Nothing here is a paraphrase: every one of these is a title the game
         // ships for exactly this control, and the icon-only ones are the reason a name is needed at all.
         private const string ArenaTitleKey = "%NotificationBattleSetupBattleArenaTitle";
-        private const string PlanTitleKey = "%NotificationBattleSetupSelectedPlayTitle";
-        private const string StartTitleKey = "%NotificationBattleSetupStartButtonTitle";
-        private const string RetreatTitleKey = "%NotificationBattleSetupRetreatButtonTitle";
         private const string AdvancedPlayTitleKey = "%NotificationBattleSetupAdvancedPlayButtonTitle";
-        private const string WatchToggleTitleKey = "%NotificationBattleSetupWatchToggleTitle";
         private const string ReorderTitleKey = "%NotificationBattleSetupReinforcementReorderingTitle";
-        private const string ReportPlanTitleKey = "%NotificationBattleReportSelectedPlayTitle";
         private const string AdvancedReportTitleKey =
             "%NotificationBattleReportAdvancedReportButtonTitle";
         private const string WatchTitleKey = "%NotificationBattleReportWatchButtonTitle";
@@ -80,9 +67,8 @@ namespace ES2Access.Screens
         private const string GroundReplayTitleKey =
             "%NotificationGroundBattleReportReplayButtonTitle";
 
-        // The shared skeleton's own word for the button that puts a choice into effect, and the name the
-        // outcome popup's prefab draws that button under (see Validate).
-        private const string ValidateTitleKey = "%NotificationValidateTitle";
+        // The name the outcome popup's prefab draws its validate button under (see Validate); the title
+        // the button is READ under is shared (BattleRows.ValidateTitleKey).
         private const string ValidateButtonName = "ValidateButton";
 
         // The impact arrows the game writes INTO a figure to mark one its own rules have moved. They
@@ -94,20 +80,12 @@ namespace ES2Access.Screens
             "[positiveImpactWhite]",
         };
 
-        // The two arcs of the ground gauge are sized from these, and the window keeps the two indices
-        // to itself. Which of the pair is this player's side is a four-branch answer (attacker,
-        // defender, and a third party watching either) the game has already written down, so it is
-        // read back rather than worked out again here - a second copy of that rule would drift.
-        private static readonly PropertyInfo LeftManpowerIndex = ManpowerIndex(
-            "LeftEmpireManpowerIndex"
-        );
-        private static readonly PropertyInfo RightManpowerIndex = ManpowerIndex(
-            "RightEmpireManpowerIndex"
-        );
-
         // Which empire the popup is calling "the left one" - the same four-branch answer, and what the
         // report's own outcome test compares the attacker against.
-        private static readonly PropertyInfo LeftEmpire = ManpowerIndex("LeftEmpire");
+        private static readonly PropertyInfo LeftEmpire = GameHandlers.Property(
+            typeof(GroundBattleNotificationWindow),
+            "LeftEmpire"
+        );
 
         /// <summary>
         /// The setup popup: what is about to happen, and the three things the player decides about it -
@@ -130,7 +108,7 @@ namespace ES2Access.Screens
                 window.GuiNotification as NotificationBattleSetup;
 
             builder.SetRegion(HeadingRegion);
-            Note(builder, window.BattleTitle, "battle-setup/title");
+            BattleRows.Note(builder, window.BattleTitle, "battle-setup/title");
             Arena(builder, window.ArenaGroup, window.ArenaNameLabel, window.ArenaGroupTooltip);
 
             Side(
@@ -151,7 +129,7 @@ namespace ES2Access.Screens
             );
 
             builder.SetRegion(AftermathRegion);
-            Balance(
+            BattleBalance.Balance(
                 builder,
                 window.PowerBalanceGroup,
                 Group(window.LeftBattleGroupSetupPanel),
@@ -170,7 +148,7 @@ namespace ES2Access.Screens
             Checkbox(
                 controls,
                 window.WatchBattleToggle,
-                WatchToggleTitleKey,
+                BattleRows.WatchToggleTitleKey,
                 "battle-setup/watch"
             );
             Command(controls, window.MoveReinforcementUp, ReorderTitleKey, "battle-setup/reinforce-up");
@@ -181,9 +159,9 @@ namespace ES2Access.Screens
                 "battle-setup/reinforce-down"
             );
             Command(controls, window.AdvancedPlayButton, AdvancedPlayTitleKey, "battle-setup/advanced");
-            Command(controls, window.StartBattleButton, StartTitleKey, "battle-setup/start");
-            Command(controls, window.RetreatButton, RetreatTitleKey, "battle-setup/retreat");
-            Countdown(
+            Command(controls, window.StartBattleButton, BattleRows.StartTitleKey, "battle-setup/start");
+            Command(controls, window.RetreatButton, BattleRows.RetreatTitleKey, "battle-setup/retreat");
+            BattleRows.Countdown(
                 controls,
                 window.TimerGauge,
                 notification == null ? (Func<float>)null : notification.GetTimeLeftRatio,
@@ -212,35 +190,45 @@ namespace ES2Access.Screens
             // and what that means for the two empires) - so the heading reads the word and carries the
             // description.
             builder.SetRegion(HeadingRegion);
-            Note(builder, window.BattleTitle, "battle-report/outcome");
-            Note(builder, window.OpponentHasRetreatedLabel, "battle-report/retreated");
+            BattleRows.Note(builder, window.BattleTitle, "battle-report/outcome");
+            BattleRows.Note(builder, window.OpponentHasRetreatedLabel, "battle-report/retreated");
             Arena(builder, null, window.ArenaNameLabel, window.ArenaGroupTooltip);
 
             builder.SetRegion(YoursRegion);
-            bool yours = Context(builder, ModStrings.BattleYourFleets);
-            Leader(builder, window.LeftBattleGroupInfoPanel, "battle-report/yours");
-            Card(builder, window.PlayerBattlePlayCard, ReportPlanTitleKey, "battle-report/your-plan");
+            bool yours = BattleRows.Context(builder, ModStrings.BattleYourFleets);
+            BattleRows.Leader(builder, window.LeftBattleGroupInfoPanel, "battle-report/yours");
+            Card(
+                builder,
+                window.PlayerBattlePlayCard,
+                BattleRows.ReportPlanTitleKey,
+                "battle-report/your-plan"
+            );
             BattleRosters.Roster(
                 builder,
                 AgeWidgets.Transform(window.LeftBattleGroupReportPanel),
                 "battle-report/yours"
             );
             Rewards(builder, window.LeftBattleGroupReportPanel, "battle-report");
-            Close(builder, yours);
+            BattleRows.Close(builder, yours);
 
             builder.SetRegion(TheirsRegion);
-            bool theirs = Context(builder, ModStrings.BattleEnemyFleets);
-            Leader(builder, window.RightBattleGroupInfoPanel, "battle-report/theirs");
-            Card(builder, window.EnemyBattlePlayCard, ReportPlanTitleKey, "battle-report/their-plan");
+            bool theirs = BattleRows.Context(builder, ModStrings.BattleEnemyFleets);
+            BattleRows.Leader(builder, window.RightBattleGroupInfoPanel, "battle-report/theirs");
+            Card(
+                builder,
+                window.EnemyBattlePlayCard,
+                BattleRows.ReportPlanTitleKey,
+                "battle-report/their-plan"
+            );
             BattleRosters.Roster(
                 builder,
                 AgeWidgets.Transform(window.RightBattleGroupReportPanel),
                 "battle-report/theirs"
             );
-            Close(builder, theirs);
+            BattleRows.Close(builder, theirs);
 
             builder.SetRegion(AftermathRegion);
-            Balance(
+            BattleBalance.Balance(
                 builder,
                 null,
                 Group(window.LeftBattleGroupReportPanel),
@@ -248,7 +236,7 @@ namespace ES2Access.Screens
                 false,
                 "battle-report/balance"
             );
-            Note(builder, window.WarExhaustLabel, "battle-report/war-exhaust");
+            BattleRows.Note(builder, window.WarExhaustLabel, "battle-report/war-exhaust");
 
             builder.SetRegion(ControlsRegion);
             List<Cell> controls = new List<Cell>();
@@ -260,7 +248,7 @@ namespace ES2Access.Screens
             );
             Command(controls, window.WatchButton, WatchName(window), "battle-report/watch");
             Command(controls, window.ReplayButton, ReplayTitleKey, "battle-report/replay");
-            Countdown(
+            BattleRows.Countdown(
                 controls,
                 AgeWidgets.Transform(window.ReplayTimerSector),
                 notification == null ? (Func<float>)null : notification.GetReplayTimeLeftRatio,
@@ -287,8 +275,8 @@ namespace ES2Access.Screens
                 window.GuiNotification as NotificationGroundBattleSetup;
 
             builder.SetRegion(HeadingRegion);
-            Note(builder, window.BattleTitle, "ground-setup/title");
-            GroundBalance(
+            BattleRows.Note(builder, window.BattleTitle, "ground-setup/title");
+            BattleBalance.GroundBalance(
                 builder,
                 window,
                 notification == null ? null : notification.GroundBattle,
@@ -331,9 +319,14 @@ namespace ES2Access.Screens
 
             builder.SetRegion(ControlsRegion);
             List<Cell> controls = new List<Cell>();
-            Checkbox(controls, window.WatchBattleToggle, WatchToggleTitleKey, "ground-setup/watch");
-            Command(controls, window.StartBattleButton, StartTitleKey, "ground-setup/start");
-            Countdown(
+            Checkbox(
+                controls,
+                window.WatchBattleToggle,
+                BattleRows.WatchToggleTitleKey,
+                "ground-setup/watch"
+            );
+            Command(controls, window.StartBattleButton, BattleRows.StartTitleKey, "ground-setup/start");
+            BattleRows.Countdown(
                 controls,
                 window.TimerGauge,
                 notification == null ? (Func<float>)null : notification.GetTimeLeftRatio,
@@ -363,7 +356,7 @@ namespace ES2Access.Screens
             builder.SetRegion(HeadingRegion);
             GroundBattleReportNotificationWindow at = window;
             GroundBattle it = battle;
-            Note(
+            BattleRows.Note(
                 builder,
                 window.BattleTitle,
                 "ground-report/outcome",
@@ -375,13 +368,13 @@ namespace ES2Access.Screens
                 // onto the title.s tooltip; here the row went and got it, so here the row says it.
                 true
             );
-            Note(builder, window.BattleSubTitle, "ground-report/subtitle");
-            GroundBalance(builder, window, battle, false, "ground-report/balance");
+            BattleRows.Note(builder, window.BattleSubTitle, "ground-report/subtitle");
+            BattleBalance.GroundBalance(builder, window, battle, false, "ground-report/balance");
 
             builder.SetRegion(YoursRegion);
-            bool yours = Context(builder, ModStrings.BattleYourTroops);
-            Leader(builder, window.LeftBattleGroupInfoPanel, "ground-report/yours");
-            Note(
+            bool yours = BattleRows.Context(builder, ModStrings.BattleYourTroops);
+            BattleRows.Leader(builder, window.LeftBattleGroupInfoPanel, "ground-report/yours");
+            BattleRows.Note(
                 builder,
                 window.LeftPlayTitle,
                 "ground-report/your-strategy",
@@ -389,12 +382,12 @@ namespace ES2Access.Screens
             );
             Contender(builder, window.LeftContenderPanel, "ground-report/yours");
             Damage(builder, window.LeftContenderPanel, "ground-report/yours");
-            Close(builder, yours);
+            BattleRows.Close(builder, yours);
 
             builder.SetRegion(TheirsRegion);
-            bool theirs = Context(builder, ModStrings.BattleEnemyTroops);
-            Leader(builder, window.RightBattleGroupInfoPanel, "ground-report/theirs");
-            Note(
+            bool theirs = BattleRows.Context(builder, ModStrings.BattleEnemyTroops);
+            BattleRows.Leader(builder, window.RightBattleGroupInfoPanel, "ground-report/theirs");
+            BattleRows.Note(
                 builder,
                 window.RightPlayTitle,
                 "ground-report/their-strategy",
@@ -402,7 +395,7 @@ namespace ES2Access.Screens
             );
             Contender(builder, window.RightContenderPanel, "ground-report/theirs");
             Damage(builder, window.RightContenderPanel, "ground-report/theirs");
-            Close(builder, theirs);
+            BattleRows.Close(builder, theirs);
 
             // What the fighting did to the system, in the tables the popup fills line by line, each
             // under the caption it drew for it - and the caption is the table's NAME rather than a stop
@@ -414,18 +407,20 @@ namespace ES2Access.Screens
                 builder,
                 window.PopulationDeathTitle,
                 "ground-report/population-title",
-                Casualties(window.DestroyedPopulationsTable, "ground-report/population")
+                Casualties(window.DestroyedPopulationsTable, "ground-report/population"),
+                Counted(battle)
             );
             Wreckage(
                 builder,
                 window.ImprovementsDestroyedTitle,
                 "ground-report/improvements-title",
-                Wrecked(window.DestroyedImprovementsTable, "ground-report/improvements")
+                Wrecked(window.DestroyedImprovementsTable, "ground-report/improvements"),
+                Counted(battle)
             );
-            Note(builder, window.PirateLairTitle, "ground-report/pirate-lair");
+            BattleRows.Note(builder, window.PirateLairTitle, "ground-report/pirate-lair");
             Lines(builder, window.LootSeizedTable, "ground-report/loot");
-            Note(builder, window.HonorGainLabel, "ground-report/honor");
-            Note(builder, window.WarExhaustLabel, "ground-report/war-exhaust");
+            BattleRows.Note(builder, window.HonorGainLabel, "ground-report/honor");
+            BattleRows.Note(builder, window.WarExhaustLabel, "ground-report/war-exhaust");
             Readout(builder, window.WillContinueLabel, "ground-report/will-continue");
 
             builder.SetRegion(ControlsRegion);
@@ -467,22 +462,22 @@ namespace ES2Access.Screens
                 window.GuiNotification as NotificationGroundBattleOutcomeSelection;
 
             builder.SetRegion(HeadingRegion);
-            Note(builder, window.SystemNameLabel, "ground-outcome/system");
+            BattleRows.Note(builder, window.SystemNameLabel, "ground-outcome/system");
             Level(builder, window.SystemLevelLabel, "ground-outcome/level");
             Populations(builder, window.SystemPopulationCountTable, "ground-outcome/population");
             // Exactly one of the two is drawn: the popup switches the count table off for a system with
             // nobody left in it and puts its own line up instead (Refresh :166-187).
-            Note(builder, window.SystemPopulationNoneLabel, "ground-outcome/no-population");
-            Note(builder, window.SystemImprovementsLabel, "ground-outcome/improvements");
-            Note(builder, window.SystemWondersLabel, "ground-outcome/wonders");
+            BattleRows.Note(builder, window.SystemPopulationNoneLabel, "ground-outcome/no-population");
+            BattleRows.Note(builder, window.SystemImprovementsLabel, "ground-outcome/improvements");
+            BattleRows.Note(builder, window.SystemWondersLabel, "ground-outcome/wonders");
 
             builder.SetRegion(OutcomesRegion);
             NotificationScreen.BuildChoices(builder, window);
 
             builder.SetRegion(ControlsRegion);
             List<Cell> controls = new List<Cell>();
-            Command(controls, Validate(window), ValidateTitleKey, "ground-outcome/validate");
-            Countdown(
+            Command(controls, Validate(window), BattleRows.ValidateTitleKey, "ground-outcome/validate");
+            BattleRows.Countdown(
                 controls,
                 window.TimerGauge,
                 notification == null ? (Func<float>)null : notification.GetTimeLeftRatio,
@@ -504,15 +499,15 @@ namespace ES2Access.Screens
         )
         {
             builder.SetRegion(region);
-            bool named = Context(builder, nameKey);
+            bool named = BattleRows.Context(builder, nameKey);
             try
             {
-                Leader(builder, info, prefix);
+                BattleRows.Leader(builder, info, prefix);
                 BattleRosters.Roster(builder, roster, prefix);
             }
             finally
             {
-                Close(builder, named);
+                BattleRows.Close(builder, named);
             }
         }
 
@@ -534,19 +529,19 @@ namespace ES2Access.Screens
         )
         {
             builder.SetRegion(region);
-            bool named = Context(builder, nameKey);
+            bool named = BattleRows.Context(builder, nameKey);
             try
             {
                 GroundBattleContenderSetupPanel setup =
                     panel as GroundBattleContenderSetupPanel;
-                Leader(builder, info, prefix);
+                BattleRows.Leader(builder, info, prefix);
                 Role(builder, setup, prefix);
                 Contender(builder, panel, prefix);
                 Details(builder, setup, prefix);
             }
             finally
             {
-                Close(builder, named);
+                BattleRows.Close(builder, named);
             }
         }
 
@@ -561,7 +556,7 @@ namespace ES2Access.Screens
         {
             if (panel != null)
             {
-                Note(builder, panel.AttackerDefenserLabel, prefix + "/role");
+                BattleRows.Note(builder, panel.AttackerDefenserLabel, prefix + "/role");
             }
         }
 
@@ -587,9 +582,9 @@ namespace ES2Access.Screens
                 return;
             }
 
-            Note(builder, panel.DetailsHealthMultiplierLabel, prefix + "/health-multiplier");
-            Note(builder, panel.DetailsDamageMultiplierLabel, prefix + "/damage-multiplier");
-            Note(builder, panel.DetailsSpecialLabel, prefix + "/special");
+            BattleRows.Note(builder, panel.DetailsHealthMultiplierLabel, prefix + "/health-multiplier");
+            BattleRows.Note(builder, panel.DetailsDamageMultiplierLabel, prefix + "/damage-multiplier");
+            BattleRows.Note(builder, panel.DetailsSpecialLabel, prefix + "/special");
         }
 
         /// <summary>What a ground contender has: the manpower it committed, the reserve behind it, and a
@@ -611,7 +606,7 @@ namespace ES2Access.Screens
             try
             {
                 AgePrimitiveLabel manpower = panel.ManpowerValueLabel;
-                Value(
+                BattleRows.Value(
                     builder,
                     panel.ManpowerLine,
                     manpower,
@@ -619,14 +614,14 @@ namespace ES2Access.Screens
                     prefix + "/manpower",
                     () => ManpowerReading(manpower)
                 );
-                Value(
+                BattleRows.Value(
                     builder,
                     panel.ReinforcementLine,
                     panel.ReinforcementValueLabel,
                     GroundReinforcementsTitleKey,
                     prefix + "/reinforcements"
                 );
-                Note(builder, panel.NoTroopsLabel, prefix + "/no-troops");
+                BattleRows.Note(builder, panel.NoTroopsLabel, prefix + "/no-troops");
 
                 AgeTransform table = panel.TroopCellsTable;
                 TroopCell[] cells = table == null
@@ -783,9 +778,17 @@ namespace ES2Access.Screens
         ///
         /// The space report hands the player that sentence by writing it onto the title's tooltip; the
         /// ground report writes only the word and leaves the sentence in the same GuiElement it took
-        /// the word from, so the row goes and gets it. Which of the nine words is drawn is the window's
-        /// own four-branch answer, read back rather than re-derived, exactly as the manpower indices
-        /// are.
+        /// the word from, so the row goes and gets it.
+        ///
+        /// RE-DERIVES a private method, and there is no way not to: which of the nine outcomes the
+        /// window drew is <c>GroundBattleReportNotificationWindow.ComputeGroundBattleResult</c>
+        /// (:419-426), which is private, writes nothing down, and leaves only the localized WORD on the
+        /// title - and the word is what the sentence would have to be looked up by. So its four
+        /// branches are re-derived here off the same three game facts it reads (third-party role,
+        /// attacker empire against the window's left side, attacker or defender result), and the
+        /// element key is spelled the way the window spells it (:194). What keeps the two honest is
+        /// that a re-derivation which went wrong would answer a DIFFERENT one of the nine elements, and
+        /// its title is the word the player can hear the row say two lines earlier.
         /// </summary>
         private static IList<string> OutcomeDescription(
             GroundBattleReportNotificationWindow window,
@@ -831,49 +834,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        /// <summary>Who is fighting for this side, in the game's own "leader of faction" form, and the
-        /// hero commanding it where there is one - the portrait carries the hero's whole dossier, so the
-        /// row indicates having one and the buffer holds it.</summary>
-        private static void Leader(
-            GraphBuilder builder,
-            BattleGroupInfoPanel panel,
-            string prefix
-        )
-        {
-            if (panel == null)
-            {
-                return;
-            }
-
-            try
-            {
-                Note(builder, panel.MainLeaderName, prefix + "/leader");
-                AgePrimitiveImage portrait = panel.MainHeroPortrait;
-                AgeTransform widget = portrait == null ? null : portrait.AgeTransform;
-                if (widget == null)
-                {
-                    return;
-                }
-
-                AgeTooltip tooltip = AgeWidgets.Raw(widget);
-                NodeVtable vtable = new NodeVtable
-                {
-                    ControlType = ControlTypes.Text,
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(() => AgeWidgets.TooltipTitle(tooltip)),
-                    },
-                    Sections = GraphNodes.Sections(null, tooltip),
-                };
-                AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
-            }
-            catch (Exception e)
-            {
-                Log.Warn("battle: reading a side's leader threw: " + e);
             }
         }
 
@@ -979,396 +939,35 @@ namespace ES2Access.Screens
                 return;
             }
 
-            BattlePlayCard card = PlanCard(window);
+            BattlePlayCard card = BattlePlans.PlanCard(window);
             AgeTransform carrier = card == null ? null : card.AgeTransform;
             AgeTooltip tooltip = card == null ? null : card.Tooltip;
 
             BattleSetupNotificationWindow it = window;
             BattlePlayCard drawn = card;
             NodeVtable vtable = GraphNodes.ComboBox(
-                () => AgeText.Clean(PlanTitleKey),
-                () => PlayName(it, CurrentPlay(it), drawn),
+                () => AgeText.Clean(BattleRows.SetupPlanTitleKey),
+                () => BattlePlans.PlayName(it, BattlePlans.CurrentPlay(it), drawn),
                 () => BattlePlanScreen.Open(it),
-                () => Steppable(it),
+                () => BattlePlans.Steppable(it),
                 tooltip
             );
             // Activating this one opens a list rather than changing the plan: the list that opens says
             // where it starts.
             vtable.StateText = null;
             vtable.Announcements.Add(
-                GraphNodes.ValuePart(() => PlanEffects(it, CurrentPlay(it), drawn), false)
+                GraphNodes.ValuePart(
+                    () => BattlePlans.PlanEffects(it, BattlePlans.CurrentPlay(it), drawn),
+                    false
+                )
             );
 
             TooltipChildren.Declare(
                 builder,
-                Drawn(ControlId.Structural(PlanKey), vtable, carrier),
-                PlanKey,
-                PlanDossiers(card, null)
+                BattlePlans.Drawn(ControlId.Structural(BattlePlans.PlanKey), vtable, carrier),
+                BattlePlans.PlanKey,
+                BattlePlans.PlanDossiers(card, null)
             );
-        }
-
-        internal const string PlanKey = "battle-setup/plan";
-
-        /// <summary>The one card the setup popup draws, whichever plan it is currently bound to.
-        /// </summary>
-        internal static BattlePlayCard PlanCard(BattleSetupNotificationWindow window)
-        {
-            return window == null ? null : Card(window.SelectedPlayCardContainer);
-        }
-
-        /// <summary>The game's own title for the plan carousel ("Battle Plan") - the closed row's name
-        /// and the chooser's.</summary>
-        internal static string PlanTitle()
-        {
-            return AgeText.Clean(PlanTitleKey);
-        }
-
-        /// <summary>A row standing on the one card the window draws.
-        ///
-        /// Synthetic only where the window has not built its card yet: what stands behind the row is
-        /// then the group's own plan list, a game fact the window's arrows step through, and the
-        /// drawn test above it (the play group the window is showing) has already asked whether the
-        /// carousel is on the screen at all. With a card - which is every frame after the first bind -
-        /// the card is the widget that vouches for the row and the gate asks it.</summary>
-        internal static NodeDeclaration Drawn(ControlId id, NodeVtable vtable, AgeTransform carrier)
-        {
-            return carrier == null
-                ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
-                : Nodes.Drawn(id, vtable, carrier);
-        }
-
-        /// <summary>
-        /// Turn the card to plan <paramref name="index"/> the way clicking its arrow does, if it is not
-        /// showing it already.
-        ///
-        /// The step is the game's own arrow, pressed the way a mouse presses it, taking whichever way
-        /// round the set is shorter - the window's handlers are what wrap the index and re-bind the
-        /// card, and nothing here reproduces them. It is idempotent: a card already on the plan
-        /// presses nothing, and an arrow that answers with nothing stops the run rather than being
-        /// pressed again as a louder way of not moving.
-        ///
-        /// TURNING THE CARD CHOOSES THE PLAN - the game has no confirm step of its own - so the only
-        /// caller that turns it while the player browses is the chooser
-        /// (<see cref="BattlePlanScreen"/>), which knows how to put it back.
-        /// </summary>
-        internal static void Turn(BattleSetupNotificationWindow window, int index)
-        {
-            try
-            {
-                if (window == null || !Steppable(window))
-                {
-                    return;
-                }
-
-                int count = PlayCount(window);
-                int current = CurrentPlay(window);
-                if (count < 2 || current < 0 || index < 0 || index >= count || current == index)
-                {
-                    return;
-                }
-
-                int forwards = (index - current + count) % count;
-                AgeControlButton arrow = forwards * 2 <= count
-                    ? window.NextPlayButton
-                    : window.PreviousPlayButton;
-                for (int step = 0; step < count && CurrentPlay(window) != index; step++)
-                {
-                    int before = CurrentPlay(window);
-                    AgeWidgets.Press(arrow);
-                    if (CurrentPlay(window) == before)
-                    {
-                        // The arrow answered with nothing - the window is not stepping, and pressing
-                        // it again would only be a louder way of not moving.
-                        break;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("battle: turning to a battle plan threw: " + e);
-            }
-        }
-
-        /// <summary>Whether the plan can still be changed - which the game answers by switching both
-        /// arrows off once this side has committed to the fight.</summary>
-        internal static bool Steppable(BattleSetupNotificationWindow window)
-        {
-            try
-            {
-                return window != null
-                    && (AgeWidgets.Operable(AgeWidgets.Transform(window.PreviousPlayButton))
-                        || AgeWidgets.Operable(AgeWidgets.Transform(window.NextPlayButton)));
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// <summary>The side of the battle whose plan this popup is choosing.</summary>
-        private static EncounterGroup PlayerGroup(BattleSetupNotificationWindow window)
-        {
-            return window == null ? null : Group(window.LeftBattleGroupSetupPanel);
-        }
-
-        /// <summary>How many plans this fleet may fight under - the list the window's own arrows step
-        /// through. -1 where the group will not say.</summary>
-        internal static int PlayCount(BattleSetupNotificationWindow window)
-        {
-            try
-            {
-                EncounterGroup group = PlayerGroup(window);
-                return group == null || group.AvailablePlays == null
-                    ? -1
-                    : group.AvailablePlays.Count;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
-
-        /// <summary>Which of them is in force, or -1 where the group will not say.</summary>
-        internal static int CurrentPlay(BattleSetupNotificationWindow window)
-        {
-            try
-            {
-                EncounterGroup group = PlayerGroup(window);
-                EncounterGroupSetup setup = group == null ? null : group.Setup;
-                EncounterPlayDefinition chosen = setup == null ? null : setup.PlayDefinition;
-                if (chosen == null || group.AvailablePlays == null)
-                {
-                    return -1;
-                }
-
-                for (int i = 0; i < group.AvailablePlays.Count; i++)
-                {
-                    if (group.AvailablePlays[i] == chosen)
-                    {
-                        return i;
-                    }
-                }
-
-                return -1;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
-
-        /// <summary>What a plan is called: the game's own title for it, which is exactly what the card
-        /// prints when the window turns to it - so an unread row and the drawn card say one word.
-        /// The card's own label answers for the plan in force where the list will not.</summary>
-        internal static string PlayName(
-            BattleSetupNotificationWindow window,
-            int index,
-            BattlePlayCard card
-        )
-        {
-            try
-            {
-                EncounterGroup group = PlayerGroup(window);
-                if (group != null && group.AvailablePlays != null
-                    && index < group.AvailablePlays.Count)
-                {
-                    GuiBattlePlayCard wrapper = Gui.GuiWrapperProviderService.GetGuiBattlePlayCard(
-                        group.AvailablePlays[index]
-                    );
-                    string title = wrapper == null ? null : AgeText.Clean(wrapper.Title);
-                    if (!string.IsNullOrEmpty(title))
-                    {
-                        return title;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Fall through to what the card drew.
-            }
-
-            return card == null || CurrentPlay(window) != index
-                ? null
-                : AgeText.Label(card.PlayTitle);
-        }
-
-        /// <summary>
-        /// What the card prints under the plan's name: the effects the plan applies, or the game's own
-        /// word for a plan that applies none.
-        ///
-        /// Always-drawn text, so it is part of what the row says rather than something to review - but
-        /// only for the row whose plan the card is actually showing. The other rows have no card of
-        /// their own and would otherwise all read the effects of whichever plan is in force.
-        /// </summary>
-        internal static string PlanEffects(
-            BattleSetupNotificationWindow window,
-            int index,
-            BattlePlayCard card
-        )
-        {
-            return CurrentPlay(window) != index ? null : PlanEffects(card);
-        }
-
-        /// <summary>
-        /// The same words off a card that is showing its OWN plan, with nothing to turn first.
-        ///
-        /// The guard above is a fact about the CAROUSEL - one card the window pages between the
-        /// plans - and not about a card. The advanced window lays the same plans out as a HAND, three
-        /// cards drawn at once with each permanently on the plan it stands for, so there is no
-        /// mis-describing to guard against and this is the whole of the reading.
-        /// </summary>
-        internal static string PlanEffects(BattlePlayCard card)
-        {
-            try
-            {
-                if (card == null)
-                {
-                    return null;
-                }
-
-                GuiEffectMapper mapper = card.FamilyEffectsMapper;
-                AgeTransform table = mapper == null ? null : mapper.EffectLinesTable;
-                // Content read: the card draws EITHER its effect lines or the game's own word for a
-                // plan that has none, and the table is the switch the game throws between them.
-                if (table == null || !AgeWidgets.Visible(table))
-                {
-                    return AgeWidgets.DrawnLabel(card.NoEffectsLabel);
-                }
-
-                MessageBuilder said = new MessageBuilder();
-                List<AgeTransform> lines = table.Children;
-                for (int i = 0; lines != null && i < lines.Count; i++)
-                {
-                    said.ListItem(AgeWidgets.PaintedText(lines[i]));
-                }
-
-                return said.Build();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// The hover surfaces the card carries besides its own: the badge naming the family of tactic
-        /// the plan belongs to, and one range diagram per flotilla.
-        ///
-        /// The three diagrams say the same three words as each other ("Short Range") and are told apart
-        /// by their position on the card alone, so each entry is named with the flotilla it belongs to
-        /// in the game's own words for both halves - the same joining the tactics deck's rows already
-        /// use. That name CARRIES the diagram's own sentence, so the entry says it once
-        /// (<see cref="TooltipChildren.AddPlain"/>'s named-entry rule): "Flotilla 1: Short Range", not
-        /// "Flotilla 1: Short Range, Short Range" (owner-reported 2026-08-29). The family badge is
-        /// named with the game's title for that family ("Aggressive"), the word it draws the picture
-        /// for and never writes down, and keeps its own different sentence.
-        ///
-        /// <paramref name="turn"/> is the chooser's: inside it every entry belongs to one plan of
-        /// several, and the card has to be showing that plan before the entry says anything. It runs
-        /// where each entry's NAME resolves, which is the one moment between the cursor arriving and
-        /// the landing being spoken. Null everywhere else - the closed row's card is always the plan
-        /// in force and there is nothing to turn.
-        /// </summary>
-        internal static List<TooltipChildren.Dossier> PlanDossiers(
-            BattlePlayCard card,
-            Action turn
-        )
-        {
-            List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(4);
-            if (card == null)
-            {
-                return dossiers;
-            }
-
-            try
-            {
-                BattlePlayCard it = card;
-                Action turned = turn;
-                AgeTransform badge = card.FamilyIcon == null ? null : card.FamilyIcon.AgeTransform;
-                TooltipChildren.AddPlain(
-                    dossiers,
-                    AgeWidgets.Raw(badge),
-                    badge,
-                    () =>
-                    {
-                        Turned(turned);
-                        return FamilyName(it);
-                    }
-                );
-
-                AgeTransform ranges = card.FlotillaRangeIndicators;
-                List<AgeTransform> indicators = ranges == null ? null : ranges.Children;
-                for (int i = 0; indicators != null && i < indicators.Count; i++)
-                {
-                    AgeTransform indicator = indicators[i];
-                    AgeTooltip tip = AgeWidgets.Raw(indicator);
-                    int flotilla = i;
-                    // Named by the sentence the game wrote for it, beside the flotilla it belongs to
-                    // - a label fallback, see RangeName.
-                    TooltipChildren.AddPlain(
-                        dossiers,
-                        tip,
-                        indicator,
-                        () => RangeName(turned, flotilla, tip)
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("battle: reading a plan card's badges threw: " + e);
-            }
-
-            return dossiers;
-        }
-
-        /// <summary>What a range diagram's entry is called, with the card first put on the plan the
-        /// entry belongs to.
-        ///
-        /// A LABEL FALLBACK, not a second reading of the tooltip: the diagram draws no words at all,
-        /// so the only thing that could NAME its entry is the sentence the game wrote for it - the
-        /// same rung the ordinary naming ladder would have reached - joined to the flotilla the card
-        /// says nowhere. The words are not silenced by being read here: they are this entry's own
-        /// section, which the named-entry rule then keeps from saying them a second time
-        /// (<see cref="TooltipChildren.AddPlain"/>).</summary>
-        private static string RangeName(Action turn, int flotilla, AgeTooltip tip)
-        {
-            Turned(turn);
-            return TooltipFeatures.FlotillaRange(flotilla, CardActions.FirstLine(tip));
-        }
-
-        /// <summary>Put the card on the plan whose entry is about to speak, where the caller is the
-        /// chooser and there is one. Failures are the turn's own to log.</summary>
-        private static void Turned(Action turn)
-        {
-            if (turn != null)
-            {
-                turn();
-            }
-        }
-
-        /// <summary>The game's own title for the family of tactic the card's badge draws the picture
-        /// for - the same element the badge takes its sentence from
-        /// (<c>BattlePlayCard.RefreshMainGroup</c>). Null where the game will not say, and the
-        /// ordinary naming ladder answers instead.</summary>
-        private static string FamilyName(BattlePlayCard card)
-        {
-            try
-            {
-                GuiBattlePlaySlot slot = card.GuiBattlePlaySlot;
-                GuiBattlePlayCard wrapper = slot == null ? null : slot.GuiCard;
-                EncounterPlayDefinition definition =
-                    wrapper == null ? null : wrapper.EncounterPlayDefinition;
-                if (definition == null || Amplitude.StaticString.IsNullOrEmpty(definition.FamilyName))
-                {
-                    return null;
-                }
-
-                return AgeText.Clean(Gui.GetLocalizedTitle("Play" + definition.FamilyName));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>One side's plan on the report, where it is a card the game drew rather than a
@@ -1398,20 +997,6 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(card, key), vtable, card));
-        }
-
-        private static BattlePlayCard Card(AgeTransform container)
-        {
-            try
-            {
-                return container == null
-                    ? null
-                    : container.GetComponentInChildren<BattlePlayCard>(true);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>The strategies a ground battle offers, as the one-of-N the game made them: a card
@@ -1492,318 +1077,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// The balance of power between the two sides, as the two numbers the arcs are sized from.
-        ///
-        /// The game draws no number here at all, and the ratio is the single most-read thing on the
-        /// popup for a sighted player - it is what tells them whether to fight or run. Setup and report
-        /// ask the same question of different halves of the model (what is committed vs what survived),
-        /// which is the <paramref name="setup"/> flag.
-        ///
-        /// Internal because the ADVANCED report window draws the same ring over the same two groups
-        /// (<see cref="AdvancedBattleReportScreen"/>) - one question, one home.
-        /// </summary>
-        internal static void Balance(
-            GraphBuilder builder,
-            AgeTransform group,
-            EncounterGroup left,
-            EncounterGroup right,
-            bool setup,
-            string key
-        )
-        {
-            if (!DeclareBalance || left == null || right == null)
-            {
-                return;
-            }
-
-            if (
-                BattleText.Optional(ModStrings.BattleBalance, string.Empty, 0, string.Empty)
-                == null
-            )
-            {
-                return;
-            }
-
-            EncounterGroup ours = left;
-            EncounterGroup theirs = right;
-            bool useSetup = setup;
-            AgeTooltip tooltip = AgeWidgets.Raw(group);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => BalanceText(ours, theirs, useSetup)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            if (group != null)
-            {
-                AgeWidgets.PointAt(vtable, group);
-            }
-            else
-            {
-                vtable.OnFocusVisual = AgeWidgets.ReleasePointer;
-            }
-
-            // Synthetic: the balance is computed from the battle, which the popup draws only as an
-            // arc with no figure on it.
-            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
-        }
-
-        /// <summary>
-        /// Which side the arcs say is stronger, and by how much - phrased from the STRONGER side, in
-        /// the two fleets' own names.
-        ///
-        /// The two military-power figures the game's own helper computes are what the arcs are sized
-        /// from, and they are the wrong thing to read out: "Military power 350 against 172" hands the
-        /// listener two numbers and the division, while the picture hands a sighted player the answer.
-        /// So the line says the answer - who leads and by what percentage - and the numbers stay where
-        /// the game put them, which is nowhere. Two equal sides are the player's own first, at 0%; a
-        /// side with nothing left is the one comparison a percentage cannot make and has its own
-        /// sentence.
-        ///
-        /// <paramref name="left"/> is the player's side wherever a caller has one, which is what
-        /// decides the tie.
-        /// </summary>
-        internal static string BalanceText(EncounterGroup left, EncounterGroup right, bool setup)
-        {
-            try
-            {
-                float ours = GuiBattleHelpers.GetMilitaryPower(left, setup, true);
-                float theirs = GuiBattleHelpers.GetMilitaryPower(right, setup, true);
-                bool leading = ours >= theirs;
-                string strongName = SideName(leading ? left : right);
-                string weakName = SideName(leading ? right : left);
-                if (string.IsNullOrEmpty(strongName) || string.IsNullOrEmpty(weakName))
-                {
-                    return null;
-                }
-
-                float stronger = leading ? ours : theirs;
-                float weaker = leading ? theirs : ours;
-                if (weaker <= 0f)
-                {
-                    return stronger <= 0f
-                        ? BattleText.Optional(ModStrings.BattleBalance, strongName, 0, weakName)
-                        : BattleText.Optional(ModStrings.BattleBalanceAll, strongName, weakName);
-                }
-
-                return BattleText.Optional(
-                    ModStrings.BattleBalance,
-                    strongName,
-                    Mathf.RoundToInt((stronger / weaker - 1f) * 100f),
-                    weakName
-                );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// What one side of a battle is called: the name of the first fleet it brought that is not a
-        /// reinforcement.
-        ///
-        /// The same name the roster header draws over that side (<c>BattleGarrisonPanel.Refresh</c>
-        /// reads it off the very same garrison), taken from the setup rather than off the drawn panel
-        /// so that the cinematic and the advanced-play modal - neither of which draws a roster - name
-        /// the two sides the popups' way. Reinforcements are skipped because the game draws them in a
-        /// table of their own underneath, and the fleet the side is known by is the one at the top.
-        /// </summary>
-        private static string SideName(EncounterGroup group)
-        {
-            try
-            {
-                EncounterGroupSetup setup = group == null ? null : group.Setup;
-                EncounterContender leader = group == null ? null : group.Leader;
-                Empire empire = leader == null ? null : leader.Empire;
-                if (setup == null || setup.ContenderSetups == null || empire == null)
-                {
-                    return null;
-                }
-
-                for (int i = 0; i < setup.ContenderSetups.Count; i++)
-                {
-                    EncounterContenderSetup contender = setup.ContenderSetups[i];
-                    if (contender == null || contender.ContenderIndex != empire.Index)
-                    {
-                        continue;
-                    }
-
-                    for (int j = 0; j < contender.GarrisonSetups.Count; j++)
-                    {
-                        EncounterGarrisonSetup garrison = contender.GarrisonSetups[j];
-                        if (garrison == null || garrison.Reinforcement)
-                        {
-                            continue;
-                        }
-
-                        string named = AgeText.Clean(garrison.GarrisonLocalizedName.ToString());
-                        if (!string.IsNullOrEmpty(named))
-                        {
-                            return named;
-                        }
-                    }
-                }
-
-                return null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// The balance of power on the ground, as the two manpower figures the arcs are sized from.
-        ///
-        /// The same silence as the space gauge, over a different quantity: the disk between the two
-        /// rosters draws one arc per side and no number anywhere, and it is the first thing a sighted
-        /// player reads off this popup. The figures are the game's own, taken from the very expression
-        /// that sizes the arcs, so the line and the picture can never disagree.
-        /// </summary>
-        private static void GroundBalance(
-            GraphBuilder builder,
-            GroundBattleNotificationWindow window,
-            GroundBattle battle,
-            bool setup,
-            string key
-        )
-        {
-            if (!DeclareBalance || window == null || battle == null)
-            {
-                return;
-            }
-
-            if (BattleText.Optional(ModStrings.BattleGroundBalance, 0, 0) == null)
-            {
-                return;
-            }
-
-            AgeTransform group =
-                window.BattlePowerGauge == null ? null : window.BattlePowerGauge.AgeTransform;
-            // Synthetic guard: the line is composed from the battle rather than read off the gauge, so
-            // it declares no evidence and the gate has nothing to ask.
-            if (group == null || !AgeWidgets.Visible(group))
-            {
-                return;
-            }
-
-            GroundBattleNotificationWindow at = window;
-            GroundBattle it = battle;
-            bool useSetup = setup;
-            if (GroundBalanceText(at, it, useSetup) == null)
-            {
-                return;
-            }
-
-            AgeTooltip tooltip = AgeWidgets.Raw(group);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => GroundBalanceText(at, it, useSetup)),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, group);
-            // Synthetic: the two manpower figures come out of the battle, not off the gauge - the
-            // gauge is what the line is anchored to.
-            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
-        }
-
-        /// <summary>
-        /// The two manpower figures the ground gauge is drawn from, in the player's own order - theirs
-        /// on the right whichever side of the invasion they are on.
-        ///
-        /// The report reads the FINAL manpowers even where the gauge does not: a defender who
-        /// surrendered leaves the game drawing a symbolic full arc against an empty one rather than the
-        /// two figures, and the numbers are what the line is for.
-        /// </summary>
-        internal static string GroundBalanceText(
-            GroundBattleNotificationWindow window,
-            GroundBattle battle,
-            bool setup
-        )
-        {
-            float[] powers = setup ? CommittedManpower(battle) : RemainingManpower(battle);
-            if (powers == null)
-            {
-                return null;
-            }
-
-            int ours = Manpower(window, powers, LeftManpowerIndex);
-            int theirs = Manpower(window, powers, RightManpowerIndex);
-            return ours < 0 || theirs < 0
-                ? null
-                : BattleText.Optional(ModStrings.BattleGroundBalance, ours, theirs);
-        }
-
-        /// <summary>What each side committed to the invasion - the setup gauge's own figures.</summary>
-        private static float[] CommittedManpower(GroundBattle battle)
-        {
-            try
-            {
-                return battle.SpawnReport == null
-                    ? null
-                    : battle.SpawnReport.OpponentInitManPowers;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>What each side has left - the report gauge's own figures, and only once the game
-        /// says the report it computes them from is finished.</summary>
-        private static float[] RemainingManpower(GroundBattle battle)
-        {
-            try
-            {
-                GroundBattleBattleReport report = battle.BattleReport;
-                return report == null || !report.IsValid
-                    ? null
-                    : report.OpponentFinalManPowers;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>One side's manpower, rounded the way the gauge rounds it, or -1 where the window
-        /// will not say which side that is.</summary>
-        private static int Manpower(
-            GroundBattleNotificationWindow window,
-            float[] powers,
-            PropertyInfo index
-        )
-        {
-            if (index == null)
-            {
-                return -1;
-            }
-
-            try
-            {
-                int side = (int)index.GetValue(window, null);
-                return side < 0 || side >= powers.Length
-                    ? -1
-                    : Mathf.RoundToInt(Mathf.Round(powers[side]));
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
-
-        private static PropertyInfo ManpowerIndex(string name)
-        {
-            return GameHandlers.Property(typeof(GroundBattleNotificationWindow), name);
-        }
-
         /// <summary>What the player earned: the resources, the salvage and the experience, each with the
         /// itemised breakdown the game hangs on it.</summary>
         /// <summary>
@@ -1827,9 +1100,9 @@ namespace ES2Access.Screens
 
             try
             {
-                Note(builder, panel.ResourcesEarnedTitleLabel, prefix + "/resources");
-                Note(builder, panel.SalvageRescuedTitleLabel, prefix + "/salvage");
-                Note(builder, panel.TotalExperienceTitleLabel, prefix + "/experience");
+                BattleRows.Note(builder, panel.ResourcesEarnedTitleLabel, prefix + "/resources");
+                BattleRows.Note(builder, panel.SalvageRescuedTitleLabel, prefix + "/salvage");
+                BattleRows.Note(builder, panel.TotalExperienceTitleLabel, prefix + "/experience");
             }
             catch (Exception e)
             {
@@ -1875,7 +1148,8 @@ namespace ES2Access.Screens
             GraphBuilder builder,
             AgePrimitiveLabel caption,
             string key,
-            List<Cell> rows
+            List<Cell> rows,
+            bool counted
         )
         {
             AgeTransform widget = caption == null ? null : caption.AgeTransform;
@@ -1896,7 +1170,7 @@ namespace ES2Access.Screens
             {
                 Cells.EmitLinear(builder, shown);
             }
-            else if (named)
+            else if (named && counted)
             {
                 Total(builder, widget, key);
             }
@@ -1915,16 +1189,12 @@ namespace ES2Access.Screens
         ///
         /// The row answers the caption's question - what was destroyed - with "None": the caption is
         /// spoken as this first row's opener and already carries the figure, so a row repeating the
-        /// figure read the 0 twice (owner, 2026-08-28). A caption with no figure in it at all gets no
-        /// row, because a block the game filled is rows of its own.
+        /// figure read the 0 twice (owner, 2026-08-28). Whether there is a figure behind the caption at
+        /// all is the caller's question (<see cref="Counted"/>), because a block the game filled is
+        /// rows of its own.
         /// </summary>
         private static void Total(GraphBuilder builder, AgeTransform caption, string key)
         {
-            if (string.IsNullOrEmpty(Figure(Captions.Text(caption))))
-            {
-                return;
-            }
-
             NodeVtable vtable = new NodeVtable
             {
                 ControlType = ControlTypes.Text,
@@ -1936,37 +1206,27 @@ namespace ES2Access.Screens
             builder.AddItem(Nodes.Drawn(ControlId.For(caption, key + "/count"), vtable, caption));
         }
 
-        /// <summary>The number a caption drew inside its own sentence - the LAST run of digits in it,
-        /// which is where this game's count templates put it (both of these captions are a localized
-        /// string taking the count as its only argument, <c>RefreshReportPanel</c> :304/:316). Null for
-        /// a caption that drew no figure.</summary>
-        private static string Figure(string caption)
+        /// <summary>
+        /// Whether the game has a COUNT behind these two captions at all - which is what decides
+        /// whether an empty block gets its one row.
+        ///
+        /// Asked of the report, which is where the counts come from: the window writes both captions
+        /// out of it on every refresh, each a localized template taking the count as its only argument
+        /// (<c>RefreshReportPanel</c> :304/:316). It used to be asked of the DRAWN caption instead, by
+        /// scanning it for its last run of digits - which is a guess about how a translator wrote the
+        /// sentence, and answers no for any language that spells a number out.
+        /// </summary>
+        private static bool Counted(GroundBattle battle)
         {
-            if (string.IsNullOrEmpty(caption))
+            try
             {
-                return null;
+                GroundBattleBattleReport report = battle == null ? null : battle.BattleReport;
+                return report != null && report.IsValid;
             }
-
-            int end = -1;
-            for (int i = caption.Length - 1; i >= 0; i--)
+            catch (Exception)
             {
-                if (char.IsDigit(caption[i]))
-                {
-                    if (end < 0)
-                    {
-                        end = i;
-                    }
-
-                    continue;
-                }
-
-                if (end >= 0)
-                {
-                    return caption.Substring(i + 1, end - i);
-                }
+                return false;
             }
-
-            return end < 0 ? null : caption.Substring(0, end + 1);
         }
 
         /// <summary>Who the invasion killed, a cell per species, in the order the popup laid them
@@ -2179,53 +1439,6 @@ namespace ES2Access.Screens
         // ---- the shapes a single widget takes ----
 
         /// <summary>
-        /// A line the game wrote and is showing: read as it stands, with whatever it explains itself
-        /// with carried along.
-        ///
-        /// <paramref name="explains"/> is for a line whose dossier the WINDOW holds rather than the
-        /// label - the ground report keeps each side's strategy tooltip in a field of its own, hung on
-        /// the card around the words - so the row carries it and the pointer is aimed at the widget it
-        /// is really on. <paramref name="details"/> is the game.s own further words about the line that
-        /// the popup itself never draws anywhere, and <paramref name="sayDetails"/> is whether the row
-        /// hands them over as it is read or leaves them in the review buffer. Saying them is for words
-        /// that are the POINT of the row - the sentence behind an outcome word, which is what the
-        /// player wanted when they landed on it - and the default is the buffer, because a row whose
-        /// further words are a second reading of something already on screen would say the screen back.
-        /// It is a fact about the row, not about a tooltip: the tooltip that comes after answers for
-        /// its own loudness by its own kind.
-        /// </summary>
-        private static void Note(
-            GraphBuilder builder,
-            AgePrimitiveLabel label,
-            string key,
-            AgeTooltip explains = null,
-            Func<IList<string>> details = null,
-            bool sayDetails = false
-        )
-        {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            if (widget == null || string.IsNullOrEmpty(AgeText.Label(label)))
-            {
-                return;
-            }
-
-            AgePrimitiveLabel it = label;
-            AgeTooltip tooltip = explains ?? AgeWidgets.Raw(widget);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Label(it)),
-                },
-                Sections = sayDetails
-                    ? GraphNodes.SpokenSections(details, tooltip)
-                    : GraphNodes.Sections(details, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget, tooltip);
-            builder.AddItem(Nodes.Drawn(ControlId.For(label, key), vtable, label));
-        }
-
-        /// <summary>
         /// The button that puts the chosen outcome into effect.
         ///
         /// The window binds no field to it: the prefab draws it in the popup's own button bar, names it
@@ -2362,80 +1575,6 @@ namespace ES2Access.Screens
             builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
         }
 
-        /// <summary>A number the game drew beside a picture, under the game's own name for what the
-        /// picture means. <paramref name="reading"/> is for a figure whose drawn string says something
-        /// other than what it looks like - the assigned-manpower one; everything else reads the label
-        /// as it stands.</summary>
-        private static void Value(
-            GraphBuilder builder,
-            AgeTransform line,
-            AgePrimitiveLabel value,
-            string titleKey,
-            string key,
-            Func<string> reading = null
-        )
-        {
-            AgeTransform widget = line ?? (value == null ? null : value.AgeTransform);
-            // Different widget: where a ROW was passed the node stands on the label inside it, and this
-            // asks about the row instead. Also the widget the title is read off (RowTitle).
-            if (widget == null || !AgeWidgets.Visible(widget) || value == null)
-            {
-                return;
-            }
-
-            AgePrimitiveLabel it = value;
-            AgeTransform row = widget;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            Func<string> said = reading ?? (() => AgeText.Label(it));
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => RowTitle(row, it, titleKey)),
-                    GraphNodes.ValuePart(said, false),
-                },
-                Sections = GraphNodes.Sections(null, tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget);
-            builder.AddItem(Nodes.Drawn(ControlId.For(value, key), vtable, value));
-        }
-
-        /// <summary>
-        /// What the game DREW over one of these figures, and only failing that the title it ships for
-        /// the row.
-        ///
-        /// The two ground popups share one row prefab and one pair of panel classes, and the report's
-        /// prefab captions the same line with a different word: the setup says "Assigned" and the
-        /// report says "Remaining", because after the fighting the figure is what is LEFT rather than
-        /// what was committed. Neither panel class rewrites that caption, so the only place the
-        /// difference exists is the drawing - and a row named from the shared title key told the player
-        /// the wrong thing on the report for as long as the key was the only source.
-        /// </summary>
-        private static string RowTitle(AgeTransform line, AgePrimitiveLabel value, string titleKey)
-        {
-            string drawn = null;
-            try
-            {
-                List<AgeTransform> children = line == null ? null : line.Children;
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    AgeTransform child = children[i];
-                    AgePrimitiveLabel label =
-                        child == null ? null : child.GetComponent<AgePrimitiveLabel>();
-                    if (label == null || ReferenceEquals(label, value))
-                    {
-                        continue;
-                    }
-
-                    drawn = AgeText.Label(label);
-                    break;
-                }
-            }
-            catch (Exception) { }
-
-            return string.IsNullOrEmpty(drawn) ? AgeText.Clean(titleKey) : drawn;
-        }
-
         /// <summary>
         /// What the assigned-manpower figure says.
         ///
@@ -2470,120 +1609,6 @@ namespace ES2Access.Screens
             return marked ? AgeText.Clean(raw) : AgeText.Label(label);
         }
 
-        /// <summary>A button the popup drew as an icon, under the game's own title for it. Its
-        /// availability is the game's own test rather than the enable flag, and a refusal reads with the
-        /// game's own reason.</summary>
-        private static void Command(
-            List<Cell> cells,
-            AgeTransform widget,
-            string titleKey,
-            string key
-        )
-        {
-            if (widget == null)
-            {
-                return;
-            }
-
-            AgeTransform it = widget;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            Func<bool> enabled = () => AgeWidgets.Offered(it);
-            NodeVtable vtable = GraphNodes.Button(
-                () => Title(titleKey, it),
-                () => AgeWidgets.Press(it),
-                enabled,
-                tooltip
-            );
-            NodeAnnouncement refusal = GraphNodes.RefusalPart(tooltip, enabled);
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
-
-            AgeWidgets.PointAt(vtable, widget);
-            Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
-        }
-
-        /// <summary>A box the player ticks, under the game's own title. The watch box is the one control
-        /// here that decides what the player MEETS - with it off the battle is over before it starts -
-        /// so it says its state like any other box rather than being left to the tooltip.</summary>
-        private static void Checkbox(
-            List<Cell> cells,
-            AgeControlToggle toggle,
-            string titleKey,
-            string key
-        )
-        {
-            AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (toggle == null)
-            {
-                return;
-            }
-
-            AgeControlToggle it = toggle;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Checkbox(
-                () => Title(titleKey, widget),
-                () => it.State,
-                () => AgeWidgets.Toggle(it),
-                () => AgeWidgets.Offered(widget),
-                tooltip
-            );
-            AgeWidgets.Point(vtable, it, tooltip, widget);
-            Cells.Add(cells, widget, ControlId.For(toggle, key), vtable);
-        }
-
-        /// <summary>
-        /// How long is left, for a popup the game is timing.
-        ///
-        /// Never watched: the countdown would otherwise talk over every other thing on the popup, and a
-        /// player who wants to know how long they have can ask. A gauge with no number on it is all the
-        /// game draws, so the figure comes from the notification's own clock.
-        /// </summary>
-        private static void Countdown(
-            List<Cell> cells,
-            AgeTransform gauge,
-            Func<float> ratio,
-            string key
-        )
-        {
-            if (gauge == null || ratio == null)
-            {
-                return;
-            }
-
-            if (BattleText.Optional(ModStrings.BattleTimeLeft, 0) == null)
-            {
-                return;
-            }
-
-            Func<float> left = ratio;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => TimeLeft(left)),
-                },
-                OnFocusVisual = AgeWidgets.ReleasePointer,
-            };
-            Cells.Add(cells, gauge, ControlId.Structural(key), vtable);
-        }
-
-        private static string TimeLeft(Func<float> ratio)
-        {
-            try
-            {
-                return BattleText.Optional(
-                    ModStrings.BattleTimeLeft,
-                    Mathf.Clamp(Mathf.RoundToInt(ratio() * 100f), 0, 100)
-                );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>What a control is called: the words the game drew on it where it drew any, else the
         /// game's own title for it.</summary>
         private static string Title(string titleKey, AgeTransform widget)
@@ -2592,29 +1617,30 @@ namespace ES2Access.Screens
             return string.IsNullOrEmpty(drawn) ? AgeText.Clean(titleKey) : drawn;
         }
 
-        /// <summary>Which side of the battle the rows that follow belong to - announced once as focus
-        /// enters, so a roster is audibly yours or theirs without every row saying so. A build with no
-        /// such phrase opens no level at all, which is why every caller closes with
-        /// <c>PopContextIfOpen</c>.</summary>
-        private static bool Context(GraphBuilder builder, string nameKey)
+        /// <summary>A battle row (<see cref="BattleRows.Command"/>) under these popups' own naming
+        /// rule.</summary>
+        private static void Command(
+            List<Cell> cells,
+            AgeTransform widget,
+            string titleKey,
+            string key
+        )
         {
-            string name = BattleText.Optional(nameKey);
-            if (string.IsNullOrEmpty(name))
-            {
-                return false;
-            }
-
-            builder.PushContext(name, null, false);
-            return true;
+            AgeTransform it = widget;
+            BattleRows.Command(cells, widget, () => Title(titleKey, it), key);
         }
 
-        /// <summary>Close the level <see cref="Context"/> opened, where it opened one.</summary>
-        private static void Close(GraphBuilder builder, bool opened)
+        /// <summary>A battle box (<see cref="BattleRows.Checkbox"/>) under these popups' own naming
+        /// rule.</summary>
+        private static void Checkbox(
+            List<Cell> cells,
+            AgeControlToggle toggle,
+            string titleKey,
+            string key
+        )
         {
-            if (opened)
-            {
-                builder.PopContext();
-            }
+            AgeTransform widget = AgeWidgets.Transform(toggle);
+            BattleRows.Checkbox(cells, toggle, () => Title(titleKey, widget), key);
         }
 
         private static EncounterGroup Group(BattleGroupSetupPanel panel)
