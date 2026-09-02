@@ -120,6 +120,9 @@ function Write-Json([string]$path, [string[]]$lines) {
 $englishTable = Read-Ordered $english
 $translationTable = Read-Ordered $translation
 $snapshot = if (Test-Path -LiteralPath $snapshotPath) { Read-Ordered $snapshotPath } else { $null }
+# A key list handed over as one comma-joined string (the way a script or an agent tends to
+# pass it) is split here, so it cannot be mistaken for a single key that matches nothing.
+$Keys = @($Keys | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $wanted = if ($Keys) { [System.Collections.Generic.HashSet[string]]::new([string[]]$Keys) } else { $null }
 
 $lines = @()
