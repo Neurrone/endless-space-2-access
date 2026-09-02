@@ -1,0 +1,469 @@
+{
+  "Arctic": [
+    { "at": 1, "end": 4.5, "text": "Un sol pálido brilla sobre un valle helado entre montañas escarpadas cubiertas de nieve. Cristales cian gigantes y resplandecientes sobresalen de las laderas heladas." },
+    { "at": 4.5, "end": 8.5, "text": "Una nave colonizadora surca el cielo luminoso. Abajo, siluetas de grandes bestias de cola larga permanecen inmóviles en la niebla gélida." },
+    { "at": 8.5, "end": 11, "text": "El viento arrastra nieve suelta sobre el hielo desolado." },
+    { "at": 11, "end": 12.693, "text": "Todo se funde a negro." }
+  ],
+  "Arid": [
+    { "at": 1, "end": 4.5, "text": "Una estela luminosa cruza un cielo crepuscular y estrellado de púrpura magullado y naranja ardiente mientras desciende la nave colonizadora." },
+    { "at": 4.5, "end": 7.5, "text": "Cae hacia un desierto inmenso y silencioso de polvo rojo óxido y rocas escarpadas talladas por el viento." },
+    { "at": 7.5, "end": 10.5, "text": "En primer plano, una criatura insectoide gigante y oscura se yergue sobre un saliente rocoso." },
+    { "at": 10.5, "end": 12.522, "text": "Al fondo, una extensa ciudad de piedra pálida se alza sobre la llanura." }
+  ],
+  "Ash": [
+    { "at": 1, "end": 4, "text": "Una ceniza espesa barre el aire oscuro y cae como nieve sobre un yermo en penumbra." },
+    { "at": 4, "end": 7, "text": "Picos escarpados de roca negra atraviesan la penumbra, recortados contra una luz pálida y dura en el horizonte." },
+    { "at": 7, "end": 12.736, "text": "Un relámpago cae del cielo denso y turbulento." }
+  ],
+  "Atoll": [
+    { "at": 1, "end": 4, "text": "Una nave colonizadora desciende veloz por un cielo azul oscuro y estrellado." },
+    { "at": 4, "end": 7, "text": "Abajo, formaciones rocosas altas y curvadas se alzan de un mar turquesa, inclinándose sobre el agua." },
+    { "at": 7, "end": 10, "text": "Aves alienígenas de colores vivos planean junto a cascadas estrechas que caen de los acantilados cubiertos de vegetación." },
+    { "at": 10, "end": 13.013, "text": "Olas suaves lamen la arena blanca de una playa virgen enmarcada por frondosos helechos." }
+  ],
+  "Barren": [
+    { "at": 1.5, "end": 5.5, "text": "Un yermo rocoso y oscuro se extiende hacia una cresta lejana. Sobre él, una nebulosa turquesa brillante y una pequeña luna roja iluminan el cielo estrellado." },
+    { "at": 5.5, "end": 9, "text": "Una nave colonizadora cae desde el extremo superior izquierdo, un punto brillante de luz blanca que deja una estela por los cielos." },
+    { "at": 9, "end": 12.693, "text": "Desciende hacia el terreno sin vida y lleva la primera chispa de movimiento a un mundo estéril." }
+  ],
+  "Boreal": [
+    { "at": 1, "end": 4.5, "text": "Un sol pálido y amarillento entre la bruma calienta un paisaje agreste de hierba parda, pinos dispersos y placas de nieve que se derrite." },
+    { "at": 4.5, "end": 9, "text": "Junto a un árbol enorme de raíces extendidas, tres criaturas esbeltas de cuatro patas se reúnen sobre salientes rocosos. Tienen hocicos largos, cabezas con cresta y colas largas y curvadas." },
+    { "at": 9, "end": 13.418, "text": "Contemplan un lago inmenso y unas formaciones rocosas imponentes. Muy arriba, la estela brillante de un módulo de descenso baja por el cielo dorado." }
+  ],
+  "Cravers_Intro": [
+    { "at": 0, "end": 5.565, "text": "Unas burbujas ascienden por un fluido dorado y turbio. Dos figuras humanoides, formadas de energía amarilla resplandeciente, salen de la bruma." },
+    { "at": 8.9, "end": 9.884, "text": "Contemplan un tanque cilíndrico de cristal." },
+    { "at": 12.436, "end": 15, "text": "Dentro, una criatura mecánica insectoide cuelga suspendida de unos cables." },
+    { "at": 15, "end": 18, "text": "Un destello de luz blanca revela un Craver metálico, enorme y de color rojo oscuro. Cuelga boca abajo en una bahía de lanzamiento, con el ojo rojo encendido." },
+    { "at": 18, "end": 20.5, "text": "Es uno de cientos, suspendidos en filas apretadas." },
+    { "at": 20.5, "end": 25, "text": "Las compuertas se abren bajo ellos y dejan ver un paisaje desértico muy abajo. Los Cravers se sueltan y se precipitan." },
+    { "at": 25, "end": 30, "text": "Desde la órbita, decenas de cápsulas de descenso caen hacia el planeta." },
+    { "at": 30, "end": 34.132, "text": "Atraviesan las nubes y se lanzan hacia el suelo árido." },
+    { "at": 37.937, "end": 39.565, "text": "Una onda expansiva enorme se extiende por el desierto desde el impacto." },
+    { "at": 43.302, "end": 45.554, "text": "A través de una mira roja, los Cravers invaden un campo de batalla polvoriento y disparan contra enemigos robóticos." },
+    { "at": 50.114, "end": 52.191, "text": "Una explosión lo baña todo de luz blanca. La mira falla y se apaga." },
+    { "at": 55.739, "end": 58.709, "text": "En la oscuridad de la noche, pequeños fuegos arden entre las ruinas dentadas y humeantes de una ciudad destruida." },
+    { "at": 67.822, "end": 72, "text": "Muy por encima de los restos en sombra, una luz dorada cegadora rasga el cielo estrellado." },
+    { "at": 72, "end": 76.458, "text": "La luz se apaga hasta la oscuridad absoluta." }
+  ],
+  "Cravers_Outro.LostBack": [
+    { "at": 0, "end": 4.448, "text": "Una forma oscura se retuerce dentro de un saco carnoso y translúcido. Unas venas rojas recorren la superficie palpitante." },
+    { "at": 8.57, "end": 9.487, "text": "Un limo viscoso se estira cuando se libera." },
+    { "at": 14.777, "end": 16.124, "text": "El Craver oscuro y metálico se examina las garras." },
+    { "at": 21.705, "end": 24, "text": "La cría se yergue entre cientos de sacos resplandecientes." },
+    { "at": 24, "end": 26.5, "text": "Cubren el suelo de una caverna enorme y carnosa que se pierde en la bruma." },
+    { "at": 26.5, "end": 30, "text": "Otro Craver imponente pasa en primer plano, con el blindaje oscuro reluciente." }
+  ],
+  "Cravers_Outro.LostNotBack": [
+    { "at": 0, "end": 2.199, "text": "Un saco de huevos carnoso y translúcido palpita con venas rojas." },
+    { "at": 8.858, "end": 10.35, "text": "Un Craver metálico se alza, chorreando un limo carnoso y viscoso." },
+    { "at": 17.873, "end": 18.694, "text": "Unos huevos resplandecientes cubren el suelo de la inmensa caverna." },
+    { "at": 26.207, "end": 30, "text": "Un Craver imponente extiende un pesado brazo mecánico. Otros permanecen entre los incontables huevos resplandecientes de la enorme colmena cubierta de telarañas." }
+  ],
+  "Desert": [
+    { "at": 1, "end": 3.5, "text": "Unas dunas de arena infinitas se extienden hasta el horizonte, bañadas por la luz dorada de un sol bajo." },
+    { "at": 3.5, "end": 6, "text": "Una luna rojiza enorme domina el cielo brumoso. Criaturas aladas y oscuras planean en las corrientes térmicas del desierto." },
+    { "at": 6, "end": 12.693, "text": "Una estela brillante cae desde la alta atmósfera. Un módulo de descenso deja un rastro de luz blanca mientras baja hacia los yermos silenciosos." }
+  ],
+  "Forest": [
+    { "at": 0.5, "end": 3.5, "text": "La niebla flota por un bosque frondoso de árboles enormes. Un ave alta con plumas de cresta curvada permanece inmóvil." },
+    { "at": 3.5, "end": 5.5, "text": "Una estela de luz brillante desciende a través de la bruma de las copas." },
+    { "at": 5.5, "end": 11, "text": "El ave gira la cabeza para ver caer el módulo de descenso. Unas motas resplandecientes flotan suavemente en el aire húmedo mientras la nave desaparece tras los árboles lejanos." },
+    { "at": 11, "end": 12.693, "text": "Oscuridad." }
+  ],
+  "GasBurning": [
+    { "at": 0.5, "end": 4, "text": "Un gigante gaseoso enorme llena el vacío estrellado. Su atmósfera es una masa arremolinada de carmesí profundo y ascuas rojas resplandecientes." },
+    { "at": 4, "end": 7.5, "text": "Una estrella rosa brillante destella tras el planeta y proyecta luz sobre unos anillos de hielo amplios y extendidos." },
+    { "at": 7.5, "end": 11, "text": "Una luna pálida en cuarto creciente pende en la oscuridad. Bajo ella, un diminuto punto de luz, la nave colonizadora, surca los anillos." },
+    { "at": 11, "end": 13.205, "text": "Desciende hacia las nubes abrasadoras." }
+  ],
+  "GasCold": [
+    { "at": 1, "end": 5.5, "text": "Un gigante gaseoso colosal llena el vacío estrellado, con la atmósfera arremolinada en bandas índigo y azul celeste. Un anillo de hielo fino y brillante corta en diagonal la esfera azul." },
+    { "at": 5.5, "end": 9.5, "text": "Unos asteroides enormes y escarpados flotan en primer plano. Muy arriba, una diminuta chispa de luz desciende hacia el planeta dejando una débil estela." },
+    { "at": 9.5, "end": 13.205, "text": "La nave colonizadora se precipita, engullida por las turbulentas nubes azules." }
+  ],
+  "GasFrozen": [
+    { "at": 1, "end": 5, "text": "Un gigante gaseoso colosal domina el vacío. Unas tormentas extensas de luz cian y helada iluminan su hemisferio derecho." },
+    { "at": 5, "end": 8.5, "text": "Unos anillos luminosos de escarcha y polvo rodean el azul profundo y sombrío de la esfera." },
+    { "at": 8.5, "end": 12.693, "text": "Una diminuta y brillante mota de luz, la nave colonizadora, se desliza por los anillos inferiores, atraída hacia el mundo congelado." }
+  ],
+  "GasHot": [
+    { "at": 1.5, "end": 5, "text": "Un gigante gaseoso enorme se cierne en el vacío estrellado. Su atmósfera rojo intenso se agita con bandas de calor naranja resplandeciente a lo largo de un horizonte." },
+    { "at": 5, "end": 7.5, "text": "Cerca, una nebulosa cian brillante resplandece en el espacio oscuro, más allá de una pequeña luna estéril." },
+    { "at": 7.5, "end": 12.693, "text": "Un diminuto punto de luz, la nave colonizadora, cruza la cara oscura del gigante. Deja una débil estela mientras se desliza junto a la atmósfera ardiente para entrar en órbita." }
+  ],
+  "GasTemperate": [
+    { "at": 1, "end": 5.5, "text": "Un gigante gaseoso enorme pende en la negrura estrellada. Su atmósfera arremolinada se ordena en amplias franjas turquesa, granate y blanco perlado. Una pequeña luna gris orbita a la izquierda." },
+    { "at": 5.5, "end": 9.5, "text": "Una nave colonizadora se dirige al planeta desde abajo a la izquierda, sobre una brillante estela de luz." },
+    { "at": 9.5, "end": 13.205, "text": "La diminuta nave desciende hacia las nubes turbulentas y se hunde en la vasta extensión gaseosa." }
+  ],
+  "GasWarm": [
+    { "at": 1, "end": 4, "text": "Un sol brillante destella tras el horizonte de un gigante gaseoso enorme e ilumina una nebulosa brumosa." },
+    { "at": 4, "end": 7, "text": "La atmósfera del planeta es un lienzo arremolinado de caramelo, óxido y crema." },
+    { "at": 7, "end": 13.205, "text": "Una nave colonizadora cruza las bandas turbulentas, una sola chispa que deja una línea de luz blanca mientras desciende hacia el resplandor cegador." }
+  ],
+  "Hisshos_Intro": [
+    { "at": 0, "end": 1.465, "text": "Unas líneas naranjas resplandecientes se derraman como tinta en un vacío negro." },
+    { "at": 7.687, "end": 9.098, "text": "El guerrero pintado se transforma en un ave oscura y estilizada." },
+    { "at": 15.104, "end": 17.73, "text": "Un guerrero en pie atraviesa con una espada resplandeciente a un compañero arrodillado. Una nave espacial negra y enorme asciende." },
+    { "at": 31.788, "end": 33.321, "text": "Tres entidades robóticas imponentes de múltiples brazos se ciernen sobre el guerrero." },
+    { "at": 43.104, "end": 49.522, "text": "Un guerrero ave con armadura bloquea con una katana un martillo de metal enorme. Unos ojos naranjas resplandecientes miran desde un yelmo rojo. El guerrero corta el blindaje del pecho del robot." },
+    { "at": 53.432, "end": 55.527, "text": "El guerrero clava la espada en el suelo de piedra." },
+    { "at": 58.747, "end": 63, "text": "Unos circuitos dorados trepan por una estructura metálica colosal y cubierta de vegetación, incrustada en una ladera frondosa." },
+    { "at": 63, "end": 69, "text": "Las ruinas antiguas cobran vida con un zumbido y brillan con energía naranja. La masa se arranca de la tierra y se eleva como una nave espacial gigantesca." },
+    { "at": 69, "end": 75, "text": "La inmensa nave asciende entre nubes y bruma y empequeñece los acantilados boscosos a ambos lados. Sus motores enormes arden con fuerza contra el cielo encapotado." },
+    { "at": 75, "end": 77.013, "text": "Todo se funde a negro." }
+  ],
+  "Hisshos_Outro.LostBack": [
+    { "at": 0, "end": 2.59, "text": "Unos trazos de tinta negra forman un brazo, marcado con patrones geométricos rojos y resplandecientes." },
+    { "at": 31.655, "end": 33.568, "text": "Unos estandartes se alzan tras el guerrero." },
+    { "at": 33.568, "end": 37, "text": "El imponente Hissho lleva un tocado de plumas y tiene los ojos encendidos; su cuerpo negro está cubierto de patrones geométricos blancos. Apoya una espada en el hombro. Todo se funde a gris." }
+  ],
+  "Hisshos_Outro.LostNotBack": [
+    { "at": 0, "end": 1.828, "text": "Unos trazos de tinta negra forman un brazo, marcado con patrones geométricos rojos y resplandecientes." },
+    { "at": 29.733, "end": 30.438, "text": "Unos estandartes se alzan tras el guerrero." },
+    { "at": 33.568, "end": 37, "text": "El imponente Hissho lleva un tocado de plumas y tiene los ojos encendidos; su cuerpo negro está cubierto de patrones geométricos blancos. Apoya una espada en el hombro. Todo se funde a gris." }
+  ],
+  "Horatio_Intro": [
+    { "at": 0, "end": 5.288, "text": "Una figura alta y calva, con una amplia capa verde, está de espaldas y mira por un gran ventanal un paisaje montañoso. La sala opulenta está flanqueada de espejos altos y plantas en macetas." },
+    { "at": 13.33, "end": 14.113, "text": "Un rostro fantasmal aparece en el cristal." },
+    { "at": 17.2, "end": 18.1, "text": "Su propio rostro liso y alargado regresa." },
+    { "at": 21.45, "end": 23.2, "text": "Está en un pasillo de espejos. Un rostro que grita aparece en el cristal." },
+    { "at": 26.45, "end": 27.5, "text": "El reflejo se transforma en un cerebro flotante." },
+    { "at": 30.75, "end": 34.2, "text": "Camina junto a los espejos. Su larga capa verde ondea tras él y se arrastra por el suelo oscuro." },
+    { "at": 42.8, "end": 43.8, "text": "Contempla su propio reflejo." },
+    { "at": 52.6, "end": 56, "text": "Bañado en una luz blanca cegadora, Horatio se alza en lo alto de una gran escalinata." },
+    { "at": 56, "end": 60, "text": "Debajo, dos hileras de clones idénticos flanquean la base de los escalones." },
+    { "at": 60, "end": 71, "text": "Los clones están firmes y miran a su líder. Se reúnen en un salón enorme de pilares imponentes. Unos ventanales gigantes muestran un planeta oscuro en el vacío estrellado del espacio." },
+    { "at": 71, "end": 74.048, "text": "Todo se funde a negro." }
+  ],
+  "Horatio_Outro.LostBack": [
+    { "at": 8.219, "end": 9.361, "text": "Horatio, con la cabeza alargada, pasa junto a unos tanques resplandecientes con cuerpos dentro." },
+    { "at": 20.745, "end": 21.355, "text": "Se enfrenta a una pirámide resplandeciente." },
+    { "at": 26.275, "end": 28.28, "text": "La luz cegadora de la pirámide se expande y lo engulle a él y a la vasta cámara de tanques en un blanco puro." }
+  ],
+  "Horatio_Outro.LostNotBack": [
+    { "at": 25.987, "end": 28.28, "text": "El enorme salón de cubas de clonación resplandecientes se funde a un blanco cegador." }
+  ],
+  "Ice": [
+    { "at": 0.5, "end": 3, "text": "Unos icebergs escarpados de azul intenso sobresalen de un extenso mar helado y agrietado." },
+    { "at": 3, "end": 5.5, "text": "La nieve cae de un cielo oscuro. Una luna enorme en cuarto creciente domina el horizonte." },
+    { "at": 5.5, "end": 8.5, "text": "La nave colonizadora baja desde la alta atmósfera, ardiendo al rojo blanco." },
+    { "at": 8.5, "end": 13.418, "text": "Choca contra el hielo lejano. Una columna imponente de vapor blanco y hielo destrozado se eleva por el aire y se despliega en una nube enorme." }
+  ],
+  "Jungle": [
+    { "at": 0.5, "end": 5, "text": "En una jungla frondosa y sombría, helechos gigantes y hojas anchas de punta roja enmarcan un valle brumoso. Una cascada ancha cae por un acantilado rocoso hasta un río verde, tranquilo y resplandeciente." },
+    { "at": 5, "end": 8, "text": "Unos gruesos rayos de sol atraviesan el denso dosel e iluminan la espesa niebla. Muy arriba, un punto de luz brillante cae del cielo." },
+    { "at": 8, "end": 12.245, "text": "La nave colonizadora desciende sobre una estela brillante, cruza los rayos de sol y se hunde en la vegetación densa junto a la cascada." }
+  ],
+  "Lava": [
+    { "at": 1, "end": 3.5, "text": "Unas formaciones rocosas oscuras y escarpadas se alzan de un mar de lava naranja resplandeciente." },
+    { "at": 3.5, "end": 7, "text": "Un ancho río de roca fundida se derrama por el borde de un acantilado vertical y cae como una cortina amarilla brillante." },
+    { "at": 7, "end": 9.5, "text": "La nave colonizadora desciende por el cielo lleno de humo como una estela de luz brillante." },
+    { "at": 9.5, "end": 12.693, "text": "Un sol pálido arde tras una aguja monolítica inclinada en la lejanía brumosa." }
+  ],
+  "Metaplot_LostBack": [
+    { "at": 0, "end": 2.625, "text": "La enorme nave de la Academia, de ocho radios, orbita un planeta azul destrozado, rodeada de escombros." },
+    { "at": 6.15, "end": 6.827, "text": "Una energía dorada chisporrotea a su alrededor." },
+    { "at": 12.739, "end": 15.266, "text": "Dentro, un rayo dorado golpea una plataforma. Isyander, con armadura, abre los brazos; su rostro es un cristal rojo resplandeciente." },
+    { "at": 21.378, "end": 22.464, "text": "El rayo dorado sale disparado hacia el cielo estrellado." },
+    { "at": 24.736, "end": 26.117, "text": "Todo se funde a un campo de estrellas negro." },
+    { "at": 29.67, "end": 31.2, "text": "Cuatro luces brillantes como estrellas se encienden dentro de una nebulosa de colores." }
+  ],
+  "Metaplot_LostBackVictory": [
+    { "at": 0, "end": 1.052, "text": "Un planeta lleno de cicatrices brilla en el espacio." },
+    { "at": 4.822, "end": 5.681, "text": "Una multitud mira hacia arriba desde una ciudad." },
+    { "at": 8.586, "end": 9.57, "text": "Una nave con forma de estrella orbita el mundo." },
+    { "at": 16.419, "end": 18.68, "text": "El rayo dorado de la nave se vierte sobre una pirámide enorme en la ciudad de abajo." },
+    { "at": 21.407, "end": 22.802, "text": "Con armadura dorada, Isyander abre los brazos." },
+    { "at": 32.659, "end": 33.307, "text": "El rayo atraviesa una nebulosa." },
+    { "at": 35.288, "end": 40, "text": "Dos ojos enormes se abren en la nebulosa misma, nube turquesa alrededor de unas pupilas doradas y ardientes. Se mantienen ahí, mirando desde la oscuridad." }
+  ],
+  "Metaplot_LostNotBack": [
+    { "at": 0, "end": 2.318, "text": "Una estación espacial enorme de largos radios orbita un planeta azul." },
+    { "at": 5.61, "end": 7.527, "text": "Una energía dorada chisporrotea por el casco oscuro de la estación." },
+    { "at": 11.502, "end": 14.665, "text": "Un rayo dorado brota del centro de la estación. Dentro, Isyander, una figura con armadura y rostro rojo resplandeciente, se deleita en la luz." },
+    { "at": 18.637, "end": 19.993, "text": "El rayo golpea una pirámide enorme en una ciudad extensa." },
+    { "at": 24.216, "end": 25.557, "text": "La pirámide estalla en una explosión dorada cegadora." },
+    { "at": 29.812, "end": 32, "text": "De rodillas, Isyander alza los brazos mientras la luz lo engulle todo." }
+  ],
+  "Monsoon": [
+    { "at": 0.5, "end": 3, "text": "Una lluvia intensa azota un paisaje oscuro. Unas cascadas anchas caen por acantilados lejanos bajo una luz amarilla pálida." },
+    { "at": 3, "end": 5, "text": "Muy arriba, la estela brillante de una nave colonizadora desciende entre densas nubes de tormenta." },
+    { "at": 5, "end": 8, "text": "En primer plano, un ave grande con una cresta roja brillante se posa en una roca cubierta de musgo y observa las cascadas." },
+    { "at": 8, "end": 12.138, "text": "Los relámpagos destellan sobre el diluvio interminable." }
+  ],
+  "Ocean": [
+    { "at": 1, "end": 5.5, "text": "En las profundidades, unas raíces enormes y oscuras se arquean en el agua azul y tenue. En el lecho marino, la flora bioluminiscente brilla en manchas de rosa vivo y cian frío, meciéndose suavemente en la corriente." },
+    { "at": 5.5, "end": 8.5, "text": "Una criatura colosal y oscura se desliza en la penumbra. Recuerda a una ballena lisa y sin ojos, con finos tentáculos que arrastra en los flancos." },
+    { "at": 8.5, "end": 13.418, "text": "Una criatura estilizada parecida a una manta raya, con una cola larga como un látigo, nada con elegancia junto al gigante por las profundidades tranquilas y resplandecientes." }
+  ],
+  "Snow": [
+    { "at": 0.5, "end": 4, "text": "Unas montañas escarpadas de hielo y roca flanquean un valle sereno cubierto de nieve. Unos anillos pálidos y enormes se arquean en el cielo lejano." },
+    { "at": 4, "end": 7, "text": "En lo alto, entre los anillos, una chispa blanca y brillante desciende hacia el horizonte." },
+    { "at": 7, "end": 10, "text": "En primer plano, dos criaturas esbeltas de cuello largo, con cuernos curvados hacia atrás, pastan con calma." },
+    { "at": 10, "end": 12.97, "text": "Unos grupos de plantas bulbosas y azules resplandecen sobre el suelo congelado." }
+  ],
+  "Sophons_Intro": [
+    { "at": 0, "end": 1.424, "text": "A través de unas rendijas oscuras brilla una luz azul." },
+    { "at": 6.458, "end": 7.314, "text": "Una figura esbelta de cabeza grande, hecha de partículas azules." },
+    { "at": 10.266, "end": 10.936, "text": "Una máquina diminuta parte una esfera." },
+    { "at": 13.66, "end": 14.462, "text": "Una nave pica en un asteroide." },
+    { "at": 17.656, "end": 19.639, "text": "Una luz cegadora se canaliza hacia un satélite. Un Sophon se yergue orgulloso." },
+    { "at": 23.565, "end": 24.498, "text": "El Sophon se lleva la mano a la cara entre el humo." },
+    { "at": 27.99, "end": 28.888, "text": "Tocan una falla resplandeciente." },
+    { "at": 32.49, "end": 36.578, "text": "El holograma de una luna se hace añicos. Se sobresaltan y luego se colocan hombro con hombro, mirando una aguja resplandeciente." },
+    { "at": 40.765, "end": 41.504, "text": "Uno levanta el pulgar." },
+    { "at": 44.508, "end": 52.122, "text": "La sala desaparece. La aguja es el núcleo de una estación colosal. Unas costillas metálicas enormes ascienden en espiral alrededor de un pilar azul y cegador de energía." },
+    { "at": 59.754, "end": 60.679, "text": "Están en la base de la estación." },
+    { "at": 62.18, "end": 67.008, "text": "La estación colosal gira despacio en el vacío oscuro. Todo se funde a negro." }
+  ],
+  "Sophons_Outro.LostBack": [
+    { "at": 0, "end": 4, "text": "Unos fuegos artificiales estallan en un cielo nocturno estrellado sobre una metrópolis futurista. Rascacielos elegantes y curvos y grandes carteles brillan con un neón cian vibrante." },
+    { "at": 4, "end": 8.476, "text": "Un holograma colosal de un Sophon de cabeza grande se proyecta desde una torre central. Unos vehículos voladores pasan entre los edificios relucientes." },
+    { "at": 13.272, "end": 14.213, "text": "Dentro, un Sophon trabaja ante unas pantallas holográficas verdes." },
+    { "at": 18.789, "end": 19.67, "text": "Un núcleo enorme y enrollado brilla en cian a su espalda." },
+    { "at": 24.672, "end": 27.8, "text": "El Sophon levanta los brazos encogiéndose de hombros. El núcleo estalla en una luz cian cegadora que inunda la sala con un resplandor deslumbrante. Todo se funde a negro." }
+  ],
+  "Sophons_Outro.LostNotBack": [
+    { "at": 0, "end": 4.5, "text": "Unos fuegos artificiales estallan en un cielo nocturno estrellado sobre una ciudad futurista y elegante bañada en una luz cian resplandeciente." },
+    { "at": 4.5, "end": 10, "text": "Unos vehículos flotantes serpentean entre rascacielos lisos y curvos y carteles holográficos gigantes." },
+    { "at": 10, "end": 11.243, "text": "Dentro, un Sophon pequeño de piel gris se sienta ante una consola verde resplandeciente." },
+    { "at": 24.529, "end": 27.8, "text": "El Sophon levanta un dedo. La alerta roja de la consola y una bobina enorme que gira a su espalda se apagan al instante y sumen la sala en la oscuridad." }
+  ],
+  "Steppe": [
+    { "at": 1, "end": 4.5, "text": "Una llanura inmensa de hierba alta y dorada se extiende hacia unas montañas escarpadas e inclinadas bajo un cielo azul brillante." },
+    { "at": 4.5, "end": 8.5, "text": "En primer plano, un ave grande y extraña se posa en un saliente. Una cresta fina se curva hacia atrás sobre su cabeza y un pico enorme y oscuro se curva hacia abajo." },
+    { "at": 8.5, "end": 11.5, "text": "Su pecho es blanco, con plumas verdes y amarillas. A lo lejos pasta una manada de animales oscuros." },
+    { "at": 11.5, "end": 14, "text": "Una estela brillante de luz rasga las nubes." },
+    { "at": 14, "end": 17.5, "text": "El módulo de descenso de la nave colonizadora baja hacia las montañas lejanas y deja una larga cola de fuego blanco." },
+    { "at": 17.5, "end": 20.533, "text": "Todo se funde a negro." }
+  ],
+  "Swamp": [
+    { "at": 1, "end": 4, "text": "Una niebla espesa de color amarillo verdoso ahoga un pantano estancado." },
+    { "at": 4, "end": 8, "text": "A la izquierda, un reptil bípedo con una cresta de púas está entre los helechos y mira hacia un árbol enorme y retorcido." },
+    { "at": 8, "end": 11, "text": "Un musgo pálido y unas enredaderas cuelgan de las ramas torcidas del árbol." },
+    { "at": 11, "end": 13.418, "text": "Sus raíces extendidas se hunden en una capa brillante de limo verde resplandeciente." }
+  ],
+  "Templars_Intro": [
+    { "at": 0, "end": 2.395, "text": "Tres figuras caminan por un yermo estéril y brumoso. Unas esquirlas de piedra enormes y escarpadas sobresalen de la tierra." },
+    { "at": 9.75, "end": 17.233, "text": "Un pie descalzo avanza, con la pierna vendada de cuero granate. Las tres figuras se detienen ante una pared rocosa imponente, donde una puerta metálica ornamentada sella la entrada de una cueva enorme." },
+    { "at": 23.009, "end": 26.902, "text": "De espaldas, una figura con un báculo observa cómo las pesadas puertas metálicas se abren y dejan ver una luz blanca intensa." },
+    { "at": 31.202, "end": 37.379, "text": "Unos brazaletes dorados y ornamentados cubren unos brazos cruzados sobre una túnica rojo oscuro. Dentro de la caverna, las tres figuras avanzan por un puente estrecho hacia una estructura resplandeciente enraizada en la oscuridad." },
+    { "at": 44.122, "end": 46.776, "text": "Miran hacia un santuario enorme y oscuro, donde una figura permanece suspendida." },
+    { "at": 49.56, "end": 52.5, "text": "Una energía dorada gira alrededor del rostro metálico y el alto tocado puntiagudo de la figura." },
+    { "at": 52.5, "end": 58, "text": "Un estallido de luz cegadora golpea un pilar central y se propaga por unos zarcillos retorcidos como raíces hasta iluminar unos nodos circulares." },
+    { "at": 58, "end": 63, "text": "Tres figuras con armadura emergen del resplandor. La del centro lleva una capa oscura y su rostro sin rasgos es una máscara de energía resplandeciente." },
+    { "at": 63, "end": 65.726, "text": "Una aguja imponente y compleja se eleva en la oscuridad. Una figura solitaria está en un nicho dorado e iluminado en su base." },
+    { "at": 69.767, "end": 70.569, "text": "Unas naves estilizadas sobrevuelan un paisaje pálido." },
+    { "at": 77.438, "end": 83.178, "text": "Unas líneas geométricas verdes y brillantes iluminan el fondo de la fosa. Todo se funde a negro." }
+  ],
+  "Templars_Outro.LostBack": [
+    { "at": 0, "end": 1.028, "text": "Una silueta con cuernos alza un báculo resplandeciente." },
+    { "at": 14.122, "end": 14.924, "text": "Unas líneas resplandecientes enormes se forman en la bruma." },
+    { "at": 26.283, "end": 30, "text": "Las líneas se unen en una entidad espectral imponente que empequeñece a la figura de la escalera. La cresta enorme y resplandeciente domina la caverna y luego se desvanece en la oscuridad." }
+  ],
+  "Templars_Outro.LostNotBack": [
+    { "at": 0, "end": 0.903, "text": "Una silueta con cuernos alza un báculo resplandeciente." },
+    { "at": 13.949, "end": 14.71, "text": "Unas líneas resplandecientes enormes se forman en la bruma." },
+    { "at": 26.283, "end": 30, "text": "Las líneas se unen en una entidad espectral imponente que empequeñece a la figura de la escalera. La cresta enorme y resplandeciente domina la caverna y luego se desvanece en la oscuridad." }
+  ],
+  "Terran": [
+    { "at": 1, "end": 4, "text": "Unas montañas escarpadas y empinadas de roca gris pálido se alzan sobre un valle verde y frondoso." },
+    { "at": 4, "end": 7, "text": "Unos pinos oscuros se aferran a los acantilados verticales. En primer plano, una cascada cae por un saliente rocoso." },
+    { "at": 7, "end": 10, "text": "Abajo, un río ancho serpentea por el valle brumoso. El cielo se tiñe del dorado del amanecer en el horizonte." },
+    { "at": 10, "end": 12.928, "text": "Muy arriba, la nave colonizadora desciende sobre una larga estela de luz blanca, rumbo a las llanuras lejanas." }
+  ],
+  "Terrans_Intro": [
+    { "at": 0, "end": 0.8, "text": "El adusto emperador Zelevas, de barba blanca." },
+    { "at": 14.551, "end": 15.6, "text": "Unas hileras de soldados en silueta miran hacia un planeta parecido a la Tierra." },
+    { "at": 31.6, "end": 35.1, "text": "Dos naves estilizadas vuelan hacia el mundo parecido a la Tierra. Este se acerca a toda velocidad y crece hasta engullirlo todo en blanco." },
+    { "at": 40.55, "end": 41.95, "text": "Un explorador toca un brote diminuto en la nieve." },
+    { "at": 46.45, "end": 47.25, "text": "Un alienígena reptiliano se arrodilla y ofrece fruta." },
+    { "at": 51.35, "end": 52.372, "text": "Un oficial clava una bandera roja." },
+    { "at": 57.98, "end": 59.03, "text": "Un soldado con armadura, un mecánico y un científico." },
+    { "at": 68.651, "end": 70.5, "text": "El trío está pintado en un cartel resplandeciente." },
+    { "at": 70.5, "end": 73, "text": "Domina una metrópolis inmensa, oscura e industrializada." },
+    { "at": 73, "end": 76.5, "text": "Un esmog amarillo y espeso ahoga el aire entre los rascacielos escarpados." },
+    { "at": 76.5, "end": 78.208, "text": "Todo se funde a negro." }
+  ],
+  "Terrans_Outro_Mezari.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Cinco espadas blancas irradian sobre un fondo rojo intenso. Se alza un monumento blanco." },
+    { "at": 23.361, "end": 25.12, "text": "Unos científicos observan al emperador con el torso desnudo, conectado a unas máquinas y brillando de energía. Oscuridad." }
+  ],
+  "Terrans_Outro_Mezari.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Cinco espadas blancas irradian sobre un fondo rojo intenso. Se alza un monumento blanco." },
+    { "at": 23.179, "end": 25.12, "text": "Unos científicos observan al emperador con el torso desnudo, conectado a unas máquinas y brillando de energía. Oscuridad." }
+  ],
+  "Terrans_Outro_Sheredyn.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Cinco espadas blancas sobre un fondo rojo se convierten en haces de luz que irradian tras un edificio blanco monumental." },
+    { "at": 23.361, "end": 25.12, "text": "Unos cables conectan su torso desnudo a una maquinaria resplandeciente. Aprieta el puño. Todo se funde a negro." }
+  ],
+  "Terrans_Outro_Sheredyn.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Cinco espadas blancas sobre un fondo rojo se convierten en haces de luz que irradian tras un edificio blanco monumental." },
+    { "at": 23.179, "end": 25.12, "text": "Unos cables conectan su torso desnudo a una maquinaria resplandeciente. Aprieta el puño. Todo se funde a negro." }
+  ],
+  "Terrans_Outro_UE.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Cinco haces blancos irradian hacia arriba sobre un fondo rojo intenso." },
+    { "at": 23.361, "end": 25.12, "text": "Conectado a unos pilares resplandecientes, el emperador, sin camisa y lleno de cicatrices, aprieta el puño. Oscuridad." }
+  ],
+  "Terrans_Outro_UE.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Cinco haces blancos irradian hacia arriba sobre un fondo rojo intenso." },
+    { "at": 23.179, "end": 25.12, "text": "Conectado a unos pilares resplandecientes, el emperador, sin camisa y lleno de cicatrices, aprieta el puño. Oscuridad." }
+  ],
+  "Timelords_Intro": [
+    { "at": 0, "end": 3.27, "text": "Unas rocas blancas angulosas flotan por un vacío luminoso y brumoso." },
+    { "at": 13.451, "end": 14.102, "text": "Una grieta oscura se abre astillándose." },
+    { "at": 23.25, "end": 24.5, "text": "Una masa oscura palpita y extiende sus zarcillos hacia fuera." },
+    { "at": 30.45, "end": 32.4, "text": "Las rocas blancas caen hacia el núcleo negro que palpita." },
+    { "at": 40.528, "end": 47.4, "text": "Una nave espacial metálica y estilizada irrumpe desde un portal arremolinado de luz blanca en el vacío oscuro del espacio. Su casco está formado por piezas geométricas segmentadas y flotantes, con detalles en rojo." },
+    { "at": 56.842, "end": 60.33, "text": "La nave segmentada se desliza sobre el horizonte de un planeta con anillos, rumbo a la luz centelleante de un sol." }
+  ],
+  "Timelords_Outro.LostBack": [
+    { "at": 0, "end": 5.808, "text": "Un valle frondoso y brumoso bajo un cielo nublado. Una nave espacial blanca y colosal flota a lo lejos. En primer plano, varios seres robóticos altos permanecen entre la hierba y los árboles. Sus cuerpos están hechos de fragmentos geométricos afilados y sueltos, con tentáculos oscuros como cintas que arrastran tras ellos." },
+    { "at": 11.943, "end": 12.849, "text": "Un robot sostiene una flor rosa resplandeciente." },
+    { "at": 20.635, "end": 24, "text": "En la palma del robot, la delicada flor rosa se transforma de pronto en un cristal blanco anguloso y resplandeciente." },
+    { "at": 24, "end": 28, "text": "El robot contempla la gema geométrica flotante. Su cuerpo se compone de esquirlas oscuras y sueltas, ancladas alrededor del núcleo rojo que brilla intensamente en su pecho." },
+    { "at": 28, "end": 30, "text": "Todo se desvanece en la oscuridad." }
+  ],
+  "Timelords_Outro.LostNotBack": [
+    { "at": 0, "end": 3, "text": "Unos rayos de sol atraviesan las nubes oscuras sobre un valle verde y brumoso. Una nave espacial blanca y enorme reposa sobre la hierba." },
+    { "at": 3, "end": 6, "text": "Unos seres robóticos altos, con blindaje oscuro y anguloso y articulaciones naranjas resplandecientes, contemplan la jungla salvaje." },
+    { "at": 6, "end": 8.308, "text": "Uno sube a una roca en primer plano. Unas esquirlas negras orbitan su cabeza flotante con forma de diamante." },
+    { "at": 12.616, "end": 13.36, "text": "Sostiene una flor rosa resplandeciente." },
+    { "at": 20.606, "end": 24, "text": "La flor se ha transformado en un cristal blanco geométrico e impecable. Flota y gira despacio sobre la mano del ser." },
+    { "at": 24, "end": 26, "text": "El ser contempla la forma perfecta y angulosa." },
+    { "at": 26, "end": 30, "text": "Todo se desvanece despacio en la oscuridad absoluta." }
+  ],
+  "Tropical": [
+    { "at": 0.5, "end": 2, "text": "Unos arcos de roca roja se alzan de un mar turquesa." },
+    { "at": 2, "end": 4.5, "text": "En lo alto del cielo azul brillante, el módulo de descenso de la nave colonizadora baja sobre una estela de luz." },
+    { "at": 4.5, "end": 8, "text": "Se pierde tras los acantilados lejanos. Unos arbustos verdes se aferran a las islas rocosas." },
+    { "at": 8, "end": 12.8, "text": "Una bandada de aves sobrevuela los arcos en círculos sobre el agua que ondea suavemente." }
+  ],
+  "Tundra": [
+    { "at": 1, "end": 5.5, "text": "Bajo un cielo denso de color azul grisáceo, dos bestias enormes parecidas a bueyes están en una llanura inundada. Tienen un pelaje pardo y espeso y coronas de cuernos largos y dentados." },
+    { "at": 5.5, "end": 8.5, "text": "Muy arriba, una chispa brillante de luz baja dejando estela. Es el módulo de descenso de la nave colonizadora." },
+    { "at": 8.5, "end": 13.418, "text": "Las bestias esperan en la hierba mojada que se mece mientras la nave lejana se pierde tras unas colinas espolvoreadas de nieve en el horizonte." }
+  ],
+  "UmbralChoir_Intro": [
+    { "at": 0, "end": 6.43, "text": "En la extensión profunda y silenciosa del espacio, un vasto campo de estrellas titila contra unas nebulosas arremolinadas de azul oscuro y esmeralda." },
+    { "at": 21.871, "end": 22.942, "text": "Una galaxia lejana estalla en una luz brillante." },
+    { "at": 30.562, "end": 31.953, "text": "Avance vertiginoso hacia una nebulosa rosa y púrpura brillante." },
+    { "at": 37.671, "end": 41, "text": "Una nave espacial oscura y estilizada se desliza por la penumbra." },
+    { "at": 41, "end": 45.5, "text": "Dentro de la cabina, un sensor robótico pende ante una ventana octogonal. Unos datos holográficos rojos parpadean en el cristal." },
+    { "at": 45.5, "end": 49.166, "text": "Una piloto con traje espacial blindado está a los mandos, con el rostro visible tras un visor transparente." },
+    { "at": 74.218, "end": 76.252, "text": "La nube sombría, con dos ojos rojos resplandecientes, se lanza hacia la nave." },
+    { "at": 84.093, "end": 91.836, "text": "Un humo púrpura engulle a la piloto y lo sume todo en la oscuridad. Momentos después, su rostro emerge de las sombras, con el ojo derecho brillando de un púrpura penetrante." },
+    { "at": 97.64, "end": 98.745, "text": "Está sentada con calma. Una flota oscura se reúne." },
+    { "at": 116.937, "end": 120, "text": "Un patrón electrónico púrpura repta por su mejilla. Sonríe levemente antes de que todo se funda a negro." }
+  ],
+  "UmbralChoir_Outro.LostBack": [
+    { "at": 24, "end": 30.08, "text": "La galaxia espiral púrpura es ahora una red dorada y resplandeciente de nodos conectados. Unos rombos rojos dispersos marcan puntos en la red. El mapa se desvanece despacio en la oscuridad." }
+  ],
+  "UmbralChoir_Outro.LostNotBack": [
+    { "at": 24, "end": 30.08, "text": "La galaxia espiral púrpura es ahora una red dorada y resplandeciente de nodos conectados. Unos rombos rojos dispersos marcan puntos en la red. El mapa se desvanece despacio en la oscuridad." }
+  ],
+  "Unfallen_Intro": [
+    { "at": 0, "end": 1.324, "text": "El planeta verde y azul Koyasil gira en el espacio." },
+    { "at": 21.267, "end": 22.157, "text": "Dos soldados apuntan con sus rifles a un alienígena caído." },
+    { "at": 31.85, "end": 33.122, "text": "Un ser arbóreo imponente y enmascarado se cierne tras los soldados." },
+    { "at": 43.884, "end": 46.337, "text": "Una nave enorme de raíces entrelazadas y velas rojas despega del planeta frondoso." },
+    { "at": 63.222, "end": 64.218, "text": "Tres naves raíz ascienden al espacio." },
+    { "at": 69.036, "end": 75.05, "text": "Las naves se reducen a puntos de luz resplandecientes y se suman a las estrellas contra un remolino de nebulosa verde. Todo se funde a negro." }
+  ],
+  "Unfallen_Outro.LostBack": [
+    { "at": 0, "end": 0.981, "text": "Un rayo dorado sale disparado de un planeta verde y nublado." },
+    { "at": 5.02, "end": 6.301, "text": "Unas venas doradas se extienden por la cara oscura del planeta." },
+    { "at": 10.336, "end": 11.6, "text": "A lo lejos, una vibrante galaxia espiral." },
+    { "at": 16.779, "end": 17.567, "text": "Unas líneas doradas tienden puentes entre las estrellas." },
+    { "at": 27.553, "end": 30, "text": "La red dorada forma un sistema de raíces colosal que abraza toda la galaxia." }
+  ],
+  "Unfallen_Outro.LostNotBack": [
+    { "at": 0, "end": 2.358, "text": "Una estela dorada de luz se aleja en arco de un planeta frondoso hacia la oscuridad estrellada." },
+    { "at": 6.252, "end": 7.604, "text": "Unas raíces resplandecientes se extienden por la cara oscura del planeta." },
+    { "at": 14.491, "end": 15.86, "text": "La estela se lanza hacia una galaxia ardiente y arremolinada." },
+    { "at": 19.596, "end": 20.577, "text": "Enlaza estrellas como una constelación." },
+    { "at": 24.754, "end": 30, "text": "Las líneas resplandecientes se extienden por la galaxia ardiente y forman un árbol de luz colosal y ramificado que abarca el cosmos." }
+  ],
+  "Vampirilis_Intro": [
+    { "at": 0, "end": 0.703, "text": "Unas líneas doradas dibujan una ciudad." },
+    { "at": 3.793, "end": 4.502, "text": "Sale humo de unas chimeneas grabadas." },
+    { "at": 8.88, "end": 9.622, "text": "La ciudad resplandeciente se aleja hasta encogerse." },
+    { "at": 24.912, "end": 25.606, "text": "La figura resplandeciente se yergue." },
+    { "at": 33.122, "end": 35.275, "text": "Aparece una figura oscura y angulosa que alza una mano entre los fieles." },
+    { "at": 40.313, "end": 43.802, "text": "El demonio extiende sus garras dentadas. Los fieles huyen aterrados." },
+    { "at": 49.168, "end": 50.702, "text": "Un guerrero fiel combate al hereje." },
+    { "at": 55.56, "end": 56.742, "text": "El guerrero lo derriba." },
+    { "at": 62.21, "end": 65.546, "text": "Los murales resplandecientes decoran las paredes de una cámara hexagonal y oscura." },
+    { "at": 71.512, "end": 72.247, "text": "Un líder Vodyani se yergue." },
+    { "at": 74.157, "end": 80, "text": "Vestida con un traje negro voluminoso y una placa facial naranja resplandeciente, la figura sostiene un báculo largo." },
+    { "at": 80, "end": 84, "text": "El balcón está dentro del puente acristalado de una nave estelar colosal." },
+    { "at": 84, "end": 88, "text": "Fuera, en el vacío, una flota enorme de naves dentadas escolta a la gran Arca." },
+    { "at": 88, "end": 93, "text": "Unos propulsores naranjas resplandecientes impulsan a la armada hacia la extensión estrellada." },
+    { "at": 93, "end": 96.682, "text": "Todo se funde a negro." }
+  ],
+  "Vampirilis_Outro.LostBack": [
+    { "at": 0, "end": 7.787, "text": "Sobre una superficie negra y metálica, unas finas líneas de luz naranja ardiente trazan patrones angulosos e intrincados. Los circuitos resplandecientes se expanden hasta formar las siluetas estilizadas de unas naves espaciales enormes grabadas en el metal oscuro." },
+    { "at": 12.965, "end": 14.234, "text": "Una multitud en silueta se estira hacia el monolito gigante y resplandeciente." },
+    { "at": 19.059, "end": 20.306, "text": "Los fieles alzan los brazos." },
+    { "at": 25.599, "end": 26.275, "text": "Unas alas geométricas y radiantes se despliegan." },
+    { "at": 30.923, "end": 38.762, "text": "Una figura Vodyani imponente, de energía naranja brillante y líneas angulosas y afiladas, se alza completamente formada contra la oscuridad. Irradia luz como un ángel mecánico. La aparición centelleante palpita con poder antes de fundirse a negro." }
+  ],
+  "Vampirilis_Outro.LostNotBack": [
+    { "at": 0, "end": 5.24, "text": "Unas líneas naranjas resplandecientes trazan el perfil estilizado y anguloso de una nave espacial enorme sobre una superficie metálica oscura." },
+    { "at": 9.715, "end": 10.412, "text": "Una flota resplandeciente toma forma." },
+    { "at": 20.243, "end": 21.328, "text": "Abajo, unas siluetas alzan los brazos en señal de adoración." },
+    { "at": 29.892, "end": 34.5, "text": "Una figura Vodyani imponente brilla con una luz naranja intensa contra una pared metálica oscura. Lleva un blindaje estilizado y unas alas enormes y angulosas hechas de esquirlas geométricas flotantes." },
+    { "at": 34.5, "end": 37, "text": "La pared se desvanece en la oscuridad." },
+    { "at": 37, "end": 38.762, "text": "La figura alada se desvanece." }
+  ],
+  "Vaulters_Intro": [
+    { "at": 0, "end": 5.348, "text": "En una bodega cavernosa y en penumbra, una figura mecánica angulosa, de color naranja óxido, se desploma contra un pilar entre cajas dispersas y cables colgantes. Una luz verde parpadea y se enciende en su visor." },
+    { "at": 8.375, "end": 9.934, "text": "La antigua máquina mueve su pesada cabeza." },
+    { "at": 12.828, "end": 13.841, "text": "Una figura congelada tras un cristal escarchado." },
+    { "at": 17.867, "end": 22.747, "text": "En el centro de una vasta cámara circular, el robot solitario reposa bajo un anillo de luz pálida. Una consola cercana proyecta un planeta holográfico." },
+    { "at": 25.64, "end": 26.848, "text": "Parpadea una alerta roja de fallo de motor." },
+    { "at": 35.328, "end": 36.536, "text": "Zolya duerme plácidamente dentro de una cápsula escarchada." },
+    { "at": 40.835, "end": 42.512, "text": "La luz pálida del interior de su cápsula parpadea y se atenúa." },
+    { "at": 44.156, "end": 44.934, "text": "Cápsulas silenciosas se alinean en la sala oscura." },
+    { "at": 48.555, "end": 51.184, "text": "Una a una, las tenues luces de las cápsulas se apagan y sumen el pasillo en la oscuridad." },
+    { "at": 53.375, "end": 54.075, "text": "Las sombras lo engullen todo." },
+    { "at": 58.334, "end": 62, "text": "En la negrura total, la rendija verde del visor del robot vuelve a encenderse." },
+    { "at": 62, "end": 71, "text": "Unas puertas enormes se abren al fondo del pasillo y recortan un haz brillante de luz blanca en el aire polvoriento. La luz baña las hileras de cápsulas criogénicas e ilumina a la máquina solitaria." },
+    { "at": 71, "end": 76, "text": "El robot mira fijamente el resplandor cegador." },
+    { "at": 76, "end": 81, "text": "En una nebulosa de tinte verde, un asteroide colosal y ahuecado brilla con fuegos dorados en su interior. Una nave estilizada con forma de anillo, la Argosy, emerge de los restos rocosos." },
+    { "at": 81, "end": 89.216, "text": "La antigua nave colonizadora se aleja deslizándose del casco incandescente, traza rumbo hacia las estrellas y se desvanece en la vasta oscuridad cósmica." }
+  ],
+  "Vaulters_Outro.LostBack": [
+    { "at": 8.21, "end": 8.84, "text": "Los Saltadores contemplan el despegue de una nave." },
+    { "at": 11.554, "end": 12.189, "text": "Todo se funde a negro." },
+    { "at": 23.124, "end": 27.882, "text": "En el espacio, un anillo enorme flota en órbita sobre Auriga. Un sol brillante destella tras el horizonte oscuro del planeta y proyecta rayos luminosos hacia el vacío estrellado." }
+  ],
+  "Vaulters_Outro.LostNotBack": [
+    { "at": 8.515, "end": 9.36, "text": "La nave anillo asciende." },
+    { "at": 25.679, "end": 27.882, "text": "Todo se funde a negro." }
+  ],
+  "Vedt": [
+    { "at": 0.5, "end": 3.5, "text": "En una sabana dorada, la hierba alta y seca susurra en torno a rocas oscuras y escarpadas." },
+    { "at": 3.5, "end": 7, "text": "Posada sobre una roca, una criatura de cuerpo felino y estilizado, cola larga y fina y cabeza con púas, otea la llanura." },
+    { "at": 7, "end": 12.693, "text": "Muy por encima de unos árboles extraños de troncos gruesos y bulbosos y ramas desnudas, una nave de desembarco de un blanco brillante desciende veloz por el cielo azul pálido." }
+  ],
+  "Venetians_Intro": [
+    { "at": 11.952, "end": 12.84, "text": "Una mujer está sentada a contraluz ante una ventana azul." },
+    { "at": 27.39, "end": 28.386, "text": "Él golpea una mesa y esparce unas fichas luminosas." },
+    { "at": 40.123, "end": 42.379, "text": "Echa los brazos hacia atrás mientras una energía dorada brota de él y sus ojos brillan con intensidad." },
+    { "at": 50.473, "end": 51.959, "text": "Con blindaje de combate, salta a través de una explosión mientras dispara un arma." },
+    { "at": 62.326, "end": 66, "text": "La mujer sonríe con suficiencia. Todo se funde a negro." }
+  ],
+  "Venetians_Outro.LostBack": [
+    { "at": 0, "end": 2.137, "text": "Una mujer pálida, con un vestido de cuello alto, se sienta sobre un orbe liso y sostiene una esfera dorada luminosa." },
+    { "at": 21.114, "end": 28, "text": "La rejilla dorada luminosa bajo sus pies se extiende sin fin por el espacio. Tras ella, una vasta nebulosa estrellada gira en un verde vibrante. Columnas colosales de luz se elevan de la rejilla hacia el cosmos y la empequeñecen ante la extensión infinita. Todo se funde a negro." }
+  ],
+  "Venetians_Outro.LostNotBack": [
+    { "at": 0, "end": 2.318, "text": "Una mujer pálida, con un vestido de cuello alto, se sienta sobre un orbe liso y sostiene una esfera dorada luminosa." },
+    { "at": 21.114, "end": 28, "text": "La rejilla dorada luminosa bajo sus pies se extiende sin fin por el espacio. Tras ella, una vasta nebulosa estrellada gira en un verde vibrante. Columnas colosales de luz se elevan de la rejilla hacia el cosmos y la empequeñecen ante la extensión infinita. Todo se funde a negro." }
+  ]
+}
