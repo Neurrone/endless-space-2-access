@@ -167,7 +167,7 @@ action is missing from it or drawn twice. The six, measured 2026-09-02:
 | Cursor and navigation | 22 | Move up |
 | Buffers | 6 | Read previous buffer line |
 | UI hotkeys | 12 | Focus HUD |
-| Inspect mode | 7 | Inspect mode |
+| Inspect mode | 7 | Enter inspect mode |
 | Scanner | 13 | Move to next category |
 | Bookmarks | 21 | Jump to home system |
 
@@ -190,8 +190,7 @@ in ("Cancel, empty, button, 2 of ⟨n⟩"). Cell ids are `options:⟨panel⟩/ke
 which is what lets Down chain across a boundary while Alt+arrow still jumps (six SHEETS would name
 one region six times — measured 2026-09-02, and the whole page then read as a single block no jump
 could walk). `/input ui.regionNext` five times walks "Buffers, Read previous buffer line, Ctrl + Up
-Arrow, 1 of 6" → "UI hotkeys, Focus HUD, Ctrl + H, 1 of 12" → "Inspect mode, Ctrl + I, 1 of 7" (the row is
-also called Inspect mode, and the readout says the repeated word once) → "Scanner, Move to next category, Ctrl + Page Down, 1 of 13" →
+Arrow, 1 of 6" → "UI hotkeys, Focus HUD, Ctrl + H, 1 of 12" → "Inspect mode, Enter inspect mode, Ctrl + I, ⟨tooltip⟩, 1 of 7" → "Scanner, Move to next category, Ctrl + Page Down, 1 of 13" →
 "Bookmarks, Jump to home system, Ctrl + C, 1 of 21", and `ui.regionPrev` walks back. `ui.up` from a
 block's first row announces the block above ("Scanner, Move to previous result in custom category 3,
 Shift + /, 13 of 13"). The heading rows declare no node of their own: `DevProbe.Ghosts()` reads

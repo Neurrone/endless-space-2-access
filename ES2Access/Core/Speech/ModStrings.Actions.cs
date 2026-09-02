@@ -160,7 +160,11 @@ namespace ES2Access.Core.Speech
             { "action.ui.clear.description", "Clears a key bind" },
 
             // The map's inspect cursor.
-            { "action.galaxy.inspect.title", "Inspect mode" },
+            { "action.galaxy.inspect.title", "Enter inspect mode" },
+            {
+                "action.galaxy.inspect.description",
+                "Use the arrow keys to inspect the map. Works with bookmarks and the scanner to jump to map locations"
+            },
             { "action.galaxy.inspectGrow.title", "Expand cursor" },
             { "action.galaxy.inspectShrink.title", "Shrink cursor" },
             { "action.galaxy.inspectSkipNorth.title", "Move to next interesting tile north" },
