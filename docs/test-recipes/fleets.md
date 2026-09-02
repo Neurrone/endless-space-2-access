@@ -11,8 +11,12 @@ game-side facts are in `docs/fleets.md`.
 **Destination-only, for lane fleets and free movers alike.** A fleet in transit is declared under
 the endpoint it is flying TO and nowhere else — a lane fleet saying which of THAT system's lanes it
 is on. **Since the 2026-09-02 wording ruling the phrases are**: a lane fleet "arriving from ⟨the
-lane's far end⟩ by star lane" (or "…by wormhole", or "arriving from an unexplored system by …"
-where the map has not named that end), a free mover "arriving from the ⟨eight-word bearing from the
+lane's far end⟩ by star lane" (or "…by wormhole", or — where the map has not named that end —
+"arriving from an unexplored system to the ⟨direction the lane leaves THIS system⟩ by star
+lane/wormhole", the compass word being the very one this system's own lane row says for that line,
+owner ruling 2026-09-02; measured under Sabel: `1st Ferocious Pirates, -36, -7, button, arriving
+from an unexplored system to the southwest by star lane, neutral Amoeba, Pincer, Moving to Sabel, 0
+movement points` against its lane row `southwest to an unexplored system`), a free mover "arriving from the ⟨eight-word bearing from the
 destination system out to where the fleet is standing⟩". Every transcript quoted below predates
 that ruling and still shows the old "on starlane ⟨n⟩, ⟨direction⟩" / "free moving to ⟨system⟩"
 forms — the ROWS and their ids are unchanged, only the sentence. The independent oracle is the leg

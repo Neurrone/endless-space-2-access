@@ -321,6 +321,13 @@ namespace ES2Access.Core.Speech
         // too, since a wormhole is a different picture from a lane. Whole phrases per kind, because
         // "star lane" and "wormhole" are words in the sentence rather than a noun slotted into it,
         // and a pair more for a far end the map has not named.
+        //
+        // Where the map has not named that end, the phrase still says which WAY the lane runs - the
+        // compass word for the bearing out of the hosting system towards the far end, which is the
+        // very word that system's own lane row says for the same line. Without it an unexplored
+        // origin is the one case that tells two incoming lanes apart with nothing at all, and the
+        // picture does tell them apart: the lines leave in different directions (owner ruling
+        // 2026-09-02).
         public const string GalaxyFleetOnStarlane = "galaxy.fleet-on-starlane";
         public const string GalaxyFleetOnWormhole = "galaxy.fleet-on-wormhole";
         public const string GalaxyFleetOnStarlaneFromUnexplored =
@@ -2182,9 +2189,12 @@ namespace ES2Access.Core.Speech
             { GalaxyFleetOnWormhole, "arriving from {0} by wormhole" },
             {
                 GalaxyFleetOnStarlaneFromUnexplored,
-                "arriving from an unexplored system by star lane"
+                "arriving from an unexplored system to the {0} by star lane"
             },
-            { GalaxyFleetOnWormholeFromUnexplored, "arriving from an unexplored system by wormhole" },
+            {
+                GalaxyFleetOnWormholeFromUnexplored,
+                "arriving from an unexplored system to the {0} by wormhole"
+            },
             { GalaxyFleetFreeMovingFrom, "arriving from the {0}" },
             { GalaxyFleetFreeMovingToUnexplored, "free moving to an unexplored system" },
             { GalaxyFleetOnLaneToUnexplored, "on a star lane to an unexplored system" },

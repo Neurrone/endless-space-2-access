@@ -604,7 +604,10 @@ the lane moves.
 one, "to an unexplored system" where the map has not named the far end — because the rows already
 sit under the system's **Star lanes** region, which says the words once for all of them. A fleet
 under way, hanging under the system it is arriving at, reads "arriving from Rigel by star lane" /
-"…by wormhole"; a fleet crossing open space reads "arriving from the west", the eight-word bearing
+"…by wormhole" — and where the map has not named that far end, "arriving from an unexplored system
+to the ⟨direction⟩ by star lane", which way still being the compass word that system's own lane row
+says for the same line, so an unnamed origin is never two incoming lanes said identically (owner
+ruling 2026-09-02); a fleet crossing open space reads "arriving from the west", the eight-word bearing
 from that system out to where the fleet is standing. The clockwise-from-north ordinal survives only
 as the internal ordering (`LanesOf`). Same rule on the scanner's Unexplored rows ("Star lane, Dusay
 north to an unexplored system") and in the inspect cell ("Star lane, ⟨west⟩ ⟨direction⟩ to ⟨east⟩"),

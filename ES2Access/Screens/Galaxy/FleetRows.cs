@@ -85,6 +85,8 @@ namespace ES2Access.Screens
         /// own place does not already say, it is what tells one incoming lane from another, and it is
         /// a place the player can go and look at (owner ruling 2026-09-02). Own fleets and foreign
         /// ones alike - what the map draws of a fleet under way is the same picture for everybody.
+        /// Where the map has not named that end, the way the lane runs is said instead of nothing -
+        /// the same compass word this system's own lane row gives the same line.
         ///
         /// A lane runs between two systems and the fleet flying it is at neither, so the map draws it
         /// out in between and the tree hangs it under the end it is ARRIVING at - the same end a free
@@ -138,12 +140,23 @@ namespace ES2Access.Screens
                     }
                     else
                     {
+                        // A far end the map has not named still leaves in a direction, and the
+                        // picture does show that much: the line runs off that way. So the phrase says
+                        // the way the lane runs - the bearing out of THIS system towards the far end,
+                        // which is the same compass word this system's own lane row says for the same
+                        // line, because both are read off the one lane list (owner ruling
+                        // 2026-09-02). Without it, two unexplored lanes into a system are two
+                        // identical sentences.
                         template = leg.Wormhole
                             ? ModStrings.GalaxyFleetOnWormholeFromUnexplored
                             : ModStrings.GalaxyFleetOnStarlaneFromUnexplored;
+                        string direction = leg.Direction;
                         vtable.Announcements.Insert(
                             1,
-                            GraphNodes.ValuePart(() => ModStrings.Get(template), false)
+                            GraphNodes.ValuePart(
+                                () => ModStrings.Format(template, ModStrings.Get(direction)),
+                                false
+                            )
                         );
                     }
                     // The anchor goes on the row that is the fleet's ONLY row: a fleet in transit hangs
@@ -584,14 +597,16 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One fleet under way on one of a system's lanes, carrying the end it set out from -
-        /// the lane's far end, read off the same list the lane rows are built from - and whether the
-        /// map names that end.</summary>
+        /// the lane's far end, read off the same list the lane rows are built from - whether the map
+        /// names that end, and the way the lane leaves towards it, which is what the phrase says when
+        /// it does not.</summary>
         private struct EnRoute
         {
             public Fleet Fleet;
             public GameNode Far;
             public bool Named;
             public bool Wormhole;
+            public string Direction;
         }
 
         /// <summary>
@@ -629,6 +644,7 @@ namespace ES2Access.Screens
                             Far = lanes[i].Far,
                             Named = Perceived(lanes[i].Far, empire),
                             Wormhole = lanes[i].Wormhole,
+                            Direction = CompassDirections.KeyForBearing(lanes[i].Bearing),
                         }
                     );
                 }

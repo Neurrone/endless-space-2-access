@@ -183,7 +183,9 @@ Primus" — with `by wormhole` appended where it is one and `to an unexplored sy
 has not named the far end; `button` is the role word, and no lane number is spoken. Expected on
 Dusay: `northeast to Primus`, `west to Rigel`, `north to Qarius`, in the clockwise-from-north order
 `LanesOf` walks. A fleet under way beneath a system reads `arriving from ⟨the lane's far end⟩ by
-star lane` (or `…by wormhole`, or `arriving from an unexplored system by …`), and a free mover
+star lane` (or `…by wormhole`, or — for a far end the map has not named — `arriving from an
+unexplored system to the ⟨direction the lane leaves this system⟩ by star lane/wormhole`, the same
+compass word this system's own lane row gives that line), and a free mover
 `arriving from the ⟨bearing from the system out to the fleet⟩`. Lane transcripts elsewhere in this
 file were rewritten to the new wording where the old line carried the direction; where it did not,
 the lane is named without one.
