@@ -640,6 +640,7 @@
   "economy.inflation-panel": "Inflation",
   "economy.trade-panel": "Trade overview",
   "economy.price-history": "Price history",
+  "economy.price-history-turn": "Turn {0}",
   "economy.increment": "Increment",
   "economy.decrement": "Decrement",
   "economy.location": "Location",
