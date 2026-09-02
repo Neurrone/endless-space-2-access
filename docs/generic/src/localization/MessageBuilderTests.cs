@@ -1,3 +1,6 @@
+// Mirrored byte-for-byte into docs/generic/src/localization/MessageBuilderTests.cs
+// (sync-manifest.txt): it must stay self-contained, and editing it means running
+// .\sync-generic-src.ps1.
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;

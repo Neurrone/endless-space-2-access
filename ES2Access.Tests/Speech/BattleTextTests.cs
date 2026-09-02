@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using Xunit;
+using static ES2Access.Tests.Speech.ModStringsFixture;
 
 namespace ES2Access.Tests.Speech
 {
@@ -191,17 +192,6 @@ namespace ES2Access.Tests.Speech
                 Untyped = untyped,
                 Absorbed = absorbed,
             };
-        }
-
-        private static void Install(params string[] pairs)
-        {
-            Dictionary<string, string> strings = new Dictionary<string, string>();
-            for (int i = 0; i + 1 < pairs.Length; i += 2)
-            {
-                strings[pairs[i]] = pairs[i + 1];
-            }
-
-            ModStrings.Install(strings);
         }
     }
 }

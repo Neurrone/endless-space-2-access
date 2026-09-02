@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
 using ES2Access.Core.Speech;
 using Xunit;
 
@@ -33,14 +31,7 @@ namespace ES2Access.Tests.Speech
         [Fact]
         public void EveryKeyTheTableProducesIsInTheEnglishTemplate()
         {
-            SortedSet<string> shipped = new SortedSet<string>();
-            using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(EnglishTemplate())))
-            {
-                foreach (JsonProperty entry in document.RootElement.EnumerateObject())
-                {
-                    shipped.Add(entry.Name);
-                }
-            }
+            SortedSet<string> shipped = TestPaths.ShippedKeys(TestPaths.EnglishTemplate());
 
             foreach (string key in IconTable.Keys)
             {
@@ -87,28 +78,6 @@ namespace ES2Access.Tests.Speech
             string key;
             Assert.True(IconTable.TryKeyForPicture(asset, out key), asset);
             return key;
-        }
-
-        private static string EnglishTemplate()
-        {
-            DirectoryInfo directory = new DirectoryInfo(System.AppContext.BaseDirectory);
-            while (directory != null)
-            {
-                string candidate = Path.Combine(
-                    directory.FullName,
-                    "ES2Access",
-                    "locale",
-                    "english.json"
-                );
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new FileNotFoundException("no ES2Access\\locale\\english.json above the tests");
         }
     }
 }

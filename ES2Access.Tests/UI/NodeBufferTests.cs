@@ -28,22 +28,6 @@ namespace ES2Access.Tests.UI
             GraphAnnouncer.Reset();
         }
 
-        private static NodeSection Section(TooltipMode mode, params string[] lines)
-        {
-            List<string> list = new List<string>(lines);
-            return NodeSection.Derived(() => list, mode, null);
-        }
-
-        private static List<string> Buffer(NodeVtable vtable)
-        {
-            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
-            GraphBuilder b = new GraphBuilder();
-            b.AddItem(new SyntheticNode(Id("a"), Vt("Before")));
-            b.AddItem(new SyntheticNode(Id("t"), vtable));
-            b.AddItem(new SyntheticNode(Id("c"), Vt("After")));
-            return NodeBuffer.Lines(Node(b.Build(), "t"));
-        }
-
         private static NodeVtable Control(params NodeSection[] sections)
         {
             return new NodeVtable
@@ -65,7 +49,7 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void TheHeadIsTheControlsOwnNameAndStateWithoutItsRoleOrPosition()
         {
-            Assert.Equal(new[] { "Difficulty", "Normal", "unavailable" }, Buffer(Control()));
+            Assert.Equal(new[] { "Difficulty", "Normal", "unavailable" }, BufferAmongNeighbours(Control()));
         }
 
         /// <summary>A control that declares NO sections still reviews correctly - which is what lets a
@@ -75,7 +59,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "The Empire is under a central monarchy." },
-                Buffer(
+                BufferAmongNeighbours(
                     new NodeVtable
                     {
                         Announcements = new List<NodeAnnouncement>
@@ -95,7 +79,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "37", "selected" },
-                Buffer(
+                BufferAmongNeighbours(
                     new NodeVtable
                     {
                         ControlType = Type("text", null),
@@ -118,7 +102,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "Mods, Valid", "selected", "Requires: Vanilla 1.5" },
-                Buffer(
+                BufferAmongNeighbours(
                     new NodeVtable
                     {
                         ControlType = Type("text", null),
@@ -153,7 +137,7 @@ namespace ES2Access.Tests.UI
                     "Food 12",
                     "A stat block",
                 },
-                Buffer(
+                BufferAmongNeighbours(
                     Control(
                         Section(TooltipMode.Announce, "What this measures"),
                         Section(TooltipMode.None, "Food 12"),
@@ -169,8 +153,8 @@ namespace ES2Access.Tests.UI
         public void AnIndicatedTooltipIsAlwaysInTheBuffer()
         {
             NodeVtable vtable = Control(Section(TooltipMode.Indicate, "Range 4", "Damage 12"));
-            Assert.Contains("Range 4", Buffer(vtable));
-            Assert.Contains("Damage 12", Buffer(vtable));
+            Assert.Contains("Range 4", BufferAmongNeighbours(vtable));
+            Assert.Contains("Damage 12", BufferAmongNeighbours(vtable));
         }
 
         /// <summary>Native tooltips routinely open by repeating the control's name; the buffer already
@@ -180,7 +164,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "Difficulty", "Normal", "unavailable", "How hard the game is" },
-                Buffer(
+                BufferAmongNeighbours(
                     Control(Section(TooltipMode.Announce, " difficulty ", "How hard the game is"))
                 )
             );
@@ -193,11 +177,11 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "Difficulty", "Normal", "unavailable", "How hard", "Difficulty" },
-                Buffer(Control(Section(TooltipMode.Announce, "How hard", "Difficulty")))
+                BufferAmongNeighbours(Control(Section(TooltipMode.Announce, "How hard", "Difficulty")))
             );
             Assert.Equal(
                 new[] { "Difficulty", "Normal", "unavailable", "Difficulty settings" },
-                Buffer(Control(Section(TooltipMode.Announce, "Difficulty settings")))
+                BufferAmongNeighbours(Control(Section(TooltipMode.Announce, "Difficulty settings")))
             );
         }
 
@@ -208,7 +192,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "Difficulty", "Normal", "unavailable", "How hard the game is" },
-                Buffer(
+                BufferAmongNeighbours(
                     Control(
                         Section(TooltipMode.None),
                         Section(TooltipMode.Announce, "Difficulty", "How hard the game is")
@@ -249,7 +233,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "Difficulty", "Normal", "unavailable", "Still here" },
-                Buffer(
+                BufferAmongNeighbours(
                     Control(
                         NodeSection.Composed(() => { throw new InvalidOperationException(); }),
                         Section(TooltipMode.None, "Still here")
@@ -266,7 +250,7 @@ namespace ES2Access.Tests.UI
         {
             Assert.Equal(
                 new[] { "Difficulty", "Normal", "unavailable", "Normal", "How hard the AI plays" },
-                Buffer(Control(Section(TooltipMode.Announce, "Normal", "How hard the AI plays")))
+                BufferAmongNeighbours(Control(Section(TooltipMode.Announce, "Normal", "How hard the AI plays")))
             );
         }
     }

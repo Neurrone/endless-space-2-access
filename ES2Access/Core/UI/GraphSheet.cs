@@ -119,6 +119,22 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>
+        /// The structural key this sheet mints for one cell of the row belonging to
+        /// <paramref name="rowRef"/> — the same identity-keyed rows <see cref="Row"/> takes a domain
+        /// object for, and independent of the order they were emitted in.
+        ///
+        /// Nothing in the mod names a cell this way: a screen sends focus with
+        /// <see cref="FirstRow"/> and everything else resolves a cell through the public
+        /// <c>NodeVtable.Row</c> and <c>Column</c> stamps. It is here so that the tests that pin the
+        /// WIRING between cells ask the sheet which id it minted, instead of re-spelling a private
+        /// format that would go on matching nothing the day it changes.
+        /// </summary>
+        public string CellKey(object rowRef, int col)
+        {
+            return RowKeyFor(rowRef) + "c" + col;
+        }
+
+        /// <summary>
         /// Continue the table below a node that is NOT part of it — a paragraph the screen drew above
         /// the first row, a heading it declared itself. The first row then meets that node exactly as
         /// it would meet a row above it: every cell reaches it going up (a lone node is a row of one
@@ -382,7 +398,12 @@ namespace ES2Access.Core.UI
         // NodeVtable.Row and Column stamps, which is how the parity probe finds a cell's widget.
         private string RowKey()
         {
-            return _rowRef != null ? _key + "row" + _rowRef.GetHashCode() : _key + "r" + _row;
+            return _rowRef != null ? RowKeyFor(_rowRef) : _key + "r" + _row;
+        }
+
+        private string RowKeyFor(object rowRef)
+        {
+            return _key + "row" + rowRef.GetHashCode();
         }
 
         private string Header(int col)

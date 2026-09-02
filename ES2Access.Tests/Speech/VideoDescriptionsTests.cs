@@ -161,7 +161,7 @@ namespace ES2Access.Tests.Speech
         [Fact]
         public void TheShippedTableIsWellFormed()
         {
-            string path = Path.Combine(DescriptionsDirectory(), "english.json");
+            string path = Path.Combine(TestPaths.Descriptions(), "english.json");
             Assert.True(File.Exists(path), "no english.json: the shipped description table is missing");
 
             using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(path)))
@@ -256,25 +256,6 @@ namespace ES2Access.Tests.Speech
             {
                 VideoDescriptions.Reset();
             }
-        }
-
-        private static string DescriptionsDirectory()
-        {
-            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory != null)
-            {
-                string candidate = Path.Combine(directory.FullName, "ES2Access", "descriptions");
-                if (Directory.Exists(candidate))
-                {
-                    return candidate;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new DirectoryNotFoundException(
-                "no ES2Access\\descriptions folder above " + AppContext.BaseDirectory
-            );
         }
     }
 }

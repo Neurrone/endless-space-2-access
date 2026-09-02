@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using ES2Access.Core.Map;
 using Xunit;
+using static ES2Access.Tests.Map.ProbeFixture;
 
 namespace ES2Access.Tests.Map
 {
@@ -20,23 +21,6 @@ namespace ES2Access.Tests.Map
     /// </summary>
     public class ProbeCorridorTests
     {
-        private static readonly MapPoint Home = new MapPoint(0, 0);
-
-        /// <summary>A galaxy that is a wide square, so a heading out of the middle has room to run.
-        /// </summary>
-        private static ConvexHull Galaxy()
-        {
-            return ConvexHull.Build(
-                new[]
-                {
-                    new MapPoint(-100, -100),
-                    new MapPoint(100, -100),
-                    new MapPoint(100, 100),
-                    new MapPoint(-100, 100),
-                }
-            );
-        }
-
         /// <summary>Fog in the given half-open stretches of the heading, the same everywhere across
         /// the corridor - the case where the three samples always agree.</summary>
         private static MapExplored Fog(params int[] bounds)
@@ -435,16 +419,6 @@ namespace ES2Access.Tests.Map
             );
 
             Assert.Empty(reading.Spans);
-        }
-
-        private static void Lattice(double offset, string axis)
-        {
-            if (Math.Abs(offset - Math.Round(offset)) > 1e-9)
-            {
-                throw new InvalidOperationException(
-                    "the fog was asked at " + offset + " " + axis + " of the anchor"
-                );
-            }
         }
 
         [Fact]

@@ -61,6 +61,12 @@ namespace ES2Access.Tests.Lint
             LintSources.AssertAllowed(Allowlist, Sites(), Rule);
         }
 
+        [Fact]
+        public void TheAllowlistIsNotEmpty()
+        {
+            Assert.NotEmpty(LintSources.Allowed(Allowlist));
+        }
+
         internal static Dictionary<Site, int> Sites()
         {
             Dictionary<Site, int> found = new Dictionary<Site, int>();

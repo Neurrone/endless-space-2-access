@@ -20,6 +20,13 @@ namespace ES2Access.Tests.UI
     [Collection(ModStringsCollection.Name)]
     public class CarryTests
     {
+        // Every phrase asserted here is the shipped English one, so a class that ran earlier in the
+        // collection and left a translation installed would fail these for the wrong reason.
+        public CarryTests()
+        {
+            ModStrings.Reset();
+        }
+
         private const string Ship = "ship";
 
         private static NodeVtable Source(object cargo, string name, string kind = Ship)

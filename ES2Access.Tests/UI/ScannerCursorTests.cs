@@ -38,6 +38,8 @@ namespace ES2Access.Tests.UI
             return Counts(12, 2, 10, 0, 6, 6, 0, 0);
         }
 
+        /// <summary>The scope sentence carries the parked thing with it, so an arming press is never
+        /// silent about what the scanner is standing on.</summary>
         [Fact]
         public void TheFirstPressSaysWhereItIsAndMovesNothing()
         {
@@ -51,17 +53,6 @@ namespace ES2Access.Tests.UI
 
             // ...and only the first.
             Assert.False(cursor.Arm());
-        }
-
-        [Fact]
-        public void TheArmingPressSaysTheScopeItIsParkedInWhicheverTierWasPressed()
-        {
-            // The scope sentence carries the parked thing with it, so an arming press is never silent
-            // about what the scanner is standing on - the tier of the key that armed it changes
-            // nothing about where it was standing.
-            ScannerCursor cursor = new ScannerCursor();
-            cursor.Arm();
-            Assert.Equal(ScannerAnswer.Scope, cursor.Hold(Fixture()));
         }
 
         [Fact]

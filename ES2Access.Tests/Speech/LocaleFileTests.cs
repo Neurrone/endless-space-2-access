@@ -1,3 +1,6 @@
+// Mirrored byte-for-byte into docs/generic/src/localization/LocaleFileTests.cs (sync-manifest.txt):
+// it must stay self-contained, so its repository walk is deliberately its own rather than TestPaths'.
+// Editing it means running .\sync-generic-src.ps1.
 using System;
 using System.Collections.Generic;
 using System.IO;

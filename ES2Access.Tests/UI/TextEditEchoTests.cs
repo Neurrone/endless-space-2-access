@@ -13,6 +13,13 @@ namespace ES2Access.Tests.UI
     [Collection(ModStringsCollection.Name)]
     public class TextEditEchoTests
     {
+        // The caret words are read from ModStrings, so a translation another class in the collection
+        // installed and did not take back would be what these assert against.
+        public TextEditEchoTests()
+        {
+            ModStrings.Reset();
+        }
+
         private static string Space
         {
             get { return ModStrings.Get(ModStrings.EditCaretSpace); }

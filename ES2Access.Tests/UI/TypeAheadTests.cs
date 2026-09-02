@@ -83,7 +83,7 @@ namespace ES2Access.Tests.UI
                 b.AddItem(new SyntheticNode(Id("heading"), heading));
             })();
 
-            SearchScope scope = SearchScope.OverStop(render, "stop#0");
+            SearchScope scope = SearchScope.OverStop(render, render.Order[0].StopKey);
 
             Assert.Equal(1, scope.Count);
             Assert.Equal("Alpha", scope.TextOf(0));
@@ -101,7 +101,7 @@ namespace ES2Access.Tests.UI
                 sheet.Finish();
             })();
 
-            SearchScope scope = SearchScope.OverStop(render, "stop#0");
+            SearchScope scope = SearchScope.OverStop(render, render.Order[0].StopKey);
 
             Assert.Equal(6, render.Order.Count); // two rows of three cells
             Assert.Equal(2, scope.Count);

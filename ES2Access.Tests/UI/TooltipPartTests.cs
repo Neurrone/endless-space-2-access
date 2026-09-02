@@ -34,11 +34,6 @@ namespace ES2Access.Tests.UI
             return () => new List<string>(lines);
         }
 
-        private static NodeSection Section(TooltipMode mode, params string[] lines)
-        {
-            return NodeSection.Derived(Tooltip(lines), mode, null);
-        }
-
         // A button carrying the given sections, in a list of three so it also reads a position - the
         // shape a menu entry has.
         private static string Readout(params NodeSection[] sections)

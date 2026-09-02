@@ -12,11 +12,6 @@ namespace ES2Access.Tests.UI
     /// </summary>
     public class KeyGraphTests
     {
-        private static string Key(GraphNode node)
-        {
-            return node == null ? null : (string)node.Id.StructuralKey;
-        }
-
         private static string Focused(KeyGraph g)
         {
             return Key(g.CurrentNode);

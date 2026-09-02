@@ -15,7 +15,7 @@ namespace ES2Access.Tests.UI
     /// </summary>
     public class GraphGateTests
     {
-        /// <summary>Drops the named keys, as the engine.s existence gate would.</summary>
+        /// <summary>Drops the named keys, as the engine's existence gate would.</summary>
         private static Func<NodeDeclaration, bool> Drop(params string[] keys)
         {
             HashSet<string> dropped = new HashSet<string>(keys);

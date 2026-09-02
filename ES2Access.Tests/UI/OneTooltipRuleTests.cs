@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ES2Access.Core.UI.Graph;
 using Xunit;
+using static ES2Access.Tests.UI.Graphs;
 
 namespace ES2Access.Tests.UI
 {
@@ -15,16 +16,8 @@ namespace ES2Access.Tests.UI
     /// </summary>
     public class OneTooltipRuleTests
     {
-        private static readonly System.Func<IList<string>> Words = () =>
-            new List<string> { "Click to consult the empire summary" };
-
         private static readonly object Hero = new object();
         private static readonly object Refusal = new object();
-
-        private static IList<NodeSection> Sections(params NodeSection[] sections)
-        {
-            return new List<NodeSection>(sections);
-        }
 
         private static NodeSection Tooltip(object source)
         {

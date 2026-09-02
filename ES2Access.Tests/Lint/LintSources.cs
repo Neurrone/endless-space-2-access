@@ -34,18 +34,29 @@ namespace ES2Access.Tests.Lint
         /// <summary>Set this in the environment to rewrite every allowlist from the current tree.</summary>
         public const string RegenerateVariable = "ES2ACCESS_LINT_REGENERATE";
 
-        /// <summary>Every <c>.cs</c> file under <c>ES2Access/</c>, as repository-relative paths with
-        /// forward slashes, sorted so a regenerated allowlist has a stable order.</summary>
+        /// <summary>Every <c>.cs</c> file under <c>ES2Access/</c> that a person wrote, as
+        /// repository-relative paths with forward slashes, sorted so a regenerated allowlist has a
+        /// stable order.
+        ///
+        /// <c>obj/</c> and <c>bin/</c> are excluded, and that is a correctness rule rather than
+        /// tidiness: the generated <c>obj/Debug/ES2Access.AssemblyInfo.cs</c> exists only once the
+        /// plugin has been built, so leaving it in makes what the lints see depend on whether
+        /// somebody ran a build - the one thing an allowlist gate must never do.</summary>
         public static IList<string> ModSources()
         {
             string root = Path.Combine(RepoRoot(), "ES2Access");
             List<string> relative = new List<string>();
             foreach (string file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
             {
-                relative.Add(
+                string path =
                     "ES2Access/"
-                        + file.Substring(root.Length + 1).Replace(Path.DirectorySeparatorChar, '/')
-                );
+                    + file.Substring(root.Length + 1).Replace(Path.DirectorySeparatorChar, '/');
+                if (path.Contains("/obj/") || path.Contains("/bin/"))
+                {
+                    continue;
+                }
+
+                relative.Add(path);
             }
 
             relative.Sort(StringComparer.Ordinal);
@@ -53,11 +64,29 @@ namespace ES2Access.Tests.Lint
             return relative;
         }
 
+        // Every lint fact sweeps every source, so the whole tree would otherwise be read off disk
+        // once per fact. The tree does not change while a test run is in flight.
+        private static readonly Dictionary<string, string[]> LineCache =
+            new Dictionary<string, string[]>(StringComparer.Ordinal);
+
         public static string[] Lines(string relativePath)
         {
-            return File.ReadAllLines(
-                Path.Combine(RepoRoot(), relativePath.Replace('/', Path.DirectorySeparatorChar))
-            );
+            lock (LineCache)
+            {
+                string[] lines;
+                if (!LineCache.TryGetValue(relativePath, out lines))
+                {
+                    lines = File.ReadAllLines(
+                        Path.Combine(
+                            RepoRoot(),
+                            relativePath.Replace('/', Path.DirectorySeparatorChar)
+                        )
+                    );
+                    LineCache[relativePath] = lines;
+                }
+
+                return lines;
+            }
         }
 
         /// <summary>A line that carries no code: a <c>//</c> comment, a doc comment, or the
@@ -247,28 +276,9 @@ namespace ES2Access.Tests.Lint
             return Path.Combine(RepoRoot(), "ES2Access.Tests", "Lint", allowlist);
         }
 
-        // The tests run from bin/, so walk up to the repository rather than depending on anything
-        // being copied next to the test assembly.
         public static string RepoRoot()
         {
-            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory != null)
-            {
-                if (
-                    File.Exists(
-                        Path.Combine(directory.FullName, "ES2Access", "ES2Access.csproj")
-                    )
-                )
-                {
-                    return directory.FullName;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new DirectoryNotFoundException(
-                "no ES2Access\\ES2Access.csproj above " + AppContext.BaseDirectory
-            );
+            return TestPaths.RepoRoot();
         }
     }
 

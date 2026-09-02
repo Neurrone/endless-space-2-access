@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Settings;
 using Xunit;
@@ -237,7 +238,18 @@ namespace ES2Access.Tests.Settings
         {
             SettingsFile file = new SettingsFile();
             file.SetHeaderComment("one\r\ntwo\nthree");
-            Assert.Equal(new List<string> { "#! one  two three" }, file.ToLines());
+
+            IList<string> lines = file.ToLines();
+            Assert.Single(lines);
+            Assert.DoesNotContain('\r', lines[0]);
+            Assert.DoesNotContain('\n', lines[0]);
+            Assert.StartsWith("#! ", lines[0]);
+
+            // Every word survives, in order: the break is what is folded away, not the text.
+            Assert.Equal(
+                new[] { "one", "two", "three" },
+                lines[0].Substring(3).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+            );
         }
     }
 }

@@ -14,7 +14,7 @@ namespace ES2Access.Tests.UI
     public class TooltipSetTests
     {
         [Fact]
-        public void A_tooltip_is_new_once_and_then_known()
+        public void ATooltipIsNewOnceAndThenKnown()
         {
             TooltipSet seen = new TooltipSet();
             TooltipKey key = new TooltipKey("Planet", "", new object());
@@ -25,7 +25,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void A_clone_of_the_same_tooltip_is_not_a_second_tooltip()
+        public void ACloneOfTheSameTooltipIsNotASecondTooltip()
         {
             object target = new object();
             TooltipSet seen = new TooltipSet();
@@ -38,7 +38,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void Two_dossiers_about_different_things_are_two_tooltips()
+        public void TwoDossiersAboutDifferentThingsAreTwoTooltips()
         {
             TooltipSet seen = new TooltipSet();
             Assert.True(seen.Add(new TooltipKey("Planet", "", new object())));
@@ -47,7 +47,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void A_class_alone_and_a_content_alone_are_different_tooltips()
+        public void AClassAloneAndAContentAloneAreDifferentTooltips()
         {
             TooltipSet seen = new TooltipSet();
             Assert.True(seen.Add(new TooltipKey("StarSystem", null, null)));
@@ -56,7 +56,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void An_unset_field_reads_the_same_whether_the_prefab_left_it_null_or_empty()
+        public void AnUnsetFieldReadsTheSameWhetherThePrefabLeftItNullOrEmpty()
         {
             // A prefab leaves a field null and code that clears one writes "": the engine reads both
             // as nothing, so the resolver must not see two tooltips where the game sees one.
@@ -66,7 +66,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void The_first_place_a_tooltip_is_found_is_the_one_that_is_kept()
+        public void TheFirstPlaceATooltipIsFoundIsTheOneThatIsKept()
         {
             // The resolver collects containers, then captions, then the widget's own, then its
             // pieces - so a tooltip the game hung in two of those places reads where it was drawn
@@ -79,7 +79,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void Clearing_forgets_everything()
+        public void ClearingForgetsEverything()
         {
             TooltipSet seen = new TooltipSet();
             TooltipKey key = new TooltipKey("ShipHull", "", null);
@@ -90,7 +90,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void Reach_is_a_set_of_directions_that_combine()
+        public void ReachIsASetOfDirectionsThatCombine()
         {
             TooltipReach reach = TooltipReach.Own | TooltipReach.Parents | TooltipReach.Siblings;
             Assert.True((reach & TooltipReach.Own) != 0);

@@ -11,11 +11,6 @@ namespace ES2Access.Tests.UI
     /// </summary>
     public class FocusReachTests
     {
-        private static string Key(GraphNode node)
-        {
-            return node == null ? null : (string)node.Id.StructuralKey;
-        }
-
         // ---- reading the ancestry out of a key ----
 
         [Fact]

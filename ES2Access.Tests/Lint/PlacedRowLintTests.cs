@@ -134,12 +134,12 @@ namespace ES2Access.Tests.Lint
             return names;
         }
 
-        /// <summary>The files that BUILD the galaxy tree's keys. The registry itself is skipped - its
-        /// declarations are the answer, not a question - and so are the tests' own fixtures.</summary>
+        /// <summary>The files that BUILD the galaxy tree's keys. The registry itself declares rather
+        /// than builds, and lives in Core rather than under Screens/Galaxy, so it is out of this scan
+        /// already.</summary>
         private static bool Builds(string file)
         {
-            return file.StartsWith("ES2Access/Screens/Galaxy", StringComparison.Ordinal)
-                && !file.EndsWith("PlacedRows.cs", StringComparison.Ordinal);
+            return file.StartsWith("ES2Access/Screens/Galaxy", StringComparison.Ordinal);
         }
     }
 }

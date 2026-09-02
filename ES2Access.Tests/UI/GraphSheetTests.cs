@@ -134,8 +134,15 @@ namespace ES2Access.Tests.UI
             g.Rerender();
             Assert.Equal("Fleets, Alpha", GraphAnnouncer.ComposeFull(g.CurrentNode));
 
-            Assert.Null(g.Move(GraphDir.Right).TransitionLabel);
-            Assert.Null(g.Move(GraphDir.Left).TransitionLabel);
+            // The crossings have to HAPPEN for their silence to mean anything: an unlabeled edge and
+            // an edge that is not there read the same off TransitionLabel alone.
+            MoveResult right = g.Move(GraphDir.Right);
+            Assert.True(right.Moved);
+            Assert.Null(right.TransitionLabel);
+
+            MoveResult left = g.Move(GraphDir.Left);
+            Assert.True(left.Moved);
+            Assert.Null(left.TransitionLabel);
         }
 
         /// <summary>One captioned column and nothing beside it is the list it looks like: the header
@@ -350,6 +357,7 @@ namespace ES2Access.Tests.UI
             if (prose) b.AddNode(new SyntheticNode(Id("words"), Vt("Something happened.")));
 
             GraphSheet s = new GraphSheet(b, "t:");
+            _sheet = s;
             s.Region("Report", new[] { "Name", "Ships", "Move" });
             if (prose) s.Follows(Id("words"));
             s.Row(Vt("Alpha"), _rowA, null, () => "3", () => "5");
@@ -360,34 +368,43 @@ namespace ES2Access.Tests.UI
             return b.Build();
         }
 
+        // The sheet ProseOverTable built, so the wiring assertions can ask it which id it minted for
+        // a cell rather than re-spelling its private key format.
+        private GraphSheet _sheet;
+
+        private string Cell(object rowRef, int col)
+        {
+            return _sheet.CellKey(rowRef, col);
+        }
+
         [Fact]
         public void EveryCellOfTheTopRowReachesTheStripAboveIt()
         {
             GraphRender r = ProseOverTable(false);
-            Assert.Equal("next", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c0"), GraphDir.Up));
-            Assert.Equal("next", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c1"), GraphDir.Up));
-            Assert.Equal("next", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c2"), GraphDir.Up));
-            Assert.Equal("t:row" + _rowA.GetHashCode() + "c0", DestKey(Node(r, "next"), GraphDir.Down));
+            Assert.Equal("next", DestKey(Node(r, Cell(_rowA, 0)), GraphDir.Up));
+            Assert.Equal("next", DestKey(Node(r, Cell(_rowA, 1)), GraphDir.Up));
+            Assert.Equal("next", DestKey(Node(r, Cell(_rowA, 2)), GraphDir.Up));
+            Assert.Equal(Cell(_rowA, 0), DestKey(Node(r, "next"), GraphDir.Down));
         }
 
         [Fact]
         public void EveryCellOfTheBottomRowReachesTheStripBelowIt()
         {
             GraphRender r = ProseOverTable(false);
-            Assert.Equal("done", DestKey(Node(r, "t:row" + _rowB.GetHashCode() + "c0"), GraphDir.Down));
-            Assert.Equal("done", DestKey(Node(r, "t:row" + _rowB.GetHashCode() + "c1"), GraphDir.Down));
-            Assert.Equal("done", DestKey(Node(r, "t:row" + _rowB.GetHashCode() + "c2"), GraphDir.Down));
-            Assert.Equal("t:row" + _rowB.GetHashCode() + "c0", DestKey(Node(r, "done"), GraphDir.Up));
+            Assert.Equal("done", DestKey(Node(r, Cell(_rowB, 0)), GraphDir.Down));
+            Assert.Equal("done", DestKey(Node(r, Cell(_rowB, 1)), GraphDir.Down));
+            Assert.Equal("done", DestKey(Node(r, Cell(_rowB, 2)), GraphDir.Down));
+            Assert.Equal(Cell(_rowB, 0), DestKey(Node(r, "done"), GraphDir.Up));
         }
 
         [Fact]
         public void ATableToldToFollowANodeMeetsItAsThoughItWereTheRowAbove()
         {
             GraphRender r = ProseOverTable(true);
-            string a0 = "t:row" + _rowA.GetHashCode() + "c0";
+            string a0 = Cell(_rowA, 0);
             Assert.Equal("words", DestKey(Node(r, a0), GraphDir.Up));
-            Assert.Equal("words", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c1"), GraphDir.Up));
-            Assert.Equal("words", DestKey(Node(r, "t:row" + _rowA.GetHashCode() + "c2"), GraphDir.Up));
+            Assert.Equal("words", DestKey(Node(r, Cell(_rowA, 1)), GraphDir.Up));
+            Assert.Equal("words", DestKey(Node(r, Cell(_rowA, 2)), GraphDir.Up));
             Assert.Equal(a0, DestKey(Node(r, "words"), GraphDir.Down));
 
             // and the strip above stops at the words rather than reaching over them into the table
@@ -420,7 +437,7 @@ namespace ES2Access.Tests.UI
             s.Row(Vt("Alpha"), _rowA, null);
             s.Row(Vt("Beta"), _rowB, null);
             s.Finish();
-            Assert.Equal("t:row" + _rowA.GetHashCode() + "c0", s.FirstRow.StructuralKey);
+            Assert.Equal(s.CellKey(_rowA, 0), s.FirstRow.StructuralKey);
             Assert.Same(_rowA, s.FirstRow.Subject);
 
             b.SetStart(s.FirstRow);
@@ -487,11 +504,11 @@ namespace ES2Access.Tests.UI
 
             Assert.Equal(
                 "Fleets, Alpha, 1 of 2",
-                GraphAnnouncer.ComposeFull(Node(render, "t:row" + _rowA.GetHashCode() + "c0"))
+                GraphAnnouncer.ComposeFull(Node(render, s.CellKey(_rowA, 0)))
             );
             Assert.Equal(
                 "Ships, Gamma, 1 of 1",
-                GraphAnnouncer.ComposeFull(Node(render, "t:row" + rowC.GetHashCode() + "c0"))
+                GraphAnnouncer.ComposeFull(Node(render, s.CellKey(rowC, 0)))
             );
         }
 

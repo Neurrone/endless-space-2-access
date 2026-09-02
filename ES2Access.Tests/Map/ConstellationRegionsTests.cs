@@ -1,5 +1,6 @@
 using ES2Access.Core.Map;
 using Xunit;
+using static ES2Access.Tests.Map.MapFixtures;
 
 namespace ES2Access.Tests.Map
 {
@@ -21,17 +22,6 @@ namespace ES2Access.Tests.Map
         private static readonly double[] Band = { 5, 4, 5, 6, 20, 6, 20, 4 };
 
         private static readonly double[] FarAway = { 30, 30, 40, 30, 40, 40, 30, 40 };
-
-        private static MapPoint[] Places(params double[] coordinates)
-        {
-            MapPoint[] places = new MapPoint[coordinates.Length / 2];
-            for (int i = 0; i < places.Length; i++)
-            {
-                places[i] = new MapPoint(coordinates[2 * i], coordinates[2 * i + 1]);
-            }
-
-            return places;
-        }
 
         [Fact]
         public void AddAnswersTheIndexThatNamesTheRegion()

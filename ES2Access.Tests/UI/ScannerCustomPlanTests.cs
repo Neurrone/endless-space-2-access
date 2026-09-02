@@ -86,7 +86,9 @@ namespace ES2Access.Tests.UI
             Galaxy galaxy = new Galaxy();
             ScannerCustomPlan plan = ScannerCustomPlan.Of(Threats(), galaxy);
 
-            Assert.DoesNotContain(plan.Labels(), label => label == "luxury");
+            // Three selectors were configured and this galaxy answered for two, so the plan is All,
+            // those two, and the two keywords - five columns rather than six.
+            Assert.Equal(5, plan.Columns.Count);
             Assert.Contains("luxury:Hyperium", galaxy.Asked);
         }
 

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
@@ -10,7 +11,7 @@ namespace ES2Access.Tests.Speech
     /// something and never throws into the game's frame.
     /// </summary>
     [Collection(ModStringsCollection.Name)]
-    public class ModStringsTests
+    public class ModStringsTests : IDisposable
     {
         private readonly List<string> _warnings = new List<string>();
 
@@ -18,6 +19,14 @@ namespace ES2Access.Tests.Speech
         {
             ModStrings.Reset();
             Log.Install(null, _warnings.Add, null);
+        }
+
+        /// <summary>The sink is a delegate over THIS instance's list, and Log is process-wide static:
+        /// left installed it keeps a finished test alive and takes every later class's warnings.
+        /// </summary>
+        public void Dispose()
+        {
+            Log.Reset();
         }
 
         [Fact]

@@ -39,10 +39,61 @@ namespace ES2Access.Tests
             }
         }
 
+        /// <summary>The files under docs/generic/src that are NOT mirrors of anything: the trimmed
+        /// localization example the other snapshots compile against, the .csproj shapes whose bytes
+        /// carry this mod's release metadata, the gitignore example, and the manifest itself. Every
+        /// one of them is a deliberate exception, which is why they are named here rather than
+        /// pattern-matched.</summary>
+        private static readonly string[] NotMirrors =
+        {
+            "docs/generic/src/bootstrap/ES2Access.csproj",
+            "docs/generic/src/bootstrap/ES2Access.Loader.csproj",
+            "docs/generic/src/bootstrap/ES2Access.Tests.csproj",
+            "docs/generic/src/bootstrap/gitignore.example",
+            "docs/generic/src/localization/ModStrings.cs",
+            "docs/generic/src/localization/english.json",
+            "docs/generic/src/sync-manifest.txt",
+        };
+
         [Fact]
         public void TheManifestListsEveryMirroredSnapshot()
         {
             Assert.NotEmpty(Manifest());
+        }
+
+        /// <summary>
+        /// The manifest is checked the OTHER way too. Byte-comparison only ever visits files the
+        /// manifest names, so a snapshot copied into docs/generic/src and never listed is a file the
+        /// guide teaches from and nothing keeps current — the exact failure the mirror exists to
+        /// prevent, hiding in the one place the mirror does not look. A new file is therefore either
+        /// a manifest line or a decision recorded in <see cref="NotMirrors"/>.
+        /// </summary>
+        [Fact]
+        public void EveryFileUnderGenericSrcIsAMirrorOrADeclaredException()
+        {
+            SortedSet<string> known = new SortedSet<string>(NotMirrors, StringComparer.Ordinal);
+            foreach (KeyValuePair<string, string> entry in Manifest())
+            {
+                known.Add(entry.Key);
+            }
+
+            foreach (
+                string file in Directory.GetFiles(
+                    TestPaths.GenericSrc(),
+                    "*",
+                    SearchOption.AllDirectories
+                )
+            )
+            {
+                string relative = file.Substring(TestPaths.RepoRoot().Length + 1)
+                    .Replace(Path.DirectorySeparatorChar, '/');
+                Assert.True(
+                    known.Contains(relative),
+                    relative
+                        + " is under docs/generic/src but is neither a sync-manifest.txt mirror nor a"
+                        + " declared exception; add a manifest line or say here why it mirrors nothing"
+                );
+            }
         }
 
         /// <summary>
@@ -53,8 +104,8 @@ namespace ES2Access.Tests
         [MemberData(nameof(Mirrors))]
         public void TheSnapshotMatchesItsOriginByteForByte(string snapshot, string origin)
         {
-            string snapshotPath = Path.Combine(RepoRoot(), snapshot);
-            string originPath = Path.Combine(RepoRoot(), origin);
+            string snapshotPath = Path.Combine(TestPaths.RepoRoot(), snapshot);
+            string originPath = Path.Combine(TestPaths.RepoRoot(), origin);
 
             Assert.True(File.Exists(snapshotPath), "missing snapshot: " + snapshot);
             Assert.True(File.Exists(originPath), "missing origin: " + origin);
@@ -76,10 +127,7 @@ namespace ES2Access.Tests
         public void TheExampleModStringsDeclaresEveryMemberTheSnapshotsUse()
         {
             string examplePath = Path.Combine(
-                RepoRoot(),
-                "docs",
-                "generic",
-                "src",
+                TestPaths.GenericSrc(),
                 "localization",
                 "ModStrings.cs"
             );
@@ -93,7 +141,7 @@ namespace ES2Access.Tests
 
             foreach (
                 string file in Directory.GetFiles(
-                    Path.Combine(RepoRoot(), "docs", "generic", "src"),
+                    TestPaths.GenericSrc(),
                     "*.cs",
                     SearchOption.AllDirectories
                 )
@@ -126,28 +174,11 @@ namespace ES2Access.Tests
         [Fact]
         public void TheExampleTemplateCarriesEveryKeyTheExampleTableReads()
         {
-            string localization = Path.Combine(
-                RepoRoot(),
-                "docs",
-                "generic",
-                "src",
-                "localization"
-            );
+            string localization = Path.Combine(TestPaths.GenericSrc(), "localization");
             string example = File.ReadAllText(Path.Combine(localization, "ModStrings.cs"));
-
-            SortedSet<string> shipped = new SortedSet<string>(StringComparer.Ordinal);
-            using (
-                JsonDocument document = JsonDocument.Parse(
-                    File.ReadAllText(Path.Combine(localization, "english.json"))
-                )
-            )
-            {
-                Assert.Equal(JsonValueKind.Object, document.RootElement.ValueKind);
-                foreach (JsonProperty entry in document.RootElement.EnumerateObject())
-                {
-                    shipped.Add(entry.Name);
-                }
-            }
+            SortedSet<string> shipped = TestPaths.ShippedKeys(
+                Path.Combine(localization, "english.json")
+            );
 
             foreach (Match match in KeyConstant.Matches(example))
             {
@@ -184,13 +215,7 @@ namespace ES2Access.Tests
             SortedDictionary<string, string> mappings = new SortedDictionary<string, string>(
                 StringComparer.Ordinal
             );
-            string path = Path.Combine(
-                RepoRoot(),
-                "docs",
-                "generic",
-                "src",
-                "sync-manifest.txt"
-            );
+            string path = Path.Combine(TestPaths.GenericSrc(), "sync-manifest.txt");
 
             foreach (string line in File.ReadAllLines(path))
             {
@@ -208,34 +233,5 @@ namespace ES2Access.Tests
             return mappings;
         }
 
-        // The tests run from bin/, so walk up to the repository rather than depending on anything
-        // being copied next to the test assembly.
-        private static string RepoRoot()
-        {
-            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory != null)
-            {
-                if (
-                    File.Exists(
-                        Path.Combine(
-                            directory.FullName,
-                            "docs",
-                            "generic",
-                            "src",
-                            "sync-manifest.txt"
-                        )
-                    )
-                )
-                {
-                    return directory.FullName;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new DirectoryNotFoundException(
-                "no docs\\generic\\src\\sync-manifest.txt above " + AppContext.BaseDirectory
-            );
-        }
     }
 }

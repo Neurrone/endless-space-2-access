@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
 using ES2Access.Core.Speech;
 using ES2Access.UI.Input;
 using Xunit;
@@ -19,14 +16,7 @@ namespace ES2Access.Tests.Speech
         [Fact]
         public void EveryActionNameIsInTheEnglishTemplate()
         {
-            SortedSet<string> shipped = new SortedSet<string>();
-            using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(TemplatePath())))
-            {
-                foreach (JsonProperty entry in document.RootElement.EnumerateObject())
-                {
-                    shipped.Add(entry.Name);
-                }
-            }
+            SortedSet<string> shipped = TestPaths.ShippedKeys(TestPaths.EnglishTemplate());
 
             foreach (string key in ModStrings.ActionStringKeys())
             {
@@ -83,28 +73,6 @@ namespace ES2Access.Tests.Speech
                 "action.galaxy.scanNext.description",
                 ModStrings.ActionDescriptionKey("galaxy.scanNext")
             );
-        }
-
-        private static string TemplatePath()
-        {
-            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory != null)
-            {
-                string candidate = Path.Combine(
-                    directory.FullName,
-                    "ES2Access",
-                    "locale",
-                    "english.json"
-                );
-                if (File.Exists(candidate))
-                {
-                    return candidate;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new FileNotFoundException("no ES2Access\\locale\\english.json above " + AppContext.BaseDirectory);
         }
     }
 }

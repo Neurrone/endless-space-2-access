@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using ES2Access.Core.UI.Graph;
 using Xunit;
+using static ES2Access.Tests.UI.Graphs;
 
 namespace ES2Access.Tests.UI
 {
@@ -16,14 +17,6 @@ namespace ES2Access.Tests.UI
     /// </summary>
     public class TooltipAimRuleTests
     {
-        private static readonly System.Func<IList<string>> Words = () =>
-            new List<string> { "Click to consult the empire summary" };
-
-        private static IList<NodeSection> Sections(params NodeSection[] sections)
-        {
-            return new List<NodeSection>(sections);
-        }
-
         private static NodeSection Tooltip()
         {
             return NodeSection.Derived(Words, TooltipMode.Announce, null);
@@ -58,14 +51,6 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void ContentTheControlDrawsIsNotATooltipPromise()
-        {
-            Assert.False(
-                TooltipAimRule.Unraisable(Sections(NodeSection.Buffer(Words)), false, false)
-            );
-        }
-
-        [Fact]
         public void OneTooltipSectionAmongDrawnOnesIsStillTheFinding()
         {
             Assert.True(
@@ -85,11 +70,13 @@ namespace ES2Access.Tests.UI
             Assert.False(TooltipAimRule.Unraisable(Sections(null, null), false, false));
         }
 
+        /// <summary>Content the control DRAWS is not a tooltip promise, however it got there:
+        /// GraphNodes.ReviewedTooltipSection builds a Buffer section deliberately, because the node is
+        /// not pointing at that tooltip and never claimed to. Only the tooltip the door DERIVED counts.
+        /// </summary>
         [Fact]
-        public void AReviewedSecondTooltipIsDeclaredAsDrawnContentAndSaysNothingHere()
+        public void ContentTheControlDrawsIsNotATooltipPromise()
         {
-            // GraphNodes.ReviewedTooltipSection builds a Buffer section, deliberately: the node is not
-            // pointing at that tooltip and never claimed to. Only the tooltip the door DERIVED counts.
             Assert.False(
                 TooltipAimRule.Unraisable(Sections(NodeSection.Buffer(Words)), false, false)
             );

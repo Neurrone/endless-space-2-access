@@ -1,5 +1,6 @@
 using ES2Access.Core.Map;
 using Xunit;
+using static ES2Access.Tests.Map.MapFixtures;
 
 namespace ES2Access.Tests.Map
 {
@@ -13,17 +14,6 @@ namespace ES2Access.Tests.Map
     /// </summary>
     public class ConvexHullTests
     {
-        private static ConvexHull Hull(params double[] coordinates)
-        {
-            MapPoint[] places = new MapPoint[coordinates.Length / 2];
-            for (int i = 0; i < places.Length; i++)
-            {
-                places[i] = new MapPoint(coordinates[2 * i], coordinates[2 * i + 1]);
-            }
-
-            return ConvexHull.Build(places);
-        }
-
         private static bool HasCorner(ConvexHull hull, double x, double y)
         {
             for (int i = 0; i < hull.Count; i++)

@@ -74,6 +74,50 @@ namespace ES2Access.Tests.UI
             return node == null ? null : GraphAnnouncer.FirstPartText(node);
         }
 
+        /// <summary>A node's own structural key, or null for no node — the shape every navigation
+        /// assertion is written in.</summary>
+        public static string Key(GraphNode node)
+        {
+            return node == null ? null : (string)node.Id.StructuralKey;
+        }
+
+        /// <summary>A tooltip section of the given loudness, spelled out line by line.</summary>
+        public static NodeSection Section(TooltipMode mode, params string[] lines)
+        {
+            List<string> list = new List<string>(lines);
+            return NodeSection.Derived(() => list, mode, null);
+        }
+
+        public static IList<NodeSection> Sections(params NodeSection[] sections)
+        {
+            return new List<NodeSection>(sections);
+        }
+
+        /// <summary>The words a tooltip fixture carries when the words themselves are beside the
+        /// point.</summary>
+        public static readonly Func<IList<string>> Words = () =>
+            new List<string> { "Click to consult the empire summary" };
+
+        /// <summary>What the review buffer holds for a lone node.</summary>
+        public static List<string> Buffer(NodeVtable vtable)
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("t"), vtable));
+            return NodeBuffer.Lines(Node(b.Build(), "t"));
+        }
+
+        /// <summary>What the review buffer holds for a node with a neighbour either side, so it reads
+        /// a position too.</summary>
+        public static List<string> BufferAmongNeighbours(NodeVtable vtable)
+        {
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Before")));
+            b.AddItem(new SyntheticNode(Id("t"), vtable));
+            b.AddItem(new SyntheticNode(Id("c"), Vt("After")));
+            return NodeBuffer.Lines(Node(b.Build(), "t"));
+        }
+
         /// <summary>A render callback that rebuilds from <paramref name="declare"/> every time, the way a
         /// real screen does.</summary>
         public static Func<GraphRender> Renderer(Action<GraphBuilder> declare, GraphState state = null)

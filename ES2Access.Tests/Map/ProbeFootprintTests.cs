@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ES2Access.Core.Map;
 using Xunit;
+using static ES2Access.Tests.Map.ProbeFixture;
 
 namespace ES2Access.Tests.Map
 {
@@ -14,36 +15,6 @@ namespace ES2Access.Tests.Map
     /// </summary>
     public class ProbeFootprintTests
     {
-        private static readonly MapPoint Home = new MapPoint(0, 0);
-
-        /// <summary>A galaxy that is a wide square, so a heading out of the middle has room to run.
-        /// </summary>
-        private static ConvexHull Galaxy()
-        {
-            return ConvexHull.Build(
-                new[]
-                {
-                    new MapPoint(-100, -100),
-                    new MapPoint(100, -100),
-                    new MapPoint(100, 100),
-                    new MapPoint(-100, 100),
-                }
-            );
-        }
-
-        private static ConvexHull Galaxy(double half)
-        {
-            return ConvexHull.Build(
-                new[]
-                {
-                    new MapPoint(-half, -half),
-                    new MapPoint(half, -half),
-                    new MapPoint(half, half),
-                    new MapPoint(-half, half),
-                }
-            );
-        }
-
         private static readonly MapExplored Everywhere = delegate(double east, double north)
         {
             return true;
@@ -213,16 +184,6 @@ namespace ES2Access.Tests.Map
             );
 
             Assert.True(footprint.Tiles > 0);
-        }
-
-        private static void Lattice(double offset, string axis)
-        {
-            if (Math.Abs(offset - Math.Round(offset)) > 1e-9)
-            {
-                throw new InvalidOperationException(
-                    "the fog was asked at " + offset + " " + axis + " of the anchor"
-                );
-            }
         }
 
         [Fact]

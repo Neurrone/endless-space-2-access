@@ -17,8 +17,15 @@ namespace ES2Access.Tests
     /// </summary>
     public class StoreDivergenceTests
     {
+        /// <summary>The divergent names. <c>Galaxy</c> is the one that has to be narrowed to a MEMBER
+        /// ACCESS: alone it is an ordinary English word this mod uses for its own things - a namespace
+        /// segment, a screen, a local - and a lint that fires on all of them is one that gets an
+        /// exception written for it instead of being read. Reached through a dot on either side
+        /// (<c>Game.Galaxy</c>, <c>Galaxy.Something</c>) it is the game's own type and nothing
+        /// else.</summary>
         private static readonly Regex Forbidden = new Regex(
-            @"\b(Galaxy|GalaxyIngame|SteamWorkshopButton|WorkshopLegalAgreementButton"
+            @"\bGalaxy\s*\.|\.\s*Galaxy\b"
+                + @"|\b(GalaxyIngame|SteamWorkshopButton|WorkshopLegalAgreementButton"
                 + @"|WorkshopLegalAgreementLabel|WorkshopFilterToggle)\b"
         );
 
@@ -36,10 +43,10 @@ namespace ES2Access.Tests
             List<string> violations = new List<string>();
             foreach (string project in new[] { "ES2Access", "ES2Access.Loader" })
             {
-                string root = Path.Combine(RepositoryRoot(), project);
+                string root = Path.Combine(TestPaths.RepoRoot(), project);
                 foreach (string file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
                 {
-                    string relative = Path.GetRelativePath(RepositoryRoot(), file);
+                    string relative = Path.GetRelativePath(TestPaths.RepoRoot(), file);
                     if (
                         SeamFiles.Contains(Path.GetFileName(file))
                         || relative.Contains(Path.DirectorySeparatorChar + "obj" + Path.DirectorySeparatorChar)
@@ -190,22 +197,6 @@ namespace ES2Access.Tests
             }
 
             return count;
-        }
-
-        private static string RepositoryRoot()
-        {
-            DirectoryInfo directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory != null)
-            {
-                if (File.Exists(Path.Combine(directory.FullName, "ES2Access", "ES2Access.csproj")))
-                {
-                    return directory.FullName;
-                }
-
-                directory = directory.Parent;
-            }
-
-            throw new InvalidOperationException("repository root not found above " + AppContext.BaseDirectory);
         }
     }
 }
