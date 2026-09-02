@@ -306,7 +306,24 @@ namespace ES2Access.UI.ModOptions
                 return;
             }
 
-            table.ArrangeChildren();
+            // The circle counts and places only the children it can SEE - Visible, and Alpha above
+            // zero unless StrictVisibility says Visible is enough (AgeTransform
+            // .ApplyCircleEvenlySpacedArrangement) - and the entries fade in and out one after
+            // another with the window, so at any moment between the window's animations some of them
+            // are at alpha 0. Arranged then, the ring was laid out for the entries that happened to be
+            // faded in and the rest kept their old slots (owner-reported 2026-09-02: the new entry
+            // drawn on top of Resume). Visible-only counting for the one call puts every entry in.
+            bool strict = table.StrictVisibility;
+            table.StrictVisibility = true;
+            try
+            {
+                table.ArrangeChildren();
+            }
+            finally
+            {
+                table.StrictVisibility = strict;
+            }
+
             for (int i = 0; i < items.Length; i++)
             {
                 AgeTransform a = items[i] == null ? null : items[i].AgeTransform;
