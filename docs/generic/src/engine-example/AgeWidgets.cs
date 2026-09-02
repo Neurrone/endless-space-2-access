@@ -1827,11 +1827,11 @@ namespace ES2Access.UI
 
                 AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
                 Add(lines, label == null ? null : AgeText.Label(label));
-                // Through the library's own reading rather than a second copy of its first half: what
-                // the player would read on this tooltip, off the widget where the words are there and
-                // off the drawn tooltip window where they are not (<see cref="TooltipLines"/>).
-                Func<IList<string>> read = TooltipLines(Raw(widget));
-                IList<string> words = read == null ? null : read();
+                // Only the words written onto the tooltip itself (the same gate and split
+                // <see cref="TooltipLines"/> uses for its first half), never the drawn tooltip
+                // window: this walk reads an unmodelled panel, and the window draws whatever the
+                // pointer is parked on, which is not this panel's text.
+                IList<string> words = AgeText.ContentLines(Readable(Raw(widget)));
                 for (int i = 0; words != null && i < words.Count; i++)
                 {
                     Add(lines, words[i]);
