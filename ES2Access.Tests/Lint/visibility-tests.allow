@@ -489,6 +489,9 @@ ES2Access/Screens/TutorialSelectionScreen.cs | 1 | if (!widget.Visible)
 
 ES2Access/Screens/VictoryAchievedScreen.cs | 1 | if (!AgeWidgets.Visible(window.WinnerListGroup) || list == null)
 
+ES2Access/UI/AgeReading.cs | 2 | if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
+ES2Access/UI/AgeReading.cs | 1 | if (widget != null && widget.Visible)
+
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(left))
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(right))
 
@@ -543,22 +546,26 @@ ES2Access/UI/PopulationMoves.cs | 1 | return sector.AgeTransform.Visible;
 
 ES2Access/UI/SessionChat.cs | 1 | return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
 
+ES2Access/UI/ShipDesignRows.Modules.cs | 1 | if (panel.ModulesGroup == null || !AgeWidgets.Visible(panel.ModulesGroup))
+ES2Access/UI/ShipDesignRows.Modules.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+
+ES2Access/UI/ShipDesignRows.Slots.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
+ES2Access/UI/ShipDesignRows.Slots.cs | 1 | if (slot == null || slot.GuiSlot == null || !AgeWidgets.Visible(slot.AgeTransform))
+ES2Access/UI/ShipDesignRows.Slots.cs | 1 | if (slot.EquipedModuleGroup != null && slot.EquipedModuleGroup.Visible)
+ES2Access/UI/ShipDesignRows.Slots.cs | 1 | if (slot.SlotCategoriesTable == null || !slot.SlotCategoriesTable.Visible)
+ES2Access/UI/ShipDesignRows.Slots.cs | 1 | if (slot.SpecialCostMarker != null && slot.SpecialCostMarker.Visible)
+ES2Access/UI/ShipDesignRows.Slots.cs | 1 | return marker != null && marker.Visible;
+
+ES2Access/UI/ShipDesignRows.Stats.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/UI/ShipDesignRows.Stats.cs | 1 | if (toggle == null || !AgeWidgets.Visible(widget))
+
 ES2Access/UI/ShipDesignRows.cs | 1 | bool characteristics = AgeWidgets.Visible(panel.CharacteristicsTable);
 ES2Access/UI/ShipDesignRows.cs | 1 | bool costed = costs != null && AgeWidgets.Visible(costs);
 ES2Access/UI/ShipDesignRows.cs | 1 | if (child == null || !AgeWidgets.Visible(child))
-ES2Access/UI/ShipDesignRows.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
 ES2Access/UI/ShipDesignRows.cs | 1 | if (list != null && AgeWidgets.Visible(list))
 ES2Access/UI/ShipDesignRows.cs | 1 | if (panel.BonusesGroup == null || !AgeWidgets.Visible(panel.BonusesGroup))
-ES2Access/UI/ShipDesignRows.cs | 1 | if (panel.ModulesGroup == null || !AgeWidgets.Visible(panel.ModulesGroup))
-ES2Access/UI/ShipDesignRows.cs | 1 | if (slot == null || slot.GuiSlot == null || !AgeWidgets.Visible(slot.AgeTransform))
-ES2Access/UI/ShipDesignRows.cs | 1 | if (slot.EquipedModuleGroup != null && slot.EquipedModuleGroup.Visible)
-ES2Access/UI/ShipDesignRows.cs | 1 | if (slot.SlotCategoriesTable == null || !slot.SlotCategoriesTable.Visible)
-ES2Access/UI/ShipDesignRows.cs | 1 | if (slot.SpecialCostMarker != null && slot.SpecialCostMarker.Visible)
 ES2Access/UI/ShipDesignRows.cs | 1 | if (stocked == null || !AgeWidgets.Visible(stocked))
-ES2Access/UI/ShipDesignRows.cs | 2 | if (table == null || !AgeWidgets.Visible(table))
-ES2Access/UI/ShipDesignRows.cs | 1 | if (toggle == null || !AgeWidgets.Visible(widget))
 ES2Access/UI/ShipDesignRows.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
-ES2Access/UI/ShipDesignRows.cs | 1 | return marker != null && marker.Visible;
 
 ES2Access/UI/ShipRows.cs | 1 | || !AgeWidgets.Visible(item.AgeTransform)
 
@@ -589,14 +596,16 @@ ES2Access/UI/SystemPanels.cs | 1 | if (line.Progress != null && line.Progress.Vi
 ES2Access/UI/SystemPanels.cs | 1 | if (line.RemainingTurnLabel != null && line.RemainingTurnLabel.Visible)
 ES2Access/UI/SystemPanels.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 
+ES2Access/UI/TableSheet.Header.cs | 1 | if (header != null && AgeWidgets.Visible(child))
+
+ES2Access/UI/TableSheet.Text.cs | 1 | if (paintedOnly && widget.Alpha <= 0f)
+ES2Access/UI/TableSheet.Text.cs | 1 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
+ES2Access/UI/TableSheet.Text.cs | 1 | if (widget == null || depth > limit || !widget.Visible)
+
 ES2Access/UI/TableSheet.cs | 1 | && button.AgeTransform.Visible
 ES2Access/UI/TableSheet.cs | 1 | && child.Alpha > 0f
 ES2Access/UI/TableSheet.cs | 1 | && child.Visible
 ES2Access/UI/TableSheet.cs | 1 | if (child == null || !child.Visible)
-ES2Access/UI/TableSheet.cs | 1 | if (header != null && AgeWidgets.Visible(child))
-ES2Access/UI/TableSheet.cs | 1 | if (paintedOnly && widget.Alpha <= 0f)
-ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
-ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > limit || !widget.Visible)
 
 ES2Access/UI/ThresholdTracks.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
@@ -605,8 +614,8 @@ ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !Age
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Visible(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
-ES2Access/UI/TooltipFeatures.cs | 1 | if (label != null && label.Visible)
-ES2Access/UI/TooltipFeatures.cs | 1 | if (mapper == null || mapper.AgeTransform == null || !mapper.AgeTransform.Visible)
+ES2Access/UI/TooltipFeatures.Readers.cs | 1 | if (label != null && label.Visible)
+ES2Access/UI/TooltipFeatures.Readers.cs | 1 | if (mapper == null || mapper.AgeTransform == null || !mapper.AgeTransform.Visible)
 
 ES2Access/UI/WindowShape.cs | 1 | if (root == null || !AgeWidgets.Visible(root))
 ES2Access/UI/WindowShape.cs | 1 | if (widget == null || depth > maxDepth || !widget.Visible)

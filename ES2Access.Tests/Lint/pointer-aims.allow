@@ -13,3 +13,7 @@ ES2Access/Screens/NotificationScreen.cs | 1 | vtable.PointsAt = () => explains;
 ES2Access/Screens/NotificationScreen.cs | 2 | vtable.PointsAt = () => hover == null ? null : tooltip;
 
 ES2Access/Screens/ResearchScreen.cs | 1 | vtable.PointsAt = () => it.Tooltip;
+
+ES2Access/UI/AgeTooltips.cs | 2 | vtable.PointsAt = () => Raw(Transform(it));
+ES2Access/UI/AgeTooltips.cs | 1 | vtable.PointsAt = () => Raw(it);
+ES2Access/UI/AgeTooltips.cs | 3 | vtable.PointsAt = () => tip;

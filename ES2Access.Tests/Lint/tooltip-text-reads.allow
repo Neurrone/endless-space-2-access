@@ -80,6 +80,12 @@ ES2Access/Screens/TroopManagementScreen.cs | 1 | string label = CardActions.Firs
 
 ES2Access/Screens/VictoryScreen.cs | 1 | return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
 
+ES2Access/UI/AgeTooltips.cs | 1 | && (!string.IsNullOrEmpty(tooltip.Content) || tooltip.Target != null);
+ES2Access/UI/AgeTooltips.cs | 1 | && string.IsNullOrEmpty(tooltip.Content)
+ES2Access/UI/AgeTooltips.cs | 1 | : new TooltipKey(tooltip.Class, tooltip.Content, tooltip.Target);
+ES2Access/UI/AgeTooltips.cs | 1 | Func<IList<string>> read = TooltipLines(Raw(widget));
+ES2Access/UI/AgeTooltips.cs | 1 | public static Func<IList<string>> TooltipLines(AgeTooltip tooltip)
+
 ES2Access/UI/BattlePlans.cs | 1 | return TooltipFeatures.FlotillaRange(flotilla, CardActions.FirstLine(tip));
 
 ES2Access/UI/BattleRosters.cs | 1 | : AgeText.Clean(tooltip.Content);
@@ -93,8 +99,9 @@ ES2Access/UI/HeroCards.cs | 1 | Func<IList<string>> read = AgeWidgets.TooltipLin
 
 ES2Access/UI/PoliticsExperience.cs | 1 | string note = AgeText.Tooltip(Note(feature));
 
+ES2Access/UI/ShipDesignRows.Modules.cs | 1 | return title ?? CardActions.FirstLine(tooltip);
+
 ES2Access/UI/ShipDesignRows.cs | 1 | () => named ? name : CardActions.FirstLine(tip),
-ES2Access/UI/ShipDesignRows.cs | 1 | return title ?? CardActions.FirstLine(tooltip);
 
 ES2Access/UI/SidePanels.cs | 1 | string described = CardActions.FirstLine(HeaderTooltip(panel));
 ES2Access/UI/SidePanels.cs | 1 | || !string.IsNullOrEmpty(CardActions.FirstLine(tooltip));
@@ -107,6 +114,6 @@ ES2Access/UI/SystemLabelReadout.cs | 1 | string says = CardActions.FirstLine(Age
 ES2Access/UI/SystemPanels.cs | 1 | () => CardActions.FirstLine(tooltip),
 ES2Access/UI/SystemPanels.cs | 1 | Func<IList<string>> drawn = GraphNodes.TooltipDetails(tooltip);
 
-ES2Access/UI/TableSheet.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+ES2Access/UI/TableSheet.Text.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
 
 ES2Access/UI/WindowShape.cs | 1 | if (string.IsNullOrEmpty(caption) && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))

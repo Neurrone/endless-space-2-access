@@ -37,6 +37,8 @@ docs/generic/src/engine-example/GameKeyStandDown.cs | ES2Access/UI/Input/GameKey
 docs/generic/src/graph-ui/GraphAnnouncer.cs | ES2Access/Core/UI/Graph/GraphAnnouncer.cs
 docs/generic/src/graph-ui/GraphBuilder.cs | ES2Access/Core/UI/Graph/GraphBuilder.cs
 docs/generic/src/engine-example/GraphNavigator.cs | ES2Access/UI/GraphNavigator.cs
+docs/generic/src/engine-example/GraphNavigator.Search.cs | ES2Access/UI/GraphNavigator.Search.cs
+docs/generic/src/engine-example/GraphNavigator.Visual.cs | ES2Access/UI/GraphNavigator.Visual.cs
 docs/generic/src/engine-example/GraphNodes.cs | ES2Access/UI/GraphNodes.cs
 docs/generic/src/graph-ui/GraphSheet.cs | ES2Access/Core/UI/GraphSheet.cs
 docs/generic/src/graph-ui/GraphTypes.cs | ES2Access/Core/UI/Graph/GraphTypes.cs
@@ -71,4 +73,7 @@ docs/generic/src/speech/NativeLoader.cs | ES2Access/Core/Native/NativeLoader.cs
 docs/generic/src/speech/PrismNative.cs | ES2Access/Core/Speech/PrismNative.cs
 docs/generic/src/speech/PrismSpeech.cs | ES2Access/Core/Speech/PrismSpeech.cs
 docs/generic/src/engine-example/AgeWidgets.cs | ES2Access/UI/AgeWidgets.cs
+docs/generic/src/engine-example/AgeTooltips.cs | ES2Access/UI/AgeTooltips.cs
+docs/generic/src/engine-example/AgeActions.cs | ES2Access/UI/AgeActions.cs
+docs/generic/src/engine-example/AgeReading.cs | ES2Access/UI/AgeReading.cs
 docs/generic/src/hot-reload/ModPatch.cs | ES2Access/UI/ModPatch.cs
