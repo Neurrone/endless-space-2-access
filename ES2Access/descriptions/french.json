@@ -1,0 +1,469 @@
+{
+  "Arctic": [
+    { "at": 1, "end": 4.5, "text": "Un soleil pâle éclaire une vallée gelée entre des montagnes déchiquetées couvertes de neige. D'immenses cristaux cyan luminescents jaillissent des pentes glacées." },
+    { "at": 4.5, "end": 8.5, "text": "Un vaisseau colonisateur file dans le ciel lumineux. En contrebas, les silhouettes de grandes bêtes à longue queue se tiennent immobiles dans la brume glaciale." },
+    { "at": 8.5, "end": 11, "text": "Le vent chasse la neige poudreuse sur la glace désolée." },
+    { "at": 11, "end": 12.693, "text": "Tout se fond dans le noir." }
+  ],
+  "Arid": [
+    { "at": 1, "end": 4.5, "text": "Une traînée de lumière vive raye un ciel crépusculaire étoilé, violet meurtri et orange ardent, tandis que le vaisseau colonisateur descend." },
+    { "at": 4.5, "end": 7.5, "text": "Il tombe vers un désert vaste et silencieux, fait de poussière rouille et de rochers déchiquetés balayés par le vent." },
+    { "at": 7.5, "end": 10.5, "text": "Au premier plan, une gigantesque créature insectoïde sombre se dresse au sommet d'un éperon rocheux." },
+    { "at": 10.5, "end": 12.522, "text": "À l'arrière-plan, une ville tentaculaire de pierre pâle s'élève de la plaine." }
+  ],
+  "Ash": [
+    { "at": 1, "end": 4, "text": "Une cendre épaisse balaie l'air sombre et tombe comme la neige sur une étendue désolée et obscure." },
+    { "at": 4, "end": 7, "text": "Des pics déchiquetés de roche noire percent la pénombre, découpés sur une lumière pâle et crue à l'horizon." },
+    { "at": 7, "end": 12.736, "text": "La foudre jaillit du ciel lourd et tourbillonnant." }
+  ],
+  "Atoll": [
+    { "at": 1, "end": 4, "text": "Un vaisseau colonisateur plonge à travers un ciel bleu profond et étoilé." },
+    { "at": 4, "end": 7, "text": "En dessous, d'immenses formations rocheuses incurvées s'élèvent d'une mer turquoise et se penchent au-dessus de l'eau." },
+    { "at": 7, "end": 10, "text": "Des oiseaux extraterrestres aux couleurs vives glissent devant d'étroites cascades qui dévalent des falaises densément boisées." },
+    { "at": 10, "end": 13.013, "text": "De douces vagues lèchent le sable blanc d'une plage immaculée bordée de fougères luxuriantes." }
+  ],
+  "Barren": [
+    { "at": 1.5, "end": 5.5, "text": "Une étendue désolée et rocheuse s'étire vers une crête lointaine. Au-dessus, une éclatante nébuleuse bleu-vert et une petite lune rouge éclairent le ciel étoilé." },
+    { "at": 5.5, "end": 9, "text": "Un vaisseau colonisateur plonge depuis le coin supérieur gauche, point de lumière blanche éclatant qui raye les cieux d'une traînée." },
+    { "at": 9, "end": 12.693, "text": "Il descend vers ce terrain sans vie, apportant la première étincelle de mouvement à un monde stérile." }
+  ],
+  "Boreal": [
+    { "at": 1, "end": 4.5, "text": "Un soleil jaune pâle et voilé réchauffe un paysage accidenté d'herbe brune, de pins épars et de plaques de neige fondante." },
+    { "at": 4.5, "end": 9, "text": "Près d'un arbre massif aux racines tentaculaires, trois créatures élancées à quatre pattes se rassemblent sur des affleurements rocheux. Elles ont un long museau, la tête surmontée d'une crête et une longue queue incurvée." },
+    { "at": 9, "end": 13.418, "text": "Elles contemplent un vaste lac et d'imposantes formations rocheuses. Très haut, la traînée lumineuse d'une navette d'atterrissage descend dans le ciel doré." }
+  ],
+  "Cravers_Intro": [
+    { "at": 0, "end": 5.565, "text": "Des bulles montent dans un fluide doré et trouble. Deux silhouettes humanoïdes, faites d'énergie jaune scintillante, sortent de la brume." },
+    { "at": 8.9, "end": 9.884, "text": "Elles fixent une cuve de verre cylindrique." },
+    { "at": 12.436, "end": 15, "text": "À l'intérieur, une créature insectoïde mécanique est suspendue à des câbles." },
+    { "at": 15, "end": 18, "text": "Un éclair de lumière blanche révèle un Craver métallique massif, rouge sombre. Il pend la tête en bas dans une soute de largage, son œil rouge luisant." },
+    { "at": 18, "end": 20.5, "text": "Il est l'un des centaines, suspendus en rangs serrés." },
+    { "at": 20.5, "end": 25, "text": "Les portes de la soute s'ouvrent sous eux, révélant un paysage désertique loin en contrebas. Les Cravers se détachent et plongent." },
+    { "at": 25, "end": 30, "text": "Depuis l'orbite, des dizaines de capsules de largage foncent vers la planète." },
+    { "at": 30, "end": 34.132, "text": "Elles percent les nuages et se ruent vers le sol aride." },
+    { "at": 37.937, "end": 39.565, "text": "Une onde de choc gigantesque se propage sur le désert depuis le point d'impact." },
+    { "at": 43.302, "end": 45.554, "text": "À travers un réticule de visée rouge, les Cravers déferlent sur un champ de bataille poussiéreux et tirent sur des ennemis robotiques." },
+    { "at": 50.114, "end": 52.191, "text": "Une explosion noie tout dans une lumière blanche. Le réticule se brouille et s'efface." },
+    { "at": 55.739, "end": 58.709, "text": "Dans l'obscurité de la nuit, de petits feux brûlent parmi les ruines déchiquetées et fumantes d'une ville détruite." },
+    { "at": 67.822, "end": 72, "text": "Très haut au-dessus des épaves en silhouette, une lumière dorée aveuglante déchire le ciel étoilé." },
+    { "at": 72, "end": 76.458, "text": "La lumière s'éteint dans l'obscurité totale." }
+  ],
+  "Cravers_Outro.LostBack": [
+    { "at": 0, "end": 4.448, "text": "Une forme sombre se tord dans un sac charnu translucide. Des veines rouges parcourent la surface palpitante." },
+    { "at": 8.57, "end": 9.487, "text": "Un mucus visqueux s'étire quand elle se libère." },
+    { "at": 14.777, "end": 16.124, "text": "Le Craver sombre et métallique inspecte ses griffes." },
+    { "at": 21.705, "end": 24, "text": "Le nouveau-né se tient parmi des centaines de sacs luminescents." },
+    { "at": 24, "end": 26.5, "text": "Ils tapissent le sol d'une immense caverne charnue et s'étendent jusque dans la brume." },
+    { "at": 26.5, "end": 30, "text": "Un autre Craver colossal passe au premier plan, son armure sombre luisante." }
+  ],
+  "Cravers_Outro.LostNotBack": [
+    { "at": 0, "end": 2.199, "text": "Un sac d'œufs charnu et translucide palpite, parcouru de veines rouges." },
+    { "at": 8.858, "end": 10.35, "text": "Un Craver métallique se dresse, dégoulinant d'un mucus visqueux et charnu." },
+    { "at": 17.873, "end": 18.694, "text": "Des œufs luminescents tapissent le vaste sol de la caverne." },
+    { "at": 26.207, "end": 30, "text": "Un Craver colossal tend un lourd bras mécanique. D'autres se tiennent parmi les innombrables œufs luminescents de l'immense ruche tendue de toiles." }
+  ],
+  "Desert": [
+    { "at": 1, "end": 3.5, "text": "Des dunes de sable sans fin s'étendent jusqu'à l'horizon, baignées dans la lumière dorée d'un soleil bas." },
+    { "at": 3.5, "end": 6, "text": "Une immense lune rougeâtre domine le ciel voilé. Des créatures ailées sombres planent sur les courants ascendants du désert." },
+    { "at": 6, "end": 12.693, "text": "Une traînée lumineuse plonge depuis la haute atmosphère. Une navette d'atterrissage laisse un sillage de lumière blanche en descendant vers les étendues silencieuses." }
+  ],
+  "Forest": [
+    { "at": 0.5, "end": 3.5, "text": "La brume dérive dans une forêt luxuriante d'arbres immenses. Un grand oiseau à la crête de plumes déployée se tient immobile." },
+    { "at": 3.5, "end": 5.5, "text": "Une éclatante traînée de lumière descend à travers la canopée embrumée." },
+    { "at": 5.5, "end": 11, "text": "L'oiseau tourne la tête pour regarder tomber la navette d'atterrissage. Des particules luminescentes flottent doucement dans l'air humide tandis que le vaisseau disparaît derrière les arbres lointains." },
+    { "at": 11, "end": 12.693, "text": "Noir." }
+  ],
+  "GasBurning": [
+    { "at": 0.5, "end": 4, "text": "Une géante gazeuse massive emplit le vide étoilé. Son atmosphère est une masse tourbillonnante de pourpre profond et de braises rouges incandescentes." },
+    { "at": 4, "end": 7.5, "text": "Une éclatante étoile rose surgit derrière la planète et projette sa lumière sur de larges anneaux de glace déployés." },
+    { "at": 7.5, "end": 11, "text": "Un pâle croissant de lune est suspendu dans le noir. En dessous, un minuscule point de lumière, le vaisseau colonisateur, file au-dessus des anneaux." },
+    { "at": 11, "end": 13.205, "text": "Il descend vers les nuages brûlants." }
+  ],
+  "GasCold": [
+    { "at": 1, "end": 5.5, "text": "Une géante gazeuse colossale emplit le vide étoilé, son atmosphère tourbillonnant en bandes indigo et azur. Un anneau de glace fin et éclatant traverse en diagonale la sphère bleue." },
+    { "at": 5.5, "end": 9.5, "text": "D'énormes astéroïdes déchiquetés dérivent au premier plan. Très haut, une minuscule étincelle de lumière descend vers la planète en laissant une faible traînée." },
+    { "at": 9.5, "end": 13.205, "text": "Le vaisseau colonisateur plonge, englouti par les nuages bleus tourmentés." }
+  ],
+  "GasFrozen": [
+    { "at": 1, "end": 5, "text": "Une géante gazeuse colossale domine le vide. De vastes tempêtes de lumière cyan glacée illuminent son hémisphère droit." },
+    { "at": 5, "end": 8.5, "text": "Des anneaux lumineux de givre et de poussière encerclent le bleu profond et ombré de la sphère." },
+    { "at": 8.5, "end": 12.693, "text": "Un minuscule éclat de lumière éblouissant, le vaisseau colonisateur, glisse le long des anneaux inférieurs, attiré vers le monde glacé." }
+  ],
+  "GasHot": [
+    { "at": 1.5, "end": 5, "text": "Une géante gazeuse massive se profile dans le vide étoilé. Son atmosphère rouge profond bouillonne de bandes de chaleur orange incandescentes le long d'un horizon." },
+    { "at": 5, "end": 7.5, "text": "Tout près, une éclatante nébuleuse cyan luit dans l'espace sombre, au-delà d'une petite lune stérile." },
+    { "at": 7.5, "end": 12.693, "text": "Un minuscule point de lumière, le vaisseau colonisateur, file devant la face sombre de la géante. Il laisse une faible traînée en glissant près de l'atmosphère ardente pour entrer en orbite." }
+  ],
+  "GasTemperate": [
+    { "at": 1, "end": 5.5, "text": "Une géante gazeuse massive est suspendue dans le noir étoilé. Son atmosphère tourbillonnante est striée de larges bandes bleu-vert, bordeaux et blanc nacré. Une petite lune grise orbite sur la gauche." },
+    { "at": 5.5, "end": 9.5, "text": "Un vaisseau colonisateur file vers la planète depuis le bas à gauche, porté par une traînée de lumière éclatante." },
+    { "at": 9.5, "end": 13.205, "text": "Le minuscule appareil descend vers les nuages agités et plonge dans la vaste étendue gazeuse." }
+  ],
+  "GasWarm": [
+    { "at": 1, "end": 4, "text": "Un soleil éclatant surgit derrière l'horizon d'une géante gazeuse massive et illumine une nébuleuse voilée." },
+    { "at": 4, "end": 7, "text": "L'atmosphère de la planète est un tourbillon de caramel, de rouille et de crème." },
+    { "at": 7, "end": 13.205, "text": "Un vaisseau colonisateur file au-dessus des bandes agitées, simple étincelle traînant un trait de lumière blanche vers l'éclat aveuglant." }
+  ],
+  "Hisshos_Intro": [
+    { "at": 0, "end": 1.465, "text": "Des lignes orange lumineuses se diffusent dans un vide noir comme de l'encre." },
+    { "at": 7.687, "end": 9.098, "text": "Le guerrier peint se transforme en un oiseau sombre stylisé." },
+    { "at": 15.104, "end": 17.73, "text": "Un guerrier debout transperce de son épée lumineuse un compagnon agenouillé. Un immense vaisseau spatial noir s'élève." },
+    { "at": 31.788, "end": 33.321, "text": "Trois entités robotiques gigantesques aux bras multiples surplombent le guerrier." },
+    { "at": 43.104, "end": 49.522, "text": "Un guerrier aviaire en armure bloque un énorme marteau de métal avec un katana. Des yeux orange luisants brillent dans un casque rouge. Le guerrier tranche l'armure de poitrine du robot." },
+    { "at": 53.432, "end": 55.527, "text": "Le guerrier plante son épée dans le sol de pierre." },
+    { "at": 58.747, "end": 63, "text": "Des circuits dorés grimpent le long d'une structure métallique colossale envahie par la végétation, encastrée dans un flanc de montagne luxuriant." },
+    { "at": 63, "end": 69, "text": "Les ruines antiques s'animent en vrombissant, luisantes d'énergie orange. La masse s'arrache à la terre et s'élève, gigantesque vaisseau spatial." },
+    { "at": 69, "end": 75, "text": "L'immense vaisseau monte à travers les nuages et la brume, écrasant les falaises boisées de part et d'autre. D'énormes moteurs brûlent, éclatants, sous le ciel couvert." },
+    { "at": 75, "end": 77.013, "text": "Tout se fond dans le noir." }
+  ],
+  "Hisshos_Outro.LostBack": [
+    { "at": 0, "end": 2.59, "text": "Des traits d'encre noire dessinent un bras, marqué de motifs géométriques rouges lumineux." },
+    { "at": 31.655, "end": 33.568, "text": "Des bannières se dressent derrière le guerrier." },
+    { "at": 33.568, "end": 37, "text": "L'imposant Hissho porte une coiffe de plumes et a les yeux luisants, son corps noir couvert de motifs géométriques blancs. Il pose une épée sur son épaule. Tout se fond dans le gris." }
+  ],
+  "Hisshos_Outro.LostNotBack": [
+    { "at": 0, "end": 1.828, "text": "Des traits d'encre noire dessinent un bras, marqué de motifs géométriques rouges lumineux." },
+    { "at": 29.733, "end": 30.438, "text": "Des bannières se dressent derrière le guerrier." },
+    { "at": 33.568, "end": 37, "text": "L'imposant Hissho porte une coiffe de plumes et a les yeux luisants, son corps noir couvert de motifs géométriques blancs. Il pose une épée sur son épaule. Tout se fond dans le gris." }
+  ],
+  "Horatio_Intro": [
+    { "at": 0, "end": 5.288, "text": "Une haute silhouette chauve, drapée d'une ample cape verte, se tient de dos et regarde par une grande fenêtre un paysage montagneux. La pièce opulente est bordée de hauts miroirs et de plantes en pot." },
+    { "at": 13.33, "end": 14.113, "text": "Un visage spectral apparaît dans la vitre." },
+    { "at": 17.2, "end": 18.1, "text": "Son propre visage lisse et allongé revient." },
+    { "at": 21.45, "end": 23.2, "text": "Il se tient dans un couloir de miroirs. Un visage hurlant apparaît dans la glace." },
+    { "at": 26.45, "end": 27.5, "text": "Le reflet se change en un cerveau flottant." },
+    { "at": 30.75, "end": 34.2, "text": "Il passe devant les miroirs à grands pas. Sa longue cape verte flotte derrière lui et traîne sur le sol sombre." },
+    { "at": 42.8, "end": 43.8, "text": "Il fixe son propre reflet." },
+    { "at": 52.6, "end": 56, "text": "Baigné d'une lumière blanche éclatante, Horatio se tient en haut d'un grand escalier." },
+    { "at": 56, "end": 60, "text": "En dessous, deux rangées de clones identiques bordent le pied des marches." },
+    { "at": 60, "end": 71, "text": "Les clones se tiennent au garde-à-vous, les yeux levés vers leur chef. Ils sont réunis dans un hall immense aux piliers imposants. D'immenses fenêtres révèlent une planète sombre dans le vide étoilé de l'espace." },
+    { "at": 71, "end": 74.048, "text": "Tout se fond dans le noir." }
+  ],
+  "Horatio_Outro.LostBack": [
+    { "at": 8.219, "end": 9.361, "text": "Horatio, le crâne allongé, passe devant des cuves luminescentes remplies de corps." },
+    { "at": 20.745, "end": 21.355, "text": "Il fait face à une pyramide lumineuse." },
+    { "at": 26.275, "end": 28.28, "text": "La lumière aveuglante de la pyramide s'étend et l'engloutit, lui et la vaste chambre de cuves, dans un blanc pur." }
+  ],
+  "Horatio_Outro.LostNotBack": [
+    { "at": 25.987, "end": 28.28, "text": "L'immense hall de cuves de clonage luminescentes se fond dans un blanc aveuglant." }
+  ],
+  "Ice": [
+    { "at": 0.5, "end": 3, "text": "Des icebergs bleu profond et déchiquetés jaillissent d'une mer gelée, craquelée et immense." },
+    { "at": 3, "end": 5.5, "text": "La neige tombe d'un ciel sombre. Un immense croissant de lune domine l'horizon." },
+    { "at": 5.5, "end": 8.5, "text": "Le vaisseau colonisateur plonge depuis la haute atmosphère, chauffé à blanc." },
+    { "at": 8.5, "end": 13.418, "text": "Il frappe la glace au loin. Un panache imposant de vapeur blanche et de glace pulvérisée jaillit haut dans l'air et se déploie en un nuage immense." }
+  ],
+  "Jungle": [
+    { "at": 0.5, "end": 5, "text": "Dans une jungle luxuriante et ombragée, des fougères géantes et de larges feuilles aux pointes rouges encadrent une vallée brumeuse. Une large cascade dévale une falaise rocheuse vers une rivière calme d'un vert luminescent." },
+    { "at": 5, "end": 8, "text": "D'épais rayons de soleil percent la canopée dense et illuminent la brume lourde. Très haut, un point de lumière éclatant tombe du ciel." },
+    { "at": 8, "end": 12.245, "text": "Le vaisseau colonisateur descend sur une traînée lumineuse, croise les rayons de soleil et s'enfonce dans la végétation profonde près des chutes." }
+  ],
+  "Lava": [
+    { "at": 1, "end": 3.5, "text": "Des formations rocheuses sombres et déchiquetées s'élèvent d'une mer de lave orange incandescente." },
+    { "at": 3.5, "end": 7, "text": "Une large rivière de roche en fusion déborde d'une falaise à pic et tombe en un rideau jaune éclatant." },
+    { "at": 7, "end": 9.5, "text": "Le vaisseau colonisateur descend dans le ciel enfumé, traînée de lumière éclatante." },
+    { "at": 9.5, "end": 12.693, "text": "Un soleil pâle brûle derrière une flèche monolithique penchée, dans le lointain voilé de brume." }
+  ],
+  "Metaplot_LostBack": [
+    { "at": 0, "end": 2.625, "text": "L'immense vaisseau de l'Académie, à huit branches, orbite autour d'une planète bleue brisée, entourée de débris." },
+    { "at": 6.15, "end": 6.827, "text": "Une énergie dorée crépite autour de lui." },
+    { "at": 12.739, "end": 15.266, "text": "À l'intérieur, un faisceau doré frappe une plateforme. Isyander, en armure, écarte les bras, le visage fait d'un cristal rouge luisant." },
+    { "at": 21.378, "end": 22.464, "text": "Le faisceau doré jaillit vers le ciel étoilé." },
+    { "at": 24.736, "end": 26.117, "text": "Tout se fond en un champ d'étoiles noir." },
+    { "at": 29.67, "end": 31.2, "text": "Quatre lumières éclatantes, semblables à des étoiles, s'allument au sein d'une nébuleuse colorée." }
+  ],
+  "Metaplot_LostBackVictory": [
+    { "at": 0, "end": 1.052, "text": "Une planète balafrée luit dans l'espace." },
+    { "at": 4.822, "end": 5.681, "text": "Une foule lève les yeux depuis une ville." },
+    { "at": 8.586, "end": 9.57, "text": "Un vaisseau en forme d'étoile orbite autour du monde." },
+    { "at": 16.419, "end": 18.68, "text": "Le faisceau doré du vaisseau se déverse dans une pyramide immense, dans la ville en contrebas." },
+    { "at": 21.407, "end": 22.802, "text": "En armure dorée, Isyander se tient les bras écartés." },
+    { "at": 32.659, "end": 33.307, "text": "Le faisceau transperce une nébuleuse." },
+    { "at": 35.288, "end": 40, "text": "Deux yeux énormes s'ouvrent dans la nébuleuse même, nuage bleu-vert autour de pupilles dorées brûlantes. Ils restent là, le regard fixe au sortir du noir." }
+  ],
+  "Metaplot_LostNotBack": [
+    { "at": 0, "end": 2.318, "text": "Une immense station spatiale aux longs rayons déployés orbite autour d'une planète bleue." },
+    { "at": 5.61, "end": 7.527, "text": "Une énergie dorée crépite sur la coque sombre de la station." },
+    { "at": 11.502, "end": 14.665, "text": "Un faisceau doré jaillit du centre de la station. À l'intérieur, Isyander, silhouette en armure au visage rouge luisant, se baigne dans la lumière." },
+    { "at": 18.637, "end": 19.993, "text": "Le faisceau frappe une pyramide immense dans une ville tentaculaire." },
+    { "at": 24.216, "end": 25.557, "text": "La pyramide explose dans une déflagration dorée aveuglante." },
+    { "at": 29.812, "end": 32, "text": "À genoux, Isyander lève les bras tandis que la lumière engloutit tout." }
+  ],
+  "Monsoon": [
+    { "at": 0.5, "end": 3, "text": "Une pluie battante fouette un paysage sombre. De larges cascades dévalent des falaises lointaines dans une lumière jaune pâle." },
+    { "at": 3, "end": 5, "text": "Très haut, la traînée lumineuse d'un vaisseau colonisateur descend à travers de lourds nuages d'orage." },
+    { "at": 5, "end": 8, "text": "Au premier plan, un grand oiseau à la crête rouge vif est posé sur un rocher moussu et regarde les chutes." },
+    { "at": 8, "end": 12.138, "text": "Des éclairs illuminent le déluge sans fin." }
+  ],
+  "Ocean": [
+    { "at": 1, "end": 5.5, "text": "Au fond de l'eau, d'immenses racines sombres s'arquent dans une eau bleue et sombre. Sur les fonds marins, une flore bioluminescente luit par plaques rose vif et cyan froid, ondulant doucement dans le courant." },
+    { "at": 5.5, "end": 8.5, "text": "Une créature sombre et colossale glisse dans la pénombre. Elle ressemble à une baleine lisse et sans yeux, traînant de fins tentacules sur ses flancs." },
+    { "at": 8.5, "end": 13.418, "text": "Une créature élancée, semblable à une raie manta à la longue queue en fouet, nage gracieusement près du géant et navigue dans les profondeurs paisibles et lumineuses." }
+  ],
+  "Snow": [
+    { "at": 0.5, "end": 4, "text": "Des montagnes déchiquetées de glace et de roche encadrent une vallée sereine couverte de neige. D'immenses anneaux pâles s'arquent dans le ciel lointain." },
+    { "at": 4, "end": 7, "text": "Haut entre les anneaux, une étincelle blanche et vive descend vers l'horizon." },
+    { "at": 7, "end": 10, "text": "Au premier plan, deux créatures élancées au long cou, aux cornes recourbées vers l'arrière, broutent paisiblement." },
+    { "at": 10, "end": 12.97, "text": "Des bouquets de plantes bulbeuses bleues et luminescentes sortent du sol gelé." }
+  ],
+  "Sophons_Intro": [
+    { "at": 0, "end": 1.424, "text": "À travers des lattes sombres, une lumière bleue luit." },
+    { "at": 6.458, "end": 7.314, "text": "Une silhouette élancée à la grande tête, faite de particules bleues." },
+    { "at": 10.266, "end": 10.936, "text": "Une minuscule machine fend une sphère." },
+    { "at": 13.66, "end": 14.462, "text": "Un vaisseau taille dans un astéroïde." },
+    { "at": 17.656, "end": 19.639, "text": "Une lumière aveuglante se canalise dans un satellite. Un Sophon se tient fièrement debout." },
+    { "at": 23.565, "end": 24.498, "text": "Le Sophon se prend le front dans la main, au milieu de la fumée." },
+    { "at": 27.99, "end": 28.888, "text": "Ils touchent une ligne de faille lumineuse." },
+    { "at": 32.49, "end": 36.578, "text": "Une lune holographique vole en éclats. Ils sursautent, puis se tiennent épaule contre épaule, contemplant une flèche lumineuse." },
+    { "at": 40.765, "end": 41.504, "text": "L'un d'eux lève le pouce." },
+    { "at": 44.508, "end": 52.122, "text": "La pièce s'efface. La flèche est le cœur d'une station colossale. D'immenses nervures métalliques s'enroulent vers le haut autour d'un pilier d'énergie bleue aveuglant." },
+    { "at": 59.754, "end": 60.679, "text": "Ils se tiennent au pied de la station." },
+    { "at": 62.18, "end": 67.008, "text": "La station colossale tourne lentement dans le vide sombre. Tout se fond dans le noir." }
+  ],
+  "Sophons_Outro.LostBack": [
+    { "at": 0, "end": 4, "text": "Des feux d'artifice éclatent dans un ciel nocturne étoilé au-dessus d'une métropole futuriste. Des gratte-ciel élancés et incurvés et de grands panneaux publicitaires brillent d'un néon cyan éclatant." },
+    { "at": 4, "end": 8.476, "text": "Un hologramme colossal de Sophon à la grande tête est projeté depuis une tour centrale. Des véhicules volants filent entre les bâtiments étincelants." },
+    { "at": 13.272, "end": 14.213, "text": "À l'intérieur, un Sophon travaille sur des écrans holographiques verts." },
+    { "at": 18.789, "end": 19.67, "text": "Derrière lui, un immense noyau enroulé luit en cyan." },
+    { "at": 24.672, "end": 27.8, "text": "Le Sophon lève les bras dans un haussement d'épaules. Le noyau s'embrase d'une lumière cyan aveuglante et noie la pièce d'un éclat éblouissant. Tout se fond dans le noir." }
+  ],
+  "Sophons_Outro.LostNotBack": [
+    { "at": 0, "end": 4.5, "text": "Des feux d'artifice éclatent dans un ciel nocturne étoilé au-dessus d'une ville futuriste élancée, baignée d'une lumière cyan luminescente." },
+    { "at": 4.5, "end": 10, "text": "Des véhicules en vol stationnaire se faufilent entre des gratte-ciel lisses et incurvés et de gigantesques panneaux publicitaires holographiques." },
+    { "at": 10, "end": 11.243, "text": "À l'intérieur, un petit Sophon à la peau grise est assis à une console verte lumineuse." },
+    { "at": 24.529, "end": 27.8, "text": "Le Sophon lève un doigt. L'alerte rouge de la console et l'immense bobine en rotation derrière lui s'éteignent aussitôt, plongeant la pièce dans le noir." }
+  ],
+  "Steppe": [
+    { "at": 1, "end": 4.5, "text": "Une vaste plaine de hautes herbes dorées s'étend vers des montagnes déchiquetées et penchées, sous un ciel bleu vif." },
+    { "at": 4.5, "end": 8.5, "text": "Au premier plan, un grand oiseau étrange est posé sur un affleurement. Une fine crête s'incurve en boucle par-dessus sa tête et un bec massif et sombre se recourbe vers le bas." },
+    { "at": 8.5, "end": 11.5, "text": "Sa poitrine est blanche, avec des plumes vertes et jaunes. Au loin, un troupeau d'animaux sombres broute." },
+    { "at": 11.5, "end": 14, "text": "Une traînée de lumière vive déchire les nuages." },
+    { "at": 14, "end": 17.5, "text": "La navette d'atterrissage du vaisseau colonisateur descend vers les montagnes lointaines, traînant une longue queue de feu blanc." },
+    { "at": 17.5, "end": 20.533, "text": "Tout se fond dans le noir." }
+  ],
+  "Swamp": [
+    { "at": 1, "end": 4, "text": "Une brume épaisse, jaune-vert, étouffe un marais stagnant." },
+    { "at": 4, "end": 8, "text": "À gauche, un reptile bipède à la crête hérissée de pointes se tient parmi les fougères et regarde vers un arbre immense et noueux." },
+    { "at": 8, "end": 11, "text": "De la mousse pâle et des lianes emmêlées pendent des branches tordues de l'arbre." },
+    { "at": 11, "end": 13.418, "text": "Ses racines tentaculaires s'enfoncent dans une couche claire de mucus vert luminescent." }
+  ],
+  "Templars_Intro": [
+    { "at": 0, "end": 2.395, "text": "Trois silhouettes traversent une étendue stérile et brumeuse. D'immenses éclats de pierre déchiquetés jaillissent du sol." },
+    { "at": 9.75, "end": 17.233, "text": "Un pied nu s'avance, la jambe étroitement enveloppée de cuir bordeaux. Les trois silhouettes se dressent devant une paroi rocheuse imposante, où une porte métallique ouvragée scelle l'entrée d'une caverne immense." },
+    { "at": 23.009, "end": 26.902, "text": "Vue de dos, une silhouette tenant un bâton regarde les lourdes portes métalliques coulisser et s'ouvrir, révélant une lumière blanche éclatante." },
+    { "at": 31.202, "end": 37.379, "text": "Des brassards d'or ouvragés couvrent deux bras croisés sur des robes rouge sombre. Dans la caverne, les trois silhouettes descendent une passerelle étroite vers une structure lumineuse enracinée dans l'obscurité." },
+    { "at": 44.122, "end": 46.776, "text": "Elles lèvent les yeux vers un sanctuaire immense et sombre, où une silhouette se tient suspendue." },
+    { "at": 49.56, "end": 52.5, "text": "Une énergie dorée tourbillonne autour du visage métallique de la silhouette et de sa haute coiffe pointue." },
+    { "at": 52.5, "end": 58, "text": "Un éclat de lumière aveuglant frappe un pilier central et se propage vers l'extérieur le long de vrilles tordues, semblables à des racines, pour illuminer des nœuds circulaires." },
+    { "at": 58, "end": 63, "text": "Trois silhouettes en armure émergent de l'éblouissement. Celle du centre porte une cape sombre, son visage sans traits n'étant qu'un masque d'énergie lumineuse." },
+    { "at": 63, "end": 65.726, "text": "Une flèche imposante et ouvragée s'élève dans l'obscurité. Une silhouette solitaire se tient dans une alcôve dorée et illuminée, à sa base." },
+    { "at": 69.767, "end": 70.569, "text": "Des vaisseaux élancés survolent un paysage pâle." },
+    { "at": 77.438, "end": 83.178, "text": "Des lignes géométriques vert vif illuminent les profondeurs de la fosse. Tout se fond dans le noir." }
+  ],
+  "Templars_Outro.LostBack": [
+    { "at": 0, "end": 1.028, "text": "Une silhouette cornue lève un bâton lumineux." },
+    { "at": 14.122, "end": 14.924, "text": "D'immenses lignes lumineuses se forment dans la brume." },
+    { "at": 26.283, "end": 30, "text": "Les lignes se rassemblent en une entité spectrale imposante qui écrase la silhouette sur les marches. L'immense crête lumineuse domine la caverne, puis se fond dans l'obscurité." }
+  ],
+  "Templars_Outro.LostNotBack": [
+    { "at": 0, "end": 0.903, "text": "Une silhouette cornue lève un bâton lumineux." },
+    { "at": 13.949, "end": 14.71, "text": "D'immenses lignes lumineuses se forment dans la brume." },
+    { "at": 26.283, "end": 30, "text": "Les lignes se rassemblent en une entité spectrale imposante qui écrase la silhouette sur les marches. L'immense crête lumineuse domine la caverne, puis se fond dans l'obscurité." }
+  ],
+  "Terran": [
+    { "at": 1, "end": 4, "text": "Des montagnes escarpées et déchiquetées de roche gris pâle s'élèvent d'une vallée verte et luxuriante." },
+    { "at": 4, "end": 7, "text": "Des pins sombres s'accrochent aux falaises à pic. Au premier plan, une cascade se jette d'une corniche rocheuse." },
+    { "at": 7, "end": 10, "text": "En contrebas, une large rivière serpente dans la vallée brumeuse. Le ciel se réchauffe en une aube dorée à l'horizon." },
+    { "at": 10, "end": 12.928, "text": "Très haut, le vaisseau colonisateur descend sur une longue traînée de lumière blanche, en direction des plaines lointaines." }
+  ],
+  "Terrans_Intro": [
+    { "at": 0, "end": 0.8, "text": "L'empereur Zelevas, sévère, à la barbe blanche." },
+    { "at": 14.551, "end": 15.6, "text": "Des rangées de soldats en silhouette font face à une planète semblable à la Terre." },
+    { "at": 31.6, "end": 35.1, "text": "Deux vaisseaux élancés volent vers ce monde semblable à la Terre. Il se rapproche à toute vitesse et grandit jusqu'à tout engloutir dans le blanc." },
+    { "at": 40.55, "end": 41.95, "text": "Un explorateur touche une minuscule pousse dans la neige." },
+    { "at": 46.45, "end": 47.25, "text": "Un extraterrestre reptilien s'agenouille et offre un fruit." },
+    { "at": 51.35, "end": 52.372, "text": "Un officier plante un drapeau rouge." },
+    { "at": 57.98, "end": 59.03, "text": "Un soldat en armure, un mécanicien et un scientifique." },
+    { "at": 68.651, "end": 70.5, "text": "Le trio est peint sur un panneau publicitaire lumineux." },
+    { "at": 70.5, "end": 73, "text": "Il domine une métropole industrielle immense et sombre." },
+    { "at": 73, "end": 76.5, "text": "Un épais smog jaune étouffe l'air entre les gratte-ciel déchiquetés." },
+    { "at": 76.5, "end": 78.208, "text": "Tout se fond dans le noir." }
+  ],
+  "Terrans_Outro_Mezari.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Cinq épées blanches rayonnent sur un fond rouge profond. Un monument blanc s'élève." },
+    { "at": 23.361, "end": 25.12, "text": "Des scientifiques observent l'empereur torse nu, relié à des machines et luisant d'énergie. Le noir." }
+  ],
+  "Terrans_Outro_Mezari.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Cinq épées blanches rayonnent sur un fond rouge profond. Un monument blanc s'élève." },
+    { "at": 23.179, "end": 25.12, "text": "Des scientifiques observent l'empereur torse nu, relié à des machines et luisant d'énergie. Le noir." }
+  ],
+  "Terrans_Outro_Sheredyn.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Cinq épées blanches sur fond rouge deviennent des faisceaux de lumière rayonnant derrière un bâtiment blanc monumental." },
+    { "at": 23.361, "end": 25.12, "text": "Des câbles relient son torse nu à des machines lumineuses. Il serre le poing. Tout se fond dans le noir." }
+  ],
+  "Terrans_Outro_Sheredyn.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Cinq épées blanches sur fond rouge deviennent des faisceaux de lumière rayonnant derrière un bâtiment blanc monumental." },
+    { "at": 23.179, "end": 25.12, "text": "Des câbles relient son torse nu à des machines lumineuses. Il serre le poing. Tout se fond dans le noir." }
+  ],
+  "Terrans_Outro_UE.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Cinq faisceaux blancs rayonnent vers le haut sur un fond rouge profond." },
+    { "at": 23.361, "end": 25.12, "text": "Relié à des piliers lumineux, l'empereur balafré et torse nu serre le poing. Le noir." }
+  ],
+  "Terrans_Outro_UE.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Cinq faisceaux blancs rayonnent vers le haut sur un fond rouge profond." },
+    { "at": 23.179, "end": 25.12, "text": "Relié à des piliers lumineux, l'empereur balafré et torse nu serre le poing. Le noir." }
+  ],
+  "Timelords_Intro": [
+    { "at": 0, "end": 3.27, "text": "Des rochers blancs anguleux dérivent dans un vide clair et brumeux." },
+    { "at": 13.451, "end": 14.102, "text": "Une fissure sombre s'ouvre en éclats." },
+    { "at": 23.25, "end": 24.5, "text": "Une masse sombre palpite, ses vrilles s'étendant vers l'extérieur." },
+    { "at": 30.45, "end": 32.4, "text": "Les rochers blancs basculent vers le noyau noir palpitant." },
+    { "at": 40.528, "end": 47.4, "text": "Un vaisseau spatial métallique et élancé surgit d'un portail tourbillonnant de lumière blanche dans le vide sombre de l'espace. Sa coque est faite de formes géométriques segmentées et flottantes, rehaussées de rouge." },
+    { "at": 56.842, "end": 60.33, "text": "Le vaisseau segmenté glisse au-dessus de l'horizon d'une planète à anneaux, en direction de la lumière ardente d'un soleil." }
+  ],
+  "Timelords_Outro.LostBack": [
+    { "at": 0, "end": 5.808, "text": "Une vallée verdoyante et brumeuse sous un ciel nuageux. Un vaisseau spatial blanc colossal plane au loin. Au premier plan, plusieurs êtres robotiques élancés se tiennent parmi l'herbe et les arbres. Leurs corps sont faits de formes géométriques acérées et détachées, avec de sombres tentacules en rubans qui traînent derrière eux." },
+    { "at": 11.943, "end": 12.849, "text": "Un robot tient une fleur rose lumineuse." },
+    { "at": 20.635, "end": 24, "text": "Dans la paume du robot, la fleur rose délicate se change soudain en un cristal blanc anguleux et lumineux." },
+    { "at": 24, "end": 28, "text": "Le robot contemple la gemme géométrique en suspension. Son corps est composé d'éclats sombres et disjoints, ancrés autour du noyau rouge vivement lumineux de sa poitrine." },
+    { "at": 28, "end": 30, "text": "Tout se fond dans l'obscurité." }
+  ],
+  "Timelords_Outro.LostNotBack": [
+    { "at": 0, "end": 3, "text": "Des rayons de soleil percent des nuages sombres au-dessus d'une vallée verte et brumeuse. Un immense vaisseau spatial blanc repose sur l'herbe." },
+    { "at": 3, "end": 6, "text": "De grands êtres robotiques à l'armure sombre et anguleuse, aux articulations orange lumineuses, examinent la jungle sauvage." },
+    { "at": 6, "end": 8.308, "text": "L'un d'eux monte sur un rocher au premier plan. Des éclats noirs orbitent autour de sa tête flottante en forme de losange." },
+    { "at": 12.616, "end": 13.36, "text": "Il tient une fleur rose lumineuse." },
+    { "at": 20.606, "end": 24, "text": "La fleur s'est transformée en un cristal blanc géométrique et immaculé. Il flotte et tourne lentement au-dessus de la main de l'être." },
+    { "at": 24, "end": 26, "text": "L'être contemple cette forme parfaite et anguleuse." },
+    { "at": 26, "end": 30, "text": "Tout se fond lentement dans l'obscurité totale." }
+  ],
+  "Tropical": [
+    { "at": 0.5, "end": 2, "text": "Des arches de roche rouge s'élèvent d'une mer turquoise." },
+    { "at": 2, "end": 4.5, "text": "Haut dans le ciel bleu vif, la navette d'atterrissage du vaisseau colonisateur descend sur une traînée de lumière." },
+    { "at": 4.5, "end": 8, "text": "Elle disparaît derrière les falaises lointaines. Des buissons verts s'accrochent aux îles rocheuses." },
+    { "at": 8, "end": 12.8, "text": "Une nuée d'oiseaux tournoie autour des arches, au-dessus de l'eau doucement ridée." }
+  ],
+  "Tundra": [
+    { "at": 1, "end": 5.5, "text": "Sous un ciel lourd, bleu-gris, deux bêtes massives semblables à des bœufs se tiennent dans une plaine inondée. Elles ont un épais pelage brun et une couronne de longues cornes déchiquetées." },
+    { "at": 5.5, "end": 8.5, "text": "Très haut, une étincelle de lumière vive laisse une traînée en descendant. La navette d'atterrissage du vaisseau colonisateur." },
+    { "at": 8.5, "end": 13.418, "text": "Les bêtes attendent dans l'herbe mouillée qui ondule, tandis que l'appareil lointain disparaît derrière des collines saupoudrées de neige, à l'horizon." }
+  ],
+  "UmbralChoir_Intro": [
+    { "at": 0, "end": 6.43, "text": "Dans l'étendue profonde et silencieuse de l'espace, un vaste champ d'étoiles scintille sur des nébuleuses tourbillonnantes bleu sombre et émeraude." },
+    { "at": 21.871, "end": 22.942, "text": "Une galaxie lointaine éclate en une lumière vive." },
+    { "at": 30.562, "end": 31.953, "text": "Plongée dans une nébuleuse rose et violette éclatante." },
+    { "at": 37.671, "end": 41, "text": "Un vaisseau spatial élancé et sombre dérive dans la pénombre." },
+    { "at": 41, "end": 45.5, "text": "Dans le cockpit, un capteur robotique pend devant un hublot octogonal. Des données holographiques rouges vacillent sur la vitre." },
+    { "at": 45.5, "end": 49.166, "text": "Une pilote en combinaison spatiale blindée est assise aux commandes, le visage visible derrière une visière transparente." },
+    { "at": 74.218, "end": 76.252, "text": "Le nuage d'ombre, porteur de deux yeux rouges luisants, se rue vers le vaisseau." },
+    { "at": 84.093, "end": 91.836, "text": "Une fumée violette engloutit la pilote et plonge tout dans le noir. Un instant plus tard, son visage émerge des ombres, l'œil droit luisant d'un violet perçant." },
+    { "at": 97.64, "end": 98.745, "text": "Elle est assise, calme. Une flotte sombre se rassemble." },
+    { "at": 116.937, "end": 120, "text": "Un motif électronique violet rampe sur sa joue. Elle sourit légèrement, puis tout se fond dans le noir." }
+  ],
+  "UmbralChoir_Outro.LostBack": [
+    { "at": 24, "end": 30.08, "text": "La galaxie spirale violette est désormais une toile dorée lumineuse de nœuds interconnectés. Des losanges rouges épars marquent des points du réseau. La carte se fond lentement dans l'obscurité." }
+  ],
+  "UmbralChoir_Outro.LostNotBack": [
+    { "at": 24, "end": 30.08, "text": "La galaxie spirale violette est désormais une toile dorée lumineuse de nœuds interconnectés. Des losanges rouges épars marquent des points du réseau. La carte se fond lentement dans l'obscurité." }
+  ],
+  "Unfallen_Intro": [
+    { "at": 0, "end": 1.324, "text": "La planète verte et bleue Koyasil tourne dans l'espace." },
+    { "at": 21.267, "end": 22.157, "text": "Deux soldats pointent leurs fusils sur un extraterrestre à terre." },
+    { "at": 31.85, "end": 33.122, "text": "Un être-arbre masqué et imposant surgit derrière les soldats." },
+    { "at": 43.884, "end": 46.337, "text": "Un immense vaisseau de racines entrelacées et de voiles rouges décolle de la planète luxuriante." },
+    { "at": 63.222, "end": 64.218, "text": "Trois vaisseaux-racines s'élèvent dans l'espace." },
+    { "at": 69.036, "end": 75.05, "text": "Les vaisseaux se réduisent à des points de lumière luisants et rejoignent les étoiles sur un tourbillon de nébuleuse verte. Tout se fond dans le noir." }
+  ],
+  "Unfallen_Outro.LostBack": [
+    { "at": 0, "end": 0.981, "text": "Un faisceau doré jaillit d'une planète verte et nuageuse." },
+    { "at": 5.02, "end": 6.301, "text": "Des veines dorées se répandent sur la face sombre de la planète." },
+    { "at": 10.336, "end": 11.6, "text": "Au loin, une galaxie spirale éclatante." },
+    { "at": 16.779, "end": 17.567, "text": "Des lignes dorées relient les étoiles." },
+    { "at": 27.553, "end": 30, "text": "La toile dorée forme un système racinaire colossal qui embrasse toute la galaxie." }
+  ],
+  "Unfallen_Outro.LostNotBack": [
+    { "at": 0, "end": 2.358, "text": "Une traînée de lumière dorée s'arque loin d'une planète luxuriante et file dans le noir étoilé." },
+    { "at": 6.252, "end": 7.604, "text": "Des racines lumineuses se répandent sur la face sombre de la planète." },
+    { "at": 14.491, "end": 15.86, "text": "La traînée fonce vers une galaxie ardente et tourbillonnante." },
+    { "at": 19.596, "end": 20.577, "text": "Reliant les étoiles comme une constellation." },
+    { "at": 24.754, "end": 30, "text": "Les lignes lumineuses se répandent sur la galaxie ardente et forment un arbre de lumière colossal et ramifié qui s'étend à travers le cosmos." }
+  ],
+  "Vampirilis_Intro": [
+    { "at": 0, "end": 0.703, "text": "Des lignes dorées esquissent une ville." },
+    { "at": 3.793, "end": 4.502, "text": "De la fumée s'échappe des cheminées gravées." },
+    { "at": 8.88, "end": 9.622, "text": "La ville lumineuse s'éloigne et rapetisse." },
+    { "at": 24.912, "end": 25.606, "text": "La silhouette lumineuse se dresse, altière." },
+    { "at": 33.122, "end": 35.275, "text": "Une silhouette sombre et anguleuse apparaît et lève une main parmi les fidèles." },
+    { "at": 40.313, "end": 43.802, "text": "Le démon tend ses griffes acérées. Les fidèles se dispersent, terrifiés." },
+    { "at": 49.168, "end": 50.702, "text": "Un guerrier fidèle affronte l'hérétique." },
+    { "at": 55.56, "end": 56.742, "text": "Le guerrier le terrasse." },
+    { "at": 62.21, "end": 65.546, "text": "Les fresques lumineuses ornent les murs d'une chambre hexagonale et sombre." },
+    { "at": 71.512, "end": 72.247, "text": "Un chef Vodyani se tient droit, altier." },
+    { "at": 74.157, "end": 80, "text": "Vêtue d'une combinaison noire massive à la visière orange lumineuse, la silhouette tient un long bâton." },
+    { "at": 80, "end": 84, "text": "Le balcon se trouve à l'intérieur de la passerelle vitrée d'un vaisseau colossal." },
+    { "at": 84, "end": 88, "text": "Dehors, dans le vide, une immense flotte de vaisseaux déchiquetés escorte la grande Arche." },
+    { "at": 88, "end": 93, "text": "Des propulseurs orange lumineux poussent l'armada dans l'étendue étoilée." },
+    { "at": 93, "end": 96.682, "text": "Tout se fond dans le noir." }
+  ],
+  "Vampirilis_Outro.LostBack": [
+    { "at": 0, "end": 7.787, "text": "Sur une surface métallique noire, de fins traits de lumière orange ardente dessinent des motifs anguleux complexes. Les circuits lumineux s'étendent et forment les silhouettes stylisées d'immenses vaisseaux spatiaux gravés dans le métal sombre." },
+    { "at": 12.965, "end": 14.234, "text": "Une foule en silhouette tend les bras vers le monolithe gigantesque et lumineux." },
+    { "at": 19.059, "end": 20.306, "text": "Les fidèles lèvent les bras bien haut." },
+    { "at": 25.599, "end": 26.275, "text": "Des ailes géométriques rayonnantes se déploient." },
+    { "at": 30.923, "end": 38.762, "text": "Une imposante figure Vodyani, faite d'énergie orange éclatante et de lignes acérées et anguleuses, se dresse pleinement formée dans l'obscurité. Elle rayonne comme un ange mécanique. L'apparition rougeoyante palpite de puissance avant de s'effacer dans le noir." }
+  ],
+  "Vampirilis_Outro.LostNotBack": [
+    { "at": 0, "end": 5.24, "text": "Des lignes orange lumineuses tracent le profil élancé et anguleux d'un immense vaisseau spatial sur une surface métallique sombre." },
+    { "at": 9.715, "end": 10.412, "text": "Une flotte lumineuse prend forme." },
+    { "at": 20.243, "end": 21.328, "text": "En dessous, des silhouettes lèvent les bras en signe d'adoration." },
+    { "at": 29.892, "end": 34.5, "text": "Une imposante figure Vodyani luit d'une lumière orange vive sur un mur métallique sombre. Elle porte une armure élancée et arbore d'immenses ailes anguleuses faites d'éclats géométriques flottants." },
+    { "at": 34.5, "end": 37, "text": "Le mur se fond dans l'obscurité." },
+    { "at": 37, "end": 38.762, "text": "La figure ailée s'efface." }
+  ],
+  "Vaulters_Intro": [
+    { "at": 0, "end": 5.348, "text": "Dans une soute caverneuse et faiblement éclairée, une silhouette mécanique anguleuse, orange rouille, s'affaisse contre un pilier parmi des caisses éparses et des câbles pendants. Une lumière verte s'anime en clignotant sur sa visière." },
+    { "at": 8.375, "end": 9.934, "text": "L'antique machine remue sa lourde tête." },
+    { "at": 12.828, "end": 13.841, "text": "Une silhouette figée derrière une vitre givrée." },
+    { "at": 17.867, "end": 22.747, "text": "Au centre d'une vaste chambre circulaire, le robot solitaire repose sous un anneau de lumière pâle. Une console voisine projette une planète holographique." },
+    { "at": 25.64, "end": 26.848, "text": "Une alerte rouge de panne moteur clignote." },
+    { "at": 35.328, "end": 36.536, "text": "Zolya dort paisiblement dans un caisson givré." },
+    { "at": 40.835, "end": 42.512, "text": "La lumière pâle de son caisson vacille et faiblit." },
+    { "at": 44.156, "end": 44.934, "text": "Des caissons silencieux bordent la salle obscure." },
+    { "at": 48.555, "end": 51.184, "text": "Un à un, les faibles témoins lumineux des caissons s'éteignent, plongeant le couloir dans l'obscurité." },
+    { "at": 53.375, "end": 54.075, "text": "Les ténèbres engloutissent tout." },
+    { "at": 58.334, "end": 62, "text": "Dans le noir absolu, la fente verte de la visière du robot se rallume." },
+    { "at": 62, "end": 71, "text": "D'immenses portes s'ouvrent à l'autre bout du couloir, découpant un éclatant faisceau de lumière blanche dans l'air poussiéreux. Il balaie les rangées de caissons cryogéniques et illumine la machine solitaire." },
+    { "at": 71, "end": 76, "text": "Le robot fixe l'éclat aveuglant." },
+    { "at": 76, "end": 81, "text": "Dans une nébuleuse teintée de vert, un astéroïde colossal et évidé rougeoie de feux dorés intérieurs. Un vaisseau élancé en forme d'anneau, l'Argosie, émerge des débris rocheux." },
+    { "at": 81, "end": 89.216, "text": "L'antique vaisseau de colonisation s'éloigne de la carcasse rougeoyante, met le cap vers les étoiles et disparaît dans l'immense obscurité cosmique." }
+  ],
+  "Vaulters_Outro.LostBack": [
+    { "at": 8.21, "end": 8.84, "text": "Des Exilés regardent un vaisseau décoller." },
+    { "at": 11.554, "end": 12.189, "text": "Tout disparaît dans un fondu au noir." },
+    { "at": 23.124, "end": 27.882, "text": "Dans l'espace, un anneau gigantesque flotte en orbite au-dessus d'Auriga. Un soleil éclatant jaillit derrière l'horizon sombre de la planète et projette des rayons vifs dans le vide étoilé." }
+  ],
+  "Vaulters_Outro.LostNotBack": [
+    { "at": 8.515, "end": 9.36, "text": "Le vaisseau-anneau s'élève." },
+    { "at": 25.679, "end": 27.882, "text": "Tout disparaît dans un fondu au noir." }
+  ],
+  "Vedt": [
+    { "at": 0.5, "end": 3.5, "text": "Dans une savane dorée, de hautes herbes sèches bruissent autour de rochers sombres et rugueux." },
+    { "at": 3.5, "end": 7, "text": "Posée sur un rocher, une créature au corps félin élancé, à la longue queue fine et à la tête hérissée de pointes, observe la plaine." },
+    { "at": 7, "end": 12.693, "text": "Loin au-dessus d'arbres étranges aux troncs épais et bulbeux et aux branches nues, un module de descente d'un blanc éclatant file dans le ciel bleu pâle." }
+  ],
+  "Venetians_Intro": [
+    { "at": 11.952, "end": 12.84, "text": "Une femme est assise à contre-jour devant une fenêtre bleue." },
+    { "at": 27.39, "end": 28.386, "text": "Il frappe une table du poing, éparpillant des jetons lumineux." },
+    { "at": 40.123, "end": 42.379, "text": "Il rejette les bras en arrière tandis qu'une énergie dorée jaillit de lui, les yeux brillant intensément." },
+    { "at": 50.473, "end": 51.959, "text": "En armure de combat, il bondit à travers une explosion en tirant avec une arme." },
+    { "at": 62.326, "end": 66, "text": "La femme esquisse un sourire narquois. Tout disparaît dans un fondu au noir." }
+  ],
+  "Venetians_Outro.LostBack": [
+    { "at": 0, "end": 2.137, "text": "Une femme pâle, en robe à col haut, est assise sur un globe lisse et tient une sphère dorée lumineuse." },
+    { "at": 21.114, "end": 28, "text": "La grille dorée lumineuse sous elle s'étend à l'infini dans l'espace. Derrière elle, une vaste nébuleuse étoilée tourbillonne d'un vert éclatant. D'immenses colonnes de lumière s'élèvent de la grille vers le cosmos, la rendant minuscule face à l'étendue infinie. Tout disparaît dans un fondu au noir." }
+  ],
+  "Venetians_Outro.LostNotBack": [
+    { "at": 0, "end": 2.318, "text": "Une femme pâle, en robe à col haut, est assise sur un globe lisse et tient une sphère dorée lumineuse." },
+    { "at": 21.114, "end": 28, "text": "La grille dorée lumineuse sous elle s'étend à l'infini dans l'espace. Derrière elle, une vaste nébuleuse étoilée tourbillonne d'un vert éclatant. D'immenses colonnes de lumière s'élèvent de la grille vers le cosmos, la rendant minuscule face à l'étendue infinie. Tout disparaît dans un fondu au noir." }
+  ]
+}
