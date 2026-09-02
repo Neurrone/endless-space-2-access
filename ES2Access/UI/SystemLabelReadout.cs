@@ -36,6 +36,37 @@ namespace ES2Access.UI
     /// </summary>
     public static class SystemLabelReadout
     {
+        /// <summary>
+        /// Which of a system row's named regions a picture on this label belongs in.
+        ///
+        /// The label draws everything it has to say in one strip of icons round a name, and the
+        /// player walking it wants the four different questions apart: what is happening here now,
+        /// what I can DO here, what is in the ground, and what the place permanently is. Only the
+        /// walk can sort them, because the answer is a fact about the WIDGET - which prefab field
+        /// the picture was read off - and never about the words on the tooltip behind it, which say
+        /// what the game is explaining rather than what kind of thing it is explaining.
+        ///
+        /// The row's other three regions (planets, star lanes, fleets) hold no dossiers, so they are
+        /// not named here: they are whole families of rows the tree builds elsewhere.
+        /// </summary>
+        public enum Region
+        {
+            /// <summary>What is happening AT the system now - a battle, a siege, an invasion, a
+            /// rebellion building, a race being run for the place.</summary>
+            Status,
+
+            /// <summary>A door: the game wired a click on this very picture, so the node is a button
+            /// and pressing it goes somewhere.</summary>
+            Actions,
+
+            /// <summary>What has been found in the ground here.</summary>
+            Resources,
+
+            /// <summary>What the place permanently IS - a home system, a wonder, a temple, a portal,
+            /// the seat of a trading company.</summary>
+            Details,
+        }
+
         /// <summary>How many people live there - the number the label writes beside the star, and the
         /// one thing on it a player scanning their empire reads first.</summary>
         public static string Population(StarSystemLabel label)
@@ -353,29 +384,30 @@ namespace ES2Access.UI
 
             try
             {
-                // Left of the name: what is happening AT the system.
-                Picture(found, label.ContextualIconBattle);
-                Picture(found, label.ContextualIconPortal);
-                Picture(found, label.ContextualIconBlockedFleetPortal);
-                Picture(found, label.ContextualIconHonorZone);
-                Picture(found, label.ContextualIconWonder);
-                Picture(found, label.ContextualIconDetectionProbe);
-                Picture(found, label.ContextualIconTemple);
-                Picture(found, label.ContextualIconSlumberingRuins);
+                // Left of the name, and the two questions the one strip answers side by side: what is
+                // happening AT the system, and what the place standingly IS.
+                Picture(found, label.ContextualIconBattle, Region.Status);
+                Picture(found, label.ContextualIconPortal, Region.Details);
+                Picture(found, label.ContextualIconBlockedFleetPortal, Region.Status);
+                Picture(found, label.ContextualIconHonorZone, Region.Details);
+                Picture(found, label.ContextualIconWonder, Region.Details);
+                Picture(found, label.ContextualIconDetectionProbe, Region.Details);
+                Picture(found, label.ContextualIconTemple, Region.Details);
+                Picture(found, label.ContextualIconSlumberingRuins, Region.Details);
 
                 // Right of the name, minus the three the game draws there as BUTTONS: those are child
                 // nodes of the system already (<see cref="Actions"/>).
-                Picture(found, label.ContextualIconBlackout);
-                Picture(found, label.ContextualIconSiege);
-                Picture(found, label.ContextualIconInvasion);
-                Picture(found, label.ContextualIconJuggernautEffects);
-                Picture(found, label.GivenToAcademyGroup);
+                Picture(found, label.ContextualIconBlackout, Region.Status);
+                Picture(found, label.ContextualIconSiege, Region.Status);
+                Picture(found, label.ContextualIconInvasion, Region.Status);
+                Picture(found, label.ContextualIconJuggernautEffects, Region.Status);
+                Picture(found, label.GivenToAcademyGroup, Region.Status);
 
                 // The population line: how many of the people here are the player's own agents. The
                 // COUNT is spoken with the system's readout; this is the sentence the game explains it
                 // with, which is on the picture and reaches nobody without a node to stand on.
                 StarSystemLabel drawn = label;
-                Picture(found, label.TraitorCountGroup, () => Sleepers(drawn));
+                Picture(found, label.TraitorCountGroup, Region.Status, () => Sleepers(drawn));
 
                 // The rebellion's two hover targets - the ring and the countdown - each with the
                 // sentence the game wrote for it. The numbers are the row's own buffer line
@@ -389,27 +421,38 @@ namespace ES2Access.UI
                         found,
                         rebellion.RebellionGauge == null
                             ? null
-                            : rebellion.RebellionGauge.AgeTransform
+                            : rebellion.RebellionGauge.AgeTransform,
+                        Region.Status
                     );
                     Picture(
                         found,
                         rebellion.RebellionTimerLabel == null
                             ? null
-                            : rebellion.RebellionTimerLabel.AgeTransform
+                            : rebellion.RebellionTimerLabel.AgeTransform,
+                        Region.Status
                     );
                 }
 
                 // What the system is building. The picture's own dossier is the constructible's, which
                 // is the thing this node exists to hand over: the label promises that dossier and,
                 // until this node existed, never offered it to anybody without a mouse.
-                Picture(found, label.QueuedConstructionGroup, () => Building(drawn));
+                //
+                // AND IT IS THE SYSTEM'S ONE DOOR INTO ITS OWN PAGE where the label is drawing it
+                // (owner ruling 2026-09-02): the slot's click is the very handler the name-line button
+                // sends (<c>StarSystemLabel.OnRequestManagementView</c> :3002), so the row offers this
+                // node and not a second "Manage system" beside it - which is why it belongs to the
+                // ACTIONS region and takes a key that says what it is rather than where it fell in the
+                // walk (<c>GalaxyHudScreen.AddInside</c> reads both).
+                int queue = found.Count;
+                Picture(found, label.QueuedConstructionGroup, Region.Actions, () => Building(drawn));
+                Keyed(found, queue, QueueKey);
 
                 // A line per team racing for the system, named by the wrapper the game hangs on the
                 // team's own icon. The score is a strip of lit gauge parts with the figure written
                 // nowhere on it, and the game keeps that figure in the row's own tooltip
                 // (<c>KingOfTheHillScoreLine.RefreshTooltip</c>) along with who is winning and how many
                 // turns are left - so the row's sentence is the whole reading.
-                Table(found, label.KingOfTheHillTable);
+                Table(found, label.KingOfTheHillTable, Region.Status);
             }
             catch (Exception e)
             {
@@ -433,9 +476,9 @@ namespace ES2Access.UI
 
             try
             {
-                Table(found, label.HomeAndTradingTable);
+                HomeAndTrading(found, label);
                 ExplorationWinners(found, label);
-                Table(found, label.HauntCirclesTable);
+                Table(found, label.HauntCirclesTable, Region.Details);
             }
             catch (Exception e)
             {
@@ -468,10 +511,118 @@ namespace ES2Access.UI
         /// <paramref name="name"/> is for a picture this mod has its own words for, which outrank the
         /// naming ladder while they answer: the queue's "Building X, N turns" is what the label draws
         /// AROUND the picture, and the ladder can only ever reach what is on it.
+        ///
+        /// EVERY WAY IN NAMES A REGION (<see cref="Region"/>). There is deliberately no overload that
+        /// leaves it out: an entry nobody stamped belongs to no region, and a region is what the row's
+        /// emit reads to find its nodes - so a picture collected without one would be silently dropped
+        /// rather than misfiled, which is the failure a walk cannot see.
         /// </summary>
-        private static void Picture(List<TooltipChildren.Dossier> found, AgeTransform widget)
+        private static void Picture(
+            List<TooltipChildren.Dossier> found,
+            AgeTransform widget,
+            Region region
+        )
         {
-            Picture(found, widget, null);
+            Picture(found, widget, region, null);
+        }
+
+        private static void Picture(
+            List<TooltipChildren.Dossier> found,
+            AgeTransform widget,
+            Region region,
+            Func<string> name
+        )
+        {
+            int at = found.Count;
+            Picture(found, widget, name);
+            In(found, at, region);
+        }
+
+        /// <summary>The structural key the construction slot's node takes under its system - a name
+        /// for the thing rather than its place in the walk, because it is the row's door into the
+        /// system's page and a door has to keep its key across the icons appearing and disappearing
+        /// beside it.</summary>
+        public const string QueueKey = "queue";
+
+        /// <summary>Stamp the region of the system's row on every entry a walk step just collected -
+        /// the one place a dossier is told which of the row's named blocks it belongs in, and public
+        /// because two of those blocks are filled from outside this file (the star's own dossier and
+        /// the deposits, both read off the galaxy model rather than off the label).</summary>
+        public static void In(List<TooltipChildren.Dossier> found, int from, Region region)
+        {
+            for (int i = from; i < found.Count; i++)
+            {
+                TooltipChildren.Dossier entry = found[i];
+                entry.Region = region;
+                found[i] = entry;
+            }
+        }
+
+        /// <summary>Give the entries the last step collected a structural key of their own.</summary>
+        private static void Keyed(List<TooltipChildren.Dossier> found, int from, string key)
+        {
+            for (int i = from; i < found.Count; i++)
+            {
+                TooltipChildren.Dossier entry = found[i];
+                entry.Key = key;
+                found[i] = entry;
+            }
+        }
+
+        /// <summary>
+        /// The strip of standing icons under the deposits, sorted into the two regions it draws into
+        /// one line: what is being DONE to the place - it is decaying, and the metaplot's battle rules
+        /// are in force here - against what the place permanently is, a home system or a trading
+        /// company's seat.
+        ///
+        /// Matched against the label's own fields rather than against anything the pictures say
+        /// (<see cref="Region"/>), and by ancestry rather than by identity, because the strip's item
+        /// is whatever the prefab wrapped the group in. Anything the prefab adds to the line that
+        /// neither field names reads as part of the place, which is what the rest of the line is - the
+        /// latent hacking beacon parked here is exactly that.
+        /// </summary>
+        private static void HomeAndTrading(
+            List<TooltipChildren.Dossier> found,
+            StarSystemLabel label
+        )
+        {
+            AgeTransform table = label.HomeAndTradingTable;
+            // Flow control, exactly as in <see cref="Table"/>: the line is what the game switches on
+            // and off, and a switched-off one still holds the last system's icons - so whether its
+            // items are walked at all is that one answer rather than one per item.
+            if (!AgeWidgets.Visible(table))
+            {
+                return;
+            }
+
+            IList<AgeTransform> items = table.Children;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform item = items[i];
+                bool happening =
+                    Holds(item, label.DecayingSystemGroup)
+                    || Holds(item, label.MetaplotBattleRulesGroup);
+                Picture(found, item, happening ? Region.Status : Region.Details);
+            }
+        }
+
+        /// <summary>Whether a strip item IS the label's own widget or the thing the prefab wrapped it
+        /// in - asked up the parent chain, and bounded, because a strip item is a wrapper or two at
+        /// most and an unbounded walk up a label reaches the whole window.</summary>
+        private static bool Holds(AgeTransform item, AgeTransform widget)
+        {
+            AgeTransform at = widget;
+            for (int i = 0; at != null && i < 4; i++)
+            {
+                if (ReferenceEquals(at, item))
+                {
+                    return true;
+                }
+
+                at = at.Parent;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -494,8 +645,8 @@ namespace ES2Access.UI
 
             try
             {
-                Picture(found, label.BlackoutIcon);
-                Picture(found, label.BestSystemIcon);
+                Picture(found, label.BlackoutIcon, Region.Status);
+                Picture(found, label.BestSystemIcon, Region.Status);
             }
             catch (Exception e)
             {
@@ -893,7 +1044,11 @@ namespace ES2Access.UI
                     continue;
                 }
 
+                // Who won the race to explore the place: a standing fact about it, like the wonder
+                // and the temple beside it.
+                int at = found.Count;
                 TooltipChildren.AddPlain(found, badge.Tooltip, badges[i]);
+                In(found, at, Region.Details);
             }
         }
 
@@ -1074,7 +1229,11 @@ namespace ES2Access.UI
         /// <summary>Every drawn item of a row of icons, one child node each, in the order the row
         /// arranges them - the strip of standing icons under the name (home system, marketplace, golden
         /// age...) and the haunted planets.</summary>
-        private static void Table(List<TooltipChildren.Dossier> found, AgeTransform table)
+        private static void Table(
+            List<TooltipChildren.Dossier> found,
+            AgeTransform table,
+            Region region
+        )
         {
             if (!AgeWidgets.Visible(table))
             {
@@ -1084,7 +1243,7 @@ namespace ES2Access.UI
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                Picture(found, items[i]);
+                Picture(found, items[i], region);
             }
         }
 

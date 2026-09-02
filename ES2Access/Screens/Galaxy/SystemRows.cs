@@ -127,9 +127,10 @@ namespace ES2Access.Screens
         /// Backslash is the right click: with fleets selected it sends them here, and with none it puts
         /// the camera back where the zoom took it from.
         ///
-        /// The page a colony of yours has of its own is on neither key. The map draws a button for it
-        /// on the system's own label, beside the name, and that button is a node here - so the player
-        /// reaches it the way a mouse does, by going to the thing that opens it.
+        /// The page a colony of yours has of its own is on neither key. The map draws a door for it on
+        /// the system's own label and that door is a node here - so the player reaches it the way a
+        /// mouse does, by going to the thing that opens it. Which of the label's two doors is the node
+        /// is <see cref="AddManagementDoor"/>'s question, and the answer is always exactly one.
         /// </summary>
         private void AddSystem(
             GraphBuilder builder,
@@ -337,21 +338,7 @@ namespace ES2Access.Screens
             // Only what is open costs anything: a galaxy of closed systems declares one node each.
             if (builder.IsExpanded(id))
             {
-                // The dossiers hang off the full NAMEPLATE - the deposit icons, the stat block behind
-                // the star. From further out the map draws a name on a coloured bar and none of them,
-                // so the branch opens onto the geometry alone (<see cref="AddInside"/>).
-                bool detail = _showsDetail;
-                object outer = detail ? TooltipChildren.Actions(builder, place) : null;
                 AddInside(builder, place, node, empire, label);
-                if (detail)
-                {
-                    TooltipChildren.Emit(
-                        builder,
-                        place,
-                        SystemDossiers(node, empire, label),
-                        outer
-                    );
-                }
             }
 
             builder.EndGroup();
@@ -402,8 +389,13 @@ namespace ES2Access.Screens
                     // the same way now, or the node reads a system the camera has moved on from.
                     () => StarAim(it, looking, LabelFor(it, SystemLabels()))
                 );
+                // The stat block behind the star is what the PLACE is, so it leads the "Details"
+                // region - the first thing the player reaches asking what this system is.
+                SystemLabelReadout.In(found, 0, SystemLabelReadout.Region.Details);
                 // Then every picture the label is drawing, in its own order, with the deposits back in
                 // the place the label draws them (<see cref="SystemLabelReadout.IconsAboveDeposits"/>).
+                // Each stamps the region of the row it belongs in as it goes, and the emit reads them
+                // back region by region while keying every node by its place in THIS list.
                 SystemLabelReadout.IconsAboveDeposits(found, label);
                 AddDeposits(found, node, empire, label);
                 SystemLabelReadout.IconsBelowDeposits(found, label);
@@ -473,6 +465,7 @@ namespace ES2Access.Screens
                 if (found.Count > at)
                 {
                     ExploitedName(found, at, it, kind);
+                    SystemLabelReadout.In(found, at, SystemLabelReadout.Region.Resources);
                 }
             }
         }
@@ -714,18 +707,36 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// What the map draws inside a system, as the children of that system's ONE node.
+        /// What the map draws inside a system, as the children of that system's ONE node - in SEVEN
+        /// NAMED REGIONS (owner design 2026-09-02).
         ///
         /// One node, because travelling a lane rebases the cursor onto the destination's own node rather
         /// than declaring a copy of it (<see cref="AddStarlanes"/>). So there is no second way in whose
         /// contents could come to differ, no structural re-keying of everything underneath, and nothing
         /// here has to be made poorer than anything else.
         ///
+        /// An opened system used to be one flat run of everything the map draws there - a door, four
+        /// buttons, the planets, the lanes, three sets of fleets, the quest pins - followed by a block
+        /// called "Tooltips" holding a dozen icon nodes in the label's own order, so the one thing a
+        /// player wanted (is anything WRONG here? what can I DO here?) was somewhere in a list of
+        /// thirty. The children are now sorted into regions the player can jump by name with
+        /// Alt+Up/Down, in one fixed order at every distance and in the scan view too: <b>Status</b>
+        /// (what is happening here now), <b>Actions</b> (the doors), <b>Planets</b>, <b>Star lanes</b>,
+        /// <b>Fleets</b>, <b>Resources</b> (what is in the ground) and <b>Details</b> (what the place
+        /// permanently is). Each is a context level, so its name is said once on the way in and the
+        /// "N of M" the player hears counts that region alone.
+        ///
+        /// A region the map is drawing nothing for does not exist: a context with no children is not a
+        /// node and a region nothing is tagged with is not a jump target, so the far bands - where the
+        /// map draws a name on a coloured bar and nothing else - open onto Star lanes and Fleets and
+        /// say nothing about the five they have no content for.
+        ///
         /// The fleets are in THREE groups because the map draws them at three distances: what is parked
         /// here, then what is under way on the lanes leaving here - the latter under the end it is
         /// arriving at, each saying which lane it is on (<see cref="AddEnRoute"/>) - and last what is
         /// crossing the open space TOWARDS here with no lane to fly (<see cref="AddFreeMoving"/>).
-        /// Both of the moving groups hang under the destination alone.
+        /// Both of the moving groups hang under the destination alone, and the hangars follow them
+        /// because a hangar is where a fleet comes from.
         /// </summary>
         private void AddInside(
             GraphBuilder builder,
@@ -736,34 +747,207 @@ namespace ES2Access.Screens
         )
         {
             List<Lane> lanes = LanesOf(node, empire);
-            if (_showsDetail)
+            // Collected ONCE for the whole branch, in the order the label draws them, and read four
+            // times: each region takes the entries stamped with its own name and keys them by their
+            // place in this one list, so sorting them into regions moves no node's key.
+            List<TooltipChildren.Dossier> dossiers =
+                _showsDetail ? SystemDossiers(node, empire, label) : null;
+            object outer = builder.Region;
+            try
+            {
+                if (_showsDetail)
+                {
+                    // What is happening at the system now: the label's own marks for it, then the quest
+                    // pins - which are a thing about the QUEST standing here rather than about the
+                    // system, and so come last of what is going on.
+                    object at = Region(builder, key, "status", ModStrings.GalaxySystemStatusRegion);
+                    try
+                    {
+                        TooltipChildren.EmitInto(
+                            builder,
+                            key,
+                            dossiers,
+                            SystemLabelReadout.Region.Status
+                        );
+                        AddQuestMarkers(builder, key, node, empire);
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+
+                    // Every door the map draws at the place: the way into the system's own page first,
+                    // then the label's buttons, the wrecks a mouse can salvage, and the bearings a
+                    // probe can be sent on.
+                    at = Region(builder, key, "actions", ModStrings.GalaxySystemActionsRegion);
+                    try
+                    {
+                        AddManagementDoor(builder, key, node, label, dossiers);
+                        AddLabelButtons(builder, key, label);
+                        AddWrecks(builder, key, node);
+                        AddProbeDirections(builder, key, node);
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+
+                    at = Region(builder, key, "planets", ModStrings.GalaxySystemPlanetsRegion);
+                    try
+                    {
+                        AddPlanets(builder, key, node, empire, label);
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+                }
+
+                // The lane network is drawn at every band the systems themselves are, so a system whose
+                // band draws nothing else still opens onto the roads out of it - which is what makes the
+                // far bands a way of reading the map's geometry rather than an emptier version of the
+                // near ones.
+                object lanesRegion = Region(
+                    builder,
+                    key,
+                    "lanes",
+                    ModStrings.GalaxySystemLanesRegion
+                );
+                try
+                {
+                    AddStarlanes(builder, key, node, empire, lanes);
+                }
+                finally
+                {
+                    TooltipChildren.EndRegion(builder, lanesRegion);
+                }
+
+                if (_showsFleets)
+                {
+                    object fleets = Region(
+                        builder,
+                        key,
+                        "fleets",
+                        ModStrings.GalaxySystemFleetsRegion
+                    );
+                    try
+                    {
+                        AddFleets(builder, key, FleetPresence.FleetsAt(node));
+                        AddEnRoute(builder, key, EnRouteOn(node, lanes));
+                        AddFreeMoving(builder, key, node, FreeMovingAt(node));
+                        if (_showsDetail)
+                        {
+                            AddHangars(builder, key, node);
+                        }
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, fleets);
+                    }
+                }
+
+                if (_showsDetail)
+                {
+                    object at = Region(
+                        builder,
+                        key,
+                        "resources",
+                        ModStrings.GalaxySystemResourcesRegion
+                    );
+                    try
+                    {
+                        TooltipChildren.EmitInto(
+                            builder,
+                            key,
+                            dossiers,
+                            SystemLabelReadout.Region.Resources
+                        );
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+
+                    at = Region(builder, key, "details", ModStrings.GalaxySystemDetailsRegion);
+                    try
+                    {
+                        TooltipChildren.EmitInto(
+                            builder,
+                            key,
+                            dossiers,
+                            SystemLabelReadout.Region.Details
+                        );
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+                }
+            }
+            finally
+            {
+                builder.SetRegion(outer);
+            }
+        }
+
+        /// <summary>One of the system row's named regions, opened - the mod's own word for the block
+        /// as a context level, and a structural path under the system's key for Alt+Up/Down to jump
+        /// to.</summary>
+        private static object Region(GraphBuilder builder, string key, string region, string name)
+        {
+            return TooltipChildren.BeginRegion(builder, key, region, ModStrings.Get(name));
+        }
+
+        /// <summary>
+        /// THE SYSTEM'S ONE DOOR INTO ITS OWN PAGE, never two (owner ruling 2026-09-02).
+        ///
+        /// The map draws two of them on a colony of the player's that has something in its queue: the
+        /// button beside the name, and the construction slot below it - and the slot's click is
+        /// literally the name-line button's handler (<c>StarSystemLabel.OnRequestManagementView</c>
+        /// :3002). So where the label is drawing the slot, the slot's own node IS the door: it is named
+        /// by what the label writes around it ("Building Interplanetary Transport Network, 3 turns"),
+        /// it carries the constructible's dossier, it points where a mouse would point, and it opens the
+        /// page - and a bare "Manage system" beside it would be the same door said twice, in a phrase
+        /// of the mod's that says less.
+        ///
+        /// Asked of the CLICK the walk found on that picture rather than of the picture being drawn,
+        /// so that a slot the game ever draws without wiring one still leaves the row a way in.
+        /// Everywhere the slot is not drawn at all - an outpost, a foreign colony we hold a traitor in
+        /// - the name-line button is the door and is declared exactly as before
+        /// (<see cref="AddManagementView"/>).
+        /// </summary>
+        private static void AddManagementDoor(
+            GraphBuilder builder,
+            string key,
+            StarSystemNode node,
+            StarSystemLabel label,
+            IList<TooltipChildren.Dossier> dossiers
+        )
+        {
+            TooltipChildren.EmitInto(builder, key, dossiers, SystemLabelReadout.Region.Actions);
+            if (!Queued(dossiers))
             {
                 AddManagementView(builder, key, node, label);
-                AddLabelButtons(builder, key, label);
-                AddPlanets(builder, key, node, empire, label);
-                AddWrecks(builder, key, node);
+            }
+        }
+
+        /// <summary>Whether the label is drawing this system a construction slot the game wired a click
+        /// on - the one thing that decides which of the two doors the row offers.</summary>
+        private static bool Queued(IList<TooltipChildren.Dossier> dossiers)
+        {
+            for (int i = 0; dossiers != null && i < dossiers.Count; i++)
+            {
+                TooltipChildren.Dossier it = dossiers[i];
+                if (
+                    it.Clicks != null
+                    && Equals(it.Region, SystemLabelReadout.Region.Actions)
+                )
+                {
+                    return true;
+                }
             }
 
-            // The lane network is drawn at every band the systems themselves are, so a system whose
-            // band draws nothing else still opens onto the roads out of it - which is what makes the
-            // far bands a way of reading the map's geometry rather than an emptier version of the
-            // near ones.
-            AddStarlanes(builder, key, node, empire, lanes);
-            if (_showsFleets)
-            {
-                AddFleets(builder, key, FleetPresence.FleetsAt(node));
-                AddEnRoute(builder, key, EnRouteOn(node, lanes));
-                AddFreeMoving(builder, key, node, FreeMovingAt(node));
-            }
-
-            if (_showsDetail)
-            {
-                // After the planets, the lanes and the fleets: a quest pin is the last thing the map
-                // draws at a place, and it is a thing about the QUEST rather than about the system.
-                AddQuestMarkers(builder, key, node, empire);
-                AddHangars(builder, key, node);
-                AddProbeDirections(builder, key, node);
-            }
+            return false;
         }
 
         /// <summary>
@@ -1113,6 +1297,10 @@ namespace ES2Access.Screens
         /// <summary>
         /// The way into a system's page from the map - the button the mouse takes where the map is
         /// drawing one, and the route behind it wherever that route would really open a page.
+        ///
+        /// Declared only where the label is NOT drawing a construction slot, which is the other door
+        /// into the same page and the one the row prefers when both exist
+        /// (<see cref="AddManagementDoor"/>, owner ruling 2026-09-02).
         ///
         /// Declared while the game is drawing the button, and pressed only while the game will act on a
         /// press. Those are two different questions here: the label greys the button out on anything but

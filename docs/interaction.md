@@ -627,7 +627,8 @@ order; an empire with no known centre sorts after those that have one), then min
 No owner and **Unexplored** — a "???" system's owner is unknown rather than none — with empty
 headings undeclared and no constellations at all. Rows read from the MODEL, so focusing one gives
 what hovering the label would (FOCUS IS HOVER, ruled: the lens paints some label content only for the
-systems it thinks important). Children: planet dots, lanes, and the scan label's own picture nodes.
+systems it thinks important). Children: the same named regions the ordinary row is read in, three of
+them - Planets (dots), Star lanes, and Status (the scan label's own picture nodes).
 Absent throughout: fleets, probes, missiles, pins, quest markers, deposits, docks, hangars, wrecks.
 **The headings are not in the stars' keys** — every row the cursor could be standing on keeps the key
 it has in the ordinary view, which is what makes the mode change cost the cursor nothing either way.
@@ -831,6 +832,31 @@ draws them (absent where it has none) — and `<key>/tooltips` SECOND, labelled 
 silent** — it wires no `OnActivate`, because there is nothing there to do. Positions count within
 the region. Which surfaces declare one, and what each one's dossiers are, is the recipe file of the
 screen that draws it (`docs/test-recipes/`).
+
+**AN OPENED STAR SYSTEM IS SEVEN NAMED REGIONS** (owner design 2026-09-02;
+`GalaxyHudScreen.AddInside`), in one fixed order at every zoom band and under a scan lens too:
+**Status** (`<key>/status` — the label's battle, blockade, blackout, siege, invasion, juggernaut,
+academy, sleeper, rebellion and King-of-the-Hill marks, the decaying-system and metaplot-battle-rules
+pictures, then the quest pins) · **Actions** (`<key>/actions` — the management door, the label's
+buttons, the wrecked Arks, the probe bearings) · **Planets** · **Star lanes** · **Fleets** (parked,
+en route, free-moving, then the hangars) · **Resources** (the deposits) · **Details**
+(`<key>/details` — the star's own dossier first, then the portal, honor zone, wonder, detection
+probe, temple, slumbering ruins, home system, trading company, exploration winners and haunted
+planets). Each is a `PushContext` level, so the name is said once on the way in and the "N of M"
+counts that region alone; Alt+Up/Down jumps between them and a region the map draws nothing for does
+not exist (the 3–6 bands are Star lanes plus Fleets, the scan lens is Planets, Star lanes, Status).
+Which region a label picture belongs to is decided by the WIDGET it was read off
+(`SystemLabelReadout.Region`), never by its words. Dossier nodes keep the keys they had —
+`<key>/tooltip/<i>` indexed over the whole collected list, not over the region — so bookmarks and
+landings are untouched.
+
+**ONE DOOR PER SYSTEM, NEVER TWO** (owner ruling 2026-09-02). The map draws two ways into a colony's
+own page — the button beside the name and the construction slot below it — and the slot's click is
+the name-line button's own handler (`StarSystemLabel.OnRequestManagementView`). So where the label
+draws the slot, its node (`<key>/queue`, "Building Interplanetary Transport Network, 3 turns",
+carrying the constructible's dossier) IS the door and leads the Actions region, and no "Manage
+system" is declared beside it; where the slot is not drawn — an outpost, a foreign colony we hold a
+traitor in — `<key>/management` is the door exactly as before.
 
 **Which key crosses a multi-region stop** (measured on the empire HUD band, 2026-08-24): Up/Down
 step between the stop's REGIONS (rows) and clamp at the last one; Right/Left walk within the row.

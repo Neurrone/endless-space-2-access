@@ -27,8 +27,24 @@ system (Sabel) expanded, key shapes counted:
 | 1–2 | constellation groups only, CLOSED, + EVERY point bookmark, interleaved by position (2026-09-01: they move up out of their shut groups and keep their `…/constellation/#/bookmark/#` keys). Each constellation row also SAYS its ownership bonus here — "Serpens, group, +15% Food" — because those are the two levels the map writes it beside the name; from 3 on the row's own dossier carries it ("Constellation control bonus: +15% Food") and the row is silent about it | — no system rows at all |
 | 3–4 | + system rows, + point bookmarks back inside their constellation | lanes only |
 | 5–6 | same | lanes + fleets (parked, en-route, free-moving) |
-| 7–12 | + the open-space rows (`galaxy:probe/#` and the rest) | lanes, fleets, planets AT DOT FIDELITY, the label dossiers (`/tooltip/#`), manage-system, hangars, quest pins, probe directions |
+| 7–12 | + the open-space rows (`galaxy:probe/#` and the rest) | all seven regions: Status, Actions, Planets (AT DOT FIDELITY), Star lanes, Fleets, Resources, Details |
 | 13 | same | the same, with the planets at full reading |
+
+**A system's children are SEVEN NAMED REGIONS** (2026-09-02; the contract and the one-door rule are
+in `docs/interaction.md`, "Regions on a stop"). Expected order per band, and a region with no node
+is absent:
+
+| band | regions, in order |
+|---|---|
+| 3–4 | Star lanes |
+| 5–6 | Star lanes · Fleets |
+| 7–13 | Status · Actions · Planets · Star lanes · Fleets · Resources · Details |
+| any scan lens | Planets · Star lanes · Status |
+
+Walking one: expand the system with Right twice, then **Alt+Down** (`ui.regionNext`) region by
+region — each announces its own name once on entry and counts "N of M" within itself. The dossier
+nodes keep their old keys (`<key>/tooltip/<i>`, indexed over the whole collected list, so the numbers
+within a region are not consecutive); the construction slot is the exception and is `<key>/queue`.
 
 **A planet's two readings, either side of 12↔13** (2026-09-01). Expand a system from 13 (or let an
 expansion at 7–12 jump you there), put the cursor on a planet, then `SetZoomHere(11)` and dump
@@ -603,7 +619,7 @@ MEASURED 2026-08-23 on `[Beginner] test`, all through `POST /input`:
 
 - **Right on a closed system**: step 9 → 12, focus onto the system, `settling` false on the very
   next probe (one snap, no flight), cursor on the system's first child.
-- **Down/Up inside one system** (management, planets, lanes, a fleet, a `Tooltips` dossier card):
+- **Down/Up inside one system** (the door, planets, lanes, a fleet, a dossier card - since 2026-09-02 read as named regions):
   nine consecutive steps, camera bit-identical at `(68.48,-22.85)` step 12 throughout.
 - **Backslash on the system row** (`ui.contextual`): step 12 → 9, focus unmoved — and then walking
   the same children keeps step 9. That is the "a zoom by hand survives" rule.
@@ -867,7 +883,8 @@ in the lens, which is why the mod has to leave for it.
 **Reaching a DOT row at all** (both views). At levels 7–12 opening a system takes the camera to 13,
 where planets are full orbital cards — so the dot reading is reached by expanding and then zooming
 back OUT with the branch open (`SetZoomHere(8)`), which is also the only route to the label's
-picture children. In scan mode the expansion is in place, so the dots are simply the children.
+picture children. In scan mode the expansion is in place, so the dots are simply the children -
+of the "Planets" region, the first of the three a scan row is read in.
 Measured 2026-09-01 on Dusay: at level 9 `Raia, Colonized, Unique Planet` beside
 `Dusay I, Inhospitable, 2 curiosities`; under the Economy lens the same row minus the curiosity
 count, and the unique mark survives panning the camera away from Dusay entirely (it is read from
@@ -1029,33 +1046,39 @@ first and it is still open after the search has walked past it.
 
 ## Dossiers and tooltips
 
-**Walking a "Tooltips" region.** Three surfaces carry one on
+**Walking a dossier region.** Three surfaces carry one on
 `[Beginner] test`, and each is reached the same way: expand the node with Right twice, step to the
 second region with **Alt+Down** (`ui.regionNext`), and read the dossier nodes there.
 - **Galaxy system.** Route: on `screen.galaxy`, Tab to `galaxy:systems`, `POST /type "osulo"`,
-  `ui.back`, Right twice (the camera comes in). The actions region holds Diplomacy, three planets,
-  three lanes and a fleet; the Tooltips region holds `Osulo` (the system dossier — its header reads
-  "Osulo - Niris" off the LABEL and just "Osulo" off the orbital window the camera swaps to) then
-  `Hyperium`, `Titanium`, `Transvine`. Dusay has the system dossier and no deposits.
+  `ui.back`, Right twice (the camera comes in). Since 2026-09-02 these are the row's own named
+  regions rather than one "Tooltips" block: Actions holds Diplomacy, Planets the three planets, Star
+  lanes the three lanes, Fleets the one fleet; Resources holds `Hyperium`, `Titanium`, `Transvine`;
+  Details holds `Osulo` (the system dossier — its header reads "Osulo - Niris" off the LABEL and just
+  "Osulo" off the orbital window the camera swaps to). Dusay has the system dossier and no deposits,
+  so it has a Details region and no Resources one.
   **A deposit node names its state** — "Transvine, exploited" — off the drawn icon, so the name is
   the bare kind wherever the label is drawing no strip.
 
-**The system label's pictures are nodes of that same region**, one per DRAWN picture, in the
-label's own order (2026-09-01). Two catches, both measured on this fixture:
+**The system label's pictures are nodes**, one per DRAWN picture, in the label's own order
+(2026-09-01) — sorted since 2026-09-02 into Status, Actions, Resources and Details by the WIDGET each
+was read off (`SystemLabelReadout.Region`), which is why a walk of one region skips index numbers.
+Two catches, both measured on this fixture:
 - **The label's lines are painted only to spoken level 12.** At 13 the map keeps every nameplate
   bound and fades its body lines to alpha 0 (`PopulationAndQueueLine`, `HomeAndTradingLine`,
   `DepositsMainLine` — all alpha 0 at camera step 12, all alpha 1 at step 11), so the picture nodes
   exist at levels ≤12 and vanish at 13. Expanding a system from 7–12 lands the camera at 13
   (stage 2's graded expansion), so the route to them is: expand, then zoom back out to ≤12 with the
   branch open. `AgeWidgets.Painted`, never `Visible` — the latter says yes to every faded line.
-- **Type-ahead cannot be the landing.** A snap landing on a Tooltips child forces level 13
+- **Type-ahead cannot be the landing.** A snap landing on a dossier child forces level 13
   (`EnsureBand`), which is exactly where the pictures are not drawn — land on the row and walk in
   with `ui.regionNext` + `ui.down` instead.
 
 Route that works: `ui.focusMap`, `POST /type "dusay"`, `ui.back`, `ui.right`,
-`SetZoomHere(10)`, then `ui.regionNext`/`ui.down`. Measured there: the Tooltips region is
-`Dusay - Imperials Neurrone` · `Building Infinite Supermarkets, 1 turns` · `This is a faction's
-home system`, and focusing the middle one raises class `Constructible` — the whole constructible
+`SetZoomHere(10)`, then `ui.regionNext`/`ui.down`. Measured 2026-09-01, before the regions: the
+label's three pictures were `Dusay - Imperials Neurrone` · `Building Infinite Supermarkets, 1 turns`
+· `This is a faction's home system`. They are now three different regions — Details leads with the
+system dossier, Actions holds the queue as the system's one door (`<key>/queue`) and Details ends
+with the home-system badge — and focusing the queue raises class `Constructible` — the whole constructible
 panel (`Infinite Supermarkets` / `System Improvement (Approval)` / description / `Effects: +10
 Approval` / `Cost: 280 Industry (1 Turn)` / `Political impact: Ecologists` / `Upkeep: 8 Upkeep`),
 which the label promised and offered to nobody before. `DevProbe.Coverage()` loses its

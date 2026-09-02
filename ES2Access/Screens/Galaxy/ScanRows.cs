@@ -601,7 +601,10 @@ namespace ES2Access.Screens
         /// heading this row is standing under, said again because a row has to be readable on its own.
         ///
         /// What hangs under it is what the lens draws INSIDE the label: the planet circles at dot
-        /// fidelity, and the lanes leaving the star, which the lens goes on drawing at every rung.
+        /// fidelity, and the lanes leaving the star, which the lens goes on drawing at every rung -
+        /// read in the same named regions the ordinary map's system row is read in
+        /// (<see cref="AddInside"/>), three of the seven, because a lens draws no fleets, no deposits
+        /// and no doors. So Alt+Up/Down means the same thing on either side of the mode change.
         /// </summary>
         private void AddScanSystem(
             GraphBuilder builder,
@@ -660,12 +663,59 @@ namespace ES2Access.Screens
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
-                object outer = TooltipChildren.Actions(builder, place);
-                AddScanPlanets(builder, place, node, empire, drawn);
-                AddStarlanes(builder, place, node, empire, LanesOf(node, empire));
-                List<TooltipChildren.Dossier> icons = new List<TooltipChildren.Dossier>(2);
-                SystemLabelReadout.ScanIcons(icons, drawn);
-                TooltipChildren.Emit(builder, place, icons, outer);
+                // The same named regions the ordinary map's system row is read in, in the same fixed
+                // order, so that Alt+Up/Down means the same thing either side of the mode change -
+                // three of them here, because a lens draws no fleets, no deposits and no doors.
+                object outer = builder.Region;
+                try
+                {
+                    object at = Region(
+                        builder,
+                        place,
+                        "planets",
+                        ModStrings.GalaxySystemPlanetsRegion
+                    );
+                    try
+                    {
+                        AddScanPlanets(builder, place, node, empire, drawn);
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+
+                    at = Region(builder, place, "lanes", ModStrings.GalaxySystemLanesRegion);
+                    try
+                    {
+                        AddStarlanes(builder, place, node, empire, LanesOf(node, empire));
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+
+                    at = Region(builder, place, "status", ModStrings.GalaxySystemStatusRegion);
+                    try
+                    {
+                        List<TooltipChildren.Dossier> icons =
+                            new List<TooltipChildren.Dossier>(2);
+                        SystemLabelReadout.ScanIcons(icons, drawn);
+                        TooltipChildren.EmitInto(
+                            builder,
+                            place,
+                            icons,
+                            SystemLabelReadout.Region.Status
+                        );
+                    }
+                    finally
+                    {
+                        TooltipChildren.EndRegion(builder, at);
+                    }
+                }
+                finally
+                {
+                    builder.SetRegion(outer);
+                }
             }
 
             builder.EndGroup();
