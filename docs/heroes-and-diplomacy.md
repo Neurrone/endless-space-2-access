@@ -51,6 +51,34 @@ Index and charter: `README.md`.
 
 ## Diplomacy and the sweep
 
+- **What an empire is CALLED is a diplomacy question, and the game never draws
+  `Empire.LocalizedName`.** Every game surface that names an empire goes through one ladder,
+  `GuiEmpire.GetLeaderName(empireLooking, useYou, colorized, iconPrefix, centeredIconPrefix,
+  useYouKey)` (decompiled `Assembly-CSharp/GuiEmpire.cs`:291-321; the GUID-context overloads
+  :323-355 answer a per-context lesser name first, then fall through to it). In order: a
+  `LesserEmpire` is "Unknown Empire"; a `PirateEmpire` is `Gui.GetLocalizedTitle("EmpirePirate")` =
+  "%EmpirePirateTitle" = "Pirates"; an `AcademyEmpire` is one of its two titles depending on
+  `IsIsyanderAlive`; with `useYou` the looker's own is "%EmpireYouTitle"; a MET major is its
+  `LocalizedName` (the player name, "Leaper (AI)"); a MINOR is `GuiFaction.Title`, not the empire
+  name at all; and anyone the looker has not met is "Unknown Empire". "Met" is
+  `IsKnownByLookingPlayer` (:124-140) — a diplomatic-relation ability, not a sight flag — so the
+  ladder is the fog gate for identity as well as the wording. The wrapper comes from
+  `Gui.GuiWrapperProviderService.GetGuiEmpire(empire)` (`FleetsManagementPanel.cs`:144,
+  `BattleGroupInfoPanel.cs`:66-70).
+  `Empire.LocalizedName` by itself is the player name of a major and nothing else: measured
+  2026-09-02 on `[Beginner] access test` (turn 36) over all 15 empires, `PirateEmpire#0` and
+  `LesserEmpire#0` are raw internal names, and the three unmet majors hand back "Leaper (AI)",
+  "St Chaoiver (AI)", "Doria (AI)" — names the picture withholds.
+  **Mod policy**: ONE shared answer, `EmpireNames.Named(empire)` (`ES2Access/UI/EmpireNames.cs`),
+  which delegates to that ladder as the player (`Gui.PlayerEmpire`, no colour, no icon prefix, no
+  "you") and cleans the result. Every mod site that speaks an empire's name calls it — the
+  foreign-fleet notifications, `FleetPhrase.Owned`, the influence sentences, the system label's
+  colony holders, the map's owner readings — so "Unknown Empire" for an unmet major is the mod's
+  answer too, and it is the game's own, not a mod paraphrase. Sites that name a FACTION
+  (`Faction.LocalizedName` in the bookmark file header) or that mirror a string the game itself
+  draws from `GuiEmpire.LocalizedName` (`OpenSpaceRows`' coordination-request tooltip, copied from
+  `CoordinationRequestLabel.SetTooltips` :373-376) are not empire-naming and stay as they are.
+
 - The diplomacy ring draws UNMET majors; `LeaderCard` wires no control at all; the sector has no
   tooltip and a god-mode branch.
 - **Every card is BOUND with real data whether the empire is met or not — what hides the unmet one is

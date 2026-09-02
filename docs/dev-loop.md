@@ -61,10 +61,10 @@ mutes voicing but `/speech` still captures.
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
 - `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
   except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry.
-  Issued while the PLANET-OVERVIEW page is up it can wedge the loading window at "Game launched
-  and ready" indefinitely (`wait-game.ps1 ingame` then times out silently with exit 0);
-  re-issuing the same `POST /loadsave` recovers in ~8 s — that recovery is the PLANET-OVERVIEW
-  case only. NEVER issue it while the end-turn button reads "Pending": into a wedged turn it
+  Issued while the PLANET-OVERVIEW page or a NOTIFICATION POPUP is up it can wedge the loading
+  window at "Game launched and ready" indefinitely (`wait-game.ps1 ingame` then times out silently
+  with exit 0); re-issuing the same `POST /loadsave` recovers in ~8 s — measured for both, and for
+  nothing else. NEVER issue it while the end-turn button reads "Pending": into a wedged turn it
   kills the process (why: `install.md`, "The Mono runtime under the REPL")
 - `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
   the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;

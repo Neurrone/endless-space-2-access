@@ -10,15 +10,6 @@ belong in the files above.
 
 ## To build
 
-- **A pirate empire is spoken by its raw internal name.** `Empire.LocalizedName` on a
-  `PirateEmpire` answers `PirateEmpire#0`, and every mod surface that names an empire through
-  `ModNotification.EmpireName` / `FleetPhrase.Owned` says it — measured 2026-09-02 on
-  `[Beginner] access test`, the turn log line "enemy PirateEmpire#0 fleet sighted". The game's own
-  screens call it "Pirates" (`RightBattleGroupInfoPanel.MainLeaderName`, the battle-setup rows), so
-  there is a localized title to route through; the fix is one shared answer for "what is this empire
-  called", not a special case in the notification family. Pre-dates the 2026-09-02 sighting work and
-  affects the sighted/lost/moved lines equally.
-
 - **Zoom bands and scan lenses — what the plan left open.** The plan itself shipped whole
   2026-09-01 (six stages; the spec is `scan-modes-design-proposal.md`, the pointer row is in
   Shipped, the per-screen recipes are in `test-recipes/galaxy-map.md` and

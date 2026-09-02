@@ -83,7 +83,17 @@ in sight — `8th Greedy Pirates` at Sabel — so `ForeignFleetWatch.InSight` re
 `2nd Thrashing Horde` (GUID 1580, Leaper, parked at Graffias) is the out-of-sight fleet with a NODE
 and `1st Liquidation Venture` (GUID 996, Doria) the one out on a starlane. Driving a Leaper or Doria
 fleet visible for the first time also fires the game's own first-contact notification — expect
-`NotificationMajorEmpireMet` and a diplomacy popup, and reload afterwards.
+`NotificationMajorEmpireMet` and a diplomacy popup, and reload afterwards. That first contact lands
+INSIDE the same `/eval` that writes the layer, so the empire is already met by the time the line is
+composed — the sighting reads "enemy Leaper (AI)", not "Unknown Empire". A first Leaper drive can
+also lose its settle window (the server's own refresh put `Unknown` back before 2.1 s and `InSight`
+never rose); the second drive, waited on with `POST /wait` body `ES2Access.UI.ForeignFleetWatch.InSight >= 2`,
+committed in 82 frames. **The PIRATE fleets** are the other half of the naming check: `5th Greedy
+Pirates` (GUID 1645) sits at `Known` and only needs `Visible` — a sighting on it reads "enemy Pirates
+fleet sighted" / "Turn 36: The enemy Pirates fleet 5th Greedy Pirates, Prowler, was sighted.". Never
+issue `POST /loadsave` while the fixture's battle popup (or the first-contact popup) is the focused
+screen — that wedged the load at "Game launched and ready" on 2026-09-02; walk the popup's Done
+button first, or re-issue the load to recover.
 
 The four cases, read off `ForeignFleetWatch.Pending` / `.InSight` / `.Watching` (all three are in
 `DevProbe.Notifications()` as `foreignFleetsSettling` / `InSight` / `Watched`) plus

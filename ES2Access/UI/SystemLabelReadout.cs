@@ -993,7 +993,7 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                string called = AgeText.Clean(colony.Empire.LocalizedName);
+                string called = EmpireNames.Named(colony.Empire);
                 if (colony.Empire == Gui.PlayerEmpire)
                 {
                     names.Insert(0, called);

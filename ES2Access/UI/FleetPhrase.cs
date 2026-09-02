@@ -20,7 +20,9 @@ namespace ES2Access.UI
     /// theirs and say nothing. Whose it is is the game's own disguise rule
     /// (<see cref="DisplayedOwner"/>) and which way the player stands to them is the mod's one
     /// standing ladder (<see cref="FleetPresence.SideOf(Empire)"/>) - so a cold-war neighbour's
-    /// fleets read "enemy", in the game's own word.</item>
+    /// fleets read "enemy", in the game's own word. What that owner is CALLED is the mod's one
+    /// naming answer (<see cref="EmpireNames.Named"/>), so a pirate fleet reads "enemy Pirates" and
+    /// an unmet major's "enemy Unknown Empire".</item>
     /// <item>HERO is any fleet's, own or foreign: the game's own fleet dossier draws a foreign
     /// hero's name with no ownership gate on it at all
     /// (<c>PanelFeatureGarrisonInfo.RefreshFleetInformation</c> :150-156). The name only - the level
@@ -134,7 +136,7 @@ namespace ES2Access.UI
                         break;
                 }
 
-                string name = AgeText.Clean(named.LocalizedName);
+                string name = EmpireNames.Named(named);
                 return string.IsNullOrEmpty(name) ? null : ModStrings.Format(key, name);
             }
             catch (Exception)

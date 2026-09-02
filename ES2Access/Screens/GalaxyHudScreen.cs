@@ -4710,17 +4710,11 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Whose a thing out in space is. A name, not a phrase: it sits beside the thing's own
-        /// name the way a fleet's does, and every empire in this game has one.</summary>
+        /// name the way a fleet's does, and every empire in this game has one
+        /// (<see cref="EmpireNames.Named"/>).</summary>
         private static string Owner(Empire empire)
         {
-            try
-            {
-                return empire == null ? null : AgeText.Clean(empire.LocalizedName);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return EmpireNames.Named(empire);
         }
 
         /// <summary>
