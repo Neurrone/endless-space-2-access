@@ -42,9 +42,18 @@ namespace ES2Access.Tests.Speech
                 Assert.Equal(JsonValueKind.Object, document.RootElement.ValueKind);
                 foreach (JsonProperty entry in document.RootElement.EnumerateObject())
                 {
+                    // A three-form language carries its middle form under "<many key>.few"
+                    // (ModStrings.Plural); it is checked against the English of the key it
+                    // hangs off, since that is the sentence it was written from.
+                    string key = entry.Name;
+                    if (key.EndsWith(PluralRules.FewSuffix, StringComparison.Ordinal))
+                    {
+                        key = key.Substring(0, key.Length - PluralRules.FewSuffix.Length);
+                    }
+
                     string english;
                     Assert.True(
-                        ModStrings.TryGetDefault(entry.Name, out english),
+                        ModStrings.TryGetDefault(key, out english),
                         fileName + ": unknown key '" + entry.Name + "'"
                     );
                     Assert.Equal(JsonValueKind.String, entry.Value.ValueKind);
