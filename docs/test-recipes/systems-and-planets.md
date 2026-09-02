@@ -483,11 +483,29 @@ LANDS, IN THREE CASES** above.
 `/input ui.left|ui.right` (`ui.coarseDecrease|ui.coarseIncrease` does the same at these rungs —
 `StepZoom` ignores `coarse` above the camera's last step): 14 → out is the galaxy at 13, 14 → in is
 the planet page at 15, `ui.right` at 15 re-reads "15 of 15" with `GalaxyViewLevels.ZoomRung`
-unchanged. Give each step ~3.5 s — the view level flies. The cursor rides the same
-`hud:view-title/zoom` key across every crossing except the arrival on the PLANET page, which seats on
-`planet:name`. `ZoomWatch` speaks an extra "Zoom level N of 15" on the way IN: the mod's screen stack
-is EMPTY for ~9 frames between the two pages (traced 2026-09-02), so `ZoomLadder.IsLadder` cannot see
-the cursor and the watcher counts the rung as unsaid.
+unchanged. Give each step ~3.5 s — the view level flies. **Every crossing seats
+`hud:view-title/zoom` and says two lines**: the page's name and then the arriving slider, e.g.
+`ui.right` at 13 → "Dusay, System management" / "View Controls, Zoom, slider, 14 of 15, 1 of 2", and
+`ui.right` again → "Planet" / "View Controls, Zoom, slider, 15 of 15, 1 of 2" (measured 2026-09-02,
+all four crossings both ways). A third line — `ZoomWatch`'s "Zoom level N of 15" — is the regression:
+the seat a step hands to the arriving ladder is what mutes it (`ZoomLadder.Crossing`), over a window
+that starts at the press and ends when the cursor REACHES the ladder, because the mod's screen stack
+is EMPTY for ~9 frames in between (traced 2026-09-02) and the rung settles after that.
+
+The contrast cases, run from a page whose remembered cursor is NOT the ladder (open it by Enter on
+the galaxy's `…/management` or on a `system:planet/<guid>` card): those routes still land on
+`system:colony/banner` / `planet:name` and the watcher still says "Zoom level N of 15" — the handoff
+is a step made on a ladder and nothing else. Same for the way back out by
+`Gui.GuiGameWindowService.RequestStarSystemManagementViewLevel(new GameEntityGUID(535UL))` or
+`RequestGalaxyOverviewViewLevel(<Vector3>)`, the non-ladder exits to use when a walk must leave a
+page without writing the ladder into its cursor memory. After the clamp at 15,
+`ES2Access.UI.ZoomLadder.Crossing()` answers false — a refused step arms no seat (it is a latch: ask
+it only where the answer is expected to be false).
+
+In SCAN mode the pair is `scan:zoom` on both screens and the same contract holds, with one residual
+on the way OUT (14 → 13, galaxy): if the galaxy page's remembered cursor is already `scan:zoom`, its
+own live value speaks the settled rung ("13 of 15") before the landing reads the whole line. That is
+the ladder's own settle announcement, not the watcher's, and predates the handoff.
 
 ## Working an outpost
 

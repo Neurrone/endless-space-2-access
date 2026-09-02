@@ -565,6 +565,15 @@ same key, no band word there): Left steps out of the page, Right opens the plane
 refused Right re-reads the unchanged value rather than falling silent, because the value is still
 readable — the silent-refusal convention only covers a control whose reading goes away.
 
+**A ladder step that changes the page lands on the arriving page's ladder** (13↔14↔15, and the scan
+view's own pair), whatever that page remembers and whatever it would otherwise open on: the player
+who stepped off a ladder arrives standing on one, and the new rung is read once, by the arriving
+slider's own value line after the page has named itself. Only a step made ON a ladder hands the seat
+over — every other way into these pages (Enter on a system's "Manage system" or a planet's card, the
+mouse, Escape or the close button back out, the page arrows) lands exactly where it always did, and
+the rung watcher still announces those, since the player was not on the ladder. A refused step (the
+clamp at either end) hands nothing over.
+
 **THE BAND WORD NAMES WHAT THE LEVEL GIVES** (owner ruling 2026-09-01, replacing the engine-jargon
 words). Five words over the camera's ladder, at the game's own layer boundaries and no others:
 levels 1–2 **Constellations**, 3–4 **Systems and star lanes**, 5–6 **Systems, star lanes and

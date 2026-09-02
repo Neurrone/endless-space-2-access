@@ -161,6 +161,19 @@ namespace ES2Access.Screens
             get { return ScanLensPanels.TitleStop; }
         }
 
+        /// <summary>Whether a landing aimed at this page should be held rather than judged - true while
+        /// the game is flying the camera between view levels, exactly as on the map
+        /// (<c>GalaxyHudScreen.LandingSuspended</c>). This overlay stands on those levels too: it is the
+        /// scan of a system at one rung and of the galaxy at the next, and while the flight is on what
+        /// it declares describes neither. Measured 2026-09-02: a zoom step onto this page landed its
+        /// seat mid-flight and read "Zoom, slider, 2 of 2" - the ladder without the rung, because the
+        /// rung is a step behind until the flight ends (<see cref="ZoomLadder"/>) - and then the rung
+        /// alone a moment later.</summary>
+        public override bool LandingSuspended
+        {
+            get { return GalaxyViewLevels.ChangingLevel || GalaxyViewLevels.CameraSettling; }
+        }
+
         public override void OnPush()
         {
             _hud.Baseline();

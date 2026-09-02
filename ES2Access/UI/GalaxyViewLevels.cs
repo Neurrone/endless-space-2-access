@@ -135,9 +135,18 @@ namespace ES2Access.UI
         ///
         /// Answers whether anything moved. False is a clamp - the galaxy's furthest out, or a planet's
         /// page with nothing closer, which are the ladder's two real ends.
+        ///
+        /// <paramref name="changesPage"/> separates the two things a step can be. Most of the ladder
+        /// only moves the camera and leaves the player exactly where they were standing; its top three
+        /// rungs cross between the map, a system's page and a planet's, which takes the whole screen
+        /// away and gives back another one. Only the caller knows what to do about that
+        /// (<see cref="ZoomLadder"/> hands the cursor to the arriving page's own ladder), and only this
+        /// method knows which branch it took - it is true for a step that both crossed and was taken,
+        /// so a refused crossing at either end reads as the clamp it is.
         /// </summary>
-        public static bool StepZoom(int sign, bool coarse)
+        public static bool StepZoom(int sign, bool coarse, out bool changesPage)
         {
+            changesPage = false;
             try
             {
                 GalaxyViewCameraController camera = GalaxyCamera();
@@ -150,12 +159,14 @@ namespace ES2Access.UI
                 int last = camera.ZoomStepsCount - 1;
                 if (rung > last)
                 {
-                    return sign < 0 ? LeaveLevel() : GoDeeper();
+                    changesPage = sign < 0 ? LeaveLevel() : GoDeeper();
+                    return changesPage;
                 }
 
                 if (sign > 0 && rung == last)
                 {
-                    return EnterSystem();
+                    changesPage = EnterSystem();
+                    return changesPage;
                 }
 
                 int wanted = coarse ? BandStep(camera, rung, sign) : rung + sign;

@@ -69,10 +69,23 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Whether the player is standing on the zoom ladder itself, whose own value reads the
-        /// new rung out as it changes.</summary>
+        /// <summary>
+        /// Whether the player is standing on the zoom ladder itself, whose own value reads the new rung
+        /// out as it changes.
+        ///
+        /// A step across the top of the ladder changes the page, and for the frames the game spends
+        /// flying between the two there is no screen and so no focused control at all - which read as
+        /// "not on the ladder" and said the rung here, before the arriving ladder said it again. So a
+        /// step still crossing counts as standing on it (<see cref="ZoomLadder.Crossing"/>): the player
+        /// is on their way from one ladder to the other, and the one they land on does the reading.
+        /// </summary>
         private static bool OnTheLadder()
         {
+            if (ZoomLadder.Crossing())
+            {
+                return true;
+            }
+
             GraphNavigator navigator = ModEntry.Navigator;
             ControlId focused = navigator == null ? null : navigator.FocusedKey;
             return focused != null && ZoomLadder.IsLadder(focused);
