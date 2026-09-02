@@ -113,22 +113,71 @@ reading should always get the separator.
 
 ## Validation
 
-A build-time test walks every locale file and asserts: keys are a subset of the compiled-in
-English keys, and each value contains exactly the `{n}` placeholders of its English template.
-Broken community translations fail the build instead of producing silent wrong speech.
+Build-time tests walk every locale file, so a broken translation fails the build instead of
+producing silent wrong speech. The minimal validator ([`LocaleFileTests.cs`](src/localization/LocaleFileTests.cs))
+asserts keys are a subset of the compiled-in English keys and each value carries exactly the
+`{n}` placeholders of its English template. The full lint set
+([`LocaleLint.cs`](src/localization/LocaleLint.cs), applied by
+[`TranslationLintTests.cs`](src/localization/TranslationLintTests.cs) and
+[`DescriptionFileTests.cs`](src/localization/DescriptionFileTests.cs)) adds, each as a pure
+function over strings so it is provable against synthetic bad input:
 
-Plurals: defer until the first plural-sensitive phrase; the cheapest adequate start is a
-two-form key pair chosen by count, each key a complete sentence (ES2's `ModStrings.Plural`),
-escalating to a gettext-style plural-forms mechanism (SoC's `ModPluralString`/`JoinList` is
-the worked example) when a three-form language arrives. Note it; don't build it
-speculatively.
+- **Encoding**: strict UTF-8 decode, no byte-order mark, no U+FFFD, no C1 controls, no
+  double-encoding bigrams (`Ã©`, `Ð`+continuation) — the mojibake a copy through the wrong
+  code page leaves behind.
+- **Script**: a Cyrillic, Hangul or Han language must actually contain its script — an entry
+  whose English has three or more words needs at least one native letter, and most entries
+  overall must; keyboard key names legitimately stay Latin.
+- **Completeness both ways**: english.json equals the compiled-in default key set exactly, and
+  every other language answers for every key. A half-finished translation cannot ship, because
+  a missing key falls back to an English sentence mid-phrase rather than to an obvious hole.
+- **Untranslated**: an entry identical to English where English has three or more words.
+- **Staleness**: a per-language snapshot of the English each entry was translated from
+  (`locale/sources/<language>.json`, in a subfolder so a non-recursive copy step never ships
+  it). Nothing at runtime can notice that English was reworded under a translation; the
+  snapshot diff can. Whoever translates a key re-records it (`mark-translated.ps1`).
+- **Descriptions**: same movie set and cue count as English, identical cue times, non-empty
+  text, and their own snapshot.
+
+Plurals: start with a two-form key pair chosen by count, each key a complete sentence, and
+carry the extra forms a three-form language needs in its locale file under
+`<many key>.few` (2–4 in Polish and Russian) and `<many key>.one` (the counts a language's
+singular also serves, 21 and 31 in Russian, needed when the pair's ONE sentence is "this
+turn" rather than "{0} turn"). The rules are CLDR cardinals keyed by the game's language
+name ([`PluralRules.cs`](src/localization/PluralRules.cs)); the lint requires the forms by
+scanning the sources for every pair that goes through the plural helper
+([`PluralPairs.cs`](src/localization/PluralPairs.cs)). The corollary is that every counted
+phrase must go through that helper: an inline `count == 1 ? one : many` test silently
+denies the third form.
+
+Producing the translations: the game's own localization files are a glossary. Extract, for
+every short English game string the mod's own strings mention, the official translation per
+language, and hand each translation batch the terms its keys name — a mod that says
+"workforce" where the game says "manpower" has two vocabularies for one stat. The
+auto-match yields false friends (a key-name "Space", a verb sense of "Dismiss"), so the
+brief says to ignore those. Batch inputs carry the English, the source comment above the
+constant, and the pair forms required ([`export-batches.ps1`](src/localization/tools/export-batches.ps1));
+the parts are merged, checked and snapshotted in one step
+([`merge-parts.ps1`](src/localization/tools/merge-parts.ps1)); and one review per language
+afterwards unifies the mod's own coinages (bookmark, buffer, inspect mode, tile) that
+independent batches render differently.
 
 ## Source files
 
 [`src/localization/ModStrings.cs`](src/localization/ModStrings.cs),
 [`MessageBuilder.cs`](src/localization/MessageBuilder.cs),
+[`PluralRules.cs`](src/localization/PluralRules.cs),
 [`ModLocale.cs`](src/engine-example/ModLocale.cs) (adapt the game-language lookup),
 [`english.json`](src/localization/english.json),
-[`LocaleFileTests.cs`](src/localization/LocaleFileTests.cs) (the validator),
+[`LocaleFileTests.cs`](src/localization/LocaleFileTests.cs) (the minimal validator),
+[`LocaleLint.cs`](src/localization/LocaleLint.cs),
+[`TranslationLintTests.cs`](src/localization/TranslationLintTests.cs),
+[`DescriptionFileTests.cs`](src/localization/DescriptionFileTests.cs),
+[`TranslationFiles.cs`](src/localization/TranslationFiles.cs) (the language list and
+script map the lints read; the paths are this mod's),
+[`PluralPairs.cs`](src/localization/PluralPairs.cs) (its hand-traced sites are this mod's),
 [`MessageBuilderTests.cs`](src/localization/MessageBuilderTests.cs) (including the
-Japanese-style table cases).
+Japanese-style table cases), and the translation workflow scripts under
+[`src/localization/tools/`](src/localization/tools/) (`export-batches.ps1`,
+`merge-parts.ps1`, `mark-translated.ps1`, `translation-lib.ps1`; the folder names are this
+mod's).

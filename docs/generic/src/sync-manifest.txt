@@ -72,3 +72,13 @@ docs/generic/src/speech/PrismNative.cs | ES2Access/Core/Speech/PrismNative.cs
 docs/generic/src/speech/PrismSpeech.cs | ES2Access/Core/Speech/PrismSpeech.cs
 docs/generic/src/engine-example/AgeWidgets.cs | ES2Access/UI/AgeWidgets.cs
 docs/generic/src/hot-reload/ModPatch.cs | ES2Access/UI/ModPatch.cs
+docs/generic/src/localization/PluralRules.cs | ES2Access/Core/Speech/PluralRules.cs
+docs/generic/src/localization/LocaleLint.cs | ES2Access.Tests/Speech/LocaleLint.cs
+docs/generic/src/localization/TranslationLintTests.cs | ES2Access.Tests/Speech/TranslationLintTests.cs
+docs/generic/src/localization/DescriptionFileTests.cs | ES2Access.Tests/Speech/DescriptionFileTests.cs
+docs/generic/src/localization/TranslationFiles.cs | ES2Access.Tests/Speech/TranslationFiles.cs
+docs/generic/src/localization/PluralPairs.cs | ES2Access.Tests/Speech/PluralPairs.cs
+docs/generic/src/localization/tools/export-batches.ps1 | tools/locale/export-batches.ps1
+docs/generic/src/localization/tools/merge-parts.ps1 | tools/locale/merge-parts.ps1
+docs/generic/src/localization/tools/mark-translated.ps1 | tools/locale/mark-translated.ps1
+docs/generic/src/localization/tools/translation-lib.ps1 | tools/locale/translation-lib.ps1
