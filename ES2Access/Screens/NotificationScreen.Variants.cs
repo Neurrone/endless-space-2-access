@@ -629,6 +629,7 @@ namespace ES2Access.Screens
             {
                 foreach (AgeTransform container in variant.Choices(window))
                 {
+                    // Flow control: a container the popup is not drawing holds none of this notification's choices.
                     if (container == null || !AgeWidgets.Visible(container))
                     {
                         continue;
@@ -757,6 +758,7 @@ namespace ES2Access.Screens
                 AgeTransform root = Root(window);
                 for (int i = controls.Count - 1; i >= 0; i--)
                 {
+                    // Spoken count: what is left of this list is what the popup says it is offering.
                     if (!Painted(controls[i].Widget, root))
                     {
                         controls.RemoveAt(i);
@@ -790,12 +792,10 @@ namespace ES2Access.Screens
                 toggle = line.GetComponentInChildren<AgeControlToggle>(true);
             }
 
+            // Different widget: the toggle a line is worked by, which is only the answer while the line draws it.
             return toggle != null && AgeWidgets.Visible(toggle.AgeTransform) ? toggle : null;
         }
 
-        /// <summary>What a gateway button is called: the caption where the popup wrote one, else the
-        /// sentence its tooltip opens with, else the mod's own name for where it goes. Null is a complete
-        /// answer for the first two - the shared naming falls through to whatever is left.</summary>
         /// <summary>What to call a control the popup drew with no words on it: whatever it DID write -
         /// the caption, else the sentence its tooltip opens with - and the mod's own phrase only where
         /// the popup wrote neither. Used for the buttons a popup draws as bare icons (a gateway, an
@@ -827,6 +827,7 @@ namespace ES2Access.Screens
 
                 AgeControlButton button =
                     AgeWidgets.Button(widget) ?? widget.GetComponentInChildren<AgeControlButton>(true);
+                // Different widget: the button inside the widget, which is only the answer while the popup draws it.
                 return button != null && AgeWidgets.Visible(button.AgeTransform) ? button : null;
             }
             catch (Exception)
@@ -984,6 +985,7 @@ namespace ES2Access.Screens
                 }
             }
 
+            // Content: which label holds the popup's OWN words rather than the description it falls back to.
             AgePrimitiveLabel wired =
                 own != null
                 && AgeWidgets.Visible(own.AgeTransform)

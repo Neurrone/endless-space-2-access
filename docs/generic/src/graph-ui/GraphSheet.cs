@@ -401,9 +401,27 @@ namespace ES2Access.Core.UI
             return _rowRef != null ? RowKeyFor(_rowRef) : _key + "r" + _row;
         }
 
+        // A row's identity is the caller's, and there are exactly two ways to hand one over.
+        //
+        // A STRING rowRef is a stable id the caller wrote, and it is used whole rather than hashed: a
+        // hash of it is a lossy projection, and two ids that hashed alike would mint the same
+        // ControlId - which GraphBuilder refuses as a "Duplicate control id" and which blanks the
+        // whole render rather than losing one row. Two rows given the SAME id are the caller's own
+        // mistake to fix, and a caller with repeats disambiguates them before handing them over.
+        //
+        // ANYTHING ELSE is identified by the OBJECT, so the hash asked for is the identity one rather
+        // than whatever Equals/GetHashCode the type overrode. A type with value equality would
+        // otherwise collapse two distinct rows onto one key for the same reason, and every other use
+        // the sheet makes of rowRef - the primary's ControlId subject, the scroll anchor - is already
+        // by reference.
         private string RowKeyFor(object rowRef)
         {
-            return _key + "row" + rowRef.GetHashCode();
+            string id = rowRef as string;
+            return _key
+                + "row"
+                + (id ?? System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(rowRef).ToString(
+                    System.Globalization.CultureInfo.InvariantCulture
+                ));
         }
 
         private string Header(int col)

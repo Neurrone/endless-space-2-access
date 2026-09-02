@@ -1106,6 +1106,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform button = label == null ? null : label.RequestManagementViewButton;
+            // The SYNTHETIC node's own existence test - the note below says why it is asked here and one step only.
             if (button == null || !AgeWidgets.Visible(button))
             {
                 return;

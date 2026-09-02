@@ -384,6 +384,7 @@ namespace ES2Access.UI
 
         private static bool Drawn(AgeTransform marker)
         {
+            // Content: the marker IS the fact - the design draws it and writes no word for it anywhere.
             return marker != null && marker.Visible;
         }
 

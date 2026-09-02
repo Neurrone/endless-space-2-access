@@ -132,9 +132,12 @@ namespace ES2Access.Screens
             string[] headers = new string[columns + 1];
             for (int c = 0; c < columns; c++)
             {
-                // The DISPLAYED turn, under the same word the turn log names a turn by: a bare number
+                // The DISPLAYED turn, under this table's own word for a turn column: a bare number
                 // crossed into says nothing about what kind of number it is.
-                headers[c + 1] = ModStrings.Format(ModStrings.HudTurnLogTurn, last - c + 1);
+                headers[c + 1] = ModStrings.Format(
+                    ModStrings.EconomyPriceHistoryTurn,
+                    last - c + 1
+                );
             }
 
             builder.BeginStop(HistoryStop);

@@ -32,7 +32,7 @@ namespace ES2Access.UI.Input
         public bool Repeats { get; private set; }
 
         /// <summary>When the next auto-repeat is due, or 0 while the action is not armed. Owned by
-        /// <see cref="InputManager"/>.</summary>
+        /// <see cref="ModInput"/>.</summary>
         internal float NextRepeatTime;
 
         public IList<InputBinding> Bindings

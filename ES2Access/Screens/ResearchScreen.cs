@@ -604,6 +604,7 @@ namespace ES2Access.Screens
                 for (int i = 0; icons != null && i < icons.Count; i++)
                 {
                     AgeTransform icon = icons[i];
+                    // Spoken count: an icon the ring is not drawing is not one of this technology's unlocks, and a dossier nobody collected is no entry.
                     if (icon != null && icon.Visible)
                     {
                         TooltipChildren.AddRevealed(found, AgeWidgets.Raw(icon), icon);
@@ -656,7 +657,7 @@ namespace ES2Access.Screens
             AgeTransform name = stage.StageNameGroup;
             AgeTooltip tooltip = stage.StageTooltip;
             NodeVtable vtable = GraphNodes.Group(() => StageTitle(it), null, tooltip);
-            // The lock sentence is the game.s own, written on markers the stage draws around its ring
+            // The lock sentence is the game's own, written on markers the stage draws around its ring
             // and nowhere the ring itself says: the row went and got it, so the row says it - declared
             // as a section, so the same words reach the review buffer exactly once.
             vtable.Sections = GraphNodes.SpokenSections(() => StageLockLines(it), tooltip);

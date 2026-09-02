@@ -245,6 +245,7 @@ namespace ES2Access.Screens
 
             try
             {
+                // Content: the trading lines are this system's only while the group is drawn.
                 IList<string> trade = AgeWidgets.Visible(window.TradingGroup)
                     ? AgeWidgets.DrawnLines(window.TradingGroup)
                     : null;
@@ -265,6 +266,7 @@ namespace ES2Access.Screens
                         children[i] == null
                             ? null
                             : children[i].GetComponent<PlanetLabel_SystemManagementScanView>();
+                    // Flow control: a label the lens is not drawing is not one of this system's planets, and is not walked.
                     if (
                         label == null
                         || label.Planet == null
@@ -468,6 +470,7 @@ namespace ES2Access.Screens
                             : children[i].GetComponent<
                                 StarSystemManagementScanViewPopulationSynergyItem
                             >();
+                    // Flow control: an item the table is not drawing is not one of this population's synergies.
                     if (item == null || !AgeWidgets.Visible(item.AgeTransform))
                     {
                         continue;
@@ -629,6 +632,7 @@ namespace ES2Access.Screens
         {
             PlanetRemainsItem item =
                 widget == null ? null : widget.GetComponent<PlanetRemainsItem>();
+            // Different widget: the remains item the lens is drawing, which is what the pointer goes to.
             return item != null && AgeWidgets.Painted(item.AgeTransform) ? item : null;
         }
 
@@ -672,6 +676,7 @@ namespace ES2Access.Screens
                     children[i] == null
                         ? null
                         : children[i].GetComponent<PlanetStatsCategoryItem>();
+                // Flow control: a category the table is not drawing is not one of this planet's, and is not walked.
                 if (category == null || !AgeWidgets.Visible(category.AgeTransform))
                 {
                     continue;
@@ -700,6 +705,7 @@ namespace ES2Access.Screens
             {
                 PlanetStatLine line =
                     children[i] == null ? null : children[i].GetComponent<PlanetStatLine>();
+                // Flow control: a line the table is not drawing carries no figure of this category's.
                 if (line == null || !AgeWidgets.Visible(line.AgeTransform))
                 {
                     continue;

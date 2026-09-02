@@ -51,6 +51,7 @@ namespace ES2Access.UI
 
             try
             {
+                // Flow control: the walk stops where the renderer stops, so an undrawn branch contributes none of its words.
                 if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
                 {
                     return;
@@ -249,6 +250,7 @@ namespace ES2Access.UI
 
             try
             {
+                // Flow control: the walk stops where the renderer stops, so an undrawn branch contributes none of its words.
                 if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
                 {
                     return;

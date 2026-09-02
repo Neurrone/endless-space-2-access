@@ -54,13 +54,6 @@ namespace ES2Access.UI
             return null;
         }
 
-        /// <summary>Forget the palette - the mod is going away, or the player has changed it.</summary>
-        public static void Reset()
-        {
-            _entries = null;
-            _from = null;
-        }
-
         private struct Entry
         {
             public string Name;

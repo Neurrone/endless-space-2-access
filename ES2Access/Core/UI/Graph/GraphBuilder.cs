@@ -314,14 +314,13 @@ namespace ES2Access.Core.UI.Graph
             return PopContext();
         }
 
-        /// <summary>Whether a group id is expanded in the persistent set — for screens that must avoid
-        /// even BUILDING a collapsed group's children (a lazy hierarchy whose child view models
-        /// materialize on first access). Groups with an explicit expanded: argument manage their own
-        /// state instead.</summary>
         /// <summary>Whether a group's children should be emitted. Screens ask this directly to decide
-        /// whether to ENUMERATE a branch at all (the emit is suppressed either way), so it has to
-        /// answer the same question <see cref="BeginGroup"/> does - <see cref="ExpandAll"/> included,
-        /// or a search build would declare group headers and nothing underneath them.</summary>
+        /// whether to ENUMERATE a branch at all (the emit is suppressed either way) - a lazy hierarchy
+        /// whose child view models materialize on first access must not even BUILD a collapsed group's
+        /// children - so it has to answer the same question <see cref="BeginGroup"/> does -
+        /// <see cref="ExpandAll"/> included, or a search build would declare group headers and nothing
+        /// underneath them. Groups with an explicit expanded: argument manage their own state
+        /// instead.</summary>
         public bool IsExpanded(ControlId id)
         {
             return ExpandAll || (_expansion != null && id != null && _expansion.Contains(id));
@@ -351,13 +350,6 @@ namespace ES2Access.Core.UI.Graph
 
         // ---- menu mode ----
 
-        /// <summary>Open a horizontal row. Rows sharing a non-null <paramref name="rowKey"/> with the row
-        /// above/below get column-preserving vertical navigation.
-        ///
-        /// <paramref name="positions"/> false for a row whose members are COLUMNS rather than a bar of
-        /// choices - a table's sort-header band, a grid line: "1 of 8" there counts the table's columns,
-        /// which is not a place in a list and is not what the player is walking. Such a row says where it
-        /// sits as a ROW instead (<see cref="TableRow"/>).</summary>
         /// <summary>Whether a row is open right now - which is the one state a GROUP cannot be declared
         /// in (<see cref="BeginGroup"/> refuses one). A caller that declares a node which MAY own
         /// children asks this rather than finding out by exception: the row shape is the host's own
@@ -367,6 +359,13 @@ namespace ES2Access.Core.UI.Graph
             get { return _currentRow != null; }
         }
 
+        /// <summary>Open a horizontal row. Rows sharing a non-null <paramref name="rowKey"/> with the row
+        /// above/below get column-preserving vertical navigation.
+        ///
+        /// <paramref name="positions"/> false for a row whose members are COLUMNS rather than a bar of
+        /// choices - a table's sort-header band, a grid line: "1 of 8" there counts the table's columns,
+        /// which is not a place in a list and is not what the player is walking. Such a row says where it
+        /// sits as a ROW instead (<see cref="TableRow"/>).</summary>
         public GraphBuilder StartRow(object rowKey = null, bool positions = true)
         {
             if (_currentRow != null) throw new InvalidOperationException("Cannot start a row while another is open");

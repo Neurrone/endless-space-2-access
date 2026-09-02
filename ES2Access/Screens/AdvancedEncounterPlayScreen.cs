@@ -113,7 +113,7 @@ namespace ES2Access.Screens
         private static readonly object TheirsRegion = "advanced-play:theirs";
         private static readonly object FiguresRegion = "advanced-play:figures";
 
-        /// <summary>The game's own titles for the things it draws as pictures.</summary>
+        // The game's own titles for the things it draws as pictures.
 
         /// <summary>The game's own sentence for a range, which it writes as "{0} Range" over the bare
         /// name a range localizes to.</summary>

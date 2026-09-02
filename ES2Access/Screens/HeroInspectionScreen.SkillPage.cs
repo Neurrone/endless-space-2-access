@@ -95,6 +95,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> lines = table == null ? null : table.Children;
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
+                // Flow control: a line the effect table is not drawing is not one of this skill's effects.
                 if (AgeWidgets.Painted(lines[i]))
                 {
                     Cells.AddReadout(
@@ -149,6 +150,7 @@ namespace ES2Access.Screens
                 {
                     HeroSkillTreeItem tree =
                         trees[i] == null ? null : trees[i].GetComponent<HeroSkillTreeItem>();
+                    // Flow control: a tree the page is not drawing is not one this hero has, and is not walked.
                     if (
                         tree == null
                         || tree.SkillTreeDefinition == null
@@ -239,6 +241,7 @@ namespace ES2Access.Screens
             {
                 HeroSkillTreeStageItem stage =
                     stages[i] == null ? null : stages[i].GetComponent<HeroSkillTreeStageItem>();
+                // Flow control: a stage the tree is not drawing is not one of its own, and is not walked.
                 if (
                     stage == null
                     || stage.SkillTreeStage == null
@@ -335,6 +338,7 @@ namespace ES2Access.Screens
                     skills[i] == null
                         ? null
                         : skills[i].GetComponent<HeroSkillTreeSkillItem>();
+                // Flow control: a skill the stage is not drawing is not one of its own, and is not walked.
                 if (
                     skill == null
                     || skill.HeroSkillDefinition == null
@@ -556,6 +560,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < boxes.Count; i++)
                 {
                     AgeTransform box = boxes[i];
+                    // Flow control: a box the page is not drawing has nothing this tree put in it, and is not walked.
                     if (!AgeWidgets.Painted(box))
                     {
                         continue;
@@ -663,6 +668,7 @@ namespace ES2Access.Screens
             for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 AgeTransform row = rows[i];
+                // Flow control: a row the table is not drawing has no words of this box's, and is not walked.
                 if (!AgeWidgets.Painted(row))
                 {
                     continue;
@@ -715,13 +721,19 @@ namespace ES2Access.Screens
                     definition == null ? null : definition.SkillLevels;
                 HeroSkillDefinition.MasteryLevel[] masteries =
                     levels == null || levels.Length == 0 ? null : levels[0].MasteryLevels;
-                MessageBuilder said = new MessageBuilder();
+                List<string> names = new List<string>(
+                    masteries == null ? 0 : masteries.Length
+                );
                 for (int i = 0; masteries != null && i < masteries.Length; i++)
                 {
-                    said.ListItem(MasteryName(masteries[i].MasteryName));
+                    names.Add(MasteryName(masteries[i].MasteryName));
                 }
 
-                return said.Build();
+                // Through the one home for "several things said as one line" rather than a
+                // MessageBuilder loop of this file's own: the separator between them is a translated
+                // template, and a skill counting towards two masteries must take the same one every
+                // other list in the mod takes.
+                return SpokenList.Items(names);
             }
             catch (Exception e)
             {
@@ -762,6 +774,7 @@ namespace ES2Access.Screens
             {
                 RelicSkillTreeItem relic =
                     rows[i] == null ? null : rows[i].GetComponent<RelicSkillTreeItem>();
+                // Flow control: a relic row the panel is not drawing is not one this hero holds, and is not walked.
                 if (
                     relic == null
                     || relic.HeroSkillDefinition == null

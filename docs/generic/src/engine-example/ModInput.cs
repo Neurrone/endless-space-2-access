@@ -15,10 +15,12 @@ namespace ES2Access.UI.Input
     /// An instance, not a static: a hot reload drops this object and its handlers with the rest of
     /// the mod, leaving nothing armed behind it.
     ///
-    /// Not implemented yet, and deliberately: rebinding persistence (bindings are compiled in), and
-    /// the category/shadowing system that lets a modal screen claim a chord away from a screen
-    /// beneath it. Both belong here when a second screen layer needs them; until then every action
-    /// is offered to the focused screen and nothing shadows anything.
+    /// The compiled-in bindings are the DEFAULTS: what the player has moved a key to, and where it
+    /// is remembered, is <see cref="ModBindings"/>'s.
+    ///
+    /// Not implemented yet, and deliberately: the category/shadowing system that lets a modal screen
+    /// claim a chord away from a screen beneath it. It belongs here when a second screen layer needs
+    /// it; until then every action is offered to the focused screen and nothing shadows anything.
     /// </summary>
     public sealed class ModInput
     {
@@ -140,19 +142,6 @@ namespace ES2Access.UI.Input
         }
 
         /// <summary>
-        /// Whether one of the keys going down THIS frame is a key the mod has already acted on during
-        /// this press - the <see cref="_consumed"/> latch, asked by key rather than for the whole layer.
-        ///
-        /// It exists for the other consumer of the frame's keys: the game's GUI hands its focused
-        /// control every key that went down, and it does that after the mod's tick, so a control the
-        /// mod's Enter has just put on screen hears that same Enter and acts on it too. Answering "the
-        /// mod already spent this press" is what lets that delivery be skipped without touching a key
-        /// the player really typed (see <c>GameKeyboardHandover</c>).
-        ///
-        /// A key that was never physically down - an injected action - is latched too and released on
-        /// the next tick, and is never GetKeyDown, so an injection cannot suppress anything.
-        /// </summary>
-        /// <summary>
         /// Whether a key the mod has already spent is STILL physically down.
         ///
         /// The other half of <see cref="ActedOnAKeyGoingDown"/>, and the one a hand-over waits on. A
@@ -180,6 +169,19 @@ namespace ES2Access.UI.Input
             return false;
         }
 
+        /// <summary>
+        /// Whether one of the keys going down THIS frame is a key the mod has already acted on during
+        /// this press - the <see cref="_consumed"/> latch, asked by key rather than for the whole layer.
+        ///
+        /// It exists for the other consumer of the frame's keys: the game's GUI hands its focused
+        /// control every key that went down, and it does that after the mod's tick, so a control the
+        /// mod's Enter has just put on screen hears that same Enter and acts on it too. Answering "the
+        /// mod already spent this press" is what lets that delivery be skipped without touching a key
+        /// the player really typed (see <c>GameKeyboardHandover</c>).
+        ///
+        /// A key that was never physically down - an injected action - is latched too and released on
+        /// the next tick, and is never GetKeyDown, so an injection cannot suppress anything.
+        /// </summary>
         public bool ActedOnAKeyGoingDown()
         {
             for (int i = 0; i < _consumed.Count; i++)
@@ -524,8 +526,8 @@ namespace ES2Access.UI.Input
             return ScreenIsFocused() && !KeyboardIsElsewhere();
         }
 
-        // Built once and dropped whenever an action is added, which is the only way the bindings
-        // change today; a rebinding UI would have to drop it too.
+        // Built once and dropped whenever an action is added or its binding is changed - the two
+        // ways the claimed set moves (ModBindings.Set drops it on every rebind).
         private HashSet<KeyCode> ClaimedKeys()
         {
             if (_claimedKeys != null)

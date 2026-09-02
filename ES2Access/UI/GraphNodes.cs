@@ -415,10 +415,10 @@ namespace ES2Access.UI
         }
 
         /// <summary>The same for a control whose <paramref name="details"/> are words the game HAS and
-        /// draws NOWHERE - the ground report.s outcome sentence, which the row went and got out of the
+        /// draws NOWHERE - the ground report's outcome sentence, which the row went and got out of the
         /// model. Handing those over is the whole reason the row went for them, so they are said as
-        /// the control is read - alongside the tooltip.s own words where its kind says those speak too,
-        /// never instead of them. Never a tooltip.s own lines: those answer for themselves.</summary>
+        /// the control is read - alongside the tooltip's own words where its kind says those speak too,
+        /// never instead of them. Never a tooltip's own lines: those answer for themselves.</summary>
         public static IList<NodeSection> SpokenSections(
             Func<IList<string>> details,
             AgeTooltip tooltip

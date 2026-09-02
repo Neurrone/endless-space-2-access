@@ -288,6 +288,7 @@ namespace ES2Access.UI
                     AgeTransform child = children[i];
                     GuiTableLine line =
                         child == null ? null : child.GetComponent<GuiTableLine>();
+                    // Banding input: these lines are the sheet's ROWS, so a retired one would band the rows the player hears.
                     if (
                         line != null
                         && child.Visible
@@ -425,17 +426,6 @@ namespace ES2Access.UI
             return index < _headers.Count ? _headers[index] : null;
         }
 
-        /// <summary>
-        /// What a column is called: the caption the game wrote into the heading from
-        /// <c>%&lt;TableName&gt;&lt;ColumnName&gt;Title</c>.
-        ///
-        /// Read through <see cref="AgeText.Label"/> rather than off the raw string because several of
-        /// these captions ARE bare icon tokens - four of the fleet table's eight columns are drawn as a
-        /// picture and nothing else - and that path is where a token becomes the icon's name
-        /// (<see cref="IconNames"/>). A token the icon table does not name leaves the caption empty and
-        /// lands in <c>IconNames.UnknownTokens</c>, which is the audit list; nothing is guessed from the
-        /// asset name here.
-        /// </summary>
         /// <summary>What this table calls a column: the screen's own answer where it has one
         /// (<see cref="NameColumn"/>), else the caption the game wrote. Public because a screen's
         /// <see cref="ReadCell"/> names its own cell's column with the same words the sheet's edges use.
@@ -457,6 +447,17 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// What a column is called: the caption the game wrote into the heading from
+        /// <c>%&lt;TableName&gt;&lt;ColumnName&gt;Title</c>.
+        ///
+        /// Read through <see cref="AgeText.Label"/> rather than off the raw string because several of
+        /// these captions ARE bare icon tokens - four of the fleet table's eight columns are drawn as a
+        /// picture and nothing else - and that path is where a token becomes the icon's name
+        /// (<see cref="IconNames"/>). A token the icon table does not name leaves the caption empty and
+        /// lands in <c>IconNames.UnknownTokens</c>, which is the audit list; nothing is guessed from the
+        /// asset name here.
+        /// </summary>
         public static string HeaderName(GuiTableHeader header)
         {
             try

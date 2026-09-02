@@ -368,6 +368,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: the badge is the only place the game says a tab has something unread.
                 return tab.NotificationImage != null && tab.NotificationImage.Visible
                     ? ModStrings.Get(ModStrings.ChatUnread)
                     : null;

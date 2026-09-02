@@ -862,6 +862,7 @@ namespace ES2Access.Screens
                 {
                     AgeControlButton button = wired[i];
                     AgeTransform transform = AgeWidgets.Transform(button);
+                    // Flow control: the window keeps every button and draws the ones this page has a use for.
                     if (
                         transform == null
                         || !AgeWidgets.Visible(transform)

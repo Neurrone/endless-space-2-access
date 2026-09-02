@@ -373,6 +373,7 @@ namespace ES2Access.Screens
             AgeControlToggle toggle = window.CloudToggle;
             try
             {
+                // Flow control: the window keeps the cloud group and draws it only where cloud saves are offered.
                 if (
                     toggle == null
                     || window.CloudToggleGroup == null

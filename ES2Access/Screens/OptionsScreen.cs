@@ -538,8 +538,6 @@ namespace ES2Access.Screens
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
 
-        /// <summary>Where a focused control's tooltip is drawn from: the transform hugging the visible
-        /// text, never the hit area, which the layout stretches well past the words.</summary>
         /// <summary>The label showing a widget's text: the widget itself when it is one, else the
         /// first one under it.</summary>
         internal static AgePrimitiveLabel LabelIn(AgeTransform transform)

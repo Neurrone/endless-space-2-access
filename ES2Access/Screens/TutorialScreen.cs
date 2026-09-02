@@ -546,6 +546,7 @@ namespace ES2Access.Screens
             Action activate
         )
         {
+            // Flow control: an empty control set opens no stop, and a stop that lands nowhere is worse than none.
             if (!AgeWidgets.Visible(AgeWidgets.Transform(button)))
             {
                 return;
@@ -576,6 +577,7 @@ namespace ES2Access.Screens
             string nameKey
         )
         {
+            // Flow control: an empty control set opens no stop, and a stop that lands nowhere is worse than none.
             if (!AgeWidgets.Visible(AgeWidgets.Transform(toggle)))
             {
                 return;

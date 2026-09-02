@@ -739,11 +739,28 @@ namespace ES2Access.Screens
                 // through one handler - and nothing on the list says either exists.
                 NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.SelectToggle);
                 NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.SelectRange);
+                // A part per COLUMN rather than one composed sentence, the shape the battle screens'
+                // figures already have: the announcer joins the parts into the one line the row
+                // always spoke, and the review buffer gives each column a line of its own to step
+                // through. A column the line is not drawing answers null and contributes to neither.
                 vtable.Announcements.Add(
-                    new NodeAnnouncement(
-                        () => LineCells(it),
-                        live: true,
-                        kind: AnnouncementKinds.Value
+                    GraphNodes.ValuePart(
+                        () =>
+                            CellText(
+                                it.CommandPointsGroup,
+                                it.CommandPointsLabel,
+                                "%FleetListTableCommandPointsTitle"
+                            )
+                    )
+                );
+                vtable.Announcements.Add(
+                    GraphNodes.ValuePart(
+                        () =>
+                            CellText(
+                                it.MovementPointsGroup,
+                                it.MovementPointsLabel,
+                                "%FleetListTableMovementPointsTitle"
+                            )
                     )
                 );
                 // After the numbers the line draws, because that is where it would be written if the
@@ -887,55 +904,37 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The numbers the line draws beside the name, each with the caption the game itself gives that
-        /// column - which is an ICON in the game's fleet-list header, and so comes out as the icon's
-        /// name. The values are the drawn strings, not the model behind them: "1/4" is what is on the
-        /// screen.
+        /// ONE of the numbers the line draws beside the name, with the caption the game itself gives
+        /// that column - which is an ICON in the game's fleet-list header, and so comes out as the
+        /// icon's name. The value is the drawn string, not the model behind it: "1/4" is what is on
+        /// the screen.
         ///
-        /// A hangar line draws no movement, so it says none: the game replaces the group with an empty
-        /// one rather than a zero.
+        /// Null where the line is not drawing that column, so the part it belongs to disappears: a
+        /// hangar line draws no movement, and the game replaces the group with an empty one rather
+        /// than a zero.
         /// </summary>
-        private static string LineCells(FleetLine line)
-        {
-            MessageBuilder message = new MessageBuilder();
-            AddCell(
-                message,
-                line.CommandPointsGroup,
-                line.CommandPointsLabel,
-                "%FleetListTableCommandPointsTitle"
-            );
-            AddCell(
-                message,
-                line.MovementPointsGroup,
-                line.MovementPointsLabel,
-                "%FleetListTableMovementPointsTitle"
-            );
-            return message.Build();
-        }
-
-        private static void AddCell(
-            MessageBuilder message,
+        private static string CellText(
             AgeTransform group,
             AgePrimitiveLabel label,
             string captionKey
         )
         {
-            // Content: whether this stat fragment joins the line's phrase.
+            // Content: whether this column is drawn on the line at all.
             if (group == null || !group.Visible)
             {
-                return;
+                return null;
             }
 
             string value = AgeText.Label(label);
             if (string.IsNullOrEmpty(value))
             {
-                return;
+                return null;
             }
 
             MessageBuilder cell = new MessageBuilder();
             cell.Fragment(AgeText.Clean(Gui.Localize(captionKey)));
             cell.Fragment(value);
-            message.ListItem(cell.Build());
+            return cell.Build();
         }
 
         // ---- the hero and the ships ----
@@ -1087,6 +1086,7 @@ namespace ES2Access.Screens
             FleetHeroPanel owner = panel;
             AgeTooltip tooltip = panel.AssignUnassignButtonTooltip;
             Func<bool> enabled = () => AgeWidgets.Operable(it);
+            // Content: which of the game's two titles the button is called by.
             NodeVtable vtable = GraphNodes.Button(
                 () =>
                     AgeText.Clean(

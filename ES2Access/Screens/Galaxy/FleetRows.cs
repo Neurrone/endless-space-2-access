@@ -764,12 +764,6 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>How many fleets the map is drawing out in the space around this system, as a whole
-        /// phrase - what is on its lanes and what is crossing open space to or from it, which together
-        /// are exactly the fleets its branch opens onto. Both halves, because a count that named one of
-        /// them would stop matching the children the player walks. Nothing at all where there are none -
-        /// a system with nothing moving near it says nothing about it, exactly as one with nothing
-        /// parked says nothing.</summary>
         /// <summary>
         /// What is moving near one system: the lanes the map draws out of it, the fleets flying those
         /// lanes TOWARDS it, and the fleets crossing open space to it.
@@ -854,6 +848,12 @@ namespace ES2Access.Screens
 
         private static Empire _nearbyEmpire;
 
+        /// <summary>How many fleets the map is drawing out in the space around this system, as a whole
+        /// phrase - what is on its lanes and what is crossing open space to or from it, which together
+        /// are exactly the fleets its branch opens onto. Both halves, because a count that named one of
+        /// them would stop matching the children the player walks. Nothing at all where there are none -
+        /// a system with nothing moving near it says nothing about it, exactly as one with nothing
+        /// parked says nothing.</summary>
         private static string UnderWayNearby(StarSystemNode node, Empire empire)
         {
             try
@@ -1135,6 +1135,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < docks.Length; i++)
                 {
                     DockLabel dock = docks[i];
+                    // Flow control: a dock the map is not drawing must not be WALKED - its slot is the last system's.
                     if (dock.DockingSlot == null || !AgeWidgets.Visible(dock.AgeTransform))
                     {
                         continue;
@@ -1153,6 +1154,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < flying.Length; i++)
                 {
                     FleetLabel label = flying[i];
+                    // Different widget: picking which of the pooled labels is the one drawn for this fleet.
                     if (
                         label.GalaxyFleet != null
                         && label.GalaxyFleet.Fleet.GUID == fleet.GUID
@@ -1391,6 +1393,7 @@ namespace ES2Access.Screens
                 MergedFleetLabels group = merged[i];
                 DualGarrisonsLabelButtons buttons =
                     group == null ? null : group.GarrisonsButtons;
+                // Different widget: picking which of the pooled merged-label groups is the one drawn here.
                 if (buttons == null || !AgeWidgets.Visible(group.AgeTransform))
                 {
                     continue;

@@ -283,6 +283,7 @@ namespace ES2Access.Screens
             for (int i = 0; depth > 0 && children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Flow control: whether anything under here is drawn at all, which is what decides the band is a band.
                 IList<AgeTransform> grandchildren =
                     child == null || !AgeWidgets.Visible(child) ? null : child.Children;
                 for (int j = 0; grandchildren != null && j < grandchildren.Count; j++)

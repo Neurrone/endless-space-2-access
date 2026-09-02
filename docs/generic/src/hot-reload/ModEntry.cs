@@ -1281,8 +1281,10 @@ namespace ES2Access
         /// is meant to keep going. Unity stops simulating an unfocused player unless this is set, which
         /// would freeze the game mid-turn under someone who is still listening to it.
         ///
-        /// The loader sets it once at startup; this re-asserts it because the setting is Unity's and
-        /// nothing tells us when the engine has reason to reset it (a resolution or fullscreen change
+        /// The loader sets it once at startup only when the dev server is on, so for a player this is
+        /// the one place it is ever turned on at all. It re-asserts every frame because the setting is
+        /// Unity's and nothing tells us when the engine has reason to reset it (a resolution or
+        /// fullscreen change
         /// from the video options is the plausible one). Nothing in the game's own code ever writes it,
         /// so there is no setting here to fight - and the write only happens if something turned it
         /// off, which makes an actual write the interesting event rather than a per-frame cost.

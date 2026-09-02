@@ -181,6 +181,7 @@ namespace ES2Access.Screens
             AgePrimitiveLabel headline = banner == null ? null : banner.NewsLabel;
             AgeControlButton link = banner == null ? null : banner.UrlButton;
             AgeTransform widget = AgeWidgets.Transform(link);
+            // Flow control: the banner is kept and drawn only where there is news, and there is no node without one.
             if (
                 widget == null
                 || !AgeWidgets.Visible(banner.AgeTransform)

@@ -78,7 +78,7 @@ namespace ES2Access.Core.UI
     /// overlay shows at that distance (<see cref="LensAt"/>).
     ///
     /// Engine-free on purpose: the table is the design, and a design is worth testing without a game
-    /// running. Nothing reads it yet.
+    /// running.
     /// </summary>
     public static class Bands
     {

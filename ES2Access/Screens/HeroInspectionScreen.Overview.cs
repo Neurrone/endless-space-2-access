@@ -124,6 +124,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < slots.Length; i++)
                 {
                     ShipDesignOverviewSlotItem slot = slots[i];
+                    // Flow control: a slot the design is not drawing contributes no module and is not walked.
                     if (
                         slot == null
                         || slot.GuiSlot == null
@@ -282,6 +283,7 @@ namespace ES2Access.Screens
                     }
 
                     AgeTransform icon = AgeWidgets.Transform(tree.IconImage);
+                    // Flow control: a tree the page is not drawing is not one this hero has, and is not walked.
                     if (!AgeWidgets.Visible(icon))
                     {
                         continue;

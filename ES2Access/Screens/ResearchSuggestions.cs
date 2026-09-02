@@ -191,6 +191,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Flow control: the shared answer to "is the game drawing this", which the callers branch on rather than declare.
                 return widget != null && widget.Visible;
             }
             catch (Exception)

@@ -246,6 +246,7 @@ namespace ES2Access.Screens
                 NotificationWindow window = Current();
                 AgeControlButton button =
                     window == null ? null : Button(window, ShowLocationButton);
+                // Availability: whether the popup is offering its show-location button right now, which is what this action asks.
                 if (
                     button == null
                     || !Painted(button.AgeTransform, Root(window))
@@ -275,6 +276,7 @@ namespace ES2Access.Screens
                     NotificationWindow window = Current();
                     AgeControlButton button =
                         window == null ? null : Button(window, ShowLocationButton);
+                    // Availability: whether the popup is offering its show-location button right now, which is what this hint asks.
                     return button != null
                         && Painted(button.AgeTransform, Root(window))
                         && AgeWidgets.Operable(button.AgeTransform);
@@ -1012,6 +1014,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
+                // Content: whether the label's words are this notification's at all.
                 string text =
                     title || (drawn != null && AgeWidgets.Visible(drawn.AgeTransform))
                         ? AgeText.Label(drawn)

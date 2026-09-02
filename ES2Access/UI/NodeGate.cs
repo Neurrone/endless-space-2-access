@@ -18,7 +18,7 @@ namespace ES2Access.UI
     ///
     /// <para><b>What is asked, and of what.</b> The node's NATURE decides. A
     /// <see cref="DrawnNode"/> was declared with the widget that vouches for it, and
-    /// <see cref="Withdrawn"/> is asked of that widget AND of everything it hangs from. A
+    /// <see cref="Hider"/> is asked of that widget AND of everything it hangs from. A
     /// <see cref="SyntheticNode"/> is untestable by construction and passes: there is no widget in
     /// its declaration to ask, and honesty about its existence lives at the walk that enumerated
     /// it.</para>
@@ -148,7 +148,7 @@ namespace ES2Access.UI
         /// A cell list is grouped into rows GEOMETRICALLY (<see cref="AgeLayout.Rows"/>) before
         /// anything is declared, so a retired ghost's stale rectangle merges or splits the bands the
         /// player then hears counted - the gate, which only ever sees finished nodes, cannot undo
-        /// that. So <see cref="Cells"/> asks here instead, with the gate's own <see cref="Withdrawn"/>
+        /// that. So <see cref="Cells"/> asks here instead, with the gate's own <see cref="Hider"/>
         /// rather than a second opinion: two tests that could disagree would band by one rule and
         /// declare by another.
         ///
@@ -194,13 +194,6 @@ namespace ES2Access.UI
 
             Report(screenKey, node.Id, widget, hider);
             return true;
-        }
-
-        /// <summary>Whether the widget is off the screen AND not on its way onto it - the boolean form
-        /// of <see cref="Hider"/>, for a caller with no report to write.</summary>
-        private static bool Withdrawn(AgeTransform widget)
-        {
-            return Hider(widget) != null;
         }
 
         /// <summary>

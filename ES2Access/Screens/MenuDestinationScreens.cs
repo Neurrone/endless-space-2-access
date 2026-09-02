@@ -441,6 +441,7 @@ namespace ES2Access.Screens
                 for (int i = 0; items != null && i < items.Count; i++)
                 {
                     AgeTransform item = items[i];
+                    // Flow control: an item the table is not drawing contributes no name to the line.
                     DLCItemMinimal drawn =
                         item == null || !item.Visible ? null : item.GetComponent<DLCItemMinimal>();
                     if (drawn == null || drawn.Tooltip == null)

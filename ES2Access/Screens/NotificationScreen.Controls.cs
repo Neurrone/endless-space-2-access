@@ -172,11 +172,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the words block and anything hanging under it are keyed by.</summary>
         /// <summary>The node the popup's own words are read as. Internal for the same reason the bands
         /// are: the self-check singles this node out by key.</summary>
         internal const string WordsKey = "notification:words";
 
+        /// <summary>What the words block and anything hanging under it are keyed by.</summary>
         private static ControlId WordsId(AgePrimitiveLabel label)
         {
             return ControlId.For(label, WordsKey);
@@ -717,6 +717,7 @@ namespace ES2Access.Screens
         )
         {
             AgeControl control = toggle == null ? (AgeControl)button : toggle;
+            // Dedupe and count: this list is what tells the popup's own controls from the skeleton's, and an empty one opens no stop.
             if (control == null || !AgeWidgets.Visible(control.AgeTransform))
             {
                 return;
@@ -769,6 +770,7 @@ namespace ES2Access.Screens
                 bool wired =
                     (button != null && !string.IsNullOrEmpty(button.OnActivateMethod))
                     || (toggle != null && !string.IsNullOrEmpty(toggle.OnSwitchMethod));
+                // Dedupe: a control already declared, or one the popup is not drawing, is not an extra to add again.
                 if (
                     !wired
                     || !Painted(control.AgeTransform, root)

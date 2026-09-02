@@ -297,17 +297,6 @@ namespace ES2Access.Dev
             return it.Node == null || it.Node.Vtable == null ? null : it.Node.Vtable.Row;
         }
 
-        /// <summary>
-        /// Whether this node undertakes to have something in its review buffer that only the game's
-        /// own hover can put there: a <see cref="TooltipMode.Indicate"/> section whose own
-        /// would-it-draw test passes right now. That test is the section's, asked here rather than
-        /// re-derived, so the check and the reading cannot disagree about which tooltips are real.
-        ///
-        /// <see cref="TooltipMode.Announce"/> sections are not asked: their words are read straight off
-        /// the tooltip and spoken, so they reach the player whether or not anything ever draws, and
-        /// nothing about the aim can take them away. <see cref="TooltipMode.None"/> sections are the
-        /// control's own drawn text and involve no tooltip at all.
-        /// </summary>
         /// <summary>Which tooltip this node's pointer goes to, as the node itself declares it
         /// (<see cref="NodeVtable.PointsAt"/>). Never re-derived from the widget tree: the deepest
         /// tooltip inside a card is often decoration, and a second opinion that picked it reported a
@@ -332,9 +321,9 @@ namespace ES2Access.Dev
         /// UNDER its card and takes no place in the popup's own down-the-page order, so measuring one
         /// against the card drawn beside it would report a walk that jumps around as a defect.
         ///
-        /// The RULE is <see cref="DrawnBy"/>.s, so that this and the gate acting on the same answer
+        /// The RULE is <see cref="DrawnBy"/>'s, so that this and the gate acting on the same answer
         /// can never disagree. <see cref="Declared.Widget"/> is preferred because it may have been
-        /// enriched since (<see cref="ResolveRowCells"/> lends a table cell its row.s widget), which can
+        /// enriched since (<see cref="ResolveRowCells"/> lends a table cell its row's widget), which can
         /// only find a widget the shared rule does not - the safe direction: the gate lets a node with
         /// no evidence through, and this still holds it to the paint test.
         /// </summary>
@@ -353,6 +342,17 @@ namespace ES2Access.Dev
             return DrawnBy.Of(node.Node == null ? null : node.Node.Declared);
         }
 
+        /// <summary>
+        /// Whether this node undertakes to have something in its review buffer that only the game's
+        /// own hover can put there: a <see cref="TooltipMode.Indicate"/> section whose own
+        /// would-it-draw test passes right now. That test is the section's, asked here rather than
+        /// re-derived, so the check and the reading cannot disagree about which tooltips are real.
+        ///
+        /// <see cref="TooltipMode.Announce"/> sections are not asked: their words are read straight off
+        /// the tooltip and spoken, so they reach the player whether or not anything ever draws, and
+        /// nothing about the aim can take them away. <see cref="TooltipMode.None"/> sections are the
+        /// control's own drawn text and involve no tooltip at all.
+        /// </summary>
         internal static bool Promises(Declared node)
         {
             NodeVtable vtable = node.Node != null ? node.Node.Vtable : null;

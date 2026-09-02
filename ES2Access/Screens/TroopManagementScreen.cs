@@ -793,7 +793,7 @@ namespace ES2Access.Screens
                 () => AgeText.Label(it.StockLabel),
                 null,
                 // Declared whether or not the wrapper named it: where it did not, the label is this
-                // tooltip.s own first line and the readout drops that line from what it goes on to
+                // tooltip's own first line and the readout drops that line from what it goes on to
                 // announce - so the rest of the sentence is handed over instead of thrown away.
                 tooltip
             );

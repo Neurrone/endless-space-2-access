@@ -328,8 +328,8 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The two multiplier chords, said in the buffer of everything that has them - the
-        /// sellable tiles, the buy table.s rows and the strip.s own steppers. The game.s tooltip on some
-        /// of those already says what a modified CLICK does; what the keyboard.s chords do is the mod.s
+        /// sellable tiles, the buy table's rows and the strip's own steppers. The game's tooltip on some
+        /// of those already says what a modified CLICK does; what the keyboard's chords do is the mod's
         /// to say, and it is said in one place so no surface offering the gesture can forget it.
         /// </summary>
         private static void MarketChordHints(NodeVtable vtable, Func<bool> offered)

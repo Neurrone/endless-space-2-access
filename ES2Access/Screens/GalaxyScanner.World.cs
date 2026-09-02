@@ -15,14 +15,6 @@ namespace ES2Access.Screens
     {
         // ---- what is out there ----
 
-        /// <summary>
-        /// Everything the map is showing, in every kind the scanner knows, each list already sorted
-        /// nearest-first from where the player is reading.
-        ///
-        /// Every list every time, not only the one being read: cycling categories has to know whether
-        /// the category next door holds anything before it decides to skip it, and that answer only
-        /// exists once the other lists have been built.
-        /// </summary>
         /// <summary>Whether the band at <paramref name="level"/> lists a category - the tree's own
         /// table (<see cref="Bands"/>), asked with the level already in hand. A level with no answer
         /// (no galaxy camera) hides nothing: a filter that cannot tell what the map is showing must
@@ -32,6 +24,14 @@ namespace ES2Access.Screens
             return level < 0 || Bands.Scans(level, scanning, categoryKey);
         }
 
+        /// <summary>
+        /// Everything the map is showing, in every kind the scanner knows, each list already sorted
+        /// nearest-first from where the player is reading.
+        ///
+        /// Every list every time, not only the one being read: cycling categories has to know whether
+        /// the category next door holds anything before it decides to skip it, and that answer only
+        /// exists once the other lists have been built.
+        /// </summary>
         private Snap Snapshot(out double east, out double north)
         {
             List<Found>[] world = new List<Found>[CategoryCount];

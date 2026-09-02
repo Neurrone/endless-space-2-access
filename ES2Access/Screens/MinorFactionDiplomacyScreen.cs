@@ -554,12 +554,15 @@ namespace ES2Access.Screens
             AgeTransform influence = window.MinorRelationInfluenceModifierLine == null
                 ? null
                 : window.MinorRelationInfluenceModifierLine.AgeTransform;
+            // Flow control: the window keeps this line wired and draws it only where influence is one
+            // of the modifiers, so this is whether the band has that row at all.
             if (influence != null && AgeWidgets.Visible(influence))
             {
                 Cells.AddReadout(_cells, influence, Keys + "influence-modifier");
             }
 
             AgeTransform table = window.MinorRelationModifiersTable;
+            // Flow control: a table the window is not drawing must not be WALKED for modifiers to declare.
             IList<AgeTransform> children = table == null || !AgeWidgets.Visible(table)
                 ? null
                 : table.Children;
@@ -677,6 +680,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // Content: a label nobody is drawing holds no words of this faction's.
                 return label == null || !AgeWidgets.Visible(label.AgeTransform)
                     ? null
                     : AgeText.Label(label);

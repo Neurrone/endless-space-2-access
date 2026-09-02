@@ -147,6 +147,8 @@ namespace ES2Access.Screens
                 AddCheckbox(_filters, panel.LocalFilterToggle, "modding:filter/local");
                 AddCheckbox(_filters, SteamWorkshop.FilterToggle(panel), "modding:filter/workshop");
                 Cells.AddControl(_filters, panel.DisableCustomConfigButton, "modding:custom-config");
+                // Flow control: the panel keeps both branches wired and draws one of them, so this is
+                // which of the two the page is showing - a list of mods, or the word for having none.
                 if (AgeWidgets.Visible(panel.NoDataAvailableGroup))
                 {
                     Cells.AddReadout(_cells, panel.NoDataAvailableGroup, "modding:no-mods");
@@ -404,7 +406,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -480,6 +482,7 @@ namespace ES2Access.Screens
 
         private static string Drawn(AgePrimitiveLabel label)
         {
+            // Content: a label nobody is drawing holds no words of this mod's.
             return label == null || !AgeWidgets.Visible(label.AgeTransform)
                 ? null
                 : AgeText.Label(label);
@@ -497,6 +500,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
+                    // Different widget: finding the one button the bar is drawing that is neither of the two named ones.
                     if (
                         child != null
                         && !ReferenceEquals(child, window.ValidateButton)

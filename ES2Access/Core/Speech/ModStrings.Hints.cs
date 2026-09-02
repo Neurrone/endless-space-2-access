@@ -80,9 +80,9 @@ namespace ES2Access.Core.Speech
         public const string HintLockShip = "hint.lock-ship";
 
         /// <summary>The marketplace, whose quantity gestures the game gives a multiplier to: a modified
-        /// click on a resource or on one of the strip.s steppers changes the quantity by five or by the
+        /// click on a resource or on one of the strip's steppers changes the quantity by five or by the
         /// whole stock (<c>MarketplacePanel.GetQuantityToAddFromClick</c>). Which way it changes is the
-        /// control.s own business - a stepper subtracts - so the sentence names the size of the step
+        /// control's own business - a stepper subtracts - so the sentence names the size of the step
         /// and not its direction.</summary>
         public const string HintMarketFive = "hint.market-five";
         public const string HintMarketAll = "hint.market-all";

@@ -559,6 +559,7 @@ namespace ES2Access.Screens
                         )
                 )
                 {
+                    // Flow control: a category the panel is not drawing is not one of this session's, and is not walked.
                     if (group != null && group.AgeTransform != null && group.AgeTransform.Visible)
                     {
                         groups.Add(group);
@@ -588,6 +589,7 @@ namespace ES2Access.Screens
 
                 foreach (SettingItem item in group.SettingItemsTable.GetChildren<SettingItem>(false))
                 {
+                    // Flow control: a row the group is not drawing is not one of this category's settings, and is not walked.
                     if (
                         item != null
                         && item.AgeTransform != null
@@ -749,6 +751,7 @@ namespace ES2Access.Screens
 
                 foreach (GameMenuItem item in window.GameMenuItems)
                 {
+                    // Flow control: the menu keeps every item and draws the ones this session offers.
                     if (item != null && item.AgeTransform != null && item.AgeTransform.Visible)
                     {
                         items.Add(item);
@@ -774,6 +777,7 @@ namespace ES2Access.Screens
                     return item.LabelRight;
                 }
 
+                // Content: which of the item's two labels holds the words it is read by.
                 if (item.LabelLeft != null && item.LabelLeft.AgeTransform.Visible)
                 {
                     return item.LabelLeft;

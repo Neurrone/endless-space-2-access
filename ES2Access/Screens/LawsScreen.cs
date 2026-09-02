@@ -224,7 +224,7 @@ namespace ES2Access.Screens
         private static void AddFilter(List<Cell> cells, AgeTransform widget, int index)
         {
             LawFilter filter = widget == null ? null : widget.GetComponent<LawFilter>();
-            if (filter == null || !AgeWidgets.Visible(widget))
+            if (filter == null)
             {
                 return;
             }
@@ -351,6 +351,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(feature);
+            // Content: the line is read for the words it draws, and one nobody is drawing has none of this law's.
             if (
                 widget == null
                 || !AgeWidgets.Visible(widget)
@@ -480,7 +481,7 @@ namespace ES2Access.Screens
             Captions.Pop(builder, named);
         }
 
-        /// <summary>The window.s own exit, which the game draws in the corner well away from
+        /// <summary>The window's own exit, which the game draws in the corner well away from
         /// everything else.</summary>
         private void BuildActions(GraphBuilder builder, LawsManagementModalWindow window)
         {

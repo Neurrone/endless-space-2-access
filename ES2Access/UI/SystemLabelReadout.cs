@@ -17,7 +17,8 @@ namespace ES2Access.UI
     ///
     /// The division follows the mod's usual one. Two SHORT numbers the label puts in front of the
     /// player - the population and the sleeper count - are spoken parts of the system's readout. Every
-    /// PICTURE on the label is a child node of the system's row (<see cref="Icons"/>), because each of
+    /// PICTURE on the label is a child node of the system's row (<see cref="IconsAboveDeposits"/> and
+    /// <see cref="IconsBelowDeposits"/>), because each of
     /// them explains itself in a tooltip of its own and a node carries exactly one tooltip: folding a
     /// dozen of them into one buffer said all their words and offered none of their explanations. What
     /// stays in the buffer is what the label draws as a NUMBER or a bar rather than as a picture - a
@@ -121,7 +122,8 @@ namespace ES2Access.UI
         /// What the label draws as a figure rather than as a picture, in its own top-to-bottom order.
         ///
         /// Everything with a tooltip behind it has left this buffer and become a child node
-        /// (<see cref="Icons"/>). What is left is the label's wordless arithmetic: the row of empire
+        /// (<see cref="IconsAboveDeposits"/> and <see cref="IconsBelowDeposits"/>). What is left is the
+        /// label's wordless arithmetic: the row of empire
         /// bars, the two relation pictures the label hangs by the population line, the rings read as
         /// the proportion they are drawn at, and the counts the garrison lozenges and the pirate and
         /// academy groups write as bare numbers.
@@ -145,7 +147,8 @@ namespace ES2Access.UI
 
                 // How close the place is to rising up, and how long there is to do something about it -
                 // an angle and a turn count, neither of them written anywhere as words. The two
-                // SENTENCES the label hangs beside them are children of the row (<see cref="Icons"/>).
+                // SENTENCES the label hangs beside them are children of the row
+                // (<see cref="IconsAboveDeposits"/> and <see cref="IconsBelowDeposits"/>).
                 Add(lines, Rebellion(label));
 
                 // The two pictures the label parks on the population line rather than in the strip
@@ -848,7 +851,8 @@ namespace ES2Access.UI
         /// it. The label draws a ring and a turn count and writes no word for either, so the phrase is
         /// the mod's; the ring is read as the proportion it is drawn at. The two SENTENCES the game
         /// hangs on the ring and the countdown are children of the row instead
-        /// (<see cref="Icons"/>) - one node each, as two hover targets always are.</summary>
+        /// (<see cref="IconsAboveDeposits"/> and <see cref="IconsBelowDeposits"/>) - one node each, as
+        /// two hover targets always are.</summary>
         private static string Rebellion(StarSystemLabel label)
         {
             RebellionGroup group = label.RebellionGroup;
@@ -867,7 +871,8 @@ namespace ES2Access.UI
         /// <summary>What the system is building and how long it has left, or the cross the game draws
         /// over the slot when the queue is empty. The label draws the thing as its own picture and its
         /// name lives in the wrapper on the tooltip behind it. This is what the queue's own child node
-        /// is CALLED (<see cref="Icons"/>); the dossier behind the picture is what it carries.</summary>
+        /// is CALLED (<see cref="IconsAboveDeposits"/> and <see cref="IconsBelowDeposits"/>); the dossier
+        /// behind the picture is what it carries.</summary>
         private static string Building(StarSystemLabel label)
         {
             AgeTransform group = label.QueuedConstructionGroup;
@@ -876,6 +881,7 @@ namespace ES2Access.UI
                 return null;
             }
 
+            // Content: which of the two the queue says - what is being built, or the cross drawn over an empty slot.
             if (
                 label.NoConstructionCross != null
                 && AgeWidgets.Visible(label.NoConstructionCross.AgeTransform)
@@ -1027,6 +1033,7 @@ namespace ES2Access.UI
                     badges[i] == null
                         ? null
                         : badges[i].GetComponent<StarSystemLabelExplorationWinner>();
+                // Flow control: a badge the group is not drawing is not one of this system's winners.
                 if (badge == null || !AgeWidgets.Painted(badges[i]))
                 {
                     continue;
@@ -1169,6 +1176,7 @@ namespace ES2Access.UI
                 return;
             }
 
+            // Content: the label draws the power tracker only where there is one, and its figure is a buffer line.
             if (AgeWidgets.Visible(academy.AcademyPowerTracker))
             {
                 Add(
@@ -1181,6 +1189,7 @@ namespace ES2Access.UI
                 );
             }
 
+            // Content: the countdown is drawn only while there is one, and it is a buffer line rather than a node.
             if (!AgeWidgets.Visible(academy.AcademyRolesCountdown))
             {
                 return;

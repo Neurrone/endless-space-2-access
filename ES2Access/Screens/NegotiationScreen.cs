@@ -1117,10 +1117,8 @@ namespace ES2Access.Screens
 
         // ---- reading widgets ----
 
-        /// <summary>A control the game draws as a bare icon: what its own tooltip calls it, else what it
-        /// draws.</summary>
         /// <summary>What a control is called: the words it draws, else the title the game gave its
-        /// tooltip, else that tooltip.s own first line (<see cref="CardActions.FirstLine"/>, which is
+        /// tooltip, else that tooltip's own first line (<see cref="CardActions.FirstLine"/>, which is
         /// where the words-are-really-on-the-widget test lives).</summary>
         private static string Named(AgeTransform widget, AgeTooltip tooltip)
         {

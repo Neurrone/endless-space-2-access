@@ -90,12 +90,6 @@ namespace ES2Access.UI
             return _details[index];
         }
 
-        /// <summary>
-        /// Re-measure only if something the answer depends on has moved. The fog's own revision is the
-        /// game's counter of "the visible map changed" and covers every way it can - a probe arriving,
-        /// a fleet's vision sweeping, a turn passing - which is why the memo watches that rather than
-        /// trying to guess at the events behind it.
-        /// </summary>
         /// <summary>Let go of the fleet, the place and the corridor readings taken for them - mod
         /// teardown. The memo re-measures on the next ask, which is what an empty one does anyway.
         /// </summary>
@@ -115,6 +109,12 @@ namespace ES2Access.UI
             _reach = 0;
         }
 
+        /// <summary>
+        /// Re-measure only if something the answer depends on has moved. The fog's own revision is the
+        /// game's counter of "the visible map changed" and covers every way it can - a probe arriving,
+        /// a fleet's vision sweeping, a turn passing - which is why the memo watches that rather than
+        /// trying to guess at the events behind it.
+        /// </summary>
         private static void Ensure(Fleet fleet, StarSystemNode node)
         {
             try

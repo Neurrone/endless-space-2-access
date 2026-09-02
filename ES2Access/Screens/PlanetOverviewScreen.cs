@@ -434,6 +434,7 @@ namespace ES2Access.Screens
             {
                 GuiSimulationProperty property = fidsi.FidsiProperties[i];
                 AgeTransform item = items[i];
+                // Flow control: an item the strip is not drawing carries no figure of this planet's.
                 if (property == null || item == null || !AgeWidgets.Visible(item))
                 {
                     continue;
@@ -489,7 +490,7 @@ namespace ES2Access.Screens
 
         private static void AddPopulation(List<Cell> cells, AgeTransform widget, int index)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -647,6 +648,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = Children(row);
             for (int i = children == null ? -1 : children.Count - 1; i >= 0; i--)
             {
+                // Different widget: the row's words come off the last child it is drawing, which is not the node's own.
                 if (children[i] == null || !AgeWidgets.Visible(children[i]))
                 {
                     continue;
@@ -673,8 +675,8 @@ namespace ES2Access.Screens
         {
             List<AgeTooltip> found = new List<AgeTooltip>();
             CollectTooltips(row, found, TooltipDepth);
-            // Drawn order with the one the row POINTS AT last, which is what the sink calls the row.s
-            // own. Which that is, is asked the resolver.s own way: it collapses a tooltip the game
+            // Drawn order with the one the row POINTS AT last, which is what the sink calls the row's
+            // own. Which that is, is asked the resolver's own way: it collapses a tooltip the game
             // cloned onto a piece inside the row into one entry, so the entry that survived may not be
             // the very object the caller passed in. Every other one used to be a reviewed section on
             // this row - the Type row alone carries two - and is now an entry of its own, aimed at the
@@ -732,7 +734,7 @@ namespace ES2Access.Screens
 
         private static void AddReadout(List<Cell> cells, AgeTransform widget, string key)
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -767,7 +769,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(button);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -863,6 +865,7 @@ namespace ES2Access.Screens
             try
             {
                 PlanetLabel_PlanetOverview card = window == null ? null : window.PlanetLabel;
+                // Flow control: the page keeps its card and draws it only for a planet it is describing.
                 return card != null && AgeWidgets.Visible(card.InfoGroup) ? card : null;
             }
             catch (Exception)
@@ -883,6 +886,7 @@ namespace ES2Access.Screens
                     ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
                     : null;
                 TPanel panel = window == null ? null : window.GetComponentInChildren<TPanel>(true);
+                // Flow control: every side panel is instantiated and only the ones this planet needs are drawn.
                 return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
             }
             catch (Exception)

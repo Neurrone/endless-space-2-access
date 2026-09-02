@@ -171,6 +171,7 @@ namespace ES2Access.UI
         )
         {
             AgeTransform widget = line ?? (value == null ? null : value.AgeTransform);
+            // Different widget: the node stands on the VALUE label; this asks about the ROW the caption is read off.
             if (widget == null || !AgeWidgets.Visible(widget) || value == null)
             {
                 return;

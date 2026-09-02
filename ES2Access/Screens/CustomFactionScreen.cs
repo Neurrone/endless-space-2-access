@@ -718,7 +718,7 @@ namespace ES2Access.Screens
 
         /// <summary>The caption over a band, as the level its rows sit in: announced on the way in and
         /// never walked past, with a row of its own only where the game hung an explanation on it
-        /// (<see cref="Captions"/>). The ALPHA gate is this panel.s own: its tables retire a row by
+        /// (<see cref="Captions"/>). The ALPHA gate is this panel's own: its tables retire a row by
         /// fading it, and a faded caption is a level with nothing in it.</summary>
         private static bool PushHeading(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {

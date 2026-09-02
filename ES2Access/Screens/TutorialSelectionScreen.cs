@@ -324,6 +324,7 @@ namespace ES2Access.Screens
 
             try
             {
+                // Flow control: a subtree the window is not drawing must not be WALKED for words to read.
                 if (!widget.Visible)
                 {
                     return;

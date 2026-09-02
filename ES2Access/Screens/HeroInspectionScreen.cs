@@ -457,6 +457,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
+                    // Flow control: a child the band is not drawing is not one of this hero's pages, and is not walked.
                     if (child == null || !AgeWidgets.Visible(child))
                     {
                         continue;
@@ -591,7 +592,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform widget = AgeWidgets.Transform(label);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -671,6 +672,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Flow control: a child the group is not drawing holds no words this fact put there.
                 if (
                     child != null
                     && AgeWidgets.Visible(child)
@@ -763,6 +765,7 @@ namespace ES2Access.Screens
 
         private static AgeTransform Drawn(AgeTransform widget)
         {
+            // Content: the shared answer to "is the game drawing this", which the callers branch on rather than declare.
             return widget != null && AgeWidgets.Visible(widget) ? widget : null;
         }
 

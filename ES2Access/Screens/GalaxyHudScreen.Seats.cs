@@ -704,6 +704,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
+                // Different widget: the first curiosity the card is actually drawing, which is where the pointer goes.
                 if (AgeWidgets.Painted(items[i]))
                 {
                     return items[i];

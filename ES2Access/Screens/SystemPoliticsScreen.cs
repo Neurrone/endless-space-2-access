@@ -376,6 +376,7 @@ namespace ES2Access.Screens
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     AgeTransform child = children[i];
+                    // Content: a modifier the game is not drawing has no words of this line's to read.
                     if (child == null || !child.Visible)
                     {
                         continue;

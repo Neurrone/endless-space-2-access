@@ -18,9 +18,19 @@ namespace ES2Access.Tests.Lint
     /// rectangle merges the rows the player hears), a dedupe, a different widget than the one the node
     /// stands on, an availability test, or the whole of a synthetic node's existence test.
     ///
-    /// This lint does not read the comment - it cannot judge one. It makes ADDING a test a deliberate
-    /// act: a new site fails until it is written into the allowlist, where it shows up in the diff
-    /// next to the comment that justifies it.
+    /// This lint does not READ the comment - it cannot judge one. What it can check is that one is
+    /// there: a comment somewhere in the eight lines above the test. Presence is not judgement, and it
+    /// is not meant to be; it is what stops the allowlist filling up with entries nobody ever wrote a
+    /// reason for, which is exactly what it had done - 104 of 527 sites carried none.
+    ///
+    /// Eight lines because that is the reach of the block a why-comment is normally the head of: the
+    /// comment, its wrapped continuation, and the two or three lines of setup between it and the
+    /// condition it is about. A doc comment on the enclosing member counts, which is deliberate - a
+    /// member whose whole summary is "only while the card is drawing the row" has said it.
+    ///
+    /// Together with the allowlist, ADDING a test is a deliberate act twice over: the site fails until
+    /// a reason is written beside it, and again until it is written into the allowlist, where it shows
+    /// up in the diff next to that reason.
     /// </summary>
     public class VisibilityTestLintTests
     {
@@ -87,6 +97,70 @@ namespace ES2Access.Tests.Lint
             Assert.NotEmpty(LintSources.Allowed(Allowlist));
         }
 
+        /// <summary>How far above a test a comment may sit and still be its reason.</summary>
+        private const int CommentReach = 8;
+
+        private const string CommentRule =
+            "A walk-level visibility test needs its reason written beside it, within eight lines above.\n"
+            + "Say which job the test does that NodeGate cannot: flow control, content read, spoken count, banding input, dedupe, different widget, availability, or a Synthetic node's own existence test.\n"
+            + "If it only guards that a Drawn node's widget exists, delete it - the gate already asked, of the whole ancestry.";
+
+        [Fact]
+        public void EveryVisibilityTestHasACommentAboveIt()
+        {
+            List<string> bare = new List<string>();
+            Dictionary<string, bool> shims = Shims();
+            foreach (string file in LintSources.ModSources())
+            {
+                if (Skipped(file))
+                {
+                    continue;
+                }
+
+                string[] lines = LintSources.Lines(file);
+                bool local = Local(lines, shims);
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (LintSources.IsComment(lines[i]) || !Tests(lines[i], local))
+                    {
+                        continue;
+                    }
+
+                    if (!Explained(lines, i))
+                    {
+                        bare.Add(file + ":" + (i + 1) + ": " + lines[i].Trim());
+                    }
+                }
+            }
+
+            bare.Sort(StringComparer.Ordinal);
+            Assert.True(
+                bare.Count == 0,
+                CommentRule
+                    + Environment.NewLine
+                    + Environment.NewLine
+                    + "No comment within "
+                    + CommentReach
+                    + " lines above:"
+                    + Environment.NewLine
+                    + "  "
+                    + string.Join(Environment.NewLine + "  ", bare.ToArray())
+            );
+        }
+
+        private static bool Explained(string[] lines, int at)
+        {
+            for (int i = at - 1; i >= 0 && i >= at - CommentReach; i--)
+            {
+                if (LintSources.IsComment(lines[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         internal static Dictionary<Site, int> Sites()
         {
             Dictionary<Site, int> found = new Dictionary<Site, int>();
@@ -99,16 +173,7 @@ namespace ES2Access.Tests.Lint
                 }
 
                 string[] lines = LintSources.Lines(file);
-                bool local = false;
-                foreach (string line in lines)
-                {
-                    if (LocalPredicate.IsMatch(line) || Declares(shims, line))
-                    {
-                        local = true;
-                        break;
-                    }
-                }
-
+                bool local = Local(lines, shims);
                 foreach (string line in lines)
                 {
                     if (LintSources.IsComment(line) || !Tests(line, local))
@@ -164,6 +229,21 @@ namespace ES2Access.Tests.Lint
             }
 
             return names;
+        }
+
+        /// <summary>Whether this file's bare <c>Visible(</c> calls count: it declares a visibility
+        /// shim of its own, or it is another half of a partial class that does.</summary>
+        private static bool Local(string[] lines, Dictionary<string, bool> shims)
+        {
+            foreach (string line in lines)
+            {
+                if (LocalPredicate.IsMatch(line) || Declares(shims, line))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool Declares(Dictionary<string, bool> shims, string line)

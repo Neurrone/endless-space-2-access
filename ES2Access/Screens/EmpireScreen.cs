@@ -337,6 +337,7 @@ namespace ES2Access.Screens
             }
 
             AgeTransform button = AgeWidgets.Transform(slot.button);
+            // Flow control, and the gate cannot cover it - the note in the branch says why.
             if (button == null || !AgeWidgets.Visible(button))
             {
                 // Nothing to press and nothing to say: the walk is still stopped, because descending
@@ -362,10 +363,10 @@ namespace ES2Access.Screens
                 tooltip
             );
             // BOTH tooltips the slot carries, through the nesting sink. The name comes off the FIDSI
-            // group.s sentence, so that sentence has to be reachable - it used to be read for the name
+            // group's sentence, so that sentence has to be reachable - it used to be read for the name
             // and then declared nowhere, and everything after its first line was unreachable. The
-            // slot.s OWN is the one the pointer goes to, so it is last and it is the one the slot
-            // announces; the group.s becomes a child entry of its own, because a second tooltip a node
+            // slot's OWN is the one the pointer goes to, so it is last and it is the one the slot
+            // announces; the group's becomes a child entry of its own, because a second tooltip a node
             // is not pointing at is a second hover target and one row means a row of NODES.
             List<AgeTooltip> found = new List<AgeTooltip>(2);
             if (

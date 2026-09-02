@@ -17,11 +17,10 @@ using UnityEngine;
 namespace ES2Access.Dev
 {
     /// <summary>The probes that report what the game and the mod are: the screen, the stack, the
-    /// session, the saves, the camera, the notifications, the windows and the patches.</summary>
+    /// session, the saves, the camera, the notifications and the patches.</summary>
     public static partial class DevProbe
     {
         private const int MaxSavesListed = 60;
-        private const int MaxWindowsListed = 80;
 
         /// <summary>What the mod thinks the player is on, and where its cursor is sitting.</summary>
         public static string Screen()
@@ -397,49 +396,6 @@ namespace ES2Access.Dev
         private static double Round(float value)
         {
             return Math.Round(value, 3);
-        }
-
-        /// <summary>The windows the game says are up, with the "shown, animated in, interactive" flag
-        /// every screen's IsActive turns on - the fastest way to see why a screen is not activating.
-        /// </summary>
-        public static string Windows()
-        {
-            return Guarded(json =>
-            {
-                json.WritePropertyName("windows");
-                json.WriteStartArray();
-                GuiManager gui = Gui.GuiServiceAvailable ? Gui.GuiService as GuiManager : null;
-                if (gui != null && gui.ShownGuiPanels != null)
-                {
-                    int listed = 0;
-                    foreach (Amplitude.Unity.Gui.GuiPanel panel in gui.ShownGuiPanels)
-                    {
-                        // The game's own GuiWindow, not the engine's: IsReady - "shown, animated in,
-                        // interactive", the gate every screen's IsActive turns on - is the subclass's.
-                        global::GuiWindow window = panel as global::GuiWindow;
-                        if (window == null)
-                        {
-                            continue;
-                        }
-
-                        if (listed++ >= MaxWindowsListed)
-                        {
-                            break;
-                        }
-
-                        json.WriteStartObject();
-                        json.WritePropertyName("name");
-                        json.WriteValue(window.Name ?? window.gameObject.name);
-                        json.WritePropertyName("type");
-                        json.WriteValue(window.GetType().Name);
-                        json.WritePropertyName("isReady");
-                        json.WriteValue(window.IsReady);
-                        json.WriteEndObject();
-                    }
-                }
-
-                json.WriteEndArray();
-            });
         }
 
         // Shared with /status, which must stay cheap: the target lookup is reflection over the six

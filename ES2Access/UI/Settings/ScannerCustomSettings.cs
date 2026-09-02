@@ -17,12 +17,12 @@ namespace ES2Access.UI.Settings
     /// scanner has spent a stage removing. The cache is a mod-assembly static, so a hot reload drops
     /// it and the next ask decodes the file again.
     ///
-    /// <para>WHERE THE SAVE HAPPENS, and the seam the editor will move: <see cref="Set"/> writes the
-    /// file immediately, which is what makes <c>/eval</c> and the test recipes able to configure a
-    /// slot and reload. The editor sub-screen (stage 4) holds its edits in a
+    /// <para>WHERE THE SAVE HAPPENS: every writer here goes through <see cref="Save"/>, which writes
+    /// the settings file immediately - which is what makes <c>/eval</c> able to configure a slot and
+    /// reload. The editor (<see cref="ES2Access.UI.ModOptions.ScannerEditor"/>) holds its edits in a
     /// <see cref="ScannerCustomSlots.Copy"/> and commits them through <see cref="Replace"/> when the
-    /// options window's Apply lands - the same Apply-to-persist the rest of the mod's settings have.
-    /// Nothing else here changes when that arrives.</para>
+    /// options window's Apply lands - the same Apply-to-persist the rest of the mod's settings
+    /// have.</para>
     /// </summary>
     public static class ScannerCustomSettings
     {

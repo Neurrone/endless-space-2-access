@@ -320,6 +320,7 @@ namespace ES2Access.Screens
                         l.MainColonizedStarSystem != null
                         && ReferenceEquals(l.MainColonizedStarSystem.Empire, empire),
                     l =>
+                        // Different widget: picking which of the map's labels is the one drawn for this empire.
                         AgeWidgets.Visible(l.AgeTransform)
                         && AgeWidgets.Painted(l.EmpireNameLine)
                 );

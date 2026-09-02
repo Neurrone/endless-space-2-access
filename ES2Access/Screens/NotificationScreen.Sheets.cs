@@ -94,6 +94,7 @@ namespace ES2Access.Screens
                 foreach (AgeControlScrollView view in ScrollViews.Under(root))
                 {
                     AgeTransform widget = view == null ? null : view.AgeTransform;
+                    // Flow control: a scroll view the popup is not drawing holds none of this notification's body.
                     if (
                         widget == null
                         || !AgeWidgets.Visible(widget)
@@ -886,6 +887,7 @@ namespace ES2Access.Screens
             AgeTransform root = Root(window);
             foreach (AgeTransform table in variant.Tables(window))
             {
+                // Flow control: a table the popup is not drawing must not be WALKED - its rows are the last notification's.
                 if (table == null || !Painted(table, root))
                 {
                     continue;

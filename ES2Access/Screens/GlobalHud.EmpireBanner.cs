@@ -383,12 +383,12 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>One icon.s explanations as sections: the FIRST is the icon.s own and speaks; every
+        /// <summary>One icon's explanations as sections: the FIRST is the icon's own and speaks; every
         /// later one is a badge inside it and is reviewable. The order is the drawn one the resolver
-        /// answers in - the control.s own tooltip, then the badges inside it - so the button says what it
-        /// opens and the badge.s sentence is a buffer line away rather than nowhere at all. Which of
-        /// several tooltips is the icon.s OWN is a fact about the icon; how loudly that one reads is the
-        /// tooltip.s own kind to answer.
+        /// answers in - the control's own tooltip, then the badges inside it - so the button says what it
+        /// opens and the badge's sentence is a buffer line away rather than nowhere at all. Which of
+        /// several tooltips is the icon's OWN is a fact about the icon; how loudly that one reads is the
+        /// tooltip's own kind to answer.
         ///
         /// The one place in the mod where a badge stays a REVIEWED section rather than becoming an entry
         /// of its own, and it is a shape constraint rather than a judgement: the strip's icons are laid

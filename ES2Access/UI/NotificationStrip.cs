@@ -91,6 +91,7 @@ namespace ES2Access.UI
                         continue;
                     }
 
+                    // Flow control, and the caller says how strict: one page counts a fading child as a row and another does not.
                     bool shown = strict ? child.Visible : child.Alpha > 0f;
                     if (!shown)
                     {

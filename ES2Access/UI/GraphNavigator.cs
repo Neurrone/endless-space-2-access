@@ -1033,16 +1033,6 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// Refill the UI review buffer from the focused control - its name, the state words its
-        /// readout would append, then its detail lines.
-        ///
-        /// Only when something actually changed. The screen is rebuilt every frame from live game
-        /// state, so "the focus moved" cannot be answered by object identity; it is answered by the
-        /// control's id and the readout it composes to. Sitting still on a control therefore keeps the
-        /// player's place in the buffer, and a control that changes under them (a button that becomes
-        /// available, its reason gone) refills with the truth.
-        /// </summary>
-        /// <summary>
         /// Put a MODE's own reading in the review buffer instead of the focused control's, and keep it
         /// there until the mode gives it back.
         ///
@@ -1093,6 +1083,16 @@ namespace ES2Access.UI
             _bufferLines = null;
         }
 
+        /// <summary>
+        /// Refill the UI review buffer from the focused control - its name, the state words its
+        /// readout would append, then its detail lines.
+        ///
+        /// Only when something actually changed. The screen is rebuilt every frame from live game
+        /// state, so "the focus moved" cannot be answered by object identity; it is answered by the
+        /// control's id and the readout it composes to. Sitting still on a control therefore keeps the
+        /// player's place in the buffer, and a control that changes under them (a button that becomes
+        /// available, its reason gone) refills with the truth.
+        /// </summary>
         private void FillBuffer(GraphNode node)
         {
             if (_buffers == null || _bufferOverride != null)

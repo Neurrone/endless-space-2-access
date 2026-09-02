@@ -747,6 +747,7 @@ namespace ES2Access.UI
             AddLabel(lines, panel.ConstellationBonusLabel);
 
             GuiEffectMapper mapper = panel.ConstellationEffectMapper;
+            // Content: the constellation's effects are this constellation's only while the mapper is drawn.
             if (mapper == null || mapper.AgeTransform == null || !mapper.AgeTransform.Visible)
             {
                 return;

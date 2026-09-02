@@ -468,6 +468,7 @@ namespace ES2Access.Screens
                 for (int i = 0; slots != null && i < slots.Count; i++)
                 {
                     CompetitorOrbitalSlot slot = Slot(slots[i]);
+                    // Spoken count: the icon IS the fact counted - how many empires have not ended their turn.
                     if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
                     {
                         playing++;

@@ -386,7 +386,7 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Which hull.s row the cursor is on, or -1 for anywhere else.</summary>
+        /// <summary>Which hull's row the cursor is on, or -1 for anywhere else.</summary>
         private static int FocusedHull()
         {
             GraphNavigator navigator = ModEntry.Navigator;
@@ -594,7 +594,7 @@ namespace ES2Access.Screens
         // ---- shared ----
 
         /// <summary>Push the heading a band was drawn under, if it drew one - and declare it as the
-        /// band.s first row where the game hung an explanation on it (<see cref="Captions"/>). The
+        /// band's first row where the game hung an explanation on it (<see cref="Captions"/>). The
         /// heading is the LABEL inside the band, which is where these prefabs draw it.</summary>
         private static bool Push(GraphBuilder builder, AgeTransform group, string key)
         {

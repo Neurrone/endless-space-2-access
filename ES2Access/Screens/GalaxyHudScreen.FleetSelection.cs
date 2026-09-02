@@ -10,23 +10,6 @@ namespace ES2Access.Screens
     /// next-idle-fleet cycle reached through the turn window's own handles.</summary>
     public sealed partial class GalaxyHudScreen
     {
-        /// <summary>
-        /// Take the camera to a fleet and select it.
-        ///
-        /// A fleet PARKED somewhere goes through the turn window's own routine for exactly that: it
-        /// knows to wait for the galaxy view to finish coming back before it hands the fleet to the
-        /// cursor, and getting that order wrong leaves the selection on nothing.
-        ///
-        /// A fleet UNDER WAY cannot go that way, and the game's routine says so by doing nothing at
-        /// all: it finds the fleet's docking slot to aim the camera at, and a fleet between two systems
-        /// has none, so it falls through to handing the fleet to a window that is not shown - which
-        /// stashes it for the next time the window opens (<c>FleetsScreen.SelectIdleFleet</c> :672-682)
-        /// and there never is one, because opening that window is what selecting a fleet does. So a
-        /// moving fleet is selected the way every other "show me this fleet" in the game does it
-        /// (<c>MilitaryScreen</c>, <c>NamedShipInfoPanel</c>): hand its cursor target to the selection,
-        /// swap in the garrison cursor, and ask the camera for the fleet - in that order, because the
-        /// panel's own visibility is gated on that cursor.
-        /// </summary>
         /// <summary>The same selection a fleet's own node makes, for the one other thing on this page
         /// that names a fleet without walking to it (<see cref="GalaxyInspect"/>).</summary>
         internal static void SelectFleet(Fleet fleet)
@@ -160,6 +143,23 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// Take the camera to a fleet and select it.
+        ///
+        /// A fleet PARKED somewhere goes through the turn window's own routine for exactly that: it
+        /// knows to wait for the galaxy view to finish coming back before it hands the fleet to the
+        /// cursor, and getting that order wrong leaves the selection on nothing.
+        ///
+        /// A fleet UNDER WAY cannot go that way, and the game's routine says so by doing nothing at
+        /// all: it finds the fleet's docking slot to aim the camera at, and a fleet between two systems
+        /// has none, so it falls through to handing the fleet to a window that is not shown - which
+        /// stashes it for the next time the window opens (<c>FleetsScreen.SelectIdleFleet</c> :672-682)
+        /// and there never is one, because opening that window is what selecting a fleet does. So a
+        /// moving fleet is selected the way every other "show me this fleet" in the game does it
+        /// (<c>MilitaryScreen</c>, <c>NamedShipInfoPanel</c>): hand its cursor target to the selection,
+        /// swap in the garrison cursor, and ask the camera for the fleet - in that order, because the
+        /// panel's own visibility is gated on that cursor.
+        /// </summary>
         private static void Select(Fleet fleet)
         {
             try

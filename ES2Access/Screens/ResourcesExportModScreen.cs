@@ -291,6 +291,7 @@ namespace ES2Access.Screens
             );
             try
             {
+                // Flow control: which of the two states the panel is in - still loading, or listing what it found.
                 if (AgeWidgets.Visible(window.LoadingGroup))
                 {
                     Line(builder, window.LoadingLabel, "resources-export:loading");
@@ -334,6 +335,7 @@ namespace ES2Access.Screens
             for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 AgeTransform widget = rows[i];
+                // Flow control: a row the table is not drawing is not one of this search's resources, and is not walked.
                 if (widget == null || !AgeWidgets.Painted(widget))
                 {
                     continue;
@@ -376,7 +378,7 @@ namespace ES2Access.Screens
         private void Filter(AgeControlToggle toggle, string key)
         {
             AgeTransform widget = AgeWidgets.Transform(toggle);
-            if (widget == null || !AgeWidgets.Visible(widget))
+            if (widget == null)
             {
                 return;
             }
@@ -411,6 +413,7 @@ namespace ES2Access.Screens
             builder.PushContext(AgeWidgets.PanelTitle(panel.AgeTransform));
             try
             {
+                // Flow control: which of the two the panel is drawing - a chosen resource, or its invitation to pick one.
                 if (!AgeWidgets.Visible(panel.SelectedResourceGroup))
                 {
                     _cells.Clear();
@@ -481,6 +484,7 @@ namespace ES2Access.Screens
             for (int i = 0; properties != null && i < properties.Count; i++)
             {
                 AgeTransform widget = properties[i];
+                // Flow control: a line the property table is not drawing is not one of this material's.
                 if (widget == null || !AgeWidgets.Painted(widget))
                 {
                     continue;

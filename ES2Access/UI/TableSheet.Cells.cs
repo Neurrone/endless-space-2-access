@@ -353,11 +353,11 @@ namespace ES2Access.UI
                 AgeTooltip cellTip = Supplied(heading, it) ? null : TooltipOf(it);
                 List<AgeTooltip> inner = Inside(it, cellTip);
                 // A cell declares a tooltip only where the game gave that COLUMN something of its
-                // own. Some tables hang one hover surface across the whole row - the marketplace.s
+                // own. Some tables hang one hover surface across the whole row - the marketplace's
                 // buy lines carry the same Resource dossier, same class and same target, on the name,
                 // the stock and the price alike (measured 2026-08-30) - and there the row already
                 // says it, so a cell repeating it is the same sentence three times over. Identity,
-                // never text: the election table.s per-cell "Weak support" is a different surface on
+                // never text: the election table's per-cell "Weak support" is a different surface on
                 // every column and stays declared (owner ruling 2026-08-30).
                 if (AgeWidgets.SameTooltip(cellTip, rowTip))
                 {

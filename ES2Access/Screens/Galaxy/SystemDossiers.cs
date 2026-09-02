@@ -242,6 +242,7 @@ namespace ES2Access.Screens
             ResourceDepositDefinition definition
         )
         {
+            // Flow control: a table the label is not drawing must not be WALKED for a deposit to read.
             if (!AgeWidgets.Visible(table))
             {
                 return null;
@@ -390,6 +391,7 @@ namespace ES2Access.Screens
             }
 
             AgeTooltip onTheLabel = label == null ? null : label.StarTooltip;
+            // Content: which tooltip the star's dossier is - the label's own only while the map is drawing that label.
             if (
                 onTheLabel != null
                 && AgeWidgets.Painted(label.AgeTransform)

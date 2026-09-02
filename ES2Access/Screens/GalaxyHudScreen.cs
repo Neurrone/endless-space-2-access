@@ -1256,6 +1256,7 @@ namespace ES2Access.Screens
                     }
 
                     StarSystemLabel label = LabelFor(place, SystemLabels());
+                    // Different widget: the tooltip and its anchor are read off the label, not off the node this answers for.
                     if (label != null && AgeWidgets.Visible(label.AgeTransform))
                     {
                         tooltip = label.StarTooltip;
@@ -1349,6 +1350,7 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < children.Count; i++)
             {
+                // Content: one buffer line per child the game is drawing, which is not a node and has no gate.
                 if (AgeWidgets.Visible(children[i]))
                 {
                     AddLine(lines, AgeWidgets.ItemText(children[i]));

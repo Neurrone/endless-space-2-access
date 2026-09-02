@@ -181,6 +181,27 @@ namespace ES2Access.Dev
                 : property.GetValue(gui, null) as Amplitude.Unity.Gui.GuiTooltipController;
         }
 
+        /// <summary>
+        /// Set the game's tooltip hover delay - normally 0.3 s - and return what it was.
+        /// <see cref="RestoreTooltipDelay"/> (-1) puts the game's own value back.
+        ///
+        /// It is here because that third of a second is the difference between a tooltip test that
+        /// works and one that needs a settle window nobody can size reliably: focus a control, ask for
+        /// its tooltip, and the words only exist once the game has drawn them (see
+        /// <see cref="DrawnTooltip"/>). At zero the next frame has them.
+        ///
+        /// Where it lives: the game's <c>GuiManager</c> (the Assembly-CSharp subclass) holds it in
+        /// <c>tooltipDisplayDelay</c>, exposed as <c>TooltipDisplayDelay</c> and read fresh by
+        /// <c>GuiTooltipController.Update</c> on every new hover - so a write takes effect on the next
+        /// hover with no reinitialization. The PUBLIC SETTER IS NOT USED: it writes the player's
+        /// Registry.xml, and a dev tool must not edit the player's settings. The private field is
+        /// written directly instead.
+        ///
+        /// Which also gives the restore path for free, and one that survives a hot reload dropping
+        /// this class's statics: the registry still holds the real value precisely because nothing here
+        /// ever writes it. The first change caches what it displaced; a later load with no cache falls
+        /// back to the registry.
+        /// </summary>
         public static string TooltipDelay(double seconds)
         {
             return Guarded(json =>

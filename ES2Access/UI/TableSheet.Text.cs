@@ -180,11 +180,13 @@ namespace ES2Access.UI
             bool paintedOnly
         )
         {
+            // Flow control: the walk stops where the renderer stops, so an undrawn branch contributes none of its words.
             if (widget == null || depth > limit || !widget.Visible)
             {
                 return;
             }
 
+            // And the caller's own stricter question: a faded branch is read on one page and not on another.
             if (paintedOnly && widget.Alpha <= 0f)
             {
                 return;

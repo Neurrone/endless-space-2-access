@@ -689,6 +689,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
+                // Flow control: a child the map is not drawing contributes no label to collect.
                 if (child == null || !AgeWidgets.Visible(child))
                 {
                     continue;

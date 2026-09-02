@@ -76,7 +76,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Rank(it)),
                 },
                 // The game writes a paragraph and the progress line into one plain tooltip, and it is
-                // announced whole like every other plain one: the tooltip.s own kind decides, and this
+                // announced whole like every other plain one: the tooltip's own kind decides, and this
                 // page states no exception to it.
                 Sections = GraphNodes.Sections(null, tooltip),
             };

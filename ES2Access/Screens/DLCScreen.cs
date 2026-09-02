@@ -255,6 +255,7 @@ namespace ES2Access.Screens
             Func<IList<string>> details = () => AgeText.Lines(AgeText.Label(description));
 
             AgeTransform activate = AgeWidgets.Transform(item.ActivateToggle);
+            // Flow control: which of two nodes the row is - a tick the player can work, or the plain reading below.
             if (AgeWidgets.Visible(activate))
             {
                 AgeControlToggle box = item.ActivateToggle;

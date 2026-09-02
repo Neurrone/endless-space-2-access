@@ -160,7 +160,7 @@ namespace ES2Access.UI
                     GraphNodes.LabelPart(() => ShipName(it)),
                     GraphNodes.ValuePart(() => Health(it), false),
                 },
-                // The outcome sentence is the game.s own, kept in a field the roster never draws, so
+                // The outcome sentence is the game's own, kept in a field the roster never draws, so
                 // the row says it as it is read - declared as a section rather than composed into the
                 // readout by hand, so the same words reach the review buffer exactly once.
                 Sections = GraphNodes.SpokenSections(() => OutcomeLines(it), tooltip),
