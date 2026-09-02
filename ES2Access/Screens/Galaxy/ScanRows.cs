@@ -859,29 +859,14 @@ namespace ES2Access.Screens
         /// widget to hang a dossier on.</summary>
         private static ScanNodeLabel ScanLabelFor(StarSystemNode node, ScanNodeLabel[] labels)
         {
-            try
-            {
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    ScanNodeLabel label = labels[i];
-                    // Different widget, and a dedupe of the window's pool: a label the camera has
-                    // culled is still bound to whatever it last drew.
-                    if (
-                        label != null
-                        && ReferenceEquals(label.GameNode, node)
-                        && AgeWidgets.Visible(label.AgeTransform)
-                    )
-                    {
-                        return label;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("scan: matching a system to its lens label threw: " + e);
-            }
-
-            return null;
+            // The drawn policy is VISIBILITY, and it is load-bearing here rather than tidy: this
+            // window POOLS its labels and culls them by camera position, so a label the camera has
+            // culled is still bound to whatever it last drew and would answer for the wrong star.
+            return LabelFor(
+                labels,
+                l => ReferenceEquals(l.GameNode, node),
+                l => AgeWidgets.Visible(l.AgeTransform)
+            );
         }
     }
 }

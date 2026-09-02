@@ -53,7 +53,7 @@ namespace ES2Access.UI
         {
             try
             {
-                AgeTransform transform = TransformOf(control) ?? TransformOf(fallback);
+                AgeTransform transform = DrawnBy.WidgetOf(control) ?? DrawnBy.WidgetOf(fallback);
                 if (transform == null)
                 {
                     return;
@@ -151,27 +151,6 @@ namespace ES2Access.UI
             {
                 vtable.ScrollAnchor = widget;
             }
-        }
-
-        /// <summary>The transform a node's backing object stands on. Controls name themselves
-        /// differently from screen to screen - a widget, the control component on it, the row object
-        /// the whole thing hangs off - so all of them are asked the same way.</summary>
-        private static AgeTransform TransformOf(object control)
-        {
-            AgeTransform transform = control as AgeTransform;
-            if (transform != null)
-            {
-                return transform;
-            }
-
-            AgeControl age = control as AgeControl;
-            if (age != null)
-            {
-                return age.AgeTransform;
-            }
-
-            Component component = control as Component;
-            return component == null ? null : component.GetComponent<AgeTransform>();
         }
     }
 }

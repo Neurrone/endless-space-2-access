@@ -316,37 +316,19 @@ namespace ES2Access.Screens
 
         /// <summary>The map's own label for a constellation - matched by the constellation it was bound
         /// to, with the entity's identity as the fallback the system labels use for the same reason.
-        /// </summary>
+        /// No drawn policy, for the same reason theirs has none: the window keeps a label per
+        /// constellation rather than a pool it re-binds.</summary>
         private static ConstellationLabel LabelFor(
             Constellation constellation,
             ConstellationLabel[] labels
         )
         {
-            try
-            {
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    if (ReferenceEquals(labels[i].Constellation, constellation))
-                    {
-                        return labels[i];
-                    }
-                }
-
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    Constellation candidate = labels[i].Constellation;
-                    if (candidate != null && candidate.GUID == constellation.GUID)
-                    {
-                        return labels[i];
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: matching a constellation to its map label threw: " + e);
-            }
-
-            return null;
+            return LabelFor(labels, l => ReferenceEquals(l.Constellation, constellation), null)
+                ?? LabelFor(
+                    labels,
+                    l => l.Constellation != null && l.Constellation.GUID == constellation.GUID,
+                    null
+                );
         }
 
         private static readonly ConstellationLabel[] NoConstellationLabels =

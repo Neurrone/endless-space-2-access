@@ -67,13 +67,7 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public static string Relationships(IList<string> links)
         {
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; links != null && i < links.Count; i++)
-            {
-                message.ListItem(links[i]);
-            }
-
-            return message.Build();
+            return SpokenList.Items(links);
         }
 
         /// <summary>

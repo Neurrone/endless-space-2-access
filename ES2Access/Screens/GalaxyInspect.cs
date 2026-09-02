@@ -1966,22 +1966,60 @@ namespace ES2Access.Screens
         private string CellText(Contents contents, string fog)
         {
             MessageBuilder message = new MessageBuilder();
+            List<List<string>> things = CellParts(contents, fog);
+            for (int i = 0; i < things.Count; i++)
+            {
+                for (int j = 0; j < things[i].Count; j++)
+                {
+                    Item(message, things[i][j]);
+                }
+            }
+
+            return message.Build();
+        }
+
+        /// <summary>
+        /// ONE WALK of the cell: everything in it, thing by thing, each as the fragments its reading is
+        /// made of - and in the order the cell names them.
+        ///
+        /// The sentence and the review buffer are the same reading twice
+        /// (<see cref="CellText"/> joins every fragment of every thing into one breath;
+        /// <see cref="CellLines"/> makes one line per thing). They were two walks, and two walks of the
+        /// same contents is two chances to disagree about what is in the cell, what order it comes in,
+        /// or which fragments a thing has - a disagreement the player meets as a buffer that does not
+        /// hold what the sentence just said.
+        ///
+        /// The contents come FIRST because they are what the player is sweeping the map FOR - the pair
+        /// of numbers is the same shape on every cell and, said in front, it is a preamble to listen
+        /// past on every reading of a sweep. Said last it is still on every reading, which is what the
+        /// mode needs: wherever the cursor stops, the player is told where they now are, whether or not
+        /// anything is there (owner's ruling 2026-08-26). An empty cell says the pair and stops; there
+        /// is no word for "empty", because hearing the pair alone IS the answer and a word on every
+        /// empty cell of a sweep would be most of what the sweep said.
+        /// </summary>
+        private List<List<string>> CellParts(Contents contents, string fog)
+        {
+            List<List<string>> things = new List<List<string>>();
             for (int i = 0; i < contents.Places.Count; i++)
             {
-                Place(message, contents.Places[i]);
+                things.Add(PlaceParts(contents.Places[i]));
             }
 
             for (int i = 0; i < contents.Special.Count; i++)
             {
-                Place(message, contents.Special[i]);
+                things.Add(PlaceParts(contents.Special[i]));
             }
 
             for (int i = 0; i < contents.Fleets.Count; i++)
             {
                 Fleet fleet = contents.Fleets[i];
-                Item(message, fleet.LocalizedName);
-                Item(message, FleetPhrase.Describe(fleet));
-                Item(message, PairOf(fleet.GalaxyPosition));
+                things.Add(
+                    Parts(
+                        fleet.LocalizedName,
+                        FleetPhrase.Describe(fleet),
+                        PairOf(fleet.GalaxyPosition)
+                    )
+                );
             }
 
             for (int i = 0; i < contents.Probes.Count; i++)
@@ -1991,11 +2029,12 @@ namespace ES2Access.Screens
                 // composition all three share (<c>GalaxyHudScreen.ProbeName</c>), since the game
                 // gives a probe no name of its own and a name read off a drawn mote would be gone
                 // whenever the map was not drawing one.
-                Item(message, found.Name);
-                if (found.Probe != null)
-                {
-                    Item(message, PairOf(found.Probe.GalaxyPosition));
-                }
+                things.Add(
+                    Parts(
+                        found.Name,
+                        found.Probe == null ? null : PairOf(found.Probe.GalaxyPosition)
+                    )
+                );
             }
 
             // Projectiles then pins, which is the order the tree declares them in behind the probes
@@ -2004,21 +2043,30 @@ namespace ES2Access.Screens
             for (int i = 0; i < contents.Projectiles.Count; i++)
             {
                 ObliteratorProjectile shot = contents.Projectiles[i];
-                Item(message, ModStrings.Get(ModStrings.GalaxyObliteratorProjectile));
-                Item(message, PairOf(shot.GalaxyPosition));
+                things.Add(
+                    Parts(
+                        ModStrings.Get(ModStrings.GalaxyObliteratorProjectile),
+                        PairOf(shot.GalaxyPosition)
+                    )
+                );
             }
 
             for (int i = 0; i < contents.Pins.Count; i++)
             {
                 CoordinationRequest pin = contents.Pins[i];
-                Item(message, GalaxyHudScreen.PinKind(pin));
-                Item(message, PairOf(pin.GalaxyPosition));
+                things.Add(
+                    Parts(GalaxyHudScreen.PinKind(pin), PairOf(pin.GalaxyPosition))
+                );
             }
 
             for (int i = 0; i < contents.Markers.Count; i++)
             {
-                Item(message, QuestMarkers.Name(contents.Markers[i]));
-                Item(message, PairOf(contents.Markers[i].At));
+                things.Add(
+                    Parts(
+                        QuestMarkers.Name(contents.Markers[i]),
+                        PairOf(contents.Markers[i].At)
+                    )
+                );
             }
 
             // Last of the things standing in the square and ahead of the lanes crossing it, which is
@@ -2028,17 +2076,23 @@ namespace ES2Access.Screens
             // already about to name (<see cref="BookmarkWord"/>).
             for (int i = 0; i < contents.Bookmarks.Count; i++)
             {
-                Item(message, BookmarkWord(contents.Bookmarks[i]));
+                things.Add(Parts(BookmarkWord(contents.Bookmarks[i])));
             }
 
             for (int i = 0; i < contents.Lanes.Count; i++)
             {
-                Item(message, contents.Lanes[i]);
+                things.Add(Parts(contents.Lanes[i]));
             }
 
-            Item(message, fog);
-            Item(message, MapCoordinates.Text(_x, _y, 0.0, 0.0));
-            return message.Build();
+            things.Add(Parts(fog));
+            things.Add(Parts(MapCoordinates.Text(_x, _y, 0.0, 0.0)));
+            return things;
+        }
+
+        /// <summary>One thing's fragments, in the order they are said.</summary>
+        private static List<string> Parts(params string[] parts)
+        {
+            return new List<string>(parts);
         }
 
         /// <summary>One item of the cell's sentence: comma-separated from whatever was said before it,
@@ -2073,101 +2127,20 @@ namespace ES2Access.Screens
         private List<string> CellLines(Contents contents, string fog)
         {
             List<string> lines = new List<string>();
-            for (int i = 0; i < contents.Places.Count; i++)
+            List<List<string>> things = CellParts(contents, fog);
+            for (int i = 0; i < things.Count; i++)
             {
-                Line(lines, PlaceLine(contents.Places[i]));
-            }
-
-            for (int i = 0; i < contents.Special.Count; i++)
-            {
-                Line(lines, PlaceLine(contents.Special[i]));
-            }
-
-            for (int i = 0; i < contents.Fleets.Count; i++)
-            {
-                Fleet fleet = contents.Fleets[i];
                 MessageBuilder line = new MessageBuilder();
-                line.Fragment(fleet.LocalizedName);
-                line.ListItemForcedComma(FleetPhrase.Describe(fleet));
-                line.ListItemForcedComma(PairOf(fleet.GalaxyPosition));
-                Line(lines, line);
-            }
-
-            for (int i = 0; i < contents.Probes.Count; i++)
-            {
-                GalaxyHudScreen.ScannedProbe found = contents.Probes[i];
-                MessageBuilder line = new MessageBuilder();
-                line.Fragment(found.Name);
-                if (found.Probe != null)
+                List<string> parts = things[i];
+                for (int j = 0; j < parts.Count; j++)
                 {
-                    line.ListItemForcedComma(PairOf(found.Probe.GalaxyPosition));
+                    Item(line, parts[j]);
                 }
 
-                Line(lines, line);
+                Line(lines, line.Build());
             }
 
-            for (int i = 0; i < contents.Projectiles.Count; i++)
-            {
-                ObliteratorProjectile shot = contents.Projectiles[i];
-                MessageBuilder line = new MessageBuilder();
-                line.Fragment(ModStrings.Get(ModStrings.GalaxyObliteratorProjectile));
-                line.ListItemForcedComma(PairOf(shot.GalaxyPosition));
-                Line(lines, line);
-            }
-
-            for (int i = 0; i < contents.Pins.Count; i++)
-            {
-                CoordinationRequest pin = contents.Pins[i];
-                MessageBuilder line = new MessageBuilder();
-                line.Fragment(GalaxyHudScreen.PinKind(pin));
-                line.ListItemForcedComma(PairOf(pin.GalaxyPosition));
-                Line(lines, line);
-            }
-
-            for (int i = 0; i < contents.Markers.Count; i++)
-            {
-                MessageBuilder line = new MessageBuilder();
-                line.Fragment(QuestMarkers.Name(contents.Markers[i]));
-                line.ListItemForcedComma(PairOf(contents.Markers[i].At));
-                Line(lines, line);
-            }
-
-            for (int i = 0; i < contents.Bookmarks.Count; i++)
-            {
-                Line(lines, BookmarkWord(contents.Bookmarks[i]));
-            }
-
-            for (int i = 0; i < contents.Lanes.Count; i++)
-            {
-                lines.Add(contents.Lanes[i]);
-            }
-
-            if (fog != null)
-            {
-                lines.Add(fog);
-            }
-
-            // Last, the way the sentence says it: the buffer's lines are the sentence's items in the
-            // sentence's order, and where the cell is is the last thing either of them says.
-            lines.Add(MapCoordinates.Text(_x, _y, 0.0, 0.0));
             return lines;
-        }
-
-        /// <summary>One place as its own line - the same three things the sentence says about it, with
-        /// no comma in front, because a line does not follow anything.</summary>
-        private string PlaceLine(StarSystemNode node)
-        {
-            MessageBuilder message = new MessageBuilder();
-            message.Fragment(node.LocalizedName);
-            message.ListItemForcedComma(PairOf(node.GalaxyPosition));
-            message.ListItemForcedComma(GalaxyHudScreen.SpecialKind(node));
-            message.ListItemForcedComma(_screen.BookmarkWord(node));
-            return message.Build();
-        }
-
-        private static void Line(List<string> lines, MessageBuilder message)
-        {
-            Line(lines, message.Build());
         }
 
         private static void Line(List<string> lines, string said)
@@ -2179,16 +2152,19 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One place in the cell: its name, where it stands, and - where the map has drawn
-        /// something other than a star system - what it is. The same three things the tree's own
-        /// system node says, in the same order and separated the same way.</summary>
-        private void Place(MessageBuilder message, StarSystemNode node)
+        /// something other than a star system - what it is. The same things the tree's own system node
+        /// says, in the same order.</summary>
+        private List<string> PlaceParts(StarSystemNode node)
         {
-            Item(message, node.LocalizedName);
-            Item(message, PairOf(node.GalaxyPosition));
-            Item(message, GalaxyHudScreen.SpecialKind(node));
-            // Last of what this place says, exactly as it is last of what the place's own tree row
-            // says, and written by that row's own composition (<see cref="BookmarkWord"/>).
-            Item(message, _screen.BookmarkWord(node));
+            // The bookmark is LAST of what this place says, exactly as it is last of what the place's
+            // own tree row says, and written by that row's own composition
+            // (<see cref="BookmarkWord"/>).
+            return Parts(
+                node.LocalizedName,
+                PairOf(node.GalaxyPosition),
+                GalaxyHudScreen.SpecialKind(node),
+                _screen.BookmarkWord(node)
+            );
         }
 
         /// <summary>The word a bookmark is said with in a cell - the map tree's own word for a slot,

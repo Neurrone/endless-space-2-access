@@ -2558,22 +2558,17 @@ namespace ES2Access.Screens
         /// row).</summary>
         private static bool Colonized(StarSystemNode node, Empire empire)
         {
-            DepartmentOfTheInterior interior =
-                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
-            if (interior == null)
+            IColonizedStarSystemRepositoryService colonies =
+                Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+            if (colonies == null || empire == null || node == null)
             {
                 return false;
             }
 
-            foreach (ColonizedStarSystem colony in interior.ColonizedStarSystems)
-            {
-                if (ReferenceEquals(colony.Node, node))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            // The repository's own index rather than a walk of the empire's colony list: it answers
+            // this in one lookup, and this is asked per system per build.
+            ColonizedStarSystem held;
+            return colonies.TryGetValue(empire, node.NodePosition, out held);
         }
 
         /// <summary>Whether a remembered map position is already a reading of this system - its own row
@@ -3034,18 +3029,21 @@ namespace ES2Access.Screens
                 return false;
             }
 
+            // The same "is this the thing the point meant" radius every other landing uses, asked
+            // through the same primitive (<see cref="NearestPick"/> squares it once, so nothing here
+            // squares it again). Offer answers false for anything outside the radius, so the first
+            // marker it accepts is the one this walk wants.
+            NearestPick within = new NearestPick(Coincides);
             List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
             for (int i = 0; i < markers.Count; i++)
             {
                 if (
-                    !ReferenceEquals(markers[i].Quest, wanted.Quest)
-                    || ((Vector3)markers[i].At - wanted.Position).sqrMagnitude > CoincidesSquared
+                    ReferenceEquals(markers[i].Quest, wanted.Quest)
+                    && within.Offer(i, ((Vector3)markers[i].At - wanted.Position).sqrMagnitude)
                 )
                 {
-                    continue;
+                    return MarkerTarget(markers[i], out target);
                 }
-
-                return MarkerTarget(markers[i], out target);
             }
 
             return false;
@@ -3443,8 +3441,6 @@ namespace ES2Access.Screens
         /// still land on the thing itself.
         /// </summary>
         private const float Coincides = 1.5f;
-
-        private const float CoincidesSquared = Coincides * Coincides;
 
         private static void Add(
             List<Spot> spots,

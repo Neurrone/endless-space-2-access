@@ -114,13 +114,14 @@ namespace ES2Access.UI.Input
                 // the edit. What the game would do with it is its VALIDATE, which is the SCREEN's
                 // action (the save-name box writes a save and closes the whole screen); the edit ends
                 // here instead and the surface is left standing.
-                if (
-                    (
-                        UnityEngine.Input.GetKeyDown(KeyCode.Return)
-                        || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)
-                    )
-                    && Screens.TextFieldEditor.CommitInsteadOfTheGamesValidate(__instance)
-                )
+                //
+                // The whole of the engine's own condition, not just its two key codes
+                // (<c>AgeControlTextField.KeyDown</c>,
+                // <c>decompiled/Assembly-CSharp-firstpass/AgeControlTextField.cs:78</c>): a field the
+                // prefab wired no validate callback onto does NOT validate on Return - the engine
+                // falls through to its key-down callback or to the base handler - so intercepting the
+                // key there was the mod standing in front of a door the game does not have.
+                if (Validates(__instance))
                 {
                     return false;
                 }
@@ -137,6 +138,23 @@ namespace ES2Access.UI.Input
                 );
                 return true;
             }
+        }
+
+        /// <summary>Whether this press is the one the engine would VALIDATE on, and whether the mod's
+        /// own commit should stand in for it. The engine's condition verbatim
+        /// (<c>decompiled/Assembly-CSharp-firstpass/AgeControlTextField.cs:78</c>) - the two Return
+        /// keys, a validate callback switched on, an object to send it to, and a method name to send -
+        /// and then the mod's own question about this field.</summary>
+        private static bool Validates(AgeControlTextField field)
+        {
+            return (
+                    UnityEngine.Input.GetKeyDown(KeyCode.Return)
+                    || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)
+                )
+                && field.UseValidateCallback
+                && field.OnValidateObject != null
+                && !string.IsNullOrEmpty(field.OnValidateMethod)
+                && Screens.TextFieldEditor.CommitInsteadOfTheGamesValidate(field);
         }
 
         /// <summary>

@@ -230,10 +230,11 @@ namespace ES2Access.UI
             return AgeText.Clean(GuiPolitics.FindExperienceTitle(reach / 100f));
         }
 
-        /// <summary>How far along the bar something is drawn, as the share of it that is.</summary>
+        /// <summary>How far along the bar something is drawn, as the share of it that is - through the
+        /// shared percent template, because "%" is a sign rather than a word.</summary>
         private static string Percent(float reach)
         {
-            return (int)Math.Round(reach) + "%";
+            return ModStrings.Format(ModStrings.Percent, (int)Math.Round(reach));
         }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace ES2Access.Core.UI
 {
     /// <summary>How much of a kind the map is worth saying at a distance.</summary>
@@ -85,7 +87,9 @@ namespace ES2Access.Core.UI
 
         public const int LastLevel = 15;
 
-        private const int Kinds = 7;
+        /// <summary>How many columns a row of the table has - one per <see cref="BandKind"/>, counted
+        /// from the enum so that adding a kind cannot leave the table reading a column short.</summary>
+        private static readonly int Kinds = Enum.GetValues(typeof(BandKind)).Length;
 
         // One row per level, one column per BandKind, in that enum's order.
         //

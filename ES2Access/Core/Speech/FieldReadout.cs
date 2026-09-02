@@ -20,25 +20,7 @@ namespace ES2Access.Core.Speech
     {
         public static string Compose(IList<string> fields)
         {
-            if (fields == null)
-            {
-                return null;
-            }
-
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; i < fields.Count; i++)
-            {
-                // Trimmed, not merely tested for empty: a label the game has blanked keeps the
-                // spacing of the text it used to hold, and a list item of one space reads as a
-                // stumble between two real ones.
-                string field = fields[i] == null ? null : fields[i].Trim();
-                if (!string.IsNullOrEmpty(field))
-                {
-                    message.ListItem(field);
-                }
-            }
-
-            return message.Build();
+            return SpokenList.Items(fields);
         }
     }
 }

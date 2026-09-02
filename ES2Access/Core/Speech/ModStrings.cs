@@ -34,6 +34,14 @@ namespace ES2Access.Core.Speech
         public const string FractionUnit = "speech.fraction-unit";
         public const string Quantity = "speech.quantity";
 
+        /// <summary>A bare percentage said as a whole phrase - the gauges and bars whose only reading
+        /// IS a share, with no sentence of the game's own to put it in. A template rather than a "%"
+        /// glued onto a number, because the sign is not a word: screen readers differ on whether they
+        /// voice it at all, and a language that writes the unit in front, or spells it, or spaces it
+        /// differently has nowhere to say so once it is glued. Where the phrase around the figure says
+        /// anything more than "percent" it gets a template of its own instead.</summary>
+        public const string Percent = "format.percent";
+
         // The role words that say what kind of control the player is on.
         public const string ControlButton = "control.button";
         public const string ControlGroup = "control.group";
@@ -2174,6 +2182,7 @@ namespace ES2Access.Core.Speech
             { Fraction, "{0} of {1}" },
             { FractionUnit, "{0} of {1} {2}" },
             { Quantity, "x {0}" },
+            { Percent, "{0} percent" },
             { ControlButton, "button" },
             { ControlGroup, "group" },
             { ControlTab, "tab" },

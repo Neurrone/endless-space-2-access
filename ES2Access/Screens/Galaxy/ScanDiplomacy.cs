@@ -307,36 +307,21 @@ namespace ES2Access.Screens
             IList<ScanViewDiplomacyLabel> labels
         )
         {
-            try
-            {
-                for (int i = 0; empire != null && i < labels.Count; i++)
-                {
-                    ScanViewDiplomacyLabel label = labels[i];
-                    ColonizedStarSystem colony =
-                        label == null ? null : label.MainColonizedStarSystem;
-                    if (colony == null || !ReferenceEquals(colony.Empire, empire))
-                    {
-                        continue;
-                    }
-
-                    // Different widget, and the game's own answer to whether the toggle is on the
-                    // screen at all: the name LINE is what it lives inside, and the label goes on
-                    // drawing its battle line with the name line hidden.
-                    if (
-                        AgeWidgets.Visible(label.AgeTransform)
-                        && AgeWidgets.Painted(label.EmpireNameLine)
-                    )
-                    {
-                        return label;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("scan: looking for an empire's swap toggle threw: " + e);
-            }
-
-            return null;
+            // The drawn policy is the game's own answer to whether the toggle is on the screen at all:
+            // the name LINE is what it lives inside, and the label goes on drawing its battle line
+            // with the name line hidden - so a label passing the empire test can still be one the
+            // player has no toggle on.
+            return empire == null
+                ? null
+                : LabelFor(
+                    labels,
+                    l =>
+                        l.MainColonizedStarSystem != null
+                        && ReferenceEquals(l.MainColonizedStarSystem.Empire, empire),
+                    l =>
+                        AgeWidgets.Visible(l.AgeTransform)
+                        && AgeWidgets.Painted(l.EmpireNameLine)
+                );
         }
 
         /// <summary>

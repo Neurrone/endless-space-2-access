@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ES2Access.Core.Util;
 
 namespace ES2Access.Core.UI
 {
@@ -159,7 +160,7 @@ namespace ES2Access.Core.UI
             {
                 // A new sweep starts at the nearest thing - unless that is the thing the player is
                 // already standing on, in which case the press steps past it.
-                return parked && count > 1 ? Wrap(delta, count) : 0;
+                return parked && count > 1 ? Cycle.Wrap(delta, count) : 0;
             }
 
             int at = IndexOf(keys, standing);
@@ -170,7 +171,7 @@ namespace ES2Access.Core.UI
                 return delta < 0 ? count - 1 : 0;
             }
 
-            return Wrap(at + delta, count);
+            return Cycle.Wrap(at + delta, count);
         }
 
         private static string[] Copy(IList<string> keys)
@@ -200,11 +201,6 @@ namespace ES2Access.Core.UI
             }
 
             return -1;
-        }
-
-        private static int Wrap(int value, int length)
-        {
-            return length <= 0 ? 0 : ((value % length) + length) % length;
         }
 
         private bool _anchored;

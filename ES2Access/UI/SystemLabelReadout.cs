@@ -287,7 +287,13 @@ namespace ES2Access.UI
                 MessageBuilder said = new MessageBuilder();
                 if (AgeWidgets.Visible(pirates.PirateFleetTimerGroup))
                 {
-                    said.ListItem(First(pirates.PirateFleetTimerGroup))
+                    // A LABEL FALLBACK: the countdown group draws a bare number and the game wrote
+                    // no caption anywhere on the label, so the tooltip's opening sentence is the
+                    // only word that says what the number counts. The tooltip's own words still
+                    // reach the player through the door, on the icon's own node.
+                    said.ListItem(
+                            CardActions.FirstLine(AgeWidgets.Raw(pirates.PirateFleetTimerGroup))
+                        )
                         .ListItem(AgeText.Label(pirates.PirateFleetTimerLabel));
                 }
 
@@ -784,7 +790,12 @@ namespace ES2Access.UI
             }
 
             AgeTooltip it = tooltip;
-            if (string.IsNullOrEmpty(Wrote(it)))
+            // A RE-COMPOSED READER, and only for the NAME: the words themselves still reach the player
+            // through the door, as the node's own sections, in whatever loudness the tooltip's kind
+            // says. Read with the readable-only gate OFF, because this door's whole subject is a
+            // tooltip that names a renderer and yet carries a written sentence - the plain reading
+            // would answer nothing here and the entry would go unnamed.
+            if (string.IsNullOrEmpty(CardActions.FirstLine(it, false)))
             {
                 return;
             }
@@ -792,24 +803,14 @@ namespace ES2Access.UI
             found.Add(
                 new TooltipChildren.Dossier
                 {
-                    Name = () => Wrote(it),
+                    // The same re-composed NAME the gate above tested for, resolved at speak time so
+                    // an entry renamed by the game is renamed here too.
+                    Name = () => CardActions.FirstLine(it, false),
                     Tooltip = it,
                     Anchor = widget,
                     Carrier = widget,
                 }
             );
-        }
-
-        /// <summary>The first line the game wrote into a tooltip itself, whatever renderer the tooltip
-        /// names - which is what <c>CardActions.FirstLine</c> answers only for the plain ones.</summary>
-        private static string Wrote(AgeTooltip tooltip)
-        {
-            // A re-composed reader, and only for the NAME: the words themselves still reach the player
-            // through the door, as the node's own sections, in whatever loudness the tooltip's kind
-            // says. This rung exists because the door's own first-line rung
-            // (<c>CardActions.FirstLine</c>) answers only for a tooltip with no class on it.
-            IList<string> words = AgeText.Lines(AgeText.Tooltip(tooltip));
-            return words == null || words.Count == 0 ? null : words[0];
         }
 
         /// <summary>Give the entry just collected this mod's own words for the picture, keeping the
@@ -1180,7 +1181,10 @@ namespace ES2Access.UI
                 return;
             }
 
-            string says = First(academy.AcademyRolesCountdown);
+            // A LABEL FALLBACK, as on the pirate countdown: the group draws a bare figure and the
+            // words naming it are on its own tooltip's first line and nowhere else. The tooltip goes
+            // on reaching the player through the door as the icon's own node.
+            string says = CardActions.FirstLine(AgeWidgets.Raw(academy.AcademyRolesCountdown));
             if (string.IsNullOrEmpty(says))
             {
                 return;
@@ -1256,7 +1260,7 @@ namespace ES2Access.UI
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
             if (AgeWidgets.Readable(tooltip) != null)
             {
-                AddWords(lines, AgeText.Lines(AgeText.Tooltip(tooltip)));
+                AddWords(lines, AgeText.ContentLines(tooltip));
                 return;
             }
 
@@ -1267,7 +1271,7 @@ namespace ES2Access.UI
                 return;
             }
 
-            AddWords(lines, AgeText.Lines(AgeText.Tooltip(tooltip)));
+            AddWords(lines, AgeText.ContentLines(tooltip));
         }
 
         private static void AddWords(List<string> lines, IList<string> words)
@@ -1276,16 +1280,6 @@ namespace ES2Access.UI
             {
                 Add(lines, words[i]);
             }
-        }
-
-        /// <summary>The first thing a picture's own tooltip says - the whole of it where the game wrote
-        /// one sentence, and the opening line where it wrote several.</summary>
-        private static string First(AgeTransform widget)
-        {
-            AgeTooltip tooltip = AgeWidgets.Readable(AgeWidgets.Raw(widget));
-            IList<string> words =
-                tooltip == null ? null : AgeText.Lines(AgeText.Tooltip(tooltip));
-            return words == null || words.Count == 0 ? null : words[0];
         }
 
         /// <summary>A ring gauge as the proportion it is DRAWN at. The game fills these by sweeping an

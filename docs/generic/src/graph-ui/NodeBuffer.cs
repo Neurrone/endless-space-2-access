@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 
 namespace ES2Access.Core.UI.Graph
 {
@@ -83,7 +84,7 @@ namespace ES2Access.Core.UI.Graph
                     // A tooltip whose first line is just the control's name again: the buffer already
                     // opened with it. Only the FIRST line of the whole list is tested, and only an
                     // exact repeat is dropped, so a heading that adds anything still reads.
-                    bool duplicate = first && IsSameText(label, details[i]);
+                    bool duplicate = first && SpokenText.SameLine(label, details[i]);
                     first = false;
                     if (!duplicate)
                     {
@@ -153,13 +154,6 @@ namespace ES2Access.Core.UI.Graph
             {
                 return null;
             }
-        }
-
-        private static bool IsSameText(string left, string right)
-        {
-            return !string.IsNullOrEmpty(left)
-                && !string.IsNullOrEmpty(right)
-                && string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         private static void Add(List<string> lines, string line)

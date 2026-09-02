@@ -628,16 +628,19 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string caption = AgeText.Title(HeroLevelKey);
-                return caption == null ? level : caption + " " + level;
+                // The word from the one reader of the key (<see cref="HeroCards.LevelCaption"/>), and
+                // the two joined by the builder rather than by a space of this file's own, so the
+                // caption and its figure read the way every other captioned figure does.
+                string caption = HeroCards.LevelCaption();
+                return caption == null
+                    ? level
+                    : new MessageBuilder().Fragment(caption).Fragment(level).Build();
             }
             catch (Exception)
             {
                 return null;
             }
         }
-
-        private const string HeroLevelKey = "%HeroCardLevelTitle";
 
         /// <summary>
         /// The laws in force and the six slots they sit in, with the upkeep line and the two buttons

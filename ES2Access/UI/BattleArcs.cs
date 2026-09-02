@@ -32,9 +32,21 @@ namespace ES2Access.UI
     /// </summary>
     public static class BattleArcs
     {
-        /// <summary>The share one arc is drawn at, as whole percent - the inverse of the
+        /// <summary>
+        /// The share one arc is drawn at, as whole percent - the inverse of the
         /// <c>share * 360 - 1</c> the gauge wrote into it. Negative angles (an arc the game stopped
-        /// drawing) answer 0, and the value is clamped to the circle it came from.</summary>
+        /// drawing) answer 0, and the value is clamped to the circle it came from.
+        ///
+        /// What is read is the angle AS DRAWN AT THIS INSTANT, which for one of the two ways the game
+        /// fills these is not the settled share. <c>BattlePowerGauge.Refresh</c> takes an
+        /// <c>animated</c> flag: unset it writes the angle straight, set it parks the arc at 1 degree
+        /// and hands the sweep to an <c>AgeModifierSet</c> to animate
+        /// (<c>decompiled/Assembly-CSharp/BattlePowerGauge.cs:41-52</c>). So a reading taken while
+        /// that animation runs answers a smaller share, rising, and only settles when the sweep does.
+        /// That is the right answer for a mod that says what is painted, and it is why this is asked
+        /// at ANNOUNCE time from a live delegate rather than captured when the node was declared - a
+        /// captured figure would be whatever fraction of the sweep had elapsed in the build frame.
+        /// </summary>
         public static int Share(AgePrimitiveSector sector)
         {
             try
