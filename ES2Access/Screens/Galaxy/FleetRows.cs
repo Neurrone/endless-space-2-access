@@ -1185,7 +1185,12 @@ namespace ES2Access.Screens
                     );
                     vtable.Announcements.Add(
                         GraphNodes.ValuePart(
-                            () => ModStrings.Format(ModStrings.GalaxyFleetShips, held.ShipsCount)
+                            () =>
+                                ModStrings.Plural(
+                                    ModStrings.GalaxyFleetShip,
+                                    ModStrings.GalaxyFleetShips,
+                                    held.ShipsCount
+                                )
                         )
                     );
                     if (lozenge != null)

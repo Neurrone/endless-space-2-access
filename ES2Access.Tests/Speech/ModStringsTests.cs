@@ -46,6 +46,16 @@ namespace ES2Access.Tests.Speech
             );
         }
 
+        /// <summary>A hangar holding one ship says "1 ship", not "1 ships": the count goes through
+        /// the plural rules rather than into a single template.</summary>
+        [Fact]
+        public void AHangarsShipCountHasASingular()
+        {
+            Assert.Equal("1 ship", Ships(1));
+            Assert.Equal("0 ships", Ships(0));
+            Assert.Equal("4 ships", Ships(4));
+        }
+
         [Fact]
         public void UnknownKeyReturnsTheKeyAndWarnsOnce()
         {
@@ -331,6 +341,15 @@ namespace ES2Access.Tests.Speech
         private static void InstallRussian(Dictionary<string, string> table)
         {
             ModStrings.Install(table, "russian");
+        }
+
+        private static string Ships(int count)
+        {
+            return ModStrings.Plural(
+                ModStrings.GalaxyFleetShip,
+                ModStrings.GalaxyFleetShips,
+                count
+            );
         }
 
         private static string Supplying(int count)

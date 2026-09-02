@@ -916,6 +916,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerOutput = "galaxy.scanner.output";
 
         // --- end scanner categories ---
+
+        /// <summary>How many ships a hangar holds, said on the row that names it. The game draws
+        /// the number beside a symbol and writes no word for what it counts, so the noun is the
+        /// mod's - and it is a COUNTED phrase, hence a form per number (see <see cref="Plural"/>)
+        /// rather than a number glued to a noun.</summary>
+        public const string GalaxyFleetShip = "galaxy.fleet-ship";
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
         public const string GalaxyFleetMovement = "galaxy.fleet-movement";
@@ -1510,6 +1516,12 @@ namespace ES2Access.Core.Speech
         /// which two ends of the run they are. A range is the one selection gesture whose result cannot
         /// be heard from the row it was made on - every OTHER row changed too - so the outcome is said
         /// rather than the row's own new state.</summary>
+        /// <summary>The same sentence about a single ship, which no player ever hears:
+        /// <see cref="SelectionText.Range"/> answers null under two, because a one-row range is
+        /// better told by the row's own membership. It exists so the range is a counted PAIR, which
+        /// is the only way a Polish or Russian file is asked for - and the plural rules will pick
+        /// up - the paucal that a range of two, three or four really needs.</summary>
+        public const string FleetsShipRange = "fleets.ship-range";
         public const string FleetsShipsRange = "fleets.ships-range";
 
         /// <summary>A ship carried out of one fleet and put down in another. The mod's own sentence:
@@ -2558,6 +2570,7 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerMaxPopulation, "max population {0}" },
             { GalaxyScannerOutput, "{0} {1}" },
             // --- end scanner categories ---
+            { GalaxyFleetShip, "{0} ship" },
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },
             { GalaxyFleetMovement, "{0} movement points" },
@@ -2763,6 +2776,7 @@ namespace ES2Access.Core.Speech
             { FleetsFleetsPanel, "Fleets" },
             { FleetsHeroPanel, "Hero" },
             { FleetsShipsPanel, "Ships" },
+            { FleetsShipRange, "{0} ship selected, {1} to {2}" },
             { FleetsShipsRange, "{0} ships selected, {1} to {2}" },
             { FleetsShipMoved, "Moved {0} to {1}" },
             { FleetsActionSeatsColonize, "moves focus to the first planet that can be colonized" },
