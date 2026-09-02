@@ -202,9 +202,11 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   are exactly their (unseen) home systems — Leaper/Baten, St Chaoiver/Jundur, Doria/Lonica.
 - **A lane leads somewhere UNEXPLORED when the far end is not perceived, not when the lane is
   unrevealed** (2026-08-22). The map draws a link at `MapVisibility.Drawn` (intensity ≥
-  PartiallyRevealed), and `GalaxyHudScreen.LanesOf` is the one list every part of the page numbers
-  lanes from (clockwise from north, per system). A wormhole is a `Link` like any other and passes
-  the same test, but is dropped entirely for an empire without `HasWormholeTechnology` — the
+  PartiallyRevealed), and `GalaxyHudScreen.LanesOf` is the one list every part of the page orders
+  lanes by (clockwise from north, per system). That ordinal is internal and nothing speaks it (owner
+  ruling 2026-09-02): a lane is told from its neighbours out loud by the way it leaves and the
+  system at its far end. A wormhole is a `Link` like any other and passes the same test, but is
+  dropped entirely for an empire without `HasWormholeTechnology` — the
   game's own neighbour search skips them the same way. Walking the perceived systems and taking
   each one's drawn links whose far end fails `MapVisibility.Perceived` therefore enumerates every
   unexplored way out EXACTLY ONCE: the other end is by definition a system the walk never reaches.
@@ -224,7 +226,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 
 ## Lanes, lines and the map's own drawing
 
-- **A starlane is ONE `Link` shared by both end systems**, so per-system nodes built from a link
+- **A star lane is ONE `Link` shared by both end systems**, so per-system nodes built from a link
   must key STRUCTURALLY (measured as a focus teleport on a fog-off build).
 - **Mod policy: one game object is the `Subject` of at most ONE node per render.** Reconciliation
   matches subjects before structural keys, so two nodes sharing a backing object are one control and
@@ -240,7 +242,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   and PartiallyRevealed+ at 1. Existence of the geometry was never the question; visibility is
   the intensity. Mod policy: `MapVisibility.Drawn(link)` gates the tree's lanes at
   ≥ PartiallyRevealed.
-- **The lane gate, second half**: a starlane's line is built end-to-end at link creation and
+- **The lane gate, second half**: a star lane's line is built end-to-end at link creation and
   tinted uniformly from the link's own state (`GalaxyLink.Refresh` :247-252 passes the SAME
   state for both extremities); what shortens a lane into the dark to a stub is the FOG SHADER —
   `FOWRendererService` publishes the empire's distance field as a global `_DistanceToFOW`
@@ -267,7 +269,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **The map draws its own lines through `ILineRendererService`, and two of the six arguments are
   not what they look like.** `CreateLine(pos0, pos1, width, color0, color1, materialType)` +
   `ShowLine` puts a `LineToRender` — a plain record of public fields the manager reads live each
-  frame, so moving one is field mutation — into the SAME manager the starlanes use
+  frame, so moving one is field mutation — into the SAME manager the star lanes use
   (`Services.GetService<ILineRendererService>()` and the galaxy technique's own answer are one
   object, measured). But: **`materialType` is an INDEX into a private `materials[]`** the manager was
   loaded with (`GetMaterialIndex` answers -1 for a foreign material), so it is borrowed off a live
@@ -279,7 +281,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   gets either wrong is accepted, reports itself `Visible`, and is simply not on the screen. **The
   `width` argument is ignored by material 0** — 0.1, 2 and 20 all draw the same hairline (measured) —
   and the drawn hue came out a pale cyan whatever colour the slot was registered with, so a mod-drawn
-  line is told apart from a starlane by being cyan, not by weight. `ReleaseLine` ×N and
+  line is told apart from a star lane by being cyan, not by weight. `ReleaseLine` ×N and
   `FreeColorSlot` on teardown; the manager's own `lineToRenders` count is the check.
   Materials 0-13 are lane, wormhole, diplomacy, trade-route ×3 and hacking-route ×8.
 - **A short line's invisibility is about the CAMERA, not the line** (supersedes an earlier reading

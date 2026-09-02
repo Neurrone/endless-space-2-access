@@ -215,10 +215,10 @@ namespace ES2Access.Core.Speech
                 "action.galaxy.inspectSkipSouth.description",
                 "Move the inspected square south until what it holds changes."
             },
-            { "action.galaxy.inspectFollowWest.title", "Follow the starlane west" },
+            { "action.galaxy.inspectFollowWest.title", "Follow the star lane west" },
             {
                 "action.galaxy.inspectFollowWest.description",
-                "Travel to the western end of the starlane in the inspected square."
+                "Travel to the western end of the star lane in the inspected square."
             },
             { "action.galaxy.inspectFollowEast.title", "Follow the fleets east" },
             {

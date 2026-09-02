@@ -82,7 +82,7 @@ and ship transfer. Index and charter: `README.md`.
   on `[Beginner] test`: two of its six fleets (`1st Conquerors Navy`, `1st Vanquishers Navy`) are on
   legs between Dusay and Heka with no link, and both are AUTOMATED delivery fleets
   (`Fleet.IsAutomated`, the `AutomatedFleet` tag — measured 2026-08-16), which is why they fly with
-  starlanes ignored. **Mod policy**: the tree hangs such a fleet under its DESTINATION alone, and
+  star lanes ignored. **Mod policy**: the tree hangs such a fleet under its DESTINATION alone, and
   under no system at all where the destination is unperceived — there it gets a top-level row walked
   into the system list by its own rounded pair (`GalaxyHudScreen.AddAdrift`). The rationale is parity,
   not tidiness: **the map draws where a fleet is GOING and never where it came from.** A selected
@@ -170,7 +170,7 @@ and ship transfer. Index and charter: `README.md`.
   bound for an unexplored system answers `FindPath(its next node → its own home system)` with null,
   and CANCELLING the move does not restore it (`Path == null`, `IsInMovement` still true, next node
   still the unexplored one). Every "where could this fleet go" answer inherits that.
-- **A STARLANE is a move target in its own right, not just a road to one.**
+- **A STAR LANE is a move target in its own right, not just a road to one.**
   `GalaxyGarrisonCursor.GetGalaxyPathToTargets` (:329-342) resolves the hovered galaxy node OR a
   `GalaxyLinkCursorTarget`'s `Link`, and `GetGalaxyPathToLink` builds the route in two halves: the
   ordinary path to whichever extremity the fleet comes in by, plus one `AddMovement` transition

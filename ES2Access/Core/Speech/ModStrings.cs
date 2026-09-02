@@ -304,34 +304,44 @@ namespace ES2Access.Core.Speech
         public const string GalaxyQuestShownOnMap = "galaxy.quest-shown-on-map";
 
         // The lanes out of a system. The game draws these as lines and writes nothing on them, and
-        // where a line runs off into space it has no destination to name either. The number is the
-        // lane's place going clockwise from north, which is also the order they are walked in; the
-        // last slot is the compass word for the way the line leaves.
+        // where a line runs off into space it has no destination to name either. A lane says the way
+        // it leaves and where it comes out - "northeast to Leo" - and no number: the rows sit under
+        // the system's own "Star lanes" heading, which is where the words "star lane" are already
+        // said, and one direction plus one far end tells the lanes of a system apart on its own. The
+        // clockwise-from-north numbering is still what orders them; it is just not spoken any more.
         public const string GalaxyStarlane = "galaxy.starlane";
         public const string GalaxyStarlaneUnexplored = "galaxy.starlane-unexplored";
         public const string GalaxyWormhole = "galaxy.wormhole";
         public const string GalaxyWormholeUnexplored = "galaxy.wormhole-unexplored";
 
-        // Which lane a fleet under way is flying, said where that fleet hangs under one of the systems
-        // the lane runs between. The number and the compass word are the ones the lane node itself
-        // announces, off the same list, so the two cannot name different lines. Whole phrases, and one
-        // per kind of line, because "starlane" and "wormhole" are different words in the sentence rather
-        // than a noun slotted into it.
+        // Where a fleet under way came FROM, said under the system it is arriving at - which is the
+        // one system this tree hangs it under, so "why is this fleet here" is the question the phrase
+        // answers. The lane it is flying is named by its far end, the end it set out from, because
+        // that is what tells one of a system's incoming lanes from another; the kind of line is said
+        // too, since a wormhole is a different picture from a lane. Whole phrases per kind, because
+        // "star lane" and "wormhole" are words in the sentence rather than a noun slotted into it,
+        // and a pair more for a far end the map has not named.
         public const string GalaxyFleetOnStarlane = "galaxy.fleet-on-starlane";
         public const string GalaxyFleetOnWormhole = "galaxy.fleet-on-wormhole";
+        public const string GalaxyFleetOnStarlaneFromUnexplored =
+            "galaxy.fleet-on-starlane-from-unexplored";
+        public const string GalaxyFleetOnWormholeFromUnexplored =
+            "galaxy.fleet-on-wormhole-from-unexplored";
 
         // The same answer for a fleet crossing OPEN SPACE between two systems with no lane between
-        // them: there is no line to number, so the leg is named by where the fleet is GOING. Only where
-        // it is going, because that is the half the map itself shows - a selected fleet's committed
-        // path is drawn ahead of it and nothing anywhere draws where it came from. A whole phrase,
-        // because "to" is the sentence rather than a word slotted into it, and one more for a
-        // destination the map has not named, which is the same silence a lane running into the dark
-        // keeps.
-        public const string GalaxyFleetFreeMovingTo = "galaxy.fleet-free-moving-to";
+        // them: there is no line to name, so the leg is said as the direction the fleet is coming in
+        // from - a fleet standing west of the system is arriving from the west. It is the same
+        // compass word the picture gives everyone else, read off the fleet's own place against the
+        // system it is flying to, and it moves with the fleet as the turns pass.
+        public const string GalaxyFleetFreeMovingFrom = "galaxy.fleet-free-moving-from";
+
+        // A fleet crossing open space towards somewhere the map has NOT named has no system in this
+        // tree to hang under, so it gets a row of its own at the top and says the one thing that can
+        // be said: the player cannot see where it is going.
         public const string GalaxyFleetFreeMovingToUnexplored =
             "galaxy.fleet-free-moving-to-unexplored";
 
-        /// <summary>The same for a fleet flying a STARLANE whose far end the map has not named - the
+        /// <summary>The same for a fleet flying a STAR LANE whose far end the map has not named - the
         /// other way a fleet under way can have no system in this tree to hang under. A separate
         /// phrase because the two are different pictures: one is a line on the map running into the
         /// dark, the other is a fleet striking out where there is no line at all.</summary>
@@ -537,10 +547,10 @@ namespace ES2Access.Core.Speech
 
         // The map's inspect cursor - a mode of the mod's own, so every word in it is the mod's. The
         // cursor's size is said as a whole phrase rather than a number glued to a symbol, because "3
-        // by 3" is a shape and "3x3" is a sum. The two starlane phrases name the lane's ends the same
-        // way round every time (westmost first), so one lane heard from two neighbouring cells is
-        // heard as one lane; a lane whose far end the map has not named says which way it runs
-        // instead, exactly as the lane's own node does.
+        // by 3" is a shape and "3x3" is a sum. The lane phrases name the lane's ends the same way
+        // round every time (westmost first) and say which way it runs between them, so one lane heard
+        // from two neighbouring cells is heard as one lane - and heard with the same compass word the
+        // lane's own row under a system says, off the same eight-word set.
         // MAP BOOKMARKS - ten places the player names by a digit. Every one of these is the mod's own
         // word: the game has no bookmarks and no text for one. The digit is a placeholder rather than
         // part of the sentence, so a language that puts the number elsewhere can; and the "set" line
@@ -710,9 +720,10 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerUnexplored = "galaxy.scanner.unexplored";
         public const string GalaxyScannerUnexploredAll = "galaxy.scanner.unexplored-all";
 
-        /// <summary>One of those ways out, named from the end the player CAN see - the place it goes
-        /// has no name yet, which is the whole of what makes it unexplored. The number is the system's
-        /// own lane numbering, clockwise from north, the same one the tree says.</summary>
+        /// <summary>One of those ways out, named from the end the player CAN see and the way it leaves
+        /// that end - the place it goes has no name yet, which is the whole of what makes it
+        /// unexplored. The kind of line comes first because this list mixes lanes with wormholes, and
+        /// the compass word is the one the lane's own row under that system says.</summary>
         public const string GalaxyScannerUnexploredLane = "galaxy.scanner.unexplored-lane";
         public const string GalaxyScannerUnexploredWormhole = "galaxy.scanner.unexplored-wormhole";
 
@@ -2163,13 +2174,18 @@ namespace ES2Access.Core.Speech
             { GalaxyManageSystem, "Manage system" },
             { GalaxyShownOnMap, "Shown on the map" },
             { GalaxyQuestShownOnMap, "{0}, objective shown on the map" },
-            { GalaxyStarlane, "Starlane {0} to {1}, {2}" },
-            { GalaxyStarlaneUnexplored, "Starlane {0} to an unexplored system, {1}" },
-            { GalaxyWormhole, "Wormhole {0} to {1}, {2}" },
-            { GalaxyWormholeUnexplored, "Wormhole {0} to an unexplored system, {1}" },
-            { GalaxyFleetOnStarlane, "on starlane {0}, {1}" },
-            { GalaxyFleetOnWormhole, "on wormhole {0}, {1}" },
-            { GalaxyFleetFreeMovingTo, "free moving to {0}" },
+            { GalaxyStarlane, "{0} to {1}" },
+            { GalaxyStarlaneUnexplored, "{0} to an unexplored system" },
+            { GalaxyWormhole, "{0} to {1} by wormhole" },
+            { GalaxyWormholeUnexplored, "{0} to an unexplored system by wormhole" },
+            { GalaxyFleetOnStarlane, "arriving from {0} by star lane" },
+            { GalaxyFleetOnWormhole, "arriving from {0} by wormhole" },
+            {
+                GalaxyFleetOnStarlaneFromUnexplored,
+                "arriving from an unexplored system by star lane"
+            },
+            { GalaxyFleetOnWormholeFromUnexplored, "arriving from an unexplored system by wormhole" },
+            { GalaxyFleetFreeMovingFrom, "arriving from the {0}" },
             { GalaxyFleetFreeMovingToUnexplored, "free moving to an unexplored system" },
             { GalaxyFleetOnLaneToUnexplored, "on a star lane to an unexplored system" },
             { GalaxyFleetUnderWayNearbyOne, "{0} fleet under way nearby" },
@@ -2266,10 +2282,10 @@ namespace ES2Access.Core.Speech
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
             { GalaxyInspectEdge, "Map edge" },
-            { GalaxyInspectStarlane, "Star lane from {0} to {1}" },
-            { GalaxyInspectStarlaneUnexplored, "Star lane from {0} going {1}" },
-            { GalaxyInspectWormhole, "Wormhole from {0} to {1}" },
-            { GalaxyInspectWormholeUnexplored, "Wormhole from {0} going {1}" },
+            { GalaxyInspectStarlane, "Star lane, {0} {1} to {2}" },
+            { GalaxyInspectStarlaneUnexplored, "Star lane, {0} {1} to an unexplored system" },
+            { GalaxyInspectWormhole, "Wormhole, {0} {1} to {2}" },
+            { GalaxyInspectWormholeUnexplored, "Wormhole, {0} {1} to an unexplored system" },
             { GalaxyInspectFog, "Unexplored" },
             { GalaxyInspectFogOne, "1 square unexplored" },
             { GalaxyInspectFogMany, "{0} squares unexplored" },
@@ -2321,8 +2337,8 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerColonizableOccupied, "occupied" },
             { GalaxyScannerUnexplored, "Unexplored" },
             { GalaxyScannerUnexploredAll, "all" },
-            { GalaxyScannerUnexploredLane, "Star lane {0} from {1} heading {2}" },
-            { GalaxyScannerUnexploredWormhole, "Wormhole {0} from {1} heading {2}" },
+            { GalaxyScannerUnexploredLane, "Star lane, {0} {1} to an unexplored system" },
+            { GalaxyScannerUnexploredWormhole, "Wormhole, {0} {1} to an unexplored system" },
             { GalaxyScannerAnomalies, "Anomalies" },
             { GalaxyScannerAnomaliesAll, "all" },
             { GalaxyScannerCuriosities, "Curiosities" },

@@ -27,13 +27,13 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The lanes the map draws out of a system, in the order - and therefore with the NUMBERS -
-        /// that every part of this screen names them by.
+        /// The lanes the map draws out of a system, in the order every part of this screen walks them
+        /// in.
         ///
         /// ONE list, because three things have to agree about it: the lane nodes themselves, the fleets
-        /// under way that are hosted under this system and say which lane they are on, and the count
-        /// phrase the system announces for them. Working the list out three times is how "starlane 2"
-        /// comes to mean two different lines depending on which control said it.
+        /// under way that are hosted under this system, and the count phrase the system announces for
+        /// them. Working the list out three times is how one line comes to be described two ways
+        /// depending on which control said it.
         ///
         /// A LANE IS OFFERED exactly while the map draws the line. The map's rule is not "has it been
         /// revealed" but an intensity taken from the link's own exploration state
@@ -49,11 +49,11 @@ namespace ES2Access.Screens
         /// beyond that a wormhole is a <c>Link</c> like any other and passes the same intensity test,
         /// because <c>GalaxyWormhole</c> draws its line through the same <c>GalaxyLink.Refresh</c>.
         ///
-        /// The game numbers no lane and the model's own order is whatever order the galaxy was
-        /// generated in, so the lanes are walked - and numbered - going clockwise from north, and each
-        /// one says the way it leaves. That is the mod's ordering, not the game's: a player who cannot
-        /// see the lines needs the same "which one is that" the picture gives everyone else, and a
-        /// number that moves between sessions would be worse than none.
+        /// The game orders no lane and the model's own order is whatever order the galaxy was generated
+        /// in, so the lanes are walked going clockwise from north. That ordering is the mod's, not the
+        /// game's, and it is the only thing the ordinal is for now: nothing says a lane's number out
+        /// loud any more (owner ruling 2026-09-02). What tells one lane from another out loud is the
+        /// way it leaves and where it comes out, which is what the picture shows too.
         /// </summary>
         internal static List<Lane> LanesOf(StarSystemNode node, Empire empire)
         {
@@ -104,6 +104,13 @@ namespace ES2Access.Screens
         /// <summary>
         /// The lanes leaving a system, as LEAVES - and right on one goes down it.
         ///
+        /// A lane says the way it leaves and where it comes out - "northeast to Leo" - and nothing
+        /// else. Not the word "star lane": these rows sit under the system's own <b>Star lanes</b>
+        /// heading, which says it once for all of them, and a wormhole is marked by naming the
+        /// wormhole instead ("northeast to Leo by wormhole"). Not a number either: one direction plus
+        /// one far end already tells a system's lanes apart, which is exactly what the picture gives a
+        /// player who can see the lines (owner ruling 2026-09-02).
+        ///
         /// A lane says the name of the system at its far end only when the map draws that name.
         /// Everything else is a lane into the unexplored, which is what the map shows: a line running
         /// off into the dark. The galaxy model would answer either way - it holds every system's name
@@ -135,7 +142,6 @@ namespace ES2Access.Screens
                 {
                     Link link = lanes[i].Link;
                     GameNode destination = lanes[i].Far;
-                    int number = i + 1;
                     string direction = CompassDirections.KeyForBearing(lanes[i].Bearing);
                     bool named = Perceived(destination, empire);
                     string template = lanes[i].Wormhole
@@ -146,12 +152,11 @@ namespace ES2Access.Screens
                             () =>
                                 ModStrings.Format(
                                     template,
-                                    number,
-                                    destination.LocalizedName,
-                                    ModStrings.Get(direction)
+                                    ModStrings.Get(direction),
+                                    destination.LocalizedName
                                 )
                         )
-                        : () => ModStrings.Format(template, number, ModStrings.Get(direction));
+                        : () => ModStrings.Format(template, ModStrings.Get(direction));
                     Link lane = link;
                     NodeVtable vtable = new NodeVtable
                     {

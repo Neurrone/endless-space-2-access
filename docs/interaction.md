@@ -80,7 +80,7 @@ this bar, 2026-08-12.
 **The selected-fleet panel has NO layer** — it is a contributor to the galaxy page
 (`ES2Access/Screens/FleetPanel.cs`), not a screen, because selecting a fleet changes only the cursor and the
 map underneath stays live and has to stay walkable. A layer of its own put it OVER the galaxy
-and took the systems, the starlanes and the HUD out of Tab. It is contributed by the galaxy page
+and took the systems, the star lanes and the HUD out of Tab. It is contributed by the galaxy page
 alone, which is complete rather than a gap: entering a system swaps the cursor to
 `StarSystemCursor` and the game hides the window outright (measured — `docs/fleets.md`).
 
@@ -244,7 +244,7 @@ unhinted, and every context whose own game tooltip already states its gesture st
 is no runtime dedup, so a new hint is an owner decision about that one context. The declared set,
 all owner-approved verbatim: a map target with a fleet selected ("move the fleet here", plus "use
 off-lane free movement" only where the selection really can — the pathfinder's own
-`FreeMovementSpeed` gate); a starlane with a fleet selected ("deselect the fleet", on Enter, only
+`FreeMovementSpeed` gate); a star lane with a fleet selected ("deselect the fleet", on Enter, only
 where the mod's Enter really deselects); a notification row and a turn-log row ("dismiss"); a
 research technology, a constructible and a colony curiosity ("queue it first"); a fleet row and a
 ship tile in the fleet lists ("add to the selection" / "select up to here"); a control carrying a
@@ -358,7 +358,7 @@ and the header's "expanded" word is never heard, while the "collapsed" word ride
 announcement on the way out. Left on a header itself is still the plain collapse with the cursor
 unmoved. **A group that turns out to be EMPTY is left OPEN** and says "Nothing in here": expanding a
 galaxy system brings the camera in, and the auto-recollapse this replaces zoomed straight back out.
-Right again on it is a consumed leaf; Left shuts it. `OnFollow` leaves (starlanes) are untouched —
+Right again on it is a consumed leaf; Left shuts it. `OnFollow` leaves (star lanes) are untouched —
 they were already one press.
 **Expanding a group that MOVES THE CAMERA announces the zoom line first and then the SETTLED first
 child** (owner accepted 2026-08-27; `Screen.BetweenViews`, ≤ 12 frames on the galaxy). The descend
@@ -486,7 +486,7 @@ stop's remembered row silently while it is reading anything else (`GalaxyPick` �
 `GalaxyHudScreen.ArmPickSeat`; the mechanism and what the right-click undo does are
 `docs/galaxy-map.md`). No key of the player's is involved and nothing new is claimed.
 
-**Enter on a NAMED starlane travels when the click would be a structural no-op** (owner ruling
+**Enter on a NAMED star lane travels when the click would be a structural no-op** (owner ruling
 2026-08-20, a deliberate exception to Enter-is-click-parity): `LaneClick` runs
 `ConfirmAt` → `Deselect()` → travel, so an armed mode still confirms, a carried fleet is still put
 down, and only the case the game's own click answers with nothing borrows Right's travel. A dark
@@ -511,13 +511,13 @@ where it sent the camera unbelievable, so the next step inside that place brings
 in `docs/galaxy-map.md`). The rule, what it folded in and its measured behaviours are
 `docs/test-recipes/galaxy-map.md`, **Moving the camera, and the camera rule**.
 
-**A starlane is a LEAF and Right on a named one TRAVELS** (`NodeVtable.OnFollow` →
+**A star lane is a LEAF and Right on a named one TRAVELS** (`NodeVtable.OnFollow` →
 `KeyGraph.TreeMove.Followed`, consumed silently) — never `ZoomIn`, because travelling is not a click
 and must not confirm an armed targeting mode (measured: the mode survives Right and is still ended by
 Enter on the same lane); a lane into the dark is a silent leaf. **Backspace pops the trail** while
 focus is in `galaxy:systems`, again with no words, and an empty trail is consumed and silent. Where
 the trail leads and what it collapses is `docs/test-recipes/galaxy-map.md`, **Travelling the
-starlanes**.
+star lanes**.
 
 **BACKSPACE RETURNS FROM EVERY LEAP, NOT ONLY FROM A LANE** (owner-approved 2026-08-31;
 `GalaxyHudScreen.NoteLeap`). A bookmark jump, the home jump and the scanner's go-to throw the player
@@ -598,6 +598,17 @@ and a pair sentence with only one half renderable contributes nothing.
 **A STAR LANE ANNOUNCES ITSELF AS A BUTTON** (owner ruling 2026-09-01), in both views: Enter on a
 lane has gone down it since the travel keys landed, so the row's role says so. Nothing else about
 the lane moves.
+
+**A LANE IS SAID AS A DIRECTION AND A FAR END, AND NO LANE NUMBER IS EVER SPOKEN** (owner ruling
+2026-09-02, both views): a lane row reads "northeast to Leo" — "by wormhole" on the end where it is
+one, "to an unexplored system" where the map has not named the far end — because the rows already
+sit under the system's **Star lanes** region, which says the words once for all of them. A fleet
+under way, hanging under the system it is arriving at, reads "arriving from Rigel by star lane" /
+"…by wormhole"; a fleet crossing open space reads "arriving from the west", the eight-word bearing
+from that system out to where the fleet is standing. The clockwise-from-north ordinal survives only
+as the internal ordering (`LanesOf`). Same rule on the scanner's Unexplored rows ("Star lane, Dusay
+north to an unexplored system") and in the inspect cell ("Star lane, ⟨west⟩ ⟨direction⟩ to ⟨east⟩"),
+so one lane is heard with one compass word from every surface.
 
 **THE TREE IS BAND-FILTERED, AND SO IS THE SCANNER** (owner ruling 2026-09-01; the table is
 `Core/UI/Bands.cs`, read through `UI/ZoomBands.cs`). The rows the map stop offers are the KINDS the
@@ -748,7 +759,7 @@ each landing keeps its own framing: the scanner's go-to on a system still zooms 
 bookmark's `LandInside` still lands on the system's first child, which at level 3 is a lane and no
 zoom. **FOLLOWING A LANE FRAMES NOTHING** (owner ruling 2026-09-02; `MapReach.Local`, set by
 `GalaxyHudScreen.Arrive` and read by `MapLandings.Decide` into `MapLanding.Frame`): Right on a
-starlane, and Backspace back up it, move the player to a NEIGHBOUR of the row they are standing on,
+star lane, and Backspace back up it, move the player to a NEIGHBOUR of the row they are standing on,
 so the camera does exactly what expanding that system in place would do at this distance and no
 more — a slide at 3–6, the ordinary coming-in at 7 and beyond. It framed before, which took a follow
 at spoken level 5 down to 13 while expanding the very same system stayed put. The forced band is

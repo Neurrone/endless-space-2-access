@@ -62,7 +62,7 @@ tree with `/input ui.right` / `ui.left`.
 
 | pair | measured |
 |---|---|
-| expand a system at 3 | camera IDENTICAL (`focus [34.16,0,-27.24]`, step 2), children = 3 lanes, cursor on "Starlane 1 to Rigel, east, 1 of 3", no zoom line |
+| expand a system at 3 | camera IDENTICAL (`focus [34.16,0,-27.24]`, step 2), children = 3 lanes, cursor on "east to Rigel, 1 of 3", no zoom line |
 | expand at 5 | camera identical (step 4), children = 3 lanes + 2 fleets; stepping onto the fleet row moves the camera not at all (before 2026-09-01 it snapped to 13) |
 | expand at 8 | step 7 → step 12; "Zoom level 13 of 15, Orbital" then "Manage system, button, 1 of 10" |
 | collapse after that | step 12 → step 7; the row's "collapsed" line then "Zoom level 8 of 15, System details" |
@@ -176,9 +176,19 @@ camera is not drawing that label — so a system dumped right after a camera mov
 put the camera back (`DevProbe.Camera()` focus `[68.884, 0, -22.45]`, zoom slider `10 of 15`)
 before comparing a before/after dump.
 
-## Travelling the starlanes
+## Travelling the star lanes
 
-**The model.** A starlane is a LEAF and Right on a NAMED one travels (`NodeVtable.OnFollow` →
+**What a lane row says** (wording ruling 2026-09-02): `⟨direction⟩ to ⟨far system⟩` — "northeast to
+Primus" — with `by wormhole` appended where it is one and `to an unexplored system` where the map
+has not named the far end; `button` is the role word, and no lane number is spoken. Expected on
+Dusay: `northeast to Primus`, `west to Rigel`, `north to Qarius`, in the clockwise-from-north order
+`LanesOf` walks. A fleet under way beneath a system reads `arriving from ⟨the lane's far end⟩ by
+star lane` (or `…by wormhole`, or `arriving from an unexplored system by …`), and a free mover
+`arriving from the ⟨bearing from the system out to the fleet⟩`. Lane transcripts elsewhere in this
+file were rewritten to the new wording where the old line carried the direction; where it did not,
+the lane is named without one.
+
+**The model.** A star lane is a LEAF and Right on a NAMED one travels (`NodeVtable.OnFollow` →
 `KeyGraph.TreeMove.Followed`, consumed silently): the cursor lands on the destination system's ONE
 node at the root of the systems stop, that branch opens, and the camera goes there through the page's
 one landing and so through the camera rule below — never `ZoomIn`, because travelling is not a click
@@ -293,7 +303,7 @@ restores the flag) — proves the real closure instead of re-implementing it.
 Identified` alone is not enough — also reflect `EntityVisibility`'s private `layers[]`
 (`GetField("layers", Instance|NonPublic)`) to `Layer.Known`; restore both from saved bytes.
 Verified reversible (a revealed far end returned to "to an unexplored system"). Fixture
-fact: `unlocked` at turn 1 has NO named starlane — Xiu's four lanes are all dark and lane
+fact: `unlocked` at turn 1 has NO named star lane — Xiu's four lanes are all dark and lane
 944's far end is a SpecialNode (never travelable) — so lane-travel work needs this reveal
 or a later save.
 
@@ -837,7 +847,7 @@ three or more empires.
 **Bookmark jumps in-mode** (2026-09-02): `galaxy.bookmarkGoToN` is consumed under the lens as it is
 outside it. A SYSTEM slot lands inside the system — measured at the System lens on the owner's save:
 one entry, `No owner, group, expanded, 3 of 4, Lors, -66, -26, group, No owner, bookmark 3, expanded,
-8 of 12, Starlane 1 to an unexplored system, west, button, 1 of 2`, the owner heading opened on the
+8 of 12, west to an unexplored system, button, 1 of 2`, the owner heading opened on the
 way in, `zoomStep` 12 on both sides and `Scanning` still true. A POINT slot with no cell up lands on
 the bookmark's own row under the in-mode heading (`Bookmarks, group, expanded, 4 of 4, Bookmark 1 at
 -68, 18, 1 of 3`), which is the ordinary view's no-cell answer. Compare against the same two chords
@@ -891,7 +901,7 @@ count, and the unique mark survives panning the camera away from Dusay entirely 
 the planet, not the overlay — `docs/galaxy-map.md`).
 
 **The lane row's role and the ladder's hint** (2026-09-01). A star lane announces `button`
-(`Starlane 1 to Primus, northeast, button, 5 of 8`) and Enter still travels to the far end; the
+(`northeast to Primus, button, 5 of 8`) and Enter still travels to the far end; the
 zoom ladder's review buffer ends on a chord sentence composed from the LIVE bindings —
 `Shift+Left Arrow or Shift+Right Arrow to change detail level` on the map, `… to change lens` under
 the scan lens (measured on both, 2026-09-01) — so a rebind re-words it and a
@@ -947,7 +957,7 @@ the camera focus moves and `zoomStep` does not.
 
 **Landing into a heading the player has SHUT (2026-09-01).** The owner headings seed open, so the
 case has to be made: focus `galaxy:owner/none`, `ui.left`, then land inside it. Both routes were
-measured at the Economy lens on the owner's save — `ui.right` on `Starlane 1 to Primus` under Dusay,
+measured at the Economy lens on the owner's save — `ui.right` on `northeast to Primus` under Dusay,
 and `galaxy.scanGoTo` onto Rigel — and both now answer
 `"No owner, group, expanded, …, ⟨star⟩, …"`, with `zoomStep` unchanged on the go-to. Before the fix
 each did nothing at all, which is the shape to watch for: `outcome: consumed` with an empty
@@ -1002,8 +1012,8 @@ re-runs it. With the scan lens up:
 
 Measured with that fixture: `Dusay … Trade route to Sabel` / `Sabel … Trade route to Dusay` /
 `Rigel … along trade route from Dusay to Sabel`, Rigel's lane children
-`Starlane 1 to Dusay, east, carries trade route Dusay to Sabel, open` and
-`Starlane 3 to Sabel, west, …, open` with `Starlane 2 to Heka` silent; after the blockaded second
+`east to Dusay, carries trade route Dusay to Sabel, open` and
+`west to Sabel, …, open` with the Heka lane silent; after the blockaded second
 route, every one of those lines DOUBLES — and since the 2026-09-01 per-route ruling the second line
 of each pair reads `blockaded` where the first reads `open` (both read `mixed` before it; that
 wording is gone from the mod, and this measurement predates the change). Toggle the lens off with the
@@ -1254,8 +1264,7 @@ page. "The chord reaches the mod and not the game" is a MANUAL-TEST line, not an
   under way nearby, collapsed, 6 of 13" and one zoom-out (12 → 9). Left on a HEADER is still the
   plain collapse: from Dusay it answered "Serpens, group, collapsed, 1 of 2". The research wheel is
   the same one press each way ("Military I, group, collapsed, 1 of 6" in, "Military, group,
-  collapsed, …, 1 of 4" out, no camera). Starlane travel is unchanged: Right on "Starlane 3 to
-  Qarius" travels and says only the landing.
+  collapsed, …, 1 of 4" out, no camera). Star lane travel is unchanged: Right on the Qarius lane travels and says only the landing.
   **No fixture system has an EMPTY expandable group** — even the SPECIAL node (B10 6805) has two
   lane children — so "Nothing in here", the group staying open and the second Right being a
   consumed leaf are still unit-test-only.
@@ -1447,7 +1456,7 @@ The gestures and the rules are `docs/interaction.md`, **Bookmark keys**; the cel
 
 ## Usage hints on the map
 
-- **Map target + starlane (`[Beginner] test`).** Both fleets in Heka's branch are mid-free-move and
+- **Map target + star lane (`[Beginner] test`).** Both fleets in Heka's branch are mid-free-move and
   declare `ControlTypes.Text` — Enter on them selects NOTHING, so the mod's own select route cannot
   be driven there. The route that works from `/eval` is the game's three calls IN ONE statement
   (splitting them leaves the cursor swapped and the panel unshown): find the `GalaxyFleet` in

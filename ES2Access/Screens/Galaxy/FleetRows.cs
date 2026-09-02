@@ -78,7 +78,13 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The fleets UNDER WAY on the lanes leaving a system, as children of that system - each saying
-        /// which lane it is on and which way that lane leaves.
+        /// where it is arriving FROM and by what kind of line.
+        ///
+        /// "Arriving from Rigel by star lane" and not a lane number, because the row already hangs
+        /// under the system the fleet is heading for: the far end is the half of the journey the row's
+        /// own place does not already say, it is what tells one incoming lane from another, and it is
+        /// a place the player can go and look at (owner ruling 2026-09-02). Own fleets and foreign
+        /// ones alike - what the map draws of a fleet under way is the same picture for everybody.
         ///
         /// A lane runs between two systems and the fleet flying it is at neither, so the map draws it
         /// out in between and the tree hangs it under the end it is ARRIVING at - the same end a free
@@ -110,22 +116,36 @@ namespace ES2Access.Screens
                     List<TooltipChildren.Dossier> badges;
                     NodeVtable vtable = FleetNode(it, docks, labels, out badges);
                     // Straight after the name, because it answers the question the player is holding
-                    // while they hear it: why is this fleet under THIS system? One whole phrase rather
-                    // than a lane number glued to a compass word, and the number is the one the lane
-                    // node itself announces - both come off the same list (<see cref="LanesOf"/>).
-                    string template = leg.Wormhole
-                        ? ModStrings.GalaxyFleetOnWormhole
-                        : ModStrings.GalaxyFleetOnStarlane;
-                    int number = leg.Number;
-                    string direction = leg.Direction;
-                    vtable.Announcements.Insert(
-                        1,
-                        GraphNodes.ValuePart(
-                            () =>
-                                ModStrings.Format(template, number, ModStrings.Get(direction)),
-                            false
-                        )
-                    );
+                    // while they hear it: why is this fleet under THIS system? It is arriving, and it
+                    // is arriving from the lane's other end - which is both the thing that tells one
+                    // of a system's incoming lanes from another and the thing the player can go and
+                    // look at. The far end comes off the same list the lane rows do
+                    // (<see cref="LanesOf"/>), so the two cannot disagree about which line this is.
+                    GameNode far = leg.Far;
+                    string template;
+                    if (leg.Named)
+                    {
+                        template = leg.Wormhole
+                            ? ModStrings.GalaxyFleetOnWormhole
+                            : ModStrings.GalaxyFleetOnStarlane;
+                        vtable.Announcements.Insert(
+                            1,
+                            GraphNodes.ValuePart(
+                                () => ModStrings.Format(template, far.LocalizedName),
+                                false
+                            )
+                        );
+                    }
+                    else
+                    {
+                        template = leg.Wormhole
+                            ? ModStrings.GalaxyFleetOnWormholeFromUnexplored
+                            : ModStrings.GalaxyFleetOnStarlaneFromUnexplored;
+                        vtable.Announcements.Insert(
+                            1,
+                            GraphNodes.ValuePart(() => ModStrings.Get(template), false)
+                        );
+                    }
                     // The anchor goes on the row that is the fleet's ONLY row: a fleet in transit hangs
                     // under the end it is arriving at and nowhere else, so that row holds it and the
                     // cursor rides it in as the key changes to the destination's.
@@ -157,6 +177,11 @@ namespace ES2Access.Screens
         /// player's own fleets (<see cref="UI.FleetRoute"/>; the game's own path starts at the node
         /// being flown towards). So a row under the source system would be the mod telling the player
         /// something the game does not tell anybody, and it was taken out on 2026-08-16.
+        ///
+        /// The DIRECTION the row says is not that missing origin: it is where the fleet is standing
+        /// right now, which the map does draw, said as its bearing from the system it is arriving at.
+        /// A sighted player reads that off the screen in a glance - the ship is over that way - and
+        /// it is the one thing that tells two fleets converging on the same system apart.
         /// </summary>
         private static void AddFreeMoving(
             GraphBuilder builder,
@@ -181,14 +206,22 @@ namespace ES2Access.Screens
                     NodeVtable vtable = FleetNode(it, docks, labels, out badges);
                     // Straight after the name, in the slot the lane phrase takes on a fleet under way,
                     // and for the same reason: it answers the question the player is holding while they
-                    // hear it - why is this fleet under THIS system?
+                    // hear it - why is this fleet under THIS system? There is no line to name here, so
+                    // what is said is the way it is coming in from: the compass bearing from this
+                    // system out to where the fleet is standing, so a fleet west of the system is
+                    // "arriving from the west". Read at announcing time rather than cached, because
+                    // the fleet moves as the turns pass while this row stays where it is.
+                    Fleet crossing = it;
                     vtable.Announcements.Insert(
                         1,
                         GraphNodes.ValuePart(
                             () =>
                                 ModStrings.Format(
-                                    ModStrings.GalaxyFleetFreeMovingTo,
-                                    node.LocalizedName
+                                    ModStrings.GalaxyFleetFreeMovingFrom,
+                                    CompassDirections.Direction(
+                                        crossing.GalaxyPosition.X - node.GalaxyPosition.X,
+                                        crossing.GalaxyPosition.Y - node.GalaxyPosition.Y
+                                    )
                                 ),
                             false
                         )
@@ -550,25 +583,30 @@ namespace ES2Access.Screens
             builder.EndGroup();
         }
 
-        /// <summary>One fleet under way on one of a system's lanes, with the lane already named the way
-        /// the lane node names itself.</summary>
+        /// <summary>One fleet under way on one of a system's lanes, carrying the end it set out from -
+        /// the lane's far end, read off the same list the lane rows are built from - and whether the
+        /// map names that end.</summary>
         private struct EnRoute
         {
             public Fleet Fleet;
-            public int Number;
-            public string Direction;
+            public GameNode Far;
+            public bool Named;
             public bool Wormhole;
         }
 
         /// <summary>
-        /// The fleets under way on a system's lanes, in lane order, each carrying its lane's number.
+        /// The fleets under way on a system's lanes, in lane order, each carrying the lane's far end.
         ///
         /// A fleet is taken by the FIRST lane that claims it. Two links can run between the same pair of
         /// systems - a wormhole beside a starlane - and a fleet's leg is a pair of positions rather than
         /// a link (<see cref="FleetPresence"/>), so both would claim it; declaring it twice under one
         /// system is a duplicate control id, which throws the whole screen out of Build.
         /// </summary>
-        private static List<EnRoute> EnRouteOn(StarSystemNode node, List<Lane> lanes)
+        private static List<EnRoute> EnRouteOn(
+            StarSystemNode node,
+            Empire empire,
+            List<Lane> lanes
+        )
         {
             List<EnRoute> flying = new List<EnRoute>();
             IPositioningService positioning =
@@ -588,8 +626,8 @@ namespace ES2Access.Screens
                         new EnRoute
                         {
                             Fleet = fleet,
-                            Number = i + 1,
-                            Direction = CompassDirections.KeyForBearing(lanes[i].Bearing),
+                            Far = lanes[i].Far,
+                            Named = Perceived(lanes[i].Far, empire),
                             Wormhole = lanes[i].Wormhole,
                         }
                     );
@@ -699,7 +737,7 @@ namespace ES2Access.Screens
             try
             {
                 int count =
-                    EnRouteOn(node, LanesOf(node, empire)).Count + FreeMovingAt(node).Count;
+                    EnRouteOn(node, empire, LanesOf(node, empire)).Count + FreeMovingAt(node).Count;
                 return count == 0
                     ? null
                     : ModStrings.Plural(
