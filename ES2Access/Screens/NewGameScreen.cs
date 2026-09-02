@@ -686,7 +686,7 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, GameNewGame window)
         {
             _entries.Clear();
-            AgeTransform band = Parent(AgeWidgets.Transform(window.StartButton));
+            AgeTransform band = AgeWidgets.Parent(AgeWidgets.Transform(window.StartButton));
             IList<AgeTransform> children = AgeWidgets.DrawnChildren(band);
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -765,12 +765,12 @@ namespace ES2Access.Screens
                 }
 
                 any = true;
-                SettingRows.AddReadout(builder, child, "newgame:" + key + "/" + Name(widget) + "/" + i);
+                SettingRows.AddReadout(builder, child, "newgame:" + key + "/" + AgeWidgets.NameOf(widget) + "/" + i);
             }
 
             if (!any && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
             {
-                SettingRows.AddReadout(builder, widget, "newgame:" + key + "/" + Name(widget));
+                SettingRows.AddReadout(builder, widget, "newgame:" + key + "/" + AgeWidgets.NameOf(widget));
             }
         }
 
@@ -793,36 +793,12 @@ namespace ES2Access.Screens
             }
         }
 
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? "?" : widget.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
         private static T Get<T>(AgeTransform widget)
             where T : UnityEngine.Component
         {
             try
             {
                 return widget == null ? null : widget.GetComponent<T>();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
             }
             catch (Exception)
             {
@@ -848,7 +824,7 @@ namespace ES2Access.Screens
         /// words themselves.</summary>
         private static AgeTransform Owner(AgePrimitiveLabel label)
         {
-            return Parent(AgeWidgets.Transform(label));
+            return AgeWidgets.Parent(AgeWidgets.Transform(label));
         }
     }
 }

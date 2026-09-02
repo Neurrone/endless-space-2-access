@@ -120,7 +120,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(Keys + "panel/" + panel.name);
-            string title = AgeWidgets.TextOf(AgeWidgets.ChildNamed(panel, "Title", 3));
+            string title = WindowShape.Title(panel, PanelTitleNames);
             bool named = !string.IsNullOrEmpty(title);
             if (named)
             {
@@ -143,6 +143,8 @@ namespace ES2Access.Screens
                 builder.PopContext();
             }
         }
+
+        private static readonly string[] PanelTitleNames = { "Title" };
 
         /// <summary>The strip of named ships, while the window is showing it, and the button that switches
         /// to the Academy's diplomacy window. The strip's own stat block is the one thing in it the shape

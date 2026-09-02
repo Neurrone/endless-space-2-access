@@ -777,9 +777,8 @@ namespace ES2Access.Dev
 
                 AgeTransform duplets =
                     card.FidsiEnumerator == null ? null : card.FidsiEnumerator.FidsiGroup;
-                return (duplets != null && NotificationAudit.Under(widget, duplets))
-                    || (card.FidsiScoreTable != null
-                        && NotificationAudit.Under(widget, card.FidsiScoreTable));
+                return AgeWidgets.Under(widget, duplets)
+                    || AgeWidgets.Under(widget, card.FidsiScoreTable);
             }
             catch (Exception)
             {

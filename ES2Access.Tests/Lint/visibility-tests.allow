@@ -353,8 +353,10 @@ ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(line.Owner, root)
 ES2Access/Screens/OptionsScreen.cs | 1 | if (item != null && AgeWidgets.Visible(AgeWidgets.Transform(item)))
 ES2Access/Screens/OptionsScreen.cs | 1 | if (tab != null && tab.Toggle != null && AgeWidgets.Visible(tab.Toggle.AgeTransform))
 
+ES2Access/Screens/PirateDiplomacyScreen.cs | 1 | float filled = AgeWidgets.Paints(item.ProgressCurrent)
 ES2Access/Screens/PirateDiplomacyScreen.cs | 1 | if (at == null || !panel.Shown || !AgeWidgets.Visible(at))
 ES2Access/Screens/PirateDiplomacyScreen.cs | 2 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/PirateDiplomacyScreen.cs | 1 | if (item.Circle != null && item.Circle.Alpha >= 1f)
 
 ES2Access/Screens/PlanetConstructiblesScreen.cs | 1 | && AgeWidgets.Visible(panel.AgeTransform)
 
@@ -591,10 +593,10 @@ ES2Access/UI/TableSheet.cs | 1 | if (widget == null || depth > limit || !widget.
 
 ES2Access/UI/ThresholdTracks.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
+ES2Access/UI/TooltipChildren.cs | 1 | if (!AgeWidgets.Paints(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Painted(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (into == null || widget == null || !AgeWidgets.Visible(widget))
 ES2Access/UI/TooltipChildren.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
-ES2Access/UI/TooltipChildren.cs | 1 | if (widget == null || widget.Alpha < 0.01f)
 
 ES2Access/UI/TooltipFeatures.cs | 1 | if (label != null && label.Visible)
 ES2Access/UI/TooltipFeatures.cs | 1 | if (mapper == null || mapper.AgeTransform == null || !mapper.AgeTransform.Visible)

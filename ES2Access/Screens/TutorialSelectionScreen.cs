@@ -297,7 +297,7 @@ namespace ES2Access.Screens
             Cells.Add(
                 cells,
                 widget,
-                ControlId.For(widget, "tutorial-selection:button/" + Name(widget)),
+                ControlId.For(widget, "tutorial-selection:button/" + AgeWidgets.NameOf(widget)),
                 vtable
             );
         }
@@ -354,18 +354,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return 0;
-            }
-        }
-
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget.name;
-            }
-            catch (Exception)
-            {
-                return string.Empty;
             }
         }
 

@@ -877,14 +877,15 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform container = window.HeroCardsTableContainer;
-                AgeTransform group = container == null ? null : container.Parent;
-                return AgeWidgets.ChildNamed(group, "Title", 0);
+                return WindowShape.TitleWidget(AgeWidgets.Parent(container), StripTitleNames);
             }
             catch (Exception)
             {
                 return null;
             }
         }
+
+        private static readonly string[] StripTitleNames = { "Title" };
 
         private static HeroDetailedCard Card(AgeTransform widget)
         {

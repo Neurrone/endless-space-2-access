@@ -169,6 +169,12 @@ namespace ES2Access.Loader.Dev
                 _http = null;
             }
 
+            // Nothing new can arrive now, but a request already inside is parked on work only a
+            // FRAME retires - a main-thread job, or a predicate - and no frame is coming. Both are
+            // ended here, or shutdown sits out every one of their timeouts.
+            _mainThread.Drain();
+            _waits.AbandonAll("the dev server stopped before this wait was satisfied");
+
             if (_logTap != null)
             {
                 BepInEx.Logging.Logger.Listeners.Remove(_logTap);

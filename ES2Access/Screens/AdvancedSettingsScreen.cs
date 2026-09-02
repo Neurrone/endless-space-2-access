@@ -181,7 +181,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop("advanced:group/" + Name(widget));
+            builder.BeginStop("advanced:group/" + AgeWidgets.NameOf(widget));
 
             string title = AgeText.Label(group.Title);
             bool named = !string.IsNullOrEmpty(title);
@@ -206,7 +206,7 @@ namespace ES2Access.Screens
                 {
                     for (int i = 0; i < row.Count; i++)
                     {
-                        AddSetting(builder, row[i], Name(widget));
+                        AddSetting(builder, row[i], AgeWidgets.NameOf(widget));
                     }
                 }
             }
@@ -262,7 +262,7 @@ namespace ES2Access.Screens
                     SettingRows.AddButton(
                         builder,
                         AgeWidgets.Button(row[i]),
-                        "advanced:button/" + Name(row[i])
+                        "advanced:button/" + AgeWidgets.NameOf(row[i])
                     );
                 }
             }
@@ -293,18 +293,6 @@ namespace ES2Access.Screens
         private static AdvancedSettingsModalWindow Window()
         {
             return GameWindows.Of<AdvancedSettingsModalWindow>();
-        }
-
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? "?" : widget.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
         }
 
         private static T Get<T>(AgeTransform widget)

@@ -23,6 +23,17 @@ namespace ES2Access.Core.Util
             _error = error;
         }
 
+        /// <summary>Give the sinks back. They are delegates over the plugin host, so a mod that has
+        /// unloaded without this leaves its dead assembly's static holding the live loader's logger -
+        /// the same asymmetry every other Start/Stop pair here is careful about. Called LAST in
+        /// teardown: nothing after it can log.</summary>
+        public static void Reset()
+        {
+            _info = null;
+            _warn = null;
+            _error = null;
+        }
+
         public static void Info(string message)
         {
             if (_info != null)

@@ -48,6 +48,16 @@ namespace ES2Access.UI
             return AgeWidgets.TextOf(TitleWidget(window, alsoNamed));
         }
 
+        /// <summary>The heading written inside any other band of a window - a PANEL, the group above a
+        /// strip - which is the same search from a different root. Panels name their heading for
+        /// themselves ("Title", "PanelTitle", "OverviewTitle"), so a panel caller passes its own names
+        /// in <paramref name="alsoNamed"/>; the window names are still tried first, for the same reason
+        /// they are on a window.</summary>
+        public static string Title(AgeTransform root, string[] alsoNamed = null)
+        {
+            return AgeWidgets.TextOf(TitleWidget(root, alsoNamed));
+        }
+
         /// <summary>The widget that heading is written in - the same search, answered as the thing
         /// rather than as its words, for a page that has to declare the heading as a node: a window
         /// title the game hung an explanation on has nowhere else to put those words, since a screen's
@@ -57,7 +67,21 @@ namespace ES2Access.UI
         {
             try
             {
-                AgeTransform root = window == null ? null : window.AgeTransform;
+                return TitleWidget(window == null ? null : window.AgeTransform, alsoNamed);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("window shape: reading the heading threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>That widget, found inside any root - see <see cref="Title(AgeTransform, string[])"/>.
+        /// </summary>
+        public static AgeTransform TitleWidget(AgeTransform root, string[] alsoNamed = null)
+        {
+            try
+            {
                 if (root == null)
                 {
                     return null;

@@ -38,6 +38,14 @@ namespace ES2Access.UI
         private static readonly List<Cell> Bar = new List<Cell>();
         private static readonly List<Cell> Grid = new List<Cell>();
 
+        /// <summary>Empty the scratch - mod teardown. Whatever the last build left in them is a
+        /// list of widgets belonging to a page nobody can reach any more.</summary>
+        public static void Forget()
+        {
+            Bar.Clear();
+            Grid.Clear();
+        }
+
         /// <summary>
         /// What this system can be told to build: the filters that decide which of them are shown, then
         /// the items themselves in the order the grid lays them out.

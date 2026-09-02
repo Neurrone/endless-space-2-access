@@ -132,10 +132,14 @@ namespace ES2Access.UI
         }
 
         /// <summary>Forget which drops have been reported - for a REPL session that wants the next
-        /// build's drops logged again after flipping <see cref="Enabled"/>.</summary>
+        /// build's drops logged again after flipping <see cref="Enabled"/> - and the per-screen
+        /// predicates, which are delegates into this assembly and are rebuilt on the next build.
+        /// Also the mod's teardown step for both.</summary>
         public static void Forget()
         {
             _reported.Clear();
+            _predicates.Clear();
+            _building = "";
         }
 
         /// <summary>

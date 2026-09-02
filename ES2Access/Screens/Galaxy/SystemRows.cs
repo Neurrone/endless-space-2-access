@@ -158,6 +158,9 @@ namespace ES2Access.Screens
             // for it, and the answer costs a walk of the colonies standing at the node.
             Empire looking = empire;
             vtable.Announcements.Add(GraphNodes.ValuePart(() => SystemOwner(it, looking), false));
+            // Then who is merely STANDING on it: an outpost is not an owner, so a place held by one
+            // and nothing else has "No owner" above and this after it (<see cref="OutpostHolders"/>).
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => OutpostHolders(it, looking), false));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => HomeSystemWord(it, looking), false));
             // What is parked here, then everything the map writes on the label itself - the icons it
             // flanks the name with, what is being built, what is in the ground - and last the dossier
@@ -993,10 +996,12 @@ namespace ES2Access.Screens
         /// Nothing at all for a system of the player's own: "mine" is the unmarked case on this map,
         /// and the colonized/outpost word that follows already says it is held.
         ///
-        /// Gated on the colonies the player can SEE, exactly as <c>SystemInfluence</c> gates its own
-        /// naming (<c>Visibility >= 1</c>): a colony the map is hiding is not named, and the answer for
-        /// a node with none the player can see is the game's own "No owner" - which is what the map is
-        /// showing, whatever the simulation knows.
+        /// The owner is the LABEL's owner (<see cref="LabelColony"/>), which counts a full colony and
+        /// nothing else - so a place whose only claims are outposts has "No owner", exactly as the map
+        /// paints it, and who is standing on it is the separate answer <see cref="OutpostHolders"/>
+        /// gives. Gated on the colonies the player can SEE: a colony the map is hiding is not named,
+        /// and the answer for a node with none the player can see is the game's own "No owner" - which
+        /// is what the map is showing, whatever the simulation knows.
         /// </summary>
         private static string SystemOwner(StarSystemNode node, Empire empire)
         {
@@ -1007,29 +1012,105 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                ColonizedStarSystem owner = VisibleColony(node, empire);
+                // The unmarked case, asked first and of the WIDER rule: a place the player holds an
+                // outpost at is still theirs, and the row says so in its own words a moment later
+                // (<see cref="OwnedState"/>). Answering "No owner" there would contradict it.
+                ColonizedStarSystem held = VisibleColony(node, empire);
+                if (held != null && ReferenceEquals(held.Empire, empire))
+                {
+                    return null;
+                }
+
+                ColonizedStarSystem owner = LabelColony(node, empire);
                 if (owner == null)
                 {
                     return AgeText.Clean(Gui.Localize(NoOwnerKey));
                 }
 
-                if (ReferenceEquals(owner.Empire, empire))
-                {
-                    return null;
-                }
-
-                GuiEmpire wrapper = Gui.GuiWrapperProviderService.GetGuiEmpire(owner.Empire);
-                return wrapper == null
-                    ? null
-                    : AgeText.Clean(
-                        wrapper.GetLeaderName(owner.GUID, empire, false, false, false)
-                    );
+                return ReferenceEquals(owner.Empire, empire) ? null : EmpireWord(owner, empire);
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading a system's owner threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Who is standing on the place without owning it: the empires holding an OUTPOST here, said
+        /// after the owner word.
+        ///
+        /// An outpost is not an owner - the map paints nobody's colour on a system whose only claim is
+        /// one, and <see cref="SystemOwner"/> follows that rule - but somebody IS there, more than one
+        /// empire can be at once, and a player reading the row past "No owner" would otherwise be told
+        /// the place is empty. Foreign empires included, and named exactly as the owner word names one
+        /// (<see cref="EmpireWord"/>), so a claim in the fog gives away no more than the map does.
+        ///
+        /// The player's OWN outpost is not in the list: the row already says "outpost" for it in its
+        /// own words (<see cref="OwnedState"/>), and this would be the same fact a second time.
+        /// </summary>
+        private static string OutpostHolders(StarSystemNode node, Empire empire)
+        {
+            try
+            {
+                if (node == null || empire == null || !MapVisibility.Perceived(node, empire))
+                {
+                    return null;
+                }
+
+                IColonizedStarSystemRepositoryService colonies =
+                    Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+                if (colonies == null)
+                {
+                    return null;
+                }
+
+                List<string> holders = new List<string>();
+                foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
+                {
+                    if (
+                        colony.Empire == null
+                        || colony.State != StarSystemState.Outpost
+                        || ReferenceEquals(colony.Empire, empire)
+                        || (int)colony.Visibility[empire] < (int)EntityVisibility.Layer.Known
+                    )
+                    {
+                        continue;
+                    }
+
+                    string named = EmpireWord(colony, empire);
+                    if (!string.IsNullOrEmpty(named) && !holders.Contains(named))
+                    {
+                        holders.Add(named);
+                    }
+                }
+
+                string names = SpokenList.Join(holders);
+                return names == null
+                    ? null
+                    : ModStrings.Format(
+                        holders.Count == 1
+                            ? ModStrings.GalaxyOutpostHeld
+                            : ModStrings.GalaxyOutpostsHeld,
+                        names
+                    );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading who holds an outpost at a system threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>What this row calls an empire, per CLAIM rather than per empire: the dossier
+        /// header's own <c>GuiEmpire.GetLeaderName</c>, which answers "Unknown Empire" for one the
+        /// player has not met and names a minor civilization by the system it lives on.</summary>
+        private static string EmpireWord(ColonizedStarSystem colony, Empire empire)
+        {
+            GuiEmpire wrapper = Gui.GuiWrapperProviderService.GetGuiEmpire(colony.Empire);
+            return wrapper == null
+                ? null
+                : AgeText.Clean(wrapper.GetLeaderName(colony.GUID, empire, false, false, false));
         }
 
         /// <summary>
@@ -1074,10 +1155,16 @@ namespace ES2Access.Screens
 
         private static readonly string HomeSystemKey = "%HomeSystemTitle";
 
-        /// <summary>The colony standing at a node that the player is being SHOWN - the strongest claim
-        /// the map is drawing there. A ghost is not one: an empire keeps a ghost of a system it has
-        /// lost, and the map draws nothing for it.</summary>
-        private static ColonizedStarSystem VisibleColony(StarSystemNode node, Empire empire)
+        /// <summary>The claim standing at a node that the player is being SHOWN - the strongest one
+        /// the map is drawing there, preferring the player's own. An OUTPOST is one of them, and a
+        /// ghost is not: an empire keeps a ghost of a system it has lost, and the map draws nothing
+        /// for it.
+        ///
+        /// One of the two "whose star is this" rules, and the WIDER one: this asks who is on the
+        /// place, <see cref="LabelColony"/> asks whose colour the label paints. Internal because the
+        /// scanner files a system under an empire by this one (<c>GalaxyScanner.Systems</c>) - a place
+        /// held by an outpost is that empire's business, however the label paints it.</summary>
+        internal static ColonizedStarSystem VisibleColony(StarSystemNode node, Empire empire)
         {
             IColonizedStarSystemRepositoryService colonies =
                 Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
@@ -1092,7 +1179,7 @@ namespace ES2Access.Screens
                 if (
                     colony.Empire == null
                     || colony.State == StarSystemState.Ghost
-                    || (int)colony.Visibility[empire] < 1
+                    || (int)colony.Visibility[empire] < (int)EntityVisibility.Layer.Known
                 )
                 {
                     continue;
@@ -1135,7 +1222,7 @@ namespace ES2Access.Screens
             foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
             {
                 if (
-                    (int)colony.Visibility[empire] >= 1
+                    (int)colony.Visibility[empire] >= (int)EntityVisibility.Layer.Known
                     && (found == null || !ReferenceEquals(found.Empire, empire))
                     && colony.State == StarSystemState.Colony
                 )
@@ -1504,7 +1591,10 @@ namespace ES2Access.Screens
 
             foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
             {
-                if ((int)colony.Visibility[empire] > 1 && colony.IsBeingInvaded)
+                if (
+                    (int)colony.Visibility[empire] > (int)EntityVisibility.Layer.Known
+                    && colony.IsBeingInvaded
+                )
                 {
                     return true;
                 }

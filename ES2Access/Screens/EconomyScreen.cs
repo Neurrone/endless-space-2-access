@@ -793,7 +793,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => label),
-                    GraphNodes.ValuePart(() => StockAndNet(it)),
+                    GraphNodes.ValuePart(() => ResourceRows.Figures(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
@@ -801,25 +801,6 @@ namespace ES2Access.Screens
             return vtable;
         }
 
-
-        /// <summary>A stock and what the next turn does to it, in the empire banner's own phrase and off
-        /// the same cached figures it reads (<see cref="GlobalHud.StockAndNet"/>), so the second number
-        /// is heard as a rate rather than as a second holding. A cell whose prefab draws no per-turn
-        /// label at all has no rate to say, and the holding reads alone.</summary>
-        private static string StockAndNet(ResourceItem item)
-        {
-            GuiLocatedResource resource = item == null ? null : item.GuiLocatedResource;
-            if (resource == null)
-            {
-                return null;
-            }
-
-            float stock = resource.GetStockValueFromCache();
-            int decimals = stock < 10f ? 1 : 0;
-            return item.NetLabel == null
-                ? GlobalHud.Amount(stock, false, decimals)
-                : GlobalHud.StockAndNet(stock, resource.GetNetValueFromCache(), decimals);
-        }
 
         /// <summary>
         /// The system development projects: one line per slot the empire has, or the one line saying it
@@ -2616,23 +2597,24 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The label a marketplace panel writes its own name into. The prefabs call it
-        /// "PanelTitle"; "Title" is what the economy tab's boxes call theirs, and it is kept as the
-        /// fallback so one lookup answers for both.</summary>
+        /// "PanelTitle"; "Title" is what the economy tab's boxes call theirs, and both are handed to
+        /// the shared search (<see cref="WindowShape.TitleWidget"/>) so one lookup answers for both.
+        /// </summary>
         private static AgeTransform PanelCaption(GuiPanel panel)
         {
             try
             {
-                AgeTransform at = panel == null ? null : panel.AgeTransform;
-                return at == null
+                return panel == null
                     ? null
-                    : AgeWidgets.ChildNamed(at, "PanelTitle", 2)
-                        ?? AgeWidgets.ChildNamed(at, "Title", 2);
+                    : WindowShape.TitleWidget(panel.AgeTransform, PanelTitleNames);
             }
             catch (Exception)
             {
                 return null;
             }
         }
+
+        private static readonly string[] PanelTitleNames = { "PanelTitle", "Title" };
 
         /// <summary>The heading the game writes across a marketplace panel, as that panel's first line -
         /// but only where it carries the sentence explaining the panel, which is the standing rule for a

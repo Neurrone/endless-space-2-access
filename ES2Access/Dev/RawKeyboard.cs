@@ -410,35 +410,34 @@ namespace ES2Access.Dev
                 // Fall through to the enumeration, which does not depend on the process record.
             }
 
-            _found = IntPtr.Zero;
-            _ourProcess = 0;
+            // The search keeps nothing between requests: /key is served on HTTP threads, and two
+            // concurrent searches sharing a static answered each other's window.
+            IntPtr found = IntPtr.Zero;
             try
             {
-                _ourProcess = (uint)Process.GetCurrentProcess().Id;
-                EnumWindows(TakeIfOurs, IntPtr.Zero);
+                uint ours = (uint)Process.GetCurrentProcess().Id;
+                EnumWindows(
+                    (window, unused) =>
+                    {
+                        uint pid;
+                        GetWindowThreadProcessId(window, out pid);
+                        if (pid != ours || !IsWindowVisible(window))
+                        {
+                            return true;
+                        }
+
+                        found = window;
+                        return false;
+                    },
+                    IntPtr.Zero
+                );
             }
             catch (Exception)
             {
                 return IntPtr.Zero;
             }
 
-            return _found;
-        }
-
-        private static IntPtr _found;
-        private static uint _ourProcess;
-
-        private static bool TakeIfOurs(IntPtr window, IntPtr unused)
-        {
-            uint pid;
-            GetWindowThreadProcessId(window, out pid);
-            if (pid == _ourProcess && IsWindowVisible(window))
-            {
-                _found = window;
-                return false;
-            }
-
-            return true;
+            return found;
         }
 
         // ---- the keys themselves ----

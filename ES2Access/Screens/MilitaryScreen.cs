@@ -863,19 +863,21 @@ namespace ES2Access.Screens
                 AgeTransform at = widget;
                 for (int depth = 0; depth < 3 && at != null; depth++)
                 {
-                    AgeTransform title = AgeWidgets.ChildNamed(at, "Title", 0);
-                    if (title != null)
+                    string title = WindowShape.Title(at, GroupTitleNames);
+                    if (!string.IsNullOrEmpty(title))
                     {
-                        return AgeWidgets.TextOf(title);
+                        return title;
                     }
 
-                    at = at.Parent;
+                    at = AgeWidgets.Parent(at);
                 }
             }
             catch (Exception) { }
 
             return null;
         }
+
+        private static readonly string[] GroupTitleNames = { "Title" };
 
         private static string GroupTitle(GuiTable table)
         {

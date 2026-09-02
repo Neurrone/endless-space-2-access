@@ -4795,18 +4795,7 @@ namespace ES2Access.Screens
 
         private static PropertyInfo Member(string name)
         {
-            try
-            {
-                return typeof(NotificationWindow).GetProperty(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("notification: looking up " + name + " threw: " + e);
-                return null;
-            }
+            return GameHandlers.Property(typeof(NotificationWindow), name);
         }
 
         private static object Value(NotificationWindow window, PropertyInfo member)

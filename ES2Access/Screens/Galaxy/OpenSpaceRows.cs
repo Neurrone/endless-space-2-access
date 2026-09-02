@@ -810,6 +810,14 @@ namespace ES2Access.Screens
 
         private static string _probeName;
 
+        /// <summary>Let go of the probe's cached title - mod teardown. It is one localized word, and
+        /// a word held for the life of the assembly is a word that survives a language change.
+        /// </summary>
+        internal static void ForgetProbeName()
+        {
+            _probeName = null;
+        }
+
         /// <summary>
         /// How many turns a probe has left before it burns out.
         ///

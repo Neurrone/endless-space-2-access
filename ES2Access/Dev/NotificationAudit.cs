@@ -1707,12 +1707,6 @@ namespace ES2Access.Dev
 
         // ---- odds and ends ----
 
-        // Kept only for <see cref="TooltipAudit"/>, which asks the same question of the same trees.
-        internal static bool Under(AgeTransform widget, AgeTransform ancestor)
-        {
-            return AgeWidgets.Under(widget, ancestor);
-        }
-
         private static bool WithinAny(AgeTransform widget, List<AgeTransform> ancestors)
         {
             for (int i = 0; i < ancestors.Count; i++)

@@ -1809,17 +1809,7 @@ namespace ES2Access.Screens
 
         private static PropertyInfo ManpowerIndex(string name)
         {
-            try
-            {
-                return typeof(GroundBattleNotificationWindow).GetProperty(
-                    name,
-                    BindingFlags.NonPublic | BindingFlags.Instance
-                );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameHandlers.Property(typeof(GroundBattleNotificationWindow), name);
         }
 
         /// <summary>What the player earned: the resources, the salvage and the experience, each with the

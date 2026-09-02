@@ -90,6 +90,54 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The game's own property of that name, or null - the same failure policy as
+        /// <see cref="Method(Type, string)"/>. A window's wired prefab fields are properties as often
+        /// as they are fields, and two screens each wrote this lookup with a different failure.
+        /// </summary>
+        public static PropertyInfo Property(Type type, string name)
+        {
+            if (type == null || string.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+
+            try
+            {
+                PropertyInfo property = type.GetProperty(name, Members);
+                if (property == null)
+                {
+                    Missing(type, name, null);
+                }
+
+                return property;
+            }
+            catch (Exception e)
+            {
+                Missing(type, name, e);
+                return null;
+            }
+        }
+
+        /// <summary>The argument list for a click handler that wants the game object the click landed
+        /// on. There was no click, so it gets nothing - which is what the game itself passes when it
+        /// calls these handlers. Spelled out as an array because a bare null would be read as "no
+        /// arguments at all" and the handlers take one.</summary>
+        public static readonly object[] NoSender = { null };
+
+        /// <summary>Run one of these handlers on the object the game would have run it on, and do
+        /// nothing at all where there is no handler or nothing to run it on: a member this build does
+        /// not have is a control the mod cannot work, and every caller answers that the same way.
+        /// </summary>
+        public static void Call(MethodInfo method, object target, params object[] arguments)
+        {
+            if (method == null || target == null)
+            {
+                return;
+            }
+
+            method.Invoke(target, arguments);
+        }
+
         private static readonly Dictionary<string, bool> Reported = new Dictionary<string, bool>();
 
         private static void Missing(Type type, string name, Exception e)

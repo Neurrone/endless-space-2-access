@@ -114,6 +114,17 @@ namespace ES2Access.Screens
             // thing that has to say so: nothing may outlive Stop.
             _navigator.ForgetPendingLanding();
             _navigator.Attach(null);
+            // Each screen is handed back its half of the registration: one kept alive by anything
+            // else would otherwise hold this manager, and through it the whole tree, after the mod
+            // has gone.
+            for (int i = 0; i < _registered.Count; i++)
+            {
+                if (_registered[i] != null)
+                {
+                    _registered[i].Manager = null;
+                }
+            }
+
             _registered.Clear();
         }
 

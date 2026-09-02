@@ -89,6 +89,37 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The widget one step up, or null - the guarded form of <c>AgeTransform.Parent</c>,
+        /// which five screens each wrapped for themselves. A walk UP a prefab is the one place a null
+        /// step is ordinary: it is how the walk finds out it has reached the top.</summary>
+        public static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the PREFAB calls this widget - the engine object's own name, which is what a
+        /// stop's id is built from where the game gives the mod nothing else to key on. "?" for a
+        /// widget that is not there, so a key is always writable and two missing widgets key alike.
+        /// Never spoken: this is a prefab name, not a word in anybody's language.</summary>
+        public static string NameOf(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? "?" : widget.name;
+            }
+            catch (Exception)
+            {
+                return "?";
+            }
+        }
+
         /// <summary>
         /// Whether <paramref name="ancestor"/> is <paramref name="widget"/> itself or somewhere above
         /// it in the parent chain - the "was this drawn inside that" question a dozen screens each
@@ -2039,7 +2070,7 @@ namespace ES2Access.UI
             // Alpha 0 with Visible still true (AgeTransform.RefreshChildrenIList), and the parked
             // item keeps its old wrapper on its tooltip - so an item that draws nothing must say
             // nothing, or it answers with the previous binding's name.
-            if (widget == null || widget.Alpha < 0.01f)
+            if (!Paints(widget))
             {
                 return null;
             }
@@ -2062,7 +2093,7 @@ namespace ES2Access.UI
 
             try
             {
-                if (!widget.Visible || widget.Alpha < 0.01f)
+                if (!Paints(widget))
                 {
                     return null;
                 }

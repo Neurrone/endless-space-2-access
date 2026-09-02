@@ -265,7 +265,7 @@ namespace ES2Access.Screens
             for (int i = 0; i < order.Count; i++)
             {
                 AgeTransform child = order[i];
-                string childKey = key + Name(child) + "/" + i;
+                string childKey = key + AgeWidgets.NameOf(child) + "/" + i;
                 AgePrimitiveLabel caption = pending ?? inherited;
 
                 AgeControl own = ControlOn(child);
@@ -521,7 +521,7 @@ namespace ES2Access.Screens
                 AgeControlToggle filter = children[i].GetComponent<AgeControlToggle>();
                 if (filter != null && SettingRows.Drawn(children[i]))
                 {
-                    AddFilter(builder, filter, children[i], "custom-faction:filter/" + Name(children[i]));
+                    AddFilter(builder, filter, children[i], "custom-faction:filter/" + AgeWidgets.NameOf(children[i]));
                 }
             }
 
@@ -669,11 +669,11 @@ namespace ES2Access.Screens
             try
             {
                 GuiFactionTrait guiTrait = trait as GuiFactionTrait;
-                return guiTrait != null ? guiTrait.Name.ToString() : Name(line);
+                return guiTrait != null ? guiTrait.Name.ToString() : AgeWidgets.NameOf(line);
             }
             catch (Exception)
             {
-                return Name(line);
+                return AgeWidgets.NameOf(line);
             }
         }
 
@@ -683,7 +683,7 @@ namespace ES2Access.Screens
         {
             _cells.Clear();
             IList<AgeTransform> children = AgeWidgets.DrawnChildren(
-                Parent(AgeWidgets.Transform(panel.ValidateButton))
+                AgeWidgets.Parent(AgeWidgets.Transform(panel.ValidateButton))
             );
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -759,7 +759,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                return table == null ? null : Parent(Parent(table.AgeTransform));
+                return table == null ? null : AgeWidgets.Parent(AgeWidgets.Parent(table.AgeTransform));
             }
             catch (Exception)
             {
@@ -785,7 +785,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = AgeWidgets.DrawnChildren(band);
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                if (Name(children[i]) == "Content")
+                if (AgeWidgets.NameOf(children[i]) == "Content")
                 {
                     return children[i];
                 }
@@ -874,30 +874,6 @@ namespace ES2Access.Screens
         private static FactionChoiceModalWindow Window()
         {
             return GameWindows.Of<FactionChoiceModalWindow>();
-        }
-
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? "?" : widget.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
     }
 }

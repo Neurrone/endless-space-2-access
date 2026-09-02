@@ -460,6 +460,13 @@ namespace ES2Access.Screens
         // Reused rather than allocated per call: readouts are declared on every build.
         private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>();
 
+        /// <summary>Empty the scratch - mod teardown. What the last read left in it is the game's
+        /// own tooltips.</summary>
+        public static void Forget()
+        {
+            Scratch.Clear();
+        }
+
         /// <summary>A line the player reads but does not work - the star rating on a portrait, a
         /// faction's affinity, one of its traits. What it says is whatever the game drew in it; what it
         /// means is in the tooltips hanging under it, the last of which - the one belonging to the

@@ -456,8 +456,9 @@ namespace ES2Access.Screens
                     }
 
                     if (
-                        (int)colony.Visibility[watched] < 1
-                        || (int)node.Exploration[watched.Index] < RevealedToDrawALine
+                        (int)colony.Visibility[watched] < (int)EntityVisibility.Layer.Known
+                        || (int)node.Exploration[watched.Index]
+                            < (int)EntityExploration.State.Revealed
                     )
                     {
                         continue;
@@ -473,10 +474,6 @@ namespace ES2Access.Screens
                 Log.Warn("scan: gathering an empire's tethered colonies threw: " + e);
             }
         }
-
-        /// <summary>The exploration state the watched empire needs of a node before the game draws its
-        /// curve - <c>EntityExploration.State.Revealed</c>, the fourth of six.</summary>
-        private const int RevealedToDrawALine = 4;
 
         /// <summary>The tethered colonies as rows: the place, and where it is. No owner word - the
         /// heading this row hangs under IS whose it is, and the word would be composed from what the

@@ -1171,7 +1171,8 @@ namespace ES2Access.Screens
             if (
                 ghost == null
                 || ghost.ColonizedStarSystem == null
-                || (int)ghost.ColonizedStarSystem.Visibility[empire] < 1
+                || (int)ghost.ColonizedStarSystem.Visibility[empire]
+                    < (int)EntityVisibility.Layer.Known
             )
             {
                 return null;
@@ -1868,7 +1869,8 @@ namespace ES2Access.Screens
         /// </summary>
         internal static bool PlanetsDeclared(StarSystemNode node, Empire empire)
         {
-            return (int)node.Exploration[empire] >= 2 && node.PlanetsVisibility[empire.Index];
+            return (int)node.Exploration[empire] >= (int)EntityExploration.State.Identified
+                && node.PlanetsVisibility[empire.Index];
         }
 
         /// <summary>A planet's own node in the tree, keyed exactly as <see cref="AddPlanets"/> keys it

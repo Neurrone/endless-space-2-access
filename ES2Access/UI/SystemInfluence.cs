@@ -600,7 +600,7 @@ namespace ES2Access.UI
             {
                 if (
                     colony.Empire != null
-                    && (int)colony.Visibility[empire] >= 1
+                    && (int)colony.Visibility[empire] >= (int)EntityVisibility.Layer.Known
                     && colony.State != StarSystemState.Ghost
                     && !Held(owners, colony.Empire)
                 )

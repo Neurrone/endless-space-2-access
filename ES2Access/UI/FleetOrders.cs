@@ -493,7 +493,8 @@ namespace ES2Access.UI
             if (
                 goal != start
                 && fleet.Position.NodePosition == NodePosition.Invalid
-                && (int)from.Exploration[fleet.Empire] < 3
+                && (int)from.Exploration[fleet.Empire]
+                    < (int)EntityExploration.State.PartiallyRevealed
             )
             {
                 FailureInfo.Add(FailureFlags.NextNodeUnknown, failureInfos);

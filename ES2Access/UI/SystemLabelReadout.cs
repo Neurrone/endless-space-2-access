@@ -968,7 +968,8 @@ namespace ES2Access.UI
                 if (
                     colony.State == StarSystemState.Lost
                     || colony.State == StarSystemState.Ghost
-                    || (int)colony.Visibility[Gui.PlayerEmpire] < 1
+                    || (int)colony.Visibility[Gui.PlayerEmpire]
+                        < (int)EntityVisibility.Layer.Known
                 )
                 {
                     continue;

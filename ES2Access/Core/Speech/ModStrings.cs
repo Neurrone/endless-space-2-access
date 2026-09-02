@@ -360,6 +360,13 @@ namespace ES2Access.Core.Speech
         // A system of the player's that is still an OUTPOST rather than a colony - a distinct label on
         // the map, so a distinct word here.
         public const string GalaxySystemOutpost = "galaxy.system-outpost";
+
+        // Who is holding an OUTPOST at a system somebody else owns, or at one the map says has no
+        // owner at all - the empires named as a spoken list, so one template says it for one empire
+        // and the other for several. Not the player's own outpost, which the row has its own word
+        // for (<see cref="GalaxySystemOutpost"/>).
+        public const string GalaxyOutpostHeld = "galaxy.outpost-held";
+        public const string GalaxyOutpostsHeld = "galaxy.outposts-held";
         public const string GalaxyManageSystem = "galaxy.manage-system";
 
         // The game has taken the camera to a point the map draws nothing at - a quest marker out
@@ -2317,6 +2324,8 @@ namespace ES2Access.Core.Speech
             { GalaxyStockAndNet, "{0}, {1} per turn" },
             { GalaxySystemColonized, "colonized" },
             { GalaxySystemOutpost, "outpost" },
+            { GalaxyOutpostHeld, "{0} outpost" },
+            { GalaxyOutpostsHeld, "{0} outposts" },
             { GalaxyManageSystem, "Manage system" },
             { GalaxyShownOnMap, "Shown on the map" },
             { GalaxyQuestShownOnMap, "{0}, objective shown on the map" },

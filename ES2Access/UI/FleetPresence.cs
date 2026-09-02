@@ -377,7 +377,7 @@ namespace ES2Access.UI
                 return fleet.IsAutomated
                     || fleet.Visibility == null
                     || empire == null
-                    || (int)fleet.Visibility[empire] >= 3;
+                    || (int)fleet.Visibility[empire] >= (int)EntityVisibility.Layer.Visible;
             }
             catch (Exception)
             {
@@ -390,7 +390,8 @@ namespace ES2Access.UI
         /// map, this is the one that says whether this empire may look at them.</summary>
         private static bool Drawn(Fleet fleet)
         {
-            return (int)fleet.Visibility[Gui.PlayerEmpire as MajorEmpire] >= 2;
+            return (int)fleet.Visibility[Gui.PlayerEmpire as MajorEmpire]
+                >= (int)EntityVisibility.Layer.Marked;
         }
 
         /// <summary>Whether the leg a fleet is currently flying is this lane, taken either way round.

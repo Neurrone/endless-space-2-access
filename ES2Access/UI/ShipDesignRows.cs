@@ -2152,7 +2152,7 @@ namespace ES2Access.UI
         // The game's own handler for the name box gaining the keyboard, which clears its "type a name
         // here" prompt the way a click on it does. Resolved once.
         private static readonly System.Reflection.MethodInfo NameFieldGainFocus =
-            OptionsScreen.Handler(
+            GameHandlers.Method(
                 typeof(ShipDesignEditionPanel),
                 "OnNameTextFieldGainFocusCb"
             );

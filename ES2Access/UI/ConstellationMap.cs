@@ -274,7 +274,8 @@ namespace ES2Access.UI
                 return constellation != null
                     && empire != null
                     && constellation.Exploration != null
-                    && (int)constellation.Exploration[empire] > 0;
+                    && (int)constellation.Exploration[empire]
+                        > (int)EntityExploration.State.Unrevealed;
             }
             catch (Exception)
             {

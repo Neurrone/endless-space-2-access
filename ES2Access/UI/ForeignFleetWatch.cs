@@ -640,6 +640,37 @@ namespace ES2Access.UI
                     Look(fleet, owner, player, announce);
                 }
             }
+
+            DropDestroyed();
+        }
+
+        /// <summary>Let go of a fleet that no longer exists. The sweep walks the EMPIRES' own lists,
+        /// so a fleet lost in a battle simply stops being visited and its row - the fleet, its owner
+        /// and the node it was last standing at - would be held for the rest of the session. Nothing
+        /// is said: a fleet that was destroyed is the game's own battle news.</summary>
+        private static void DropDestroyed()
+        {
+            List<ulong> gone = null;
+            foreach (KeyValuePair<ulong, Seen> pair in _seen)
+            {
+                Fleet fleet = pair.Value.Fleet;
+                if (fleet != null && !fleet.IsDestroyed)
+                {
+                    continue;
+                }
+
+                if (gone == null)
+                {
+                    gone = new List<ulong>();
+                }
+
+                gone.Add(pair.Key);
+            }
+
+            for (int i = 0; gone != null && i < gone.Count; i++)
+            {
+                _seen.Remove(gone[i]);
+            }
         }
 
         private static void Look(Fleet fleet, Empire owner, Empire player, bool announce)

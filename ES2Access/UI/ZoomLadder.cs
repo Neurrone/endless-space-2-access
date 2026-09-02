@@ -82,6 +82,17 @@ namespace ES2Access.UI
         /// watcher asks whether the control under the cursor is one of these.</summary>
         private static readonly List<ControlId> Ladders = new List<ControlId>();
 
+        /// <summary>Let go of every declared ladder and any crossing still in the air - mod
+        /// teardown, which the per-page <see cref="Forget"/> deliberately does not do (a page
+        /// popping must leave the seat for the page arriving).</summary>
+        public static void Reset()
+        {
+            Ladders.Clear();
+            _handedFrom = null;
+            _seat = null;
+            _handingUntil = 0;
+        }
+
         /// <summary>Whether a control is a zoom ladder - i.e. whether the player standing on it is
         /// already being told the rung.</summary>
         public static bool IsLadder(ControlId id)

@@ -89,11 +89,13 @@ namespace ES2Access.Screens
             return control != null && ReferenceEquals(control, _focus);
         }
 
-        /// <summary>Forget any open list - the mod is going away.</summary>
+        /// <summary>Forget any open list - the mod is going away - and the tooltips the last entry
+        /// read left in the scratch.</summary>
         public static void Reset()
         {
             _open = null;
             ReleaseFocus();
+            Scratch.Clear();
         }
 
         public override string Key
@@ -209,7 +211,7 @@ namespace ES2Access.Screens
 
             try
             {
-                OptionsScreen.Call(OpenPopup, list);
+                GameHandlers.Call(OpenPopup, list);
                 TakeFocus(list);
             }
             catch (Exception e)
@@ -286,7 +288,7 @@ namespace ES2Access.Screens
                 // gone, and only the highlight still needs putting back.
                 if (list.MenuActive)
                 {
-                    OptionsScreen.Call(ClosePopup, list, false);
+                    GameHandlers.Call(ClosePopup, list, false);
                 }
 
                 if (list.PopupMenu != null)

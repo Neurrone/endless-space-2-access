@@ -729,7 +729,7 @@ namespace ES2Access.Screens
                             index =>
                             {
                                 dropList.DropList.SelectedItem = index;
-                                Call(EntrySelected, dropList, NoSender);
+                                GameHandlers.Call(EntrySelected, dropList, GameHandlers.NoSender);
                             }
                         ),
                     enabled,
@@ -850,7 +850,7 @@ namespace ES2Access.Screens
                 }
 
                 slider.CurrentValue = target;
-                Call(SliderReleased, item, NoSender);
+                GameHandlers.Call(SliderReleased, item, GameHandlers.NoSender);
             }
             catch (Exception e)
             {
@@ -1593,34 +1593,6 @@ namespace ES2Access.Screens
         );
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
-
-        /// <summary>The argument list for a click handler that wants the game object the click landed
-        /// on. There was no click, so it gets nothing - which is the same thing the game passes when
-        /// it calls these handlers itself. Spelled out as an array because a bare null would be read
-        /// as "no arguments at all" and the handlers take one.</summary>
-        internal static readonly object[] NoSender = { null };
-
-        /// <summary>The game's own method by name - <see cref="GameHandlers.Method(Type, string)"/>,
-        /// which is where the lookup and its one failure policy live. Kept as a forwarder for the one
-        /// caller outside this batch of screens.</summary>
-        internal static MethodInfo Handler(Type type, string name)
-        {
-            return GameHandlers.Method(type, name);
-        }
-
-        /// <summary>Run one of those handlers on the object the game would have run it on. Here rather
-        /// than beside the lookup because what a null means is the caller's: a handler this build does
-        /// not have is a control the mod cannot work, and every caller answers that by doing
-        /// nothing.</summary>
-        internal static void Call(MethodInfo method, object target, params object[] arguments)
-        {
-            if (method == null || target == null)
-            {
-                return;
-            }
-
-            method.Invoke(target, arguments);
-        }
 
         /// <summary>Where a focused control's tooltip is drawn from: the transform hugging the visible
         /// text, never the hit area, which the layout stretches well past the words.</summary>

@@ -240,7 +240,7 @@ namespace ES2Access.Screens
                     age.FocusedControl = field;
                 }
 
-                OptionsScreen.Call(gainFocus, owner, OptionsScreen.NoSender);
+                GameHandlers.Call(gainFocus, owner, GameHandlers.NoSender);
                 if (Typing(field))
                 {
                     Begin(field, before, row, options);
@@ -631,6 +631,10 @@ namespace ES2Access.Screens
         {
             Clear();
             _reportedFailure = false;
+            // And the armed commit. The patch that consumes it comes off one step earlier in
+            // <c>ModEntry.Stop</c>, so an unload between the key going down and its release would
+            // otherwise arm the NEXT load's first focus change as a commit.
+            CommitTheNextRelease = false;
         }
 
         /// <summary>The box's text exactly as the engine holds it - not the cleaned reading, because a

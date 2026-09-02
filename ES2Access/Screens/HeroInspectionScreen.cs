@@ -388,10 +388,9 @@ namespace ES2Access.Screens
                     case HeroInspectionModalWindow.HeroHubMode.ShipDesign:
                         return Drawn(AgeWidgets.Transform(window.ShipDesignPanelTitle));
                     default:
-                        return AgeWidgets.ChildNamed(
+                        return WindowShape.TitleWidget(
                             window.OverviewPanel.AgeTransform,
-                            "OverviewTitle",
-                            1
+                            OverviewTitleNames
                         );
                 }
             }
@@ -400,6 +399,8 @@ namespace ES2Access.Screens
                 return null;
             }
         }
+
+        private static readonly string[] OverviewTitleNames = { "OverviewTitle" };
 
         // ---- the overview page ----
 

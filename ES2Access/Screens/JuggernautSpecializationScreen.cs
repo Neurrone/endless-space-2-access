@@ -330,7 +330,7 @@ namespace ES2Access.Screens
             GuiLocatedResource located = resource;
             NodeVtable vtable = GraphNodes.Readout(
                 () => AgeText.Clean(located.Title),
-                () => StockAndNet(it, located),
+                () => ResourceRows.Figures(it),
                 null,
                 item.Tooltip
             );
@@ -341,20 +341,6 @@ namespace ES2Access.Screens
                 ControlId.For(item, "juggernaut:resource/" + located.Name),
                 vtable
             );
-        }
-
-        /// <summary>A holding and what the next turn does to it, in the empire banner's own phrase and
-        /// off the same cached figures it reads (<see cref="GlobalHud.StockAndNet"/>) - or just the
-        /// holding, which is all this strip draws. The item keeps a per-turn label with a real figure in
-        /// it ("+0") and leaves it HIDDEN here (measured), so the rate is gated on the label being
-        /// DRAWN, or the reading invents a rate that is nowhere on screen.</summary>
-        private static string StockAndNet(ResourceItem item, GuiLocatedResource resource)
-        {
-            float stock = resource.GetStockValueFromCache();
-            int decimals = stock < 10f ? 1 : 0;
-            return AgeWidgets.DrawnLabel(item.NetLabel) != null
-                ? GlobalHud.StockAndNet(stock, resource.GetNetValueFromCache(), decimals)
-                : GlobalHud.Amount(stock, false, decimals);
         }
 
         /// <summary>The strip of strategic resources, off the panel the window binds rather than by

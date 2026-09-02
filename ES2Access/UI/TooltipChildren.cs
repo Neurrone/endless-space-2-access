@@ -815,7 +815,7 @@ namespace ES2Access.UI
                 // with its previous binding's words still on it, and naming a dossier off those words
                 // calls it by the last thing the widget held. The same test <see cref="AgeWidgets.ItemText"/>
                 // makes for the same reason.
-                if (widget == null || widget.Alpha < 0.01f)
+                if (!AgeWidgets.Paints(widget))
                 {
                     return null;
                 }

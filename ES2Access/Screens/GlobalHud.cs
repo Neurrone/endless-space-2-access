@@ -1001,16 +1001,10 @@ namespace ES2Access.Screens
                     }
 
                     GuiLocatedResource it = resource;
-                    // Small holdings of a strategic or a luxury are counted in tenths, which is how
-                    // the strip itself writes them.
+                    ResourceItem row = item;
                     NodeVtable vtable = GraphNodes.Readout(
                         () => AgeText.Clean(it.Title),
-                        () =>
-                            StockAndNet(
-                                it.GetStockValueFromCache(),
-                                it.GetNetValueFromCache(),
-                                it.GetStockValueFromCache() < 10f ? 1 : 0
-                            ),
+                        () => ResourceRows.Figures(row),
                         null,
                         item.Tooltip
                     );
@@ -3265,10 +3259,23 @@ namespace ES2Access.Screens
         /// system page, whose colony panel draws the same resource strip for one system.</summary>
         internal static string StockAndNet(float stock, float net, int decimals)
         {
+            return StockAndNet(stock, net, decimals, decimals);
+        }
+
+        /// <summary>The same phrase where the two figures are written to different precisions, which
+        /// is how the game writes a resource item's pair (<see cref="ES2Access.UI.ResourceRows"/>):
+        /// each label's decimals are decided from its OWN value.</summary>
+        internal static string StockAndNet(
+            float stock,
+            float net,
+            int stockDecimals,
+            int netDecimals
+        )
+        {
             return ModStrings.Format(
                 ModStrings.GalaxyStockAndNet,
-                Amount(stock, false, decimals),
-                Amount(net, true, decimals)
+                Amount(stock, false, stockDecimals),
+                Amount(net, true, netDecimals)
             );
         }
 

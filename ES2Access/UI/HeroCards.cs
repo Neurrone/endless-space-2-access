@@ -225,6 +225,13 @@ namespace ES2Access.UI
         // caller consumes it before the next card is read.
         private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(12);
 
+        /// <summary>Empty the scratch - mod teardown. What the last sweep left in it is a card's
+        /// tooltips, which are the game's own objects.</summary>
+        public static void Forget()
+        {
+            Scratch.Clear();
+        }
+
         /// <summary>
         /// Everything the card is showing, band by band in the order the card DRAWS them - which is the
         /// order <c>Refresh</c> writes them in everywhere but the definition band (see

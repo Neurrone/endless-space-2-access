@@ -1897,20 +1897,23 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The heading a panel writes across its own top. Neither panel exposes the label, so
-        /// it is found where it is drawn.</summary>
+        /// it is found where it is drawn - the shared search (<see cref="WindowShape.Title"/>), with
+        /// the name these prefabs use for it.</summary>
         private static string PanelTitle(GuiPanel panel)
         {
             try
             {
-                AgeTransform title =
-                    panel == null ? null : AgeWidgets.ChildNamed(panel.AgeTransform, "Title", 3);
-                return title == null ? null : AgeWidgets.TextOf(title);
+                return panel == null
+                    ? null
+                    : WindowShape.Title(panel.AgeTransform, PanelTitleNames);
             }
             catch (Exception)
             {
                 return null;
             }
         }
+
+        private static readonly string[] PanelTitleNames = { "Title" };
 
         private static void AddWidgetLines(List<string> lines, AgeTransform widget)
         {

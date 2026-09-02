@@ -4014,6 +4014,11 @@ namespace ES2Access.Screens
             // different constellations, and the ones it does share by key are being met for the first
             // time (<see cref="Seed"/>).
             _seeded.Clear();
+            // And the two other things keyed on nodes of the galaxy that has gone: the scan lens's
+            // remembered row, which <see cref="CentreOnScanSystem"/> would pan the camera to, and the
+            // zoom level each system was jumped from (<see cref="CollapseZoom"/>).
+            _scanRow = null;
+            _jumpedFrom.Clear();
         }
 
         /// <summary>
