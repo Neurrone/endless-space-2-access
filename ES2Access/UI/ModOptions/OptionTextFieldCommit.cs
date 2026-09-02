@@ -1,6 +1,4 @@
 using System;
-using System.Reflection;
-using ES2Access.Core.Util;
 using HarmonyLib;
 using UnityEngine;
 
@@ -29,77 +27,29 @@ namespace ES2Access.UI.ModOptions
     /// </summary>
     internal static class OptionTextFieldCommit
     {
-        private static Harmony _harmony;
-        private static bool _reportedFailure;
+        private static readonly ModPatch Patches = new ModPatch(
+            "optiontext",
+            "the game's text-field option row"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load: a fixed one lets the unpatch of the assembly a reload replaced
-            // strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.optiontext." + Guid.NewGuid().ToString("N")
-            );
-
-            try
-            {
-                MethodInfo target = AccessTools.Method(
-                    typeof(OptionTextFieldItem),
-                    "OnTextFieldFocusLostCb"
-                );
-                if (target == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(OptionTextFieldItem).FullName,
-                        "OnTextFieldFocusLostCb"
-                    );
-                }
-
-                harmony.Patch(
-                    target,
-                    new HarmonyMethod(
-                        typeof(OptionTextFieldCommit).GetMethod(
-                            "CommitTheTextRatherThanTheLabel",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
+            Patches.Install(
+                patch =>
+                    patch.Prefix(
+                        AccessTools.Method(
+                            typeof(OptionTextFieldItem),
+                            "OnTextFieldFocusLostCb"
+                        ),
+                        typeof(OptionTextFieldCommit),
+                        "CommitTheTextRatherThanTheLabel"
                     )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, every name and keyword the player types is thrown away silently.
-                Log.Error("the game's text-field option row could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
+            );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the game's text-field option row could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         private static bool CommitTheTextRatherThanTheLabel(
@@ -122,12 +72,7 @@ namespace ES2Access.UI.ModOptions
             }
             catch (Exception e)
             {
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn("committing a settings text field threw: " + e);
-                }
-
+                Patches.Report("committing a settings text field threw", e);
                 return false;
             }
         }

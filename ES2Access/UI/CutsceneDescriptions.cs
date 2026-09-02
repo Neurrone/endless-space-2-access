@@ -42,7 +42,11 @@ namespace ES2Access.UI
     /// </summary>
     public static class CutsceneDescriptions
     {
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "cutscenedescriptions",
+            "cutscene descriptions"
+        );
+
         private static MethodInfo _playTime;
 
         private static string _movie;
@@ -83,87 +87,42 @@ namespace ES2Access.UI
 
         public static void Install()
         {
-            Remove();
+            bool armed = Patches.Install(
+                patch =>
+                {
+                    _playTime = AccessTools.PropertyGetter(typeof(CutsceneModalWindow), "PlayTime");
+                    if (_playTime == null)
+                    {
+                        throw new MissingMemberException(
+                            typeof(CutsceneModalWindow).FullName,
+                            "PlayTime"
+                        );
+                    }
 
-            // A unique id per load, per repo convention: a fixed one lets the UnpatchSelf of the
-            // assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.cutscenedescriptions." + Guid.NewGuid().ToString("N")
+                    patch.Prefix(
+                        AccessTools.Method(typeof(CutsceneModalWindow), "ShowWindow"),
+                        typeof(CutsceneDescriptions),
+                        "Showing"
+                    );
+                    patch.Postfix(
+                        AccessTools.Method(typeof(CutsceneModalWindow), "OnPlayStarted"),
+                        typeof(CutsceneDescriptions),
+                        "Started"
+                    );
+                }
             );
 
-            try
+            if (!armed)
             {
-                _playTime = AccessTools.PropertyGetter(typeof(CutsceneModalWindow), "PlayTime");
-                if (_playTime == null)
-                {
-                    throw new MissingMemberException(
-                        typeof(CutsceneModalWindow).FullName,
-                        "PlayTime"
-                    );
-                }
-
-                MethodInfo showing = AccessTools.Method(typeof(CutsceneModalWindow), "ShowWindow");
-                if (showing == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(CutsceneModalWindow).FullName,
-                        "ShowWindow"
-                    );
-                }
-
-                MethodInfo starting = AccessTools.Method(
-                    typeof(CutsceneModalWindow),
-                    "OnPlayStarted"
-                );
-                if (starting == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(CutsceneModalWindow).FullName,
-                        "OnPlayStarted"
-                    );
-                }
-
-                harmony.Patch(showing, new HarmonyMethod(Hook("Showing")));
-                harmony.Patch(starting, null, new HarmonyMethod(Hook("Started")));
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, a cutscene plays as it did before the descriptions existed. Worth
-                // saying loudly, not worth refusing to start over.
-                Log.Error("cutscene descriptions could not be armed: " + e);
                 _playTime = null;
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
             }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             _playTime = null;
             Rearm();
-
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Warn("cutscene descriptions could not be disarmed: " + e.Message);
-            }
         }
 
         /// <summary>Forget the scene, so a video that ended, was skipped, or was interrupted by a
@@ -256,14 +215,6 @@ namespace ES2Access.UI
                 Log.Warn("cutscene descriptions: the track could not be armed: " + e.Message);
                 Rearm();
             }
-        }
-
-        private static MethodInfo Hook(string name)
-        {
-            return typeof(CutsceneDescriptions).GetMethod(
-                name,
-                BindingFlags.Static | BindingFlags.NonPublic
-            );
         }
     }
 }

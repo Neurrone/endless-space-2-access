@@ -39,60 +39,27 @@ namespace ES2Access.UI.ModOptions
     /// </summary>
     internal static class BindingOverlaps
     {
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "bindingoverlaps",
+            "the key-binding commit"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.bindingoverlaps." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch =>
+                    patch.Around(
+                        Commit(),
+                        typeof(BindingOverlaps),
+                        "RememberWhatItHeld",
+                        "SayWhatItShadows"
+                    )
             );
-
-            try
-            {
-                harmony.Patch(
-                    Commit(),
-                    new HarmonyMethod(Own("RememberWhatItHeld")),
-                    new HarmonyMethod(Own("SayWhatItShadows"))
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, an overlap simply goes unmentioned - worth saying loudly and not worth
-                // refusing to start over.
-                Log.Error("the key-binding commit could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the key-binding commit could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         /// <summary>Internal rather than private so the dev server can report whether it is still
@@ -112,14 +79,6 @@ namespace ES2Access.UI.ModOptions
             }
 
             return commit;
-        }
-
-        private static MethodInfo Own(string name)
-        {
-            return typeof(BindingOverlaps).GetMethod(
-                name,
-                BindingFlags.Static | BindingFlags.NonPublic
-            );
         }
 
         private static void RememberWhatItHeld(OptionKeyMappingItem __instance, ref object __state)

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using ES2Access.Core.Util;
 using HarmonyLib;
 
 namespace ES2Access.UI
@@ -29,87 +27,36 @@ namespace ES2Access.UI
     /// </summary>
     internal static class NotificationStrip
     {
-        private static Harmony _harmony;
-        private static bool _reportedFailure;
+        private static readonly ModPatch Patches = new ModPatch(
+            "notificationstrip",
+            "the notification strip"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load: a fixed one lets the UnpatchSelf of the assembly a reload
-            // replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.notificationstrip." + Guid.NewGuid().ToString("N")
-            );
-
-            try
-            {
-                MethodInfo refresh = AccessTools.Method(
-                    typeof(NotificationItemsWindow),
-                    "Refresh",
-                    Type.EmptyTypes
-                );
-                if (refresh == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(NotificationItemsWindow).FullName,
-                        "Refresh"
-                    );
-                }
-
-                harmony.Patch(
-                    refresh,
-                    null,
-                    new HarmonyMethod(
-                        typeof(NotificationStrip).GetMethod(
-                            "HideModItems",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
+            Patches.Install(
+                patch =>
+                    patch.Postfix(
+                        AccessTools.Method(
+                            typeof(NotificationItemsWindow),
+                            "Refresh",
+                            Type.EmptyTypes
+                        ),
+                        typeof(NotificationStrip),
+                        "HideModItems"
                     )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, the mod's notifications appear in the strip as extra icons. That is
-                // ugly rather than broken, so it is worth saying loudly and not worth refusing to
-                // start over.
-                Log.Error("the notification strip could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
+            );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the notification strip could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         /// <summary>Whether the strip patch is in place - what the teardown check reads.</summary>
         public static bool Installed
         {
-            get { return _harmony != null; }
+            get { return Patches.Installed; }
         }
 
         /// <summary>Who is patching the strip's refresh right now (see <see cref="ModPatches"/>).
@@ -195,11 +142,7 @@ namespace ES2Access.UI
             {
                 // Runs inside the window's own refresh: say so once rather than once a frame, and
                 // leave the strip as the game drew it.
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn("notifications: hiding the mod items from the strip threw: " + e);
-                }
+                Patches.Report("notifications: hiding the mod items from the strip threw", e);
             }
         }
     }

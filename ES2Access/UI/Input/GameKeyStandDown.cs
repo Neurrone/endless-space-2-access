@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using ES2Access.Core.Util;
 using HarmonyLib;
 
 namespace ES2Access.UI.Input
@@ -57,70 +56,27 @@ namespace ES2Access.UI.Input
     /// </summary>
     internal static class GameKeyStandDown
     {
-        private static Harmony _harmony;
-        private static bool _reportedFailure;
+        private static readonly ModPatch Patches = new ModPatch(
+            "gamekeys",
+            "the game's key scans"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load. Harmony identifies a patch's owner by id alone, so a stale
-            // UnpatchSelf from the assembly a reload replaced would otherwise strip the patches
-            // this load has just applied.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.gamekeys." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch =>
+                {
+                    foreach (MethodInfo scan in KeyScans())
+                    {
+                        patch.Prefix(scan, typeof(GameKeyStandDown), "NotPressedWhenModClaimsIt");
+                    }
+                }
             );
-
-            try
-            {
-                HarmonyMethod prefix = new HarmonyMethod(
-                    typeof(GameKeyStandDown).GetMethod(
-                        "NotPressedWhenModClaimsIt",
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                );
-
-                foreach (MethodInfo scan in KeyScans())
-                {
-                    harmony.Patch(scan, prefix);
-                }
-
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // A failed patch leaves the mod's keys doing double duty, which is worth a loud
-                // complaint but not worth refusing to start over.
-                Log.Error("the game's key scans could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the game's key scans could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         /// <summary>The game's three key-matching routines, resolved by signature so a missing one
@@ -217,14 +173,10 @@ namespace ES2Access.UI.Input
             {
                 // Runs inside the game's own scan, several times a frame: claim nothing rather than
                 // throw into it, and say so once instead of once per key per frame.
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn(
-                        "deciding whether the mod claims a key threw, leaving it to the game: " + e
-                    );
-                }
-
+                Patches.Report(
+                    "deciding whether the mod claims a key threw, leaving it to the game",
+                    e
+                );
                 return false;
             }
         }

@@ -1,6 +1,6 @@
 using System;
-using System.Reflection;
 using ES2Access.Core.Util;
+using ES2Access.UI;
 using HarmonyLib;
 
 namespace ES2Access.Screens
@@ -45,7 +45,10 @@ namespace ES2Access.Screens
     /// </summary>
     internal static class GalaxyOverviewEntry
     {
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "galaxyoverviewentry",
+            "the galaxy overview's activation"
+        );
 
         /// <summary>Set when the game has activated the galaxy overview for a reason of its own, and
         /// cleared by whoever answers it. Sticky rather than frame-stamped: a save being loaded
@@ -55,73 +58,26 @@ namespace ES2Access.Screens
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.galaxyoverviewentry." + Guid.NewGuid().ToString("N")
-            );
-
-            try
-            {
-                MethodInfo method = AccessTools.Method(
-                    typeof(GalaxyViewLevel_GalaxyOverview),
-                    "ActivateAsync",
-                    new[] { typeof(bool), typeof(object[]) }
-                );
-                if (method == null)
-                {
-                    Log.Warn(
-                        "galaxy overview entry: the game has no ActivateAsync with that signature"
-                    );
-                    return;
-                }
-
-                harmony.Patch(
-                    method,
-                    prefix: new HarmonyMethod(
-                        typeof(GalaxyOverviewEntry).GetMethod(
-                            "Entering",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
+            Patches.Install(
+                patch =>
+                    patch.Hook(
+                        AccessTools.Method(
+                            typeof(GalaxyViewLevel_GalaxyOverview),
+                            "ActivateAsync",
+                            new[] { typeof(bool), typeof(object[]) }
+                        ),
+                        "ActivateAsync",
+                        typeof(GalaxyOverviewEntry),
+                        "Entering",
+                        null
                     )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, the map still opens; what is lost is the tree cursor agreeing with the
-                // picture on the way in.
-                Log.Error("the galaxy overview's activation could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
+            );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             _entered = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the galaxy overview's activation could not be unpatched: " + e);
-            }
         }
 
         /// <summary>Whether the map has been arrived at since this was last asked, and it is nobody's
