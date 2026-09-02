@@ -5,8 +5,9 @@ places, inspects what is there, and moves between them. Distinct from ordinary p
 ([ui-navigation.md](ui-navigation.md)) because the world is rendered by a camera whose
 distance decides what is drawn, and because the world model knows things the player must
 not hear ([fog](#fog-discipline)). Proven on ES2 Access's galaxy map (a node-graph world),
-including the categorized scanner and the spatial cursor; only tile-signature skips and
-audio cues remain unproven — see the last sections.
+including the categorized scanner, the spatial cursor and signature skip on a cell cursor
+(`CellSkip.cs`); only signature skip on a TILE world and audio cues remain unproven — see
+the last sections.
 
 ## World-as-graph: the cursor is the game's own graph
 

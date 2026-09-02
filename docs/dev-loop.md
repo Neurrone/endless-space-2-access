@@ -43,16 +43,12 @@ mutes voicing but `/speech` still captures.
   it caused. `/input` cannot carry it: that queue is actions, and typing is text. Neither reaches a
   field the GAME owns — the letters queue against the mod's own type-ahead and fire as a search the
   moment the field lets go, so a game-owned edit is driven by writing its text from `/eval`
-- `GET /gui/game?path=&depth=` — Unity hierarchy; `GET /gui/age?window=&depth=&visibleOnly=` —
-  AGE widgets with rects (`window=` is the filter; `/gui/game` is the one taking `path=`)
-- `window=` matches a registered window, a shown panel, then any named AgeTransform under them;
+- `GET /gui/age`: `window=` matches a registered window, a shown panel, then any named AgeTransform under them;
   `depth=`/`visibleOnly=`/`fields=` apply from there; an empty answer carries an `error`/`note`
   line; a node cut off by `depth=` is kept (`more:true`). The dump PRUNES any node with no
   control, text, value or readable tooltip (`AgeDump.Node.Speaks`), and "readable" means
   class-free — a CLASS-backed tooltip does not save a textless icon from the prune. Icon-only
   controls are found with an `/eval` walk of `.Children`, never with a tree dump
-- `GET /gui/age?...&fields=name,kind,text,tooltip,rect,interactable,enabled` — flat text, one
-  indented line per widget, only those fields, empties omitted
 - `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech.
   `settle` is honoured ONLY while speech capture is on — with `speech=0` there is no wait at
   all; substitute `POST /wait` with body `false` and a timeout
@@ -74,8 +70,6 @@ mutes voicing but `/speech` still captures.
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
   20–100 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 120 s
-- **Every route rejects a query parameter it does not declare** — 400 naming it and listing the
-  route's own; a typo can no longer look like a broken feature
 - `POST /reload` (needs `Content-Length`). Empty-body POSTs (`/reload`, `/quit`): under the
   PowerShell tool `curl.exe --data-raw ''` silently drops the argument — use
   `Invoke-WebRequest -Method Post -Body "" -UseBasicParsing` (without `-UseBasicParsing` it
@@ -87,23 +81,11 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 
 ### Verification helpers (`/eval` one-liners)
 
-The full contract of each is its own doc comment; this is the inventory.
-
-| Helper | One line | File |
-|---|---|---|
-| `DevProbe` | `Screen() Stack() State() Saves() Camera() Windows() Patches() Claims(keys?) TooltipDelay(s) Tooltip() UnknownIcons() Sounds()` (the last: what the carry asked the game to PLAY, which nothing can hear over the wire) | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.Trace(tag)` | One LOG line per frame (stack, focused screen, cursor, declared node count, tutorial/window state) and always false, so `POST /wait` on it records a whole transition | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.RowTrace(tag)` | Per-frame recording of what the FOCUSED control would say — off the LAST BUILT render, so a rebuild-less change shows late | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.TooltipTrace(tag)` / `TooltipPipe()` | The hover-to-tooltip pipeline in one line (`999` timer = the parked request); `TooltipTrace` logs per frame and is always false, `TooltipPipe` answers one poll | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.Claims("Escape,Return")` | What the input layer claims FROM the game, side-effect-free, per named key (the latch, `claimsBack`, `layerLive`, `leftToGame`) | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.EndEdit(commit)` / `ArmCommit()` | Fallback levers for a text edit's endings when `POST /key` cannot run (locked desktop, unfocused game); real key events stay the primary route | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.Notifications()` | The notification engine's live state in one answer — mapping count + owning assembly, patch owners per hooked method, the turn subscription, the foreign-fleet watch's four figures (`foreignFleetsWatched`/`InSight`/`Settling`/`SweepPending` — remembered, settled in sight, crossings still inside the settle window, and whether the turn's moved diff is still waiting for the map to go quiet), and the influence sweep's `ground*` counters | `ES2Access/Dev/DevProbe.cs` |
-| `DevProbe.TooltipParity()` | The promised/misaimed/unraised/unaimed/uncovered/misclassed tooltip self-check on the FOCUSED screen, eleven buckets (seven findings, four context), aim read off `NodeVtable.PointsAt` rather than re-derived; `unraised` is the one that asks whether the pointer is ever MOVED there, `unaimed` the one that asks whether the node aimed at all, `misclassed` the one that asks whether the tooltip's KIND decided how it reached the player | `ES2Access/Dev/TooltipAudit.cs` |
-| `DevProbe.NotificationParity()` | The notification family's self-check on whichever popup is up — painted-but-unsaid, spoken-but-undrawn, mis-banded, promised/lost tooltips, figures spoken with no caption; also runs by itself on every popup (`/log?grep=parity`) | `ES2Access/Dev/NotificationAudit.cs` |
-| `DevProbe.Coverage(wholeTree?)` | What the FOCUSED screen never declared (tooltips AND actions) against everything the engine draws; a COLLAPSED branch reads as uncovered, and `live` roots walk the windows BEHIND the screen too | `ES2Access/Dev/CoverageAudit.cs` |
-| `DevProbe.Ghosts()` | Declared vs painted on the FOCUSED screen, split: `droppedByGate` (the gate already withholds these — informational) and `shippedUnpainted` (in the player's render yet unpainted — defects) | `ES2Access/Dev/GhostAudit.cs` |
-| `DevProbe.GateDiff()` | The focused screen built gated and ungated in one call — what the gate is dropping; blind to the pre-builder Cells/CardActions path (its doc says why) | `ES2Access/Dev/DevProbe.cs` |
-| `NodeGate.Enabled` | The gate's off/on lever — flip via `/eval`, dump, flip, dump, diff: the standard existence-verification primitive, needing no baseline but proving ONLY surfaces actually opened; drops log as `NodeGate drop:` (`/log?grep=NodeGate`), deduped; `NodeGate.Forget()` resets | `ES2Access/UI/NodeGate.cs` |
+`ES2Access.Dev.DevProbe` is the front door (its doc comments are the inventory: state and
+stack probes, per-frame traces for `POST /wait`, key-claim probes, the tooltip pipeline, and
+the four audits — tooltip parity, notification parity, coverage, ghosts). `NodeGate.Enabled`
+is the existence lever: flip via `/eval`, dump, flip, dump, diff — no baseline needed, but it
+proves ONLY surfaces actually opened.
 
 `POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
 physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`
@@ -151,9 +133,8 @@ fewer, bigger calls. Scope every grep to a named subtree (unscoped greps over
 bodies you need via offset. `/gui/age` or `/gui/graph` dump FIRST — it answers layout and
 text; decompiled classes only for action paths; re-read the dump already in hand before
 probing or walking. Scope `/eval` probes to the one entity in question; bound `/log` with
-`since=`; print counts, not enumerations. There is NO Python on this machine — helpers are
-`.sh`/`.ps1`/perl script files in the scratchpad; `crop-shot.ps1` via the PowerShell tool.
-Build from the repo root only; after every reload confirm `modAssemblyName` incremented
+`since=`; print counts, not enumerations. Helpers are `.sh`/`.ps1` script files in the
+scratchpad; `crop-shot.ps1` via the PowerShell tool. Build from the repo root only; after every reload confirm `modAssemblyName` incremented
 before interpreting live results. Repeated-node `ControlId` keys: index-in-parent, never
 widget names. Interim narration one line — findings go in the final report; never re-Read
 an image.
@@ -162,10 +143,8 @@ an image.
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked PowerShell hits
 execution policy). First act in-game: minimize the tutorial popup (`walks/cs/tut.cs` does it
-from `/eval`) — expanded, it eats every injection as `unconsumed`.
-A `launcher-x64` orphaned into the *Services* session (session 0) never exits and cannot be killed;
-the launch guard skips other sessions, but if a launch still fails,
-`tasklist /FI "PID eq <pid>"` tells you which session you are fighting.
+from `/eval`) — expanded, it eats every injection as `unconsumed`. If a launch fails with the
+process alive, `tasklist /FI "PID eq <pid>"` shows whether it is orphaned into another session.
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
@@ -305,15 +284,9 @@ key on the same node with no mode up, which must still do the node's own thing.
 
 **Proving a refactor changed no spoken or buffer line.** The scripted walk lives in `walks/`
 (`walk-all.sh <dir>` twice — before and after — then `diffwalks.sh`; `walks/README.md` is the
-manual, fixture-agnostic by runtime discovery). Hand-rolling the same idea: walk every reachable
-screen family with `POST /input`, save `GET /gui/graph?buffers=1` per family to a scratchpad
-`before/`, make the change, walk the IDENTICAL route into `after/`, `diff` (normalise
-instance-hash ids such as `droplist:-138580/…`). It works because the dump is text and stable, and unfocused Class-backed
-tooltips read EMPTY on both sides, so they cancel — and are therefore UNPROVEN by the diff: a
-change touching them needs a FOCUSED second pass over the nodes that carry them. A route is only
-identical from a normalised cursor AND camera — drive to an edge and re-seat the camera/zoom in the
-route's own prologue before the first dump; a screen that remembers its cursor, or a camera-driven
-page, makes the two walks start elsewhere. A "before" needed afterwards: `git stash push
+manual, fixture-agnostic by runtime discovery). Unfocused Class-backed tooltips read EMPTY on
+both sides, so they cancel and are UNPROVEN by the diff: a change touching them needs the
+walk's FOCUSED tooltip pass. A "before" needed afterwards: `git stash push
 -u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash pop` → build →
 `/reload` (~3 min). A **sheet** baseline must come from ONE session — `GraphSheet` row keys
 derive from `GetHashCode()`, which survives a hot reload but not a restart — so the stash loop,

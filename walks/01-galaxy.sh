@@ -15,8 +15,15 @@ FAMILY=galaxy; . "$(dirname "$0")/lib.sh" "$@"
 
 prologue
 inp ui.focusMap
-inp ui.home          # the constellation row, collapsed
-inp ui.right         # expand it and step in -> the first system
+# The map stop's first rows are bookmarks, so "home" is not the constellation. Read the
+# first constellation's own name off the tree and land on it by type-ahead instead.
+snap "$TMP/stop.txt"
+CONST=$(label_nth "$TMP/stop.txt" 'galaxy:constellation/[0-9]*\]' 1)
+if [ -n "$CONST" ] && tland "$CONST"; then
+  inp ui.right       # expand it and step in -> the first system
+else
+  inp ui.home
+fi
 pause 1500
 
 at prologue

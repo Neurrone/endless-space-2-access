@@ -42,8 +42,8 @@ Proven across wotr-access/SoC/ES2 (make rebindable eventually):
 | Arrows | Move (repeating); Left/Right adjust sliders; Right on a closed group expands AND enters, Left on a child ascends AND collapses |
 | Shift+Left / Shift+Right | Coarse adjust, ~10 increments (repeating) — see [widgets.md](widgets.md) |
 | Tab / Shift+Tab | Cycle tab-stops, landing on the stop's remembered position |
-| Enter | Activate (primary); on a key-binding row, start capturing the primary binding |
-| Backspace | Secondary action; on a key-binding row, start capturing the secondary binding |
+| Enter | Activate (primary) |
+| Backspace | Secondary action |
 | Escape | Back / close |
 | Home / End | First / last |
 | Alt+Up / Alt+Down | Region jump between the current panel's sections (repeating; never crosses a panel — Tab does that): see [ui-navigation.md](ui-navigation.md) |

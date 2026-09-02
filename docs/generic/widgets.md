@@ -140,11 +140,12 @@ replaced it, and it costs less than it looks — the game already has an answer 
   the current selection (move orders, zoom restore); its availability is computed on the
   press, not per frame.
 - **Moving things — reorder, transfer — is the game's DRAG, modeled as a keyboard drag**
-  (`src/graph-ui/Carry.cs`): one key holds (pick up / swap on a new source / put back on
-  its own source), the activation key drops on a compatible target (overriding that
-  target's click only while dragging; drop on the held item's own row is a cancel, matching
-  the game's drag), Escape cancels — a mod-owned MODE takes the back key like a mod-owned
-  surface does ([input.md](input.md)). Validate and commit through the game's drag path
+  (`src/graph-ui/Carry.cs`): one key holds (pick up, or swap on a new source; pressed again
+  on the source it came from it picks up AGAIN, because a source can hand over different
+  amounts of the same thing, so there is no put-back), the activation key drops on a
+  compatible target (overriding that target's click only while dragging), and the back key
+  is the ONLY cancel — a mod-owned MODE takes the back key like a mod-owned surface does
+  ([input.md](input.md)). Validate and commit through the game's drag path
   including its confirmations, and **read the game's drag handler for the landing rule** —
   which index `OnDragCompleted` posts and what the collection's `Move` does with it is the
   one thing an implementer guesses wrong. Where the mouse's gesture is "release over
@@ -320,7 +321,7 @@ confirmation window — if the dialog screen exists, the flow needs nothing extr
 
 ## Source exemplars
 
-`src/engine-example/GraphNodes.cs` (the factories), `Carry.cs` (the keyboard drag),
+Engine, copy verbatim: `src/graph-ui/Carry.cs` (the keyboard drag). Models to imitate, not
+copy (they name ES2 types): `src/engine-example/GraphNodes.cs` (the factories),
 `DropListScreen.cs` (popup-as-sub-screen, focus handover, cancel-restore),
-`MessageBoxScreen.cs` (the confirmation-dialog screen). Models to imitate, not copy: they
-name ES2 types.
+`MessageBoxScreen.cs` (the confirmation-dialog screen).

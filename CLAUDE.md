@@ -43,8 +43,8 @@ speech, GUI inspection, a C# REPL, input injection, hot reload, and loading save
 the screen-agnostic verification patterns. Its index points at the per-need files: the
 ES2 interaction language — layers, keys, claims — (`docs/interaction.md`) and the
 game-facts topic files indexed by `docs/README.md`. Helper contracts live in their source
-doc comments; the dev/verification helpers are tabled in `docs/dev-loop.md` §1. The
-regression harness is `walks/` (fixture-agnostic by runtime discovery; `walks/README.md`).
+doc comments (`ES2Access/Dev/DevProbe.cs` is the front door to the verification helpers).
+The regression harness is `walks/` (fixture-agnostic by runtime discovery; `walks/README.md`).
 
 Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. Harmony instances are created with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
 
@@ -68,9 +68,8 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
   measurement-settled for pipelining.
 - Evidence pairs use `crop-shot.ps1`; never read full-frame screenshots into context.
 - A stage is not done until each of its outputs has landed in the file whose charter fits
-  it: a new helper's contract in its own doc comment (dev/verification helpers also get a
-  one-line row in `docs/dev-loop.md` §1); a new layer number or key binding in
-  `docs/interaction.md`; a new route, REPL gotcha, or screen-agnostic verification
+  it: a new helper's contract in its own doc comment; an owner ruling on a key or layer that
+  the code does not itself state in `docs/interaction.md`; a REPL gotcha or screen-agnostic verification
   pattern in `docs/dev-loop.md` (ONLY the loop lives there, and it stays under ~350
   lines); a game-mechanism finding or the mod-policy decision it forces in the docs topic
   file that fits (`docs/README.md` is the index); a screen-status change or

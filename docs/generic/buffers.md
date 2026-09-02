@@ -85,11 +85,11 @@ is where the rest of the control lives". A grid of such cards linearises to one 
 card in drawn order — the roster-grid pattern in [ui-navigation.md](ui-navigation.md).
 This shape sits in deliberate tension with "say everything the game always draws"
 ([making-screens-accessible.md](making-screens-accessible.md) §0). How much of a card's face
-earns a spoken mention is the OWNER'S ruling, made once for the whole mod and recorded here,
-never re-litigated per control. This mod's owner ruled for silence plus convention — the readout advertises
-nothing, not even that the buffer has substance, because on content-dense screens a
-near-constant cue carries no information, and the player learns to check the buffer on
-every control.
+earns a spoken mention is the OWNER'S ruling, made once for the whole mod and recorded in
+that mod's own docs, never re-litigated per control. (ES2 Access ruled for silence plus
+convention: the readout advertises nothing, not even that the buffer has substance, because
+on content-dense screens a near-constant cue carries no information, and the player learns
+to check the buffer on every control.)
 
 Cursor rules, all load-bearing:
 

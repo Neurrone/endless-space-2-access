@@ -449,7 +449,7 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   §0); the card's substance lives in its buffer ([buffers.md](buffers.md)'s card example).
   A **kept-lattice grid IS a table**: the holes are cells that say "empty", and only a line
   the game faded WHOLE is not a row. Ask whether the column is a fact in the game's own
-  data (the luxury grid's columns were its FIDSI families) and, where it is, every cell —
+  data (in ES2, the luxury grid's columns were the game's own resource families) and, where it is, every cell —
   empty ones included — sits under that column's header.
 - **Tables read as tables**: one graph row per data row with a shared row key (Up/Down keeps
   the column), one node per cell announcing the drawn value alone — the column heading is

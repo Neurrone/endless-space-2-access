@@ -33,6 +33,7 @@ snap "$TMP/page.txt"
 PLRE='system:planet/[0-9]*\]'
 NPL=$(nkeys "$TMP/page.txt" "$PLRE")
 delay0
+inp ui.next          # type-ahead reaches the current stop only: step into the planets stop
 n=2
 while [ "$n" -le 3 ]; do
   p=$(label_nth "$TMP/page.txt" "$PLRE" "$n")
@@ -64,6 +65,7 @@ else
 fi
 
 # ---- the planet-overview page ---------------------------------------------------------
+inp ui.next          # into the planets stop, where type-ahead can see the planet rows
 if [ -n "$PLANET2" ] && tland "$PLANET2"; then
   at "on-planet"
   inp ui.activate; pause 3000; evq "$CS/tut.cs"; pause 600
