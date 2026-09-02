@@ -1131,7 +1131,7 @@
   "action.ui.alternate.title": "Alt clic gauche",
   "action.ui.alternate.description": "Effectue un Alt clic gauche",
   "action.ui.contextual.title": "Clic droit",
-  "action.ui.contextual.description": "Effectue le clic droit du jeu ici. Si Ctrl est maintenu, c'est le contrôle lui-même qui est lu.",
+  "action.ui.contextual.description": "Effectue le clic droit du jeu ici. Maintenez Ctrl pour effectuer un Ctrl clic droit.",
   "action.ui.doubleClick.title": "Double clic",
   "action.ui.doubleClick.description": "Effectue le double clic du jeu ici.",
   "action.ui.coarseDecrease.title": "Diminuer d'un cran",
