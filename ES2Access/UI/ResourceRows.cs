@@ -40,7 +40,7 @@ namespace ES2Access.UI
             try
             {
                 GuiLocatedResource resource = item == null ? null : item.GuiLocatedResource;
-                if (resource == null || !AgeWidgets.Paints(item.AgeTransform))
+                if (resource == null)
                 {
                     return null;
                 }
