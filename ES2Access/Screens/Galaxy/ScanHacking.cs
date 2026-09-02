@@ -43,7 +43,7 @@ namespace ES2Access.Screens
         /// while its own transform is on the screen.</summary>
         public void Hacking(GraphBuilder builder)
         {
-            ScanOverlayWindow window = Window<ScanOverlayWindow>();
+            ScanOverlayWindow window = GameWindows.Of<ScanOverlayWindow>();
             if (window == null || !window.Shown)
             {
                 return;

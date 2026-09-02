@@ -628,7 +628,7 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                if (!Under(node.Widget, root))
+                if (!AgeWidgets.Under(node.Widget, root))
                 {
                     result.Placement.Add(
                         Made(node.Widget, node.Key, "declared but drawn outside the popup", null)
@@ -968,7 +968,10 @@ namespace ES2Access.Dev
             for (int i = 0; i < declared.Count; i++)
             {
                 AgeTransform widget = declared[i].Widget;
-                if (widget != null && (Under(owner, widget) || Under(widget, owner)))
+                if (
+                    widget != null
+                    && (AgeWidgets.Under(owner, widget) || AgeWidgets.Under(widget, owner))
+                )
                 {
                     covering.Add(declared[i]);
                     continue;
@@ -1143,10 +1146,8 @@ namespace ES2Access.Dev
         {
             try
             {
-                GuiTooltipWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GuiTooltipWindow>(false)
-                    : null;
-                if (window == null || !window.Shown || window.PanelFeaturesTable == null)
+                GuiTooltipWindow window = GameWindows.Shown<GuiTooltipWindow>();
+                if (window == null || window.PanelFeaturesTable == null)
                 {
                     return;
                 }
@@ -1706,27 +1707,17 @@ namespace ES2Access.Dev
 
         // ---- odds and ends ----
 
+        // Kept only for <see cref="TooltipAudit"/>, which asks the same question of the same trees.
         internal static bool Under(AgeTransform widget, AgeTransform ancestor)
         {
-            AgeTransform at = widget;
-            for (int depth = 0; at != null && depth < 64; depth++)
-            {
-                if (ReferenceEquals(at, ancestor))
-                {
-                    return true;
-                }
-
-                at = at.Parent;
-            }
-
-            return false;
+            return AgeWidgets.Under(widget, ancestor);
         }
 
         private static bool WithinAny(AgeTransform widget, List<AgeTransform> ancestors)
         {
             for (int i = 0; i < ancestors.Count; i++)
             {
-                if (Under(widget, ancestors[i]))
+                if (AgeWidgets.Under(widget, ancestors[i]))
                 {
                     return true;
                 }

@@ -149,7 +149,7 @@ namespace ES2Access.Screens
                 YoursRegion,
                 YourFleetsKey,
                 window.LeftBattleGroupInfoPanel,
-                Widget(window.LeftBattleGroupSetupPanel),
+                AgeWidgets.Transform(window.LeftBattleGroupSetupPanel),
                 "battle-setup/yours"
             );
             Side(
@@ -157,7 +157,7 @@ namespace ES2Access.Screens
                 TheirsRegion,
                 EnemyFleetsKey,
                 window.RightBattleGroupInfoPanel,
-                Widget(window.RightBattleGroupSetupPanel),
+                AgeWidgets.Transform(window.RightBattleGroupSetupPanel),
                 "battle-setup/theirs"
             );
 
@@ -233,7 +233,7 @@ namespace ES2Access.Screens
             Card(builder, window.PlayerBattlePlayCard, ReportPlanTitleKey, "battle-report/your-plan");
             BattleRosters.Roster(
                 builder,
-                Widget(window.LeftBattleGroupReportPanel),
+                AgeWidgets.Transform(window.LeftBattleGroupReportPanel),
                 "battle-report/yours"
             );
             Rewards(builder, window.LeftBattleGroupReportPanel, "battle-report");
@@ -245,7 +245,7 @@ namespace ES2Access.Screens
             Card(builder, window.EnemyBattlePlayCard, ReportPlanTitleKey, "battle-report/their-plan");
             BattleRosters.Roster(
                 builder,
-                Widget(window.RightBattleGroupReportPanel),
+                AgeWidgets.Transform(window.RightBattleGroupReportPanel),
                 "battle-report/theirs"
             );
             Close(builder, theirs);
@@ -273,7 +273,7 @@ namespace ES2Access.Screens
             Command(controls, window.ReplayButton, ReplayTitleKey, "battle-report/replay");
             Countdown(
                 controls,
-                Widget(window.ReplayTimerSector),
+                AgeWidgets.Transform(window.ReplayTimerSector),
                 notification == null ? (Func<float>)null : notification.GetReplayTimeLeftRatio,
                 "battle-report/replay-timer"
             );
@@ -836,10 +836,8 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string said = AgeText.Clean(raw);
-                return string.IsNullOrEmpty(said) || Gui.IsLocalizationKey(said)
-                    ? null
-                    : AgeText.Lines(said);
+                string said = AgeText.Title(raw);
+                return said == null ? null : AgeText.Lines(said);
             }
             catch (Exception)
             {
@@ -1109,24 +1107,12 @@ namespace ES2Access.Screens
             try
             {
                 return window != null
-                    && (AgeWidgets.Operable(Widget(window.PreviousPlayButton))
-                        || AgeWidgets.Operable(Widget(window.NextPlayButton)));
+                    && (AgeWidgets.Operable(AgeWidgets.Transform(window.PreviousPlayButton))
+                        || AgeWidgets.Operable(AgeWidgets.Transform(window.NextPlayButton)));
             }
             catch (Exception)
             {
                 return false;
-            }
-        }
-
-        private static AgeTransform Widget(AgeControlButton button)
-        {
-            try
-            {
-                return button == null ? null : button.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -2646,30 +2632,6 @@ namespace ES2Access.Screens
             if (opened)
             {
                 builder.PopContext();
-            }
-        }
-
-        private static AgeTransform Widget(GuiPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveSector sector)
-        {
-            try
-            {
-                return sector == null ? null : sector.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

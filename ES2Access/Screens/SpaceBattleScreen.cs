@@ -1155,33 +1155,14 @@ namespace ES2Access.Screens
 
         private static global::BattleScreen Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::BattleScreen>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<global::BattleScreen>();
         }
 
         /// <summary>The loading window while it is the battle surface the game is DRAWING - which is what
         /// makes its labels this battle's own rather than whatever the last one left in them.</summary>
         private static BattleLoadingWindow Showing()
         {
-            try
-            {
-                BattleLoadingWindow loading = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<BattleLoadingWindow>(false)
-                    : null;
-                return loading != null && loading.Shown ? loading : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Shown<BattleLoadingWindow>();
         }
     }
 }

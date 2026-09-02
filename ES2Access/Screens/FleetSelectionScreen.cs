@@ -284,16 +284,7 @@ namespace ES2Access.Screens
 
         private static FleetSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<FleetSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<FleetSelectionModalWindow>();
         }
     }
 }

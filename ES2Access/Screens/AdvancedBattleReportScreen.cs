@@ -188,7 +188,7 @@ namespace ES2Access.Screens
             Note(builder, window.BattleTitle, "battle-advanced/outcome");
             BattleNotifications.Balance(
                 builder,
-                Widget(window.BattlePowerGauge),
+                AgeWidgets.Transform(window.BattlePowerGauge),
                 window.PlayerEncounterGroup,
                 window.EnemyEncounterGroup,
                 false,
@@ -471,7 +471,7 @@ namespace ES2Access.Screens
                         : container.GetComponentsInChildren<AdvancedReportPhaseItem>(true);
                 for (int i = 0; phases != null && i < phases.Length; i++)
                 {
-                    AgeTransform icon = Widget(
+                    AgeTransform icon = AgeWidgets.Transform(
                         phases[i] == null ? null : phases[i].MoraleBonusLabel
                     );
                     // Candidate choice, not existence: every fought phase draws the same icon and the
@@ -993,7 +993,7 @@ namespace ES2Access.Screens
                 builder,
                 YoursRegion,
                 YourFleetsKey,
-                Widget(window.PlayerBattleGroupReportPanel),
+                AgeWidgets.Transform(window.PlayerBattleGroupReportPanel),
                 "battle-advanced/yours",
                 FlotillaCards(window),
                 Rewarded(window)
@@ -1002,7 +1002,7 @@ namespace ES2Access.Screens
                 builder,
                 TheirsRegion,
                 EnemyFleetsKey,
-                Widget(window.EnemyBattleGroupReportPanel),
+                AgeWidgets.Transform(window.EnemyBattleGroupReportPanel),
                 "battle-advanced/theirs",
                 null,
                 null
@@ -1428,32 +1428,9 @@ namespace ES2Access.Screens
         /// window's own code and a prefab name is a guess.</summary>
         private static AgeTransform Back(AdvancedEncounterReportModalWindow window)
         {
-            try
-            {
-                AgeControlButton[] buttons = window.AgeTransform.GetComponentsInChildren<AgeControlButton>(
-                    true
-                );
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    AgeControlButton button = buttons[i];
-                    if (
-                        button != null
-                        && button.OnActivateMethod == BackHandler
-                        // Candidate choice, not existence: several buttons share this handler and the
-                        // drawn one is the live one. The gate can only drop a node, never pick.
-                        && AgeWidgets.Visible(button.AgeTransform)
-                    )
-                    {
-                        return button.AgeTransform;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("battle report: looking for the way out threw: " + e);
-            }
-
-            return null;
+            return AgeWidgets.Transform(
+                AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, BackHandler)
+            );
         }
 
         private const string BackHandler = "OnBackCb";
@@ -1585,54 +1562,9 @@ namespace ES2Access.Screens
             builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
         }
 
-        private static AgeTransform Widget(GuiPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(GuiBehaviour behaviour)
-        {
-            try
-            {
-                return behaviour == null ? null : behaviour.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static AdvancedEncounterReportModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<AdvancedEncounterReportModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<AdvancedEncounterReportModalWindow>();
         }
     }
 }

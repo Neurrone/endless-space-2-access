@@ -27,10 +27,6 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> lines = AgeWidg
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> sentence = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
 
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | Func<IList<string>> source = TooltipLines(tooltip);
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | private static Func<IList<string>> TooltipLines(AgeTooltip tooltip)
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | return AgeWidgets.TooltipLines(tooltip);
-
 ES2Access/Screens/GlobalHud.cs | 1 | GraphNodes.TooltipDetails(AgeWidgets.Raw(panel.AgeTransform)),
 ES2Access/Screens/GlobalHud.cs | 1 | foreach (string line in AgeText.Lines(AgeText.Tooltip(slot.Tooltip)))
 ES2Access/Screens/GlobalHud.cs | 1 | foreach (string line in AgeText.Lines(AgeText.Tooltip(tooltip)))

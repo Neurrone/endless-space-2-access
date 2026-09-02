@@ -213,22 +213,7 @@ namespace ES2Access.Screens
         /// entries - or -1 for anywhere else.</summary>
         private static int UnderCursor()
         {
-            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
-            string structural = key == null ? null : key.StructuralKey as string;
-            if (structural == null || !structural.StartsWith(RowKey, StringComparison.Ordinal))
-            {
-                return -1;
-            }
-
-            string rest = structural.Substring(RowKey.Length);
-            int slash = rest.IndexOf('/');
-            if (slash >= 0)
-            {
-                rest = rest.Substring(0, slash);
-            }
-
-            int index;
-            return int.TryParse(rest, out index) ? index : -1;
+            return ModEntry.Navigator == null ? -1 : ModEntry.Navigator.FocusedIndex(RowKey);
         }
 
         /// <summary>Take a row out of the persistent expansion set, so the next build declares no

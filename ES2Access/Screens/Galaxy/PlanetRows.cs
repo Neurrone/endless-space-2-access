@@ -119,7 +119,7 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    AgeTooltip onTheCircle = Raw(circle);
+                    AgeTooltip onTheCircle = AgeWidgets.Raw(circle);
                     AgeTooltip dossier = AgeWidgets.Draws(onTheCircle)
                         ? onTheCircle
                         : PlanetCarrier(system, planet, i, looking);
@@ -140,7 +140,7 @@ namespace ES2Access.Screens
                     };
                     if (circle != null)
                     {
-                        PointAt(vtable, circle);
+                        AgeWidgets.PointAt(vtable, circle);
                     }
                     else if (dossier != null)
                     {
@@ -210,7 +210,7 @@ namespace ES2Access.Screens
             AgeTransform circle
         )
         {
-            AgeTooltip drawn = Raw(circle);
+            AgeTooltip drawn = AgeWidgets.Raw(circle);
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
@@ -253,7 +253,7 @@ namespace ES2Access.Screens
 
             if (circle != null)
             {
-                PointAt(vtable, circle);
+                AgeWidgets.PointAt(vtable, circle);
             }
 
             // Synthetic: a dot in a system's label is the map's drawing of a world, not a control.
@@ -322,7 +322,7 @@ namespace ES2Access.Screens
                     if (
                         card != null
                         && ReferenceEquals(card.Planet, planet)
-                        && Visible(card.AgeTransform)
+                        && AgeWidgets.Visible(card.AgeTransform)
                     )
                     {
                         return card;
@@ -444,7 +444,7 @@ namespace ES2Access.Screens
             }
 
             PlanetAnomalyItem component = item.GetComponent<PlanetAnomalyItem>();
-            return component == null ? Raw(item) : component.Tooltip;
+            return component == null ? AgeWidgets.Raw(item) : component.Tooltip;
         }
 
         private static AgeTooltip AnomalyCarrier(Planet planet, Anomaly anomaly, int index)
@@ -525,7 +525,7 @@ namespace ES2Access.Screens
             }
 
             ResourceDepositItem component = item.GetComponent<ResourceDepositItem>();
-            return component == null ? Raw(item) : component.Tooltip;
+            return component == null ? AgeWidgets.Raw(item) : component.Tooltip;
         }
 
         /// <summary>A carrier bound exactly as <c>ResourceDepositItem.Refresh</c> binds the game's own
@@ -854,7 +854,7 @@ namespace ES2Access.Screens
                 NodeSection.Buffer(() => OutpostTimerHelp(it)),
                 GraphNodes.TooltipSection(dossier)
             );
-            PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
+            AgeWidgets.PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
             return vtable;
         }
 
@@ -888,7 +888,8 @@ namespace ES2Access.Screens
         {
             try
             {
-                return card.OutpostTimer != null && Visible(card.OutpostTimer.AgeTransform)
+                return card.OutpostTimer != null
+                    && AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
                     ? AgeText.Label(card.OutpostTimer)
                     : null;
             }
@@ -904,7 +905,10 @@ namespace ES2Access.Screens
         {
             try
             {
-                if (card.OutpostTimer == null || !Visible(card.OutpostTimer.AgeTransform))
+                if (
+                    card.OutpostTimer == null
+                    || !AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
+                )
                 {
                     return null;
                 }
@@ -1363,7 +1367,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                if (!Visible(fidsi.AgeTransform))
+                if (!AgeWidgets.Visible(fidsi.AgeTransform))
                 {
                     return;
                 }
@@ -1404,7 +1408,7 @@ namespace ES2Access.Screens
         )
         {
             Planet planet = card.Planet;
-            if (planet == null || !card.IsNodeRevealed || !Visible(card.FidsiScoreTable))
+            if (planet == null || !card.IsNodeRevealed || !AgeWidgets.Visible(card.FidsiScoreTable))
             {
                 return;
             }
@@ -1454,7 +1458,7 @@ namespace ES2Access.Screens
             AgeTransform widget = AgeWidgets.Transform(button);
             return () =>
             {
-                string title = AgeWidgets.TooltipTitle(Raw(widget));
+                string title = AgeWidgets.TooltipTitle(AgeWidgets.Raw(widget));
                 return string.IsNullOrEmpty(title) ? Localize(CancelJuggernautAction) : title;
             };
         }
@@ -1560,7 +1564,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform table = card.PlanetCuriositiesTable;
-            if (table == null || !Visible(table))
+            if (table == null || !AgeWidgets.Visible(table))
             {
                 return;
             }
@@ -1736,7 +1740,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < items.Count; i++)
                 {
                     AgeTransform item = items[i];
-                    if (item != null && Visible(item))
+                    if (item != null && AgeWidgets.Visible(item))
                     {
                         CardActions.AddRefusable(found, item, WreckName(item, window));
                     }
@@ -1755,7 +1759,7 @@ namespace ES2Access.Screens
         /// writes over the whole group.</summary>
         private static Func<string> WreckName(AgeTransform item, WreckedMothershipLabelWindow window)
         {
-            AgeTooltip tooltip = Raw(item);
+            AgeTooltip tooltip = AgeWidgets.Raw(item);
             AgePrimitiveLabel title = window.TitleLabel;
             return () =>
             {

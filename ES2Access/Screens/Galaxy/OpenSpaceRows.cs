@@ -384,11 +384,13 @@ namespace ES2Access.Screens
             _pins.Clear();
             try
             {
-                ProbeLabelsWindow probes = Window<ProbeLabelsWindow>();
+                ProbeLabelsWindow probes = GameWindows.Shown<ProbeLabelsWindow>();
                 Collect(probes == null ? null : probes.LabelsContainer, _probes);
-                ObliteratorProjectileLabelsWindow shots = Window<ObliteratorProjectileLabelsWindow>();
+                ObliteratorProjectileLabelsWindow shots =
+                    GameWindows.Shown<ObliteratorProjectileLabelsWindow>();
                 Collect(shots == null ? null : shots.LabelsContainer, _projectiles);
-                CoordinationRequestLabelsWindow pins = Window<CoordinationRequestLabelsWindow>();
+                CoordinationRequestLabelsWindow pins =
+                    GameWindows.Shown<CoordinationRequestLabelsWindow>();
                 Collect(pins == null ? null : pins.RequestLabelsContainer, _pins);
             }
             catch (Exception e)
@@ -710,7 +712,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
-                if (child == null || !Visible(child))
+                if (child == null || !AgeWidgets.Visible(child))
                 {
                     continue;
                 }
@@ -720,22 +722,6 @@ namespace ES2Access.Screens
                 {
                     found.Add(label);
                 }
-            }
-        }
-
-        private static TWindow Window<TWindow>()
-            where TWindow : Amplitude.Unity.Gui.GuiWindow
-        {
-            try
-            {
-                TWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<TWindow>(false)
-                    : null;
-                return window != null && window.Shown ? window : null;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -1245,28 +1231,12 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The words on the pin, as its own field is drawing them.</summary>
-        private static string PinMessage(CoordinationRequestLabel label)
-        {
-            try
-            {
-                AgeControlTextField field = label.TextField;
-                return field == null || !Visible(field.AgeTransform)
-                    ? null
-                    : AgeText.Label(field.Label);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>The turns a thing in flight has left, but only where the map is drawing the number:
         /// the game hides that background for anything that is not the player's own, and a hidden label
         /// still holds whatever was written on it for the last thing that needed it.</summary>
         private static string Countdown(AgeTransform background, AgePrimitiveLabel label)
         {
-            return Visible(background) ? AgeText.Label(label) : null;
+            return AgeWidgets.Visible(background) ? AgeText.Label(label) : null;
         }
 
         /// <summary>Point at the thing the map draws out between the stars, so the game shows its dossier
@@ -1289,7 +1259,7 @@ namespace ES2Access.Screens
                     PointerFocus.MoveTo(null, tip, anchor);
                 }
             };
-            vtable.OnBlurVisual = ReleasePointer;
+            vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
         }
     }
 }

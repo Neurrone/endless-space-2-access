@@ -199,9 +199,6 @@ namespace ES2Access.Screens
         /// region of their own rather than being left at the end of a list of a hundred systems.</summary>
         private static readonly object OpenSpaceRegion = "galaxy:systems/space";
 
-        /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
-        private const int MaxAncestors = 64;
-
         // Reused across builds rather than allocated per frame: the galaxy is walked whole to work
         // out which systems the player can see, and Build runs every tick.
 
@@ -1354,7 +1351,7 @@ namespace ES2Access.Screens
         private static AgeTransform FirstCuriosity(PlanetLabel_SystemOrbital card)
         {
             AgeTransform table = card.PlanetCuriositiesTable;
-            if (table == null || !Visible(table))
+            if (table == null || !AgeWidgets.Visible(table))
             {
                 return null;
             }
@@ -1380,7 +1377,7 @@ namespace ES2Access.Screens
             IList<AgeTransform> items = table == null ? null : table.Children;
             for (int i = 0; items != null && i < items.Count; i++)
             {
-                if (items[i] != null && Visible(items[i]))
+                if (items[i] != null && AgeWidgets.Visible(items[i]))
                 {
                     return ControlId.Structural(place + "/wreck/action/0");
                 }
@@ -4762,7 +4759,7 @@ namespace ES2Access.Screens
                     }
 
                     StarSystemLabel label = LabelFor(place, SystemLabels());
-                    if (label != null && Visible(label.AgeTransform))
+                    if (label != null && AgeWidgets.Visible(label.AgeTransform))
                     {
                         tooltip = label.StarTooltip;
                         anchor = label.AgeTransform;
@@ -4775,7 +4772,7 @@ namespace ES2Access.Screens
                 if (fleet != null)
                 {
                     anchor = FleetLozenge(fleet, DockLabels(), FleetLabels());
-                    tooltip = Raw(anchor);
+                    tooltip = AgeWidgets.Raw(anchor);
                     return tooltip != null;
                 }
 
@@ -5058,100 +5055,24 @@ namespace ES2Access.Screens
 
         // The window keeps its "go to this fleet" routine to itself, and it is the only place the
         // whole recipe - dock slot, camera, view level, cursor, fleet panel - is written down.
-        private static readonly MethodInfo SelectIdleFleet = Member("SelectIdleFleet");
+        private static readonly MethodInfo SelectIdleFleet = GameHandlers.Method(
+            typeof(EndTurnWindow),
+            "SelectIdleFleet",
+            new Type[] { typeof(Fleet) }
+        );
 
         // The cycle itself - which fleet the button would have gone to, and the counter it advances, so
         // that the key and the click walk the same fleets in the same order
         // (<see cref="GoToNextIdleFleet"/>).
-        private static readonly MethodInfo NextIdleFleetOf = Member("GetNextIdleFleet", Type.EmptyTypes);
-
-        private static MethodInfo Member(string name)
-        {
-            return Member(name, new Type[] { typeof(Fleet) });
-        }
-
-        private static MethodInfo Member(string name, Type[] arguments)
-        {
-            try
-            {
-                return typeof(EndTurnWindow).GetMethod(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
-                    null,
-                    arguments,
-                    null
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: looking up " + name + " threw: " + e);
-                return null;
-            }
-        }
+        private static readonly MethodInfo NextIdleFleetOf = GameHandlers.Method(
+            typeof(EndTurnWindow),
+            "GetNextIdleFleet",
+            Type.EmptyTypes
+        );
 
         // ---- shared ----
 
-        private static string Amount(float value, bool signed, int decimals)
-        {
-            try
-            {
-                return Gui.FormatAmount(value, true, Gui.Rounding.Floor, signed, decimals);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>Press a control the way the engine presses it: every AGE button carries the object
-        /// and the method name its own mouse handler sends to, so replaying that pair runs the
-        /// window's own handler with no click that could land on whatever the mouse is over.</summary>
-        private static void Press(AgeControlButton button)
-        {
-            try
-            {
-                GameObject target = button.OnActivateObject;
-                string method = button.OnActivateMethod;
-                if (target != null && !string.IsNullOrEmpty(method))
-                {
-                    target.SendMessage(method, button.gameObject, SendMessageOptions.DontRequireReceiver);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: pressing a control threw: " + e);
-            }
-        }
-
-        /// <summary>Make the control look hovered while the cursor is on it. The tooltip handed over
-        /// here is the widget's own, class-driven or not: a class tooltip has nothing to READ off the
-        /// widget but plenty to SHOW, and showing it is the whole point of this hook.</summary>
-        private static void Point(NodeVtable vtable, AgeControlButton button)
-        {
-            AgeControlButton it = button;
-            vtable.OnFocusVisual = () =>
-                PointerFocus.MoveTo(it, Transform(it).AgeTooltip, it.AgeTransform);
-            vtable.OnBlurVisual = ReleasePointer;
-            // The aim is written down beside the visual, from the same argument, because the navigator
-            // re-commits a standing cursor's pointer when this answer changes - which is how a node
-            // reading a widget the map POOLS follows the pool.
-            vtable.PointsAt = () => Raw(Transform(it));
-        }
-
-        /// <summary>The same for a widget with no button under it: a running total, one of the screen
-        /// icons. Nothing lights up - there is nothing there to light - and the tooltip appears, which
-        /// for these is the whole of what the pointer was ever for.</summary>
-        private static void PointAt(NodeVtable vtable, AgeTransform widget)
-        {
-            AgeTransform it = widget;
-            vtable.OnFocusVisual = () => PointerFocus.MoveTo(it, Raw(it), it);
-            vtable.OnBlurVisual = ReleasePointer;
-            vtable.PointsAt = () => Raw(it);
-        }
-
-        private static readonly Action ReleasePointer = PointerFocus.Release;
-
-        /// <summary>The same, for a node that also had the map drawing something for it: the pointer
+        /// <summary>The blur for a node that also had the map drawing something for it: the pointer
         /// goes down and the constellation label the mod was holding shown goes back to the game.
         /// </summary>
         private static readonly Action ReleaseConstellation = () =>
@@ -5159,56 +5080,6 @@ namespace ES2Access.Screens
             ConstellationLabelHold.Release();
             PointerFocus.Release();
         };
-
-        private static AgeTransform Transform(AgeControl control)
-        {
-            try
-            {
-                return control == null ? null : control.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTooltip Tooltip(AgeControl control)
-        {
-            return Tooltip(Transform(control));
-        }
-
-        /// <summary>
-        /// A tooltip only if the widget itself has anything to read.
-        ///
-        /// An AGE tooltip comes in two kinds. One carries its words in its content field. The other
-        /// names a CLASS and a target, and the words are assembled by a renderer at the moment the
-        /// tooltip is drawn - a stat block laid out from live data, which is worth reading but is not
-        /// there to be read from the widget. The banners and the resource strip are all the second
-        /// kind, and their content fields still hold whatever the prefab was authored with - the
-        /// panel's own name, most of the time. Reading it aloud would announce "StrategicResourceBanner"
-        /// under every resource, so a tooltip that names a class has nothing for a caller that wanted
-        /// words off the widget. <see cref="TooltipLines"/> is how those are read instead.
-        /// </summary>
-        private static AgeTooltip Tooltip(AgeTransform transform)
-        {
-            try
-            {
-                return Readable(Raw(transform));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        // One rule for "are this tooltip's words on the widget", shared with every other screen and
-        // with the mode the readout picks - a private copy of it here disagreed about the "Simple"
-        // class, which is how a tooltip came to be announced from Content and reviewed from a window
-        // that had not been drawn.
-        private static AgeTooltip Readable(AgeTooltip tooltip)
-        {
-            return AgeWidgets.Readable(tooltip);
-        }
 
         private static void AddLine(List<string> lines, string line)
         {
@@ -5218,32 +5089,13 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void AddTooltip(List<string> lines, AgeTooltip tooltip)
-        {
-            Func<IList<string>> source = TooltipLines(tooltip);
-            if (source == null)
-            {
-                return;
-            }
-
-            try
-            {
-                IList<string> from = source();
-                for (int i = 0; from != null && i < from.Count; i++)
-                {
-                    AddLine(lines, from[i]);
-                }
-            }
-            catch (Exception) { }
-        }
-
         /// <summary>A table of things - anomalies, curiosities, deposits - reads one line per thing,
         /// which is how it is drawn and how it is reviewed. Each line is what the item SAYS
         /// (<see cref="AgeWidgets.ItemText"/>), which for a table of bare icons is the name off its own
         /// wrapper: reading such a table as text read nothing at all.</summary>
         private static void AddWidgetLines(List<string> lines, AgeTransform widget)
         {
-            if (widget == null || !Visible(widget))
+            if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
             }
@@ -5257,81 +5109,10 @@ namespace ES2Access.Screens
 
             for (int i = 0; i < children.Count; i++)
             {
-                if (Visible(children[i]))
+                if (AgeWidgets.Visible(children[i]))
                 {
                     AddLine(lines, AgeWidgets.ItemText(children[i]));
                 }
-            }
-        }
-
-        /// <summary>The first thing a tooltip says - what a control with no caption of its own is
-        /// called, in the game's words.</summary>
-        /// <summary>A widget's tooltip whatever kind it is - what a caller needs to SHOW one rather
-        /// than to read it.</summary>
-        private static AgeTooltip Raw(AgeTransform transform)
-        {
-            try
-            {
-                return transform == null ? null : transform.AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// What the player would read on a tooltip, resolved when they ask to read it.
-        ///
-        /// A tooltip that carries its words reads straight off the widget. One that names a class has
-        /// none to carry, so it is read back off the tooltip the game has DRAWN - which focus is what
-        /// makes appear. That the two are the same text is then true by construction rather than by
-        /// this screen reimplementing however the game assembles a stat block.
-        ///
-        /// It follows that these lines exist a fraction of a second after focus arrives, not with it:
-        /// the game waits out its hover delay before drawing. The buffer is filled again when the
-        /// tooltip lands (<see cref="PointerFocus.DrawnTooltipChanged"/>), which is well before anyone
-        /// can press a key to read it.
-        /// </summary>
-        private static Func<IList<string>> TooltipLines(AgeTooltip tooltip)
-        {
-            return AgeWidgets.TooltipLines(tooltip);
-        }
-
-        // A control inside a group the window has collapsed is still marked visible itself, so the
-        // chain above it is what says whether the player can see it.
-        private static bool Visible(AgeTransform widget)
-        {
-            try
-            {
-                AgeTransform at = widget;
-                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
-                {
-                    if (!at.Visible)
-                    {
-                        return false;
-                    }
-
-                    at = at.Parent;
-                }
-
-                return widget != null;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Enabled(AgeTransform widget)
-        {
-            try
-            {
-                return widget != null && widget.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
 
@@ -5349,16 +5130,7 @@ namespace ES2Access.Screens
 
         private static EndTurnWindow TurnWindow()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<EndTurnWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<EndTurnWindow>();
         }
 
         private static GuiManager GuiService()

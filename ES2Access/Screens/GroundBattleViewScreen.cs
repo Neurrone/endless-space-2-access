@@ -189,7 +189,7 @@ namespace ES2Access.Screens
                     2,
                     new MessageBuilder()
                         .ListItem(AgeText.Label(window.ConclusionEndStatusTitle))
-                        .ListItem(Visible(window.ConclusionEndStatusSubTitle))
+                        .ListItem(AgeWidgets.DrawnLabel(window.ConclusionEndStatusSubTitle))
                         .Build()
                 );
                 return;
@@ -456,13 +456,6 @@ namespace ES2Access.Screens
             Cells.Add(_cells, button, ControlId.For(label, key), vtable);
         }
 
-        /// <summary>What a label SAYS while it is drawn - a string, not a node.</summary>
-        private static string Visible(AgePrimitiveLabel label)
-        {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            return AgeWidgets.Visible(widget) ? AgeText.Label(label) : null;
-        }
-
         /// <summary>Whether a phase's whole band is being drawn - flow control for the readings under
         /// it, each of which walks a panel of its own.</summary>
         private static bool Shown(AgeTransform group)
@@ -484,36 +477,14 @@ namespace ES2Access.Screens
 
         private static global::GroundBattleScreen Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::GroundBattleScreen>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<global::GroundBattleScreen>();
         }
 
         /// <summary>The viewer's own round counter, which it keeps private - the only thing about a ground
         /// battle this screen cannot ask for.</summary>
-        private static readonly FieldInfo RoundIndex = Field("currentRoundIndex");
-
-        private static FieldInfo Field(string name)
-        {
-            try
-            {
-                return typeof(GroundBattleViewer).GetField(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("ground battle: looking up " + name + " threw: " + e);
-                return null;
-            }
-        }
+        private static readonly FieldInfo RoundIndex = GameHandlers.Field(
+            typeof(GroundBattleViewer),
+            "currentRoundIndex"
+        );
     }
 }

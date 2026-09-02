@@ -241,7 +241,7 @@ namespace ES2Access.Screens
                 if (
                     button == null
                     || !Painted(button.AgeTransform, Root(window))
-                    || !Enabled(button.AgeTransform)
+                    || !AgeWidgets.Operable(button.AgeTransform)
                 )
                 {
                     return false;
@@ -269,7 +269,7 @@ namespace ES2Access.Screens
                         window == null ? null : Button(window, ShowLocationButton);
                     return button != null
                         && Painted(button.AgeTransform, Root(window))
-                        && Enabled(button.AgeTransform);
+                        && AgeWidgets.Operable(button.AgeTransform);
                 }
                 catch (Exception)
                 {
@@ -531,7 +531,7 @@ namespace ES2Access.Screens
                 TooltipChildren.Carried carried =
                     TooltipChildren.Split(WordsTooltips(label, Words(window)));
                 AgeTooltip explains = carried.Own;
-                AgeTransform hover = explains == null ? null : Holder(explains);
+                AgeTransform hover = explains == null ? null : AgeWidgets.TooltipOwner(explains);
                 NodeVtable saying = new NodeVtable
                 {
                     // No role word: the text is not a control the player works, it is what they
@@ -546,10 +546,12 @@ namespace ES2Access.Screens
                     // under the cursor to light up, and no tooltip of a neighbouring one to leave
                     // hanging over the popup. Aimed here rather than by the door because the
                     // explanation hangs on a WRAPPER of the words and the pointer belongs on the
-                    // holder the popup drew it in (<see cref="Holder"/>).
+                    // holder the popup drew it in (the widget the tooltip is hung on).
                     OnFocusVisual =
-                        hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, explains),
-                    OnBlurVisual = ReleasePointer,
+                        hover == null
+                            ? AgeWidgets.ReleasePointer
+                            : () => PointerFocus.MoveTo(hover, explains),
+                    OnBlurVisual = AgeWidgets.ReleasePointer,
                     PointsAt = () => hover == null ? null : explains,
                 };
                 DrawnNode said = Nodes.Drawn(lead, saying, label);
@@ -727,7 +729,7 @@ namespace ES2Access.Screens
         {
             foreach (AgeTransform bar in bars)
             {
-                if (IsUnder(widget, bar))
+                if (AgeWidgets.Under(widget, bar))
                 {
                     return true;
                 }
@@ -750,7 +752,7 @@ namespace ES2Access.Screens
         {
             List<AgeTransform> rails = new List<AgeTransform>();
             AgePrimitiveLabel title = Value(window, NotificationTitle) as AgePrimitiveLabel;
-            if (title != null && Visible(title.AgeTransform))
+            if (title != null && AgeWidgets.Visible(title.AgeTransform))
             {
                 rails.Add(title.AgeTransform);
             }
@@ -846,8 +848,8 @@ namespace ES2Access.Screens
         ///
         /// The content is walked in the CARDS the popup drew it in - each of them a region of its own,
         /// so that the rows under "Next Research" audibly belong to the next technology rather than to
-        /// the one that just finished. Which cards those are is the game's own grouping: see
-        /// <see cref="Card"/>.
+        /// the one that just finished. Which cards those are is the game's own grouping: the card each
+        /// row was drawn in is <see cref="AgeWidgets.Ancestor"/> of the cards' own container.
         ///
         /// <paramref name="lines"/> are the lines of a table the popup stamped out of a prefab, where it
         /// has one (<see cref="TableLines"/>). Text drawn inside one of them is that LINE's row rather
@@ -959,7 +961,7 @@ namespace ES2Access.Screens
             List<AgeTransform> cards = new List<AgeTransform>();
             foreach (Item item in items)
             {
-                AgeTransform card = Card(common, item.Widget);
+                AgeTransform card = AgeWidgets.Ancestor(item.Widget, common);
                 if (card == null || ReferenceEquals(card, item.Widget))
                 {
                     // A row drawn outside the cards - one of them containing all the others, say -
@@ -977,51 +979,17 @@ namespace ES2Access.Screens
             return cards.Count > 1 ? cards : null;
         }
 
-        /// <summary>Which card a widget was drawn in: the ancestor of it that the cards' own container
-        /// holds.</summary>
-        private static AgeTransform Card(AgeTransform common, AgeTransform widget)
-        {
-            AgeTransform at = widget;
-            for (int depth = 0; at != null && depth < MaxAncestors; depth++)
-            {
-                if (ReferenceEquals(at.Parent, common))
-                {
-                    return at;
-                }
-
-                at = at.Parent;
-            }
-
-            return null;
-        }
-
         private static object RegionOf(List<AgeTransform> cards, AgeTransform widget)
         {
             for (int i = 0; i < cards.Count; i++)
             {
-                if (IsUnder(widget, cards[i]))
+                if (AgeWidgets.Under(widget, cards[i]))
                 {
                     return "notification:body/" + i + "/" + cards[i].name;
                 }
             }
 
             return BodyRegion;
-        }
-
-        private static bool IsUnder(AgeTransform widget, AgeTransform ancestor)
-        {
-            AgeTransform at = widget;
-            for (int depth = 0; at != null && depth < MaxAncestors; depth++)
-            {
-                if (ReferenceEquals(at, ancestor))
-                {
-                    return true;
-                }
-
-                at = at.Parent;
-            }
-
-            return false;
         }
 
         /// <summary>Where two widgets' chains meet - the innermost thing the popup drew both of them
@@ -1031,7 +999,7 @@ namespace ES2Access.Screens
             AgeTransform at = first;
             for (int depth = 0; at != null && depth < MaxAncestors; depth++)
             {
-                if (IsUnder(second, at))
+                if (AgeWidgets.Under(second, at))
                 {
                     return at;
                 }
@@ -1071,7 +1039,7 @@ namespace ES2Access.Screens
             // an entry of its own, aimed at the piece a mouse would have pointed at.
             TooltipChildren.Carried carried = TooltipChildren.Split(explaining);
             AgeTooltip tooltip = carried.Own;
-            AgeTransform hover = tooltip == null ? null : Holder(tooltip);
+            AgeTransform hover = tooltip == null ? null : AgeWidgets.TooltipOwner(tooltip);
 
             // A table line the game wired a click to is a control the player works, exactly as it is in
             // a popup whose captions let the same lines read as a sheet (<see cref="RowNode"/>) - so it
@@ -1106,8 +1074,10 @@ namespace ES2Access.Screens
 
             vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip));
             vtable.OnFocusVisual =
-                hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
-            vtable.OnBlurVisual = ReleasePointer;
+                hover == null
+                    ? AgeWidgets.ReleasePointer
+                    : () => PointerFocus.MoveTo(hover, tooltip);
+            vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
             vtable.PointsAt = () => hover == null ? null : tooltip;
 
             AgeTransform named = group ?? it[0].Widget;
@@ -1157,11 +1127,11 @@ namespace ES2Access.Screens
 
                 if (Holds(row, card.AllyLabel))
                 {
-                    return Titled("%MinorFactionCurrentAllyTitle");
+                    return AgeText.Title("%MinorFactionCurrentAllyTitle");
                 }
 
                 return Holds(row, card.RelationLabel)
-                    ? Titled("%MinorFactionRelationTitle")
+                    ? AgeText.Title("%MinorFactionRelationTitle")
                     : null;
             }
             catch (Exception)
@@ -1182,12 +1152,6 @@ namespace ES2Access.Screens
             }
 
             return false;
-        }
-
-        private static string Titled(string key)
-        {
-            string text = AgeText.Clean(Gui.Localize(key));
-            return string.IsNullOrEmpty(text) || text[0] == '%' ? null : text;
         }
 
         private static List<AgeTooltip> Single(AgeTooltip tooltip)
@@ -1257,7 +1221,7 @@ namespace ES2Access.Screens
                     || !Painted(line.Owner, root)
                     || PartOf(line.Widget, controls)
                     || IsWords(line, words)
-                    || IsIn(line.Widget, dossier)
+                    || AgeWidgets.Under(line.Widget, dossier)
                 )
                 {
                     continue;
@@ -1347,18 +1311,13 @@ namespace ES2Access.Screens
             return panel == null || !Open(panel) ? null : panel.AgeTransform;
         }
 
-        private static bool IsIn(AgeTransform widget, AgeTransform ancestor)
-        {
-            return ancestor != null && IsUnder(widget, ancestor);
-        }
-
         /// <summary>Which of the table's lines this widget was drawn inside, or null where it was drawn
         /// outside all of them - a caption band, a totals footer.</summary>
         private static AgeTransform In(AgeTransform widget, List<AgeTransform> lines)
         {
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
-                if (IsUnder(widget, lines[i]))
+                if (AgeWidgets.Under(widget, lines[i]))
                 {
                     return lines[i];
                 }
@@ -1415,22 +1374,9 @@ namespace ES2Access.Screens
         /// is one - which is the whole thing, not the first words in it - else the first line.</summary>
         private static AgeTransform Anchor(List<Line> row)
         {
-            AgeTransform holder = row[0].Tooltip == null ? null : Holder(row[0].Tooltip);
+            AgeTransform holder =
+                row[0].Tooltip == null ? null : AgeWidgets.TooltipOwner(row[0].Tooltip);
             return holder ?? row[0].Widget;
-        }
-
-        /// <summary>The widget a tooltip is attached to - what has to be pointed at for the game to
-        /// draw it, which for a row's explaining tooltip is never the label inside the row.</summary>
-        private static AgeTransform Holder(AgeTooltip tooltip)
-        {
-            try
-            {
-                return tooltip.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         /// <summary>The tooltip, unless its words are the words already being read - the game both
@@ -1527,46 +1473,17 @@ namespace ES2Access.Screens
                 }
 
                 AgeControlButton button = Button(window, ShowLocationButton);
-                return button != null && LaidOut(button.AgeTransform, Root(window));
+                // The LAYOUT question, not the painted one: forty-one of the sixty-nine prefabs
+                // bind a show-location button their layout never holds, an orphan with no parent
+                // at all (ES2 facts), and that orphan is what has to be caught. Painted is the wrong
+                // test here because a CLOSED popup draws nothing at all, so it answers false for every
+                // notification on the strip - where the go-to-location key is most of the time
+                // (measured 2026-08-22: the hint and the key both vanished from every strip row).
+                return button != null && AgeWidgets.Under(button.AgeTransform, Root(window));
             }
             catch (Exception e)
             {
                 Log.Warn("notification: asking whether it draws a show-location threw: " + e);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Whether a widget is part of the window's own LAYOUT - its parent chain reaches the
-        /// window's root - without asking whether anything is being drawn right now.
-        ///
-        /// <see cref="Painted"/> is the question for a popup that is UP: is the player seeing this.
-        /// This is the question for one that is not, and the two are different for exactly the reason
-        /// <see cref="Painted"/> exists: forty-one of the sixty-nine prefabs bind a show-location
-        /// button their layout never holds, an orphan with no parent at all (ES2 facts). The orphan is
-        /// what has to be caught, and a closed popup draws nothing at all - so asking
-        /// <see cref="Painted"/> of one answers false for every notification on the strip, which is
-        /// where the go-to-location key is most of the time (measured 2026-08-22: the hint and the
-        /// key both vanished from every strip row).
-        /// </summary>
-        private static bool LaidOut(AgeTransform widget, AgeTransform root)
-        {
-            try
-            {
-                AgeTransform at = widget;
-                for (
-                    int depth = 0;
-                    at != null && !ReferenceEquals(at, root) && depth < MaxAncestors;
-                    depth++
-                )
-                {
-                    at = at.Parent;
-                }
-
-                return ReferenceEquals(at, root) && root != null;
-            }
-            catch (Exception)
-            {
                 return false;
             }
         }
@@ -1698,7 +1615,7 @@ namespace ES2Access.Screens
         private static bool Held(NotificationWindow window, AgeTransform widget)
         {
             AgeTransform root = Root(window);
-            return root != null && IsUnder(widget, root);
+            return root != null && AgeWidgets.Under(widget, root);
         }
 
         // ---- the table a popup drew its content as ----
@@ -1781,7 +1698,11 @@ namespace ES2Access.Screens
                 foreach (AgeControlScrollView view in root.GetComponentsInChildren<AgeControlScrollView>(true))
                 {
                     AgeTransform widget = view == null ? null : view.AgeTransform;
-                    if (widget == null || !Visible(widget) || !InBody(widget, top, bottom))
+                    if (
+                        widget == null
+                        || !AgeWidgets.Visible(widget)
+                        || !InBody(widget, top, bottom)
+                    )
                     {
                         continue;
                     }
@@ -1809,7 +1730,7 @@ namespace ES2Access.Screens
             // drop, so the popup is not a table - it is a page with a list on it.
             foreach (Control control in inside)
             {
-                if (!IsUnder(control.Widget, view))
+                if (!AgeWidgets.Under(control.Widget, view))
                 {
                     return null;
                 }
@@ -1819,7 +1740,7 @@ namespace ES2Access.Screens
             List<Line> within = new List<Line>();
             foreach (Line line in body)
             {
-                (IsUnder(line.Widget, view) ? within : headers).Add(line);
+                (AgeWidgets.Under(line.Widget, view) ? within : headers).Add(line);
             }
 
             // Column names are written on one line across the top of the list, and they are the only
@@ -2033,7 +1954,7 @@ namespace ES2Access.Screens
         {
             for (int i = 0; i < ancestors.Count; i++)
             {
-                if (IsUnder(widget, ancestors[i]))
+                if (AgeWidgets.Under(widget, ancestors[i]))
                 {
                     return true;
                 }
@@ -2105,7 +2026,7 @@ namespace ES2Access.Screens
                         {
                             GraphNodes.LabelPart(() => RowText(band)),
                         },
-                        OnFocusVisual = ReleasePointer,
+                        OnFocusVisual = AgeWidgets.ReleasePointer,
                     }
                 );
             }
@@ -2195,10 +2116,12 @@ namespace ES2Access.Screens
             // The tooltip hangs off the picture inside the cell rather than the cell, and pointing at
             // anything else draws nothing.
             AgeTooltip tooltip = shown;
-            AgeTransform hover = tooltip == null ? null : Holder(tooltip);
+            AgeTransform hover = tooltip == null ? null : AgeWidgets.TooltipOwner(tooltip);
             vtable.OnFocusVisual =
-                hover == null ? ReleasePointer : () => PointerFocus.MoveTo(hover, tooltip);
-            vtable.OnBlurVisual = ReleasePointer;
+                hover == null
+                    ? AgeWidgets.ReleasePointer
+                    : () => PointerFocus.MoveTo(hover, tooltip);
+            vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
             vtable.PointsAt = () => hover == null ? null : tooltip;
             return vtable;
         }
@@ -2382,7 +2305,7 @@ namespace ES2Access.Screens
                 // would drop, exactly as for a scrolling one.
                 foreach (Control control in inside)
                 {
-                    if (!IsUnder(control.Widget, table))
+                    if (!AgeWidgets.Under(control.Widget, table))
                     {
                         return null;
                     }
@@ -2394,7 +2317,7 @@ namespace ES2Access.Screens
                 // would declare it twice. The rows stay.
                 foreach (Control control in controls)
                 {
-                    if (IsUnder(control.Widget, table) && !Has(inside, control.Widget))
+                    if (AgeWidgets.Under(control.Widget, table) && !Has(inside, control.Widget))
                     {
                         return null;
                     }
@@ -2496,8 +2419,8 @@ namespace ES2Access.Screens
                     InBody(line.Widget, top, bottom)
                     && !PartOf(line.Widget, controls)
                     && !IsWords(line, words)
-                    && !IsUnder(line.Widget, table)
-                    && !IsIn(line.Widget, dossier)
+                    && !AgeWidgets.Under(line.Widget, table)
+                    && !AgeWidgets.Under(line.Widget, dossier)
                 )
                 {
                     outside.Add(line);
@@ -2517,7 +2440,7 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = AgeWidgets.DrawnChild(children, i);
-                if (child != null && Visible(child) && Draws(child, 0))
+                if (child != null && AgeWidgets.Visible(child) && Draws(child, 0))
                 {
                     rows.Add(child);
                 }
@@ -2779,7 +2702,7 @@ namespace ES2Access.Screens
                 vtable = GraphNodes.Button(
                     () => Caption(it),
                     () => Press(it),
-                    () => Enabled(it.Widget),
+                    () => AgeWidgets.Operable(it.Widget),
                     explains,
                     it.Drawn
                 );
@@ -2790,7 +2713,7 @@ namespace ES2Access.Screens
                     () => Caption(it),
                     () => State(it.Toggle),
                     () => Press(it),
-                    () => Enabled(it.Widget),
+                    () => AgeWidgets.Operable(it.Widget),
                     it.Drawn,
                     explains
                 );
@@ -2809,8 +2732,7 @@ namespace ES2Access.Screens
                     && !string.IsNullOrEmpty(again.OnDoubleClickMethod)
                 )
                 {
-                    vtable.OnDoubleClick = () =>
-                        Send(again.OnDoubleClickObject, again.OnDoubleClickMethod, again.gameObject);
+                    vtable.OnDoubleClick = () => AgeWidgets.DoubleClick(again);
                 }
             }
             else
@@ -2819,7 +2741,7 @@ namespace ES2Access.Screens
                     () => Caption(it),
                     () => State(it.Toggle),
                     () => Press(it),
-                    () => Enabled(it.Widget),
+                    () => AgeWidgets.Operable(it.Widget),
                     explains,
                     it.Drawn
                 );
@@ -2840,7 +2762,7 @@ namespace ES2Access.Screens
             {
                 vtable.OnFocusVisual = () =>
                     PointerFocus.MoveTo(it.Button, explains, it.Widget);
-                vtable.OnBlurVisual = ReleasePointer;
+                vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
                 vtable.PointsAt = () => explains;
             }
 
@@ -3233,7 +3155,7 @@ namespace ES2Access.Screens
         )
         {
             AgeControl control = toggle == null ? (AgeControl)button : toggle;
-            if (control == null || !Visible(control.AgeTransform))
+            if (control == null || !AgeWidgets.Visible(control.AgeTransform))
             {
                 return;
             }
@@ -3768,7 +3690,7 @@ namespace ES2Access.Screens
                     Gateways = w =>
                         Out(
                             To(
-                                Transform(
+                                AgeWidgets.Transform(
                                     (
                                         (ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w
                                     ).academyScreen
@@ -3826,7 +3748,9 @@ namespace ES2Access.Screens
         {
             AcademyRolesReportPanel panel = window.RoleLineTable;
             return Some(
-                panel == null || !Visible(window.RolesPanel) ? null : panel.RoleLineTable
+                panel == null || !AgeWidgets.Visible(window.RolesPanel)
+                    ? null
+                    : panel.RoleLineTable
             );
         }
 
@@ -3836,19 +3760,11 @@ namespace ES2Access.Screens
         private static IList<AgeTransform> Roles(AcademyRoleNotificationWindow window)
         {
             AcademyRolesReportPanel panel = window.RoleLineTable;
-            return Some(panel == null || !Visible(panel.AgeTransform) ? null : panel.RoleLineTable);
-        }
-
-        private static AgeTransform Transform(AgeControl control)
-        {
-            try
-            {
-                return control == null ? null : control.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return Some(
+                panel == null || !AgeWidgets.Visible(panel.AgeTransform)
+                    ? null
+                    : panel.RoleLineTable
+            );
         }
 
         /// <summary>The terms of a diplomatic offer: the ones that bind both sides, then what each side
@@ -3951,7 +3867,7 @@ namespace ES2Access.Screens
             {
                 foreach (AgeTransform container in variant.Choices(window))
                 {
-                    if (container == null || !Visible(container))
+                    if (container == null || !AgeWidgets.Visible(container))
                     {
                         continue;
                     }
@@ -4101,7 +4017,7 @@ namespace ES2Access.Screens
         /// whole card the switch, else the one inside it.</summary>
         private static AgeControlToggle Switch(AgeTransform line)
         {
-            if (line == null || !Visible(line))
+            if (line == null || !AgeWidgets.Visible(line))
             {
                 return null;
             }
@@ -4112,7 +4028,7 @@ namespace ES2Access.Screens
                 toggle = line.GetComponentInChildren<AgeControlToggle>(true);
             }
 
-            return toggle != null && Visible(toggle.AgeTransform) ? toggle : null;
+            return toggle != null && AgeWidgets.Visible(toggle.AgeTransform) ? toggle : null;
         }
 
         /// <summary>What a gateway button is called: the caption where the popup wrote one, else the
@@ -4142,14 +4058,14 @@ namespace ES2Access.Screens
         {
             try
             {
-                if (widget == null || !Visible(widget))
+                if (widget == null || !AgeWidgets.Visible(widget))
                 {
                     return null;
                 }
 
                 AgeControlButton button =
                     AgeWidgets.Button(widget) ?? widget.GetComponentInChildren<AgeControlButton>(true);
-                return button != null && Visible(button.AgeTransform) ? button : null;
+                return button != null && AgeWidgets.Visible(button.AgeTransform) ? button : null;
             }
             catch (Exception)
             {
@@ -4264,8 +4180,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                string title = AgeText.Clean(Gui.Localize(ConfirmTitleKey));
-                return string.IsNullOrEmpty(title) || Gui.IsLocalizationKey(title) ? null : title;
+                return AgeText.Title(ConfirmTitleKey);
             }
             catch (Exception)
             {
@@ -4308,7 +4223,9 @@ namespace ES2Access.Screens
             }
 
             AgePrimitiveLabel wired =
-                own != null && Visible(own.AgeTransform) && !string.IsNullOrEmpty(AgeText.Label(own))
+                own != null
+                && AgeWidgets.Visible(own.AgeTransform)
+                && !string.IsNullOrEmpty(AgeText.Label(own))
                     ? own
                     : Value(window, NotificationDescription) as AgePrimitiveLabel;
             return wired != null && Held(window, wired.AgeTransform) ? wired : null;
@@ -4533,32 +4450,15 @@ namespace ES2Access.Screens
             {
                 if (control.Toggle != null)
                 {
-                    control.Toggle.State = !control.Toggle.State;
-                    Send(
-                        control.Toggle.OnSwitchObject,
-                        control.Toggle.OnSwitchMethod,
-                        control.Toggle.gameObject
-                    );
+                    AgeWidgets.Toggle(control.Toggle);
                     return;
                 }
 
-                Send(
-                    control.Button.OnActivateObject,
-                    control.Button.OnActivateMethod,
-                    control.Button.gameObject
-                );
+                AgeWidgets.Press(control.Button);
             }
             catch (Exception e)
             {
                 Log.Warn("notification: pressing " + control.Key + " threw: " + e);
-            }
-        }
-
-        private static void Send(GameObject target, string method, GameObject sender)
-        {
-            if (target != null && !string.IsNullOrEmpty(method))
-            {
-                target.SendMessage(method, sender, SendMessageOptions.DontRequireReceiver);
             }
         }
 
@@ -4662,7 +4562,7 @@ namespace ES2Access.Screens
         {
             for (int i = 0; groups != null && i < groups.Length; i++)
             {
-                if (Visible(groups[i]))
+                if (AgeWidgets.Visible(groups[i]))
                 {
                     return true;
                 }
@@ -4719,7 +4619,7 @@ namespace ES2Access.Screens
                 }
 
                 string text =
-                    title || (drawn != null && Visible(drawn.AgeTransform))
+                    title || (drawn != null && AgeWidgets.Visible(drawn.AgeTransform))
                         ? AgeText.Label(drawn)
                         : null;
                 if (!string.IsNullOrEmpty(text) && (title || !Unwritten(text)))
@@ -4874,8 +4774,6 @@ namespace ES2Access.Screens
             return _windows;
         }
 
-        private static readonly Action ReleasePointer = PointerFocus.Release;
-
         // The base class keeps its skeleton behind protected properties, so every popup type is read
         // through the one set of accessors rather than sixty sets of fields.
         private static readonly PropertyInfo ModalButton = Member("ModalButton");
@@ -4951,38 +4849,12 @@ namespace ES2Access.Screens
             }
         }
 
-        // A control inside a group the popup has collapsed is still marked visible itself, so the
-        // chain above it is what says whether the player can see it.
-        private static bool Visible(AgeTransform widget)
-        {
-            try
-            {
-                AgeTransform at = widget;
-                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
-                {
-                    // Infrastructure: this file's own ancestor-walking Visible, the primitive the readings
-                    // above are built out of.
-                    if (!at.Visible)
-                    {
-                        return false;
-                    }
-
-                    at = at.Parent;
-                }
-
-                return widget != null;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         /// <summary>
         /// Whether the popup is really drawing this, or has folded it away.
         ///
         /// A report popup collapses its detail panel by FADING it: the panel keeps <c>Visible</c> true,
-        /// keeps its rectangle and keeps every word inside it at alpha 1, so <see cref="Visible"/> says
+        /// keeps its rectangle and keeps every word inside it at alpha 1, so
+        /// <see cref="AgeWidgets.Visible"/> says
         /// yes to a whole "Damage Report" the screen shows nothing of. Measured on
         /// <c>IonWaveReportNotificationWindow</c> with the report collapsed: <c>ReportPanel</c> visible,
         /// alpha 0, all five of its children visible at alpha 1, every ancestor above it at alpha 1.
@@ -5005,7 +4877,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                if (widget == null || !Visible(widget))
+                if (widget == null || !AgeWidgets.Visible(widget))
                 {
                     return false;
                 }
@@ -5035,16 +4907,5 @@ namespace ES2Access.Screens
             }
         }
 
-        private static bool Enabled(AgeTransform widget)
-        {
-            try
-            {
-                return widget != null && widget.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
     }
 }

@@ -351,16 +351,7 @@ namespace ES2Access.Screens
 
         private static UserInstructionsWindow InstructionsWindow()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<UserInstructionsWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<UserInstructionsWindow>();
         }
 
         // ---- the empire ----
@@ -487,21 +478,6 @@ namespace ES2Access.Screens
             {
                 cells[i].Row = named;
                 cells[i].Region = region;
-            }
-        }
-
-        /// <summary>The game's own word for something, or nothing where the corpus never wrote one - a
-        /// key that came back as itself is parked text, not a name to say over a row.</summary>
-        private static string GameWord(string key)
-        {
-            try
-            {
-                string said = AgeText.Clean(Gui.Localize(key));
-                return string.IsNullOrEmpty(said) || said[0] == '%' ? null : said;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
@@ -1090,25 +1066,25 @@ namespace ES2Access.Screens
             {
                 int from = cells.Count;
                 AddLifeforce(cells, window.LifeforceStatusPanel);
-                Name(cells, from, GameWord("%NetEmpireLifeforceTitle"), "lifeforce");
+                Name(cells, from, AgeText.Title("%NetEmpireLifeforceTitle"), "lifeforce");
                 from = cells.Count;
                 AddGenes(cells, window.GeneManagementShortcutPanel);
-                Name(cells, from, GameWord("%AssimilationShortcutTitle"), "genes");
+                Name(cells, from, AgeText.Title("%AssimilationShortcutTitle"), "genes");
                 from = cells.Count;
                 AddTimeBubbles(cells, window.TimeBubbleStockPanel);
                 Name(cells, from, ModStrings.Get(ModStrings.HudSingularitiesPanel), "singularities");
                 from = cells.Count;
                 AddGoldenAge(cells, window.GoldenAgePanel);
-                Name(cells, from, GameWord("%GoldenAgeTitle"), "golden-age");
+                Name(cells, from, AgeText.Title("%GoldenAgeTitle"), "golden-age");
                 from = cells.Count;
                 AddPirateMark(cells, window.PirateMarkPanel);
                 Name(cells, from, ModStrings.Get(ModStrings.HudPirateMarkPanel), "pirate-mark");
                 from = cells.Count;
                 AddHonor(cells, window.HonorManagementPanel);
-                Name(cells, from, GameWord("%HonorTitle"), "honor");
+                Name(cells, from, AgeText.Title("%HonorTitle"), "honor");
                 from = cells.Count;
                 AddRelics(cells, window.RelicManagementPanel);
-                Name(cells, from, GameWord("%RelicsTitle"), "relics");
+                Name(cells, from, AgeText.Title("%RelicsTitle"), "relics");
             }
             catch (Exception e)
             {
@@ -1561,7 +1537,9 @@ namespace ES2Access.Screens
         /// Asked about a property it has no GUI element for, the game answers with a pink "(missing
         /// GuiElement)" placeholder written for its own designers; asked about one whose title is not in
         /// the localization, it answers with the key. Neither is a name, and both are on properties
-        /// these panels really use (measured: MothershipCount, TempleRelics, FIDIRelics).
+        /// these panels really use (measured: MothershipCount, TempleRelics, FIDIRelics). The
+        /// still-a-key half of that is <see cref="AgeText.Title"/>; the GUI-element test is this
+        /// page's own.
         /// </summary>
         private static string PropertyTitle(string property)
         {
@@ -1572,8 +1550,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string title = AgeText.Clean(Gui.GetLocalizedTitle(property));
-                return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+                return AgeText.Title(Gui.GetLocalizedTitle(property));
             }
             catch (Exception)
             {
@@ -1912,10 +1889,8 @@ namespace ES2Access.Screens
         {
             try
             {
-                PinnedQuestWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<PinnedQuestWindow>(false)
-                    : null;
-                if (window == null || !window.Shown)
+                PinnedQuestWindow window = GameWindows.Shown<PinnedQuestWindow>();
+                if (window == null)
                 {
                     return null;
                 }
@@ -2219,9 +2194,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                NotificationItemsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<NotificationItemsWindow>(false)
-                    : null;
+                NotificationItemsWindow window = GameWindows.Of<NotificationItemsWindow>();
                 return window == null
                     ? null
                     : AgeWidgets.ChildNamed(window.AgeTransform, "BaseTriangleBackground", 3);
@@ -2357,9 +2330,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                NotificationItemsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<NotificationItemsWindow>(false)
-                    : null;
+                NotificationItemsWindow window = GameWindows.Of<NotificationItemsWindow>();
                 return window == null
                     ? NoItems
                     : window.GetComponentsInChildren<NotificationItem>(true);
@@ -2992,26 +2963,12 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The window field of that name, looked up once and remembered: these are read every
+        /// frame the clock is running, and the lookup itself is
+        /// <see cref="GameHandlers.Field"/>.</summary>
         private static FieldInfo TimerField(string name, ref FieldInfo cache)
         {
-            if (cache != null)
-            {
-                return cache;
-            }
-
-            try
-            {
-                cache = typeof(EndTurnWindow).GetField(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-            }
-            catch (Exception)
-            {
-                cache = null;
-            }
-
-            return cache;
+            return cache = cache ?? GameHandlers.Field(typeof(EndTurnWindow), name);
         }
 
         /// <summary>The button's own caption, which the game writes over two lines and rewrites while
@@ -3411,30 +3368,12 @@ namespace ES2Access.Screens
 
         internal static EndTurnWindow TurnWindow()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<EndTurnWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<EndTurnWindow>();
         }
 
         private static GameOverlayWindow OverlayWindow()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GameOverlayWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GameOverlayWindow>();
         }
     }
 }

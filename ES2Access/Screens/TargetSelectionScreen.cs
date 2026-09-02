@@ -378,16 +378,7 @@ namespace ES2Access.Screens
 
         private static TargetSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<TargetSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<TargetSelectionModalWindow>();
         }
     }
 
@@ -484,16 +475,7 @@ namespace ES2Access.Screens
 
         private static GroundBattleTargetSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GroundBattleTargetSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GroundBattleTargetSelectionModalWindow>();
         }
     }
 }

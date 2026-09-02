@@ -492,7 +492,7 @@ namespace ES2Access.Screens
             BattleRosters.FlotillaExtras extras
         )
         {
-            BattleRosters.Roster(builder, Widget(panel), prefix, extras);
+            BattleRosters.Roster(builder, AgeWidgets.Transform(panel), prefix, extras);
         }
 
         /// <summary>
@@ -521,7 +521,7 @@ namespace ES2Access.Screens
             return new BattleRosters.FlotillaExtras
             {
                 Drawn = line => AgeWidgets.DrawnLabel(CommandPoints(Card(it, line))),
-                Tooltip = line => AgeWidgets.Raw(Widget((GuiPanel)Card(it, line))),
+                Tooltip = line => AgeWidgets.Raw(AgeWidgets.Transform((GuiPanel)Card(it, line))),
                 Row = (line, vtable) => Destination(it, line, vtable),
                 Ship = (line, item, vtable) => Arrangeable(it, line, item, vtable),
             };
@@ -963,15 +963,7 @@ namespace ES2Access.Screens
         /// <summary>Which page's row the cursor is on, or -1 for anywhere else.</summary>
         private static int FocusedPage()
         {
-            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
-            string structural = key == null ? null : key.StructuralKey as string;
-            if (structural == null || !structural.StartsWith(StatPageKey, StringComparison.Ordinal))
-            {
-                return -1;
-            }
-
-            int page;
-            return int.TryParse(structural.Substring(StatPageKey.Length), out page) ? page : -1;
+            return ModEntry.Navigator == null ? -1 : ModEntry.Navigator.FocusedIndex(StatPageKey);
         }
 
         /// <summary>The four pages, as the things they say rather than as the order the prefab happens
@@ -992,17 +984,20 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform panel = Panel(window, index);
-                if (panel != null && panel == Widget(window.BattlePowerGauge))
+                if (panel != null && panel == AgeWidgets.Transform(window.BattlePowerGauge))
                 {
                     return Stats.Military;
                 }
 
-                if (panel != null && panel == Parent(Widget(window.EnergyPowerGauge)))
+                if (panel != null && panel == Parent(AgeWidgets.Transform(window.EnergyPowerGauge)))
                 {
                     return Stats.Damage;
                 }
 
-                if (panel != null && panel == Parent(Widget(window.ShortRangePowerGauge)))
+                if (
+                    panel != null
+                    && panel == Parent(AgeWidgets.Transform(window.ShortRangePowerGauge))
+                )
                 {
                     return Stats.Ranges;
                 }
@@ -1196,10 +1191,10 @@ namespace ES2Access.Screens
             AgeTransform panel
         )
         {
-            AgeTransform balance = Widget(window.BattlePowerGauge);
-            AgeTransform energy = Widget(window.EnergyPowerGauge);
-            AgeTransform physical = Widget(window.PhysicalPowerGauge);
-            AgeTransform shortRange = Widget(window.ShortRangePowerGauge);
+            AgeTransform balance = AgeWidgets.Transform(window.BattlePowerGauge);
+            AgeTransform energy = AgeWidgets.Transform(window.EnergyPowerGauge);
+            AgeTransform physical = AgeWidgets.Transform(window.PhysicalPowerGauge);
+            AgeTransform shortRange = AgeWidgets.Transform(window.ShortRangePowerGauge);
             if (panel != null && panel == balance)
             {
                 return new[] { balance };
@@ -1215,8 +1210,8 @@ namespace ES2Access.Screens
                 return new[]
                 {
                     shortRange,
-                    Widget(window.MediumRangePowerGauge),
-                    Widget(window.LongRangePowerGauge),
+                    AgeWidgets.Transform(window.MediumRangePowerGauge),
+                    AgeWidgets.Transform(window.LongRangePowerGauge),
                 };
             }
 
@@ -1484,31 +1479,9 @@ namespace ES2Access.Screens
             string method
         )
         {
-            try
-            {
-                AgeControlButton[] buttons =
-                    window.AgeTransform.GetComponentsInChildren<AgeControlButton>(true);
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    AgeControlButton button = buttons[i];
-                    if (
-                        button != null
-                        && button.OnActivateMethod == method
-                        // Candidate choice, not existence: several buttons share a handler and the drawn
-                        // one is the live one. The gate can only drop a node, never pick.
-                        && AgeWidgets.Visible(button.AgeTransform)
-                    )
-                    {
-                        return button.AgeTransform;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("advanced play: looking for " + method + " threw: " + e);
-            }
-
-            return null;
+            return AgeWidgets.Transform(
+                AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, method)
+            );
         }
 
         /// <summary>Who is leading this side, and the hero commanding it where there is one - the portrait
@@ -1688,42 +1661,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Widget(GuiPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(BattlePowerGauge gauge)
-        {
-            try
-            {
-                return gauge == null ? null : gauge.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static AdvancedEncounterPlayModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<AdvancedEncounterPlayModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<AdvancedEncounterPlayModalWindow>();
         }
 
         /// <summary>Where this screen is drawn, for the tooltip audit (see

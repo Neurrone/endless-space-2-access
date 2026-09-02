@@ -320,7 +320,7 @@ namespace ES2Access.Screens
                     onTheLabel ? drawing.AgeTransform : star.AgeTransform
                 );
             };
-            vtable.OnBlurVisual = ReleasePointer;
+            vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
 
             // Right means "tell me what is inside this", and what is inside it is whatever the map is
             // drawing there: the circles when the camera is out, the orbital cards when it is in...
@@ -585,7 +585,7 @@ namespace ES2Access.Screens
             ResourceDepositDefinition definition
         )
         {
-            if (!Visible(table))
+            if (!AgeWidgets.Visible(table))
             {
                 return null;
             }
@@ -601,7 +601,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                AgeTooltip tooltip = Raw(item);
+                AgeTooltip tooltip = AgeWidgets.Raw(item);
                 GuiResourceDepositGroup group =
                     tooltip == null ? null : tooltip.Target as GuiResourceDepositGroup;
                 if (group != null && group.Definition != null
@@ -1336,7 +1336,7 @@ namespace ES2Access.Screens
         )
         {
             AgeTransform button = label == null ? null : label.RequestManagementViewButton;
-            if (button == null || !Visible(button))
+            if (button == null || !AgeWidgets.Visible(button))
             {
                 return;
             }
@@ -1352,9 +1352,9 @@ namespace ES2Access.Screens
                 () => ModStrings.Get(ModStrings.GalaxyManageSystem),
                 () => OpenManagementView(it, at),
                 null,
-                Raw(it)
+                AgeWidgets.Raw(it)
             );
-            PointAt(vtable, it);
+            AgeWidgets.PointAt(vtable, it);
             // SYNTHETIC on purpose, and it is the one node in this file whose nature was measured
             // rather than reasoned. The button is a real widget and declaring it DRAWN was tried
             // (2026-08-27): the map's own label prefab keeps the button Visible at alpha 0.5 while its
