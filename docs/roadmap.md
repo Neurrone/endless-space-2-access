@@ -448,7 +448,7 @@ belong in the files above.
   What is left is MANUAL: a real MOUSE PICK on either entry (the wiring is replay-proved, the
   engine's hit test is not). Open question: whether the pause-menu entry should keep the Options
   gear icon it was cloned from.
-- The Bookmarks tab: SHIPPED 2026-09-02 - the window's fourth and last tab, holding no setting,
+- The Bookmarks tab: SHIPPED 2026-09-02 - the window's third tab, ahead of Controls, holding no setting,
   saying where this campaign's map bookmarks are kept and offering "Copy bookmarks to clipboard"
   and "Open bookmarks folder" (`docs/test-recipes/mod-settings.md`, **The Bookmarks tab**). What is
   left is MANUAL: `Process.Start` on a folder is Windows-verified only (Mac and Linux unproven),

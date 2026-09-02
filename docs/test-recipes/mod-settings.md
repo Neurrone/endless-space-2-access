@@ -45,7 +45,7 @@ drawn in list order.
 order — EVERYWHERE**, main menu included (owner rulings 2026-08-24 and 2026-09-02;
 `ES2Access/UI/ModOptions/`). Their panels are named by index, so node ids read
 `options:0TabPanel/…` (General), `options:1TabPanel/…` (Scanner), `options:2TabPanel/…`
-(Controls) and `options:3TabPanel/…` (Bookmarks). The Scanner tab was in-game only for as long as its columns were a snapshot of the
+(Bookmarks) and `options:3TabPanel/…` (Controls). The Scanner tab was in-game only for as long as its columns were a snapshot of the
 galaxy being played; they come from the game's DATABASES now, so no page needs a game and the
 window is never rebuilt for crossing that line. The key-binding category is CALLED "Controls" —
 the game's own key for its own key-binding page — which is what makes the game's own window logic
@@ -111,8 +111,8 @@ last three carry a tooltip), `options:rows` (absent altogether on an EMPTY page 
 Bookmarks tab**), and
 `options:buttons` (Cancel, Apply — Apply "unavailable, No modification detected." until something
 changes, which is also the proof that the option getter's instance is stable; on the Controls tab a
-third button, "Reset to Defaults", sits between them). The Controls tab is `2TabPanel`, and its row ids are
-`options:2TabPanel/keys/row<hash>c{0,1,2}` (a three-column sheet), the panel's own children
+third button, "Reset to Defaults", sits between them). The Controls tab is `3TabPanel`, and its row ids are
+`options:3TabPanel/keys/row<hash>c{0,1,2}` (a three-column sheet), the panel's own children
 `<index><action key>KeyMapping`.
 
 ## Rebinding without a keyboard
@@ -186,7 +186,7 @@ button" / back onto "Action, Confirm, …"), `ui.down` stays in the column and n
 in ("Cancel, empty, button, 2 of ⟨n⟩"). Cell ids are `options:⟨panel⟩/keys/row⟨hash⟩c⟨0|1|2⟩`.
 
 **A heading is a REGION, never a stop.** The six blocks are six regions of ONE `GraphSheet`
-(`options:2TabPanel/keys/reg:0` … `reg:5`): one sheet with `Region()` called again at each heading,
+(`options:3TabPanel/keys/reg:0` … `reg:5`): one sheet with `Region()` called again at each heading,
 which is what lets Down chain across a boundary while Alt+arrow still jumps (six SHEETS would name
 one region six times — measured 2026-09-02, and the whole page then read as a single block no jump
 could walk). `/input ui.regionNext` five times walks "Buffers, Read previous buffer line, Ctrl + Up
@@ -403,16 +403,16 @@ ModBindings.Persist(); ModSettings.Save();`.
 
 ## The Bookmarks tab
 
-**The window's LAST tab, and it holds no setting** (owner design 2026-09-02;
+**The window's THIRD tab, ahead of Controls, and it holds no setting** (owner design 2026-09-02;
 `ES2Access/UI/ModOptions/BookmarkRows.cs`). Map bookmarks are set on the map and written the
 moment they are set; what this page adds is where they are and how to hand them to somebody else -
-"Bookmarks, tab, Share this game's map bookmarks, 4 of 4". Its rows are built when the window
+"Bookmarks, tab, Share this game's map bookmarks, 3 of 4". Its rows are built when the window
 OPENS (`BookmarkRows.Refill` from `ModOptionsWindow.OnBeginShow`, before the base call, exactly
 like the Scanner tab's), because everything it says depends on state that changes while the window
 is shut.
 
 **FOUR STATES, one caption row over the buttons that make sense under it.** Node ids are
-`options:3TabPanel/bookmarksState` (the caption - a region name and the context word on the rows
+`options:2TabPanel/bookmarksState` (the caption - a region name and the context word on the rows
 under it, never a stop), `.../bookmarksCopy` and `.../bookmarksOpenFolder`. Measured 2026-09-02,
 one `/input` walk each:
 

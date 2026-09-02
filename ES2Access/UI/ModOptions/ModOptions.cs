@@ -58,12 +58,13 @@ namespace ES2Access.UI.ModOptions
 
         /// <summary>
         /// The window's four tabs, in the order they are drawn - General first, then the player's
-        /// own scanner categories, then the mod's key bindings, then Bookmarks. General is where a
+        /// own scanner categories, then Bookmarks, then the mod's key bindings. General is where a
         /// setting that belongs to no other tab lives, and it is first because that is where a
         /// player looks for one; being first also makes it the tab the window OPENS on
-        /// (<see cref="ModOptionsWindow.Load"/> shows the first panel). Bookmarks is LAST because it
-        /// holds no setting at all (<see cref="BookmarkRows"/>): it says where this campaign's map
-        /// bookmarks are kept and offers the two ways of reaching them.
+        /// (<see cref="ModOptionsWindow.Load"/> shows the first panel). Bookmarks holds no setting at
+        /// all (<see cref="BookmarkRows"/>): it says where this campaign's map bookmarks are kept and
+        /// offers the two ways of reaching them; it sits ahead of the key bindings because the
+        /// bindings are the longest page and belong at the end (owner ruling 2026-09-02).
         ///
         /// ALL EXIST EVERYWHERE, main menu included (owner ruling 2026-08-24). The Scanner tab was
         /// in-game only for as long as its columns were a snapshot of the galaxy being played; they
@@ -114,23 +115,23 @@ namespace ES2Access.UI.ModOptions
 
                     _categories.Add(
                         new ModCategory(
-                            KeybindsCategory,
-                            typeof(IModKeybindsService),
-                            new ModKeybindsService(),
-                            () => Gui.Localize(ControlsTitleKey),
-                            () => Gui.Localize(ControlsDescriptionKey),
-                            KeybindRows.Fill
-                        )
-                    );
-
-                    _categories.Add(
-                        new ModCategory(
                             BookmarksCategory,
                             typeof(IModBookmarksService),
                             new ModBookmarksService(),
                             () => ModStrings.Get(ModStrings.ModSettingsBookmarks),
                             () => ModStrings.Get(ModStrings.ModSettingsBookmarksDescription),
                             BookmarkRows.Fill
+                        )
+                    );
+
+                    _categories.Add(
+                        new ModCategory(
+                            KeybindsCategory,
+                            typeof(IModKeybindsService),
+                            new ModKeybindsService(),
+                            () => Gui.Localize(ControlsTitleKey),
+                            () => Gui.Localize(ControlsDescriptionKey),
+                            KeybindRows.Fill
                         )
                     );
                 }
