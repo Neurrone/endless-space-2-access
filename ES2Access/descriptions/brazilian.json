@@ -439,12 +439,12 @@
   ],
   "Vaulters_Outro.LostBack": [
     { "at": 8.21, "end": 8.84, "text": "Vaulters assistem ao lançamento de uma nave." },
-    { "at": 11.554, "end": 12.189, "text": "Tudo escurece até o preto." },
+    { "at": 11.554, "end": 12.189, "text": "Tudo escurece até o negro." },
     { "at": 23.124, "end": 27.882, "text": "No espaço, um anel imenso flutua em órbita acima de Auriga. Um sol brilhante irrompe por trás do horizonte escuro do planeta, lançando raios luminosos no vazio estrelado." }
   ],
   "Vaulters_Outro.LostNotBack": [
     { "at": 8.515, "end": 9.36, "text": "A nave em forma de anel sobe." },
-    { "at": 25.679, "end": 27.882, "text": "Tudo escurece até o preto." }
+    { "at": 25.679, "end": 27.882, "text": "Tudo escurece até o negro." }
   ],
   "Vedt": [
     { "at": 0.5, "end": 3.5, "text": "Em uma savana dourada, capim alto e seco farfalha em torno de rochedos escuros e ásperos." },
@@ -456,14 +456,14 @@
     { "at": 27.39, "end": 28.386, "text": "Ele bate na mesa, espalhando fichas luminosas." },
     { "at": 40.123, "end": 42.379, "text": "Ele joga os braços para trás enquanto uma energia dourada irrompe de seu corpo, os olhos brilhando intensamente." },
     { "at": 50.473, "end": 51.959, "text": "Em armadura de combate, ele salta em meio a uma explosão, disparando uma arma." },
-    { "at": 62.326, "end": 66, "text": "A mulher sorri de canto. Tudo escurece até o preto." }
+    { "at": 62.326, "end": 66, "text": "A mulher sorri de canto. Tudo escurece até o negro." }
   ],
   "Venetians_Outro.LostBack": [
     { "at": 0, "end": 2.137, "text": "Uma mulher pálida, num vestido de gola alta, está sentada sobre um orbe liso, segurando uma esfera dourada luminosa." },
-    { "at": 21.114, "end": 28, "text": "A grade dourada e luminosa sob ela se estende sem fim pelo espaço. Atrás dela, uma vasta nebulosa estrelada gira em verde vibrante. Colunas altíssimas de luz sobem da grade rumo ao cosmos, diminuindo-a diante da imensidão infinita. Tudo escurece até o preto." }
+    { "at": 21.114, "end": 28, "text": "A grade dourada e luminosa sob ela se estende sem fim pelo espaço. Atrás dela, uma vasta nebulosa estrelada gira em verde vibrante. Colunas altíssimas de luz sobem da grade rumo ao cosmos, diminuindo-a diante da imensidão infinita. Tudo escurece até o negro." }
   ],
   "Venetians_Outro.LostNotBack": [
     { "at": 0, "end": 2.318, "text": "Uma mulher pálida, num vestido de gola alta, está sentada sobre um orbe liso, segurando uma esfera dourada luminosa." },
-    { "at": 21.114, "end": 28, "text": "A grade dourada e luminosa sob ela se estende sem fim pelo espaço. Atrás dela, uma vasta nebulosa estrelada gira em verde vibrante. Colunas altíssimas de luz sobem da grade rumo ao cosmos, diminuindo-a diante da imensidão infinita. Tudo escurece até o preto." }
+    { "at": 21.114, "end": 28, "text": "A grade dourada e luminosa sob ela se estende sem fim pelo espaço. Atrás dela, uma vasta nebulosa estrelada gira em verde vibrante. Colunas altíssimas de luz sobem da grade rumo ao cosmos, diminuindo-a diante da imensidão infinita. Tudo escurece até o negro." }
   ]
 }
