@@ -37,11 +37,6 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class MainMenuScreen : Screen
     {
-        /// <summary>The game's own Options entry, which is what its handler
-        /// (<c>OnClickMainMenuSettings</c>) is named after. The mod's settings entry goes straight
-        /// after it.</summary>
-        private const string SettingsEntry = "MainMenuSettings";
-
         public override string Key
         {
             get { return "screen.main-menu"; }
@@ -96,7 +91,7 @@ namespace ES2Access.Screens
                 }
 
                 MainMenuItem entry = item;
-                ControlId id = ControlId.For(item, "mainmenu:" + name);
+                ControlId id = ControlId.For(item, NodeKey(name));
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(entry.TitleLabel),
                     () => Click(name),
@@ -117,7 +112,6 @@ namespace ES2Access.Screens
                 if (subItems.Count == 0)
                 {
                     builder.AddItem(Nodes.Drawn(id, vtable, item));
-                    AddModSettingsAfter(builder, name);
                     continue;
                 }
 
@@ -159,7 +153,6 @@ namespace ES2Access.Screens
                 }
 
                 builder.EndGroup();
-                AddModSettingsAfter(builder, name);
             }
 
             AddNews(builder, window);
@@ -230,12 +223,14 @@ namespace ES2Access.Screens
         /// all here (the entry is a GROUP, and the node has to land after the group closes so that
         /// it is a sibling of Options rather than one of its flyout entries).
         /// </summary>
-        private static void AddModSettingsAfter(GraphBuilder builder, string name)
+        /// <summary>What an entry is keyed under. The mod's own settings entry - a real entry of the
+        /// menu's own now (<see cref="ModSettingsMenuEntry"/>) - keeps the key it had while nothing
+        /// was drawn for it.</summary>
+        private static string NodeKey(string name)
         {
-            if (name == SettingsEntry)
-            {
-                ModSettingsNode.Add(builder, "mainmenu:mod-settings");
-            }
+            return name == ModSettingsMenuEntry.MainMenuEntryName
+                ? ModSettingsMenuEntry.MainMenuNodeKey
+                : "mainmenu:" + name;
         }
 
         /// <summary>

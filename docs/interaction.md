@@ -305,7 +305,7 @@ again, and the act is simply the button's own click: `EndTurnWindow.OnApplyMovem
 rather than doing anything of its own. Silent on success (the arrivals announce themselves through
 the notification watchers), and a refusal reads that button's own node ("Apply movements, button,
 unavailable, …"). **The three turn-corner chords are deliberately adjacent** in `BindKeys`, so they
-are adjacent rows of the Controls tab too (30, 31, 32 of 60).
+are adjacent rows of the Controls tab too (the table is 81 rows as of 2026-09-02).
 **Alt+Left/Right turn the PAGE** (`UiActions.PagePrev/PageNext` → `Screen.PagePrev/PageNext`,
 non-repeating): the previous/next system on the star-system page, planet on the planet page,
 notification on a popup, hero on the academy page — the game's own arrow pair, pressed from anywhere
@@ -1406,8 +1406,9 @@ actually MOVED, in the game's own `InputBinding.ToRegistryString` form; moving a
 default takes the line out again, so a later build changing a default reaches everybody who
 never touched that key.
 
-The rest of the mod's settings window — how a player reaches it, the two tabs, the Scanner tab's
-slot editor — is `docs/test-recipes/mod-settings.md`.
+The rest of the mod's settings window — how a player reaches it (a DRAWN entry titled
+"Accessibility mod settings" on both menus, owner ruling 2026-09-02), the three tabs (General,
+Scanner, Controls) and the Scanner tab's slot editor — is `docs/test-recipes/mod-settings.md`.
 
 Game-mechanism findings (window gates, pool slots, tooltip internals, fleet and quest
 mechanics, the icon numbers) live in the game-facts topic files ([README.md](README.md)) — a new

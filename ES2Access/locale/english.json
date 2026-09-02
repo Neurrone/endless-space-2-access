@@ -58,7 +58,7 @@
   "screen.message-box": "Dialog",
   "screen.options": "Options",
   "screen.mod-settings": "Mod settings",
-  "mod-settings.entry": "Mod settings",
+  "mod-settings.entry": "Accessibility mod settings",
   "mod-settings.general": "General",
   "mod-settings.general-description": "General settings of the accessibility mod",
   "mod-settings.general.cutscene-descriptions": "Video descriptions in cut scenes",

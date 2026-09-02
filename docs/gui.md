@@ -878,3 +878,51 @@ the reasoning. What belongs here is what the ENGINE does, which any second mod w
   (`OnClickMainMenuNewGame`, `...LoadGame`, `...Settings`, `...Exit`, …) — invoke these
   directly (reflection) for deterministic activation, after checking `screen.IsReady` and the
   item's `AgeTransform.Enable`.
+
+## The two menus and their entries (adding one of the mod's own)
+
+Both menus can be given an extra entry without re-implementing anything, and they are given one
+in opposite ways because their entry lists are different KINDS of thing (measured 2026-09-02).
+
+**The main menu's entries are DATA.** `MainMenuScreen.Refresh` reads
+`MainMenuScreenGuiElement.Entries`, calls `MainMenuItemsContainer.ReserveChildren(entries.Length,
+MainMenuItemPrefab, "MainMenuItem")`, then `RefreshChildrenArray(entries, BindMainMenuItem)`.
+`ReserveChildren` only ever ADDS children (:2319-2329) and `RefreshChildrenArray` hides the ones
+past the array's end, so appending an entry to `Entries` is enough: the screen builds, names
+(`MainMenuItem<Name>`), binds, places on the circle and animates the item for it. `Bind` writes
+`Gui.GetTitle(Name)` / `Gui.GetDescription(Name)` every refresh, and an unknown name comes back
+as the raw key, so a mod entry's label and tooltip have to be written again after each bind —
+cheaply, because `AgePrimitiveLabel.Text`'s setter does nothing when the words have not changed
+(:168-189). An unknown name also gets the game's own `MainMenuDefaultLarge` icon, which is what
+every entry it has no picture for gets.
+
+**The main menu's click is a MESSAGE NAMED AFTER THE ENTRY.** `MainMenuItem.OnClickCb` does
+`mainMenuScreen.gameObject.SendMessage("OnClick" + MainMenuEntry.Name, DontRequireReceiver)` with
+no argument, so a receiver is a parameterless public method on a component sitting on the SCREEN's
+GameObject. That is also what the mod's own main-menu screen sends to activate an entry from the
+keyboard, so one receiver serves the mouse and the keyboard and nothing has to be re-aimed.
+
+**The pause menu's entries are a fixed array of prefab instances** — `GameMenuModalWindow`'s
+public `GameMenuItems`, each a `GameMenuItem` (`ButtonAgeTransform`, `BlurGroup`, `IconGroup`,
+`LabelRight`, `LabelLeft`, `Modifier`). An extra one is `InstantiateChild`'d off an existing item
+and appended to that array.
+
+**The ring is a TABLE, not hand-placed rectangles.** `ButtonsCircularTable` has `IsTable = true`
+and `Arrangement = AgeTableArrangement.CIRCLE_EVENLY_SPACED`, and
+`ApplyCircleEvenlySpacedArrangement` (:2881-2895) walks `Children` in order giving each the next
+polar angle. So **where an entry sits round the circle is decided by its position in the child
+list**, and any X or Y written by hand is overwritten the next time the table arranges — the way
+to place a new entry is `transform.SetSiblingIndex` (plus the same move in the AGE `Children`
+list, which is rebuilt from the Unity child order) and then `ArrangeChildren()`, which spreads
+seven entries exactly as it spread six. Removing the child and arranging again restores the
+original ring to the pixel.
+
+**What `GameMenuModalWindow.Load` does ONCE therefore has to be said again** (:76-95): each
+item's label goes on the side away from the centre (`ShowRightLabel` when
+`item.AgeTransform.X > ButtonsCircularTable.CenterX`, else `ShowLeftLabel`), and the show
+animation's per-item delays are staggered by index —
+`spread = Circle.AgeFirstModifierSet.ModifierItems[0].Duration / count`,
+`delay = window.AgeTransform.AgeFirstModifierSet.ModifierItems[0].Duration * 0.5 + spread * 0.5`,
+`ReverseStartDelay = total - delay`. Re-running that arithmetic over the entries that are LEFT
+reproduces the game's own numbers exactly, so it doubles as the restore. The per-item first
+modifier animates `Alpha` and nothing else, so it never fights a placement.

@@ -3,20 +3,31 @@
 The clone of the game's options window: getting there, the key-binding table, the Scanner tab
 and the physical key paths.
 
-## Screen model: a menu entry over a cloned options window
+## Screen model: a DRAWN menu entry over a cloned options window
 
-**THE MOD'S OWN SETTINGS ARE A MENU ENTRY, NOT A HOTKEY** (owner ruling 2026-08-23;
-`ES2Access/UI/ModOptions/ModSettingsNode.cs`). One synthetic `GraphNodes.Button` labelled
-"Mod settings" (`mod-settings.entry`), declared immediately AFTER the game's own Options entry
-on the main menu (`mainmenu:mod-settings`, after the `MainMenuSettings` group closes — Options
-is an entry with a flyout, so the node has to be a sibling of the group and not one of its
-children) and on the pause menu (`gamemenu:mod-settings`, after the entry whose button is wired
-to `OnOptionsCb`). Nothing is drawn for it, so a sighted player never meets it — the shape the
-graph already uses for things the game does not draw. **No key binding, and no gating**: both
-menus are static and are exactly where the game opens its own Options, and Apply, Cancel and
-Escape all pop back to the menu by the game's own hand. Enter shows the mod's cloned options
-window with the skin matching the menu (`OutGameSkin = !Gui.IsInGame`). Ctrl+M was weighed and
-set aside; it remains verified free should a hotkey ever be wanted.
+**THE MOD'S OWN SETTINGS ARE A MENU ENTRY, NOT A HOTKEY** (owner ruling 2026-08-23), **AND THAT
+ENTRY IS DRAWN** (owner ruling 2026-09-02; `ES2Access/UI/ModOptions/ModSettingsMenuEntry.cs`,
+which replaced the synthetic `ModSettingsNode.cs`). It is titled **"Accessibility mod settings"**
+(`mod-settings.entry`) and sits immediately after the game's own Options entry on both menus,
+keyed as before — `mainmenu:mod-settings` and `gamemenu:mod-settings` — but now a `Nodes.Drawn`
+over a real entry of the menu's own, so a sighted player meets it too and can click it with the
+mouse. `DevProbe.Ghosts()` on either menu reports `synthetic: 0`. It carries **no tooltip**: the
+game's own entries all describe themselves and there is no owner-approved sentence for this one.
+**No key binding, and no gating beyond `ModOptions.CanOpen()`** (which is what decides whether the
+entry is added at all): both menus are static and are exactly where the game opens its own
+Options, and Apply, Cancel and Escape all pop back to the menu by the game's own hand. Enter shows
+the mod's cloned options window with the skin matching the menu (`OutGameSkin = !Gui.IsInGame`).
+Ctrl+M was weighed and set aside; it remains verified free should a hotkey ever be wanted.
+
+**How each menu is given the entry** — neither menu is re-implemented; each is handed one more of
+its own entries (the game mechanisms are in `docs/gui.md`, **The two menus and their entries**).
+Pause menu: the Options item is cloned into `GameMenuModalWindow.GameMenuItems` and into the
+ring's child list straight after Options, its labels written, its tooltip cleared and its button
+aimed at `ModOptionsWindow.OnAccessibilitySettingsCb`; the ring is then arranged by the table
+itself. Main menu: one entry is appended to `MainMenuScreenGuiElement.Entries` and the screen
+builds, binds, places and dispatches the item for it, with a `ModSettingsClick` component on the
+screen's own GameObject answering `OnClickES2AccessModSettings` — the same message the mouse
+sends and the same one the mod's keyboard activation sends.
 
 **The window is the game's options window, and reads as one** — same tab bar, same rows, same
 button bar, same Escape/Apply/Cancel, so `OptionsScreen` serves it with one change (`Window()`
@@ -25,37 +36,57 @@ not the game's "Options", because the two are the same window class and a player
 be told they are in the game's settings. Categories are a data-driven list (`ModOptions.Categories`)
 drawn in list order.
 
-**THE WINDOW HAS EXACTLY TWO TABS — "Scanner" and "Controls" — EVERYWHERE**, main menu included
-(owner ruling 2026-08-24; `ES2Access/UI/ModOptions/`). The Scanner tab was in-game only for as
-long as its columns were a snapshot of the galaxy being played; they come from the game's
-DATABASES now, so neither page needs a game and the window is never rebuilt for crossing that
-line. The key-binding category is CALLED "Controls" — the game's own key for its own key-binding
-page — which is what makes the game's own window logic do three right things for it: the tab draws
-itself with `%OptionToggleControlsTitle` (the game's words, every language), leaving with unapplied
-changes asks the binding question rather than the generic one, and the **Reset to Defaults** button
-appears on the button bar for that tab and no other. The binding rows' own key semantics are
-`docs/interaction.md`, **The mod's Controls tab**.
+**THE WINDOW HAS EXACTLY THREE TABS — "General", "Scanner" and "Controls", in that order —
+EVERYWHERE**, main menu included (owner rulings 2026-08-24 and 2026-09-02;
+`ES2Access/UI/ModOptions/`). Their panels are named by index, so node ids read
+`options:0TabPanel/…` (General), `options:1TabPanel/…` (Scanner) and `options:2TabPanel/…`
+(Controls). The Scanner tab was in-game only for as long as its columns were a snapshot of the
+galaxy being played; they come from the game's DATABASES now, so no page needs a game and the
+window is never rebuilt for crossing that line. The key-binding category is CALLED "Controls" —
+the game's own key for its own key-binding page — which is what makes the game's own window logic
+do three right things for it: the tab draws itself with `%OptionToggleControlsTitle` (the game's
+words, every language), leaving with unapplied changes asks the binding question rather than the
+generic one, and the **Reset to Defaults** button appears on the button bar for that tab and no
+other. The binding rows' own key semantics are `docs/interaction.md`, **The mod's Controls tab**.
+
+## The General tab
+
+One row: **"Video descriptions in cut scenes"** (`options:0TabPanel/cutsceneDescriptions`),
+**checked by default**. It is the player's way into a setting that already lives in the BepInEx
+config file — `[Speech] cutsceneDescriptions` in
+`<game>\BepInEx\config\endless.space2.access.cfg` — and that file stays the ONE store: ticking the
+box writes the live flag (`ES2Access.UI.CutsceneDescriptions.Enabled`, what the cutscene watcher
+reads) and the loader's config entry, which BepInEx saves on every set. Non-latent like every
+other mod row, so Apply keeps and Cancel writes the backup back through the same setter.
+
+**The loader does not hot-reload**, so a mod built against a newer loader than the one running
+finds no setter: the write is caught and logged ONCE
+(`/log?grep=cutscene setting` — "this loader cannot be told about the cutscene setting"), the live
+flag still moves, and the FILE write is only provable after a game restart.
 
 ## Getting there
 
 **Getting there is the player's own route, and only that route counts.** In game: open the pause
 menu (`Gui.GuiService.ShowWindow(Gui.GuiService.GetWindow<GameMenuModalWindow>())` from `/eval`
 is the same thing Escape does), then `/input ui.down` five times from Save Game and
-`/input ui.activate` — "Mod settings, button, 6 of 9", then "Mod settings" + "Scanner, tab,
-selected, …, 1 of 2". On the MAIN MENU the entry sits after Options as 8 of 9; the whole main-menu route
-is untested live from an in-game fixture, and **is no longer checkable from inside a running game**:
-`GET /gui/graph?screen=screen.main-menu` now answers `screen inactive: it declared no controls`, and
-`&ungated=1` answers the same (measured 2026-08-28) — the main-menu window is not drawn from in
-game, so there is nothing for the by-key build to declare. That check is what once caught the node
-being declared in the wrong branch, since the main menu's Options entry is a GROUP with a flyout
-while the pause menu's is a flat button; redo it from an OUT-GAME session, where the screen is
-active.
+`/input ui.activate` — "Accessibility mod settings, button, 6 of 9", then "Mod settings" +
+"General, tab, selected, …, 1 of 3". On the MAIN MENU the entry sits after Options as **8 of 10**
+(measured 2026-09-02 out-game; the tenth stop is the news banner). The main-menu route is **not
+checkable from inside a running game**: `GET /gui/graph?screen=screen.main-menu` answers
+`screen inactive: it declared no controls` and `&ungated=1` answers the same (measured
+2026-08-28) — the main-menu window is not drawn from in game, so there is nothing for the by-key
+build to declare. Walk it from an OUT-GAME session instead
+(`test-recipes/modals-and-outgame.md`, **The out-game family**).
 
-**From there, one route serves every tab and both buttons bars.** The window opens on the Scanner
-tab; `ui.down` on the tabs stop reaches Controls. `ui.next` from the tabs stop reaches
+**From there, one route serves every tab and both buttons bars.** The window opens on **General**
+the first time and on whichever tab was last selected afterwards (the game's own radio group keeps
+its selection across shows — measured 2026-09-02, so re-read the tabs stop before counting
+`ui.down` presses). `ui.down` on the tabs stop walks General → Scanner → Controls. `ui.next` from
+the tabs stop reaches
 `options:rows`, `ui.next` again `options:buttons` (`ui.home` = Cancel, `ui.end` = Apply; on the
 Controls tab a third button, Reset to Defaults, sits between them at
-`options:button/ResetButton/OnModResetCb`). Pause menu → Options is 5 of 9, Mod settings 6 of 9.
+`options:button/ResetButton/OnModResetCb`). Pause menu → Options is 5 of 9, Accessibility mod
+settings 6 of 9.
 `/input ui.back` does NOT close THIS window: the options screen leaves Escape to the game and an
 injected action presses no key — use the window's own Cancel button. (That is this window's answer,
 not a general rule: the seven modals listed in `interaction.md` DO consume Back and press their own
@@ -65,11 +96,11 @@ own confirmation (`ui.end` then `ui.activate` confirms) and lands back on the pa
 ## Reading it
 
 **Reading it.** `GET /gui/graph` on the mod window gives three stops exactly as the game's options
-window does: `options:tabs` (two tabs, "Scanner" and "Controls"), `options:rows`, and
+window does: `options:tabs` (three tabs, "General", "Scanner" and "Controls"), `options:rows`, and
 `options:buttons` (Cancel, Apply — Apply "unavailable, No modification detected." until something
 changes, which is also the proof that the option getter's instance is stable; on the Controls tab a
-third button, "Reset to Defaults", sits between them). The Controls tab's row ids are
-`options:1TabPanel/keys/row<hash>c{0,1,2}` (a three-column sheet), the panel's own children
+third button, "Reset to Defaults", sits between them). The Controls tab is `2TabPanel`, and its row ids are
+`options:2TabPanel/keys/row<hash>c{0,1,2}` (a three-column sheet), the panel's own children
 `<index><action key>KeyMapping`.
 
 ## Rebinding without a keyboard
@@ -115,14 +146,15 @@ survives, because it is read from the file at `ModEntry.Start`:
 
 **Reading it.** Both windows read the same way. `/input ui.next` into `options:rows` lands on the
 first row's name cell — on the GAME's tab "Controls, table, Confirm, Enter, ⟨description⟩", on the
-MOD's "Controls, table, Move up, Up Arrow, Move the cursor to the control above., 1 of 60" (measured
-2026-08-28) — and then
+MOD's "Controls, table, Move up, Up Arrow, Move the cursor to the control above., 1 of 81" (measured
+2026-09-02) — and then
 `ui.right` / `ui.left` cross the columns ("Primary key, Enter, button" / "Secondary key, empty,
 button" / back onto "Action, Confirm, …"), `ui.down` stays in the column and names the row it landed
 in ("Cancel, empty, button, 2 of ⟨n⟩"). Cell ids are `options:⟨panel⟩/keys/row⟨hash⟩c⟨0|1|2⟩`.
-**The MOD table's row count is 60** — one per `action.*.title` key in the locale, and the same figure the
-physical-key measurements below read back ("49 of 60"). The figure read 57 until 2026-08-28, when the
-idle-fleet and apply-movements chords were added and the line was found two actions stale; re-check it with
+**The MOD table's row count is 81** (measured 2026-09-02) — one per `action.*.title` key in the
+locale. It read 57 until 2026-08-28 and 60 until 2026-09-02, and the physical-key measurements
+further down still quote the 60-row numbering ("49 of 60"), so treat those ordinals as stale;
+re-check the count with
 `grep -c '"action\..*\.title"' ES2Access/locale/english.json` whenever an action is added.
 
 **Driving a clear.** `/input ui.clear` on a key cell — the cell announces its new "empty" as a live
@@ -169,8 +201,17 @@ not foregrounded.
 
 ## The Scanner tab
 
+**The tab's FIRST row is not about a category.** "Shortened directions"
+(`options:1TabPanel/shortDirections`), **unchecked by default** (owner ruling 2026-09-02), decides
+whether the scanner says how far away a result is in short form - "1w, 9s" rather than "1 west,
+9 south" (`GalaxyScanner.Away` through `CompassDirections.Offsets(east, north, shortened)`). It is
+that sentence and nothing else: "here" keeps its word, and the compass WORD an unexplored lane
+gets is untouched. Stored in the mod's own settings file as `scanner.short-directions = true`, and
+the key is REMOVED when it goes back off, so a file that never had it says nothing about it.
+Non-latent like every other mod row, so Apply persists and Cancel restores.
+
 **Screen model: each of the three custom-category slots is one drawn control that OPENS AND SHUTS
-IN PLACE.** The tab is one page: three headers reading "Custom category {n}: {name}" ("empty" when
+IN PLACE.** Below that row the tab is one page: three headers reading "Custom category {n}: {name}" ("empty" when
 the slot is unset), each an expandable GROUP whose rows are drawn under it. Right opens it and steps
 into it, Left shuts it, Enter flips it where you stand and says "expanded"/"collapsed"; all three
 slots start collapsed every time the window opens. Opening is show-and-arrange, never a rebuild —
@@ -228,10 +269,10 @@ is said there — so a refusal is heard after the control it left unchanged.
 flips it where you stand and answers "expanded"/"collapsed". All three start collapsed every time
 the window is shown.
 
-Node ids are all on the one panel: `options:0TabPanel/slot{0..2}Header`, and under a header
+Node ids are all on the one panel, which is the SECOND now that General is first: `options:1TabPanel/slot{0..2}Header`, and under a header
 `slot{n}Name`, `slot{n}Keyword{i}`, `slot{n}NewKeyword`, `slot{n}Clear`,
 `slot{n}Section{categoryKey}` (a caption - drawn, never a node) and
-`slot{n}Select{categoryKey}:{columnKey}`. Regions are `options:0TabPanel/head` and
+`slot{n}Select{categoryKey}:{columnKey}`. Regions are `options:1TabPanel/head` and
 `.../slot{n}Section{categoryKey}`, so `ui.regionNext` walks the thirteen sections; the head region
 is what makes the header and the name/keyword boxes a place Ctrl+arrow can leave.
 
@@ -328,7 +369,7 @@ the rebind reverted (ES2 facts). Check the clone's place in the dispatch list wi
 with whatever the game left in it (empty on a row with both slots filled, the old chord on a row whose
 other slot is empty — 2026-08-24: no cancel, no restore); `Return` then `Comma` = the chord twice (the field as it builds it,
 then the mod confirming what stuck) with Apply lit; Apply (`ui.next` to the buttons, `ui.end`,
-`Return`) hides the window, lands on "Mod settings, button, 6 of 9" and writes
+`Return`) hides the window, lands on "Accessibility mod settings, button, 6 of 9" and writes
 `keys.galaxy.scanCustom1Next = galaxy.scanCustom1Next:F1,`; rebinding back to the default and
 applying takes the line out again.
 
@@ -373,7 +414,14 @@ for byte what it was.
 release → the row speaks what stuck), Escape on the mod window (`POST /key` needs the game
 foreground; the registration that makes it work is checkable instead — the clone sits at the FRONT
 of `GuiManager.guiWindowsFromBackToFront`, ahead of `GameMenuModalWindow`, and is an
-`IInputHandler`), and the whole main-menu route.
+`IInputHandler`), and a real MOUSE PICK on either menu entry. The main-menu route is no longer
+blocked: it was walked end to end from an out-game session on 2026-09-02 (leave the session the
+way `modals-and-outgame.md` describes, walk, then `POST /loadsave` the snapshot back).
 
-- The physical capture end to end, Escape on the mod window, and the whole main-menu route
-  (**Getting there**, **The physical key paths**).
+A mouse pick is proved as far as the wiring goes and no further: `SendMessage`-ing the entry's own
+`OnActivateObject`/`OnActivateMethod` opens the window on the pause menu, and on the main menu the
+keyboard already travels the identical message (`OnClickES2AccessModSettings` to the screen), so
+what is UNPROVEN is only the engine's own hit test.
+
+- The physical capture end to end, Escape on the mod window, and a real mouse pick on the menu
+  entry (**The physical key paths**).

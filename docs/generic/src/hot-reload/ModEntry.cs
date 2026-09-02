@@ -1129,6 +1129,8 @@ namespace ES2Access
             // The mod's own settings window is a GameObject in one of the game's window stacks and
             // an entry in two of its registries: it comes out by NAME, because after the swap this
             // load's types match nothing the old load put there.
+            // Before the window goes: the pause menu's entry is aimed at the window's GameObject.
+            Step("mod settings entry", ModSettingsMenuEntry.Shutdown);
             Step("mod options window", ModOptions.Shutdown);
             Step("pointer focus", PointerFocus.Shutdown);
             // After the pointer has let go: the carriers are scene objects this assembly created, and
@@ -1198,9 +1200,9 @@ namespace ES2Access
             // chose is already on disk (the window wrote it when it hid), so this only lets go.
             Step("bindings", ModBindings.Reset);
             Step("scanner categories", ScannerCustomSettings.Reset);
+            Step("scanner directions", ScannerDirectionSettings.Reset);
             // Every bookmark a saved campaign has is already on disk (the set wrote it), so this only
             // lets go of the game the store was watching.
-            Step("scanner directions", ScannerDirectionSettings.Reset);
             Step("bookmarks", MapBookmarkStore.Reset);
             Step("settings", ModSettings.Reset);
 
@@ -1283,6 +1285,9 @@ namespace ES2Access
             // game has finished loading its own, and built again if a runtime change ever takes it
             // away with the rest of them.
             ModOptions.Tick();
+            // The mod's settings entry on whichever menu is up. Two null checks and an array scan
+            // on a frame where it is already there.
+            ModSettingsMenuEntry.Tick();
 
             // Before the keys are polled: a window the game hid while its text field held the engine's
             // keyboard would otherwise leave the whole layer standing down for a field nobody can see.

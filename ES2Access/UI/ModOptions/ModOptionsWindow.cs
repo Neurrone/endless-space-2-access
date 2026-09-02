@@ -217,6 +217,23 @@ namespace ES2Access.UI.ModOptions
             }
         }
 
+        /// <summary>What the pause menu's own entry for these settings presses. Public because an
+        /// AGE button reaches it by SendMessage, and it lives on THIS window because this window's
+        /// GameObject exists exactly as long as the entry can do anything. The argument is the
+        /// GameObject every AGE button sends and nothing here needs it.</summary>
+        public void OnAccessibilitySettingsCb(UnityEngine.GameObject sender)
+        {
+            try
+            {
+                ModOptions.Open();
+            }
+            catch (System.Exception e)
+            {
+                // Runs inside the engine's own mouse dispatch: never throw into it.
+                Log.Warn("mod options: opening from the pause menu threw: " + e);
+            }
+        }
+
         /// <summary>The game's own question before a key-binding reset.</summary>
         private const string ResetConfirmation = "%OptionBindingResetConfirmation";
 

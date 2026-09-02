@@ -154,8 +154,10 @@ namespace ES2Access.Core.Speech
         /// announce the game's settings.</summary>
         public const string ScreenModSettings = "screen.mod-settings";
 
-        /// <summary>The entry that opens it, on the main menu and the pause menu. The mod declares
-        /// it; nothing is drawn for it, so these are the only words it has.</summary>
+        /// <summary>The entry that opens it, on the main menu and the pause menu. The mod adds a
+        /// real entry to each menu (owner ruling 2026-09-02), so these words are DRAWN on it as
+        /// well as spoken - which is why they name the mod rather than just "Mod settings".
+        /// </summary>
         public const string ModSettingsEntry = "mod-settings.entry";
 
         /// <summary>What the General tab - the window's first - says about itself. It is where a
@@ -169,19 +171,19 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsCutsceneDescriptions =
             "mod-settings.general.cutscene-descriptions";
 
-        /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
-        /// language (<see cref="ES2Access.UI.ModOptions.ModOptions.Categories"/>).</summary>
         /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
         /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
+        /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
+        /// language (<see cref="ES2Access.UI.ModOptions.ModOptions.Categories"/>).</summary>
         public const string ModSettingsScanner = "mod-settings.scanner";
         public const string ModSettingsScannerDescription = "mod-settings.scanner-description";
-
-        // --- the editor for the player's own three scanner categories (2026-08-23) ---
 
         /// <summary>The Scanner tab's first row: whether the scanner says how far away a result is
         /// in short form - "23s" rather than "23 south".</summary>
         public const string ModSettingsScannerShortDirections =
             "mod-settings.scanner.short-directions";
+
+        // --- the editor for the player's own three scanner categories (2026-08-23) ---
 
         /// <summary>The Scanner tab's button for one slot: which slot it is, and what is in it - the
         /// player's own name, or the word for a slot nobody has filled.</summary>
@@ -592,8 +594,6 @@ namespace ES2Access.Core.Speech
         public const string OffsetEast = "offset.east";
         public const string OffsetWest = "offset.west";
 
-        /// <summary>Where a place on the map is, as a pair of whole numbers measured from the empire's
-        /// home system (<see cref="MapCoordinates"/>). The game draws the galaxy and writes no
         /// <summary>The same four components said SHORT - "23s", "1w, 23s" - for a player who is
         /// stepping through scanner results and hears the pair on every one of them. A whole
         /// template per axis again, so a language whose abbreviation goes in front of the number, or
@@ -603,6 +603,8 @@ namespace ES2Access.Core.Speech
         public const string OffsetEastShort = "offset.east-short";
         public const string OffsetWestShort = "offset.west-short";
 
+        /// <summary>Where a place on the map is, as a pair of whole numbers measured from the empire's
+        /// home system (<see cref="MapCoordinates"/>). The game draws the galaxy and writes no
         /// coordinate anywhere, so the pair is the mod's - and it is ONE template rather than a number
         /// said twice, because which axis comes first, and what separates them, is a language's
         /// business.</summary>
@@ -2175,7 +2177,7 @@ namespace ES2Access.Core.Speech
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },
             { ScreenModSettings, "Mod settings" },
-            { ModSettingsEntry, "Mod settings" },
+            { ModSettingsEntry, "Accessibility mod settings" },
             { ModSettingsGeneral, "General" },
             {
                 ModSettingsGeneralDescription,
@@ -2187,9 +2189,9 @@ namespace ES2Access.Core.Speech
                 ModSettingsScannerDescription,
                 "Configure custom scanner categories and shortened directions"
             },
+            { ModSettingsScannerShortDirections, "Shortened directions" },
             { ScannerEditSlotButton, "Custom category {0}: {1}" },
             { ScannerEditEmpty, "empty" },
-            { ModSettingsScannerShortDirections, "Shortened directions" },
             { ScannerEditName, "Name" },
             { ScannerEditKeyword, "Keyword {0}" },
             { ScannerEditSelected, "{0}, {1} selected" },
@@ -2378,12 +2380,12 @@ namespace ES2Access.Core.Speech
             { OffsetSouth, "{0} south" },
             { OffsetEast, "{0} east" },
             { OffsetWest, "{0} west" },
-            { GalaxyCoordinatePair, "{0}, {1}" },
-            {
             { OffsetNorthShort, "{0}n" },
             { OffsetSouthShort, "{0}s" },
             { OffsetEastShort, "{0}e" },
             { OffsetWestShort, "{0}w" },
+            { GalaxyCoordinatePair, "{0}, {1}" },
+            {
                 GalaxyMapSummary,
                 "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}."
             },

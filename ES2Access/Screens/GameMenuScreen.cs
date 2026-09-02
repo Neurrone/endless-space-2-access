@@ -166,18 +166,14 @@ namespace ES2Access.Screens
                     vtable.OnBlurVisual = ReleasePointer;
                 }
 
+                // The mod's own settings entry is one of these - a real item in the ring, added to
+                // the window's own array (ModSettingsMenuEntry) and read here like any other. Only
+                // its KEY is the mod's, kept as it was when nothing was drawn for it.
                 builder.AddItem(Nodes.Drawn(
-                    ControlId.For(entry, "gamemenu:" + entry.name),
+                    ControlId.For(entry, NodeKey(entry)),
                     vtable,
                     entry
                 ));
-
-                // The mod's own settings, right where the game's are. Found by what the entry DOES
-                // rather than by what it is called, so a renamed prefab cannot move it.
-                if (OpensOptions(button))
-                {
-                    ModSettingsNode.Add(builder, "gamemenu:mod-settings");
-                }
             }
 
             AddToggle(
@@ -841,18 +837,14 @@ namespace ES2Access.Screens
             return null;
         }
 
-        /// <summary>Whether this is the entry that opens the game's options window - the handler the
-        /// window wires to its own Options item.</summary>
-        private static bool OpensOptions(AgeControlButton button)
+        /// <summary>What an entry is keyed under. The mod's own settings entry keeps the key it had
+        /// while nothing was drawn for it, so a remembered cursor and every doc still find it.
+        /// </summary>
+        private static string NodeKey(GameMenuItem entry)
         {
-            try
-            {
-                return button != null && button.OnActivateMethod == "OnOptionsCb";
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return entry.name == ModSettingsMenuEntry.PauseMenuItemName
+                ? ModSettingsMenuEntry.PauseMenuNodeKey
+                : "gamemenu:" + entry.name;
         }
 
         private static AgeControlButton Button(GameMenuItem item)
