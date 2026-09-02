@@ -833,7 +833,7 @@ namespace ES2Access.Screens
                     try
                     {
                         AddFleets(builder, key, FleetPresence.FleetsAt(node));
-                        AddEnRoute(builder, key, EnRouteOn(node, lanes));
+                        AddEnRoute(builder, key, EnRouteOn(node, empire, lanes));
                         AddFreeMoving(builder, key, node, FreeMovingAt(node));
                         if (_showsDetail)
                         {

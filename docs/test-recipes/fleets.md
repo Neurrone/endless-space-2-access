@@ -10,7 +10,13 @@ game-side facts are in `docs/fleets.md`.
 
 **Destination-only, for lane fleets and free movers alike.** A fleet in transit is declared under
 the endpoint it is flying TO and nowhere else — a lane fleet saying which of THAT system's lanes it
-is on, a free mover reading "free moving to ⟨system⟩". The independent oracle is the leg itself:
+is on. **Since the 2026-09-02 wording ruling the phrases are**: a lane fleet "arriving from ⟨the
+lane's far end⟩ by star lane" (or "…by wormhole", or "arriving from an unexplored system by …"
+where the map has not named that end), a free mover "arriving from the ⟨eight-word bearing from the
+destination system out to where the fleet is standing⟩". Every transcript quoted below predates
+that ruling and still shows the old "on starlane ⟨n⟩, ⟨direction⟩" / "free moving to ⟨system⟩"
+forms — the ROWS and their ids are unchanged, only the sentence. The independent oracle is the leg
+itself:
 `IPositioningService.GetGameNode(fleet.Position.Movement.Goal)`, and it always answers one of the
 lane's two ends — "on a lane with no destination" is unreachable (`docs/fleets.md`), so there is no
 second-host case to test for and each lane fleet has exactly ONE row. The LANE
@@ -44,9 +50,10 @@ testing the ship-count gate — use `1st Protectors Navy` — and `GalaxyFleetCu
 refuses both selection (:17-24) and highlight (:26-33) for one. **The mod says so**: `FleetNode`
 declares an unselectable fleet `ControlTypes.Text` with no `OnActivate`, so the row carries no role
 word and Enter is a no-op. The regression check is one line
-of a branch dump — the Heka rows must read "…, -1, -6, free moving to Heka, …" with no "button",
-while Dusay's three lane fleets (not automated) must still read "…, 12, 15, button, on starlane 1,
-northeast, …". A build where all five say "button" has lost `FleetPresence.Selectable`; one where
+of a branch dump — the Heka rows must read "…, -1, -6, arriving from the ⟨bearing⟩, …" with no
+"button", while Dusay's three lane fleets (not automated) must still read "…, 12, 15, button,
+arriving from ⟨far end⟩ by star lane, …" (pre-2026-09-02 transcript: "…, on starlane 1, northeast,
+…"). A build where all five say "button" has lost `FleetPresence.Selectable`; one where
 all five drop it has the predicate inverted.
 
 ## Foreign fleets: what no fixture perceives
@@ -61,8 +68,8 @@ Two probes stand in for the missing fixture, and both are real evidence rather t
 - **Ship count below Visible.** Write the private `EntityVisibility.layers` array by reflection
   (`typeof(EntityVisibility).GetField("layers", Instance|NonPublic)`, index by `empire.Index`) to
   drop a NON-automated fleet to `Layer.Marked`, dump, then write it back to `Visible`. Measured on
-  `1st Protectors Navy` under Dusay: "… on starlane 2, west, **1 ships**, Moving to an unexplored
-  system, 6 movement points, …" became "… on starlane 2, west, Moving to an unexplored system,
+  `1st Protectors Navy` under Dusay: "… on star lane 2, west, **1 ships**, Moving to an unexplored
+  system, 6 movement points, …" became "… on star lane 2, west, Moving to an unexplored system,
   6 movement points, …" — the part omitted, no placeholder, its two Visible neighbours unchanged.
   (Predates 2026-08-26: the gated part is now the design composition — "Patrol" and the like —
   through `FleetPhrase.Composition`; the omission behaviour is the same.)
@@ -77,7 +84,7 @@ Two probes stand in for the missing fixture, and both are real evidence rather t
 
 **Ordering a fleet around** (state-changing — only against a save you can reload, and only after
 every read-only check is done). It is two halves: **Enter** on the fleet's own node selects it, then
-**`/input ui.contextual`** (backslash) on the DESTINATION — a system node, or a starlane child of one
+**`/input ui.contextual`** (backslash) on the DESTINATION — a system node, or a star lane child of one
 (expand the system with `ui.right`) — sends it. What it answers, in the mod's own words
 (`ModStrings.GalaxySendFleet`/`GalaxySendFleets`, `GalaxyHudScreen.SendAll`): with ONE fleet going,
 *"Send fleet ⟨name⟩ here"*; with several, *"Send the ⟨n⟩ selected fleets here"* — so a multi-select

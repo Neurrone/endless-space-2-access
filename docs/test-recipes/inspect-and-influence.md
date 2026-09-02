@@ -114,7 +114,7 @@ contributes no token, and an empire whose colony node the map is not showing is 
 while its field stays in the arithmetic — so an unseen neighbour can cost a cell its "in" and can
 never be named by one. The measured wordings are **Inspect-cell influence** above.
 
-**A cell names a starlane only where the fog DRAWS it** (2026-08-20): the link gate answers "is this
+**A cell names a star lane only where the fog DRAWS it** (2026-08-20): the link gate answers "is this
 lane lit", never "lit HERE" — `Lit` samples the cell's unit squares through
 `IVisibilityService.IsExplored`, the same field the cell's "Unexplored" word uses; the tree's lane
 rows keep the link-level gate (they hang under the system, a thing not a place).
@@ -234,8 +234,17 @@ session, so a re-entry repeats whatever was last set) then `Dusay, Star lane fro
 from Qarius to Dusay, Star lane from Dusay to Primus, 0, 0`. **The cell says its CONTENTS first and
 its coordinate LAST** (owner ruling 2026-08-26): systems, special nodes,
 fleets, probes, obliterator missiles, ally pins, then the lanes crossing it, then the fog, then the
-pair — an EMPTY cell is the bare pair and nothing else, and no reading ever opens with a comma. The
-three
+pair — an EMPTY cell is the bare pair and nothing else, and no reading ever opens with a comma.
+
+**The lane sentence changed on 2026-09-02** and every lane line quoted in this file predates it:
+`Star lane from ⟨west⟩ to ⟨east⟩` is now `Star lane, ⟨west⟩ ⟨direction⟩ to ⟨east⟩`, and
+`Star lane from ⟨known⟩ going ⟨direction⟩` is now `Star lane, ⟨known⟩ ⟨direction⟩ to an unexplored
+system` (wormholes the same with `Wormhole,`). Westmost-first is unchanged, and the direction is the
+eight-word bearing from that west end toward the other — the same word the lane's own row under a
+system says. WHICH cells hold a lane, and everything else in the orderings below, is untouched, so
+re-measure only the wording.
+
+The three
 open-space kinds in the tree's own declaration order (`AddProbes`/`AddProjectiles`/`AddPins`), off
 the page's own `DrawnProbes`/`DrawnProjectiles`/`DrawnPins` lists, so the cell and the tree cannot
 disagree about what the map is drawing. `ui.right` twice then `ui.up` twice reads
@@ -460,7 +469,7 @@ bookmarks are `galaxy-map.md`, **Bookmarks**.
   where `<x>,<y>` is `GalaxyCoordinates.Origin()` plus the cell's own pair — an arithmetic check the
   file can be read against (home `68.884, -22.45`, cell `0, 4` → `0,68.8843002,-18.4499054`). A
   square holding TWO OR MORE refuses: **"Shrink cursor so it contains only one system"**, nothing
-  stored. A lane crossing the square does not make it a place: `-74, -31` at 9×9 names a starlane
+  stored. A lane crossing the square does not make it a place: `-74, -31` at 9×9 names a star lane
   and still sets a POINT.
 - **Staging a two-system square.** Cell centres are relative to where the cursor stands
   (`InspectGrid.Step` adds the size), not a fixed grid, so ANY integer pair is a reachable centre —

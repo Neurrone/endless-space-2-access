@@ -2562,9 +2562,9 @@ namespace ES2Access.Screens
         /// a place they have not.
         ///
         /// The lanes are the page's own (<see cref="GalaxyHudScreen.LanesOf"/>) - the same list its
-        /// lane rows, its fleet legs and its count phrases are built from, so a lane is numbered here
-        /// exactly as the tree numbers it, clockwise from north. A wormhole is one of them where the
-        /// empire has the technology to be shown wormholes at all, and says it is one.
+        /// lane rows, its fleet legs and its count phrases are built from, so a lane is described here
+        /// with the same compass word its own row under that system says. A wormhole is one of them
+        /// where the empire has the technology to be shown wormholes at all, and says it is one.
         ///
         /// EACH ONE ONCE, by construction rather than by de-duplication: a lane is offered by the end
         /// the player can SEE, and the other end is by definition one they cannot, so the walk never
@@ -2595,7 +2595,6 @@ namespace ES2Access.Screens
                         lane.Wormhole
                             ? ModStrings.GalaxyScannerUnexploredWormhole
                             : ModStrings.GalaxyScannerUnexploredLane,
-                        i + 1,
                         node.LocalizedName,
                         ModStrings.Get(CompassDirections.KeyForBearing(lane.Bearing))
                     );

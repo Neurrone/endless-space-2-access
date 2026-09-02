@@ -3853,7 +3853,7 @@ namespace ES2Access.Screens
             ControlId system = ControlId.For(node, systemKey);
             ControlId group = GroupId(node);
             Index(FleetPresence.FleetsAt(node), system, group, systemKey, sites, declared);
-            List<EnRoute> flying = EnRouteOn(node, LanesOf(node, empire));
+            List<EnRoute> flying = EnRouteOn(node, empire, LanesOf(node, empire));
             List<Fleet> crossing = FreeMovingAt(node);
             List<Fleet> nearby = new List<Fleet>(flying.Count + crossing.Count);
             for (int i = 0; i < flying.Count; i++)
