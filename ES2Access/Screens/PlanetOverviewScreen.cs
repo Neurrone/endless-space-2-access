@@ -100,7 +100,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.planet"; }
+            get { return ModStrings.ScreenPlanet; }
         }
 
         /// <summary>The same layer as the galaxy and the system page: the three are the game's view

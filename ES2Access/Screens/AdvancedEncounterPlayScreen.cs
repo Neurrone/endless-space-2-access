@@ -120,36 +120,6 @@ namespace ES2Access.Screens
         private const string RetreatTitleKey = "%NotificationBattleSetupRetreatButtonTitle";
         private const string WatchToggleTitleKey = "%NotificationBattleSetupWatchToggleTitle";
 
-        /// <summary>The mod's own, for the things the game names nowhere - the four bands Tab crosses
-        /// and the two roster switches. All are asked for optionally: a build without the phrase
-        /// leaves that line out rather than reading a key.</summary>
-        private const string TacticsKey = "battle.tactics";
-        private const string YourFleetsKey = "battle.your-fleets";
-        private const string EnemyFleetsKey = "battle.enemy-fleets";
-        private const string StatsKey = "battle.stats";
-        private const string ShowYourFleetsKey = "battle.show-your-fleets";
-        private const string ShowEnemyFleetsKey = "battle.show-enemy-fleets";
-        private const string TimeLeftKey = "battle.time-left";
-
-        /// <summary>What the four stats pages are called, and what each of them says. The game names
-        /// none of this: its four switches are wordless icons with a description apiece, and every
-        /// figure on every page is a coloured arc with no number written anywhere on it.</summary>
-        private const string StatsTrajectoriesKey = "battle.stats-trajectories";
-        private const string StatsMilitaryKey = "battle.stats-military";
-        private const string StatsDamageKey = "battle.stats-damage";
-        private const string StatsRangeKey = "battle.stats-range";
-        private const string FlotillaRangeKey = "battle.flotilla-range";
-        private const string EnergyShareKey = "battle.energy-damage-share";
-        private const string ProjectileShareKey = "battle.projectile-damage-share";
-        private const string EnergyThreatKey = "battle.energy-bigger-threat";
-        private const string ProjectileThreatKey = "battle.projectile-bigger-threat";
-        private const string ShortRangeShareKey = "battle.short-range-share";
-        private const string MediumRangeShareKey = "battle.medium-range-share";
-        private const string LongRangeShareKey = "battle.long-range-share";
-        private const string ShortRangeMattersKey = "battle.short-range-matters";
-        private const string MediumRangeMattersKey = "battle.medium-range-matters";
-        private const string LongRangeMattersKey = "battle.long-range-matters";
-
         /// <summary>The game's own sentence for a range, which it writes as "{0} Range" over the bare
         /// name a range localizes to.</summary>
         private const string RangeTitleKey = "%AdvancedPlayFlotillaOptimalRangeTitle";
@@ -321,7 +291,7 @@ namespace ES2Access.Screens
         private void Tactics(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(TacticsRegion);
-            bool named = Context(builder, TacticsKey, true);
+            bool named = Context(builder, ModStrings.BattleTactics, true);
             try
             {
                 Plans(builder, window.PlayerPlaySelectionTable, "advanced-play/plan");
@@ -338,7 +308,7 @@ namespace ES2Access.Screens
         private void Yours(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(YoursRegion);
-            bool named = Context(builder, YourFleetsKey);
+            bool named = Context(builder, ModStrings.BattleYourFleets);
             try
             {
                 Leader(builder, window.PlayerBattleGroupInfoPanel, "advanced-play/yours");
@@ -360,7 +330,7 @@ namespace ES2Access.Screens
         private void Theirs(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(TheirsRegion);
-            bool named = Context(builder, EnemyFleetsKey);
+            bool named = Context(builder, ModStrings.BattleEnemyFleets);
             try
             {
                 Leader(builder, window.EnemyBattleGroupInfoPanel, "advanced-play/theirs");
@@ -744,7 +714,6 @@ namespace ES2Access.Screens
             }
         }
 
-
         /// <summary>
         /// The figures: the four pages of stats the window keeps behind its four switches, and the
         /// fighters line the window writes under them.
@@ -757,7 +726,7 @@ namespace ES2Access.Screens
         private void Figures(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(FiguresRegion);
-            bool named = Context(builder, StatsKey, true);
+            bool named = Context(builder, ModStrings.BattleStats, true);
             try
             {
                 Pages(builder, window);
@@ -1017,13 +986,13 @@ namespace ES2Access.Screens
             switch (page)
             {
                 case Stats.Military:
-                    return StatsMilitaryKey;
+                    return ModStrings.BattleStatsMilitary;
                 case Stats.Damage:
-                    return StatsDamageKey;
+                    return ModStrings.BattleStatsDamage;
                 case Stats.Ranges:
-                    return StatsRangeKey;
+                    return ModStrings.BattleStatsRange;
                 default:
-                    return StatsTrajectoriesKey;
+                    return ModStrings.BattleStatsTrajectories;
             }
         }
 
@@ -1069,32 +1038,59 @@ namespace ES2Access.Screens
                     Figure(vtable, () => BalanceText(it));
                     return;
                 case Stats.Damage:
-                    Figure(vtable, () => BattleArcs.Shares(it.EnergyPowerGauge, EnergyShareKey));
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.PhysicalPowerGauge, ProjectileShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.EnergyPowerGauge,
+                                ModStrings.BattleEnergyDamageShare
+                            )
+                    );
+                    Figure(
+                        vtable,
+                        () =>
+                            BattleArcs.Shares(
+                                it.PhysicalPowerGauge,
+                                ModStrings.BattleProjectileDamageShare
+                            )
                     );
                     Figure(
                         vtable,
                         () =>
                             BattleArcs.Thickest(
                                 new[] { it.EnergyPowerGauge, it.PhysicalPowerGauge },
-                                new[] { EnergyThreatKey, ProjectileThreatKey }
+                                new[]
+                                {
+                                    ModStrings.BattleEnergyBiggerThreat,
+                                    ModStrings.BattleProjectileBiggerThreat,
+                                }
                             )
                     );
                     return;
                 case Stats.Ranges:
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.ShortRangePowerGauge, ShortRangeShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.ShortRangePowerGauge,
+                                ModStrings.BattleShortRangeShare
+                            )
                     );
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.MediumRangePowerGauge, MediumRangeShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.MediumRangePowerGauge,
+                                ModStrings.BattleMediumRangeShare
+                            )
                     );
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.LongRangePowerGauge, LongRangeShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.LongRangePowerGauge,
+                                ModStrings.BattleLongRangeShare
+                            )
                     );
                     Figure(
                         vtable,
@@ -1108,9 +1104,9 @@ namespace ES2Access.Screens
                                 },
                                 new[]
                                 {
-                                    ShortRangeMattersKey,
-                                    MediumRangeMattersKey,
-                                    LongRangeMattersKey,
+                                    ModStrings.BattleShortRangeMatters,
+                                    ModStrings.BattleMediumRangeMatters,
+                                    ModStrings.BattleLongRangeMatters,
                                 }
                             )
                     );
@@ -1245,7 +1241,7 @@ namespace ES2Access.Screens
                 }
 
                 return OptionalText.Phrase(
-                    FlotillaRangeKey,
+                    ModStrings.BattleFlotillaRange,
                     index + 1,
                     Gui.Localize(RangeTitleKey, Gui.GetLocalizedTitle(range))
                 );
@@ -1298,10 +1294,15 @@ namespace ES2Access.Screens
         private void Controls(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             _cells.Clear();
-            Checkbox(window.ShowYourFleetsToggle, ShowYourFleetsKey, null, "advanced-play:show-yours");
+            Checkbox(
+                window.ShowYourFleetsToggle,
+                ModStrings.BattleShowYourFleets,
+                null,
+                "advanced-play:show-yours"
+            );
             Checkbox(
                 window.ShowEnemyFleetsToggle,
-                ShowEnemyFleetsKey,
+                ModStrings.BattleShowEnemyFleets,
                 null,
                 "advanced-play:show-theirs"
             );
@@ -1434,7 +1435,7 @@ namespace ES2Access.Screens
             if (
                 gauge == null
                 || notification == null
-                || OptionalText.Phrase(TimeLeftKey, 0) == null
+                || OptionalText.Phrase(ModStrings.BattleTimeLeft, 0) == null
             )
             {
                 return;
@@ -1457,7 +1458,7 @@ namespace ES2Access.Screens
             try
             {
                 return OptionalText.Phrase(
-                    TimeLeftKey,
+                    ModStrings.BattleTimeLeft,
                     UnityEngine.Mathf.Clamp(
                         UnityEngine.Mathf.RoundToInt(notification.GetTimeLeftRatio() * 100f),
                         0,

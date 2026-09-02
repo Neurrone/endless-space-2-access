@@ -77,7 +77,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.scan-view"; }
+            get { return ModStrings.ScreenScanView; }
         }
 
         /// <summary>Just above the view levels it overlays and well below everything that can be raised

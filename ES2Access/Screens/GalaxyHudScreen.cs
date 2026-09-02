@@ -223,7 +223,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.galaxy"; }
+            get { return ModStrings.ScreenGalaxy; }
         }
 
         /// <summary>Above nothing - it is the bottom of the game - and below everything drawn over it:

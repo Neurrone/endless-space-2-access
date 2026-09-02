@@ -59,7 +59,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.faction-choice"; }
+            get { return ModStrings.ScreenFactionChoice; }
         }
 
         /// <summary>Over the lobby that opens it, and under everything a control of its own can raise -

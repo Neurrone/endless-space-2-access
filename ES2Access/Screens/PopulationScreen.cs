@@ -57,7 +57,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.population"; }
+            get { return ModStrings.ScreenPopulation; }
         }
 
         /// <summary>

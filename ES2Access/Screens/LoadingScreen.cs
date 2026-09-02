@@ -60,7 +60,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.loading"; }
+            get { return ModStrings.ScreenLoading; }
         }
 
         /// <summary>Above every page a load replaces, and below the confirmation box, which can be

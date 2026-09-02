@@ -36,13 +36,13 @@ namespace ES2Access.Screens
         /// <summary>The mod's own word for the box, since the window draws no heading at all. Optional:
         /// a build without the phrase says nothing rather than reading the key
         /// (<see cref="OptionalText"/>).</summary>
-        private const string ScreenNameKey = "screen.error";
+        private const string ScreenNameKey = ModStrings.ScreenError;
 
         private readonly List<Cell> _cells = new List<Cell>();
 
         public override string Key
         {
-            get { return "screen.error"; }
+            get { return ModStrings.ScreenError; }
         }
 
         /// <summary>

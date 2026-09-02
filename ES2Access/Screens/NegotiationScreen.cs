@@ -69,7 +69,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.negotiation"; }
+            get { return ModStrings.ScreenNegotiation; }
         }
 
         /// <summary>Above the notification popups that open it - the mod's notification screen does not

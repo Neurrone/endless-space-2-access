@@ -110,22 +110,6 @@ namespace ES2Access.Screens
             "%BattleScreenOverviewCameraTitle",
         };
 
-        private const string ScreenNameKey = "screen.battle";
-        private const string ProgressKey = "battle.progress";
-        private const string YourShipLostKey = "battle.your-ship-lost";
-        private const string YourShipsLostKey = "battle.your-ships-lost";
-        private const string EnemyShipLostKey = "battle.enemy-ship-lost";
-        private const string EnemyShipsLostKey = "battle.enemy-ships-lost";
-        private const string YourFlotillaLostKey = "battle.your-flotilla-lost";
-        private const string YourFlotillasLostKey = "battle.your-flotillas-lost";
-        private const string EnemyFlotillaLostKey = "battle.enemy-flotilla-lost";
-        private const string EnemyFlotillasLostKey = "battle.enemy-flotillas-lost";
-        private const string ReinforcementsKey = "battle.reinforcements";
-        private const string EnemyReinforcementsKey = "battle.enemy-reinforcements";
-        private const string RepairedKey = "battle.repaired";
-        private const string EffectAppliedKey = "battle.effect-applied";
-        private const string MedalEarnedKey = "battle.medal-earned";
-
         private static readonly object ControlsStop = "battle:controls";
         private static readonly object PreRollStop = "battle:pre-roll";
 
@@ -148,7 +132,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.battle"; }
+            get { return ModStrings.ScreenBattle; }
         }
 
         /// <summary>The same layer as the galaxy and the system pages: a battle is one of the game's view
@@ -198,7 +182,7 @@ namespace ES2Access.Screens
                         }
                     }
 
-                    return BattleText.Optional(ScreenNameKey);
+                    return BattleText.Optional(ModStrings.ScreenBattle);
                 }
                 catch (Exception)
                 {
@@ -546,11 +530,19 @@ namespace ES2Access.Screens
 
             float now = Time.realtimeSinceStartup;
             Voice.Say(
-                BattleText.Losses(_yourShips.Due(now), YourShipLostKey, YourShipsLostKey),
+                BattleText.Losses(
+                    _yourShips.Due(now),
+                    ModStrings.BattleYourShipLost,
+                    ModStrings.BattleYourShipsLost
+                ),
                 false
             );
             Voice.Say(
-                BattleText.Losses(_enemyShips.Due(now), EnemyShipLostKey, EnemyShipsLostKey),
+                BattleText.Losses(
+                    _enemyShips.Due(now),
+                    ModStrings.BattleEnemyShipLost,
+                    ModStrings.BattleEnemyShipsLost
+                ),
                 false
             );
         }
@@ -652,16 +644,16 @@ namespace ES2Access.Screens
             Voice.Say(
                 BattleText.Losses(
                     _yourFlotillas.Due(when),
-                    YourFlotillaLostKey,
-                    YourFlotillasLostKey
+                    ModStrings.BattleYourFlotillaLost,
+                    ModStrings.BattleYourFlotillasLost
                 ),
                 false
             );
             Voice.Say(
                 BattleText.Losses(
                     _enemyFlotillas.Due(when),
-                    EnemyFlotillaLostKey,
-                    EnemyFlotillasLostKey
+                    ModStrings.BattleEnemyFlotillaLost,
+                    ModStrings.BattleEnemyFlotillasLost
                 ),
                 false
             );
@@ -751,7 +743,9 @@ namespace ES2Access.Screens
             {
                 Voice.Say(
                     BattleText.Optional(
-                        arrivals[i].Mine ? ReinforcementsKey : EnemyReinforcementsKey,
+                        arrivals[i].Mine
+                            ? ModStrings.BattleReinforcements
+                            : ModStrings.BattleEnemyReinforcements,
                         arrivals[i].Name
                     ),
                     false
@@ -782,7 +776,10 @@ namespace ES2Access.Screens
                 int amount = (int)Mathf.Round(mend.Value);
                 if (amount > 0)
                 {
-                    Voice.Say(BattleText.Optional(RepairedKey, mend.Key, amount), false);
+                    Voice.Say(
+                        BattleText.Optional(ModStrings.BattleRepaired, mend.Key, amount),
+                        false
+                    );
                 }
             }
         }
@@ -800,7 +797,7 @@ namespace ES2Access.Screens
             {
                 Voice.Say(
                     BattleText.Optional(
-                        EffectAppliedKey,
+                        ModStrings.BattleEffectApplied,
                         effects[i].Initiator,
                         effects[i].Name,
                         effects[i].Target
@@ -823,7 +820,11 @@ namespace ES2Access.Screens
             for (int i = 0; i < awards.Count; i++)
             {
                 Voice.Say(
-                    BattleText.Optional(MedalEarnedKey, awards[i].Ship, awards[i].Medal),
+                    BattleText.Optional(
+                        ModStrings.BattleMedalEarned,
+                        awards[i].Ship,
+                        awards[i].Medal
+                    ),
                     false
                 );
             }
@@ -859,7 +860,7 @@ namespace ES2Access.Screens
 
             _milestone = milestone;
             Voice.Say(
-                BattleText.Optional(ProgressKey, milestone * 100 / Milestones),
+                BattleText.Optional(ModStrings.BattleProgress, milestone * 100 / Milestones),
                 false
             );
         }

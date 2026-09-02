@@ -38,7 +38,7 @@ namespace ES2Access.Screens
         /// <summary>The mod's own name for the page, for the frames before the window's heading is
         /// written. Optional: a build without the phrase says nothing rather than reading the
         /// key.</summary>
-        private const string ScreenNameKey = "screen.journal";
+        private const string ScreenNameKey = ModStrings.ScreenJournal;
 
         private readonly List<Cell> _cells = new List<Cell>();
 
@@ -54,7 +54,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.journal"; }
+            get { return ModStrings.ScreenJournal; }
         }
 
         /// <summary>Above the game menu, so that a journal opened over a paused game is the page the

@@ -59,7 +59,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.load-save"; }
+            get { return ModStrings.ScreenLoadSave; }
         }
 
         /// <summary>Above the pause menu that opens it, below the loading screen it leads to and

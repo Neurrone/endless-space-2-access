@@ -59,7 +59,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.options"; }
+            get { return ModStrings.ScreenOptions; }
         }
 
         /// <summary>

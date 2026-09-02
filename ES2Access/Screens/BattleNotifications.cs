@@ -85,17 +85,6 @@ namespace ES2Access.Screens
         private const string ValidateTitleKey = "%NotificationValidateTitle";
         private const string ValidateButtonName = "ValidateButton";
 
-        // The mod's own phrases - only where the game writes nothing at all. See BattleText.Optional:
-        // a build without these keys is silent about them rather than reading them aloud.
-        private const string YourFleetsKey = "battle.your-fleets";
-        private const string EnemyFleetsKey = "battle.enemy-fleets";
-        private const string YourTroopsKey = "battle.your-troops";
-        private const string EnemyTroopsKey = "battle.enemy-troops";
-        private const string BalanceKey = "battle.balance";
-        private const string BalanceAllKey = "battle.balance-all";
-        private const string GroundBalanceKey = "battle.ground-balance";
-        private const string TimeLeftKey = "battle.time-left";
-
         // The impact arrows the game writes INTO a figure to mark one its own rules have moved. They
         // are named like any other icon everywhere else in the mod; inside a number they are not a
         // word at all (see ManpowerReading).
@@ -147,7 +136,7 @@ namespace ES2Access.Screens
             Side(
                 builder,
                 YoursRegion,
-                YourFleetsKey,
+                ModStrings.BattleYourFleets,
                 window.LeftBattleGroupInfoPanel,
                 AgeWidgets.Transform(window.LeftBattleGroupSetupPanel),
                 "battle-setup/yours"
@@ -155,7 +144,7 @@ namespace ES2Access.Screens
             Side(
                 builder,
                 TheirsRegion,
-                EnemyFleetsKey,
+                ModStrings.BattleEnemyFleets,
                 window.RightBattleGroupInfoPanel,
                 AgeWidgets.Transform(window.RightBattleGroupSetupPanel),
                 "battle-setup/theirs"
@@ -228,7 +217,7 @@ namespace ES2Access.Screens
             Arena(builder, null, window.ArenaNameLabel, window.ArenaGroupTooltip);
 
             builder.SetRegion(YoursRegion);
-            bool yours = Context(builder, YourFleetsKey);
+            bool yours = Context(builder, ModStrings.BattleYourFleets);
             Leader(builder, window.LeftBattleGroupInfoPanel, "battle-report/yours");
             Card(builder, window.PlayerBattlePlayCard, ReportPlanTitleKey, "battle-report/your-plan");
             BattleRosters.Roster(
@@ -240,7 +229,7 @@ namespace ES2Access.Screens
             Close(builder, yours);
 
             builder.SetRegion(TheirsRegion);
-            bool theirs = Context(builder, EnemyFleetsKey);
+            bool theirs = Context(builder, ModStrings.BattleEnemyFleets);
             Leader(builder, window.RightBattleGroupInfoPanel, "battle-report/theirs");
             Card(builder, window.EnemyBattlePlayCard, ReportPlanTitleKey, "battle-report/their-plan");
             BattleRosters.Roster(
@@ -310,7 +299,7 @@ namespace ES2Access.Screens
             Troops(
                 builder,
                 YoursRegion,
-                YourTroopsKey,
+                ModStrings.BattleYourTroops,
                 window.LeftBattleGroupInfoPanel,
                 window.LeftContenderPanel,
                 "ground-setup/yours"
@@ -318,7 +307,7 @@ namespace ES2Access.Screens
             Troops(
                 builder,
                 TheirsRegion,
-                EnemyTroopsKey,
+                ModStrings.BattleEnemyTroops,
                 window.RightBattleGroupInfoPanel,
                 window.RightContenderPanel,
                 "ground-setup/theirs"
@@ -390,7 +379,7 @@ namespace ES2Access.Screens
             GroundBalance(builder, window, battle, false, "ground-report/balance");
 
             builder.SetRegion(YoursRegion);
-            bool yours = Context(builder, YourTroopsKey);
+            bool yours = Context(builder, ModStrings.BattleYourTroops);
             Leader(builder, window.LeftBattleGroupInfoPanel, "ground-report/yours");
             Note(
                 builder,
@@ -403,7 +392,7 @@ namespace ES2Access.Screens
             Close(builder, yours);
 
             builder.SetRegion(TheirsRegion);
-            bool theirs = Context(builder, EnemyTroopsKey);
+            bool theirs = Context(builder, ModStrings.BattleEnemyTroops);
             Leader(builder, window.RightBattleGroupInfoPanel, "ground-report/theirs");
             Note(
                 builder,
@@ -1528,7 +1517,10 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (BattleText.Optional(BalanceKey, string.Empty, 0, string.Empty) == null)
+            if (
+                BattleText.Optional(ModStrings.BattleBalance, string.Empty, 0, string.Empty)
+                == null
+            )
             {
                 return;
             }
@@ -1593,12 +1585,12 @@ namespace ES2Access.Screens
                 if (weaker <= 0f)
                 {
                     return stronger <= 0f
-                        ? BattleText.Optional(BalanceKey, strongName, 0, weakName)
-                        : BattleText.Optional(BalanceAllKey, strongName, weakName);
+                        ? BattleText.Optional(ModStrings.BattleBalance, strongName, 0, weakName)
+                        : BattleText.Optional(ModStrings.BattleBalanceAll, strongName, weakName);
                 }
 
                 return BattleText.Optional(
-                    BalanceKey,
+                    ModStrings.BattleBalance,
                     strongName,
                     Mathf.RoundToInt((stronger / weaker - 1f) * 100f),
                     weakName
@@ -1685,7 +1677,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (BattleText.Optional(GroundBalanceKey, 0, 0) == null)
+            if (BattleText.Optional(ModStrings.BattleGroundBalance, 0, 0) == null)
             {
                 return;
             }
@@ -1746,7 +1738,7 @@ namespace ES2Access.Screens
             int theirs = Manpower(window, powers, RightManpowerIndex);
             return ours < 0 || theirs < 0
                 ? null
-                : BattleText.Optional(GroundBalanceKey, ours, theirs);
+                : BattleText.Optional(ModStrings.BattleGroundBalance, ours, theirs);
         }
 
         /// <summary>What each side committed to the invasion - the setup gauge's own figures.</summary>
@@ -2560,7 +2552,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (BattleText.Optional(TimeLeftKey, 0) == null)
+            if (BattleText.Optional(ModStrings.BattleTimeLeft, 0) == null)
             {
                 return;
             }
@@ -2582,7 +2574,7 @@ namespace ES2Access.Screens
             try
             {
                 return BattleText.Optional(
-                    TimeLeftKey,
+                    ModStrings.BattleTimeLeft,
                     Mathf.Clamp(Mathf.RoundToInt(ratio() * 100f), 0, 100)
                 );
             }

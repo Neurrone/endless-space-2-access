@@ -106,7 +106,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.diplomacy"; }
+            get { return ModStrings.ScreenDiplomacy; }
         }
 
         /// <summary>The eighth of the icon strip's screens, drawn over whichever view level is

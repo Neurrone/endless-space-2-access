@@ -45,7 +45,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.message-box"; }
+            get { return ModStrings.ScreenMessageBox; }
         }
 
         /// <summary>Above every ordinary screen: a modal is on top of whatever raised it, and this

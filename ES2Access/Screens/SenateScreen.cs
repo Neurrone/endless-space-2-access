@@ -62,7 +62,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.senate"; }
+            get { return ModStrings.ScreenSenate; }
         }
 
         /// <summary>Above the view levels it is drawn over, beside the technology wheel and the quest

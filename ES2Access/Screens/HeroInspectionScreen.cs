@@ -86,7 +86,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.hero-inspection"; }
+            get { return ModStrings.ScreenHeroInspection; }
         }
 
         /// <summary>Over everything that opens it - the Academy page and the hero picker at 15 and 28,

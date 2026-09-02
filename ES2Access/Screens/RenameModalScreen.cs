@@ -29,7 +29,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.rename"; }
+            get { return ModStrings.ScreenRename; }
         }
 
         /// <summary>Above every page it can be opened from, and below the confirmation box, which is

@@ -57,7 +57,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.dlc"; }
+            get { return ModStrings.ScreenDlc; }
         }
 
         protected override string Prefix
@@ -67,7 +67,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.dlc"; }
+            get { return ModStrings.ScreenDlc; }
         }
 
         /// <summary>The tabs, because they decide what the rest of the page is.</summary>

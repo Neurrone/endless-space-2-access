@@ -48,13 +48,13 @@ namespace ES2Access.Screens
         /// <summary>The mod's own name for the page, since it writes no heading of its own - the outcome
         /// is drawn as artwork. Optional: a build without the phrase says nothing rather than reading the
         /// key.</summary>
-        private const string ScreenNameKey = "screen.victory";
+        private const string ScreenNameKey = ModStrings.ScreenVictory;
 
         private readonly List<Cell> _cells = new List<Cell>();
 
         public override string Key
         {
-            get { return "screen.victory"; }
+            get { return ModStrings.ScreenVictory; }
         }
 
         /// <summary>With the main menu and the lobby: an out-of-game page that replaces the menu rather

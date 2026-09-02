@@ -48,7 +48,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.game-menu"; }
+            get { return ModStrings.ScreenGameMenu; }
         }
 
         /// <summary>Above the popups a game corner can hold - a notification does not survive being

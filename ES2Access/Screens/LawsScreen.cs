@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -51,7 +52,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.laws"; }
+            get { return ModStrings.ScreenLaws; }
         }
 
         /// <summary>The heading the window writes over itself ("Pass Laws"), so the page announces itself

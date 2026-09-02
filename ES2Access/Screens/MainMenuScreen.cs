@@ -39,7 +39,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.main-menu"; }
+            get { return ModStrings.ScreenMainMenu; }
         }
 
         public override string ScreenName

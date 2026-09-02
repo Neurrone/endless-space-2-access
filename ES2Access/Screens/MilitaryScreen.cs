@@ -109,7 +109,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.military"; }
+            get { return ModStrings.ScreenMilitary; }
         }
 
         /// <summary>Above the view levels it is drawn over, beside the empire summary and the senate: the

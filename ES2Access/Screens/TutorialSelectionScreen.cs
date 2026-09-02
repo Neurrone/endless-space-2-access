@@ -44,7 +44,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.tutorial-selection"; }
+            get { return ModStrings.ScreenTutorialSelection; }
         }
 
         /// <summary>Over the new game screen it is drawn on. Nothing of ours is under it yet and only

@@ -83,7 +83,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.research"; }
+            get { return ModStrings.ScreenResearch; }
         }
 
         /// <summary>Above the view levels the wheel is drawn over, and below the panel a planet card

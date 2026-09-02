@@ -47,7 +47,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.advanced-settings"; }
+            get { return ModStrings.ScreenAdvancedSettings; }
         }
 
         /// <summary>Just above the new game page it is opened from - its only opener - and well below

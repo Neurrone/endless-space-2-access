@@ -44,7 +44,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.academy-diplomacy"; }
+            get { return ModStrings.ScreenAcademyDiplomacy; }
         }
 
         /// <summary>Shared with the Academy's own window, above the hero inspection window at 45.</summary>

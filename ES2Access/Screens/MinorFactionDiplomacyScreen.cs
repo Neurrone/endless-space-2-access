@@ -62,7 +62,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.minor-diplomacy"; }
+            get { return ModStrings.ScreenMinorDiplomacy; }
         }
 
         /// <summary>Over the star-system page and the galaxy map that open it; 42 is the advanced battle

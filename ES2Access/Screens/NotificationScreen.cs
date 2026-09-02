@@ -148,7 +148,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.notification"; }
+            get { return ModStrings.ScreenNotification; }
         }
 
         /// <summary>Where the engine itself puts notifications: above the screens, below every modal
@@ -3628,7 +3628,7 @@ namespace ES2Access.Screens
                         Out(
                             To(
                                 ((DiplomaticRelationChangeNotificationWindow)w).DidNotAgreeWarButton,
-                                NegotiationGatewayKey
+                                ModStrings.NotifyOpenNegotiation
                             )
                         ),
                 }
@@ -3645,7 +3645,7 @@ namespace ES2Access.Screens
                         Out(
                             To(
                                 ((MinorEmpireMetNotificationWindow)w).NegotiationButton,
-                                MinorFactionGatewayKey
+                                ModStrings.NotifyOpenMinorFaction
                             )
                         ),
                 }
@@ -3667,7 +3667,7 @@ namespace ES2Access.Screens
                         Out(
                             To(
                                 ((EmpireEliminatedNotificationWindow)w).ScoreScreenButton,
-                                ScoreScreenGatewayKey
+                                ModStrings.NotifyOpenScoreScreen
                             )
                         ),
                 }
@@ -3695,7 +3695,7 @@ namespace ES2Access.Screens
                                         (ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w
                                     ).academyScreen
                                 ),
-                                AcademyGatewayKey
+                                ModStrings.NotifyOpenAcademy
                             )
                         ),
                 }
@@ -3731,14 +3731,6 @@ namespace ES2Access.Screens
         {
             return widgets;
         }
-
-        /// <summary>The mod's own names for where a gateway button goes, used only where the popup wrote no
-        /// caption and no tooltip on it. Asked for optionally, so a build without the phrase leaves the
-        /// button to whatever the game did write rather than reading a key aloud.</summary>
-        private const string NegotiationGatewayKey = "notify.open-negotiation";
-        private const string MinorFactionGatewayKey = "notify.open-minor-faction";
-        private const string ScoreScreenGatewayKey = "notify.open-score-screen";
-        private const string AcademyGatewayKey = "notify.open-academy";
 
         /// <summary>The roles the academy has handed out, which its popup draws as cloned lines inside a
         /// panel of its own - and only while the academy is in the state that shows them.</summary>

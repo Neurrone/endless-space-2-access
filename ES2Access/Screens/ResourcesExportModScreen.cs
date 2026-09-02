@@ -108,7 +108,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.resources-export"; }
+            get { return ModStrings.ScreenResourcesExport; }
         }
 
         protected override string Prefix

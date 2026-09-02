@@ -43,7 +43,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.hero-complete-list"; }
+            get { return ModStrings.ScreenHeroCompleteList; }
         }
 
         /// <summary>Over the Academy page that opens it, and below everything this window could raise over

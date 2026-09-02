@@ -77,7 +77,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.new-game"; }
+            get { return ModStrings.ScreenNewGame; }
         }
 
         /// <summary>The same layer as the main menu it replaces: it is the other full-screen out-game

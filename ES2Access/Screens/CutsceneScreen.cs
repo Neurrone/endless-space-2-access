@@ -54,7 +54,7 @@ namespace ES2Access.Screens
         /// <summary>The mod's own word for "a video is playing", for a window that draws no heading and
         /// whose whole content may be a picture. Optional: a build without the phrase says nothing rather
         /// than reading the key.</summary>
-        private const string ScreenNameKey = "screen.cutscene";
+        private const string ScreenNameKey = ModStrings.ScreenCutscene;
 
         /// <summary>The subtitle last spoken, so the same line is not repeated while it stays up. Instance
         /// state, so a hot reload starts the watch over.</summary>
@@ -62,7 +62,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.cutscene"; }
+            get { return ModStrings.ScreenCutscene; }
         }
 
         /// <summary>Above the notifications a quest scene is opened from and above the view levels, and

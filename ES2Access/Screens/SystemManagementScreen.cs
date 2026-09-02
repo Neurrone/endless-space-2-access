@@ -89,7 +89,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.star-system"; }
+            get { return ModStrings.ScreenStarSystem; }
         }
 
         /// <summary>The same layer as the galaxy: it is the other half of the same map, and the two are

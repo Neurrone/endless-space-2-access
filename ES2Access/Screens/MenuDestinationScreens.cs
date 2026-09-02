@@ -196,7 +196,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.join-game"; }
+            get { return ModStrings.ScreenJoinGame; }
         }
 
         protected override string Prefix
@@ -206,7 +206,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.join-game"; }
+            get { return ModStrings.ScreenJoinGame; }
         }
 
         protected override GuiWindow Window()

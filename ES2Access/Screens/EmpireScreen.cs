@@ -101,7 +101,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.empire"; }
+            get { return ModStrings.ScreenEmpire; }
         }
 
         /// <summary>Above the view levels it is drawn over, beside the senate and the technology wheel:

@@ -54,7 +54,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.fleet-selection"; }
+            get { return ModStrings.ScreenFleetSelection; }
         }
 
         /// <summary>Over the Academy page that opens it and the galaxy underneath, and below everything

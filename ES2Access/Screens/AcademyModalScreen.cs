@@ -42,7 +42,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.academy-modal"; }
+            get { return ModStrings.ScreenAcademyModal; }
         }
 
         /// <summary>Shared with the Academy's diplomacy window, which it swaps places with.</summary>

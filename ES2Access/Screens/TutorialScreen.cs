@@ -65,7 +65,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.tutorial"; }
+            get { return ModStrings.ScreenTutorial; }
         }
 
         /// <summary>

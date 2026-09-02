@@ -1020,11 +1020,11 @@ namespace ES2Access.UI
             string where = PlaceName(_node);
             return where == null
                 ? ModStrings.Format(
-                    ModStrings.NotificationObliteratorObservedPlain,
+                    ModStrings.NotificationObliteratorFiredPlain,
                     EmpireName(_by)
                 )
                 : ModStrings.Format(
-                    ModStrings.NotificationObliteratorObserved,
+                    ModStrings.NotificationObliteratorFired,
                     EmpireName(_by),
                     where
                 );

@@ -69,7 +69,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.quests"; }
+            get { return ModStrings.ScreenQuests; }
         }
 
         /// <summary>Over the view levels it is drawn on top of, beside the technology wheel and the

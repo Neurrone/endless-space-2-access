@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -50,7 +51,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.government"; }
+            get { return ModStrings.ScreenGovernment; }
         }
 
         /// <summary>Over the senate that opens it, and under the message box anything here could raise.

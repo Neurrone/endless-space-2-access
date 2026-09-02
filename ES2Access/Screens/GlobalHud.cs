@@ -324,7 +324,7 @@ namespace ES2Access.Screens
         /// <summary>The mod's own word for a mode ending, which the game marks by simply taking its
         /// instruction off the screen. Optional: a build without the phrase says nothing rather than
         /// reading the key.</summary>
-        private const string ModeEndedKey = "cursor.mode-ended";
+        private const string ModeEndedKey = ModStrings.CursorModeEnded;
 
         /// <summary>What the game is instructing the player to do with the cursor, or null while it is
         /// instructing nothing. The window is hidden whenever there is no mode, so its own visibility is

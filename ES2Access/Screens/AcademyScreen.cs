@@ -82,7 +82,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.academy"; }
+            get { return ModStrings.ScreenAcademy; }
         }
 
         /// <summary>Above the view levels it is drawn over, beside the empire summary, the senate, the

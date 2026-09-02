@@ -45,7 +45,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.pirate-diplomacy"; }
+            get { return ModStrings.ScreenPirateDiplomacy; }
         }
 
         /// <summary>Beside the minor-faction window, which it can never be up with - both are exclusive

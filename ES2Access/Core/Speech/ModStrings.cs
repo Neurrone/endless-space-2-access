@@ -902,7 +902,9 @@ namespace ES2Access.Core.Speech
 
         /// <summary>One of a world's five outputs and how much of it - the name is the game's own
         /// title for the property, the number the game's own formatting, and this is only the order
-        /// they go in.</summary>
+        /// they go in. Not folded into <see cref="ScanOutput"/> despite the identical English: this
+        /// one is given (name, amount) and that one (amount, name), so one template could not be
+        /// reordered for both.</summary>
         public const string GalaxyScannerOutput = "galaxy.scanner.output";
 
         // --- end scanner categories ---
@@ -1116,12 +1118,12 @@ namespace ES2Access.Core.Speech
         public const string NotificationTradeBlockadeEndedPlain =
             "notification.trade-blockade-ended-plain";
 
+        /// <summary>An Obliterator going off. One pair for both firings the player hears about: the
+        /// name in front is the player's own fleet when the shot is theirs and the firing empire when
+        /// it is somebody else's, which reads the same either way.</summary>
         public const string NotificationObliteratorFired = "notification.obliterator-fired";
         public const string NotificationObliteratorFiredPlain =
             "notification.obliterator-fired-plain";
-        public const string NotificationObliteratorObserved = "notification.obliterator-observed";
-        public const string NotificationObliteratorObservedPlain =
-            "notification.obliterator-observed-plain";
 
         /// <summary>A fleet of the player's reaching the place it was sent to. The journey ENDING is
         /// also how a fleet stopped short reads, so the two are separate families with separate
@@ -1289,6 +1291,9 @@ namespace ES2Access.Core.Speech
         public const string ScreenScanView = "screen.scan-view";
         public const string ScanSystemInfo = "scan.system-info";
         public const string ScanLegend = "scan.legend";
+
+        /// <summary>A figure and the output it counts, in that order (see
+        /// <see cref="GalaxyScannerOutput"/>, which puts the same two the other way round).</summary>
         public const string ScanOutput = "scan.output";
 
         /// <summary>What the legend's own Tab stop is called (owner's word, 2026-09-01). The panel's
@@ -1444,7 +1449,6 @@ namespace ES2Access.Core.Speech
         // nowhere, and what the mod says about an action it carried out.
         public const string SystemColonize = "system.colonize";
         public const string SystemRenamePlanet = "system.rename-planet";
-        public const string SystemRenameSystem = "system.rename-system";
         public const string SystemPopulationMoved = "system.population-moved";
 
         /// <summary>One slot of a colony's population ring: where it is round the ring, and whether
@@ -1476,7 +1480,6 @@ namespace ES2Access.Core.Speech
         public const string SystemBuyOut = "system.buy-out";
         public const string SystemQueuePosition = "system.queue-position";
         public const string SystemProgress = "system.progress";
-        public const string SystemShipSelected = "system.ship-selected";
 
         /// <summary>A rate with no holding beside it: the colony panel's resource strip draws each
         /// resource's per-turn figure and hides the stock label entirely, so the row says what the
@@ -1634,8 +1637,6 @@ namespace ES2Access.Core.Speech
         // number the marketplace changes without ever captioning it, the quantity being traded.
         public const string ScreenEconomy = "screen.economy";
         public const string EconomyQuantity = "economy.quantity";
-        public const string EconomyBuyPanel = "economy.buy-panel";
-        public const string EconomySellPanel = "economy.sell-panel";
         public const string EconomyTaxesPanel = "economy.taxes-panel";
         public const string EconomyLogPanel = "economy.log-panel";
         public const string EconomyAdsPanel = "economy.ads-panel";
@@ -1968,6 +1969,9 @@ namespace ES2Access.Core.Speech
         /// heading of its own.</summary>
         public const string NewGameChatLog = "new-game.chat-log";
 
+        /// <summary>Where a notification popup's gateway button goes, used only where the popup wrote
+        /// no caption and no tooltip on it. Asked for optionally, so a build without the phrase leaves
+        /// the button to whatever the game did write rather than reading a key aloud.</summary>
         public const string NotifyOpenNegotiation = "notify.open-negotiation";
         public const string NotifyOpenMinorFaction = "notify.open-minor-faction";
         public const string NotifyOpenScoreScreen = "notify.open-score-screen";
@@ -2133,11 +2137,6 @@ namespace ES2Access.Core.Speech
         /// gives the line no title anywhere - only a sentence explaining what a relation IS - so the
         /// caption is the mod's (owner ruling 2026-08-22).</summary>
         public const string MinorRelationship = "minor.relationship";
-
-        /// <summary>The pane one of the senate windows writes the selected thing out in; the game gives
-        /// it no heading of its own. Its button band shares <see cref="DiplomacyActionsBand"/>.
-        /// </summary>
-        public const string SenateDetailPane = "senate.detail-pane";
 
         /// <summary>The tutorial picker the game raises over a new game. Only ever spoken if the
         /// window has not written its own heading yet; the heading it draws is what is normally
@@ -2638,8 +2637,6 @@ namespace ES2Access.Core.Speech
             { NotificationTradeBlockadeEndedPlain, "Trade blockade ended" },
             { NotificationObliteratorFired, "{0} fired an Obliterator from {1}" },
             { NotificationObliteratorFiredPlain, "{0} fired an Obliterator" },
-            { NotificationObliteratorObserved, "{0} fired an Obliterator from {1}" },
-            { NotificationObliteratorObservedPlain, "{0} fired an Obliterator" },
             { NotificationFleetArrived, "{0} arrived at {1}" },
             { NotificationFleetArrivedPlain, "{0} arrived" },
             { NotificationFleetLostSight, "Lost sight of {0} fleet {1}, last seen at {2}" },
@@ -2738,7 +2735,6 @@ namespace ES2Access.Core.Speech
             { SystemHangarPanel, "Hangar" },
             { SystemColonize, "Colonize" },
             { SystemRenamePlanet, "Rename planet" },
-            { SystemRenameSystem, "Rename system" },
             { SystemPopulationMoved, "Moved {0} to {1}" },
             { SystemPopulationSlot, "Slot {0} of {1}" },
             { SystemPopulationSlotEmpty, "Empty slot {0} of {1}" },
@@ -2751,7 +2747,6 @@ namespace ES2Access.Core.Speech
             { SystemBuyOut, "Buy out with {0}" },
             { SystemQueuePosition, "position {0}" },
             { SystemProgress, "{0} percent built" },
-            { SystemShipSelected, "selected" },
             { SystemNetPerTurn, "{0} per turn" },
             { FleetsPanelOpened, "Fleet panel open for {0}" },
             { FleetsPanelClosed, "Fleet panel closed" },
@@ -2814,8 +2809,6 @@ namespace ES2Access.Core.Speech
             { ElectionRepresentativesCounted, "{0} of {1} representatives counted" },
             { ScreenEconomy, "Economy" },
             { EconomyQuantity, "Quantity {0}" },
-            { EconomyBuyPanel, "Buy" },
-            { EconomySellPanel, "Sell" },
             { EconomyTaxesPanel, "Marketplace taxes" },
             { EconomyLogPanel, "Recent transactions" },
             { EconomyAdsPanel, "Advertisements" },
@@ -3033,7 +3026,6 @@ namespace ES2Access.Core.Speech
             { DiplomacyTreasury, "Treasury" },
             { MinorBand, "{0} ({1})" },
             { MinorRelationship, "Relationship" },
-            { SenateDetailPane, "Details" },
             { ScreenTutorialSelection, "Tutorial selection" },
             { ScreenNewGame, "New game" },
             { ScreenAdvancedSettings, "Advanced settings" },

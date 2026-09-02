@@ -43,15 +43,6 @@ namespace ES2Access.Screens
 
         private const string SkipTitleKey = "%GroundBattleScreenSkipTitle";
 
-        private const string ScreenNameKey = "screen.ground-battle";
-        private const string RoundKey = "ground-battle.round";
-        private const string BombardmentKey = "ground-battle.bombardment";
-        private const string AssaultKey = "ground-battle.assault";
-        private const string YourTroopLostKey = "ground-battle.your-troop-lost";
-        private const string YourTroopsLostKey = "ground-battle.your-troops-lost";
-        private const string EnemyTroopLostKey = "ground-battle.enemy-troop-lost";
-        private const string EnemyTroopsLostKey = "ground-battle.enemy-troops-lost";
-
         private static readonly object ControlsStop = "ground-battle:controls";
 
         private readonly StepWatch _act = new StepWatch();
@@ -70,7 +61,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.ground-battle"; }
+            get { return ModStrings.ScreenGroundBattle; }
         }
 
         /// <summary>One of the game's view levels over the map, like the space battle and the galaxy - no
@@ -92,7 +83,7 @@ namespace ES2Access.Screens
                         ? null
                         : AgeText.Label(window.IntroductionLocationLabel);
                     return string.IsNullOrEmpty(where)
-                        ? BattleText.Optional(ScreenNameKey)
+                        ? BattleText.Optional(ModStrings.ScreenGroundBattle)
                         : where;
                 }
                 catch (Exception)
@@ -249,11 +240,11 @@ namespace ES2Access.Screens
             string said = null;
             if (phase == GroundBattleViewer.PhaseType.BombardmentPhase)
             {
-                said = BattleText.Optional(BombardmentKey);
+                said = BattleText.Optional(ModStrings.GroundBattleBombardment);
             }
             else if (phase == GroundBattleViewer.PhaseType.AttackPhase)
             {
-                said = BattleText.Optional(AssaultKey);
+                said = BattleText.Optional(ModStrings.GroundBattleAssault);
             }
 
             _phase.Told(step);
@@ -285,7 +276,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string said = BattleText.Optional(RoundKey, round + 1);
+            string said = BattleText.Optional(ModStrings.GroundBattleRound, round + 1);
             if (string.IsNullOrEmpty(said))
             {
                 return;
@@ -317,11 +308,19 @@ namespace ES2Access.Screens
 
             float now = Time.realtimeSinceStartup;
             Voice.Say(
-                BattleText.Losses(_yourTroops.Due(now), YourTroopLostKey, YourTroopsLostKey),
+                BattleText.Losses(
+                    _yourTroops.Due(now),
+                    ModStrings.GroundBattleYourTroopLost,
+                    ModStrings.GroundBattleYourTroopsLost
+                ),
                 false
             );
             Voice.Say(
-                BattleText.Losses(_enemyTroops.Due(now), EnemyTroopLostKey, EnemyTroopsLostKey),
+                BattleText.Losses(
+                    _enemyTroops.Due(now),
+                    ModStrings.GroundBattleEnemyTroopLost,
+                    ModStrings.GroundBattleEnemyTroopsLost
+                ),
                 false
             );
         }
