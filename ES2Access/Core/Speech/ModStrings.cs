@@ -3200,6 +3200,37 @@ namespace ES2Access.Core.Speech
                 || ActionDefaults.TryGetValue(key, out template);
         }
 
+        /// <summary>
+        /// Every key the mod ships an English phrase for, across all four default tables.
+        ///
+        /// <see cref="TryGetDefault"/> answers "is this key ours"; this answers "what are all of
+        /// them", which is the question the translation template has to match in BOTH directions -
+        /// a key missing from english.json is a phrase no translator is ever offered, and there is
+        /// no way to see that from the individual lookups.
+        /// </summary>
+        public static IEnumerable<string> DefaultKeys()
+        {
+            foreach (string key in Defaults.Keys)
+            {
+                yield return key;
+            }
+
+            foreach (string key in IconDefaults.Keys)
+            {
+                yield return key;
+            }
+
+            foreach (string key in HintDefaults.Keys)
+            {
+                yield return key;
+            }
+
+            foreach (string key in ActionDefaults.Keys)
+            {
+                yield return key;
+            }
+        }
+
         /// <summary>Whether the mod ships a phrase for <paramref name="key"/> at all - asked where a
         /// key is COMPOSED and may legitimately not exist (a keyboard key the hint table does not
         /// name), so that <see cref="Get"/>'s warn-once is not spent on a miss that is expected.
