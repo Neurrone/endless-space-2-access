@@ -54,6 +54,38 @@ namespace ES2Access.Tests.Speech
             Assert.Null(SelectionText.Range(new List<string> { "Vanguard", "" }));
         }
 
+        /// <summary>The range is a counted pair, so a three-form language's paucal reaches it - which
+        /// is the whole reason the pair has a singular nobody ever hears.</summary>
+        [Fact]
+        public void AThreeFormLanguageTakesThePaucalForASmallRange()
+        {
+            ModStrings.Install(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.FleetsShipRange, "one {0} {1} {2}" },
+                    { ModStrings.FleetsShipsRange, "many {0} {1} {2}" },
+                    {
+                        ModStrings.FleetsShipsRange + PluralRules.FewSuffix,
+                        "few {0} {1} {2}"
+                    },
+                },
+                "russian"
+            );
+
+            List<string> three = new List<string> { "Vanguard", "Patrol", "Settler" };
+            Assert.Equal("few 3 Vanguard Settler", SelectionText.Range(three));
+
+            List<string> five = new List<string>
+            {
+                "Vanguard",
+                "Patrol",
+                "Settler",
+                "Probe",
+                "Scout",
+            };
+            Assert.Equal("many 5 Vanguard Scout", SelectionText.Range(five));
+        }
+
         [Fact]
         public void TranslationsReorderTheWholeSentence()
         {

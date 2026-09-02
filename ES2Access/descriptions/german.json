@@ -1,0 +1,469 @@
+{
+  "Arctic": [
+    { "at": 1, "end": 4.5, "text": "Eine blasse Sonne scheint über ein gefrorenes Tal zwischen zerklüfteten, schneebedeckten Bergen. Riesige, leuchtend türkise Kristalle ragen aus den eisigen Hängen." },
+    { "at": 4.5, "end": 8.5, "text": "Ein Kolonieschiff zieht über den hellen Himmel. Darunter stehen Silhouetten großer, langschwänziger Bestien reglos im eisigen Nebel." },
+    { "at": 8.5, "end": 11, "text": "Winde peitschen losen Schnee über das öde Eis." },
+    { "at": 11, "end": 12.693, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Arid": [
+    { "at": 1, "end": 4.5, "text": "Ein heller Lichtstreif zieht durch einen sternklaren Dämmerhimmel aus dunklem Violett und feurigem Orange, während das Kolonieschiff niedergeht." },
+    { "at": 4.5, "end": 7.5, "text": "Es fällt einer weiten, stillen Wüste aus rostrotem Staub und zerklüfteten, windgeschliffenen Felsen entgegen." },
+    { "at": 7.5, "end": 10.5, "text": "Im Vordergrund steht eine riesige, dunkle Insektenkreatur auf einem Felsvorsprung." },
+    { "at": 10.5, "end": 12.522, "text": "Im Hintergrund erhebt sich eine weitläufige Stadt aus blassem Stein über der Ebene." }
+  ],
+  "Ash": [
+    { "at": 1, "end": 4, "text": "Dichte Asche treibt durch die dunkle Luft und fällt wie Schnee über ein finsteres Ödland." },
+    { "at": 4, "end": 7, "text": "Zerklüftete Gipfel aus schwarzem Fels durchstoßen das Düster, als Silhouetten vor einem harten, blassen Licht am Horizont." },
+    { "at": 7, "end": 12.736, "text": "Blitze zucken aus dem schweren, wogenden Himmel." }
+  ],
+  "Atoll": [
+    { "at": 1, "end": 4, "text": "Ein Kolonieschiff schießt durch einen sternklaren, tiefblauen Himmel herab." },
+    { "at": 4, "end": 7, "text": "Darunter erheben sich hoch aufragende, geschwungene Felsformationen aus einem türkisen Meer und neigen sich über das Wasser." },
+    { "at": 7, "end": 10, "text": "Leuchtend bunte außerirdische Vögel gleiten an schmalen Wasserfällen vorbei, die von den dicht bewaldeten Klippen stürzen." },
+    { "at": 10, "end": 13.013, "text": "Sanfte Wellen umspülen den weißen Sand eines unberührten Strandes, gesäumt von üppigen Farnen." }
+  ],
+  "Barren": [
+    { "at": 1.5, "end": 5.5, "text": "Ein dunkles, felsiges Ödland reicht bis zu einem fernen Kamm. Darüber erhellen ein leuchtender blaugrüner Nebel und ein kleiner roter Mond den Sternenhimmel." },
+    { "at": 5.5, "end": 9, "text": "Ein Kolonieschiff schießt von links oben herab, ein greller weißer Lichtpunkt, der über den Himmel zieht." },
+    { "at": 9, "end": 12.693, "text": "Es sinkt dem leblosen Gelände entgegen und bringt die erste Regung in eine öde Welt." }
+  ],
+  "Boreal": [
+    { "at": 1, "end": 4.5, "text": "Eine diesige, blassgelbe Sonne wärmt eine raue Landschaft aus braunem Gras, verstreuten Kiefern und schmelzenden Schneeflecken." },
+    { "at": 4.5, "end": 9, "text": "Neben einem gewaltigen Baum mit weit ausladenden Wurzeln versammeln sich drei schlanke, vierbeinige Geschöpfe auf Felsvorsprüngen. Sie haben lange Schnauzen, Kämme auf dem Kopf und lange, geschwungene Schwänze." },
+    { "at": 9, "end": 13.418, "text": "Sie blicken über einen weiten See zu hoch aufragenden Felsformationen. Hoch oben sinkt der helle Streif eines Landers durch den goldenen Himmel." }
+  ],
+  "Cravers_Intro": [
+    { "at": 0, "end": 5.565, "text": "Blasen steigen durch eine trübe, goldene Flüssigkeit. Zwei menschenähnliche Gestalten aus leuchtend gelber Energie treten aus dem Dunst." },
+    { "at": 8.9, "end": 9.884, "text": "Sie blicken in einen zylindrischen Glastank." },
+    { "at": 12.436, "end": 15, "text": "Darin hängt eine mechanische Insektenkreatur an Kabeln." },
+    { "at": 15, "end": 18, "text": "Ein weißer Lichtblitz enthüllt einen gewaltigen, dunkelroten, metallischen Craver. Er hängt kopfüber in einer Abwurfbucht, sein rotes Auge glüht." },
+    { "at": 18, "end": 20.5, "text": "Er ist einer von Hunderten, aufgereiht in engen Reihen." },
+    { "at": 20.5, "end": 25, "text": "Unter ihnen gleiten Luken auf und geben eine Wüstenlandschaft weit unten frei. Die Craver koppeln ab und stürzen." },
+    { "at": 25, "end": 30, "text": "Aus dem Orbit rasen Dutzende Landekapseln auf den Planeten zu." },
+    { "at": 30, "end": 34.132, "text": "Sie durchstoßen die Wolken und stürzen dem trockenen Boden entgegen." },
+    { "at": 37.937, "end": 39.565, "text": "Eine gewaltige Druckwelle breitet sich vom Einschlag über die Wüste aus." },
+    { "at": 43.302, "end": 45.554, "text": "Durch ein rotes Zielkreuz gesehen überrennen Craver ein staubiges Schlachtfeld und feuern auf robotische Feinde." },
+    { "at": 50.114, "end": 52.191, "text": "Eine Explosion taucht alles in weißes Licht. Das Zielkreuz flackert und verlischt." },
+    { "at": 55.739, "end": 58.709, "text": "In der Dunkelheit der Nacht brennen kleine Feuer in den zackigen, rauchenden Ruinen einer zerstörten Stadt." },
+    { "at": 67.822, "end": 72, "text": "Hoch über den Wracks in der Silhouette reißt ein blendendes, goldenes Licht über den Sternenhimmel." },
+    { "at": 72, "end": 76.458, "text": "Das Licht verblasst in völlige Dunkelheit." }
+  ],
+  "Cravers_Outro.LostBack": [
+    { "at": 0, "end": 4.448, "text": "Eine dunkle Gestalt windet sich in einem durchscheinenden, fleischigen Sack. Rote Adern durchziehen die pulsierende Oberfläche." },
+    { "at": 8.57, "end": 9.487, "text": "Zäher Schleim zieht Fäden, als sie sich befreit." },
+    { "at": 14.777, "end": 16.124, "text": "Der dunkle, metallische Craver betrachtet seine Klauen." },
+    { "at": 21.705, "end": 24, "text": "Der Schlüpfling steht zwischen Hunderten leuchtender Säcke." },
+    { "at": 24, "end": 26.5, "text": "Sie bedecken den Boden einer riesigen, fleischigen Höhle und reichen bis in den Dunst." },
+    { "at": 26.5, "end": 30, "text": "Ein weiterer hoch aufragender Craver schreitet im Vordergrund vorbei, seine dunkle Panzerung glänzt." }
+  ],
+  "Cravers_Outro.LostNotBack": [
+    { "at": 0, "end": 2.199, "text": "Ein durchscheinender, fleischiger Eiersack pulsiert mit roten Adern." },
+    { "at": 8.858, "end": 10.35, "text": "Ein metallischer Craver richtet sich auf, triefend von zähem, fleischigem Schleim." },
+    { "at": 17.873, "end": 18.694, "text": "Leuchtende Eier bedecken den weiten Höhlenboden." },
+    { "at": 26.207, "end": 30, "text": "Ein hoch aufragender Craver greift mit einem schweren mechanischen Arm hinaus. Andere stehen zwischen den unzähligen leuchtenden Eiern im riesigen, von Netzen behangenen Bau." }
+  ],
+  "Desert": [
+    { "at": 1, "end": 3.5, "text": "Endlose Sanddünen reichen bis zum Horizont, gebadet im goldenen Licht einer tiefstehenden Sonne." },
+    { "at": 3.5, "end": 6, "text": "Ein gewaltiger rötlicher Mond beherrscht den diesigen Himmel. Dunkle geflügelte Wesen gleiten auf der Thermik der Wüste." },
+    { "at": 6, "end": 12.693, "text": "Ein heller Streif stürzt aus der oberen Atmosphäre. Ein Lander zieht weißes Licht hinter sich her, während er zur stillen Einöde sinkt." }
+  ],
+  "Forest": [
+    { "at": 0.5, "end": 3.5, "text": "Nebel zieht durch einen üppigen Wald aus gewaltigen Bäumen. Ein hoher Vogel mit geschwungenen Kammfedern steht reglos." },
+    { "at": 3.5, "end": 5.5, "text": "Ein greller Lichtstreif sinkt durch das diesige Blätterdach." },
+    { "at": 5.5, "end": 11, "text": "Der Vogel wendet den Kopf und sieht den Lander fallen. Leuchtende Partikel schweben sanft in der feuchten Luft, während das Schiff hinter den fernen Bäumen verschwindet." },
+    { "at": 11, "end": 12.693, "text": "Dunkelheit." }
+  ],
+  "GasBurning": [
+    { "at": 0.5, "end": 4, "text": "Ein gewaltiger Gasriese füllt die sternklare Leere. Seine Atmosphäre ist eine wirbelnde Masse aus tiefem Purpur und glühend roter Glut." },
+    { "at": 4, "end": 7.5, "text": "Ein greller rosa Stern flammt hinter dem Planeten auf und wirft Licht über weite, geschwungene Eisringe." },
+    { "at": 7.5, "end": 11, "text": "Ein blasser Halbmond hängt im Dunkeln. Darunter zieht ein winziger Lichtpunkt, das Kolonieschiff, über die Ringe." },
+    { "at": 11, "end": 13.205, "text": "Es sinkt den brennenden Wolken entgegen." }
+  ],
+  "GasCold": [
+    { "at": 1, "end": 5.5, "text": "Ein gigantischer Gasriese füllt die sternklare Leere, seine Atmosphäre wirbelt in indigoblauen und azurnen Bändern. Ein greller, dünner Eisring schneidet diagonal über die blaue Kugel." },
+    { "at": 5.5, "end": 9.5, "text": "Gewaltige, zerklüftete Asteroiden treiben im Vordergrund. Hoch oben sinkt ein winziger Lichtfunke zum Planeten und zieht einen schwachen Schweif nach." },
+    { "at": 9.5, "end": 13.205, "text": "Das Kolonieschiff stürzt hinab und wird von den wogenden blauen Wolken verschluckt." }
+  ],
+  "GasFrozen": [
+    { "at": 1, "end": 5, "text": "Ein gigantischer Gasriese beherrscht die Leere. Wogende Stürme aus eisigem türkisem Licht erhellen seine rechte Hemisphäre." },
+    { "at": 5, "end": 8.5, "text": "Leuchtende Ringe aus Frost und Staub umgeben das tiefe, beschattete Blau der Kugel." },
+    { "at": 8.5, "end": 12.693, "text": "Ein winziger, greller Lichtpunkt, das Kolonieschiff, gleitet an den unteren Ringen entlang, hingezogen zur gefrorenen Welt." }
+  ],
+  "GasHot": [
+    { "at": 1.5, "end": 5, "text": "Ein gewaltiger Gasriese ragt in der sternklaren Leere auf. Seine tiefrote Atmosphäre wogt mit heftigen, glühend orangen Hitzebändern entlang eines Horizonts." },
+    { "at": 5, "end": 7.5, "text": "Ganz in der Nähe leuchtet ein greller türkiser Nebel im dunklen Raum hinter einem kleinen, öden Mond." },
+    { "at": 7.5, "end": 12.693, "text": "Ein winziger Lichtpunkt, das Kolonieschiff, zieht über die dunkle Seite des Riesen. Es hinterlässt eine schwache Spur, während es an der feurigen Atmosphäre vorbei in den Orbit gleitet." }
+  ],
+  "GasTemperate": [
+    { "at": 1, "end": 5.5, "text": "Ein gewaltiger Gasriese hängt in der sternklaren Schwärze. Seine wirbelnde Atmosphäre ist in breiten Bändern aus Blaugrün, Rotbraun und perlmuttfarbenem Weiß gestreift. Ein kleiner grauer Mond kreist links." },
+    { "at": 5.5, "end": 9.5, "text": "Ein Kolonieschiff zieht von links unten zum Planeten, auf einer hellen Lichtspur." },
+    { "at": 9.5, "end": 13.205, "text": "Der winzige Flugkörper sinkt den turbulenten Wolken entgegen und taucht in die weite Gaswelt ein." }
+  ],
+  "GasWarm": [
+    { "at": 1, "end": 4, "text": "Eine helle Sonne flammt hinter dem Horizont eines gewaltigen Gasriesen auf und erleuchtet einen diesigen Nebel." },
+    { "at": 4, "end": 7, "text": "Die Atmosphäre des Planeten ist ein wirbelndes Gemälde aus Karamell, Rost und Creme." },
+    { "at": 7, "end": 13.205, "text": "Ein Kolonieschiff zieht über die turbulenten Bänder, ein einzelner Funke mit einer Linie aus weißem Licht, während es dem grellen Schein entgegensinkt." }
+  ],
+  "Hisshos_Intro": [
+    { "at": 0, "end": 1.465, "text": "Glühend orange Linien laufen wie Tinte in eine schwarze Leere." },
+    { "at": 7.687, "end": 9.098, "text": "Der bemalte Krieger verwandelt sich in einen dunklen, stilisierten Vogel." },
+    { "at": 15.104, "end": 17.73, "text": "Ein stehender Krieger stößt einem knienden Gefährten ein glühendes Schwert durch den Leib. Ein gewaltiges schwarzes Raumschiff steigt auf." },
+    { "at": 31.788, "end": 33.321, "text": "Drei hoch aufragende, vielarmige Roboterwesen türmen sich über dem Krieger." },
+    { "at": 43.104, "end": 49.522, "text": "Ein gepanzerter Vogelkrieger pariert einen gewaltigen Metallhammer mit einer Katana. Glühend orange Augen starren aus einem roten Helm. Der Krieger durchschneidet die Brustpanzerung des Roboters." },
+    { "at": 53.432, "end": 55.527, "text": "Der Krieger stößt das Schwert in den steinernen Boden." },
+    { "at": 58.747, "end": 63, "text": "Goldene Schaltkreise klettern über ein gigantisches, überwuchertes metallisches Bauwerk in einem üppigen Berghang." },
+    { "at": 63, "end": 69, "text": "Die uralten Ruinen erwachen summend und glühen in oranger Energie. Die Masse reißt sich aus der Erde und steigt als gigantisches Raumschiff auf." },
+    { "at": 69, "end": 75, "text": "Das gewaltige Schiff steigt durch Wolken und Nebel und lässt die bewaldeten Klippen zu beiden Seiten winzig wirken. Riesige Triebwerke brennen hell vor dem bedeckten Himmel." },
+    { "at": 75, "end": 77.013, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Hisshos_Outro.LostBack": [
+    { "at": 0, "end": 2.59, "text": "Schwarze Tuschestriche formen einen Arm, gezeichnet mit glühend roten geometrischen Mustern." },
+    { "at": 31.655, "end": 33.568, "text": "Hinter dem Krieger steigen Banner auf." },
+    { "at": 33.568, "end": 37, "text": "Der hoch aufragende Hissho trägt einen Federkopfschmuck und hat glühende Augen, sein schwarzer Körper ist mit weißen geometrischen Mustern bedeckt. Er legt ein Schwert auf die Schulter. Alles verblasst zu Grau." }
+  ],
+  "Hisshos_Outro.LostNotBack": [
+    { "at": 0, "end": 1.828, "text": "Schwarze Tuschestriche formen einen Arm, gezeichnet mit glühend roten geometrischen Mustern." },
+    { "at": 29.733, "end": 30.438, "text": "Hinter dem Krieger steigen Banner auf." },
+    { "at": 33.568, "end": 37, "text": "Der hoch aufragende Hissho trägt einen Federkopfschmuck und hat glühende Augen, sein schwarzer Körper ist mit weißen geometrischen Mustern bedeckt. Er legt ein Schwert auf die Schulter. Alles verblasst zu Grau." }
+  ],
+  "Horatio_Intro": [
+    { "at": 0, "end": 5.288, "text": "Eine hohe, kahle Gestalt in einem weiten grünen Umhang steht mit dem Rücken zum Betrachter und blickt durch ein großes Fenster auf eine Berglandschaft. Der prunkvolle Saal ist von hohen Spiegeln und Topfpflanzen gesäumt." },
+    { "at": 13.33, "end": 14.113, "text": "Ein geisterhaftes Gesicht erscheint im Glas." },
+    { "at": 17.2, "end": 18.1, "text": "Sein eigenes glattes, langgezogenes Gesicht kehrt zurück." },
+    { "at": 21.45, "end": 23.2, "text": "Er steht in einem verspiegelten Gang. Ein schreiendes Gesicht erscheint im Glas." },
+    { "at": 26.45, "end": 27.5, "text": "Das Spiegelbild wandelt sich zu einem schwebenden Gehirn." },
+    { "at": 30.75, "end": 34.2, "text": "Er schreitet an den Spiegeln vorbei. Sein langer grüner Umhang fließt hinter ihm her, über den dunklen Boden." },
+    { "at": 42.8, "end": 43.8, "text": "Er starrt sein eigenes Spiegelbild an." },
+    { "at": 52.6, "end": 56, "text": "In grelles weißes Licht getaucht steht Horatio am oberen Ende einer großen Treppe." },
+    { "at": 56, "end": 60, "text": "Unter ihm säumen zwei Reihen identischer Klone den Fuß der Treppe." },
+    { "at": 60, "end": 71, "text": "Die Klone stehen stramm und blicken zu ihrem Anführer hinauf. Sie sind in einer riesigen Halle mit hohen Säulen versammelt. Durch gewaltige Fenster ist ein dunkler Planet in der sternklaren Leere des Alls zu sehen." },
+    { "at": 71, "end": 74.048, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Horatio_Outro.LostBack": [
+    { "at": 8.219, "end": 9.361, "text": "Horatio, sein Kopf langgezogen, geht an leuchtenden Tanks voller Körper vorbei." },
+    { "at": 20.745, "end": 21.355, "text": "Er steht vor einer glühenden Pyramide." },
+    { "at": 26.275, "end": 28.28, "text": "Das blendende Licht der Pyramide dehnt sich aus und verschlingt ihn und die weite Halle der Tanks in reinem Weiß." }
+  ],
+  "Horatio_Outro.LostNotBack": [
+    { "at": 25.987, "end": 28.28, "text": "Die riesige Halle mit den leuchtenden Klonbecken verblasst zu blendendem Weiß." }
+  ],
+  "Ice": [
+    { "at": 0.5, "end": 3, "text": "Zerklüftete, tiefblaue Eisberge ragen aus einem weiten, aufgebrochenen gefrorenen Meer." },
+    { "at": 3, "end": 5.5, "text": "Schnee rieselt aus einem dunklen Himmel. Ein gewaltiger Halbmond beherrscht den Horizont." },
+    { "at": 5.5, "end": 8.5, "text": "Das Kolonieschiff stürzt aus der oberen Atmosphäre herab, weißglühend." },
+    { "at": 8.5, "end": 13.418, "text": "Es schlägt im fernen Eis ein. Eine hoch aufragende Säule aus weißem Dampf und zersplittertem Eis schießt in die Luft und bauscht sich zu einer gewaltigen Wolke." }
+  ],
+  "Jungle": [
+    { "at": 0.5, "end": 5, "text": "In einem üppigen, schattigen Dschungel rahmen riesige Farne und breite, rot gesäumte Blätter ein nebliges Tal. Ein breiter Wasserfall stürzt eine Felsklippe hinab in einen ruhigen, grün leuchtenden Fluss." },
+    { "at": 5, "end": 8, "text": "Dichte Sonnenstrahlen durchdringen das Blätterdach und erhellen den schweren Nebel. Hoch oben fällt ein greller Lichtpunkt vom Himmel." },
+    { "at": 8, "end": 12.245, "text": "Das Kolonieschiff sinkt auf einer hellen Spur herab, kreuzt die Sonnenstrahlen und taucht nahe den Fällen in das dichte Grün." }
+  ],
+  "Lava": [
+    { "at": 1, "end": 3.5, "text": "Dunkle, zerklüftete Felsformationen ragen aus einem Meer glühend oranger Lava." },
+    { "at": 3.5, "end": 7, "text": "Ein breiter Strom geschmolzenen Gesteins ergießt sich über eine steile Klippe und fällt als greller gelber Vorhang." },
+    { "at": 7, "end": 9.5, "text": "Das Kolonieschiff sinkt als heller Lichtstreif durch den rauchigen Himmel." },
+    { "at": 9.5, "end": 12.693, "text": "Eine blasse Sonne brennt hinter einer geneigten, monolithischen Spitze in der diesigen Ferne." }
+  ],
+  "Metaplot_LostBack": [
+    { "at": 0, "end": 2.625, "text": "Das gewaltige, achtspeichige Schiff der Akademie umkreist einen zerborstenen blauen Planeten, umgeben von Trümmern." },
+    { "at": 6.15, "end": 6.827, "text": "Goldene Energie knistert um es herum." },
+    { "at": 12.739, "end": 15.266, "text": "Im Inneren trifft ein goldener Strahl eine Plattform. Der gepanzerte Isyander breitet die Arme aus, sein Gesicht ein glühender roter Kristall." },
+    { "at": 21.378, "end": 22.464, "text": "Der goldene Strahl schießt in den Sternenhimmel." },
+    { "at": 24.736, "end": 26.117, "text": "Alles verblasst zu einem schwarzen Sternenfeld." },
+    { "at": 29.67, "end": 31.2, "text": "Vier grelle, sternengleiche Lichter entzünden sich in einem farbenprächtigen Nebel." }
+  ],
+  "Metaplot_LostBackVictory": [
+    { "at": 0, "end": 1.052, "text": "Ein vernarbter Planet leuchtet im All." },
+    { "at": 4.822, "end": 5.681, "text": "Eine Menge blickt aus einer Stadt hinauf." },
+    { "at": 8.586, "end": 9.57, "text": "Ein sternförmiges Schiff umkreist die Welt." },
+    { "at": 16.419, "end": 18.68, "text": "Der goldene Strahl des Schiffes ergießt sich in eine gewaltige Pyramide in der Stadt darunter." },
+    { "at": 21.407, "end": 22.802, "text": "In goldener Rüstung steht Isyander mit ausgebreiteten Armen." },
+    { "at": 32.659, "end": 33.307, "text": "Der Strahl durchdringt einen Nebel." },
+    { "at": 35.288, "end": 40, "text": "Zwei gewaltige Augen öffnen sich im Nebel selbst, blaugrüne Wolken um brennend goldene Pupillen. Sie verharren und starren aus dem Dunkel." }
+  ],
+  "Metaplot_LostNotBack": [
+    { "at": 0, "end": 2.318, "text": "Eine gewaltige Raumstation mit langen, strahlenförmigen Speichen umkreist einen blauen Planeten." },
+    { "at": 5.61, "end": 7.527, "text": "Goldene Energie knistert über den dunklen Rumpf der Station." },
+    { "at": 11.502, "end": 14.665, "text": "Ein goldener Strahl bricht aus dem Zentrum der Station. Im Inneren badet Isyander, eine gepanzerte Gestalt mit glühend rotem Gesicht, im Licht." },
+    { "at": 18.637, "end": 19.993, "text": "Der Strahl trifft eine gewaltige Pyramide in einer weitläufigen Stadt." },
+    { "at": 24.216, "end": 25.557, "text": "Die Pyramide detoniert in einer blendenden goldenen Explosion." },
+    { "at": 29.812, "end": 32, "text": "Kniend hebt Isyander die Arme, während das Licht alles verschlingt." }
+  ],
+  "Monsoon": [
+    { "at": 0.5, "end": 3, "text": "Schwerer Regen peitscht auf eine dunkle Landschaft. Breite Wasserfälle stürzen über ferne Klippen im blassgelben Licht." },
+    { "at": 3, "end": 5, "text": "Hoch oben sinkt der helle Streif eines Kolonieschiffs durch schwere Sturmwolken." },
+    { "at": 5, "end": 8, "text": "Im Vordergrund sitzt ein großer Vogel mit leuchtend rotem Kamm auf einem bemoosten Felsen und beobachtet die Fälle." },
+    { "at": 8, "end": 12.138, "text": "Blitze zucken über die endlose Flut." }
+  ],
+  "Ocean": [
+    { "at": 1, "end": 5.5, "text": "Tief unter Wasser wölben sich gewaltige dunkle Wurzeln durch trübes blaues Wasser. Am Meeresgrund leuchtet biolumineszente Flora in Flecken aus kräftigem Rosa und kühlem Türkis und wiegt sich sanft in der Strömung." },
+    { "at": 5.5, "end": 8.5, "text": "Ein gigantisches dunkles Geschöpf gleitet durch das Düster. Es ähnelt einem glatten, augenlosen Wal und zieht dünne Fühler an den Flanken nach." },
+    { "at": 8.5, "end": 13.418, "text": "Ein schlankes Wesen, das an einen Mantarochen mit langem, peitschenartigem Schwanz erinnert, schwimmt anmutig am Riesen vorbei durch die ruhige, leuchtende Tiefe." }
+  ],
+  "Snow": [
+    { "at": 0.5, "end": 4, "text": "Zerklüftete Berge aus Eis und Fels säumen ein stilles, schneebedecktes Tal. Gewaltige blasse Ringe spannen sich über den fernen Himmel." },
+    { "at": 4, "end": 7, "text": "Hoch zwischen den Ringen sinkt ein heller weißer Funke zum Horizont." },
+    { "at": 7, "end": 10, "text": "Im Vordergrund grasen friedlich zwei schlanke, langhalsige Geschöpfe mit weit zurückgeschwungenen Hörnern." },
+    { "at": 10, "end": 12.97, "text": "Büschel leuchtend blauer, knolliger Pflanzen ragen aus dem gefrorenen Boden." }
+  ],
+  "Sophons_Intro": [
+    { "at": 0, "end": 1.424, "text": "Durch dunkle Lamellen leuchtet ein blaues Licht." },
+    { "at": 6.458, "end": 7.314, "text": "Eine schlanke Gestalt mit großem Kopf aus blauen Partikeln." },
+    { "at": 10.266, "end": 10.936, "text": "Eine winzige Maschine spaltet eine Kugel." },
+    { "at": 13.66, "end": 14.462, "text": "Ein Schiff meißelt an einem Asteroiden." },
+    { "at": 17.656, "end": 19.639, "text": "Blendendes Licht strömt in einen Satelliten. Ein Sophon steht stolz da." },
+    { "at": 23.565, "end": 24.498, "text": "Der Sophon schlägt sich im Rauch die Hand vors Gesicht." },
+    { "at": 27.99, "end": 28.888, "text": "Sie berühren eine glühende Bruchlinie." },
+    { "at": 32.49, "end": 36.578, "text": "Ein Hologramm-Mond zerspringt. Sie zucken zusammen, dann stehen sie Schulter an Schulter und blicken auf eine leuchtende Spitze." },
+    { "at": 40.765, "end": 41.504, "text": "Einer hebt den Daumen." },
+    { "at": 44.508, "end": 52.122, "text": "Der Raum fällt weg. Die Spitze ist der Kern einer gigantischen Station. Gewaltige metallische Rippen winden sich spiralförmig um eine blendend blaue Energiesäule." },
+    { "at": 59.754, "end": 60.679, "text": "Sie stehen am Fuß der Station." },
+    { "at": 62.18, "end": 67.008, "text": "Die gigantische Station dreht sich langsam in der dunklen Leere. Alles verblasst zu Schwarz." }
+  ],
+  "Sophons_Outro.LostBack": [
+    { "at": 0, "end": 4, "text": "Feuerwerk zerplatzt am sternklaren Nachthimmel über einer futuristischen Metropole. Elegante, geschwungene Wolkenkratzer und große Reklametafeln leuchten in kräftigem türkisem Neon." },
+    { "at": 4, "end": 8.476, "text": "Ein gigantisches Hologramm eines großköpfigen Sophon wird von einem zentralen Turm projiziert. Fluggeräte huschen zwischen den glänzenden Gebäuden hindurch." },
+    { "at": 13.272, "end": 14.213, "text": "Im Inneren arbeitet ein Sophon an grünen Holobildschirmen." },
+    { "at": 18.789, "end": 19.67, "text": "Ein gewaltiger gewundener Kern dahinter leuchtet türkis." },
+    { "at": 24.672, "end": 27.8, "text": "Der Sophon wirft achselzuckend die Arme hoch. Der Kern flammt in blendendem Türkis auf und taucht den Raum in grellen Schein. Alles verblasst zu Schwarz." }
+  ],
+  "Sophons_Outro.LostNotBack": [
+    { "at": 0, "end": 4.5, "text": "Feuerwerk zerplatzt am sternklaren Nachthimmel über einer eleganten, futuristischen Stadt, getaucht in leuchtend türkises Licht." },
+    { "at": 4.5, "end": 10, "text": "Schwebende Fahrzeuge ziehen zwischen glatten, geschwungenen Wolkenkratzern und riesigen holografischen Reklametafeln hindurch." },
+    { "at": 10, "end": 11.243, "text": "Im Inneren sitzt ein kleiner, grauhäutiger Sophon an einer grün leuchtenden Konsole." },
+    { "at": 24.529, "end": 27.8, "text": "Der Sophon hebt einen Finger. Die rote Warnung der Konsole und eine gewaltige rotierende Spule dahinter schalten sich sofort ab und stürzen den Raum in Dunkelheit." }
+  ],
+  "Steppe": [
+    { "at": 1, "end": 4.5, "text": "Eine weite Ebene aus hohem, goldenem Gras reicht bis zu zerklüfteten, geneigten Bergen unter einem strahlend blauen Himmel." },
+    { "at": 4.5, "end": 8.5, "text": "Im Vordergrund sitzt ein großer, bizarrer Vogel auf einem Felsvorsprung. Ein dünner Kamm schwingt sich über seinen Kopf zurück, und ein gewaltiger, dunkler Schnabel krümmt sich nach unten." },
+    { "at": 8.5, "end": 11.5, "text": "Seine Brust ist weiß, mit grünen und gelben Federn. In der Ferne weidet eine Herde dunkler Tiere." },
+    { "at": 11.5, "end": 14, "text": "Ein heller Lichtstreif reißt über die Wolken." },
+    { "at": 14, "end": 17.5, "text": "Der Lander des Kolonieschiffs sinkt den fernen Bergen entgegen und zieht einen langen Schweif aus weißem Feuer." },
+    { "at": 17.5, "end": 20.533, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Swamp": [
+    { "at": 1, "end": 4, "text": "Dichter gelbgrüner Nebel erstickt einen stehenden Sumpf." },
+    { "at": 4, "end": 8, "text": "Links steht ein zweibeiniges Reptil mit stacheligem Kamm zwischen Farnen und blickt zu einem gewaltigen, knorrigen Baum." },
+    { "at": 8, "end": 11, "text": "Blasses Moos und wirre Ranken hängen von den gewundenen Ästen des Baumes." },
+    { "at": 11, "end": 13.418, "text": "Seine ausladenden Wurzeln versinken in einer hellen Schicht grün leuchtenden Schleims." }
+  ],
+  "Templars_Intro": [
+    { "at": 0, "end": 2.395, "text": "Drei Gestalten gehen durch ein ödes, nebliges Brachland. Gewaltige, zackige Steinsplitter ragen aus der Erde." },
+    { "at": 9.75, "end": 17.233, "text": "Ein nackter Fuß tritt vor, das Bein eng in rotbraunes Leder gewickelt. Die drei Gestalten stehen vor einer hoch aufragenden Felswand, wo eine verzierte metallische Tür einen gewaltigen Höhleneingang verschließt." },
+    { "at": 23.009, "end": 26.902, "text": "Von hinten gesehen beobachtet eine Gestalt mit einem Stab, wie die schweren metallischen Tore aufgleiten und ein helles weißes Licht freigeben." },
+    { "at": 31.202, "end": 37.379, "text": "Verzierte goldene Armschienen bedecken ein Paar verschränkter Arme über dunkelroten Gewändern. In der Höhle gehen die drei Gestalten über eine schmale Brücke auf ein leuchtendes Bauwerk zu, das in der Dunkelheit wurzelt." },
+    { "at": 44.122, "end": 46.776, "text": "Sie blicken hinauf zu einem gewaltigen, dunklen Schrein, in dem eine Gestalt schwebend hängt." },
+    { "at": 49.56, "end": 52.5, "text": "Goldene Energie wirbelt um das metallische Gesicht der Gestalt und ihren hohen, spitzen Kopfschmuck." },
+    { "at": 52.5, "end": 58, "text": "Ein blendender Lichtstoß trifft eine zentrale Säule und strömt entlang gewundener, wurzelartiger Ranken nach außen und erhellt runde Knoten." },
+    { "at": 58, "end": 63, "text": "Drei gepanzerte Gestalten treten aus dem Gleißen. Die mittlere trägt einen dunklen Umhang, ihr gesichtsloses Antlitz eine Maske aus glühender Energie." },
+    { "at": 63, "end": 65.726, "text": "Eine hoch aufragende, filigrane Spitze steigt in die Dunkelheit. Eine einzelne Gestalt steht in einer goldenen, erleuchteten Nische an ihrem Fuß." },
+    { "at": 69.767, "end": 70.569, "text": "Elegante Schiffe fliegen über eine blasse Landschaft." },
+    { "at": 77.438, "end": 83.178, "text": "Leuchtend grüne geometrische Linien erhellen die Tiefe des Grabens. Alles verblasst zu Schwarz." }
+  ],
+  "Templars_Outro.LostBack": [
+    { "at": 0, "end": 1.028, "text": "Eine gehörnte Silhouette hebt einen leuchtenden Stab." },
+    { "at": 14.122, "end": 14.924, "text": "Gewaltige leuchtende Linien formen sich im Nebel." },
+    { "at": 26.283, "end": 30, "text": "Die Linien verschmelzen zu einer hoch aufragenden, geisterhaften Erscheinung, die die Gestalt auf der Treppe winzig wirken lässt. Der gewaltige, leuchtende Kamm beherrscht die Höhle und verblasst dann in Dunkelheit." }
+  ],
+  "Templars_Outro.LostNotBack": [
+    { "at": 0, "end": 0.903, "text": "Eine gehörnte Silhouette hebt einen leuchtenden Stab." },
+    { "at": 13.949, "end": 14.71, "text": "Gewaltige leuchtende Linien formen sich im Nebel." },
+    { "at": 26.283, "end": 30, "text": "Die Linien verschmelzen zu einer hoch aufragenden, geisterhaften Erscheinung, die die Gestalt auf der Treppe winzig wirken lässt. Der gewaltige, leuchtende Kamm beherrscht die Höhle und verblasst dann in Dunkelheit." }
+  ],
+  "Terran": [
+    { "at": 1, "end": 4, "text": "Steile, zerklüftete Berge aus blassgrauem Fels erheben sich aus einem üppigen grünen Tal." },
+    { "at": 4, "end": 7, "text": "Dunkle Kiefern klammern sich an die steilen Klippen. Im Vordergrund stürzt ein Wasserfall über einen Felsvorsprung." },
+    { "at": 7, "end": 10, "text": "Darunter windet sich ein breiter Fluss durch das neblige Tal. Der Himmel erwärmt sich zu einem goldenen Sonnenaufgang am Horizont." },
+    { "at": 10, "end": 12.928, "text": "Hoch oben sinkt das Kolonieschiff auf einer langen Spur aus weißem Licht herab, den fernen Ebenen entgegen." }
+  ],
+  "Terrans_Intro": [
+    { "at": 0, "end": 0.8, "text": "Der strenge, weißbärtige Kaiser Zelevas." },
+    { "at": 14.551, "end": 15.6, "text": "Reihen von Soldaten in Silhouette blicken auf einen erdähnlichen Planeten." },
+    { "at": 31.6, "end": 35.1, "text": "Zwei elegante Schiffe fliegen auf die erdähnliche Welt zu. Sie rast heran und dehnt sich, bis sie alles in Weiß verschlingt." },
+    { "at": 40.55, "end": 41.95, "text": "Ein Entdecker berührt einen winzigen Trieb im Schnee." },
+    { "at": 46.45, "end": 47.25, "text": "Ein reptilienartiger Außerirdischer kniet und bietet Früchte an." },
+    { "at": 51.35, "end": 52.372, "text": "Ein Offizier pflanzt eine rote Flagge auf." },
+    { "at": 57.98, "end": 59.03, "text": "Ein gepanzerter Soldat, ein Mechaniker und ein Wissenschaftler." },
+    { "at": 68.651, "end": 70.5, "text": "Die drei sind auf eine leuchtende Reklametafel gemalt." },
+    { "at": 70.5, "end": 73, "text": "Sie überblickt eine weite, dunkle, industrialisierte Metropole." },
+    { "at": 73, "end": 76.5, "text": "Dichter gelber Smog erstickt die Luft zwischen zackigen Wolkenkratzern." },
+    { "at": 76.5, "end": 78.208, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Terrans_Outro_Mezari.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Fünf weiße Schwerter strahlen über einen tiefroten Hintergrund. Ein weißes Monument erhebt sich." },
+    { "at": 23.361, "end": 25.12, "text": "Wissenschaftler beobachten den Kaiser mit nacktem Oberkörper, verkabelt mit Maschinen und von Energie leuchtend. Dunkelheit." }
+  ],
+  "Terrans_Outro_Mezari.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Fünf weiße Schwerter strahlen über einen tiefroten Hintergrund. Ein weißes Monument erhebt sich." },
+    { "at": 23.179, "end": 25.12, "text": "Wissenschaftler beobachten den Kaiser mit nacktem Oberkörper, verkabelt mit Maschinen und von Energie leuchtend. Dunkelheit." }
+  ],
+  "Terrans_Outro_Sheredyn.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Fünf weiße Schwerter auf rotem Grund werden zu Lichtstrahlen, die hinter einem monumentalen weißen Gebäude hervorstrahlen." },
+    { "at": 23.361, "end": 25.12, "text": "Kabel verbinden seinen nackten Oberkörper mit leuchtenden Maschinen. Er ballt die Faust. Alles verblasst zu Schwarz." }
+  ],
+  "Terrans_Outro_Sheredyn.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Fünf weiße Schwerter auf rotem Grund werden zu Lichtstrahlen, die hinter einem monumentalen weißen Gebäude hervorstrahlen." },
+    { "at": 23.179, "end": 25.12, "text": "Kabel verbinden seinen nackten Oberkörper mit leuchtenden Maschinen. Er ballt die Faust. Alles verblasst zu Schwarz." }
+  ],
+  "Terrans_Outro_UE.LostBack": [
+    { "at": 0, "end": 2.158, "text": "Fünf weiße Strahlen ziehen aufwärts vor einem tiefroten Hintergrund." },
+    { "at": 23.361, "end": 25.12, "text": "Verkabelt mit leuchtenden Säulen ballt der vernarbte Kaiser mit nacktem Oberkörper die Faust. Dunkelheit." }
+  ],
+  "Terrans_Outro_UE.LostNotBack": [
+    { "at": 0, "end": 1.944, "text": "Fünf weiße Strahlen ziehen aufwärts vor einem tiefroten Hintergrund." },
+    { "at": 23.179, "end": 25.12, "text": "Verkabelt mit leuchtenden Säulen ballt der vernarbte Kaiser mit nacktem Oberkörper die Faust. Dunkelheit." }
+  ],
+  "Timelords_Intro": [
+    { "at": 0, "end": 3.27, "text": "Kantige weiße Felsen treiben durch eine helle, nebelverhangene Leere." },
+    { "at": 13.451, "end": 14.102, "text": "Ein dunkler Riss klafft auf." },
+    { "at": 23.25, "end": 24.5, "text": "Eine dunkle Masse pulsiert, ihre Ranken breiten sich aus." },
+    { "at": 30.45, "end": 32.4, "text": "Weiße Felsen stürzen dem pulsierenden schwarzen Kern entgegen." },
+    { "at": 40.528, "end": 47.4, "text": "Ein elegantes, metallisches Raumschiff bricht aus einem wirbelnden Portal aus weißem Licht in die dunkle Leere des Alls. Sein Rumpf besteht aus segmentierten, schwebenden geometrischen Formen mit roten Akzenten." },
+    { "at": 56.842, "end": 60.33, "text": "Das segmentierte Schiff gleitet über den Horizont eines Ringplaneten, dem lodernden Licht einer Sonne entgegen." }
+  ],
+  "Timelords_Outro.LostBack": [
+    { "at": 0, "end": 5.808, "text": "Ein üppiges, nebliges Tal unter bewölktem Himmel. Ein gigantisches weißes Raumschiff schwebt in der Ferne. Im Vordergrund stehen mehrere hohe Roboterwesen zwischen Gras und Bäumen. Ihre Körper bestehen aus scharfkantigen, losgelösten geometrischen Formen, dunkle, bandartige Tentakel ziehen hinter ihnen her." },
+    { "at": 11.943, "end": 12.849, "text": "Ein Roboter hält eine leuchtende rosa Blume." },
+    { "at": 20.635, "end": 24, "text": "In der Handfläche des Roboters verwandelt sich die zarte rosa Blume plötzlich in einen leuchtenden, kantigen weißen Kristall." },
+    { "at": 24, "end": 28, "text": "Der Roboter betrachtet den schwebenden, geometrischen Edelstein. Sein Körper besteht aus dunklen, losen Splittern, verankert um den hell leuchtenden roten Kern in seiner Brust." },
+    { "at": 28, "end": 30, "text": "Alles verblasst in Dunkelheit." }
+  ],
+  "Timelords_Outro.LostNotBack": [
+    { "at": 0, "end": 3, "text": "Sonnenstrahlen durchdringen dunkle Wolken über einem nebligen, grünen Tal. Ein gewaltiges weißes Raumschiff ruht im Gras." },
+    { "at": 3, "end": 6, "text": "Hohe Roboterwesen mit dunkler, kantiger Panzerung und glühend orangen Gelenken mustern den wilden Dschungel." },
+    { "at": 6, "end": 8.308, "text": "Eines tritt im Vordergrund auf einen Felsen. Schwarze Splitter umkreisen seinen schwebenden, rautenförmigen Kopf." },
+    { "at": 12.616, "end": 13.36, "text": "Es hält eine leuchtende rosa Blume." },
+    { "at": 20.606, "end": 24, "text": "Die Blume hat sich in einen makellosen, geometrischen weißen Kristall verwandelt. Er schwebt und dreht sich langsam über der Hand des Wesens." },
+    { "at": 24, "end": 26, "text": "Das Wesen betrachtet die perfekte, kantige Form." },
+    { "at": 26, "end": 30, "text": "Alles verblasst langsam in völlige Dunkelheit." }
+  ],
+  "Tropical": [
+    { "at": 0.5, "end": 2, "text": "Rote Felsbögen erheben sich aus einem türkisen Meer." },
+    { "at": 2, "end": 4.5, "text": "Hoch im strahlend blauen Himmel sinkt der Lander des Kolonieschiffs auf einer Lichtspur herab." },
+    { "at": 4.5, "end": 8, "text": "Er verschwindet hinter den fernen Klippen. Grüne Büsche klammern sich an die felsigen Inseln." },
+    { "at": 8, "end": 12.8, "text": "Ein Vogelschwarm kreist über den Bögen, über dem sanft gekräuselten Wasser." }
+  ],
+  "Tundra": [
+    { "at": 1, "end": 5.5, "text": "Unter einem schweren, blaugrauen Himmel stehen zwei gewaltige, ochsenartige Bestien in einer überfluteten Ebene. Sie haben dichtes braunes Fell und Kronen aus langen, zackigen Hörnern." },
+    { "at": 5.5, "end": 8.5, "text": "Hoch oben zieht ein heller Lichtfunke abwärts. Der Lander des Kolonieschiffs." },
+    { "at": 8.5, "end": 13.418, "text": "Die Bestien warten im nassen, wogenden Gras, während der ferne Flugkörper hinter schneebestäubten Hügeln am Horizont verschwindet." }
+  ],
+  "UmbralChoir_Intro": [
+    { "at": 0, "end": 6.43, "text": "In der tiefen, stillen Weite des Alls funkelt ein riesiges Sternenfeld vor wirbelnden dunkelblauen und smaragdgrünen Nebeln." },
+    { "at": 21.871, "end": 22.942, "text": "Eine ferne Galaxie erstrahlt in hellem Licht." },
+    { "at": 30.562, "end": 31.953, "text": "Hinein in einen leuchtend rosa und violetten Nebel." },
+    { "at": 37.671, "end": 41, "text": "Ein elegantes, dunkles Raumschiff treibt durch das Düster." },
+    { "at": 41, "end": 45.5, "text": "Im Cockpit hängt ein Robotersensor vor einem achteckigen Fenster. Rote holografische Daten flackern auf dem Glas." },
+    { "at": 45.5, "end": 49.166, "text": "Eine Pilotin im gepanzerten Raumanzug sitzt an der Steuerung, ihr Gesicht durch ein klares Visier sichtbar." },
+    { "at": 74.218, "end": 76.252, "text": "Die schattenhafte Wolke mit zwei glühend roten Augen rast auf das Schiff zu." },
+    { "at": 84.093, "end": 91.836, "text": "Violetter Rauch verschlingt die Pilotin und stürzt alles in Dunkelheit. Augenblicke später taucht ihr Gesicht aus den Schatten auf, ihr rechtes Auge glüht stechend violett." },
+    { "at": 97.64, "end": 98.745, "text": "Sie sitzt ruhig da. Eine dunkle Flotte sammelt sich." },
+    { "at": 116.937, "end": 120, "text": "Ein violettes elektronisches Muster kriecht über ihre Wange. Sie lächelt schwach, bevor alles zu Schwarz verblasst." }
+  ],
+  "UmbralChoir_Outro.LostBack": [
+    { "at": 24, "end": 30.08, "text": "Die violette Spiralgalaxie ist nun ein leuchtend goldenes Netz verbundener Knoten. Verstreute rote Rauten markieren Punkte im Netzwerk. Die Karte verblasst langsam in Dunkelheit." }
+  ],
+  "UmbralChoir_Outro.LostNotBack": [
+    { "at": 24, "end": 30.08, "text": "Die violette Spiralgalaxie ist nun ein leuchtend goldenes Netz verbundener Knoten. Verstreute rote Rauten markieren Punkte im Netzwerk. Die Karte verblasst langsam in Dunkelheit." }
+  ],
+  "Unfallen_Intro": [
+    { "at": 0, "end": 1.324, "text": "Der grün-blaue Planet Koyasil dreht sich im All." },
+    { "at": 21.267, "end": 22.157, "text": "Zwei Soldaten richten Gewehre auf einen gefallenen Außerirdischen." },
+    { "at": 31.85, "end": 33.122, "text": "Ein hoch aufragendes, maskiertes Baumwesen erhebt sich hinter den Soldaten." },
+    { "at": 43.884, "end": 46.337, "text": "Ein gewaltiges Schiff aus verflochtenen Wurzeln und roten Segeln startet vom üppigen Planeten." },
+    { "at": 63.222, "end": 64.218, "text": "Drei Wurzelschiffe steigen ins All auf." },
+    { "at": 69.036, "end": 75.05, "text": "Die Schiffe schrumpfen zu leuchtenden Lichtpunkten und reihen sich zwischen die Sterne vor einem Wirbel aus grünem Nebel. Alles verblasst zu Schwarz." }
+  ],
+  "Unfallen_Outro.LostBack": [
+    { "at": 0, "end": 0.981, "text": "Ein goldener Strahl schießt von einem wolkenverhangenen grünen Planeten empor." },
+    { "at": 5.02, "end": 6.301, "text": "Goldene Adern breiten sich über die Nachtseite des Planeten aus." },
+    { "at": 10.336, "end": 11.6, "text": "Weit entfernt eine leuchtende Spiralgalaxie." },
+    { "at": 16.779, "end": 17.567, "text": "Goldene Linien überbrücken die Sterne." },
+    { "at": 27.553, "end": 30, "text": "Das goldene Netz bildet ein gigantisches Wurzelsystem, das die gesamte Galaxie umfasst." }
+  ],
+  "Unfallen_Outro.LostNotBack": [
+    { "at": 0, "end": 2.358, "text": "Ein goldener Lichtstreif schwingt sich von einem üppigen Planeten fort in die sternklare Dunkelheit." },
+    { "at": 6.252, "end": 7.604, "text": "Leuchtende Wurzeln breiten sich über die Nachtseite des Planeten aus." },
+    { "at": 14.491, "end": 15.86, "text": "Der Streif schießt auf eine feurige, wirbelnde Galaxie zu." },
+    { "at": 19.596, "end": 20.577, "text": "Er verbindet Sterne wie eine Konstellation." },
+    { "at": 24.754, "end": 30, "text": "Die leuchtenden Linien breiten sich über die feurige Galaxie aus und formen die Gestalt eines gigantischen, verzweigten Lichtbaums, der den Kosmos umspannt." }
+  ],
+  "Vampirilis_Intro": [
+    { "at": 0, "end": 0.703, "text": "Goldene Linien skizzieren eine Stadt." },
+    { "at": 3.793, "end": 4.502, "text": "Rauch quillt aus gezeichneten Schloten." },
+    { "at": 8.88, "end": 9.622, "text": "Die leuchtende Stadt schrumpft davon." },
+    { "at": 24.912, "end": 25.606, "text": "Die leuchtende Gestalt steht aufrecht." },
+    { "at": 33.122, "end": 35.275, "text": "Eine dunkle, kantige Gestalt erscheint und hebt eine Hand inmitten der Gläubigen." },
+    { "at": 40.313, "end": 43.802, "text": "Der Dämon greift mit zackigen Klauen aus. Die Gläubigen stieben entsetzt auseinander." },
+    { "at": 49.168, "end": 50.702, "text": "Ein gläubiger Krieger kämpft gegen den Ketzer." },
+    { "at": 55.56, "end": 56.742, "text": "Der Krieger streckt ihn nieder." },
+    { "at": 62.21, "end": 65.546, "text": "Die leuchtenden Wandbilder schmücken die Wände einer dunklen, sechseckigen Kammer." },
+    { "at": 71.512, "end": 72.247, "text": "Ein Anführer der Vodyani steht aufrecht." },
+    { "at": 74.157, "end": 80, "text": "In einen wuchtigen schwarzen Anzug gehüllt, mit glühend oranger Gesichtsplatte, hält die Gestalt einen langen Stab." },
+    { "at": 80, "end": 84, "text": "Der Balkon liegt in der verglasten Brücke eines gigantischen Raumschiffs." },
+    { "at": 84, "end": 88, "text": "Draußen in der Leere flankiert eine gewaltige Flotte zackiger Schiffe die große Arche." },
+    { "at": 88, "end": 93, "text": "Glühend orange Triebwerke treiben die Armada in die sternklare Weite." },
+    { "at": 93, "end": 96.682, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Vampirilis_Outro.LostBack": [
+    { "at": 0, "end": 7.787, "text": "Auf einer schwarzen, metallischen Oberfläche zeichnen dünne Linien aus feurig orangem Licht filigrane, kantige Muster. Die glühenden Schaltkreise dehnen sich und formen die stilisierten Umrisse gewaltiger Raumschiffe, eingraviert in das dunkle Metall." },
+    { "at": 12.965, "end": 14.234, "text": "Eine Menge in Silhouette streckt sich dem riesigen, leuchtenden Monolithen entgegen." },
+    { "at": 19.059, "end": 20.306, "text": "Die Anbetenden halten die Arme hoch." },
+    { "at": 25.599, "end": 26.275, "text": "Strahlende, geometrische Flügel entfalten sich." },
+    { "at": 30.923, "end": 38.762, "text": "Eine hoch aufragende Vodyani-Gestalt aus grell orangefarbener Energie und scharfen, kantigen Linien steht voll geformt vor der Dunkelheit. Sie strahlt Licht ab wie ein mechanischer Engel. Die lodernde Erscheinung pulsiert vor Macht, bevor sie zu Schwarz verblasst." }
+  ],
+  "Vampirilis_Outro.LostNotBack": [
+    { "at": 0, "end": 5.24, "text": "Glühend orange Linien zeichnen das elegante, kantige Profil eines gewaltigen Raumschiffs in eine dunkle metallische Oberfläche." },
+    { "at": 9.715, "end": 10.412, "text": "Eine leuchtende Flotte nimmt Gestalt an." },
+    { "at": 20.243, "end": 21.328, "text": "Darunter heben Silhouetten die Arme zur Anbetung." },
+    { "at": 29.892, "end": 34.5, "text": "Eine hoch aufragende Vodyani-Gestalt leuchtet in hellem orangem Licht vor einer dunklen metallischen Wand. Sie trägt eine elegante Rüstung und hat gewaltige, kantige Flügel aus schwebenden geometrischen Splittern." },
+    { "at": 34.5, "end": 37, "text": "Die Wand verblasst in Dunkelheit." },
+    { "at": 37, "end": 38.762, "text": "Die geflügelte Gestalt verschwindet." }
+  ],
+  "Vaulters_Intro": [
+    { "at": 0, "end": 5.348, "text": "In einem höhlenartigen, schwach beleuchteten Frachtraum lehnt eine kantige, rostrote Maschinengestalt an einem Pfeiler, zwischen verstreuten Kisten und herabhängenden Kabeln. Ein grünes Licht flackert über ihrem Visier auf." },
+    { "at": 8.375, "end": 9.934, "text": "Die uralte Maschine bewegt ihren schweren Kopf." },
+    { "at": 12.828, "end": 13.841, "text": "Eine Gestalt, eingefroren hinter vereistem Glas." },
+    { "at": 17.867, "end": 22.747, "text": "In der Mitte einer riesigen, runden Kammer ruht der einsame Roboter unter einem Ring aus fahlem Licht. Eine Konsole daneben projiziert einen holografischen Planeten." },
+    { "at": 25.64, "end": 26.848, "text": "Eine rote Warnung vor Triebwerksausfall blinkt." },
+    { "at": 35.328, "end": 36.536, "text": "Zolya schläft friedlich in einer vereisten Kapsel." },
+    { "at": 40.835, "end": 42.512, "text": "Das fahle Licht in ihrer Kapsel flackert und wird schwächer." },
+    { "at": 44.156, "end": 44.934, "text": "Stumme Kapseln säumen die dunkle Halle." },
+    { "at": 48.555, "end": 51.184, "text": "Eines nach dem anderen erlöschen die schwachen Lichter der Kapseln und tauchen den Korridor in Dunkelheit." },
+    { "at": 53.375, "end": 54.075, "text": "Die Schatten verschlingen alles." },
+    { "at": 58.334, "end": 62, "text": "In der völligen Dunkelheit leuchtet der grüne Schlitz im Visier des Roboters wieder auf." },
+    { "at": 62, "end": 71, "text": "Am fernen Ende des Korridors öffnen sich massive Tore und schneiden einen gleißenden Schacht weißen Lichts durch die staubige Luft. Er überflutet die Reihen der Kryokapseln und beleuchtet die einsame Maschine." },
+    { "at": 71, "end": 76, "text": "Der Roboter starrt in das blendende Licht." },
+    { "at": 76, "end": 81, "text": "In einem grünlich schimmernden Nebel glüht ein gigantischer, ausgehöhlter Asteroid von goldenen Feuern im Inneren. Ein schlankes, ringförmiges Schiff, die Argosy, tritt aus den Felstrümmern hervor." },
+    { "at": 81, "end": 89.216, "text": "Das uralte Kolonieschiff gleitet von der glühenden Hülle fort, nimmt Kurs auf die Sterne und verschwindet in der weiten kosmischen Finsternis." }
+  ],
+  "Vaulters_Outro.LostBack": [
+    { "at": 8.21, "end": 8.84, "text": "Vaulters sehen einem startenden Schiff zu." },
+    { "at": 11.554, "end": 12.189, "text": "Alles verblasst zu Schwarz." },
+    { "at": 23.124, "end": 27.882, "text": "Im All schwebt ein gewaltiger Ring in der Umlaufbahn über Auriga. Eine gleißende Sonne bricht hinter dem dunklen Horizont des Planeten hervor und wirft helle Strahlen in die sternenübersäte Leere." }
+  ],
+  "Vaulters_Outro.LostNotBack": [
+    { "at": 8.515, "end": 9.36, "text": "Das Ringschiff steigt auf." },
+    { "at": 25.679, "end": 27.882, "text": "Alles verblasst zu Schwarz." }
+  ],
+  "Vedt": [
+    { "at": 0.5, "end": 3.5, "text": "In einer goldenen Savanne raschelt hohes, trockenes Gras um dunkle, zerklüftete Felsblöcke." },
+    { "at": 3.5, "end": 7, "text": "Auf einem Felsen ruht ein Wesen mit schlankem Katzenkörper, langem dünnem Schwanz und bestacheltem Kopf und blickt über die Ebene." },
+    { "at": 7, "end": 12.693, "text": "Hoch über fremdartigen Bäumen mit dicken, knolligen Stämmen und kahlen Ästen rast ein strahlend weißer Lander durch den blassblauen Himmel herab." }
+  ],
+  "Venetians_Intro": [
+    { "at": 11.952, "end": 12.84, "text": "Eine Frau sitzt im Gegenlicht eines blauen Fensters." },
+    { "at": 27.39, "end": 28.386, "text": "Er schlägt auf einen Tisch, sodass leuchtende Chips davonfliegen." },
+    { "at": 40.123, "end": 42.379, "text": "Er reißt die Arme zurück, während goldene Energie aus ihm hervorbricht und seine Augen hell leuchten." },
+    { "at": 50.473, "end": 51.959, "text": "In Kampfpanzerung springt er durch eine Explosion und feuert eine Waffe ab." },
+    { "at": 62.326, "end": 66, "text": "Die Frau grinst süffisant. Alles verblasst zu Schwarz." }
+  ],
+  "Venetians_Outro.LostBack": [
+    { "at": 0, "end": 2.137, "text": "Eine blasse Frau in einem hochgeschlossenen Gewand sitzt auf einer glatten Kugel und hält eine leuchtende goldene Sphäre." },
+    { "at": 21.114, "end": 28, "text": "Das leuchtende goldene Gitter unter ihr erstreckt sich endlos in den Raum. Hinter ihr wirbelt ein riesiger Sternennebel in leuchtendem Grün. Aufragende Lichtsäulen steigen vom Gitter in den Kosmos und lassen sie vor der unendlichen Weite winzig wirken. Alles verblasst zu Schwarz." }
+  ],
+  "Venetians_Outro.LostNotBack": [
+    { "at": 0, "end": 2.318, "text": "Eine blasse Frau in einem hochgeschlossenen Gewand sitzt auf einer glatten Kugel und hält eine leuchtende goldene Sphäre." },
+    { "at": 21.114, "end": 28, "text": "Das leuchtende goldene Gitter unter ihr erstreckt sich endlos in den Raum. Hinter ihr wirbelt ein riesiger Sternennebel in leuchtendem Grün. Aufragende Lichtsäulen steigen vom Gitter in den Kosmos und lassen sie vor der unendlichen Weite winzig wirken. Alles verblasst zu Schwarz." }
+  ]
+}

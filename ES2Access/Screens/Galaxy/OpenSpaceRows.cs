@@ -878,7 +878,11 @@ namespace ES2Access.Screens
                 }
 
                 return ModStrings.Format(
-                    turns == 1 ? ModStrings.GalaxyProbeOutOne : ModStrings.GalaxyProbeOutMany,
+                    ModStrings.PluralKey(
+                        ModStrings.GalaxyProbeOutOne,
+                        ModStrings.GalaxyProbeOutMany,
+                        turns
+                    ),
                     direction,
                     near.LocalizedName,
                     turns

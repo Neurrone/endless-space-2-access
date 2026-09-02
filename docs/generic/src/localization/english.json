@@ -51,6 +51,10 @@
   "galaxy.zoomed-out": "Zoomed out",
   "galaxy.player-playing": "{0} player is still playing",
   "galaxy.players-playing": "{0} players are still playing",
+  "galaxy.system-friendly-ship": "{0} friendly ship",
+  "galaxy.system-friendly-ships": "{0} friendly ships",
+  "system.supplying-outpost": "Supplying {0} outpost",
+  "system.supplying-outposts": "Supplying {0} outposts",
   "icon.food": "Food",
   "icon.industry": "Industry"
 }

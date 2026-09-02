@@ -753,13 +753,18 @@ namespace ES2Access.UI
                 );
             }
 
-            string one = bearing
-                ? ModStrings.GalaxyProbeHeadingOne
-                : ModStrings.GalaxyProbeLaunchedOne;
-            string many = bearing
-                ? ModStrings.GalaxyProbeHeadingMany
-                : ModStrings.GalaxyProbeLaunchedMany;
-            return ModStrings.Format(left == 1 ? one : many, towards, left);
+            string key = bearing
+                ? ModStrings.PluralKey(
+                    ModStrings.GalaxyProbeHeadingOne,
+                    ModStrings.GalaxyProbeHeadingMany,
+                    left
+                )
+                : ModStrings.PluralKey(
+                    ModStrings.GalaxyProbeLaunchedOne,
+                    ModStrings.GalaxyProbeLaunchedMany,
+                    left
+                );
+            return ModStrings.Format(key, towards, left);
         }
 
         /// <summary>

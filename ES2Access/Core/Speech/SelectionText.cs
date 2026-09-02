@@ -27,7 +27,9 @@ namespace ES2Access.Core.Speech
         ///
         /// Null when there is no range to report - nothing selected, or a single row, where the row's
         /// own <see cref="Membership"/> is the truthful and shorter answer. The caller falls back to it,
-        /// which is also what keeps "1 ships selected" out of the language.
+        /// which is also what keeps "1 ships selected" out of the language - and why the pair's own
+        /// singular (<see cref="ModStrings.FleetsShipRange"/>) is never spoken, existing only so a
+        /// three-form language is asked for the paucal a range of two, three or four needs.
         /// </summary>
         public static string Range(IList<string> names)
         {
@@ -43,7 +45,16 @@ namespace ES2Access.Core.Speech
                 return null;
             }
 
-            return ModStrings.Format(ModStrings.FleetsShipsRange, names.Count, first, last);
+            return ModStrings.Format(
+                ModStrings.PluralKey(
+                    ModStrings.FleetsShipRange,
+                    ModStrings.FleetsShipsRange,
+                    names.Count
+                ),
+                names.Count,
+                first,
+                last
+            );
         }
     }
 }

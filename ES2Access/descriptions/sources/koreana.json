@@ -1,0 +1,469 @@
+{
+  "Arctic": [
+    "A pale sun shines over a frozen valley between jagged, snow-covered mountains. Giant, glowing cyan crystals jut from the icy slopes.",
+    "A colony ship streaks across the bright sky. Below, silhouettes of large, long-tailed beasts stand motionless in the freezing fog.",
+    "Winds whip loose snow across the desolate ice.",
+    "Everything fades to black."
+  ],
+  "Arid": [
+    "A bright streak of light trails through a starry twilight sky of bruised purple and fiery orange as the colony ship descends.",
+    "It falls toward a vast, silent desert of rust-red dust and jagged, wind-swept rocks.",
+    "In the foreground, a giant, dark insectoid creature stands atop a rocky outcropping.",
+    "In the background, a sprawling city of pale stone rises from the plains."
+  ],
+  "Ash": [
+    "Thick ash sweeps through the dark air, falling like snow over a shadowed wasteland.",
+    "Jagged peaks of black rock pierce the gloom, silhouetted against a harsh, pale light on the horizon.",
+    "Lightning strikes from the heavy, churning sky."
+  ],
+  "Atoll": [
+    "A colony ship streaks down through a starry, deep blue sky.",
+    "Below, towering, curved rock formations rise from a turquoise sea, leaning out over the water.",
+    "Vibrant alien birds glide past narrow waterfalls cascading from the lushly forested cliffs.",
+    "Gentle waves lap the white sand of a pristine beach framed by lush ferns."
+  ],
+  "Barren": [
+    "A dark, rocky wasteland stretches toward a distant ridge. Above it, a brilliant teal nebula and a small red moon illuminate the starry sky.",
+    "A colony ship streaks down from the upper left, a brilliant point of white light trailing across the heavens.",
+    "It descends toward the lifeless terrain, bringing the first spark of movement to a barren world."
+  ],
+  "Boreal": [
+    "A hazy, pale yellow sun warms a rugged landscape of brown grass, scattered pines, and patches of melting snow.",
+    "Beside a massive tree with sprawling roots, three slender, four-legged creatures gather on rocky outcrops. They have long snouts, crested heads, and long, curved tails.",
+    "They look out over a vast lake toward towering rock formations. High above, the bright streak of a landing craft descends through the golden sky."
+  ],
+  "Cravers_Intro": [
+    "Bubbles rise through a murky, golden fluid. Two humanoid figures, formed of glowing yellow energy, step out of the haze.",
+    "They gaze into a cylindrical glass tank.",
+    "Inside, a mechanical, insectoid creature hangs suspended by cables.",
+    "A flash of white light reveals a massive, dark red, metallic Craver. It hangs upside down in a drop bay, its red eye glowing.",
+    "It is one of hundreds, suspended in tight rows.",
+    "Bay doors slide open beneath them, revealing a desert landscape far below. The Cravers detach and plummet.",
+    "From orbit, dozens of drop pods streak toward the planet.",
+    "They punch through the clouds, hurtling toward the arid ground.",
+    "A massive shockwave spreads across the desert from the impact.",
+    "Through a red targeting reticle, Cravers swarm a dusty battlefield, firing on robotic enemies.",
+    "An explosion washes everything in white light. The reticle glitches and fades.",
+    "In the darkness of night, small fires burn among the jagged, smoking ruins of a destroyed city.",
+    "High above the silhouetted wreckage, a blinding, golden light tears across the starry sky.",
+    "The light fades into absolute darkness."
+  ],
+  "Cravers_Outro.LostBack": [
+    "A dark shape writhes inside a translucent, fleshy sac. Red veins web the pulsing surface.",
+    "Viscous slime stretches as it breaks free.",
+    "The dark, metallic Craver inspects its claws.",
+    "The hatchling stands among hundreds of glowing sacs.",
+    "They carpet the floor of a massive, fleshy cavern, stretching into the haze.",
+    "Another towering Craver strides past in the foreground, its dark armor gleaming."
+  ],
+  "Cravers_Outro.LostNotBack": [
+    "A translucent, fleshy egg sac pulses with red veins.",
+    "A metallic Craver rises, dripping viscous, fleshy slime.",
+    "Glowing eggs carpet the vast cavern floor.",
+    "A towering Craver reaches out with a heavy mechanical arm. Others stand among the countless glowing eggs in the massive, web-draped hive."
+  ],
+  "Desert": [
+    "Endless sand dunes stretch to the horizon, bathed in the golden light of a low sun.",
+    "A massive reddish moon dominates the hazy sky. Dark winged creatures glide on the desert thermals.",
+    "A bright streak plunges from the upper atmosphere. A landing craft trails white light as it descends toward the silent wastes."
+  ],
+  "Forest": [
+    "Mist drifts through a lush forest of massive trees. A tall bird with sweeping crest feathers stands motionless.",
+    "A brilliant streak of light descends through the hazy canopy.",
+    "The bird turns its head to watch the landing craft fall. Glowing motes float gently in the damp air as the ship vanishes behind the distant trees.",
+    "Darkness."
+  ],
+  "GasBurning": [
+    "A massive gas giant fills the starry void. Its atmosphere is a swirling mass of deep crimson and glowing red embers.",
+    "A brilliant pink star flares from behind the planet, casting light across wide, sweeping rings of ice.",
+    "A pale crescent moon hangs in the dark. Below it, a tiny point of light, the colony ship, streaks over the rings.",
+    "It descends toward the burning clouds."
+  ],
+  "GasCold": [
+    "A colossal gas giant fills the starry void, its atmosphere swirling with indigo and azure bands. A brilliant, thin ring of ice slices diagonally across the blue sphere.",
+    "Massive, jagged asteroids drift in the foreground. High above, a tiny spark of light descends towards the planet, trailing a faint tail.",
+    "The colony ship plunges down, swallowed by the churning blue clouds."
+  ],
+  "GasFrozen": [
+    "A colossal gas giant dominates the void. Sweeping storms of icy cyan light illuminate its right hemisphere.",
+    "Luminous rings of frost and dust encircle the deep, shadowed blue of the sphere.",
+    "A tiny, brilliant speck of light, the colony ship, glides along the lower rings, drawn toward the frozen world."
+  ],
+  "GasHot": [
+    "A massive gas giant looms in the starry void. Its deep red atmosphere churns with fierce, glowing orange bands of heat along one horizon.",
+    "Nearby, a brilliant cyan nebula glows in the dark space beyond a small, barren moon.",
+    "A tiny point of light, the colony ship, streaks across the dark face of the giant. It leaves a faint trail as it glides past the fiery atmosphere to enter orbit."
+  ],
+  "GasTemperate": [
+    "A massive gas giant hangs in the starry blackness. Its swirling atmosphere is banded in broad strokes of teal, maroon, and pearlescent white. A small grey moon orbits to the left.",
+    "A colony ship streaks toward the planet from the lower left, riding a bright trail of light.",
+    "The tiny craft descends toward the turbulent clouds, plunging into the vast, gaseous expanse."
+  ],
+  "GasWarm": [
+    "A bright sun flares from behind the horizon of a massive gas giant, illuminating a hazy nebula.",
+    "The planet's atmosphere is a swirling canvas of caramel, rust, and cream.",
+    "A colony ship streaks across the turbulent bands, a single spark trailing a line of white light as it descends toward the brilliant glare."
+  ],
+  "Hisshos_Intro": [
+    "Glowing orange lines bleed into a black void like ink.",
+    "The painted warrior morphs into a dark, stylized bird.",
+    "A standing warrior runs a glowing sword through a kneeling companion. A massive black spaceship ascends.",
+    "Three towering, multi-armed robotic entities loom over the warrior.",
+    "An armored avian warrior blocks a massive metal hammer with a katana. Glowing orange eyes glare from a red helmet. The warrior slices through the robot's chest armor.",
+    "The warrior plunges the sword into the stone ground.",
+    "Golden circuitry climbs a colossal, overgrown metallic structure embedded in a lush mountainside.",
+    "The ancient ruins hum to life, glowing with orange energy. The mass tears free from the earth, rising as a gigantic spaceship.",
+    "The immense vessel ascends through clouds and mist, dwarfing the forested cliffs on either side. Massive engines burn bright against the overcast sky.",
+    "Everything fades to black."
+  ],
+  "Hisshos_Outro.LostBack": [
+    "Black ink strokes form an arm, marked with glowing red geometric patterns.",
+    "Banners rise behind the warrior.",
+    "The towering Hissho has a feathered headdress and glowing eyes, his black body covered in white geometric patterns. He rests a sword on his shoulder. Everything fades to grey."
+  ],
+  "Hisshos_Outro.LostNotBack": [
+    "Black ink strokes form an arm, marked with glowing red geometric patterns.",
+    "Banners rise behind the warrior.",
+    "The towering Hissho has a feathered headdress and glowing eyes, his black body covered in white geometric patterns. He rests a sword on his shoulder. Everything fades to grey."
+  ],
+  "Horatio_Intro": [
+    "A tall, bald figure in a sweeping green cape stands with his back turned, looking out a large window at a mountainous landscape. The opulent room is lined with tall mirrors and potted plants.",
+    "A ghostly face appears in the glass.",
+    "His own smooth, elongated face returns.",
+    "He stands in a mirrored hallway. A screaming face appears in the glass.",
+    "The reflection shifts to a floating brain.",
+    "He strides past the mirrors. His long green cape flows behind him, trailing over the dark floor.",
+    "He stares at his own reflection.",
+    "Bathed in brilliant white light, Horatio stands at the top of a grand staircase.",
+    "Below him, two rows of identical clones line the base of the stairs.",
+    "The clones stand at attention, looking up at their leader. They are gathered in a massive hall with towering pillars. Huge windows reveal a dark planet in the starry void of space.",
+    "Everything fades to black."
+  ],
+  "Horatio_Outro.LostBack": [
+    "Horatio, his head elongated, passes glowing tanks of bodies.",
+    "He faces a glowing pyramid.",
+    "The pyramid's blinding light expands, swallowing him and the vast chamber of tanks in pure white."
+  ],
+  "Horatio_Outro.LostNotBack": [
+    "The massive hall of glowing cloning vats fades to blinding white."
+  ],
+  "Ice": [
+    "Jagged, deep blue icebergs jut from a sprawling, cracked frozen sea.",
+    "Snow drifts from a dark sky. A massive crescent moon dominates the horizon.",
+    "The colony ship streaks down from the upper atmosphere, burning white-hot.",
+    "It strikes the distant ice. A towering plume of white steam and shattered ice erupts high into the air, billowing outward into a massive cloud."
+  ],
+  "Jungle": [
+    "In a lush, shadowed jungle, giant ferns and broad, red-tipped leaves frame a misty valley. A wide waterfall cascades down a rocky cliff into a calm, glowing green river.",
+    "Thick sunbeams pierce the dense canopy, illuminating the heavy mist. High above, a brilliant point of light drops from the sky.",
+    "The colony ship descends on a bright trail, crossing the sunbeams and sinking into the deep vegetation near the falls."
+  ],
+  "Lava": [
+    "Dark, jagged rock formations rise from a sea of glowing orange lava.",
+    "A wide river of molten rock pours over a sheer cliff edge, falling as a brilliant yellow curtain.",
+    "The colony ship descends through the smoky sky as a bright streak of light.",
+    "A pale sun burns behind a leaning, monolithic spire in the hazy distance."
+  ],
+  "Metaplot_LostBack": [
+    "The massive, eight-spoked Academy ship orbits a shattered blue planet, surrounded by debris.",
+    "Golden energy crackles around it.",
+    "Inside, a golden beam strikes a platform. The armored Isyander spreads his arms, his face a glowing red crystal.",
+    "The golden beam shoots into the starry sky.",
+    "Everything fades to a black starfield.",
+    "Four brilliant, star-like lights ignite within a colorful nebula."
+  ],
+  "Metaplot_LostBackVictory": [
+    "A scarred planet glows in space.",
+    "A crowd gazes up from a city.",
+    "A star-shaped ship orbits the world.",
+    "The ship's golden beam pours into a massive pyramid in the city below.",
+    "In golden armor, Isyander stands with arms outstretched.",
+    "The beam pierces a nebula.",
+    "Two enormous eyes open in the nebula itself, teal cloud around burning golden pupils. They hold there, staring out of the dark."
+  ],
+  "Metaplot_LostNotBack": [
+    "A massive space station with long radiating spokes orbits a blue planet.",
+    "Golden energy crackles across the station's dark hull.",
+    "A golden beam erupts from the station's center. Inside, Isyander, an armored figure with a glowing red face, basks in the light.",
+    "The beam strikes a massive pyramid in a sprawling city.",
+    "The pyramid detonates in a blinding golden explosion.",
+    "Kneeling, Isyander raises his arms as the light swallows everything."
+  ],
+  "Monsoon": [
+    "Heavy rain lashes a dark landscape. Wide waterfalls cascade over distant cliffs in pale yellow light.",
+    "High above, the bright streak of a colony ship descends through heavy storm clouds.",
+    "In the foreground, a large bird with a bright red crest sits on a mossy rock, watching the falls.",
+    "Lightning flashes over the endless deluge."
+  ],
+  "Ocean": [
+    "Deep underwater, massive dark roots arch through dim blue water. On the seabed, bioluminescent flora glows in patches of vibrant pink and cool cyan, swaying gently in the current.",
+    "A colossal dark creature glides through the gloom. It resembles a smooth, eyeless whale, trailing thin tendrils from its flanks.",
+    "A sleek creature resembling a manta ray with a long, whip-like tail swims gracefully past the giant, navigating the tranquil, glowing depths."
+  ],
+  "Snow": [
+    "Jagged mountains of ice and rock flank a serene, snow-covered valley. Massive pale rings arch across the distant sky.",
+    "High between the rings, a bright white spark descends toward the horizon.",
+    "In the foreground, two slender, long-necked creatures with sweeping backward horns graze peacefully.",
+    "Clusters of glowing blue, bulbous plants rise from the frozen ground."
+  ],
+  "Sophons_Intro": [
+    "Through dark slats, a blue light glows.",
+    "A slender, large-headed figure of blue particles.",
+    "A tiny machine splits a sphere.",
+    "A ship chips at an asteroid.",
+    "Blinding light channels into a satellite. A Sophon stands proudly.",
+    "The Sophon facepalms in the smoke.",
+    "They touch a glowing fault line.",
+    "A hologram moon shatters. They flinch, then stand shoulder-to-shoulder, gazing at a glowing spire.",
+    "One gives a thumbs up.",
+    "The room falls away. The spire is the core of a colossal station. Massive metallic ribs spiral upward around a blinding blue pillar of energy.",
+    "They stand at the station's base.",
+    "The colossal station turns slowly in the dark void. Everything fades to black."
+  ],
+  "Sophons_Outro.LostBack": [
+    "Fireworks burst in a starry night sky above a futuristic metropolis. Sleek, curved skyscrapers and large billboards glow with vibrant cyan neon.",
+    "A colossal hologram of a large-headed Sophon projects from a central tower. Flying vehicles zip between the gleaming buildings.",
+    "Inside, a Sophon works at green holographic screens.",
+    "A massive coiled core behind them glows cyan.",
+    "The Sophon throws their arms up in a shrug. The core blazes with blinding cyan light, swallowing the room in a brilliant glow. Everything fades to black."
+  ],
+  "Sophons_Outro.LostNotBack": [
+    "Fireworks burst in a starry night sky above a sleek, futuristic city bathed in glowing cyan light.",
+    "Hovering vehicles weave between smooth, curved skyscrapers and giant holographic billboards.",
+    "Inside, a small, grey-skinned Sophon sits at a glowing green console.",
+    "The Sophon raises a finger. The console's red warning and a massive spinning coil behind them instantly power down, plunging the room into darkness."
+  ],
+  "Steppe": [
+    "A vast plain of tall, golden grass stretches towards jagged, leaning mountains under a bright blue sky.",
+    "In the foreground, a large, bizarre bird sits on an outcrop. A thin crest loops back over its head, and a massive, dark beak curves downwards.",
+    "Its breast is white, with green and yellow feathers. In the distance, a herd of dark animals grazes.",
+    "A bright streak of light tears across the clouds.",
+    "The colony ship's landing craft descends towards the distant mountains, trailing a long tail of white fire.",
+    "Everything fades to black."
+  ],
+  "Swamp": [
+    "Thick, yellow-green mist chokes a stagnant swamp.",
+    "On the left, a bipedal reptile with a spiked crest stands among ferns, looking toward a massive, gnarled tree.",
+    "Pale moss and tangled vines drape from the tree's twisting branches.",
+    "Its sprawling roots sink into a bright layer of glowing green slime."
+  ],
+  "Templars_Intro": [
+    "Three figures walk across a barren, foggy wasteland. Massive, jagged stone shards jut from the earth.",
+    "A bare foot steps forward, the leg tightly wrapped in maroon leather. The three figures stand before a towering rock face, where an ornate metallic door seals a massive cave entrance.",
+    "Seen from behind, a figure holding a staff watches as the heavy metallic doors slide open, revealing a bright white light.",
+    "Ornate gold bracers cover a pair of crossed arms over dark red robes. Inside the cavern, the three figures walk down a narrow bridge toward a glowing structure rooted in the darkness.",
+    "They look up at a massive, dark shrine, where a figure stands suspended.",
+    "Golden energy swirls around the figure's metallic face and high, pointed headdress.",
+    "A blinding burst of light strikes a central pillar, surging outward along twisting, root-like tendrils to illuminate circular nodes.",
+    "Three armored figures emerge from the glare. The central figure wears a dark cape, their featureless face a mask of glowing energy.",
+    "A towering, intricate spire rises into the darkness. A solitary figure stands in a golden, illuminated alcove at its base.",
+    "Sleek ships fly over a pale landscape.",
+    "Bright green geometric lines illuminate the depths of the trench. Everything fades to black."
+  ],
+  "Templars_Outro.LostBack": [
+    "A horned silhouette raises a glowing staff.",
+    "Massive glowing lines form in the mist.",
+    "The lines coalesce into a towering, spectral entity that dwarfs the figure on the stairs. The massive, glowing crest dominates the cavern, then fades into darkness."
+  ],
+  "Templars_Outro.LostNotBack": [
+    "A horned silhouette raises a glowing staff.",
+    "Massive glowing lines form in the mist.",
+    "The lines coalesce into a towering, spectral entity that dwarfs the figure on the stairs. The massive, glowing crest dominates the cavern, then fades into darkness."
+  ],
+  "Terran": [
+    "Steep, jagged mountains of pale grey rock rise from a lush green valley.",
+    "Dark pine trees cling to the sheer cliffs. In the foreground, a waterfall tumbles over a rocky ledge.",
+    "Below, a wide river winds through the misty valley. The sky warms to a golden sunrise at the horizon.",
+    "High above, the colony ship descends on a long trail of white light, heading for the distant plains."
+  ],
+  "Terrans_Intro": [
+    "The stern, white-bearded Emperor Zelevas.",
+    "Rows of silhouetted soldiers face an Earth-like planet.",
+    "Two sleek ships fly toward the Earth-like world. It rushes closer, expanding until it swallows everything in white.",
+    "An explorer touches a tiny sprout in the snow.",
+    "A reptilian alien kneels, offering fruit.",
+    "An officer plants a red flag.",
+    "An armored soldier, a mechanic, and a scientist.",
+    "The trio are painted on a glowing billboard.",
+    "It overlooks a vast, dark, industrialized metropolis.",
+    "Thick yellow smog chokes the air between jagged skyscrapers.",
+    "Everything fades to black."
+  ],
+  "Terrans_Outro_Mezari.LostBack": [
+    "Five white swords radiate across a deep red background. A white monument rises.",
+    "Scientists observe the bare-chested emperor, wired to machinery and glowing with energy. Darkness."
+  ],
+  "Terrans_Outro_Mezari.LostNotBack": [
+    "Five white swords radiate across a deep red background. A white monument rises.",
+    "Scientists observe the bare-chested emperor, wired to machinery and glowing with energy. Darkness."
+  ],
+  "Terrans_Outro_Sheredyn.LostBack": [
+    "Five white swords on a red background become light beams radiating behind a monumental white building.",
+    "Cables connect his bare torso to glowing machinery. He clenches his fist. Everything fades to black."
+  ],
+  "Terrans_Outro_Sheredyn.LostNotBack": [
+    "Five white swords on a red background become light beams radiating behind a monumental white building.",
+    "Cables connect his bare torso to glowing machinery. He clenches his fist. Everything fades to black."
+  ],
+  "Terrans_Outro_UE.LostBack": [
+    "Five white beams radiate upwards against a deep red background.",
+    "Wired to glowing pillars, the scarred, shirtless emperor clenches his fist. Darkness."
+  ],
+  "Terrans_Outro_UE.LostNotBack": [
+    "Five white beams radiate upwards against a deep red background.",
+    "Wired to glowing pillars, the scarred, shirtless emperor clenches his fist. Darkness."
+  ],
+  "Timelords_Intro": [
+    "Angular white rocks drift through a bright, misty void.",
+    "A dark crack splinters open.",
+    "A dark mass pulses, its tendrils spreading outward.",
+    "White rocks tumble toward the pulsing black core.",
+    "A sleek, metallic spacecraft bursts from a swirling portal of white light into the dark void of space. Its hull is formed of segmented, floating geometric shapes, accented in red.",
+    "The segmented ship glides over the horizon of a ringed planet, heading toward the blazing light of a sun."
+  ],
+  "Timelords_Outro.LostBack": [
+    "A lush, misty valley under a cloudy sky. A colossal white spacecraft hovers in the distance. In the foreground, several tall, robotic beings stand among the grass and trees. Their bodies are built from sharp, detached geometric shapes, with dark, ribbon-like tentacles trailing behind them.",
+    "One robot holds a glowing pink flower.",
+    "In the robot's palm, the delicate pink flower suddenly morphs into a glowing, angular white crystal.",
+    "The robot gazes at the floating, geometric gem. Its body is composed of dark, disconnected shards, anchored around the brightly glowing red core in its chest.",
+    "Everything fades into darkness."
+  ],
+  "Timelords_Outro.LostNotBack": [
+    "Sunbeams pierce dark clouds over a misty, green valley. A massive white spaceship rests on the grass.",
+    "Tall, robotic beings with dark, angular armor and glowing orange joints survey the untamed jungle.",
+    "One steps onto a rock in the foreground. Black shards orbit its floating, diamond-shaped head.",
+    "It holds a glowing pink flower.",
+    "The flower has transformed into a pristine, geometric white crystal. It hovers and turns slowly above the being's hand.",
+    "The being gazes at the perfect, angular shape.",
+    "Everything slowly fades into absolute darkness."
+  ],
+  "Tropical": [
+    "Red rock arches rise from a turquoise sea.",
+    "High in the bright blue sky, the colony ship's landing craft descends on a trail of light.",
+    "It slips behind the distant cliffs. Green bushes cling to the rocky islands.",
+    "A flock of birds circles the arches above the gently rippling water."
+  ],
+  "Tundra": [
+    "Under a heavy, blue-grey sky, two massive, ox-like beasts stand in a flooded plain. They have thick brown coats and crowns of long, jagged horns.",
+    "High above, a bright spark of light trails downwards. The colony ship's landing craft.",
+    "The beasts wait in the wet, swaying grass as the distant craft slips behind snow-dusted hills on the horizon."
+  ],
+  "UmbralChoir_Intro": [
+    "In the deep, silent expanse of space, a vast starfield twinkles against swirling dark blue and emerald nebulae.",
+    "A distant galaxy bursts into bright light.",
+    "Rushing into a bright pink and purple nebula.",
+    "A sleek, dark spacecraft drifts through the gloom.",
+    "Inside the cockpit, a robotic sensor hangs in front of an octagonal window. Red holographic data flickers on the glass.",
+    "A pilot in an armored spacesuit sits at the controls, her face visible through a clear visor.",
+    "The shadowy cloud, bearing two glowing red eyes, rushes toward the ship.",
+    "Purple smoke swallows the pilot, plunging everything into darkness. Moments later, her face emerges from the shadows, her right eye glowing a piercing purple.",
+    "She sits calmly. A dark fleet gathers.",
+    "A purple electronic pattern crawls across her cheek. She smiles faintly before everything fades to black."
+  ],
+  "UmbralChoir_Outro.LostBack": [
+    "The purple spiral galaxy is now a glowing golden web of interconnected nodes. Scattered red diamonds mark points across the network. The map slowly fades into darkness."
+  ],
+  "UmbralChoir_Outro.LostNotBack": [
+    "The purple spiral galaxy is now a glowing golden web of interconnected nodes. Scattered red diamonds mark points across the network. The map slowly fades into darkness."
+  ],
+  "Unfallen_Intro": [
+    "The green and blue planet Koyasil rotates in space.",
+    "Two soldiers aim rifles at a fallen alien.",
+    "A towering, masked tree-being looms behind the soldiers.",
+    "A massive ship of interwoven roots and red sails launches from the lush planet.",
+    "Three root ships ascend into space.",
+    "The ships shrink to glowing points of light, joining the stars against a swirl of green nebula. Everything fades to black."
+  ],
+  "Unfallen_Outro.LostBack": [
+    "A golden beam shoots from a clouded green planet.",
+    "Golden veins spread across the planet's dark side.",
+    "Far away, a vibrant spiral galaxy.",
+    "Golden lines bridge the stars.",
+    "The golden web forms a colossal root system, embracing the entire galaxy."
+  ],
+  "Unfallen_Outro.LostNotBack": [
+    "A golden streak of light arcs away from a lush planet and into the starry dark.",
+    "Glowing roots spread across the planet's dark side.",
+    "The streak shoots toward a fiery, swirling galaxy.",
+    "Linking stars like a constellation.",
+    "The glowing lines spread across the fiery galaxy, forming the shape of a colossal, branching tree of light that spans the cosmos."
+  ],
+  "Vampirilis_Intro": [
+    "Golden lines sketch a city.",
+    "Smoke billows from etched smokestacks.",
+    "The glowing city shrinks away.",
+    "The glowing figure stands tall.",
+    "A dark, angular figure appears, raising a hand among the faithful.",
+    "The demon reaches out with jagged claws. The faithful scatter in terror.",
+    "A faithful warrior battles the heretic.",
+    "The warrior strikes him down.",
+    "The glowing murals decorate the walls of a dark, hexagonal chamber.",
+    "A Vodyani leader stands tall.",
+    "Clad in a bulky black suit with a glowing orange faceplate, the figure holds a long staff.",
+    "The balcony sits within the windowed bridge of a colossal starship.",
+    "Outside in the void, a massive fleet of jagged vessels flanks the great Ark.",
+    "Glowing orange thrusters propel the armada forward into the starry expanse.",
+    "Everything fades to black."
+  ],
+  "Vampirilis_Outro.LostBack": [
+    "On a black, metallic surface, thin lines of fiery orange light trace intricate, angular patterns. The glowing circuits expand to form the stylized shapes of massive spaceships etched into the dark metal.",
+    "A silhouetted crowd reaches toward the huge, glowing monolith.",
+    "The worshipers hold their arms high.",
+    "Radiant, geometric wings unfold.",
+    "A towering Vodyani figure of brilliant orange energy and sharp, angular lines stands fully formed against the darkness. It radiates light like a mechanical angel. The blazing apparition pulses with power before fading to black."
+  ],
+  "Vampirilis_Outro.LostNotBack": [
+    "Glowing orange lines trace the sleek, angular profile of a massive spaceship into a dark metallic surface.",
+    "A glowing fleet takes shape.",
+    "Below, silhouettes raise arms in worship.",
+    "A towering Vodyani figure glows with bright orange light against a dark metallic wall. It wears sleek armor and bears massive, angular wings made of floating geometric shards.",
+    "The wall fades into darkness.",
+    "The winged figure fades away."
+  ],
+  "Vaulters_Intro": [
+    "In a cavernous, dimly lit hold, a blocky, rust-orange mechanical figure slumps against a pillar among scattered crates and trailing cables. A green light flickers to life across its visor.",
+    "The ancient machine shifts its heavy head.",
+    "A figure frozen behind frosted glass.",
+    "In the center of a vast, circular chamber, the solitary robot rests beneath a ring of pale light. A nearby console projects a holographic planet.",
+    "A red engine failure warning flashes.",
+    "Zolya sleeps peacefully inside a frosted pod.",
+    "The pale light inside her pod flickers and dims.",
+    "Silent pods line the dark hall.",
+    "One by one, the faint lights on the pods extinguish, plunging the corridor into darkness.",
+    "The shadows swallow everything.",
+    "In the pitch black, the green slit of the robot's visor flares back to life.",
+    "Massive doors open at the far end of the corridor, carving a brilliant shaft of white light through the dusty air. It washes over the rows of cryo-pods, illuminating the solitary machine.",
+    "The robot stares into the blinding glare.",
+    "In a green-tinged nebula, a colossal, hollowed-out asteroid glows with internal golden fires. A sleek, ring-shaped vessel, the Argosy, emerges from the rocky remnants.",
+    "The ancient colony ship glides away from the glowing husk, charting a course toward the stars before fading into the vast, cosmic dark."
+  ],
+  "Vaulters_Outro.LostBack": [
+    "Vaulters watch a ship launch.",
+    "Everything fades to black.",
+    "In space, a massive ring floats in orbit above Auriga. A brilliant sun flares from behind the planet's dark horizon, casting bright rays into the starry void."
+  ],
+  "Vaulters_Outro.LostNotBack": [
+    "The ring ship ascends.",
+    "Everything fades to black."
+  ],
+  "Vedt": [
+    "On a golden savannah, tall dry grass rustles around dark, rugged boulders.",
+    "Resting on a rock, a creature with a sleek feline body, a long thin tail, and a spiked head looks across the plains.",
+    "High above strange trees with thick, bulbous trunks and bare branches, a bright white landing craft streaks down through the pale blue sky."
+  ],
+  "Venetians_Intro": [
+    "A woman sits backlit by a blue window.",
+    "He slams a table, scattering glowing chips.",
+    "He throws his arms back as golden energy erupts from him, his eyes glowing brightly.",
+    "In combat armor, he leaps through an explosion, firing a weapon.",
+    "The woman smirks. Everything fades to black."
+  ],
+  "Venetians_Outro.LostBack": [
+    "A pale woman in a high-collared gown sits on a smooth orb, holding a glowing golden sphere.",
+    "The glowing golden grid beneath her stretches endlessly into space. Behind her, a vast starry nebula swirls in vibrant green. Towering shafts of light rise from the grid into the cosmos, dwarfing her against the infinite expanse. Everything fades to black."
+  ],
+  "Venetians_Outro.LostNotBack": [
+    "A pale woman in a high-collared gown sits on a smooth orb, holding a glowing golden sphere.",
+    "The glowing golden grid beneath her stretches endlessly into space. Behind her, a vast starry nebula swirls in vibrant green. Towering shafts of light rise from the grid into the cosmos, dwarfing her against the infinite expanse. Everything fades to black."
+  ]
+}

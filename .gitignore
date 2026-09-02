@@ -32,3 +32,7 @@ release-template/BepInEx/plugins/
 release-template/prism.dll
 release-template/prism-NOTICE.txt
 release-template/prism-LICENSE-MPL-2.0.txt
+
+# Glossary extracted from the game's localization tables: a translation aid, regenerable
+# with tools\glossary\extract-glossary.ps1. Amplitude's text is never committed.
+tools/glossary/out/

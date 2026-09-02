@@ -45,9 +45,15 @@ namespace ES2Access.Tests.Speech
                 Assert.Equal(JsonValueKind.Object, document.RootElement.ValueKind);
                 foreach (JsonProperty entry in document.RootElement.EnumerateObject())
                 {
+                    // A language with more than two number forms carries the extra ones under
+                    // "<many key>.few" and "<many key>.one" (ModStrings.Plural); each is
+                    // checked against the English of the key it hangs off, since that is the
+                    // sentence it was written from.
+                    string key = BaseKey(entry.Name);
+
                     string english;
                     Assert.True(
-                        ModStrings.TryGetDefault(entry.Name, out english),
+                        ModStrings.TryGetDefault(key, out english),
                         fileName + ": unknown key '" + entry.Name + "'"
                     );
                     Assert.Equal(JsonValueKind.String, entry.Value.ValueKind);
@@ -94,6 +100,20 @@ namespace ES2Access.Tests.Speech
                     "english.json: missing key '" + key + "' (ModStrings." + field.Name + ")"
                 );
             }
+        }
+
+        // The key an extra counted form hangs off, or the key itself.
+        private static string BaseKey(string key)
+        {
+            foreach (string suffix in new[] { PluralRules.FewSuffix, PluralRules.OneSuffix })
+            {
+                if (key.Length > suffix.Length && key.EndsWith(suffix, StringComparison.Ordinal))
+                {
+                    return key.Substring(0, key.Length - suffix.Length);
+                }
+            }
+
+            return key;
         }
 
         private static SortedSet<string> Placeholders(string template)

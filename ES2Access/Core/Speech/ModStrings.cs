@@ -709,6 +709,7 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerMaxPopulation, "max population {0}" },
             { GalaxyScannerOutput, "{0} {1}" },
             // --- end scanner categories ---
+            { GalaxyFleetShip, "{0} ship" },
             { GalaxyFleetShips, "{0} ships" },
             { GalaxyFleetMoving, "moving" },
             { GalaxyFleetMovement, "{0} movement points" },
@@ -914,6 +915,7 @@ namespace ES2Access.Core.Speech
             { FleetsFleetsPanel, "Fleets" },
             { FleetsHeroPanel, "Hero" },
             { FleetsShipsPanel, "Ships" },
+            { FleetsShipRange, "{0} ship selected, {1} to {2}" },
             { FleetsShipsRange, "{0} ships selected, {1} to {2}" },
             { FleetsShipMoved, "Moved {0} to {1}" },
             { FleetsActionSeatsColonize, "moves focus to the first planet that can be colonized" },
@@ -1213,15 +1215,29 @@ namespace ES2Access.Core.Speech
         private static readonly Dictionary<string, bool> Warned = new Dictionary<string, bool>();
 
         private static Dictionary<string, string> _overrides;
+        private static string _language;
 
         /// <summary>
-        /// Make <paramref name="overrides"/> the active translation overlay. Null or empty clears
-        /// back to the English defaults, which is also the right result for a language with no
-        /// translation file.
+        /// Make <paramref name="overrides"/> the active translation overlay for a language whose
+        /// plural rule is English's. Null or empty clears the overlay back to the English defaults.
         /// </summary>
         public static void Install(IDictionary<string, string> overrides)
         {
+            Install(overrides, null);
+        }
+
+        /// <summary>
+        /// Make <paramref name="overrides"/> the active translation overlay, spoken as
+        /// <paramref name="language"/> - the game's own language name, which is also the name of
+        /// the translation file. Null or empty overrides clear back to the English defaults, which
+        /// is also the right result for a language with no translation file; the language is still
+        /// recorded, because <see cref="Plural"/>'s rule belongs to the language rather than to the
+        /// file.
+        /// </summary>
+        public static void Install(IDictionary<string, string> overrides, string language)
+        {
             Warned.Clear();
+            _language = language;
             if (overrides == null || overrides.Count == 0)
             {
                 _overrides = null;
@@ -1237,10 +1253,11 @@ namespace ES2Access.Core.Speech
             _overrides = copy;
         }
 
-        /// <summary>Drop the overlay, returning to English defaults.</summary>
+        /// <summary>Drop the overlay, returning to English defaults and English's plural rule.</summary>
         public static void Reset()
         {
             _overrides = null;
+            _language = null;
             Warned.Clear();
         }
 
@@ -1306,13 +1323,57 @@ namespace ES2Access.Core.Speech
         /// Each form is a WHOLE sentence of its own rather than a number glued to a noun, because the
         /// noun agrees with the number in most languages and no template can inflect a fragment handed
         /// to it. Two forms is what English needs and what a translator can always fill in - a language
-        /// with a single form writes the same sentence twice. A language that wants THREE or more
-        /// (Russian, Polish, Arabic) is the trigger for real plural rules carried by the locale file;
-        /// nothing here anticipates them, which is deliberate.
+        /// with a single form writes the same sentence twice.
+        ///
+        /// The forms BEYOND those two are real, and they live in the locale file rather than in a
+        /// call site - English needs none of them and ships none, so no caller passes a third key
+        /// and adding a language costs no code. <see cref="PluralKey"/> is where they are chosen,
+        /// and is also what a caller uses whose count is not the phrase's only slot.
         /// </summary>
         public static string Plural(string oneKey, string manyKey, int count)
         {
-            return Format(count == 1 ? oneKey : manyKey, count);
+            return Format(PluralKey(oneKey, manyKey, count), count);
+        }
+
+        /// <summary>
+        /// Which of a counted pair's KEYS a number calls for, by the same rules as
+        /// <see cref="Plural"/>, for the callers that cannot let it do the formatting: a phrase
+        /// whose count is not its only slot ("Probe launched towards {0}, {1} probes remaining"),
+        /// and one whose two forms take different arguments altogether ("Arrives this turn, {0}
+        /// movement" against "{0} turns, {1} movement"). Such a caller compares the answer against
+        /// the ONE key to know which argument list goes with it.
+        ///
+        /// Three forms, two of which live in the locale file rather than at the call site. The
+        /// paucal is <c>&lt;manyKey&gt;.few</c> (<see cref="PluralRules.FewSuffix"/>). The other is
+        /// <c>&lt;manyKey&gt;.one</c> (<see cref="PluralRules.OneSuffix"/>), for the singular with a
+        /// count that is not one - Russian's 21, 31 and so on, where a pair whose ONE sentence has
+        /// no number in it would otherwise say something untrue. A count of one always takes
+        /// <paramref name="oneKey"/>, and a missing form falls back to the key it hangs off, so a
+        /// language that carries neither is spoken exactly as it was before either existed.
+        /// </summary>
+        public static string PluralKey(string oneKey, string manyKey, int count)
+        {
+            switch (PluralRules.For(_language, count))
+            {
+                case PluralForm.One:
+                    if (count != 1)
+                    {
+                        string singularKey = manyKey + PluralRules.OneSuffix;
+                        if (Has(singularKey))
+                        {
+                            return singularKey;
+                        }
+                    }
+
+                    return oneKey;
+
+                case PluralForm.Few:
+                    string fewKey = manyKey + PluralRules.FewSuffix;
+                    return Has(fewKey) ? fewKey : manyKey;
+
+                default:
+                    return manyKey;
+            }
         }
 
         /// <summary>
@@ -1329,6 +1390,37 @@ namespace ES2Access.Core.Speech
                 || IconDefaults.TryGetValue(key, out template)
                 || HintDefaults.TryGetValue(key, out template)
                 || ActionDefaults.TryGetValue(key, out template);
+        }
+
+        /// <summary>
+        /// Every key the mod ships an English phrase for, across all four default tables.
+        ///
+        /// <see cref="TryGetDefault"/> answers "is this key ours"; this answers "what are all of
+        /// them", which is the question the translation template has to match in BOTH directions -
+        /// a key missing from english.json is a phrase no translator is ever offered, and there is
+        /// no way to see that from the individual lookups.
+        /// </summary>
+        public static IEnumerable<string> DefaultKeys()
+        {
+            foreach (string key in Defaults.Keys)
+            {
+                yield return key;
+            }
+
+            foreach (string key in IconDefaults.Keys)
+            {
+                yield return key;
+            }
+
+            foreach (string key in HintDefaults.Keys)
+            {
+                yield return key;
+            }
+
+            foreach (string key in ActionDefaults.Keys)
+            {
+                yield return key;
+            }
         }
 
         /// <summary>Whether the mod ships a phrase for <paramref name="key"/> at all - asked where a

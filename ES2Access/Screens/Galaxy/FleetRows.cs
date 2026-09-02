@@ -914,22 +914,22 @@ namespace ES2Access.Screens
                 );
             }
 
-            return turn == 1
-                ? ModStrings.Format(
-                    wormhole
-                        ? ModStrings.GalaxyFleetArrivingWormholeThisTurn
-                        : ModStrings.GalaxyFleetArrivingLaneThisTurn,
-                    host.LocalizedName,
-                    far.LocalizedName
-                )
-                : ModStrings.Format(
-                    wormhole
-                        ? ModStrings.GalaxyFleetArrivingWormholeTurns
-                        : ModStrings.GalaxyFleetArrivingLaneTurns,
-                    host.LocalizedName,
-                    far.LocalizedName,
-                    turn
-                );
+            return ModStrings.Format(
+                wormhole
+                    ? ModStrings.PluralKey(
+                        ModStrings.GalaxyFleetArrivingWormholeThisTurn,
+                        ModStrings.GalaxyFleetArrivingWormholeTurns,
+                        turn
+                    )
+                    : ModStrings.PluralKey(
+                        ModStrings.GalaxyFleetArrivingLaneThisTurn,
+                        ModStrings.GalaxyFleetArrivingLaneTurns,
+                        turn
+                    ),
+                host.LocalizedName,
+                far.LocalizedName,
+                turn
+            );
         }
 
         /// <summary>The same for a lane whose far end the map has not named: the way the lane runs
@@ -954,22 +954,22 @@ namespace ES2Access.Screens
                 );
             }
 
-            return turn == 1
-                ? ModStrings.Format(
-                    wormhole
-                        ? ModStrings.GalaxyFleetArrivingWormholeDarkThisTurn
-                        : ModStrings.GalaxyFleetArrivingLaneDarkThisTurn,
-                    host.LocalizedName,
-                    way
-                )
-                : ModStrings.Format(
-                    wormhole
-                        ? ModStrings.GalaxyFleetArrivingWormholeDarkTurns
-                        : ModStrings.GalaxyFleetArrivingLaneDarkTurns,
-                    host.LocalizedName,
-                    way,
-                    turn
-                );
+            return ModStrings.Format(
+                wormhole
+                    ? ModStrings.PluralKey(
+                        ModStrings.GalaxyFleetArrivingWormholeDarkThisTurn,
+                        ModStrings.GalaxyFleetArrivingWormholeDarkTurns,
+                        turn
+                    )
+                    : ModStrings.PluralKey(
+                        ModStrings.GalaxyFleetArrivingLaneDarkThisTurn,
+                        ModStrings.GalaxyFleetArrivingLaneDarkTurns,
+                        turn
+                    ),
+                host.LocalizedName,
+                way,
+                turn
+            );
         }
 
         /// <summary>A fleet crossing open space: no line to name, so the bearing from this system out
@@ -990,18 +990,16 @@ namespace ES2Access.Screens
                 );
             }
 
-            return turn == 1
-                ? ModStrings.Format(
+            return ModStrings.Format(
+                ModStrings.PluralKey(
                     ModStrings.GalaxyFleetArrivingOpenThisTurn,
-                    host.LocalizedName,
-                    way
-                )
-                : ModStrings.Format(
                     ModStrings.GalaxyFleetArrivingOpenTurns,
-                    host.LocalizedName,
-                    way,
                     turn
-                );
+                ),
+                host.LocalizedName,
+                way,
+                turn
+            );
         }
 
         /// <summary>Where the fleet goes AFTER this system, and when it gets there - said only where
@@ -1032,13 +1030,15 @@ namespace ES2Access.Screens
                 );
             }
 
-            return route.ArrivesIn == 1
-                ? ModStrings.Format(ModStrings.GalaxyFleetEnRouteThisTurn, name)
-                : ModStrings.Format(
+            return ModStrings.Format(
+                ModStrings.PluralKey(
+                    ModStrings.GalaxyFleetEnRouteThisTurn,
                     ModStrings.GalaxyFleetEnRouteTurns,
-                    name,
                     route.ArrivesIn
-                );
+                ),
+                name,
+                route.ArrivesIn
+            );
         }
 
         /// <summary>What a fleet is doing and how far it can still go this turn.
@@ -1266,7 +1266,12 @@ namespace ES2Access.Screens
                     );
                     vtable.Announcements.Add(
                         GraphNodes.ValuePart(
-                            () => ModStrings.Format(ModStrings.GalaxyFleetShips, held.ShipsCount)
+                            () =>
+                                ModStrings.Plural(
+                                    ModStrings.GalaxyFleetShip,
+                                    ModStrings.GalaxyFleetShips,
+                                    held.ShipsCount
+                                )
                         )
                     );
                     if (lozenge != null)

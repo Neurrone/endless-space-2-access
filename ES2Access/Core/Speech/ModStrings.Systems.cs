@@ -113,6 +113,12 @@ namespace ES2Access.Core.Speech
         /// which two ends of the run they are. A range is the one selection gesture whose result cannot
         /// be heard from the row it was made on - every OTHER row changed too - so the outcome is said
         /// rather than the row's own new state.</summary>
+        /// <summary>The same sentence about a single ship, which no player ever hears:
+        /// <see cref="SelectionText.Range"/> answers null under two, because a one-row range is
+        /// better told by the row's own membership. It exists so the range is a counted PAIR, which
+        /// is the only way a Polish or Russian file is asked for - and the plural rules will pick
+        /// up - the paucal that a range of two, three or four really needs.</summary>
+        public const string FleetsShipRange = "fleets.ship-range";
         public const string FleetsShipsRange = "fleets.ships-range";
 
         /// <summary>A ship carried out of one fleet and put down in another. The mod's own sentence:

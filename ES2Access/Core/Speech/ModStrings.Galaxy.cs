@@ -612,6 +612,11 @@ namespace ES2Access.Core.Speech
         public const string GalaxyScannerOutput = "galaxy.scanner.output";
 
         // --- end scanner categories ---
+        /// <summary>How many ships a hangar holds, said on the row that names it. The game draws
+        /// the number beside a symbol and writes no word for what it counts, so the noun is the
+        /// mod's - and it is a COUNTED phrase, hence a form per number (see <see cref="Plural"/>)
+        /// rather than a number glued to a noun.</summary>
+        public const string GalaxyFleetShip = "galaxy.fleet-ship";
         public const string GalaxyFleetShips = "galaxy.fleet-ships";
         public const string GalaxyFleetMoving = "galaxy.fleet-moving";
         public const string GalaxyFleetMovement = "galaxy.fleet-movement";
