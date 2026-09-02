@@ -182,11 +182,16 @@ before comparing a before/after dump.
 Primus" — with `by wormhole` appended where it is one and `to an unexplored system` where the map
 has not named the far end; `button` is the role word, and no lane number is spoken. Expected on
 Dusay: `northeast to Primus`, `west to Rigel`, `north to Qarius`, in the clockwise-from-north order
-`LanesOf` walks. A fleet under way beneath a system reads `arriving from ⟨the lane's far end⟩ by
-star lane` (or `…by wormhole`, or — for a far end the map has not named — `arriving from an
-unexplored system to the ⟨direction the lane leaves this system⟩ by star lane/wormhole`, the same
-compass word this system's own lane row gives that line), and a free mover
-`arriving from the ⟨bearing from the system out to the fleet⟩`. Lane transcripts elsewhere in this
+`LanesOf` walks. A fleet under way beneath a system reads `arriving at ⟨this system⟩ from ⟨the
+lane's far end⟩ by star lane in ⟨n⟩ turns` / `…this turn` (or `…by wormhole`, or — for a far end the
+map has not named — `arriving at ⟨this system⟩ from an unexplored system to the ⟨direction the lane
+leaves this system⟩ by star lane/wormhole …`, the same compass word this system's own lane row gives
+that line), and a free mover `arriving at ⟨this system⟩ from the ⟨bearing from the system out to the
+fleet⟩ …`. The turn is the turn the route reaches THIS system on, and where the journey carries on
+past it a second phrase follows the composition, `en route to ⟨destination⟩ in ⟨n⟩ turns`; both are
+gated on the game drawing that fleet's path (`FleetRoute.RouteShown`), and `Moving to ⟨system⟩` is no
+longer said on either row kind. The whole contract and its measured lines are `fleets.md`. Lane
+transcripts elsewhere in this
 file were rewritten to the new wording where the old line carried the direction; where it did not,
 the lane is named without one.
 

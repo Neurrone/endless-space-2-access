@@ -328,7 +328,9 @@ its ordinary announcement, and a lane fleet opens its host branch and lands on
 `galaxy.scanGoTo` on `1st Conquerors Navy` opens **Heka's** branch and lands on
 `galaxy:system/522/fleet/1570`, heard as "1st Conquerors Navy, -1, -6, free moving to Heka,
 1 ships, Moving to Heka, 0 movement points, Arrives in 2 turns, 8 of 9" (no role word —
-it is an automated fleet). There is only one row to pick — the source branch no longer holds one.
+it is an automated fleet; that transcript predates the 2026-09-02 wording rulings and the row now
+reads "arriving at Heka from the ⟨bearing⟩ …" with no "Moving to" and no "Arrives in" — `fleets.md`.
+WHERE it lands is unchanged). There is only one row to pick — the source branch no longer holds one.
 **Fixture-blocked**: the `SelectFleet` fallback (camera + fleet panel + the scanner's line spoken
 again) is reachable only by a fleet PARKED at a system the map does not name or flying a lane the
 map does not draw — a free mover always has a row, top-level if its destination is unperceived

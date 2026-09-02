@@ -66,7 +66,7 @@ namespace ES2Access.Screens
                 {
                     Fleet it = fleets[i];
                     List<TooltipChildren.Dossier> badges;
-                    NodeVtable vtable = FleetNode(it, docks, flying, out badges);
+                    NodeVtable vtable = FleetNode(it, docks, flying, out badges, null);
                     AddFleet(builder, it, place + "/fleet/" + it.GUID, vtable, badges);
                 }
             }
@@ -78,15 +78,27 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// The fleets UNDER WAY on the lanes leaving a system, as children of that system - each saying
-        /// where it is arriving FROM and by what kind of line.
+        /// where it is arriving, where it came FROM, by what kind of line, and on which turn it gets
+        /// here.
         ///
-        /// "Arriving from Rigel by star lane" and not a lane number, because the row already hangs
-        /// under the system the fleet is heading for: the far end is the half of the journey the row's
-        /// own place does not already say, it is what tells one incoming lane from another, and it is
-        /// a place the player can go and look at (owner ruling 2026-09-02). Own fleets and foreign
-        /// ones alike - what the map draws of a fleet under way is the same picture for everybody.
-        /// Where the map has not named that end, the way the lane runs is said instead of nothing -
-        /// the same compass word this system's own lane row gives the same line.
+        /// "Arriving at Rigel from Dusay by star lane this turn" and not a lane number, because the row
+        /// already hangs under the system the fleet is heading for: the far end is the half of the
+        /// journey the row's own place does not already say, it is what tells one incoming lane from
+        /// another, and it is a place the player can go and look at (owner ruling 2026-09-02). Own
+        /// fleets and foreign ones alike - what the map draws of a fleet under way is the same picture
+        /// for everybody. Where the map has not named that end, the way the lane runs is said instead
+        /// of nothing - the same compass word this system's own lane row gives the same line.
+        ///
+        /// The turn is the turn the route reaches THIS system on, which is not the turn the journey
+        /// ends on: a fleet passing through on its way somewhere else says when it gets here first and
+        /// then where it carries on to (<see cref="EnRouteBeyond"/>). Both halves are gated on the
+        /// game drawing that fleet's path at all (<see cref="FleetRoute.Current"/>), so a foreign
+        /// fleet whose route the player has not earned the right to see says the countless phrase and
+        /// nothing more - never more than a sighted player is shown (owner ruling 2026-09-02).
+        ///
+        /// "Moving to X" is not said on these rows: it named the journey's end while the sentence
+        /// above named the leg, and the two together were one place too many. Docked fleets and the
+        /// scanner keep it (<see cref="FleetState"/>).
         ///
         /// A lane runs between two systems and the fleet flying it is at neither, so the map draws it
         /// out in between and the tree hangs it under the end it is ARRIVING at - the same end a free
@@ -116,24 +128,24 @@ namespace ES2Access.Screens
                     EnRoute leg = flying[i];
                     Fleet it = leg.Fleet;
                     List<TooltipChildren.Dossier> badges;
-                    NodeVtable vtable = FleetNode(it, docks, labels, out badges);
+                    GameNode host = leg.Host;
+                    NodeVtable vtable = FleetNode(it, docks, labels, out badges, host);
                     // Straight after the name, because it answers the question the player is holding
-                    // while they hear it: why is this fleet under THIS system? It is arriving, and it
-                    // is arriving from the lane's other end - which is both the thing that tells one
-                    // of a system's incoming lanes from another and the thing the player can go and
-                    // look at. The far end comes off the same list the lane rows do
-                    // (<see cref="LanesOf"/>), so the two cannot disagree about which line this is.
+                    // while they hear it: why is this fleet under THIS system, and when does it get
+                    // here? It is arriving, and it is arriving from the lane's other end - which is
+                    // both the thing that tells one of a system's incoming lanes from another and the
+                    // thing the player can go and look at. The far end comes off the same list the
+                    // lane rows do (<see cref="LanesOf"/>), so the two cannot disagree about which
+                    // line this is. Composed at announcing time rather than captured, because the
+                    // turn it says moves as the turns pass while this row stays where it is.
                     GameNode far = leg.Far;
-                    string template;
+                    bool wormhole = leg.Wormhole;
                     if (leg.Named)
                     {
-                        template = leg.Wormhole
-                            ? ModStrings.GalaxyFleetOnWormhole
-                            : ModStrings.GalaxyFleetOnStarlane;
                         vtable.Announcements.Insert(
                             1,
                             GraphNodes.ValuePart(
-                                () => ModStrings.Format(template, far.LocalizedName),
+                                () => ArrivingByLane(it, host, far, wormhole),
                                 false
                             )
                         );
@@ -147,14 +159,11 @@ namespace ES2Access.Screens
                         // line, because both are read off the one lane list (owner ruling
                         // 2026-09-02). Without it, two unexplored lanes into a system are two
                         // identical sentences.
-                        template = leg.Wormhole
-                            ? ModStrings.GalaxyFleetOnWormholeFromUnexplored
-                            : ModStrings.GalaxyFleetOnStarlaneFromUnexplored;
                         string direction = leg.Direction;
                         vtable.Announcements.Insert(
                             1,
                             GraphNodes.ValuePart(
-                                () => ModStrings.Format(template, ModStrings.Get(direction)),
+                                () => ArrivingFromTheDark(it, host, direction, wormhole),
                                 false
                             )
                         );
@@ -216,28 +225,19 @@ namespace ES2Access.Screens
                 {
                     Fleet it = arriving[i];
                     List<TooltipChildren.Dossier> badges;
-                    NodeVtable vtable = FleetNode(it, docks, labels, out badges);
+                    NodeVtable vtable = FleetNode(it, docks, labels, out badges, node);
                     // Straight after the name, in the slot the lane phrase takes on a fleet under way,
                     // and for the same reason: it answers the question the player is holding while they
-                    // hear it - why is this fleet under THIS system? There is no line to name here, so
-                    // what is said is the way it is coming in from: the compass bearing from this
-                    // system out to where the fleet is standing, so a fleet west of the system is
-                    // "arriving from the west". Read at announcing time rather than cached, because
-                    // the fleet moves as the turns pass while this row stays where it is.
+                    // hear it - why is this fleet under THIS system, and when does it get here? There
+                    // is no line to name, so what is said is the way it is coming in from: the compass
+                    // bearing from this system out to where the fleet is standing, so a fleet west of
+                    // the system is "arriving at Rigel from the west". Read at announcing time rather
+                    // than cached, because both the bearing and the turn move as the turns pass while
+                    // this row stays where it is.
                     Fleet crossing = it;
                     vtable.Announcements.Insert(
                         1,
-                        GraphNodes.ValuePart(
-                            () =>
-                                ModStrings.Format(
-                                    ModStrings.GalaxyFleetFreeMovingFrom,
-                                    CompassDirections.Direction(
-                                        crossing.GalaxyPosition.X - node.GalaxyPosition.X,
-                                        crossing.GalaxyPosition.Y - node.GalaxyPosition.Y
-                                    )
-                                ),
-                            false
-                        )
+                        GraphNodes.ValuePart(() => ArrivingAcrossOpenSpace(crossing, node), false)
                     );
                     AddFleet(builder, it, place + "/fleet/" + it.GUID, vtable, badges);
                 }
@@ -263,7 +263,7 @@ namespace ES2Access.Screens
             try
             {
                 List<TooltipChildren.Dossier> badges;
-                NodeVtable vtable = FleetNode(it, DockLabels(), FleetLabels(), out badges);
+                NodeVtable vtable = FleetNode(it, DockLabels(), FleetLabels(), out badges, null);
                 // Which kind of journey it is, since the unnamed destination is all either can say
                 // about where it is going: a lane running into the dark is not the same picture as a
                 // fleet striking out across open space, and the map draws the one and not the other.
@@ -453,12 +453,22 @@ namespace ES2Access.Screens
         /// Owner ruling 2026-08-16.
         ///
         /// <paramref name="badges"/> answers what the map drew ON the lozenge beside the fleet - see
-        /// <see cref="FleetBadges"/> - for the caller to declare with <see cref="AddFleet"/>.</summary>
+        /// <see cref="FleetBadges"/> - for the caller to declare with <see cref="AddFleet"/>.
+        ///
+        /// <paramref name="host"/> is the system the row hangs under where the fleet is UNDER WAY
+        /// towards it - a lane leg or a crossing of open space - and null everywhere else. The caller
+        /// puts the arriving sentence in front of the coordinates itself; what the host changes here
+        /// is the two things that sentence has taken over. "Moving to X" goes, because the arriving
+        /// sentence names the leg and <see cref="EnRouteBeyond"/> names the rest of the journey, and
+        /// the game's own two-icon question is only worth asking where neither of those is said. And
+        /// the standing route line goes with it, because its count now lives inside those phrases
+        /// (owner ruling 2026-09-02).</summary>
         private static NodeVtable FleetNode(
             Fleet it,
             DockLabel[] docks,
             FleetLabel[] flying,
-            out List<TooltipChildren.Dossier> badges
+            out List<TooltipChildren.Dossier> badges,
+            GameNode host
         )
         {
             AgeTransform lozenge = FleetLozenge(it, docks, flying);
@@ -488,24 +498,29 @@ namespace ES2Access.Screens
             // ship walk is memoised on the fleet's own membership, because an announcement part is
             // asked on every frame whether anything is watching it or not.
             vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetPhrase.Describe(it)));
-            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it)));
-            // How much of the journey is left. A part of its OWN and not part of the line
-            // above, because that line is WATCHED - a movement figure the game changes under
-            // the player is worth saying - and the answer here is a walk of the fleet's whole
-            // route, which is a thing to do when focus lands and never on a frame.
-            //
-            // The destination is named only where the line above has not already named it: a
-            // fleet under way says "Moving to Xiu" and then how long that will take, and a
-            // fleet parked with an order standing says where it is and then where it is going.
-            vtable.Announcements.Add(
-                GraphNodes.ValuePart(
-                    () =>
-                        FleetOrders.Orbit(it) == null
-                            ? FleetRoute.Arrival(it)
-                            : FleetRoute.Committed(it),
-                    false
-                )
-            );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => FleetText(it, host)));
+            if (host == null)
+            {
+                // How much of the journey is left. A part of its OWN and not part of the line
+                // above, because that line is WATCHED - a movement figure the game changes under
+                // the player is worth saying - and the answer here is a walk of the fleet's whole
+                // route, which is a thing to do when focus lands and never on a frame.
+                //
+                // The destination is named only where the line above has not already named it: a
+                // fleet under way says "Moving to Xiu" and then how long that will take, and a
+                // fleet parked with an order standing says where it is and then where it is going.
+                // A row hanging under the system a fleet is flying towards says both of those
+                // itself, in words about THIS system, and does not reach here.
+                vtable.Announcements.Add(
+                    GraphNodes.ValuePart(
+                        () =>
+                            FleetOrders.Orbit(it) == null
+                                ? FleetRoute.Arrival(it)
+                                : FleetRoute.Committed(it),
+                        false
+                    )
+                );
+            }
             if (lozenge != null)
             {
                 PointAt(vtable, lozenge);
@@ -603,6 +618,12 @@ namespace ES2Access.Screens
         private struct EnRoute
         {
             public Fleet Fleet;
+
+            /// <summary>The system this leg is hung under - the one the fleet is flying towards.
+            /// The row names it, so it travels with the leg rather than being read back off the
+            /// key.</summary>
+            public GameNode Host;
+
             public GameNode Far;
             public bool Named;
             public bool Wormhole;
@@ -641,6 +662,7 @@ namespace ES2Access.Screens
                         new EnRoute
                         {
                             Fleet = fleet,
+                            Host = node,
                             Far = lanes[i].Far,
                             Named = Perceived(lanes[i].Far, empire),
                             Wormhole = lanes[i].Wormhole,
@@ -768,18 +790,189 @@ namespace ES2Access.Screens
             }
         }
 
+        // ---- where a fleet under way is arriving, and when ----
+        //
+        // One sentence per row, composed whole rather than glued together: which system the fleet is
+        // arriving at, where this leg set out from, how it is flying, and the turn it gets there.
+        //
+        // The turn is the turn the ROUTE reaches this system on and not the turn the journey ends on
+        // (<see cref="FleetRoute.ReachesIn"/>), so a fleet passing straight through says the near
+        // number here and the far one afterwards. It is gated by what the game itself draws: a
+        // foreign fleet whose path the player has not earned the right to see has no route to walk
+        // (<see cref="FleetRoute.Current"/>), and the phrase without a turn clause is what is said
+        // instead - never more than a sighted player is shown (owner ruling 2026-09-02).
+
+        /// <summary>The turn the fleet's route reaches this system on, or nought where the game will
+        /// not draw that fleet's path and there is therefore nothing to count.</summary>
+        private static int ArrivingIn(Fleet fleet, GameNode host)
+        {
+            return FleetRoute.ReachesIn(FleetRoute.Current(fleet), host);
+        }
+
+        /// <summary>A fleet under way on a lane whose far end the map has named.</summary>
+        private static string ArrivingByLane(
+            Fleet fleet,
+            GameNode host,
+            GameNode far,
+            bool wormhole
+        )
+        {
+            int turn = ArrivingIn(fleet, host);
+            if (turn <= 0)
+            {
+                return ModStrings.Format(
+                    wormhole
+                        ? ModStrings.GalaxyFleetArrivingWormhole
+                        : ModStrings.GalaxyFleetArrivingLane,
+                    host.LocalizedName,
+                    far.LocalizedName
+                );
+            }
+
+            return turn == 1
+                ? ModStrings.Format(
+                    wormhole
+                        ? ModStrings.GalaxyFleetArrivingWormholeThisTurn
+                        : ModStrings.GalaxyFleetArrivingLaneThisTurn,
+                    host.LocalizedName,
+                    far.LocalizedName
+                )
+                : ModStrings.Format(
+                    wormhole
+                        ? ModStrings.GalaxyFleetArrivingWormholeTurns
+                        : ModStrings.GalaxyFleetArrivingLaneTurns,
+                    host.LocalizedName,
+                    far.LocalizedName,
+                    turn
+                );
+        }
+
+        /// <summary>The same for a lane whose far end the map has not named: the way the lane runs
+        /// stands in for the place, which is what the picture shows too.</summary>
+        private static string ArrivingFromTheDark(
+            Fleet fleet,
+            GameNode host,
+            string direction,
+            bool wormhole
+        )
+        {
+            int turn = ArrivingIn(fleet, host);
+            string way = ModStrings.Get(direction);
+            if (turn <= 0)
+            {
+                return ModStrings.Format(
+                    wormhole
+                        ? ModStrings.GalaxyFleetArrivingWormholeDark
+                        : ModStrings.GalaxyFleetArrivingLaneDark,
+                    host.LocalizedName,
+                    way
+                );
+            }
+
+            return turn == 1
+                ? ModStrings.Format(
+                    wormhole
+                        ? ModStrings.GalaxyFleetArrivingWormholeDarkThisTurn
+                        : ModStrings.GalaxyFleetArrivingLaneDarkThisTurn,
+                    host.LocalizedName,
+                    way
+                )
+                : ModStrings.Format(
+                    wormhole
+                        ? ModStrings.GalaxyFleetArrivingWormholeDarkTurns
+                        : ModStrings.GalaxyFleetArrivingLaneDarkTurns,
+                    host.LocalizedName,
+                    way,
+                    turn
+                );
+        }
+
+        /// <summary>A fleet crossing open space: no line to name, so the bearing from this system out
+        /// to where the fleet is standing is what says which one it is.</summary>
+        private static string ArrivingAcrossOpenSpace(Fleet fleet, StarSystemNode host)
+        {
+            string way = CompassDirections.Direction(
+                fleet.GalaxyPosition.X - host.GalaxyPosition.X,
+                fleet.GalaxyPosition.Y - host.GalaxyPosition.Y
+            );
+            int turn = ArrivingIn(fleet, host);
+            if (turn <= 0)
+            {
+                return ModStrings.Format(
+                    ModStrings.GalaxyFleetArrivingOpen,
+                    host.LocalizedName,
+                    way
+                );
+            }
+
+            return turn == 1
+                ? ModStrings.Format(
+                    ModStrings.GalaxyFleetArrivingOpenThisTurn,
+                    host.LocalizedName,
+                    way
+                )
+                : ModStrings.Format(
+                    ModStrings.GalaxyFleetArrivingOpenTurns,
+                    host.LocalizedName,
+                    way,
+                    turn
+                );
+        }
+
+        /// <summary>Where the fleet goes AFTER this system, and when it gets there - said only where
+        /// the journey does not end here, because a destination that IS the hosting system is the
+        /// fact the arriving sentence has already given. Null where the game will not draw the route,
+        /// which is the same gate the turn count above rides.</summary>
+        private static string EnRouteBeyond(Fleet fleet, GameNode host)
+        {
+            FleetRoute.Route route = FleetRoute.Current(fleet);
+            if (route == null || route.Places == null || route.Places.Length == 0)
+            {
+                return null;
+            }
+
+            GameNode end = route.Places[route.Places.Length - 1];
+            if (end == null || ReferenceEquals(end, host))
+            {
+                return null;
+            }
+
+            string name = FleetRoute.Named(end);
+            if (name == null)
+            {
+                return ModStrings.Plural(
+                    ModStrings.GalaxyFleetEnRouteUnexploredThisTurn,
+                    ModStrings.GalaxyFleetEnRouteUnexploredTurns,
+                    route.ArrivesIn
+                );
+            }
+
+            return route.ArrivesIn == 1
+                ? ModStrings.Format(ModStrings.GalaxyFleetEnRouteThisTurn, name)
+                : ModStrings.Format(
+                    ModStrings.GalaxyFleetEnRouteTurns,
+                    name,
+                    route.ArrivesIn
+                );
+        }
+
         /// <summary>What a fleet is doing and how far it can still go this turn.
         ///
         /// What it is MADE of is said before this, by the fleet phrase every surface names a fleet
         /// with (<see cref="FleetPhrase.Composition"/>) - a list of what the ships are, which is what
         /// the bare total used to stand in for.
+        ///
+        /// <paramref name="host"/> is the system a row hanging under a fleet UNDER WAY towards it
+        /// stands for, and null on every other row. Where there is one, what the fleet is doing has
+        /// already been said as where it is arriving; what is left to say is what it does AFTER this
+        /// system, which is nothing at all when this system is where it is going.
         /// </summary>
-        private static string FleetText(Fleet fleet)
+        private static string FleetText(Fleet fleet, GameNode host)
         {
             try
             {
                 MessageBuilder message = new MessageBuilder();
-                message.ListItem(FleetState(fleet));
+                message.ListItem(host == null ? FleetState(fleet) : EnRouteBeyond(fleet, host));
                 if (fleet.IsGuarding)
                 {
                     message.ListItem(ModStrings.Get(ModStrings.GalaxyFleetGuarding));

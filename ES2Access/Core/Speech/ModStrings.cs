@@ -314,13 +314,14 @@ namespace ES2Access.Core.Speech
         public const string GalaxyWormhole = "galaxy.wormhole";
         public const string GalaxyWormholeUnexplored = "galaxy.wormhole-unexplored";
 
-        // Where a fleet under way came FROM, said under the system it is arriving at - which is the
-        // one system this tree hangs it under, so "why is this fleet here" is the question the phrase
-        // answers. The lane it is flying is named by its far end, the end it set out from, because
-        // that is what tells one of a system's incoming lanes from another; the kind of line is said
-        // too, since a wormhole is a different picture from a lane. Whole phrases per kind, because
-        // "star lane" and "wormhole" are words in the sentence rather than a noun slotted into it,
-        // and a pair more for a far end the map has not named.
+        // Where a fleet under way is arriving, where it came FROM, and WHEN it gets there - one
+        // sentence said under the system it is flying towards, which is the one system this tree
+        // hangs it under, so "why is this fleet here, and when does it matter" is the question the
+        // phrase answers. The hosting system is named in it rather than left to the row's place in
+        // the tree, because the row is heard on its own from the scanner and the search as well.
+        // The lane it is flying is named by its far end, the end it set out from, because that is
+        // what tells one of a system's incoming lanes from another; the kind of line is said too,
+        // since a wormhole is a different picture from a lane.
         //
         // Where the map has not named that end, the phrase still says which WAY the lane runs - the
         // compass word for the bearing out of the hosting system towards the far end, which is the
@@ -328,19 +329,53 @@ namespace ES2Access.Core.Speech
         // origin is the one case that tells two incoming lanes apart with nothing at all, and the
         // picture does tell them apart: the lines leave in different directions (owner ruling
         // 2026-09-02).
-        public const string GalaxyFleetOnStarlane = "galaxy.fleet-on-starlane";
-        public const string GalaxyFleetOnWormhole = "galaxy.fleet-on-wormhole";
-        public const string GalaxyFleetOnStarlaneFromUnexplored =
-            "galaxy.fleet-on-starlane-from-unexplored";
-        public const string GalaxyFleetOnWormholeFromUnexplored =
-            "galaxy.fleet-on-wormhole-from-unexplored";
+        //
+        // Three of each, because the turn count is not always there to say: the game only draws a
+        // foreign fleet's path where the empire has earned the right to see it, and where the picture
+        // is refused the words are too (owner ruling 2026-09-02, `FleetRoute.RouteShown`). The
+        // countless phrase is what is left. Whole phrases throughout rather than a turn clause glued
+        // on the end, because a language that puts "in two turns" first has to be able to.
+        public const string GalaxyFleetArrivingLane = "galaxy.fleet-arriving-lane";
+        public const string GalaxyFleetArrivingLaneThisTurn =
+            "galaxy.fleet-arriving-lane-this-turn";
+        public const string GalaxyFleetArrivingLaneTurns = "galaxy.fleet-arriving-lane-turns";
+        public const string GalaxyFleetArrivingWormhole = "galaxy.fleet-arriving-wormhole";
+        public const string GalaxyFleetArrivingWormholeThisTurn =
+            "galaxy.fleet-arriving-wormhole-this-turn";
+        public const string GalaxyFleetArrivingWormholeTurns =
+            "galaxy.fleet-arriving-wormhole-turns";
+        public const string GalaxyFleetArrivingLaneDark = "galaxy.fleet-arriving-lane-dark";
+        public const string GalaxyFleetArrivingLaneDarkThisTurn =
+            "galaxy.fleet-arriving-lane-dark-this-turn";
+        public const string GalaxyFleetArrivingLaneDarkTurns =
+            "galaxy.fleet-arriving-lane-dark-turns";
+        public const string GalaxyFleetArrivingWormholeDark = "galaxy.fleet-arriving-wormhole-dark";
+        public const string GalaxyFleetArrivingWormholeDarkThisTurn =
+            "galaxy.fleet-arriving-wormhole-dark-this-turn";
+        public const string GalaxyFleetArrivingWormholeDarkTurns =
+            "galaxy.fleet-arriving-wormhole-dark-turns";
 
         // The same answer for a fleet crossing OPEN SPACE between two systems with no lane between
         // them: there is no line to name, so the leg is said as the direction the fleet is coming in
         // from - a fleet standing west of the system is arriving from the west. It is the same
         // compass word the picture gives everyone else, read off the fleet's own place against the
         // system it is flying to, and it moves with the fleet as the turns pass.
-        public const string GalaxyFleetFreeMovingFrom = "galaxy.fleet-free-moving-from";
+        public const string GalaxyFleetArrivingOpen = "galaxy.fleet-arriving-open";
+        public const string GalaxyFleetArrivingOpenThisTurn =
+            "galaxy.fleet-arriving-open-this-turn";
+        public const string GalaxyFleetArrivingOpenTurns = "galaxy.fleet-arriving-open-turns";
+
+        // What the fleet does AFTER this system, said only where this system is not the end of its
+        // journey: the row has already said when it gets HERE, and where the journey carries on the
+        // player is owed the rest of it. Nothing at all where the destination is the hosting system,
+        // which would be the same fact twice. Gated with the count above and for the same reason - a
+        // route the game will not draw is a route the mod does not read out.
+        public const string GalaxyFleetEnRouteThisTurn = "galaxy.fleet-en-route-this-turn";
+        public const string GalaxyFleetEnRouteTurns = "galaxy.fleet-en-route-turns";
+        public const string GalaxyFleetEnRouteUnexploredThisTurn =
+            "galaxy.fleet-en-route-unexplored-this-turn";
+        public const string GalaxyFleetEnRouteUnexploredTurns =
+            "galaxy.fleet-en-route-unexplored-turns";
 
         // A fleet crossing open space towards somewhere the map has NOT named has no system in this
         // tree to hang under, so it gets a row of its own at the top and says the one thing that can
@@ -2185,17 +2220,49 @@ namespace ES2Access.Core.Speech
             { GalaxyStarlaneUnexplored, "{0} to an unexplored system" },
             { GalaxyWormhole, "{0} to {1} by wormhole" },
             { GalaxyWormholeUnexplored, "{0} to an unexplored system by wormhole" },
-            { GalaxyFleetOnStarlane, "arriving from {0} by star lane" },
-            { GalaxyFleetOnWormhole, "arriving from {0} by wormhole" },
+            { GalaxyFleetArrivingLane, "arriving at {0} from {1} by star lane" },
+            { GalaxyFleetArrivingLaneThisTurn, "arriving at {0} from {1} by star lane this turn" },
+            { GalaxyFleetArrivingLaneTurns, "arriving at {0} from {1} by star lane in {2} turns" },
+            { GalaxyFleetArrivingWormhole, "arriving at {0} from {1} by wormhole" },
+            { GalaxyFleetArrivingWormholeThisTurn, "arriving at {0} from {1} by wormhole this turn" },
+            { GalaxyFleetArrivingWormholeTurns, "arriving at {0} from {1} by wormhole in {2} turns" },
             {
-                GalaxyFleetOnStarlaneFromUnexplored,
-                "arriving from an unexplored system to the {0} by star lane"
+                GalaxyFleetArrivingLaneDark,
+                "arriving at {0} from an unexplored system to the {1} by star lane"
             },
             {
-                GalaxyFleetOnWormholeFromUnexplored,
-                "arriving from an unexplored system to the {0} by wormhole"
+                GalaxyFleetArrivingLaneDarkThisTurn,
+                "arriving at {0} from an unexplored system to the {1} by star lane this turn"
             },
-            { GalaxyFleetFreeMovingFrom, "arriving from the {0}" },
+            {
+                GalaxyFleetArrivingLaneDarkTurns,
+                "arriving at {0} from an unexplored system to the {1} by star lane in {2} turns"
+            },
+            {
+                GalaxyFleetArrivingWormholeDark,
+                "arriving at {0} from an unexplored system to the {1} by wormhole"
+            },
+            {
+                GalaxyFleetArrivingWormholeDarkThisTurn,
+                "arriving at {0} from an unexplored system to the {1} by wormhole this turn"
+            },
+            {
+                GalaxyFleetArrivingWormholeDarkTurns,
+                "arriving at {0} from an unexplored system to the {1} by wormhole in {2} turns"
+            },
+            { GalaxyFleetArrivingOpen, "arriving at {0} from the {1}" },
+            { GalaxyFleetArrivingOpenThisTurn, "arriving at {0} from the {1} this turn" },
+            { GalaxyFleetArrivingOpenTurns, "arriving at {0} from the {1} in {2} turns" },
+            { GalaxyFleetEnRouteThisTurn, "en route to {0} this turn" },
+            { GalaxyFleetEnRouteTurns, "en route to {0} in {1} turns" },
+            {
+                GalaxyFleetEnRouteUnexploredThisTurn,
+                "en route to an unexplored system this turn"
+            },
+            {
+                GalaxyFleetEnRouteUnexploredTurns,
+                "en route to an unexplored system in {0} turns"
+            },
             { GalaxyFleetFreeMovingToUnexplored, "free moving to an unexplored system" },
             { GalaxyFleetOnLaneToUnexplored, "on a star lane to an unexplored system" },
             { GalaxyFleetUnderWayNearbyOne, "{0} fleet under way nearby" },

@@ -311,5 +311,80 @@ namespace ES2Access.Tests.UI
             Assert.Single(turns);
             Assert.True(turns[0].IsArrival);
         }
+
+        // ---- which turn a journey reaches a given place on ----
+        //
+        // The question a fleet row hanging under a system asks: the row says when the fleet gets
+        // HERE, which is rarely the turn the whole journey ends on.
+
+        [Fact]
+        public void APlaceTheTurnEndsAtIsReachedOnThatTurn()
+        {
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(3f), Ordinary(3f)),
+                3f,
+                3f,
+                0f,
+                -1f
+            );
+
+            Assert.Equal(1, RouteTurns.ReachedOn(turns, 1));
+            Assert.Equal(2, RouteTurns.ReachedOn(turns, 2));
+        }
+
+        [Fact]
+        public void APlaceFlownStraightThroughIsReachedOnTheTurnThatPassedIt()
+        {
+            // The same measured route as above: turn 3 reaches Dusay and then spends the night in
+            // empty space beyond it, so Dusay is reached on 3 even though no turn ends there.
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(13.33f), Ordinary(8.27f)),
+                4.666434f,
+                6f,
+                0f,
+                -1f
+            );
+
+            Assert.Equal(3, RouteTurns.ReachedOn(turns, 1));
+            Assert.Equal(-1, turns[2].EndLeg);
+        }
+
+        [Fact]
+        public void TheJourneysOwnStartIsReachedOnTheFirstTurn()
+        {
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(3f), Ordinary(3f)),
+                3f,
+                3f,
+                0f,
+                -1f
+            );
+
+            Assert.Equal(1, RouteTurns.ReachedOn(turns, 0));
+        }
+
+        [Fact]
+        public void TheLastPlaceIsReachedOnTheArrivalTurn()
+        {
+            List<RouteTurn> turns = RouteTurns.Walk(
+                new Legs(Ordinary(13.33f), Ordinary(8.27f)),
+                4.666434f,
+                6f,
+                0f,
+                -1f
+            );
+
+            Assert.Equal(turns[turns.Count - 1].Number, RouteTurns.ReachedOn(turns, 2));
+            Assert.True(turns[turns.Count - 1].IsArrival);
+        }
+
+        [Fact]
+        public void APlaceOffTheRouteHasNoTurn()
+        {
+            List<RouteTurn> turns = RouteTurns.Walk(new Legs(Ordinary(3f)), 3f, 3f, 0f, -1f);
+
+            Assert.Equal(0, RouteTurns.ReachedOn(turns, 7));
+            Assert.Equal(0, RouteTurns.ReachedOn(null, 1));
+        }
     }
 }

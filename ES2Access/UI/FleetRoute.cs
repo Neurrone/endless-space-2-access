@@ -317,6 +317,36 @@ namespace ES2Access.UI
             return message.Build();
         }
 
+        /// <summary>
+        /// The turn a route gets to one of the places it runs through, counting the turn now in
+        /// progress as one. Nought where the route never goes there, and nought for no route at all -
+        /// which is also the answer for a foreign fleet whose path the game will not draw, because
+        /// <see cref="Current"/> is the gate (<see cref="RouteShown"/>).
+        ///
+        /// Not <see cref="Route.ArrivesIn"/>, which is the turn the whole journey ends on. A row
+        /// hanging under the system a fleet is flying towards is asking about THIS system: the fleet
+        /// may pass straight through it on the way to somewhere three turns further on, and the turn
+        /// it gets HERE is the one the player standing here wants. The arithmetic is
+        /// <see cref="RouteTurns.ReachedOn"/>, which is engine-free and unit-tested.
+        /// </summary>
+        public static int ReachesIn(Route route, GameNode place)
+        {
+            if (route == null || route.Places == null || place == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < route.Places.Length; i++)
+            {
+                if (ReferenceEquals(route.Places[i], place))
+                {
+                    return RouteTurns.ReachedOn(route.Turns, i);
+                }
+            }
+
+            return 0;
+        }
+
         /// <summary>The remaining journey turn by turn, for the review buffer under a fleet.</summary>
         public static IList<string> CommittedLines(Fleet fleet)
         {
@@ -339,6 +369,10 @@ namespace ES2Access.UI
         /// picture is refused the words are too. What is left is what a sighted player still has: the
         /// fleet drawn between two stars, and the leg it is flying now, which is geometry on the screen
         /// rather than a route read out of the model.
+        ///
+        /// Every turn count the map's fleet rows say rides this gate, because they all reach a route
+        /// through <see cref="Current"/>: a foreign fleet whose path the game will not draw gets the
+        /// countless phrase and nothing about where it is going (owner ruling 2026-09-02).
         /// </summary>
         private static bool RouteShown(Fleet fleet)
         {

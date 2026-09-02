@@ -10,17 +10,32 @@ game-side facts are in `docs/fleets.md`.
 
 **Destination-only, for lane fleets and free movers alike.** A fleet in transit is declared under
 the endpoint it is flying TO and nowhere else — a lane fleet saying which of THAT system's lanes it
-is on. **Since the 2026-09-02 wording ruling the phrases are**: a lane fleet "arriving from ⟨the
-lane's far end⟩ by star lane" (or "…by wormhole", or — where the map has not named that end —
-"arriving from an unexplored system to the ⟨direction the lane leaves THIS system⟩ by star
-lane/wormhole", the compass word being the very one this system's own lane row says for that line,
-owner ruling 2026-09-02; measured under Sabel: `1st Ferocious Pirates, -36, -7, button, arriving
-from an unexplored system to the southwest by star lane, neutral Amoeba, Pincer, Moving to Sabel, 0
-movement points` against its lane row `southwest to an unexplored system`), a free mover "arriving from the ⟨eight-word bearing from the
-destination system out to where the fleet is standing⟩". Every transcript quoted below predates
-that ruling and still shows the old "on starlane ⟨n⟩, ⟨direction⟩" / "free moving to ⟨system⟩"
-forms — the ROWS and their ids are unchanged, only the sentence. The independent oracle is the leg
-itself:
+is on. **Since the 2026-09-02 wording rulings the row says where the fleet is arriving, when it gets
+there, and where it goes next.** A lane fleet reads "arriving at ⟨this system⟩ from ⟨the lane's far
+end⟩ by star lane in ⟨n⟩ turns" / "…this turn" (or "…by wormhole", or — where the map has not named
+that far end — "arriving at ⟨this system⟩ from an unexplored system to the ⟨direction the lane
+leaves THIS system⟩ by star lane/wormhole", the compass word being the very one this system's own
+lane row says for that line); a free mover reads "arriving at ⟨this system⟩ from the ⟨eight-word
+bearing from the destination system out to where the fleet is standing⟩ in ⟨n⟩ turns".
+
+**The turn is the turn the route reaches THIS system on**, not the turn the journey ends on
+(`FleetRoute.ReachesIn` over `RouteTurns.ReachedOn`). Where the journey carries on past this system,
+a second phrase follows the composition — "en route to ⟨destination⟩ in ⟨n⟩ turns" / "…this turn",
+or "en route to an unexplored system …" — and where the destination IS this system there is no
+second phrase at all. **"Moving to X" is gone from both row kinds** (it named the journey's end while
+the arriving sentence named the leg); docked rows and the scanner's fleet results keep it.
+
+**Both counts are gated on `FleetRoute.RouteShown`** — own fleets, and foreign ones whose drawn path
+the game permits. A foreign fleet otherwise says the arriving phrase WITHOUT any turn clause and no
+"en route" at all: measured under Sabel, `1st Ferocious Pirates, -36, -7, button, arriving at Sabel
+from an unexplored system to the southwest by star lane, neutral Amoeba, Pincer, 0 movement points`
+against its lane row `southwest to an unexplored system`. Measured under Rigel on the owner's
+campaign (turn 28), an own fleet mid-leg Dusay→Rigel with the path carrying it back:
+`1st Defenders Navy, -11, -3, button, arriving at Rigel from Dusay by star lane this turn, Patrol,
+en route to Dusay in 2 turns, 6 movement points`. Every transcript quoted below predates these
+rulings and still shows the old "on starlane ⟨n⟩, ⟨direction⟩" / "free moving to ⟨system⟩" /
+"Moving to ⟨system⟩, … Arrives in ⟨n⟩ turns" forms — the ROWS and their ids are unchanged, only the
+sentence. The independent oracle is the leg itself:
 `IPositioningService.GetGameNode(fleet.Position.Movement.Goal)`, and it always answers one of the
 lane's two ends — "on a lane with no destination" is unreachable (`docs/fleets.md`), so there is no
 second-host case to test for and each lane fleet has exactly ONE row. The LANE
@@ -54,10 +69,10 @@ testing the ship-count gate — use `1st Protectors Navy` — and `GalaxyFleetCu
 refuses both selection (:17-24) and highlight (:26-33) for one. **The mod says so**: `FleetNode`
 declares an unselectable fleet `ControlTypes.Text` with no `OnActivate`, so the row carries no role
 word and Enter is a no-op. The regression check is one line
-of a branch dump — the Heka rows must read "…, -1, -6, arriving from the ⟨bearing⟩, …" with no
-"button", while Dusay's three lane fleets (not automated) must still read "…, 12, 15, button,
-arriving from ⟨far end⟩ by star lane, …" (pre-2026-09-02 transcript: "…, on starlane 1, northeast,
-…"). A build where all five say "button" has lost `FleetPresence.Selectable`; one where
+of a branch dump — the Heka rows must read "…, -1, -6, arriving at Heka from the ⟨bearing⟩ …" with
+no "button", while Dusay's three lane fleets (not automated) must still read "…, 12, 15, button,
+arriving at Dusay from ⟨far end⟩ by star lane …" (pre-2026-09-02 transcript: "…, on starlane 1,
+northeast, …"). A build where all five say "button" has lost `FleetPresence.Selectable`; one where
 all five drop it has the predicate inverted.
 
 ## Foreign fleets: what no fixture perceives

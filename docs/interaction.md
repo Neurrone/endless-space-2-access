@@ -603,17 +603,35 @@ the lane moves.
 2026-09-02, both views): a lane row reads "northeast to Leo" — "by wormhole" on the end where it is
 one, "to an unexplored system" where the map has not named the far end — because the rows already
 sit under the system's **Star lanes** region, which says the words once for all of them. A fleet
-under way, hanging under the system it is arriving at, reads "arriving from Rigel by star lane" /
-"…by wormhole" — and where the map has not named that far end, "arriving from an unexplored system
-to the ⟨direction⟩ by star lane", which way still being the compass word that system's own lane row
-says for the same line, so an unnamed origin is never two incoming lanes said identically (owner
-ruling 2026-09-02); a fleet crossing open space reads "arriving from the west", the eight-word bearing
-from that system out to where the fleet is standing. The clockwise-from-north ordinal survives only
+under way, hanging under the system it is arriving at, reads "arriving at Rigel from Dusay by star
+lane this turn" / "…by wormhole" — and where the map has not named that far end, "arriving at Rigel
+from an unexplored system to the ⟨direction⟩ by star lane …", which way still being the compass word
+that system's own lane row says for the same line, so an unnamed origin is never two incoming lanes
+said identically (owner ruling 2026-09-02); a fleet crossing open space reads "arriving at Rigel from
+the west …", the eight-word bearing from that system out to where the fleet is standing. The
+clockwise-from-north ordinal survives only
 as the internal ordering (`LanesOf`). The scanner's Unexplored rows keep their own sentence, "Star
 lane from Dusay heading north", and so does the INSPECT CELL, "Star lane from ⟨west⟩ to ⟨east⟩" —
 westmost end first and no compass word at all (owner ruling 2026-09-02, reverting a day-old change):
 a cell reads the lanes crossing it, and westmost-first is what makes one lane crossing two
 neighbouring cells heard as one lane.
+
+**A FLEET UNDER WAY SAYS WHEN IT GETS HERE, AND WHERE IT GOES NEXT** (owner rulings 2026-09-02;
+`FleetRows.AddEnRoute`/`AddFreeMoving`). The turn in the arriving sentence is the turn the fleet's
+route reaches THE HOSTING SYSTEM on, counting the turn in progress as one — not the turn the journey
+ends on, which is a different number whenever the fleet is passing through. Where the journey does
+carry on past this system, a second phrase follows the composition: "en route to Dusay in 2 turns",
+"…this turn", or "en route to an unexplored system …" for a destination the map has not named;
+where the destination IS the hosting system there is no second phrase, because the arriving sentence
+already said it. **"Moving to X" leaves both row kinds** — it named the journey's end while the
+sentence above it named the leg — and docked rows and the scanner's fleet results keep it unchanged.
+
+**NEVER MORE THAN A SIGHTED PLAYER SEES**: both the turn count and the "en route" phrase are said
+only where the game would DRAW that fleet's path — own fleets, and foreign ones the empire has
+earned the sight of (`FleetRoute.RouteShown`, and `FleetRoute.Current` is the gate every caller
+passes through). A foreign fleet otherwise says the arriving phrase with no turn clause and nothing
+about its destination; a pirate under Sabel reads "arriving at Sabel from an unexplored system to
+the southwest by star lane, neutral Amoeba, Pincer, 0 movement points" and no more.
 
 **THE TREE IS BAND-FILTERED, AND SO IS THE SCANNER** (owner ruling 2026-09-01; the table is
 `Core/UI/Bands.cs`, read through `UI/ZoomBands.cs`). The rows the map stop offers are the KINDS the

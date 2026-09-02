@@ -219,5 +219,44 @@ namespace ES2Access.Core.UI
             turns.Add(turn);
             return turns;
         }
+
+        /// <summary>
+        /// The number of the turn a journey REACHES one of its places on - the place being a leg
+        /// far-end index, nought being where the journey starts.
+        ///
+        /// Not the same question as which turn ENDS there. A traveller with movement left flies
+        /// straight through a place and spends the night past it, so the turn that got there is a turn
+        /// that ended somewhere else - and it is still the turn the traveller was there on, which is
+        /// what somebody waiting at that place wants to know. The journey's own start is where the
+        /// walk begins, so it answers the first turn.
+        ///
+        /// Nought where the turns never reach it, which a caller reads as no answer at all.
+        /// </summary>
+        public static int ReachedOn(IList<RouteTurn> turns, int place)
+        {
+            if (turns == null || turns.Count == 0 || place < 0)
+            {
+                return 0;
+            }
+
+            if (place == 0)
+            {
+                return turns[0].Number;
+            }
+
+            for (int i = 0; i < turns.Count; i++)
+            {
+                List<int> reached = turns[i].Reached;
+                for (int j = 0; reached != null && j < reached.Count; j++)
+                {
+                    if (reached[j] == place)
+                    {
+                        return turns[i].Number;
+                    }
+                }
+            }
+
+            return 0;
+        }
     }
 }
