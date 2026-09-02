@@ -24,6 +24,12 @@ namespace ES2Access.UI
     /// (<see cref="Emit"/>) holding one node per dossier. A node with no actions has only the second
     /// region, which is a lone region whose jump is silently consumed - by design.
     ///
+    /// A surface that draws enough for two regions to be a poor answer sorts its dossiers instead:
+    /// each entry says which of the owner's regions it belongs in (<see cref="Dossier.Region"/>), the
+    /// owner opens each region by name (<see cref="BeginRegion"/>) and mixes the dossier nodes in
+    /// with its own children there (<see cref="EmitInto"/>). The galaxy's system row is the one that
+    /// does: seven named regions rather than one block called "Tooltips".
+    ///
     /// A dossier node is not a button UNLESS THE GAME WIRED A CLICK ON THE VERY WIDGET IT WAS READ
     /// OFF (<see cref="Dossier.Clicks"/>, owner ruling 2026-09-02): several pictures a label draws as
     /// decoration are clickable, and their tooltips say so in as many words - "Click to queue up a
@@ -108,6 +114,26 @@ namespace ES2Access.UI
             /// pressable here and one it does not is not, with no list to keep in step.</summary>
             public AgeControlButton Clicks;
 
+            /// <summary>
+            /// Which of the OWNER's regions this dossier belongs in, where the owner sorts what it
+            /// collected into several named ones rather than the one "Tooltips" block
+            /// (<see cref="EmitInto"/>).
+            ///
+            /// Stamped by the WALK that read the dossier off a widget, because which widget it was is
+            /// the only thing that decides this and the walk is the only thing that knows - never
+            /// worked out afterwards from the words, which say what the game is explaining and not
+            /// what kind of thing it is explaining.
+            ///
+            /// Null for a surface whose dossiers are one block, which is every other one.
+            /// </summary>
+            public object Region;
+
+            /// <summary>The structural key this dossier's node takes UNDER its owner, where the caller
+            /// has a name for the thing rather than leaving it at its place in a list ("queue"). Null
+            /// for the ordinary dossier, keyed by its index as it always was - and a key given here is
+            /// the caller promising it is stable across rebuilds, which an index is not.</summary>
+            public string Key;
+
             /// <summary>What this entry's NAME already says - the words its sections then leave out
             /// (<see cref="Unrepeat"/>). Set only by a caller that named the entry out of the very
             /// sentence it carries; null for every entry whose name and sentence are different
@@ -174,6 +200,78 @@ namespace ES2Access.UI
             {
                 builder.PopContext();
                 builder.SetRegion(outer);
+            }
+        }
+
+        /// <summary>
+        /// Open ONE NAMED REGION inside somebody else's stop - the shape <see cref="Emit"/> makes for
+        /// "Tooltips", for a surface that has several of them.
+        ///
+        /// The region key is a structural path under the owner's (<paramref name="key"/> +
+        /// <paramref name="region"/>) so that Alt+Up/Down has something stable to jump to, and the
+        /// name is pushed as a context level: the player hears it once on the way in rather than on
+        /// every node, and the "N of M" count is the region's own.
+        ///
+        /// Answers the region that was in force, which the caller hands back to
+        /// <see cref="EndRegion"/> - so each region leaves the stop exactly as it found it and a
+        /// surface can open as many in a row as it draws.
+        /// </summary>
+        public static object BeginRegion(
+            GraphBuilder builder,
+            string key,
+            string region,
+            string name
+        )
+        {
+            object outer = builder.Region;
+            builder.SetRegion(key + "/" + region);
+            builder.PushContext(name);
+            return outer;
+        }
+
+        /// <summary>Close a region <see cref="BeginRegion"/> opened. A region nothing was added to
+        /// leaves no trace: a context with no children is never a node and a region nothing is tagged
+        /// with does not exist, which is what lets a surface declare every region it has a name for
+        /// and let the ones the game is drawing nothing in disappear.</summary>
+        public static void EndRegion(GraphBuilder builder, object outer)
+        {
+            builder.PopContext();
+            builder.SetRegion(outer);
+        }
+
+        /// <summary>
+        /// The dossiers of ONE region as nodes, into whatever region and context the caller has open -
+        /// what a surface that sorts its dossiers into several named regions
+        /// (<see cref="Dossier.Region"/>) uses in place of <see cref="Emit"/>, which is the whole list
+        /// under one caption of its own.
+        ///
+        /// Keyed by each dossier's place in the WHOLE list and never by its place in the region, so
+        /// that sorting a surface's dossiers into regions moves no node's key: a bookmark, a landing
+        /// or a scanner go-to that names one goes on naming it. A caller with a name for one says so
+        /// (<see cref="Dossier.Key"/>) and the node takes that instead.
+        /// </summary>
+        public static void EmitInto(
+            GraphBuilder builder,
+            string key,
+            IList<Dossier> dossiers,
+            object region
+        )
+        {
+            if (builder == null || dossiers == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < dossiers.Count; i++)
+            {
+                Dossier it = dossiers[i];
+                if (!Equals(it.Region, region))
+                {
+                    continue;
+                }
+
+                string id = it.Key == null ? key + "/tooltip/" + i : key + "/" + it.Key;
+                builder.AddItem(Stands(ControlId.Structural(id), it));
             }
         }
 

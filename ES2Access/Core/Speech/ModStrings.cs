@@ -402,6 +402,18 @@ namespace ES2Access.Core.Speech
         // arrives - is the game's own sentence, which arrives with the node as its tooltip.
         public const string GalaxyObliteratorProjectile = "galaxy.obliterator-projectile";
 
+        // The named blocks an opened system on the map is read in, in the order they are walked. The
+        // map draws them all as one strip of icons round a name, so every one of these words is the
+        // mod's - what the player hears once on the way into the block, and what Alt+Up/Down jumps
+        // by. They name the QUESTION each block answers, never the widgets it was assembled from.
+        public const string GalaxySystemStatusRegion = "galaxy.system-status-region";
+        public const string GalaxySystemActionsRegion = "galaxy.system-actions-region";
+        public const string GalaxySystemPlanetsRegion = "galaxy.system-planets-region";
+        public const string GalaxySystemLanesRegion = "galaxy.system-lanes-region";
+        public const string GalaxySystemFleetsRegion = "galaxy.system-fleets-region";
+        public const string GalaxySystemResourcesRegion = "galaxy.system-resources-region";
+        public const string GalaxySystemDetailsRegion = "galaxy.system-details-region";
+
         // The buttons the label draws on a system. Each is a wordless icon the game explains in a
         // sentence rather than names - the sentence arrives with the node as its tooltip - so what to
         // CALL each one is the mod's, kept as short as the thing it does.
@@ -2181,6 +2193,13 @@ namespace ES2Access.Core.Speech
             { GalaxyConstellationUnexplored, "Unexplored space" },
             { GalaxySystemUnexplored, "Unexplored system" },
             { GalaxyObliteratorProjectile, "Obliterator missile" },
+            { GalaxySystemStatusRegion, "Status" },
+            { GalaxySystemActionsRegion, "Actions" },
+            { GalaxySystemPlanetsRegion, "Planets" },
+            { GalaxySystemLanesRegion, "Star lanes" },
+            { GalaxySystemFleetsRegion, "Fleets" },
+            { GalaxySystemResourcesRegion, "Resources" },
+            { GalaxySystemDetailsRegion, "Details" },
             { GalaxySystemDiplomacy, "Diplomacy" },
             { GalaxySystemPirateMarkBuyout, "Buy out pirate mark" },
             { GalaxySystemConversionBuyout, "Buy out conversion" },
