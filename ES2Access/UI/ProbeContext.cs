@@ -4,6 +4,8 @@ using Amplitude.Unity.Framework;
 using ES2Access.Core.Map;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using ES2Access.ES2.Map;
+using ES2Access.ES2.Speech;
 using ES2Access.Localization;
 
 namespace ES2Access.UI

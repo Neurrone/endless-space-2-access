@@ -74,6 +74,7 @@ namespace ES2Access.Tests.Lint
         private static bool Skipped(string file)
         {
             return file.StartsWith("ES2Access/Core/", StringComparison.Ordinal)
+                || file.StartsWith("ES2Access/ES2/", StringComparison.Ordinal)
                 || file.StartsWith("ES2Access/Dev/", StringComparison.Ordinal)
                 // The factory itself - this is the line every allowlisted site goes through.
                 || string.Equals(file, "ES2Access/UI/Nodes.cs", StringComparison.Ordinal);

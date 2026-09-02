@@ -99,6 +99,7 @@ namespace ES2Access.Tests.Lint
         private static bool Skipped(string file)
         {
             return file.StartsWith("ES2Access/Core/", StringComparison.Ordinal)
+                || file.StartsWith("ES2Access/ES2/", StringComparison.Ordinal)
                 // The dev dumps report the raw string on purpose - that is what a dump is for.
                 || file.StartsWith("ES2Access/Dev/", StringComparison.Ordinal)
                 // Reading the raw string and cleaning it is this file's entire job.

@@ -1,8 +1,8 @@
 using System;
-using ES2Access.Core.Bookmarks;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.ES2.Bookmarks;
 using ES2Access.UI;
 using ES2Access.UI.Bookmarks;
 using ES2Access.UI.Input;

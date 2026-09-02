@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using ES2Access.Core.UI;
+using ES2Access.ES2.UI;
 using Xunit;
 
 namespace ES2Access.Tests.Lint
@@ -27,10 +27,10 @@ namespace ES2Access.Tests.Lint
 
         private const string Rule =
             "Every structural key segment the galaxy tree builds must be DECLARED in"
-            + " Core/UI/PlacedRows.cs (a row that stands somewhere, or a grouping that refuses) or"
+            + " ES2/UI/PlacedRows.cs (a row that stands somewhere, or a grouping that refuses) or"
             + " allowlisted here as one the map carries on an ancestor. Deciding means answering four"
             + " questions: arms the inspect cell, enterable (and at which tier), leap-recordable,"
-            + " restore-candidate. See Core/UI/PlacedRows.cs.";
+            + " restore-candidate. See ES2/UI/PlacedRows.cs.";
 
         /// <summary>A key literal in the tree-building code: the segment is the word before a
         /// <c>/</c>-and-value, which is how every id in this page is composed - <c>key + "/fleet/" +

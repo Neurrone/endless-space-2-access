@@ -674,9 +674,9 @@ namespace ES2Access.Core.Speech
         /// <summary>The galaxy in one sentence: the shape and size it was generated with, how far
         /// across it is, and where its middle lies from the empire's home system - the picture a
         /// sighted player takes in at a glance when the map first opens and can never be told
-        /// otherwise (<see cref="GalaxyMapText"/>). One template rather than a chain of them because
-        /// every join in it is punctuation a language chooses for itself, and the shape and size words
-        /// are the GAME's own, dropped in whole.</summary>
+        /// otherwise (<see cref="ES2Access.ES2.Speech.GalaxyMapText"/>). One template rather than a
+        /// chain of them because every join in it is punctuation a language chooses for itself, and
+        /// the shape and size words are the GAME's own, dropped in whole.</summary>
         public const string GalaxyMapSummary = "galaxy.map-summary";
 
         // The map's inspect cursor - a mode of the mod's own, so every word in it is the mod's. The
@@ -964,8 +964,9 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeLaunchReach = "galaxy.probe-launch-reach";
 
         /// <summary>What lies down one bearing, said as the stretches of it nobody has explored yet
-        /// and how far the map itself goes that way (<see cref="ProbeContextText"/>). The game draws
-        /// the fog and the map's rim and says neither in words, so all of it is the mod's.
+        /// and how far the map itself goes that way
+        /// (<see cref="ES2Access.ES2.Speech.ProbeContextText"/>). The game draws the fog and the
+        /// map's rim and says neither in words, so all of it is the mod's.
         ///
         /// <see cref="GalaxyProbeContext"/> itself is only what the bearing ANNOUNCES - the heading and
         /// the one number a listener chooses on - because sixteen of these are walked one after another
@@ -987,10 +988,10 @@ namespace ES2Access.Core.Speech
         public const string GalaxyProbeContextExplored = "galaxy.probe-context-explored";
 
         /// <summary>The share of everything a launch this way would reveal that the empire already has
-        /// ({0}, the whole number of percent - <see cref="ProbeFootprint"/>). The one figure a listener
-        /// comparing sixteen headings chooses on, so it is said twice: once in the bearing's own
-        /// announcement (<see cref="GalaxyProbeContext"/>) and once as the first line of its buffer,
-        /// where the ranges that explain it follow.</summary>
+        /// ({0}, the whole number of percent - <see cref="ES2Access.ES2.Map.ProbeFootprint"/>). The
+        /// one figure a listener comparing sixteen headings chooses on, so it is said twice: once in
+        /// the bearing's own announcement (<see cref="GalaxyProbeContext"/>) and once as the first
+        /// line of its buffer, where the ranges that explain it follow.</summary>
         public const string GalaxyProbeContextPercentExplored =
             "galaxy.probe-context-percent-explored";
 
@@ -1379,7 +1380,7 @@ namespace ES2Access.Core.Speech
         public const string ScanSystemInfoHidden = "scan.system-info-hidden";
 
         /// <summary>The trade routes the scan view draws as lines across the map, woven into the places
-        /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.Core.UI.TradeWeave"/>):
+        /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.ES2.UI.TradeWeave"/>):
         /// a system at either END of a route says where the route goes, a system the route merely
         /// crosses says whose road is passing through, and a star LANE says which route it carries and
         /// how THAT route is running over it - open or blockaded. One phrase per route, never a merged
