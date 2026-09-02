@@ -19,14 +19,15 @@ namespace ES2Access.UI
     public static class ResourceRows
     {
         /// <summary>
-        /// The item's figures as one phrase: both, the holding alone, the rate alone, or nothing.
+        /// The item's figures as one phrase: the holding and the rate, or the rate alone, or nothing.
         ///
-        /// The LABELS decide which figures are said and the CACHE decides what they say. A label is
-        /// animated towards its target, so its own text mid-slide is a number the game never settled
-        /// on, while a label the panel is not drawing keeps whatever it was last bound with - so
-        /// reading it would invent a figure that is nowhere on the screen. Every host of this prefab
-        /// draws some subset: the colony banner has resources that draw the rate alone, and the
-        /// juggernaut strip keeps a hidden "+0" it never shows.
+        /// Both figures are the GAME'S, read from the resource's own cache - never from the labels,
+        /// which are animated towards their target (mid-slide text is a number the game never
+        /// settled on) and, for the rate, hidden on most hosts: the empire strip and the economy
+        /// grid draw only the holding and put the income in the tooltip. The income is said anyway,
+        /// from the cache, because a player wants it beside the holding (owner ruling 2026-09-03);
+        /// nothing here reads text the game is not drawing. The holding is said only where the item
+        /// draws one - a colony banner's resources have no holding of their own, only a rate.
         ///
         /// Decimals are the item's OWN rule (<c>ResourceItem.Refresh</c> :114,124,138), asked of each
         /// figure separately as the game asks it: a tenth for a small holding of a luxury or a
@@ -39,22 +40,16 @@ namespace ES2Access.UI
             try
             {
                 GuiLocatedResource resource = item == null ? null : item.GuiLocatedResource;
-                if (resource == null)
+                if (resource == null || !AgeWidgets.Paints(item.AgeTransform))
                 {
                     return null;
                 }
 
                 bool held = AgeWidgets.DrawnLabel(item.StockLabel) != null;
-                bool rate = AgeWidgets.DrawnLabel(item.NetLabel) != null;
-                if (!held && !rate)
-                {
-                    return null;
-                }
-
                 bool tenths = ShowsSmallValueDecimal(item) && (resource.IsLuxury || resource.IsStrategic);
                 float stock = resource.GetStockValueFromCache();
                 float net = resource.GetNetValueFromCache();
-                if (held && rate)
+                if (held)
                 {
                     return GlobalHud.StockAndNet(
                         stock,
@@ -64,12 +59,10 @@ namespace ES2Access.UI
                     );
                 }
 
-                return held
-                    ? GlobalHud.Amount(stock, false, Decimals(stock, tenths))
-                    : ModStrings.Format(
-                        ModStrings.SystemNetPerTurn,
-                        GlobalHud.Amount(net, true, Decimals(net, tenths))
-                    );
+                return ModStrings.Format(
+                    ModStrings.SystemNetPerTurn,
+                    GlobalHud.Amount(net, true, Decimals(net, tenths))
+                );
             }
             catch (Exception)
             {
