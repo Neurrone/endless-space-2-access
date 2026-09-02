@@ -600,29 +600,10 @@ namespace ES2Access.UI
             {
                 AgeTransform item = items[i];
                 bool happening =
-                    Holds(item, label.DecayingSystemGroup)
-                    || Holds(item, label.MetaplotBattleRulesGroup);
+                    AgeWidgets.Under(label.DecayingSystemGroup, item)
+                    || AgeWidgets.Under(label.MetaplotBattleRulesGroup, item);
                 Picture(found, item, happening ? Region.Status : Region.Details);
             }
-        }
-
-        /// <summary>Whether a strip item IS the label's own widget or the thing the prefab wrapped it
-        /// in - asked up the parent chain, and bounded, because a strip item is a wrapper or two at
-        /// most and an unbounded walk up a label reaches the whole window.</summary>
-        private static bool Holds(AgeTransform item, AgeTransform widget)
-        {
-            AgeTransform at = widget;
-            for (int i = 0; at != null && i < 4; i++)
-            {
-                if (ReferenceEquals(at, item))
-                {
-                    return true;
-                }
-
-                at = at.Parent;
-            }
-
-            return false;
         }
 
         /// <summary>

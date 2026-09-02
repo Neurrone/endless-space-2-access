@@ -606,7 +606,7 @@ namespace ES2Access.Screens
             if (population != null)
             {
                 GuiTableCellSystemPopulation at = population;
-                vtable.DropKind = PopulationKind;
+                vtable.DropKind = PopulationMoves.Kind;
                 vtable.DropAccepts = held => Shippable(at, held) != null;
                 vtable.OnDrop = held => Ship(at, held);
             }
@@ -1178,23 +1178,11 @@ namespace ES2Access.Screens
         private static int DrawnMarkers(PlanetCard card)
         {
             PlanetPopulationEnumerator enumerator = card.PlanetCardPopulationEnumerator;
-            if (enumerator == null || !AgeWidgets.Visible(enumerator.AgeTransform))
-            {
-                return 0;
-            }
-
-            AgeTransform container = enumerator.PopMarkersContainer ?? enumerator.AgeTransform;
-            IList<AgeTransform> markers = container.Children;
-            int drawn = 0;
-            for (int i = 0; markers != null && i < markers.Count; i++)
-            {
-                if (AgeWidgets.DrawnChild(markers, i) != null)
-                {
-                    drawn++;
-                }
-            }
-
-            return drawn;
+            return enumerator == null
+                ? 0
+                : AgeWidgets.DrawnCount(
+                    enumerator.PopMarkersContainer ?? enumerator.AgeTransform
+                );
         }
 
         /// <summary>
@@ -1245,7 +1233,7 @@ namespace ES2Access.Screens
                         band = slot.Kind;
                         inBand = true;
                         builder.SetRegion(keyPrefix + "/population/" + band);
-                        builder.PushContext(BandName(band));
+                        builder.PushContext(PopulationMoves.BandName(band));
                     }
 
                     AddPopulationSlot(builder, keyPrefix, card, colony, units, slot, total, canCarry);
@@ -1316,7 +1304,7 @@ namespace ES2Access.Screens
 
                 PlanetCard it = card;
                 StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
-                vtable.DropKind = PopulationKind;
+                vtable.DropKind = PopulationMoves.Kind;
                 vtable.DropAccepts = cargo => Accepts(it, cargo);
                 vtable.OnDrop = cargo => DropOnCard(it, cargo, replaced);
             }
@@ -1331,16 +1319,7 @@ namespace ES2Access.Screens
             );
         }
 
-        private static string BandName(PopulationSlots.Band band)
-        {
-            return PopulationMoves.BandName(band);
-        }
-
         // ---- moving a population unit ----
-
-        /// <summary>What the carried thing IS, shared with the star system page so a unit picked up
-        /// there can be put down here.</summary>
-        private const string PopulationKind = SystemManagementScreen.PopulationKind;
 
         /// <summary>The game's own word for an affinity.</summary>
         private static string PopulationName(Population population)
@@ -1392,8 +1371,7 @@ namespace ES2Access.Screens
                 if (
                     colony == null
                     || !colony.CanMovePopulation
-                    || container == null
-                    || !container.Enable
+                    || !AgeWidgets.Operable(container)
                 )
                 {
                     return false;
@@ -1487,7 +1465,10 @@ namespace ES2Access.Screens
                         return DropResult.Refused(null);
                     }
 
-                    Transfer(panel, destination);
+                    if (!Transfer(panel, destination))
+                    {
+                        return DropResult.Refused(null);
+                    }
                 }
                 finally
                 {
@@ -1511,21 +1492,26 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void Transfer(
+        /// <summary>Hands the carried unit to the panel's own transfer, and says whether the game had
+        /// one to hand it to: a patch that renames the method is a refusal here rather than an
+        /// exception, which is the one failure policy <see cref="GameHandlers"/> gives every screen
+        /// that reaches into the game this way.</summary>
+        private static bool Transfer(
             StarSystemPlanetCardsPanel panel,
             ColonizedPlanet destination
         )
         {
-            MethodInfo method = typeof(StarSystemPlanetCardsPanel).GetMethod(
-                "TransferDraggedPopulationToPlanet",
-                BindingFlags.Instance | BindingFlags.NonPublic
+            MethodInfo method = GameHandlers.Method(
+                typeof(StarSystemPlanetCardsPanel),
+                "TransferDraggedPopulationToPlanet"
             );
             if (method == null)
             {
-                throw new MissingMethodException("TransferDraggedPopulationToPlanet");
+                return false;
             }
 
             method.Invoke(panel, new object[] { destination });
+            return true;
         }
 
         private static StarSystemPlanetCardsPanel Cards(PlanetCard card)
@@ -1687,10 +1673,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string said = AgeText.Clean(
-                    Gui.Localize("%Failure" + failure.ToString() + "Description")
-                );
-                return string.IsNullOrEmpty(said) || said[0] == '%' ? null : said;
+                return AgeText.Title("%Failure" + failure.ToString() + "Description");
             }
             catch (Exception)
             {
@@ -1754,7 +1737,7 @@ namespace ES2Access.Screens
             }
 
             VictoryConditionSector it = sector;
-            AgeTooltip tooltip = AgeWidgets.Raw(Widget(sector.VictoryObjectives));
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(sector.VictoryObjectives));
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
@@ -1767,7 +1750,7 @@ namespace ES2Access.Screens
                 // page states no exception to it.
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, Widget(sector.VictoryObjectives) ?? widget);
+            AgeWidgets.PointAt(vtable, AgeWidgets.Transform(sector.VictoryObjectives) ?? widget);
 
             string key = "empire:victory/" + index;
             ControlId id = ControlId.For(widget, key);
@@ -1879,11 +1862,9 @@ namespace ES2Access.Screens
 
                 Amplitude.Unity.Gui.ExtendedGuiElement element =
                     Gui.GetExtendedGuiElement(trackers[index].Name);
-                string title =
-                    element == null ? null : AgeText.Clean(Gui.Localize(element.Title));
                 // A title the corpus never wrote comes back as its own key: parked text, which is not
                 // a name to speak.
-                return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+                return element == null ? null : AgeText.Title(element.Title);
             }
             catch (Exception)
             {
@@ -1891,22 +1872,10 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly FieldInfo SectorDefinition = SectorDefinitionField();
-
-        private static FieldInfo SectorDefinitionField()
-        {
-            try
-            {
-                return typeof(VictoryConditionSector).GetField(
-                    "victoryConditionDefinition",
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly FieldInfo SectorDefinition = GameHandlers.Field(
+            typeof(VictoryConditionSector),
+            "victoryConditionDefinition"
+        );
 
         // ---- reading the window ----
 
@@ -1958,18 +1927,6 @@ namespace ES2Access.Screens
                 {
                     lines.Add(drawn[i]);
                 }
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

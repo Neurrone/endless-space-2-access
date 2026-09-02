@@ -49,16 +49,16 @@ namespace ES2Access.UI
                 AgeTransform left = gauge.LeftGauge;
                 AgeTransform right = gauge.RightGauge;
                 // Content: which half of the gauge contributes its figure to the phrase.
-                if (left != null && left.Visible)
+                if (AgeWidgets.Paints(left))
                 {
-                    message.ListItem(AgeText.Clean(ProjectileTitle));
+                    message.ListItem(AgeText.Title(ProjectileTitle));
                     message.Fragment(Percent(50f - left.PercentLeft));
                 }
 
                 // Content: the same for the other half.
-                if (right != null && right.Visible)
+                if (AgeWidgets.Paints(right))
                 {
-                    message.ListItem(AgeText.Clean(EnergyTitle));
+                    message.ListItem(AgeText.Title(EnergyTitle));
                     message.Fragment(Percent(right.PercentRight - 50f));
                 }
 

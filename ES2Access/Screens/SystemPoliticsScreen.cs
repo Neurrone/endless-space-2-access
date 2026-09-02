@@ -142,7 +142,7 @@ namespace ES2Access.Screens
         /// tooltip. The window does not expose the label, so it is found where it is drawn.</summary>
         private void BuildHeading(GraphBuilder builder, StarSystemPopulationModalWindow window)
         {
-            AgeTransform title = Named(Root(window), "TitleLabel");
+            AgeTransform title = WindowShape.TitleWidget(window);
             if (title == null)
             {
                 return;

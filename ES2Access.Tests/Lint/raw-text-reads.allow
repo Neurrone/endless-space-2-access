@@ -11,8 +11,6 @@ ES2Access/Screens/MenuDestinationScreens.cs | 1 | string.IsNullOrEmpty(name) ? A
 
 ES2Access/Screens/MinorFactionDiplomacyScreen.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
-ES2Access/Screens/PlanetOverviewScreen.cs | 1 | && (!string.IsNullOrEmpty(tooltip.Class) || !string.IsNullOrEmpty(tooltip.Content))
-
 ES2Access/Screens/ResearchScreen.cs | 1 | : AgeText.Clean(marker.Tooltip.Content);
 
 ES2Access/Screens/SettingRows.cs | 1 | : AgeText.Clean(field.Label.Text);

@@ -115,8 +115,8 @@ namespace ES2Access.Screens
             get
             {
                 string system = SystemTitle();
-                string page = AgeText.Clean(Gui.Localize(SystemManagementTitleKey));
-                if (string.IsNullOrEmpty(system) || string.IsNullOrEmpty(page) || page[0] == '%')
+                string page = AgeText.Title(SystemManagementTitleKey);
+                if (string.IsNullOrEmpty(system) || page == null)
                 {
                     return ModStrings.Get(ModStrings.ScreenStarSystem);
                 }
@@ -1784,10 +1784,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the carried thing IS here, so that a population unit cannot be dropped into a
-        /// fleet and a ship cannot be dropped onto a planet.</summary>
-        public const string PopulationKind = PopulationMoves.Kind;
-
         /// <summary>The colony this card is for WHOEVER owns it - the same object the card binds its
         /// population ring to (<c>PlanetLabel.BindPlanet</c> takes it straight off
         /// <c>Planet.ColonizedPlanet</c>, so an enemy outpost's card holds the enemy's colony), and so
@@ -1950,18 +1946,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static int DrawnMarkers(Ring ring)
         {
-            AgeTransform container = MarkerContainer(ring);
-            IList<AgeTransform> markers = container == null ? null : container.Children;
-            int drawn = 0;
-            for (int i = 0; markers != null && i < markers.Count; i++)
-            {
-                if (AgeWidgets.DrawnChild(markers, i) != null)
-                {
-                    drawn++;
-                }
-            }
-
-            return drawn;
+            return AgeWidgets.DrawnCount(MarkerContainer(ring));
         }
 
         /// <summary>The widget the ring is drawing for one slot, which is where that slot's dossier
@@ -2076,7 +2061,7 @@ namespace ES2Access.Screens
                         band = slot.Kind;
                         inBand = true;
                         builder.SetRegion(keyPrefix + "/" + band);
-                        builder.PushContext(BandName(band));
+                        builder.PushContext(PopulationMoves.BandName(band));
                     }
 
                     AddPopulationSlot(builder, ring, units, slot, total, carry);
@@ -2181,7 +2166,7 @@ namespace ES2Access.Screens
 
                 Ring on = ring;
                 StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
-                vtable.DropKind = PopulationKind;
+                vtable.DropKind = PopulationMoves.Kind;
                 vtable.DropAccepts = cargo => AcceptsPopulation(on, cargo);
                 vtable.OnDrop = cargo => DropPopulation(on, cargo, replaced);
             }
@@ -2398,20 +2383,6 @@ namespace ES2Access.Screens
             return (stamp * 97L) + count;
         }
 
-        /// <summary>
-        /// What a band of slots is called.
-        ///
-        /// The three words are the GAME's own, taken straight from its localization rather than given
-        /// mod keys of their own - an owner ruling of 2026-08-26, and a deliberate departure from this
-        /// mod's usual "every phrase it authors is a ModStrings key". The game already draws all three
-        /// words for these very things, so borrowing them costs the player no new vocabulary and costs
-        /// the translators nothing at all.
-        /// </summary>
-        private static string BandName(PopulationSlots.Band band)
-        {
-            return PopulationMoves.BandName(band);
-        }
-
         private const string OverpopulationSentence = "%PlanetLabelOverPopulationDescription";
         private const string OverpopulationSentencePlural =
             "%PlanetLabelOverPopulationDescriptionPlural";
@@ -2595,7 +2566,7 @@ namespace ES2Access.Screens
                                     : PopulationSlots.Band.Population)
                         );
                         builder.PushContext(
-                            BandName(
+                            PopulationMoves.BandName(
                                 locked
                                     ? PopulationSlots.Band.Locked
                                     : PopulationSlots.Band.Population
@@ -2668,7 +2639,7 @@ namespace ES2Access.Screens
             {
                 SpaceportSidePanel host = panel;
                 StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
-                vtable.DropKind = PopulationKind;
+                vtable.DropKind = PopulationMoves.Kind;
                 vtable.DropAccepts = cargo => PortTakes(host, cargo, unit != null);
                 vtable.OnDrop = cargo => DropIntoSpaceport(host, cargo, replaced);
             }
@@ -3447,7 +3418,7 @@ namespace ES2Access.Screens
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => FirstLine(tooltip)),
+                    GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
                 },
                 Sections = GraphNodes.Sections(
                     GraphNodes.TooltipSection(tooltip)
@@ -3877,22 +3848,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static AgeTransform BannerButton(ColonyInfoSidePanel panel, string handler)
         {
-            AgeTransform banner = panel.SystemBanner;
-            if (banner == null)
-            {
-                return null;
-            }
-
-            AgeControlButton[] buttons = banner.GetComponentsInChildren<AgeControlButton>(true);
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == handler)
-                {
-                    return buttons[i].AgeTransform;
-                }
-            }
-
-            return null;
+            return AgeWidgets.Transform(AgeWidgets.WiredTo(panel.SystemBanner, handler));
         }
 
         /// <summary>The game's own word for what the badge in the banner's corner is - it draws the
@@ -3901,22 +3857,9 @@ namespace ES2Access.Screens
 
         private static AgeTransform ImprovementsButton(ColonyInfoSidePanel panel)
         {
-            AgeTransform group = panel.SystemUpkeepGroup;
-            if (group == null)
-            {
-                return null;
-            }
-
-            AgeControlButton[] buttons = group.GetComponentsInChildren<AgeControlButton>(true);
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == "OnImprovementsCb")
-                {
-                    return buttons[i].AgeTransform;
-                }
-            }
-
-            return null;
+            return AgeWidgets.Transform(
+                AgeWidgets.WiredTo(panel.SystemUpkeepGroup, "OnImprovementsCb")
+            );
         }
 
         // ---- reading a panel nobody has modelled ----
@@ -4533,7 +4476,9 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(
-                        () => FirstLine(kind) ?? AgeText.Label(it.NextPopulationLabel)
+                        () =>
+                            CardActions.FirstLine(kind)
+                            ?? AgeText.Label(it.NextPopulationLabel)
                     ),
                     GraphNodes.ValuePart(() => Drawn(it.TurnsBeforeNextPop)),
                     GraphNodes.ValuePart(() => Drawn(it.NextPopulationDestinationLabel)),
@@ -4614,19 +4559,13 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>A drawn-but-blank label answers null here rather than the empty string
+        /// <see cref="AgeWidgets.DrawnLabel"/> keeps the two cases apart with: one caller falls back to
+        /// the wrapper's title with ?? for an effect line drawn as a bare picture.</summary>
         private static string Drawn(AgePrimitiveLabel label)
         {
-            try
-            {
-                // A drawn-but-blank label answers null here rather than empty: one caller falls back
-                // to the wrapper's title with ?? for an effect line drawn as a bare picture.
-                string drawn = AgeWidgets.DrawnLabel(label);
-                return string.IsNullOrEmpty(drawn) ? null : drawn;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            string drawn = AgeWidgets.DrawnLabel(label);
+            return string.IsNullOrEmpty(drawn) ? null : drawn;
         }
 
         /// <summary>
@@ -4650,7 +4589,7 @@ namespace ES2Access.Screens
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => FirstLine(tooltip)),
+                    GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
                     GraphNodes.ValuePart(() => SensitivityText(it, true)),
                 },
                 // The graph.s tooltip opens with the sentence that is already the row.s NAME and then
@@ -4973,13 +4912,6 @@ namespace ES2Access.Screens
                 }
             }
             catch (Exception) { }
-        }
-
-        /// <summary>The first thing a tooltip says - what a control with no caption of its own is
-        /// called, in the game's words.</summary>
-        private static string FirstLine(AgeTooltip tooltip)
-        {
-            return CardActions.FirstLine(tooltip);
         }
 
         /// <summary>The caption written beside a control - a drop list's own name, which the game draws

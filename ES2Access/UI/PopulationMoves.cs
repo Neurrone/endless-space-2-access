@@ -243,7 +243,13 @@ namespace ES2Access.UI
 
         /// <summary>The game's own word for each band of the ring - the three colours a player cannot
         /// see, heard as three regions instead. Shared, because both pages that draw a ring band it the
-        /// same way and a band named differently on two pages is two facts about one picture.</summary>
+        /// same way and a band named differently on two pages is two facts about one picture.
+        ///
+        /// The three words are the GAME's own, taken straight from its localization rather than given
+        /// mod keys of their own - an owner ruling of 2026-08-26, and a deliberate departure from this
+        /// mod's usual "every phrase it authors is a ModStrings key". The game already draws all three
+        /// words for these very things, so borrowing them costs the player no new vocabulary and costs
+        /// the translators nothing at all.</summary>
         public static string BandName(PopulationSlots.Band band)
         {
             string key = PopulationBandTitle;
@@ -256,7 +262,7 @@ namespace ES2Access.UI
                 key = LockedBandTitle;
             }
 
-            return AgeText.Clean(Gui.Localize(key));
+            return AgeText.Title(key);
         }
 
         private const string PopulationBandTitle = "%PlanetScreenPopulationTitle";

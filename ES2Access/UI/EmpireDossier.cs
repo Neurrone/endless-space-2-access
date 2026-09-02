@@ -97,10 +97,10 @@ namespace ES2Access.UI
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                AgeTransform child = children[i];
                 // Flow control: a hidden band's children each read visible of their own, so a walk that
                 // descended into one would collect lines the player cannot see.
-                if (child != null && child.Visible)
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child != null)
                 {
                     Read(child, lines, tooltip, depth + 1);
                 }

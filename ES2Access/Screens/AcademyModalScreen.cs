@@ -84,21 +84,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && Panels(window) != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(GuiModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -322,7 +308,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            AgeTransform at = label == null ? null : label.AgeTransform;
+            AgeTransform at = AgeWidgets.Transform(label);
             if (at == null)
             {
                 return;
@@ -394,18 +380,7 @@ namespace ES2Access.Screens
 
         private static AgeControlButton Button(GuiWindow window)
         {
-            AgeControlButton[] buttons = window.AgeTransform.GetComponentsInChildren<AgeControlButton>(
-                true
-            );
-            for (int i = 0; buttons != null && i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == SwitchHandler)
-                {
-                    return buttons[i];
-                }
-            }
-
-            return null;
+            return AgeWidgets.WiredTo(window.AgeTransform, SwitchHandler);
         }
     }
 }

@@ -825,7 +825,7 @@ namespace ES2Access.UI
             AgePrimitiveLabel label
         )
         {
-            Name(named, label, Word(CommandPointsTitle));
+            Name(named, label, AgeText.Title(CommandPointsTitle));
         }
 
         /// <summary>
@@ -992,10 +992,10 @@ namespace ES2Access.UI
                 return named;
             }
 
-            Name(named, card.MajorTraitLabel, Word(MinorPersonalityTitle));
-            Name(named, card.MinorTraitLabel, Word(MinorFactionTraitTitle));
-            Name(named, card.RelationLabel, Word(MinorRelationTitle));
-            Name(named, card.AllyLabel, Word(MinorAllyTitle));
+            Name(named, card.MajorTraitLabel, AgeText.Title(MinorPersonalityTitle));
+            Name(named, card.MinorTraitLabel, AgeText.Title(MinorFactionTraitTitle));
+            Name(named, card.RelationLabel, AgeText.Title(MinorRelationTitle));
+            Name(named, card.AllyLabel, AgeText.Title(MinorAllyTitle));
             return named;
         }
 
@@ -1129,24 +1129,6 @@ namespace ES2Access.UI
             Name(named, label, StatTitle(stat));
         }
 
-        /// <summary>A widget named with a value the reader COMPUTED rather than the one drawn on it -
-        /// the play deck's range words, which the game only ever writes out in full on a hover
-        /// tooltip.</summary>
-        private static void NameAs(
-            Dictionary<AgeTransform, Naming> named,
-            AgePrimitiveLabel label,
-            string title,
-            string value
-        )
-        {
-            if (label == null || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(value))
-            {
-                return;
-            }
-
-            named[label.AgeTransform] = new Naming { Text = TooltipText.Captioned(title, value) };
-        }
-
         /// <summary>Two whole phrases as the one line the reader hands over, joined by the
         /// translator's colon connective. Null where either half is missing, so a row the game left
         /// half-drawn goes on reading as whatever it drew.</summary>
@@ -1157,7 +1139,7 @@ namespace ES2Access.UI
                 : ModStrings.Format(ModStrings.CaptionedColon, caption.Trim(), value.Trim());
         }
 
-        /// <summary>The same substitution as <see cref="NameAs"/> for a caller that has already
+        /// <summary>The same substitution the <c>Name</c> pair make, for a caller that has already
         /// composed the line.</summary>
         private static void NameText(
             Dictionary<AgeTransform, Naming> named,
@@ -1211,39 +1193,13 @@ namespace ES2Access.UI
         /// </summary>
         private static string StatTitle(Amplitude.StaticString stat)
         {
-            string title = AgeText.Clean(Gui.GetTitle(stat));
-            if (Unresolved(title))
-            {
-                title = AgeText.Clean("%" + stat + "Title");
-            }
-
-            return Unresolved(title) ? null : title;
-        }
-
-        /// <summary>A word the game keeps under a translation key of its own rather than on an element
-        /// - a column heading, a card's caption. Silence rather than the key, for the same reason
-        /// <see cref="StatTitle"/> ends in silence.</summary>
-        private static string Word(string key)
-        {
-            string title = AgeText.Clean(key);
-            return Unresolved(title) ? null : title;
-        }
-
-        private static bool Unresolved(string title)
-        {
-            return string.IsNullOrEmpty(title) || title[0] == '%';
+            return AgeText.Title(Gui.GetTitle(stat)) ?? AgeText.Title("%" + stat + "Title");
         }
 
         /// <summary>What the fleet list calls a fleet's command points - preferred over the ship stat
         /// of the same name so that a fleet is described in the words the fleet rows already use.
         /// </summary>
         private const string CommandPointsTitle = "%FleetListTableCommandPointsTitle";
-
-        /// <summary>The caption a hero's card draws ABOVE the level it belongs to, and the one it
-        /// draws beside a bare upkeep figure as a picture.</summary>
-        private const string HeroLevelTitle = "%HeroCardLevelTitle";
-
-        private const string HeroUpkeepTitle = "%HeroCardUpkeepTitle";
 
         // ---- the hero card ----
 
@@ -1271,9 +1227,9 @@ namespace ES2Access.UI
                 return named;
             }
 
-            Name(named, card.LevelLabel, Word(HeroLevelTitle), true);
-            Silence(named, Caption(hero.AgeTransform, HeroLevelTitle, 0));
-            Name(named, card.UpkeepLabel, Word(HeroUpkeepTitle));
+            Name(named, card.LevelLabel, HeroCards.LevelCaption(), true);
+            Silence(named, Caption(hero.AgeTransform, HeroCards.LevelTitle, 0));
+            Name(named, card.UpkeepLabel, HeroCards.UpkeepCaption());
             Masteries(named, card.HeroMasteryPanel);
             return named;
         }
@@ -1390,7 +1346,7 @@ namespace ES2Access.UI
             {
                 TooltipText.AddLines(
                     lines,
-                    TooltipText.Captioned(Word(HeroLevelTitle), AgeText.Label(skill.LevelLabel))
+                    TooltipText.Captioned(HeroCards.LevelCaption(), AgeText.Label(skill.LevelLabel))
                 );
             }
 

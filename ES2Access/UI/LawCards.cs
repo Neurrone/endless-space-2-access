@@ -96,8 +96,7 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                string word = AgeText.Clean(Gui.GetLocalizedTitle(LawCard.SubCategoryForcedLaw));
-                return string.IsNullOrEmpty(word) || word[0] == '%' ? null : word;
+                return AgeText.Title(Gui.GetLocalizedTitle(LawCard.SubCategoryForcedLaw));
             }
             catch (Exception)
             {

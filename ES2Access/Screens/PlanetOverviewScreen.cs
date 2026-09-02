@@ -376,7 +376,7 @@ namespace ES2Access.Screens
         private void BuildInfo(GraphBuilder builder, PlanetInfoSidePanel panel, Planet planet)
         {
             _cells.Clear();
-            AddReadout(_cells, Transform(panel.PlanetTitleLabel), "planet:name");
+            AddReadout(_cells, AgeWidgets.Transform(panel.PlanetTitleLabel), "planet:name");
             // Named by the mod: the game gives these two arrows a sentence about what a click would do
             // and no title at all, so without a name they read as a bare "button" and a description.
             AddButton(
@@ -394,7 +394,7 @@ namespace ES2Access.Screens
                 UiActions.PageNext
             );
             AddFidsi(_cells, panel, planet);
-            EmitLinear(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -473,9 +473,9 @@ namespace ES2Access.Screens
             }
 
             _cells.Clear();
-            AgeTransform count = Transform(panel.PopulationCountLabel);
+            AgeTransform count = AgeWidgets.Transform(panel.PopulationCountLabel);
             AddReadout(_cells, count == null ? null : count.Parent, "planet:population-summary");
-            EmitLinear(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
 
             _cells.Clear();
             IList<AgeTransform> units = Children(panel.PopulationsContainer);
@@ -484,7 +484,7 @@ namespace ES2Access.Screens
                 AddPopulation(_cells, units[i], i);
             }
 
-            EmitLinear(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddPopulation(List<Cell> cells, AgeTransform widget, int index)
@@ -508,7 +508,7 @@ namespace ES2Access.Screens
             // button opens (<see cref="PopulationScreen"/>). It had no opener node anywhere.
             AgeTransform at = widget;
             NodeVtable vtable = GraphNodes.Button(
-                () => TooltipTitle(tooltip),
+                () => AgeWidgets.TooltipTitle(tooltip),
                 () => AgeWidgets.Press(at),
                 () => AgeWidgets.Operable(at),
                 tooltip
@@ -521,11 +521,6 @@ namespace ES2Access.Screens
                 ControlId.For(widget, "planet:population/" + index),
                 vtable
             );
-        }
-
-        private static string TooltipTitle(AgeTooltip tooltip)
-        {
-            return AgeWidgets.TooltipTitle(tooltip);
         }
 
         // ---- the card ----
@@ -544,8 +539,8 @@ namespace ES2Access.Screens
         private void BuildCard(GraphBuilder builder, PlanetLabel_PlanetOverview card)
         {
             _cells.Clear();
-            AddReadout(_cells, Transform(card.PlanetTitle), "planet:title");
-            AddReadout(_cells, Transform(card.LoreLabel), "planet:lore");
+            AddReadout(_cells, AgeWidgets.Transform(card.PlanetTitle), "planet:title");
+            AddReadout(_cells, AgeWidgets.Transform(card.LoreLabel), "planet:lore");
 
             IList<AgeTransform> rows = Children(card.ContentTable);
             for (int i = 0; rows != null && i < rows.Count; i++)
@@ -553,7 +548,7 @@ namespace ES2Access.Screens
                 AddCardRows(_cells, rows[i]);
             }
 
-            EmitLinear(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         /// <summary>
@@ -726,45 +721,12 @@ namespace ES2Access.Screens
 
         // ---- shared ----
 
-        /// <summary>A control on its way into the graph, still carrying the widget it was read from: the
-        /// rows are worked out from a whole panel at once, which cannot be done while declaring it row
-        /// by row.</summary>
-        private sealed class Cell
-        {
-            public AgeTransform Widget;
-            public ControlId Id;
-            public NodeVtable Vtable;
-
-            /// <summary>The hover surfaces this row carries beyond the one it points at, as entries
-            /// under it (<see cref="TooltipChildren"/>). Null on the ordinary row, which stays a leaf.</summary>
-            public List<TooltipChildren.Dossier> Dossiers;
-
-            /// <summary>What those entries are keyed under - this row.s own key path.</summary>
-            public string Key;
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
-
-        /// <summary>Declare a panel's controls one per row, in the order the game drew them - measured,
-        /// so a control the game inserts between two others is walked where it appears. The bands the
-        /// page draws are a layout, not columns: the five outputs are peers of one kind and so are the
-        /// kinds of people living here, so the player walks all of them with one key.</summary>
-        private static void EmitLinear(GraphBuilder builder, List<Cell> cells)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                for (int i = 0; i < row.Count; i++)
-                {
-                    TooltipChildren.Declare(
-                        builder,
-                        Nodes.Drawn(row[i].Id, row[i].Vtable, row[i].Widget),
-                        row[i].Key,
-                        row[i].Dossiers
-                    );
-                }
-            }
-        }
-
+        /// <summary>Declare one control, and where it owns dossiers of its own hand them over so
+        /// <see cref="Cells.EmitLinear"/> declares it as the group they hang under. The page's controls
+        /// are read from a whole panel at once and banded by where they were drawn, which is what puts
+        /// a control the game inserts between two others where it appears; the bands are a layout and
+        /// not columns - the five outputs are peers of one kind and so are the kinds of people living
+        /// here, so the player walks all of them with one key.</summary>
         private static void Add(
             List<Cell> cells,
             AgeTransform widget,
@@ -774,16 +736,9 @@ namespace ES2Access.Screens
             List<TooltipChildren.Dossier> dossiers = null
         )
         {
-            cells.Add(
-                new Cell
-                {
-                    Widget = widget,
-                    Id = id,
-                    Vtable = vtable,
-                    Key = key,
-                    Dossiers = dossiers,
-                }
-            );
+            Cell cell = Cells.Add(cells, widget, id, vtable);
+            cell.Key = key;
+            cell.Dossiers = dossiers;
         }
 
         private static void AddReadout(List<Cell> cells, AgeTransform widget, string key)
@@ -856,20 +811,11 @@ namespace ES2Access.Screens
 
         /// <summary>A tooltip only when there is something behind it. AGE hangs a tooltip component on
         /// widgets that never get one filled in, and an empty one would be picked as a row's
-        /// explanation and then say nothing.</summary>
+        /// explanation and then say nothing. The rule is the shared one
+        /// (<see cref="AgeWidgets.NeverDraws"/>), so a stub is the same stub on every page.</summary>
         private static AgeTooltip Meaningful(AgeTooltip tooltip)
         {
-            try
-            {
-                return tooltip != null
-                    && (!string.IsNullOrEmpty(tooltip.Class) || !string.IsNullOrEmpty(tooltip.Content))
-                    ? tooltip
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return AgeWidgets.NeverDraws(tooltip) ? null : tooltip;
         }
 
         private static string Name(AgeTransform widget)
@@ -881,18 +827,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return string.Empty;
-            }
-        }
-
-        private static AgeTransform Transform(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 
