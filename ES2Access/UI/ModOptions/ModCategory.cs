@@ -42,6 +42,9 @@ namespace ES2Access.UI.ModOptions
         /// <summary>The words, resolved when the tab is built rather than held as a key: two of the
         /// tabs are numbered, so their names are composed rather than looked up.</summary>
         public readonly System.Func<string> Title;
+
+        /// <summary>The sentence the tab explains itself with, or NULL for a tab that has none - and
+        /// then the tab carries no tooltip at all (ModOptionsWindow.Relabel).</summary>
         public readonly System.Func<string> Description;
 
         /// <summary>Puts the category's rows in, once the game has built the empty panel. Null for a

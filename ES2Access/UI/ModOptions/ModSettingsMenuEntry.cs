@@ -71,6 +71,15 @@ namespace ES2Access.UI.ModOptions
             return ModStrings.Get(ModStrings.ModSettingsEntry);
         }
 
+        /// <summary>The sentence beside them, both menus (owner ruling 2026-09-02): the entry is
+        /// named as briefly as the menu can draw on one line, so the tooltip is where it says which
+        /// mod these settings belong to. Every neighbouring entry on both menus carries one.
+        /// </summary>
+        public static string Description()
+        {
+            return ModStrings.Get(ModStrings.ModSettingsEntryDescription);
+        }
+
         /// <summary>Put the entry on whichever menu exists, and keep it right. Called once a frame
         /// from the pump; the whole cost on a frame where nothing has changed is two null checks and
         /// an array scan.</summary>
@@ -223,8 +232,9 @@ namespace ES2Access.UI.ModOptions
             {
                 if (button.AgeTooltip != null)
                 {
-                    // The clone brought the Options entry's own sentence with it.
-                    button.AgeTooltip.Content = string.Empty;
+                    // The clone brought the Options entry's own sentence with it; this entry's own
+                    // goes in its place, so the row explains itself the way its neighbours do.
+                    button.AgeTooltip.Content = Description();
                 }
 
                 AgeControlButton control = button.GetComponent<AgeControlButton>();
@@ -555,7 +565,7 @@ namespace ES2Access.UI.ModOptions
 
                 if (item.Tooltip != null)
                 {
-                    item.Tooltip.Content = string.Empty;
+                    item.Tooltip.Content = Description();
                 }
             }
         }

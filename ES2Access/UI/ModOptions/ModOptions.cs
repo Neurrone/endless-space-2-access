@@ -91,7 +91,10 @@ namespace ES2Access.UI.ModOptions
                             typeof(IModGeneralService),
                             new ModGeneralService(),
                             () => ModStrings.Get(ModStrings.ModSettingsGeneral),
-                            () => ModStrings.Get(ModStrings.ModSettingsGeneralDescription),
+                            // No sentence about itself: the tab is called what it holds and there is
+                            // nothing further to say (owner ruling 2026-09-02). A null description is
+                            // how a tab asks for NO tooltip - see ModOptionsWindow.Relabel.
+                            null,
                             GeneralRows.Fill
                         )
                     );

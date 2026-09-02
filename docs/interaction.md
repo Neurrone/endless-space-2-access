@@ -1381,14 +1381,21 @@ cancel semantics of its own, and the hand-over waits for the activating key's re
 
 ## The mod's Controls tab
 
-**The Controls category holds one row per mod ACTION**, in the order `ModEntry.BindKeys`
-registers them — which groups them by family already: the cursor's keys, then the map's, then
-the review buffer's. Each row is the game's own `OptionKeyMappingItem`, so it reads exactly as a
+**The Controls category holds one row per mod ACTION, in SIX TABLES under six headings** (owner
+ruling 2026-09-02): Cursor and navigation, Buffers, UI hotkeys, Inspect mode, Scanner, Bookmarks.
+The layout is `ES2Access/UI/Input/KeybindLayout.cs` and NOT the order `ModEntry.BindKeys` registers
+in - which key exists is the input layer's business and where its row is drawn is the page's, kept
+apart so that moving a row cannot move a binding. A heading is a `ModRows.Caption`, which the
+options screen turns into the name of a REGION and never into a stop: "3 of 22" counts the table the
+player is standing in, Alt+arrow jumps by the six names, and Down still walks the page end to end.
+Each row is the game's own `OptionKeyMappingItem`, so it reads exactly as a
 Controls-tab row does, read as a three-column TABLE (the action, its primary key, its secondary
 key) with Enter on a key cell capturing that cell and Delete emptying it. Every row's
-title and description are the mod's own strings (`action.<action key>.title` /
-`.description`) — mandatory, not cosmetic: a localization key the game has no row for is drawn
-and spoken RAW (`docs/gui.md`). An action bound to more than two chords keeps the extras, which stay
+title is the mod's own string (`action.<action key>.title`) - mandatory, not cosmetic: a
+localization key the game has no row for is drawn and spoken RAW (`docs/gui.md`). **A DESCRIPTION IS
+OPTIONAL** (owner ruling 2026-09-02): most titles say everything the row has to say, and an
+`action.<key>.description` the table does not carry leaves the row's `AgeTooltip.Content` empty, so
+nothing is drawn and nothing is declared. An action bound to more than two chords keeps the extras, which stay
 live and are not offered by any row (today only `galaxy.inspectGrow`, four chords because "+"
 is three of them on a common keyboard). **No mod↔mod conflict check** (ruling 10): the rows
 carry `AcceptsMultipleKeys`, which also stops the game's Controls tab stealing a chord from one
@@ -1406,8 +1413,8 @@ actually MOVED, in the game's own `InputBinding.ToRegistryString` form; moving a
 default takes the line out again, so a later build changing a default reaches everybody who
 never touched that key.
 
-The rest of the mod's settings window — how a player reaches it (a DRAWN entry titled
-"Accessibility mod settings" on both menus, owner ruling 2026-09-02), the three tabs (General,
+The rest of the mod's settings window — how a player reaches it (a DRAWN entry titled "Mod Settings",
+tooltipped "Endless Space 2 accessibility mod settings", on both menus - owner rulings 2026-09-02), the three tabs (General,
 Scanner, Controls) and the Scanner tab's slot editor — is `docs/test-recipes/mod-settings.md`.
 
 Game-mechanism findings (window gates, pool slots, tooltip internals, fleet and quest

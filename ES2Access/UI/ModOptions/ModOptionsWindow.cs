@@ -273,9 +273,14 @@ namespace ES2Access.UI.ModOptions
                     toggle.Toggle == null || toggle.Toggle.AgeTransform == null
                         ? null
                         : toggle.Toggle.AgeTransform.AgeTooltip;
+                // A category with no sentence of its own leaves the tooltip EMPTY, which is a
+                // tooltip the game draws nothing for and the mod declares nothing about
+                // (AgeWidgets.Draws) - the same shape every mod-drawn row already has.
+                string sentence =
+                    category.Description == null ? string.Empty : category.Description();
                 if (tooltip != null)
                 {
-                    tooltip.Content = category.Description();
+                    tooltip.Content = sentence ?? string.Empty;
                 }
             }
             catch (System.Exception e)

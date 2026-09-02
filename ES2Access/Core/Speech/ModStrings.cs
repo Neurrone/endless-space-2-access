@@ -156,14 +156,16 @@ namespace ES2Access.Core.Speech
 
         /// <summary>The entry that opens it, on the main menu and the pause menu. The mod adds a
         /// real entry to each menu (owner ruling 2026-09-02), so these words are DRAWN on it as
-        /// well as spoken - which is why they name the mod rather than just "Mod settings".
+        /// well as spoken - which is why they are short enough to fit the main menu's own entry on
+        /// ONE line (owner ruling 2026-09-02), with the sentence beside them saying which mod.
         /// </summary>
         public const string ModSettingsEntry = "mod-settings.entry";
+        public const string ModSettingsEntryDescription = "mod-settings.entry-description";
 
-        /// <summary>What the General tab - the window's first - says about itself. It is where a
-        /// setting that belongs to no other tab lives.</summary>
+        /// <summary>What the General tab - the window's first - is called. It is where a setting
+        /// that belongs to no other tab lives, and it says nothing further about itself: the tab
+        /// carries NO tooltip (owner ruling 2026-09-02).</summary>
         public const string ModSettingsGeneral = "mod-settings.general";
-        public const string ModSettingsGeneralDescription = "mod-settings.general-description";
 
         /// <summary>The General tab's one row: whether the game's cut scenes are described while
         /// they play. The setting itself lives in the BepInEx config file, which this row is the
@@ -225,8 +227,6 @@ namespace ES2Access.Core.Speech
 
         public const string ScannerEditClear = "mod-settings.scanner.clear";
 
-        public const string ScreenLoading = "screen.loading";
-        public const string ScreenNotification = "screen.notification";
         // --- the Controls tab's six tables (owner ruling 2026-09-02) ---
 
         /// <summary>What each block of key-binding rows is called. The Controls tab is not one
@@ -241,6 +241,8 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsKeysScanner = "mod-settings.keys.scanner";
         public const string ModSettingsKeysBookmarks = "mod-settings.keys.bookmarks";
 
+        public const string ScreenLoading = "screen.loading";
+        public const string ScreenNotification = "screen.notification";
         public const string ScreenTutorial = "screen.tutorial";
         public const string ScreenGalaxy = "screen.galaxy";
         public const string ScreenGameMenu = "screen.game-menu";
@@ -2191,12 +2193,9 @@ namespace ES2Access.Core.Speech
             { ScreenMessageBox, "Dialog" },
             { ScreenOptions, "Options" },
             { ScreenModSettings, "Mod settings" },
-            { ModSettingsEntry, "Accessibility mod settings" },
+            { ModSettingsEntry, "Mod Settings" },
+            { ModSettingsEntryDescription, "Endless Space 2 accessibility mod settings" },
             { ModSettingsGeneral, "General" },
-            {
-                ModSettingsGeneralDescription,
-                "General settings of the accessibility mod"
-            },
             { ModSettingsCutsceneDescriptions, "Video descriptions in cut scenes" },
             { ModSettingsScanner, "Scanner" },
             {
@@ -2219,13 +2218,13 @@ namespace ES2Access.Core.Speech
                 ScannerEditKeywordTaken,
                 "That keyword is already in this custom category"
             },
+            { ScannerEditClear, "Clear this custom category" },
             { ModSettingsKeysCursor, "Cursor and navigation" },
             { ModSettingsKeysBuffers, "Buffers" },
             { ModSettingsKeysHotkeys, "UI hotkeys" },
             { ModSettingsKeysInspect, "Inspect mode" },
             { ModSettingsKeysScanner, "Scanner" },
             { ModSettingsKeysBookmarks, "Bookmarks" },
-            { ScannerEditClear, "Clear this custom category" },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },
             { ScreenTutorial, "Tutorial" },

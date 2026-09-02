@@ -440,12 +440,13 @@ belong in the files above.
   The window opens on a General tab whose one row exposes the BepInEx `[Speech]
   cutsceneDescriptions` setting; the Scanner tab's first row is "Shortened directions" (off by
   default, "1w, 9s" for "1 west, 9 south" on scanner results only); and the settings entry on both
-  menus is a real drawn entry titled "Accessibility mod settings", added to each menu's own entry
-  list rather than declared synthetically. What is left is MANUAL: a real MOUSE PICK on either
-  entry (the wiring is replay-proved, the engine's hit test is not), and the BepInEx FILE write
-  behind the cut-scene row - the loader does not hot-reload, so it takes a game restart to prove.
-  Open wording questions: whether the entry should carry a tooltip, and whether the pause-menu
-  entry should keep the Options gear icon it was cloned from.
+  menus is a real drawn entry titled "Mod Settings" and tooltipped "Endless Space 2 accessibility
+  mod settings", added to each menu's own entry list rather than declared synthetically. The
+  General tab itself carries no tooltip. The BepInEx FILE write behind the cut-scene row is
+  proved (2026-09-02, after a restart: the config line went false on Apply and back to true).
+  What is left is MANUAL: a real MOUSE PICK on either entry (the wiring is replay-proved, the
+  engine's hit test is not). Open question: whether the pause-menu entry should keep the Options
+  gear icon it was cloned from.
 - Rebindable mod keys: SHIPPED 2026-08-23 - the mod's own Controls tab (stage 2a), the
   three-column binding table with Delete-to-clear, the Escape cancel and the two-way mod/game
   overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls tab alike; and, from stage
@@ -454,8 +455,9 @@ belong in the files above.
   stage 7 (2026-08-24, `POST /key` with the game foregrounded): Enter to capture, a chord committing
   and being spoken, Escape cancelling a capture, and the reported vanish - which was the clone being
   asked for input AHEAD of the message box, fixed by registering it beside the game's own options
-  window (ES2 facts). What is left is the MANUAL pass over the physical LETTER keys
-  (type-ahead on the settings pages).
+  window (ES2 facts). The tab became SIX captioned tables and its wording was reworked
+  2026-09-02 (layout in `ES2Access/UI/Input/KeybindLayout.cs`, most rows now tooltip-less). What is
+  left is the MANUAL pass over the physical LETTER keys (type-ahead on the settings pages).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)

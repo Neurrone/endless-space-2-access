@@ -7,12 +7,17 @@ and the physical key paths.
 
 **THE MOD'S OWN SETTINGS ARE A MENU ENTRY, NOT A HOTKEY** (owner ruling 2026-08-23), **AND THAT
 ENTRY IS DRAWN** (owner ruling 2026-09-02; `ES2Access/UI/ModOptions/ModSettingsMenuEntry.cs`,
-which replaced the synthetic `ModSettingsNode.cs`). It is titled **"Accessibility mod settings"**
-(`mod-settings.entry`) and sits immediately after the game's own Options entry on both menus,
+which replaced the synthetic `ModSettingsNode.cs`). It is titled **"Mod Settings"**
+(`mod-settings.entry`, owner ruling 2026-09-02 - short enough that the main menu draws it on ONE
+line) and sits immediately after the game's own Options entry on both menus,
 keyed as before — `mainmenu:mod-settings` and `gamemenu:mod-settings` — but now a `Nodes.Drawn`
 over a real entry of the menu's own, so a sighted player meets it too and can click it with the
-mouse. `DevProbe.Ghosts()` on either menu reports `synthetic: 0`. It carries **no tooltip**: the
-game's own entries all describe themselves and there is no owner-approved sentence for this one.
+mouse. `DevProbe.Ghosts()` on either menu reports `synthetic: 0`. It carries the tooltip **"Endless Space 2 accessibility mod settings"**
+(`mod-settings.entry-description`, owner ruling 2026-09-02), written onto the pause-menu clone's
+`AgeTooltip` and the main-menu item's `Tooltip` — so it describes itself the way every neighbouring
+entry does. `DevProbe.TooltipParity()` is clean on both menus and the pause menu paints nine
+tooltips for nine entries; `DevProbe.Tooltip()` on the focused entry answers `shown:true` with that
+one line, on both.
 **No key binding, and no gating beyond `ModOptions.CanOpen()`** (which is what decides whether the
 entry is added at all): both menus are static and are exactly where the game opens its own
 Options, and Apply, Cancel and Escape all pop back to the menu by the game's own hand. Enter shows
@@ -51,6 +56,11 @@ other. The binding rows' own key semantics are `docs/interaction.md`, **The mod'
 
 ## The General tab
 
+**The tab itself carries no tooltip** (owner ruling 2026-09-02): its name says what it holds. A
+category with a null description is how a tab asks for that (`ModCategory.Description`,
+`ModOptionsWindow`'s Relabel writes an empty `AgeTooltip.Content`, which `AgeWidgets.Draws` answers
+false for) - "General, tab, selected, 1 of 3" and `DevProbe.Tooltip()` `shown:false`.
+
 One row: **"Video descriptions in cut scenes"** (`options:0TabPanel/cutsceneDescriptions`),
 **checked by default**. It is the player's way into a setting that already lives in the BepInEx
 config file — `[Speech] cutsceneDescriptions` in
@@ -69,8 +79,9 @@ flag still moves, and the FILE write is only provable after a game restart.
 **Getting there is the player's own route, and only that route counts.** In game: open the pause
 menu (`Gui.GuiService.ShowWindow(Gui.GuiService.GetWindow<GameMenuModalWindow>())` from `/eval`
 is the same thing Escape does), then `/input ui.down` five times from Save Game and
-`/input ui.activate` — "Accessibility mod settings, button, 6 of 9", then "Mod settings" +
-"General, tab, selected, …, 1 of 3". On the MAIN MENU the entry sits after Options as **8 of 10**
+`/input ui.activate` — "Mod Settings, button, Endless Space 2 accessibility mod settings, 6 of 9", then "Mod settings" +
+"General, tab, selected, 1 of 3" - the General tab carries NO tooltip (owner ruling 2026-09-02). On the MAIN MENU the entry sits after Options as **"Mod Settings, button, Endless Space 2
+accessibility mod settings, 8 of 10"**
 (measured 2026-09-02 out-game; the tenth stop is the news banner). The main-menu route is **not
 checkable from inside a running game**: `GET /gui/graph?screen=screen.main-menu` answers
 `screen inactive: it declared no controls` and `&ungated=1` answers the same (measured
@@ -85,8 +96,7 @@ its selection across shows — measured 2026-09-02, so re-read the tabs stop bef
 the tabs stop reaches
 `options:rows`, `ui.next` again `options:buttons` (`ui.home` = Cancel, `ui.end` = Apply; on the
 Controls tab a third button, Reset to Defaults, sits between them at
-`options:button/ResetButton/OnModResetCb`). Pause menu → Options is 5 of 9, Accessibility mod
-settings 6 of 9.
+`options:button/ResetButton/OnModResetCb`). Pause menu → Options is 5 of 9, Mod Settings 6 of 9.
 `/input ui.back` does NOT close THIS window: the options screen leaves Escape to the game and an
 injected action presses no key — use the window's own Cancel button. (That is this window's answer,
 not a general rule: the seven modals listed in `interaction.md` DO consume Back and press their own
@@ -96,7 +106,8 @@ own confirmation (`ui.end` then `ui.activate` confirms) and lands back on the pa
 ## Reading it
 
 **Reading it.** `GET /gui/graph` on the mod window gives three stops exactly as the game's options
-window does: `options:tabs` (three tabs, "General", "Scanner" and "Controls"), `options:rows`, and
+window does: `options:tabs` (three tabs, "General", "Scanner" and "Controls"; only the last two carry a
+tooltip), `options:rows`, and
 `options:buttons` (Cancel, Apply — Apply "unavailable, No modification detected." until something
 changes, which is also the proof that the option getter's instance is stable; on the Controls tab a
 third button, "Reset to Defaults", sits between them). The Controls tab is `2TabPanel`, and its row ids are
@@ -144,18 +155,59 @@ survives, because it is read from the file at `ModEntry.Start`:
 
 ## Key bindings, the table
 
+**The MOD's tab is SIX TABLES under six headings** (owner ruling 2026-09-02); the game's own tab is
+still one. Which action is in which table, and in what order, is
+`ES2Access/UI/Input/KeybindLayout.cs` — deliberately NOT the registration order, so moving a row
+cannot move a binding — and `ES2Access.Tests/Input/KeybindLayoutTests.cs` fails the build if an
+action is missing from it or drawn twice. The six, measured 2026-09-02:
+
+| Heading | Rows | First row |
+|---|---|---|
+| Cursor and navigation | 22 | Move up |
+| Buffers | 6 | Read previous buffer line |
+| UI hotkeys | 11 | Focus HUD |
+| Inspect mode | 8 | Return to previous position |
+| Scanner | 13 | Move to next category |
+| Bookmarks | 21 | Set bookmark 1 |
+
+81 rows in all — one per `action.*.title` key in the locale; re-check with
+`grep -c '"action\..*\.title"' ES2Access/locale/english.json` whenever an action is added. (It read
+57 until 2026-08-28 and 60 until 2026-09-02, and the physical-key measurements further down still
+quote the 60-row numbering, "49 of 60", so treat those ordinals as stale.)
+
 **Reading it.** Both windows read the same way. `/input ui.next` into `options:rows` lands on the
 first row's name cell — on the GAME's tab "Controls, table, Confirm, Enter, ⟨description⟩", on the
-MOD's "Controls, table, Move up, Up Arrow, Move the cursor to the control above., 1 of 81" (measured
-2026-09-02) — and then
+MOD's "Controls, table, Cursor and navigation, Move up, Up Arrow, Move the cursor to the control
+above., 1 of 22" (measured 2026-09-02: the heading is the block's CONTEXT and the count is the
+BLOCK's, not the page's) — and then
 `ui.right` / `ui.left` cross the columns ("Primary key, Enter, button" / "Secondary key, empty,
 button" / back onto "Action, Confirm, …"), `ui.down` stays in the column and names the row it landed
 in ("Cancel, empty, button, 2 of ⟨n⟩"). Cell ids are `options:⟨panel⟩/keys/row⟨hash⟩c⟨0|1|2⟩`.
-**The MOD table's row count is 81** (measured 2026-09-02) — one per `action.*.title` key in the
-locale. It read 57 until 2026-08-28 and 60 until 2026-09-02, and the physical-key measurements
-further down still quote the 60-row numbering ("49 of 60"), so treat those ordinals as stale;
-re-check the count with
-`grep -c '"action\..*\.title"' ES2Access/locale/english.json` whenever an action is added.
+
+**A heading is a REGION, never a stop.** The six blocks are six regions of ONE `GraphSheet`
+(`options:2TabPanel/keys/reg:0` … `reg:5`): one sheet with `Region()` called again at each heading,
+which is what lets Down chain across a boundary while Alt+arrow still jumps (six SHEETS would name
+one region six times — measured 2026-09-02, and the whole page then read as a single block no jump
+could walk). `/input ui.regionNext` five times walks "Buffers, Read previous buffer line, Ctrl + Up
+Arrow, 1 of 6" → "UI hotkeys, Focus HUD, Ctrl + H, 1 of 11" → "Inspect mode, Return to previous
+position, Backspace, 1 of 8" → "Scanner, Move to next category, Ctrl + Page Down, 1 of 13" →
+"Bookmarks, Set bookmark 1, Shift + 1, 1 of 21", and `ui.regionPrev` walks back. `ui.up` from a
+block's first row announces the block above ("Scanner, Move to previous result in custom category 3,
+Shift + /, 13 of 13"). The heading rows declare no node of their own: `DevProbe.Ghosts()` reads
+`synthetic: 0` and 249 located nodes — 81 rows × 3 cells, 3 tabs, 3 buttons, no heading among them.
+
+**MOST ROWS HAVE NO TOOLTIP** (owner ruling 2026-09-02). A row's title says what its key does, and a
+sentence repeating it would be read on every step; nine rows keep a description
+(`ES2Access/Core/Speech/ModStrings.Actions.cs` — an action with no `.description` entry gets an EMPTY
+`AgeTooltip.Content`, which `AgeWidgets.Draws` answers false for, so nothing draws and the options
+screen declares nothing). Evidence: "UI hotkeys, Focus HUD, Ctrl + H, 1 of 11" with two buffer lines
+and no third, "Move up" still carrying "Move the cursor to the control above.", and
+`DevProbe.TooltipParity()` clean with every bucket empty.
+
+**Reset to Defaults still walks every row** with the headings among them: its loop asks each child
+for an `OptionKeyMappingItem` and a heading has none, so it is skipped (measured 2026-09-02 — the
+confirmation, the reset, no log line, 243 cells and six regions still there afterwards, and the
+window's own Cancel put everything back with the settings file untouched).
 
 **Driving a clear.** `/input ui.clear` on a key cell — the cell announces its new "empty" as a live
 part, Apply lights, and the game's own value follows
@@ -170,10 +222,10 @@ invoke the private `OnLoseFocusCb` with `item.PrimaryKeyBindingField.gameObject`
 finished capture takes, conflict check included.
 
 **The overlap warning, both ways.** Game side: on the Controls tab, commit `InputBindingsQuickSave`
-onto `Ctrl+H` (the mod's `ui.focusEmpire`) — the box reads "While the mod's Go to the empire banners
+onto `Ctrl+H` (the mod's `ui.focusEmpire`) — the box reads "While the mod's Focus HUD
 is active, the game's Quick Save will not fire" and the binding still lands (`QuickSave: Ctrl + H`).
-Mod side: on the mod's own Controls tab, commit `ui.goToLocation` onto `F1` — "While the mod's Show
-on the map is active, the game's Empire Screen will not fire", and `ui.goToLocation: F1` sticks. TWO
+Mod side: on the mod's own Controls tab, commit `ui.goToLocation` onto `F1` — "While the mod's Move to
+location is active, the game's Empire Screen will not fire", and `ui.goToLocation: F1` sticks. TWO
 buttons: Confirm keeps it, Cancel puts the row back on what it held (measured: binding
 `ui.up` onto `KeypadEnter` warned about End Turn, and Cancel restored `ui.up: UpArrow` with Apply
 going back to unavailable). Either answer reads the cell out and leaves the settings window SHOWN
@@ -369,7 +421,7 @@ the rebind reverted (ES2 facts). Check the clone's place in the dispatch list wi
 with whatever the game left in it (empty on a row with both slots filled, the old chord on a row whose
 other slot is empty — 2026-08-24: no cancel, no restore); `Return` then `Comma` = the chord twice (the field as it builds it,
 then the mod confirming what stuck) with Apply lit; Apply (`ui.next` to the buttons, `ui.end`,
-`Return`) hides the window, lands on "Accessibility mod settings, button, 6 of 9" and writes
+`Return`) hides the window, lands on "Mod Settings, button, Endless Space 2 accessibility mod settings, 6 of 9" and writes
 `keys.galaxy.scanCustom1Next = galaxy.scanCustom1Next:F1,`; rebinding back to the default and
 applying takes the line out again.
 
