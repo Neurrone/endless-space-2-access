@@ -94,7 +94,7 @@ namespace ES2Access.Core.Speech
         public const string ScanSystemInfoHidden = "scan.system-info-hidden";
 
         /// <summary>The trade routes the scan view draws as lines across the map, woven into the places
-        /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.Core.UI.TradeWeave"/>):
+        /// the lines run between and over (RULED 2026-09-01, <see cref="ES2Access.ES2.UI.TradeWeave"/>):
         /// a system at either END of a route says where the route goes, a system the route merely
         /// crosses says whose road is passing through, and a star LANE says which route it carries and
         /// how THAT route is running over it - open or blockaded. One phrase per route, never a merged

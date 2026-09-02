@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    Offline unit tests for the engine-agnostic core. No Unity, no BepInEx, no game launch.
-    There is no Core assembly to reference: the plugin's Core/ sources are LINKED and compiled
-    directly into this test assembly, so anything under Core/ that reached for Unity, BepInEx or
-    the game would break this build. That is the point — Core stays BCL-only, and the tests run
+    Offline unit tests for the engine-free half of the mod. No Unity, no BepInEx, no game launch.
+    There is no Core assembly to reference: the plugin's Core/ and ES2/ sources are LINKED and
+    compiled directly into this test assembly, so anything under either that reached for Unity,
+    BepInEx or the game would break this build. That is the point — Core (the game-agnostic
+    framework) and ES2 (this game's own tables and wordings) both stay BCL-only, and the tests run
     on a modern runtime without the game installed.
   -->
   <PropertyGroup>
@@ -23,6 +24,7 @@
 
   <ItemGroup>
     <Compile Include="..\ES2Access\Core\**\*.cs" LinkBase="Core" />
+    <Compile Include="..\ES2Access\ES2\**\*.cs" LinkBase="ES2" />
     <!--
       The mod's ACTION NAMES and the Controls tab's LAYOUT over them. They live under UI\ because
       that is who registers and draws them, but the four files are plain string tables with no

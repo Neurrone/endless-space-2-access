@@ -118,7 +118,7 @@ standing on.
 A tree of a map answers "what things exist and what is next to which"; it cannot answer
 the question a sighted player settles at a glance — what lies in *that* direction, *that*
 far away, whether or not anything is there. Two games (Songs of Conquest's adventure map,
-ES2's galaxy — `songs-of-conquest-access` `TileSkipNavigator.cs`, ES2 `Core/UI/InspectGrid.cs` +
+ES2's galaxy — `songs-of-conquest-access` `TileSkipNavigator.cs`, ES2 `ES2/UI/InspectGrid.cs` +
 `CellSkip.cs`, both unit-tested off-engine) independently converged on the same answer: a
 **cell cursor** — a square of map the arrows move, speaking position first and contents
 second. The rules both arrived at:
@@ -168,6 +168,6 @@ that ships them.
 ES2 Access (models to imitate — they name ES2 types): `GalaxyHudScreen.cs` (the systems
 stop, expandable system nodes, drawn-surface switching for planet children, lane wording),
 `GalaxyViewLevels.cs` (view-level queries, camera routes, zoom-step handling with the
-limits read from the game's own comparisons), `GalaxyScanner.cs` + `Core/UI/ScannerCursor.cs`
+limits read from the game's own comparisons), `GalaxyScanner.cs` + `ES2/UI/ScannerCursor.cs`
 (the scanner's live half and its engine-free stepping rules), `GalaxyInspect.cs` +
-`Core/UI/InspectGrid.cs` (the inspection cursor and its cell geometry).
+`ES2/UI/InspectGrid.cs` (the inspection cursor and its cell geometry).

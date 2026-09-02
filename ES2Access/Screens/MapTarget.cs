@@ -1,5 +1,6 @@
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
+using ES2Access.ES2.UI;
 using UnityEngine;
 
 namespace ES2Access.Screens

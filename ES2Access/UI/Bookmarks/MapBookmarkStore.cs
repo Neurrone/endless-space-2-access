@@ -2,10 +2,10 @@ using System;
 using System.Globalization;
 using System.IO;
 using Amplitude.Unity.Framework;
-using ES2Access.Core.Bookmarks;
 using ES2Access.Core.Settings;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using ES2Access.ES2.Bookmarks;
 
 namespace ES2Access.UI.Bookmarks
 {

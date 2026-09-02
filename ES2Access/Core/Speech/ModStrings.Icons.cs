@@ -4,9 +4,9 @@ namespace ES2Access.Core.Speech
 {
     /// <summary>
     /// What each icon the game draws is called. One key per concept - see
-    /// <see cref="IconTable"/> for which tokens and textures land on which key - and one
-    /// complete word or phrase per key, because these are substituted into the middle of a
-    /// sentence the game wrote: "+10 Food per Fertile".
+    /// <see cref="ES2Access.ES2.Speech.IconTable"/> for which tokens and textures land on which
+    /// key - and one complete word or phrase per key, because these are substituted into the middle
+    /// of a sentence the game wrote: "+10 Food per Fertile".
     ///
     /// They are ordinary translatable strings and live apart from the rest only because there
     /// are so many of them.

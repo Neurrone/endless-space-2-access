@@ -4,6 +4,7 @@ using System.Reflection;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.ES2.Speech;
 using ES2Access.UI;
 
 namespace ES2Access.Screens

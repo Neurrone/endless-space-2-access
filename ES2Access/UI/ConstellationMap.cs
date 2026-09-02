@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ES2Access.Core.Map;
 using ES2Access.Core.Util;
+using ES2Access.ES2.Map;
 
 namespace ES2Access.UI
 {

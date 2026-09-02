@@ -275,7 +275,9 @@ namespace ES2Access.Tests.Lint
         {
             if (
                 file.StartsWith("ES2Access/Core/", StringComparison.Ordinal)
-                // Core knows nothing of widgets; the dev audits exist to report raw paint state.
+                || file.StartsWith("ES2Access/ES2/", StringComparison.Ordinal)
+                // Neither engine-free folder knows anything of widgets; the dev audits exist to
+                // report raw paint state.
                 || file.StartsWith("ES2Access/Dev/", StringComparison.Ordinal)
             )
             {

@@ -1,0 +1,182 @@
+namespace ES2Access.ES2.UI
+{
+    /// <summary>What kind of thing the player is being sent to on a world map - the only distinction
+    /// the landing rules turn on.</summary>
+    public enum MapThing
+    {
+        /// <summary>A place the map draws as one point and the tree declares as one node: a star
+        /// system, a special node. The camera goes IN on it.</summary>
+        Place,
+
+        /// <summary>Something standing at a bare point of the map with a row of its own: a fleet under
+        /// way, a probe, an ally's pin, a missile in flight, a quest marker planted out in the open.
+        /// The camera slides onto the point.</summary>
+        Point,
+
+        /// <summary>Something the map draws AT a place rather than as a point of its own: a planet, an
+        /// anomaly or curiosity or deposit on one, a quest marker planted at a system. Its node hangs
+        /// under the place's, and reading it needs the close-up view the camera has to fly to.
+        /// </summary>
+        PlanetBound,
+
+        /// <summary>A point with nothing on it. Not a landing: the map has been moved and the tree has
+        /// nowhere to put the player.</summary>
+        Nowhere,
+    }
+
+    /// <summary>What the camera has to do beyond whatever the cell cursor already does.</summary>
+    public enum MapCameraMove
+    {
+        None,
+        Zoom,
+        Slide,
+    }
+
+    /// <summary>How far a landing reaches - the one thing that decides whether it FRAMES what it
+    /// lands on.</summary>
+    public enum MapReach
+    {
+        /// <summary>Somewhere else on the map: a go-to, a bookmark jump, a quest pin, the game's own
+        /// show-location. The player asked to be taken there, so the picture is composed around the
+        /// destination.</summary>
+        Elsewhere,
+
+        /// <summary>One step from where the player already stands - following a starlane to the star
+        /// at its far end, and backing up the lane again. It is a walk and not a journey: the
+        /// destination is a neighbour of the row the cursor was already on, so the picture stays at
+        /// the distance the player put it and moves only as far as reading the next row moves it.
+        /// </summary>
+        Local,
+    }
+
+    /// <summary>The plan for one "go and look at this" - what to do to the inspect cell, the tree
+    /// cursor and the camera.</summary>
+    public struct MapLanding
+    {
+        /// <summary>Take the inspect cursor down first: what is being landed on is read from the tree
+        /// and not from a square of sky.</summary>
+        public bool ExitInspect;
+
+        /// <summary>Put the inspect cell on the thing's own tile.</summary>
+        public bool MoveCell;
+
+        /// <summary>Send the tree cursor to the thing's node.</summary>
+        public bool FocusNode;
+
+        /// <summary>...and let that landing announce itself. False where the cell is the thing the
+        /// player is reading, so the tree move is felt only when the mode ends.</summary>
+        public bool AnnounceNode;
+
+        /// <summary>What the caller must do to the camera. <see cref="MapCameraMove.None"/> with
+        /// <see cref="MoveCell"/> set means the cell's own slide is the whole camera move.</summary>
+        public MapCameraMove Camera;
+
+        /// <summary>Nothing on the map answers for the point: say so and leave the cursor alone.
+        /// </summary>
+        public bool Unplaced;
+
+        /// <summary>The camera move FRAMES the destination - it is made as a thing asked for out loud
+        /// rather than as the camera following the cursor, so it overrides whatever the player had
+        /// set the picture to. False for a local hop, whose camera does exactly what walking into
+        /// that place would have done at this distance and no more.</summary>
+        public bool Frame;
+    }
+
+    /// <summary>
+    /// The one decision table behind every "go and look at this" on a world map: a notification's
+    /// show-location, a scanner's go-to, travelling a road, a global go-to key.
+    ///
+    /// It exists apart from the game because the thing that goes wrong here is inaudible. Each caller
+    /// used to answer these three questions for itself - does the free cursor stay up, does the tree
+    /// cursor move, does the camera zoom or slide - and the copies disagreed: one of them jumped the
+    /// cell onto a PLANET, which is a thing the cell cannot read, and the player was left standing on
+    /// a square of sky next to the world they had asked for.
+    ///
+    /// The rules, owner-ruled 2026-08-22:
+    /// <list type="bullet">
+    /// <item>A PLACE and a POINT keep the free cursor up where it is up: both are things the cell can
+    /// read, so the cell goes to them and the tree cursor follows silently underneath, to be felt when
+    /// the mode ends.</item>
+    /// <item>A PLANET-BOUND thing ENDS the free cursor first: it is read from the tree and from the
+    /// close-up view, neither of which the cell can show.</item>
+    /// <item>OUT of the cell, a place is ZOOMED to and a point is SLID to.</item>
+    /// <item>UNDER THE CELL, NOTHING CHANGES THE ZOOM (owner ruling 2026-08-31, reversing the
+    /// 2026-08-22 line that had a place's zoom override the cell's own slide). While the player is
+    /// driving a square about the map, that square is the only thing moving the camera: it centres
+    /// what was landed on and the picture stays at the scale the player chose. A landing that dived
+    /// in was answering a question they had not asked - they asked where a thing IS, not to be taken
+    /// down to it - and it disagreed with the map's other go-to gestures, which leave the zoom alone.
+    /// So a place and a point are the same plan in the cell: move the cell, seat the cursor silently,
+    /// and let the cell's slide be the whole camera move. Leaving the mode then puts the cursor on
+    /// what was landed on, and stepping INSIDE it zooms as any tree walk does - the ordinary machinery,
+    /// unchanged.</item>
+    /// <item>A LOCAL HOP DOES NOT FRAME (owner ruling 2026-09-02, <see cref="MapReach.Local"/>).
+    /// Following a starlane is a walk to the next row along, not a request to be shown a place, so
+    /// its camera is the camera an in-place expansion of that system would have given: at the far
+    /// bands, where the map draws no inside for a system, a slide and nothing more; at the detail
+    /// bands, the same coming-in that walking into the place makes. Measured at spoken level 5, where
+    /// expanding a system correctly stayed put and following a lane out of it dived to 13 - the same
+    /// gesture, one row apart, answering two different questions. The MINIMUM BAND is untouched: a
+    /// landing still forces the band its target needs a row at (<c>GalaxyHudScreen.EnsureBand</c>),
+    /// which for a system is the band that names the systems, so a hop can never land where there is
+    /// no row.</item>
+    /// <item>Out of the free cursor the landing's own announcement is the whole utterance, once.
+    /// </item>
+    /// <item>A point with NOTHING on it is a defect, not a behaviour (owner ruling, 2026-08-22):
+    /// everything the game can point the player at is supposed to have a row. The caller says the
+    /// "shown on the map" line, logs the request so the sweep can find it, and moves nothing.</item>
+    /// </list>
+    /// </summary>
+    public static class MapLandings
+    {
+        public static MapLanding Decide(
+            MapThing thing,
+            bool inspectLive,
+            MapReach reach = MapReach.Elsewhere
+        )
+        {
+            bool frame = reach == MapReach.Elsewhere;
+            switch (thing)
+            {
+                case MapThing.Place:
+                    return new MapLanding
+                    {
+                        Frame = frame,
+                        MoveCell = inspectLive,
+                        // Under the cell the TREE CURSOR DOES NOT MOVE AT ALL (owner ruling
+                        // 2026-08-31, reversing the reseat ruling of the same day): the cell is the
+                        // only thing that goes anywhere.
+                        FocusNode = !inspectLive,
+                        AnnounceNode = !inspectLive,
+                        // Out of the cell a place is zoomed to. UNDER the cell nothing is: the cell's
+                        // own slide is the whole camera move, exactly as it is for a point.
+                        Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Zoom,
+                    };
+
+                case MapThing.Point:
+                    return new MapLanding
+                    {
+                        Frame = frame,
+                        MoveCell = inspectLive,
+                        FocusNode = !inspectLive,
+                        AnnounceNode = !inspectLive,
+                        // The cell slides itself; out of the mode the caller does it.
+                        Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Slide,
+                    };
+
+                case MapThing.PlanetBound:
+                    return new MapLanding
+                    {
+                        Frame = frame,
+                        ExitInspect = inspectLive,
+                        FocusNode = true,
+                        AnnounceNode = true,
+                        Camera = MapCameraMove.Zoom,
+                    };
+
+                default:
+                    return new MapLanding { Unplaced = true };
+            }
+        }
+    }
+}
