@@ -621,6 +621,28 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The game's own name for a flotilla by its NUMBER ("Flotilla 2"), for the surfaces that know
+        /// which flotilla they are drawing but have no line to read it off - an arena card, a run of
+        /// phase lines, a squadron count, a ship the narrator watched go.
+        ///
+        /// <paramref name="number"/> is the number the game WRITES DOWN, counted from one; every game
+        /// field that carries a flotilla index counts from zero, so the caller adds the one. Kept
+        /// beside <see cref="FlotillaNumber"/> because they answer the same question from the two
+        /// directions a battle surface can ask it from.
+        /// </summary>
+        public static string FlotillaName(int number)
+        {
+            try
+            {
+                return AgeText.Clean(Gui.Localize(FlotillaNameKey, number.ToString()));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private const string FlotillaNameKey = "%FlotillaNameTitle";
 
         /// <summary>The host's own answers, asked defensively: a screen reading a surface this one

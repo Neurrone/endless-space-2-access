@@ -6,8 +6,8 @@ using ES2Access.Screens;
 using ES2Access.UI;
 using Newtonsoft.Json;
 using UnityEngine;
-using Breach = ES2Access.Dev.NotificationAudit.Breach;
-using Declared = ES2Access.Dev.NotificationAudit.Declared;
+using Breach = ES2Access.Dev.AuditModel.Breach;
+using Declared = ES2Access.Dev.AuditModel.Declared;
 using Screen = ES2Access.Screens.Screen;
 
 namespace ES2Access.Dev
@@ -140,7 +140,7 @@ namespace ES2Access.Dev
                 // heads-up display contributes stops to every screen and a ghost up there is just as
                 // unreachable. Each finding carries whether it is the screen's own, so a run taken on
                 // a screen drawn over another can be read by subtracting the ones that are not.
-                List<Declared> declared = NotificationAudit.DeclaredNodes(screen, unlocatable);
+                List<Declared> declared = AuditModel.DeclaredNodes(screen, unlocatable);
                 result.Nodes = declared.Count;
                 result.Unlocatable = unlocatable.Count;
                 result.Shipped = Shipped();
@@ -165,7 +165,7 @@ namespace ES2Access.Dev
             // guessing about one would drown the findings that are real. The aim is asked as well as
             // the widget (<see cref="NotificationAudit.Evidence"/>), so a node located only by what its
             // pointer points at is still checked.
-            AgeTransform widget = NotificationAudit.Evidence(node);
+            AgeTransform widget = AuditModel.Evidence(node);
             if (widget == null)
             {
                 result.Synthetic++;
@@ -183,7 +183,7 @@ namespace ES2Access.Dev
             finding.Region = node.Region;
             finding.Path = DrawnBy.Path(widget);
             finding.Why = Why(widget);
-            finding.Says = NotificationAudit.Excerpt(node.Announcement);
+            finding.Says = AuditModel.Excerpt(node.Announcement);
             // Whose node it is, asked of the stop it was declared into rather than of how its key is
             // spelled: a screen that keys its frame one way and its body another - every notification
             // popup - had its whole body counted as somebody else's.

@@ -2791,9 +2791,18 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>How many players have not ended their turn, counted the way the game counts them:
-        /// the slots of the ready ring whose unready icon is showing (<c>EndTurnWindow.Refresh</c>
-        /// :857-880). -1 when there is no ring, which is every single-player game.</summary>
+        /// <summary>
+        /// How many players have not ended their turn.
+        ///
+        /// RE-DERIVES a private list: the game counts exactly this into <c>EndTurnWindow.unreadySlots</c>
+        /// on every refresh (:859-873) and keeps it to itself, so the only way to have the figure is to
+        /// count the same slots the same way - the ring's children whose unready icon is showing, under
+        /// the same gate the game puts the whole count behind (<c>CompetitorsCircularTable.Visible</c>,
+        /// which the game sets false for a single-player session at :735). The gate is the widget's own
+        /// flag rather than whether it is really on screen, because that is the flag the game's own test
+        /// reads: asking a stricter question would make the two counts disagree in exactly the frames a
+        /// wait is being announced. -1 is no ring at all, which is every single-player game.
+        /// </summary>
         private static int PlayersPlaying(EndTurnWindow window)
         {
             try
@@ -2801,7 +2810,7 @@ namespace ES2Access.Screens
                 AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
                 // Spoken count: this figure is said as "N still playing", and -1 is how the caller
                 // hears that there is no ring to count - which is every single-player game.
-                if (!AgeWidgets.Visible(ring))
+                if (ring == null || !ring.Visible)
                 {
                     return -1;
                 }
@@ -2984,21 +2993,23 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// End the turn the way the game's own end-turn SHORTCUT does (<c>EndTurnWindow.HandleInput</c>
-        /// :637-654): the same three gates, then the armed cursor put back to the plain galaxy one - an
-        /// order still waiting for a target would otherwise eat the turn - and then the session's own
-        /// TryToEndTurn. The button is not pressed: the shortcut path is what a key is, and it is the
-        /// path the game itself takes for a key.
+        /// End the turn the way the game's own end-turn SHORTCUT does: by ASKING it to
+        /// (<c>EndTurnWindow.HandleInput(InputAction.EndTurn)</c> :637-654, which is public and is the
+        /// path the game itself takes for a key). Its three gates, the armed cursor put back to the
+        /// plain galaxy one - an order still waiting for a target would otherwise eat the turn - and the
+        /// session's own TryToEndTurn are all the game's, and none of them is restated here. The button
+        /// is not pressed: the shortcut path is what a key is.
         ///
-        /// A refusal speaks the END-TURN NODE's own reading - its name, which turn it is and
-        /// "unavailable" - because the player pressing this key from the far side of the page cannot see
-        /// the button greying out. It is read out of the graph rather than composed again here, so the
-        /// key and the button can never say different things; the game's sentence about WHY stays where
-        /// the button keeps it, in the review buffer (<see cref="EndTurnReason"/>). Success says nothing
-        /// at all, exactly as pressing the button says nothing.
+        /// It answers false for exactly the turn it will not end, and that is the refusal: the key
+        /// speaks the END-TURN NODE's own reading - its name, which turn it is and "unavailable" -
+        /// because the player pressing this from the far side of the page cannot see the button greying
+        /// out. That reading is taken out of the graph rather than composed again here, so the key and
+        /// the button can never say different things; the game's sentence about WHY stays where the
+        /// button keeps it, in the review buffer (<see cref="EndTurnReason"/>). Success says nothing at
+        /// all, exactly as pressing the button says nothing.
         ///
-        /// False means the key was not this page's business (no turn controls drawn), which is what
-        /// leaves the press alone.
+        /// False from THIS method means the key was not this page's business (no turn controls drawn),
+        /// which is what leaves the press alone.
         /// </summary>
         public static bool EndTurnByKey()
         {
@@ -3010,29 +3021,19 @@ namespace ES2Access.Screens
                 return false;
             }
 
-            if (!CanEndTurn(window))
-            {
-                SpeakTurnRefusal("hud:end-turn");
-                return true;
-            }
-
+            bool ended = false;
             try
             {
-                ICursorService cursors = Services.GetService<ICursorService>();
-                if (
-                    cursors != null
-                    && cursors.CurrentCursor != null
-                    && cursors.CurrentCursor.GetType() != typeof(GalaxyCursor)
-                )
-                {
-                    cursors.ChangeCursor(typeof(GalaxyCursor));
-                }
-
-                window.EndTurnService.Target.TryToEndTurn();
+                ended = window.HandleInput(InputAction.EndTurn);
             }
             catch (Exception e)
             {
                 Log.Warn("hud: ending the turn from the keyboard threw: " + e);
+            }
+
+            if (!ended)
+            {
+                SpeakTurnRefusal("hud:end-turn");
             }
 
             return true;

@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 
 namespace ES2Access.Loader.Dev
 {
@@ -12,9 +14,9 @@ namespace ES2Access.Loader.Dev
     /// Written from whichever thread produced the line - the Unity main thread for speech, any
     /// thread at all for BepInEx log events - and read from HTTP handler threads.
     /// </summary>
-    internal sealed class SeqLog
+    public class SeqLog
     {
-        internal struct Entry
+        public struct Entry
         {
             public long Seq;
             public string Text;
@@ -26,6 +28,11 @@ namespace ES2Access.Loader.Dev
 
         // Sequence number of _texts[0]. Sequences start at 1 so "since=0" means "everything".
         private long _firstSeq = 1;
+
+        // Set when whatever writes this is going away, so a waiter blocked for the next line is
+        // released rather than left holding an HTTP thread against an object nobody will write to
+        // again.
+        private bool _closed;
 
         public SeqLog(int capacity)
         {
@@ -61,6 +68,8 @@ namespace ES2Access.Loader.Dev
                     _texts.RemoveAt(0);
                     _firstSeq++;
                 }
+
+                Monitor.PulseAll(_lock);
             }
         }
 
@@ -117,6 +126,91 @@ namespace ES2Access.Loader.Dev
             }
 
             return matched;
+        }
+
+        /// <summary>
+        /// Block up to <paramref name="timeoutMilliseconds"/> for a line newer than
+        /// <paramref name="since"/>, returning true as soon as there is one (or at once if there
+        /// already was). The write side pulses under the same lock it appends under, so a caller
+        /// asking "what does this say next" is released on the frame it is said rather than on its
+        /// next poll. HTTP threads only - the main thread must never wait on the pump that feeds
+        /// this.
+        /// </summary>
+        public bool WaitForNewer(long since, int timeoutMilliseconds)
+        {
+            lock (_lock)
+            {
+                if (Newer(since) || _closed)
+                {
+                    return Newer(since);
+                }
+
+                // One wait, not a loop: a spurious wake would only cost the caller the rest of its
+                // budget, and Monitor.Wait here is only ever pulsed by an actual append or by close.
+                Monitor.Wait(_lock, timeoutMilliseconds);
+                return Newer(since);
+            }
+        }
+
+        /// <summary>Release anyone waiting for the next line - whatever writes this is going away,
+        /// and a waiter left holding an HTTP thread against an object nobody will write to again is
+        /// a hang.</summary>
+        public void Close()
+        {
+            lock (_lock)
+            {
+                _closed = true;
+                Monitor.PulseAll(_lock);
+            }
+        }
+
+        // Caller holds the lock.
+        private bool Newer(long since)
+        {
+            return _firstSeq + _texts.Count - 1 > since;
+        }
+
+        /// <summary>
+        /// Everything written since <paramref name="since"/>, once the writing has STOPPED: wait
+        /// until nothing new has arrived for <paramref name="settleMilliseconds"/>, giving up after
+        /// <paramref name="maxWaitMilliseconds"/> however talkative it stays.
+        ///
+        /// This is what makes "and here is what that made it say" a complete answer rather than
+        /// whatever had been said by the time the request returned - a line the action causes two
+        /// frames later is still the action's. It polls rather than waiting on the pulse, because
+        /// the question is when the noise STOPPED rather than when the next line arrives.
+        ///
+        /// HTTP threads only, for the reason <see cref="WaitForNewer"/> gives.
+        /// </summary>
+        public List<Entry> Settled(
+            long since,
+            int settleMilliseconds,
+            int pollMilliseconds,
+            int maxWaitMilliseconds
+        )
+        {
+            Stopwatch total = Stopwatch.StartNew();
+            Stopwatch quiet = Stopwatch.StartNew();
+            long cursor = since;
+
+            while (
+                quiet.ElapsedMilliseconds < settleMilliseconds
+                && total.ElapsedMilliseconds < maxWaitMilliseconds
+            )
+            {
+                Thread.Sleep(pollMilliseconds);
+
+                long now = Cursor;
+                if (now != cursor)
+                {
+                    cursor = now;
+                    quiet.Reset();
+                    quiet.Start();
+                }
+            }
+
+            long next;
+            return Since(since, out next);
         }
     }
 }

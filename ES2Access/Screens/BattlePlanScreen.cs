@@ -94,7 +94,7 @@ namespace ES2Access.Screens
         /// Plan" and then the plan it is currently on.</summary>
         public override string ScreenName
         {
-            get { return BattleNotifications.PlanTitle(); }
+            get { return BattlePlans.PlanTitle(); }
         }
 
         /// <summary>A surface the mod put up and the game cannot close.</summary>
@@ -107,14 +107,14 @@ namespace ES2Access.Screens
         /// opened, and the player is handed back to the closed row, which then says it.</summary>
         public override bool Back()
         {
-            BattleNotifications.Turn(_window, _opened);
+            BattlePlans.Turn(_window, _opened);
             CloseSelf();
             return true;
         }
 
         public override void OnPush()
         {
-            _opened = BattleNotifications.CurrentPlay(_window);
+            _opened = BattlePlans.CurrentPlay(_window);
         }
 
         public override void OnPop()
@@ -135,12 +135,12 @@ namespace ES2Access.Screens
         public override void Build(GraphBuilder builder)
         {
             BattleSetupNotificationWindow window = _window;
-            BattlePlayCard card = BattleNotifications.PlanCard(window);
+            BattlePlayCard card = BattlePlans.PlanCard(window);
             AgeTransform carrier = card == null ? null : card.AgeTransform;
             AgeTooltip tooltip = card == null ? null : card.Tooltip;
             // A window whose plan list will not answer still draws a card, and the one row that says
             // what the fleet is fighting under is worth more than an empty list.
-            int count = Math.Max(1, BattleNotifications.PlayCount(window));
+            int count = Math.Max(1, BattlePlans.PlayCount(window));
             int under = UnderCursor();
             int chosen = _opened;
 
@@ -160,17 +160,17 @@ namespace ES2Access.Screens
                     () =>
                     {
                         Show(window, index);
-                        return BattleNotifications.PlayName(window, index, card);
+                        return BattlePlans.PlayName(window, index, card);
                     },
                     () => index == chosen,
                     () => Accept(index),
-                    () => BattleNotifications.Steppable(window),
+                    () => BattlePlans.Steppable(window),
                     null,
                     tooltip
                 );
                 vtable.Announcements.Add(
                     GraphNodes.ValuePart(
-                        () => BattleNotifications.PlanEffects(window, index, card),
+                        () => BattlePlans.PlanEffects(window, index, card),
                         false
                     )
                 );
@@ -179,9 +179,9 @@ namespace ES2Access.Screens
                 // plan a row means is its index.
                 TooltipChildren.Declare(
                     builder,
-                    BattleNotifications.Drawn(id, vtable, carrier),
+                    BattlePlans.Drawn(id, vtable, carrier),
                     key,
-                    BattleNotifications.PlanDossiers(card, () => Show(window, index))
+                    BattlePlans.PlanDossiers(card, () => Show(window, index))
                 );
             }
         }
@@ -191,7 +191,7 @@ namespace ES2Access.Screens
         /// belt-and-braces for a row activated from anywhere else.</summary>
         private void Accept(int index)
         {
-            BattleNotifications.Turn(_window, index);
+            BattlePlans.Turn(_window, index);
             CloseSelf();
         }
 
@@ -205,7 +205,7 @@ namespace ES2Access.Screens
         {
             if (UnderCursor() == index)
             {
-                BattleNotifications.Turn(window, index);
+                BattlePlans.Turn(window, index);
             }
         }
 
@@ -239,7 +239,7 @@ namespace ES2Access.Screens
                 // in, and the rows below would have no card to read.
                 return _window != null
                     && AgeWidgets.Visible(_window.PlayGroup)
-                    && BattleNotifications.Steppable(_window);
+                    && BattlePlans.Steppable(_window);
             }
             catch (Exception)
             {

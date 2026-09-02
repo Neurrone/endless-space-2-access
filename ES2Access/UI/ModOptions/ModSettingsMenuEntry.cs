@@ -536,6 +536,14 @@ namespace ES2Access.UI.ModOptions
             if (screen.gameObject.GetComponent<ModSettingsClick>() == null)
             {
                 screen.gameObject.AddComponent<ModSettingsClick>();
+                if (!ModSettingsClick.Installed())
+                {
+                    Log.Warn(
+                        "mod settings entry: nothing answers "
+                            + ModSettingsClick.Method
+                            + "; the entry will draw and do nothing"
+                    );
+                }
             }
 
             Relabel(screen);
@@ -687,7 +695,21 @@ namespace ES2Access.UI.ModOptions
     /// </summary>
     public sealed class ModSettingsClick : MonoBehaviour
     {
-        /// <summary>Public, and named to match the entry, because the game reaches it by
+        /// <summary>The message that activates the entry, spelled from the entry's own name: the game
+        /// builds it as <c>"OnClick" + entry.Name</c> (<c>MainMenuItem.OnClickCb</c>) and delivers it
+        /// by SendMessage. A C# method name cannot be built out of a constant, so this is the constant
+        /// the method below is checked against as it is installed (<see cref="Installed"/>) - which is
+        /// what turns a hand agreement into a loud one.</summary>
+        public const string Method = "OnClick" + ModSettingsMenuEntry.MainMenuEntryName;
+
+        /// <summary>Whether this component really answers to <see cref="Method"/>. False means the
+        /// entry would be drawn and the click would go nowhere.</summary>
+        public static bool Installed()
+        {
+            return typeof(ModSettingsClick).GetMethod(Method) != null;
+        }
+
+        /// <summary>Public, and named to match <see cref="Method"/>, because the game reaches it by
         /// SendMessage. It takes no argument: neither sender passes one.</summary>
         public void OnClickES2AccessModSettings()
         {

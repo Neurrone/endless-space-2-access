@@ -29,11 +29,10 @@ ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return widget != null && A
 
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (AgeWidgets.Visible(window.EnemyDeckGroup))
 
-ES2Access/Screens/BattleNotifications.cs | 2 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/BattleNotifications.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/BattleNotifications.cs | 1 | if (report == null || !AgeWidgets.Visible(report.AgeTransform))
-ES2Access/Screens/BattleNotifications.cs | 6 | if (table == null || !AgeWidgets.Visible(table))
-ES2Access/Screens/BattleNotifications.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || value == null)
+ES2Access/Screens/BattleNotifications.cs | 5 | if (table == null || !AgeWidgets.Visible(table))
 
 ES2Access/Screens/BattlePlanScreen.cs | 1 | && AgeWidgets.Visible(_window.PlayGroup)
 
@@ -215,7 +214,7 @@ ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(action))
 ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(area))
 ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(clock))
 ES2Access/Screens/GlobalHud.cs | 2 | if (!AgeWidgets.Visible(group))
-ES2Access/Screens/GlobalHud.cs | 3 | if (!AgeWidgets.Visible(ring))
+ES2Access/Screens/GlobalHud.cs | 2 | if (!AgeWidgets.Visible(ring))
 ES2Access/Screens/GlobalHud.cs | 2 | if (!AgeWidgets.Visible(widget))
 ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(AgeWidgets.Transform(endTurn)))
 ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(global))
@@ -228,6 +227,7 @@ ES2Access/Screens/GlobalHud.cs | 1 | if (item == null || !AgeWidgets.Visible(ite
 ES2Access/Screens/GlobalHud.cs | 1 | if (label == null || !AgeWidgets.Visible(label.AgeTransform))
 ES2Access/Screens/GlobalHud.cs | 1 | if (panel == null || !panel.Shown || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/GlobalHud.cs | 1 | if (resource == null || !AgeWidgets.Visible(item.AgeTransform))
+ES2Access/Screens/GlobalHud.cs | 1 | if (ring == null || !ring.Visible)
 ES2Access/Screens/GlobalHud.cs | 1 | if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
 ES2Access/Screens/GlobalHud.cs | 1 | if (toggle.Screen == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/GlobalHud.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
@@ -332,7 +332,6 @@ ES2Access/Screens/NotificationScreen.cs | 1 | if (container == null || !AgeWidge
 ES2Access/Screens/NotificationScreen.cs | 1 | if (control == null || !AgeWidgets.Visible(control.AgeTransform))
 ES2Access/Screens/NotificationScreen.cs | 1 | if (line == null || !AgeWidgets.Visible(line))
 ES2Access/Screens/NotificationScreen.cs | 1 | if (table == null || !Painted(table, root))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (title != null && AgeWidgets.Visible(title.AgeTransform))
 ES2Access/Screens/NotificationScreen.cs | 2 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/NotificationScreen.cs | 2 | if (widget == null || depth > MaxAncestors || !widget.Visible)
 ES2Access/Screens/NotificationScreen.cs | 2 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
@@ -493,6 +492,10 @@ ES2Access/Screens/VictoryAchievedScreen.cs | 1 | if (!AgeWidgets.Visible(window.
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(left))
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(right))
 
+ES2Access/UI/BattleBalance.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
+
+ES2Access/UI/BattlePlans.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+
 ES2Access/UI/BattleRosters.cs | 1 | ?? (AgeWidgets.Visible(commandPoints) ? AgeWidgets.Raw(commandPoints) : null);
 ES2Access/UI/BattleRosters.cs | 1 | if (AgeWidgets.Visible(invisibility))
 ES2Access/UI/BattleRosters.cs | 1 | if (builder == null || root == null || !AgeWidgets.Visible(root))
@@ -501,6 +504,8 @@ ES2Access/UI/BattleRosters.cs | 1 | if (header != null && AgeWidgets.Visible(hea
 ES2Access/UI/BattleRosters.cs | 1 | if (line == null || !AgeWidgets.Visible(line.AgeTransform))
 ES2Access/UI/BattleRosters.cs | 2 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/UI/BattleRosters.cs | 1 | || !AgeWidgets.Visible(widget)
+
+ES2Access/UI/BattleRows.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || value == null)
 
 ES2Access/UI/Captions.cs | 1 | AgeTooltip tooltip = AgeWidgets.Visible(widget) ? AgeWidgets.Raw(widget) : null;
 

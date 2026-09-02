@@ -39,20 +39,6 @@ namespace ES2Access.Tests.Speech
             Assert.Equal("Probe mode ended", OptionalText.Phrase("cursor.mode-ended", "Probe"));
         }
 
-        /// <summary>The battle narration's own name for it answers identically - it is one mechanism, not
-        /// two, and a screen outside the battle windows uses the general one.</summary>
-        [Fact]
-        public void TheBattleNarrationsNameIsTheSameMechanism()
-        {
-            Install("battle.progress", "Battle {0} percent fought");
-
-            Assert.Equal(
-                OptionalText.Phrase("battle.progress", 50),
-                BattleText.Optional("battle.progress", 50)
-            );
-            Assert.Null(BattleText.Optional("battle.no-such-phrase"));
-        }
-
         private static void Install(params string[] pairs)
         {
             Dictionary<string, string> strings = new Dictionary<string, string>();

@@ -153,6 +153,14 @@ namespace ES2Access.Loader.Dev
             }
         }
 
+        /// <summary>Whether the listener is up, which is the one place the dev server's config
+        /// setting and its environment override have both already been resolved to a yes or a no.
+        /// </summary>
+        public bool Listening
+        {
+            get { return _http != null; }
+        }
+
         /// <summary>Run the work HTTP requests queued for the main thread, then ask every
         /// outstanding /wait whether it is done. Call once per frame.</summary>
         public void Tick()
@@ -371,7 +379,14 @@ namespace ES2Access.Loader.Dev
 
             // Settling polls the ring from this thread, never the main one: the game has to keep
             // running frames for speech to arrive at all.
-            List<SeqLog.Entry> spoken = wantSpeech ? Settled(spokenBefore, settle) : null;
+            List<SeqLog.Entry> spoken = wantSpeech
+                ? _spoken.Settled(
+                    spokenBefore,
+                    settle,
+                    SpeechPollMilliseconds,
+                    MaxSpeechWaitMilliseconds
+                )
+                : null;
 
             return DevResponse.Json(
                 DevJson.Write(json =>
@@ -411,34 +426,6 @@ namespace ES2Access.Loader.Dev
             {
                 return CSharpEvaluator.Result.Failed(e.ToString());
             }
-        }
-
-        // HTTP thread. Returns once nothing has been spoken for the settle window, or once the
-        // overall budget is gone, whichever comes first.
-        private List<SeqLog.Entry> Settled(long since, int settleMilliseconds)
-        {
-            Stopwatch total = Stopwatch.StartNew();
-            Stopwatch quiet = Stopwatch.StartNew();
-            long cursor = since;
-
-            while (
-                quiet.ElapsedMilliseconds < settleMilliseconds
-                && total.ElapsedMilliseconds < MaxSpeechWaitMilliseconds
-            )
-            {
-                Thread.Sleep(SpeechPollMilliseconds);
-
-                long now = _spoken.Cursor;
-                if (now != cursor)
-                {
-                    cursor = now;
-                    quiet.Reset();
-                    quiet.Start();
-                }
-            }
-
-            long next;
-            return _spoken.Since(since, out next);
         }
 
         /// <summary>
