@@ -55,7 +55,8 @@ slot 2 of Ita, `ui.pagePrev` lands on `system:planet/541/population/2` ("Slot 2 
 card, the same rank; on the rename button of Ita's card 0 (`/name/action/0`), a turn to Heka, whose
 card 0 draws no rename button, falls back to `system:planet/533`, the planets stop's first row; on
 slot 8 of an 8-slot world, a turn to a system whose card 0 has fewer slots falls back the same way.
-The regression to watch for is a landing on `hud:view-title/scan`: it means a render was declared
+The regression to watch for is a landing anywhere in `hud:view-title` (the stop now holds the zoom
+ladder as well as the scan button): it means a render was declared
 while the page was half torn down, which is how the cursor used to be lost (see **Why the page
 declares nothing while it is in pieces**, `planets.md`).
 
@@ -466,7 +467,8 @@ target").
 
 **The Tab order, top to bottom** (owner design 2026-08-29 — what the system IS comes before what is
 in it). Walking it with `FocusStop("hud:empire")` then eleven `ui.next`, the spoken order on a
-colony page is: Hud (the empire banners, whose first row is Controls) → System management scan →
+colony page is: Hud (the empire banners, whose first row is Controls) → View Controls (the zoom
+ladder, then the System management scan button) →
 **System information** → **Spaceport** → **Planets** → Constructibles → Construction queue → Hangar →
 Quest → Notifications → End Turn, and the twelfth wraps back to the empire banners. The stop keys in declaration order are
 `hud:empire`, `hud:view-title`, `system:side`, `system:side/SpaceportSidePanel`, `system:planets`,
@@ -476,6 +478,16 @@ on the rare page that draws it). The move that put the panels first was a pure r
 diff of `/gui/graph?buffers=1` before and after holds no node id and no buffer line either side, only
 the cursor marker and the clock. Entry still does NOT land on the planets — see **WHERE THE CURSOR
 LANDS, IN THREE CASES** above.
+
+**Stepping the zoom ladder off a page** (2026-09-02). Tab to `hud:view-title` and step with
+`/input ui.left|ui.right` (`ui.coarseDecrease|ui.coarseIncrease` does the same at these rungs —
+`StepZoom` ignores `coarse` above the camera's last step): 14 → out is the galaxy at 13, 14 → in is
+the planet page at 15, `ui.right` at 15 re-reads "15 of 15" with `GalaxyViewLevels.ZoomRung`
+unchanged. Give each step ~3.5 s — the view level flies. The cursor rides the same
+`hud:view-title/zoom` key across every crossing except the arrival on the PLANET page, which seats on
+`planet:name`. `ZoomWatch` speaks an extra "Zoom level N of 15" on the way IN: the mod's screen stack
+is EMPTY for ~9 frames between the two pages (traced 2026-09-02), so `ZoomLadder.IsLadder` cannot see
+the cursor and the watcher counts the rung as unsaid.
 
 ## Working an outpost
 

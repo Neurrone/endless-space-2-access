@@ -548,11 +548,15 @@ namespace ES2Access.Screens
         /// One call rather than two, because the top of the screen is the same on every such page and
         /// the next page to be modelled should not be able to inherit half of it. A page that has to
         /// put something of its own between them can still call the two halves separately.
+        ///
+        /// A page standing on a rung of the zoom ladder passes its own ladder in, and it is handed
+        /// straight to the cluster that owns the ordering (<see cref="ViewTitle"/>): a system's page and
+        /// a planet's are rungs like any other, and the ladder is how the player steps off them.
         /// </summary>
-        public void Top(GraphBuilder builder)
+        public void Top(GraphBuilder builder, ZoomLadder zoom = null)
         {
             Empire(builder);
-            ViewTitle(builder);
+            ViewTitle(builder, zoom);
         }
 
         /// <summary>

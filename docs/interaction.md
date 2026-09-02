@@ -555,11 +555,15 @@ instance — arming clears it, leaving clears it — and an empty one is consume
 the empty tree trail is. A jump made while the mode is PARKED still pushes its cell: Backspace is not
 reachable from another stop, but the landing brings the player back to the map and it must be there.
 **Zoom is an adjustable node** on the existing
-Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the galaxy's
+Left/Right + Shift chords (no new binding), and it lives on BOTH the scan view and the
 `hud:view-title` stop, in a row of its own (the view-name label and its close-button node are gone —
 owner-ruled 2026-08-18, Escape closes screens); its
 coarse step is a LAYER-BAND jump rather than ≈10 increments — an owner-approved deviation, since
-ten of the camera's thirteen steps would be the whole range.
+ten of the camera's thirteen steps would be the whole range. **A system's page and a planet's are
+rungs 14 and 15**, so the ladder stands in their `hud:view-title` stop too (before the scan button,
+same key, no band word there): Left steps out of the page, Right opens the planet, and at 15 a
+refused Right re-reads the unchanged value rather than falling silent, because the value is still
+readable — the silent-refusal convention only covers a control whose reading goes away.
 
 **THE BAND WORD NAMES WHAT THE LEVEL GIVES** (owner ruling 2026-09-01, replacing the engine-jargon
 words). Five words over the camera's ladder, at the game's own layer boundaries and no others:

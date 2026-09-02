@@ -74,6 +74,11 @@ namespace ES2Access.Screens
         /// too, and until they were declared here they were on the screen and out of reach.</summary>
         private readonly GlobalHud _hud = new GlobalHud();
 
+        /// <summary>How close the game is looking. This page IS a rung of that ladder
+        /// (<see cref="GalaxyViewLevels.ZoomRung"/>), so the same control the map offers is offered
+        /// here: stepping out goes back to the map, stepping in opens a planet's page.</summary>
+        private readonly ZoomLadder _zoom = new ZoomLadder();
+
         /// <summary>Reused across builds rather than allocated per frame: Build runs every tick.
         /// </summary>
         private readonly List<Cell> _cells = new List<Cell>();
@@ -517,6 +522,7 @@ namespace ES2Access.Screens
 
         public override void OnPop()
         {
+            _zoom.Forget();
             _hud.Forget();
             _showing = null;
             _turnSettle = 0;
@@ -526,6 +532,7 @@ namespace ES2Access.Screens
         public override void OnUpdate()
         {
             _hud.Update();
+            _zoom.Update();
             Remember();
             Turned();
         }
@@ -800,7 +807,7 @@ namespace ES2Access.Screens
             // then the right-hand edge - a collapsed tutorial's bar and the notification icons under
             // it - and the turn controls in the bottom corner. Same order as every other view level,
             // because the game draws them in the same places whichever one is up.
-            _hud.Top(builder);
+            _hud.Top(builder, _zoom);
 
             BuildPage(builder, window);
 

@@ -49,6 +49,12 @@ namespace ES2Access.Screens
         /// too, and until they were declared here they were on the screen and out of reach.</summary>
         private readonly GlobalHud _hud = new GlobalHud();
 
+        /// <summary>How close the game is looking. This page is the ladder's innermost rung
+        /// (<see cref="GalaxyViewLevels.ZoomRung"/>), so the same control the map offers is offered
+        /// here: stepping out goes back to the system's page, and stepping in has nowhere to go.
+        /// </summary>
+        private readonly ZoomLadder _zoom = new ZoomLadder();
+
         /// <summary>How far into a row to look for the tooltips that belong to it.</summary>
         private const int TooltipDepth = 4;
 
@@ -216,6 +222,7 @@ namespace ES2Access.Screens
         {
             _announced = null;
             _finishArriving.Forget();
+            _zoom.Forget();
             _hud.Forget();
         }
 
@@ -225,6 +232,7 @@ namespace ES2Access.Screens
         public override void OnUpdate()
         {
             _hud.Update();
+            _zoom.Update();
             try
             {
                 // Not until the window has finished arriving on the new planet: it binds the planet
@@ -336,7 +344,7 @@ namespace ES2Access.Screens
             // then the right-hand edge - a collapsed tutorial's bar and the notification icons under
             // it - and the turn controls in the bottom corner. Same order as every other view level,
             // because the game draws them in the same places whichever one is up.
-            _hud.Top(builder);
+            _hud.Top(builder, _zoom);
 
             builder.BeginStop(InfoStop);
             BuildInfo(builder, info, window.Planet);
