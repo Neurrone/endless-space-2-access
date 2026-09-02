@@ -33,6 +33,7 @@
   "screen.message-box": "Dialog",
   "screen.loading": "Loading",
   "loading.progress": "{0} percent",
+  "loading.progress-bar": "Loading progress",
   "drag.started": "Dragging {0}. {1} to drop, {2} to cancel.",
   "drag.started-plain": "Dragging {0}",
   "drag.dropped": "Dropped {0}",

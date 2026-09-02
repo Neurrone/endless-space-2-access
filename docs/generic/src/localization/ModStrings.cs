@@ -87,6 +87,7 @@ namespace ES2Access.Core.Speech
 
         // How far a load has got, said at the quarter marks.
         public const string LoadingProgress = "loading.progress";
+        public const string LoadingProgressBar = "loading.progress-bar";
 
         // Picking something up and putting it down somewhere else (a ship into another fleet). The
         // words are the DRAG's, because that is the gesture these keys stand in for and the one the
@@ -181,6 +182,7 @@ namespace ES2Access.Core.Speech
             { ScreenMessageBox, "Dialog" },
             { ScreenLoading, "Loading" },
             { LoadingProgress, "{0} percent" },
+            { LoadingProgressBar, "Loading progress" },
             { DragStarted, "Dragging {0}. {1} to drop, {2} to cancel." },
             { DragStartedPlain, "Dragging {0}" },
             { DragDropped, "Dropped {0}" },

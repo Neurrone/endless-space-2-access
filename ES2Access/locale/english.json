@@ -79,6 +79,7 @@
   "screen.tutorial": "Tutorial",
   "screen.galaxy": "Galaxy",
   "loading.progress": "{0} percent",
+  "loading.progress-bar": "Loading progress",
   "notify.dismiss": "Dismiss",
   "notify.minimize": "Minimize",
   "notify.show-location": "Show location",

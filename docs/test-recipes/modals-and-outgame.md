@@ -388,6 +388,38 @@ node is the title row — the player hears *"Save Game" / "Save Game, Save the c
 and reaches the headings with Down. (The dump's traversal begins at the render's start node, which
 is what makes the first line printed the proof.)
 
+## The loading screen
+
+`screen.loading` declares rows since 2026-09-02 (`loading:rows`, one stop, `AnswersOnly` still
+true so the tutorial bar and the chat alert stay off it). The rows are the window's own pieces in
+the order it draws them: **the status lines OLDEST FIRST**, then the progress bar, then the tip —
+the game inserts each new line as the table's FIRST CHILD and draws it LOWEST, so `loading:status/0`
+is the newest and reads last. Keys are the child's index in the pool, so the cursor stays on the
+same pool slot as new lines arrive. In multiplayer the player list is drawn across the top of the
+screen (y=20) and would read before everything else; single-player fixtures never draw it, so those
+rows are unverified.
+
+Sighting it: `POST /loadsave` a save and, while the load runs (~30 s), `GET /gui/graph?buffers=1`
+and `POST /input ui.down`. Measured mid-load —
+
+    Game launched and ready, 1 of 7   [loading:status/4]
+    Connecting to server, 2 of 7      [loading:status/3]
+    Launching game, 3 of 7            [loading:status/2]
+    Game launched, 4 of 7             [loading:status/1]
+    Game launched and ready, 5 of 7   [loading:status/0]
+    Loading progress, 100 percent, 6 of 7  [loading:progress]
+    Tip: …, 7 of 7                    [loading:tip]
+
+— against a `crop-shot.ps1 -Rect 236,606,812,180` of the same frame, where the dimmest line is at
+the top and the brightest at the bottom. The bar has no drawn caption (the game localizes none),
+so its label is the mod's `loading.progress-bar` and its value is read off
+`Amplitude.Diagnostics.Progress.Current`, not off the animated bar. Nothing here is watched: the
+per-frame speech still says each new status line, the tip once, and each quarter mark.
+
+The first frames of a load can read the PREVIOUS load's lines — a new showing clears the list the
+window keeps but not the labels already on it — so an arrival transcript may carry one stale line
+before the game reports anything. That is what the window is drawing.
+
 ## The out-game family
 
 **Walking the out-game family from inside a session.** Leave the session first: show

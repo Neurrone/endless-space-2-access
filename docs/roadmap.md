@@ -320,6 +320,10 @@ belong in the files above.
   unverified live), whispers and alliance sending.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
+- Loading screen rows (shipped 2026-09-02 — `test-recipes/modals-and-outgame.md`): the
+  MULTIPLAYER player-status rows are declared off the drawn table and never sighted; the group
+  is `Visible = false` in every single-player load (`LoadingWindow.OnBeginShow`), so their
+  place in the reading order (top of the screen, above the status lines) is code-measured only.
 - Skill-tree type-ahead: EVERY screen now searches what its collapsed branches would declare
   (`GraphBuilder.ExpandAll`), so this should be covered by construction - it is unverified
   live because no fixture reaches a hero with a skill tree.

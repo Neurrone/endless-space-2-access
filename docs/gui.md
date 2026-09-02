@@ -504,6 +504,17 @@ widget, exactly as the game's own mouse flows do.
   not be reached; the laws modal reproduces it on demand — switching its filter from All (37 cards)
   back to Available (6) strands 31 bound ghosts. `TermLine.Unbind` and friends DO clear the binding,
   but the panels call them only at whole-panel teardown.
+- **A pool's child INDEX is not its place on the screen.** The loading window's status list inserts
+  each new line at index 0 and fades the rest (`LoadingWindow.SpecificUpdate` :162-197,
+  `RefreshProgressItem` alpha `1 - 0.2 * index`), and `ArrangeChildren` lays child 0 out LAST:
+  measured 2026-09-02, `Item000` sits at y=702 and `Item004` at y=622, so the newest line is the
+  BOTTOM one and the brightest. Any reading that wants the drawn order has to sort by measured
+  position — the collection order is the opposite of it here.
+- **A window's own `OnBeginShow` can clear its model without clearing its widgets.** The same window
+  clears `progressStrings` on every showing but leaves the five labels holding the previous load's
+  text until the first new line arrives, so its first frames genuinely DRAW the last load's status
+  list. A reader that follows the pixels reports that; a reader that trusts "a fresh window is
+  empty" reports nothing and is wrong about what is on screen.
 - **A scroll view scrolls by moving the TABLE's transform, not by the virtual area's offset.**
   Measured 2026-08-28 on the negotiation term shelf: focusing a row below the fold left
   `AgeControlScrollView.VirtualArea.PixelOffsetTop` at 0 throughout while the table's own `y` moved

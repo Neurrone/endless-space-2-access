@@ -217,6 +217,10 @@ namespace ES2Access.Core.Speech
         // How far a load has got, said at the quarter marks.
         public const string LoadingProgress = "loading.progress";
 
+        // The name of the progress bar the loading window draws. The game draws it as a bare
+        // rectangle and localizes no word for it, so the row it becomes is named here.
+        public const string LoadingProgressBar = "loading.progress-bar";
+
         // The controls every notification popup carries. The game draws them as icons and names
         // only some of them, so the unnamed ones are named here.
         public const string NotifyDismiss = "notify.dismiss";
@@ -2175,6 +2179,7 @@ namespace ES2Access.Core.Speech
             { ScreenGameMenu, "Game menu" },
             { ScreenLoadSave, "Load or save" },
             { LoadingProgress, "{0} percent" },
+            { LoadingProgressBar, "Loading progress" },
             { NotifyDismiss, "Dismiss" },
             { NotifyMinimize, "Minimize" },
             { NotifyShowLocation, "Show location" },
