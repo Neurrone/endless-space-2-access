@@ -1247,27 +1247,14 @@ namespace ES2Access.Screens
         /// DRAWN is the one on whatever the pointer is over, and the label carries two.</summary>
         private static AgeTransform HangarLozenge(GalaxyHangar hangar, HangarLabel[] labels)
         {
-            try
-            {
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    HangarLabel label = labels[i];
-                    if (
-                        label != null
-                        && ReferenceEquals(label.GalaxyHangar, hangar)
-                        && AgeWidgets.Visible(label.AgeTransform)
-                    )
-                    {
-                        return Lozenge(label.FleetLozenge);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: matching a hangar to its map label threw: " + e);
-            }
-
-            return null;
+            // The drawn policy is VISIBILITY: this window pools its labels the way the fleet labels
+            // do, so a label the map is not drawing is still bound to whatever it last held.
+            HangarLabel found = LabelFor(
+                labels,
+                l => ReferenceEquals(l.GalaxyHangar, hangar),
+                l => AgeWidgets.Visible(l.AgeTransform)
+            );
+            return found == null ? null : Lozenge(found.FleetLozenge);
         }
 
         /// <summary>Select the ships a colony is holding at home, exactly as clicking their lozenge does

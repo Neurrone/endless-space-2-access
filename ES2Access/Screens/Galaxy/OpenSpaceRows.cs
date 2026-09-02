@@ -483,33 +483,18 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The mote the map happens to be drawing for this missile. No drawn policy: the
+        /// caller keeps the label only as a shortcut to the dossier and treats a null as "the camera
+        /// has culled it", which is the same answer a culled label would give.</summary>
         private ObliteratorProjectileLabel LabelFor(ObliteratorProjectile shot)
         {
-            for (int i = 0; i < _projectiles.Count; i++)
-            {
-                if (_projectiles[i] != null && ReferenceEquals(_projectiles[i].Entity, shot))
-                {
-                    return _projectiles[i];
-                }
-            }
-
-            return null;
+            return LabelFor(_projectiles, l => ReferenceEquals(l.Entity, shot), null);
         }
 
+        /// <summary>The same for an ally's pin, with the same no-policy reasoning.</summary>
         private CoordinationRequestLabel LabelFor(CoordinationRequest request)
         {
-            for (int i = 0; i < _pins.Count; i++)
-            {
-                if (
-                    _pins[i] != null
-                    && ReferenceEquals(_pins[i].CoordinationRequest, request)
-                )
-                {
-                    return _pins[i];
-                }
-            }
-
-            return null;
+            return LabelFor(_pins, l => ReferenceEquals(l.CoordinationRequest, request), null);
         }
 
         /// <summary>One probe the player has been shown, and the star it is drawn nearest to.</summary>
@@ -599,15 +584,7 @@ namespace ES2Access.Screens
         /// has culled it out.</summary>
         private ProbeLabel LabelFor(Probe probe)
         {
-            for (int i = 0; i < _probes.Count; i++)
-            {
-                if (_probes[i] != null && ReferenceEquals(_probes[i].Entity, probe))
-                {
-                    return _probes[i];
-                }
-            }
-
-            return null;
+            return LabelFor(_probes, l => ReferenceEquals(l.Entity, probe), null);
         }
 
         /// <summary>The declared system nearest a point on the map, with no radius: the point is one
@@ -843,7 +820,10 @@ namespace ES2Access.Screens
                 Probe probe = drifting.Probe;
                 return probe == null || !ReferenceEquals(probe.Empire, Gui.PlayerEmpire)
                     ? null
-                    : AgeText.Clean(new GuiProbe(probe).RemainingLifetime + "[turn]");
+                    : ModStrings.Format(
+                        ModStrings.GalaxyTurnsRemaining,
+                        new GuiProbe(probe).RemainingLifetime
+                    );
             }
             catch (Exception)
             {
@@ -976,7 +956,7 @@ namespace ES2Access.Screens
             try
             {
                 return ReferenceEquals(shot.Empire, Gui.PlayerEmpire)
-                    ? AgeText.Clean(ShotTurns(shot) + "[turn]")
+                    ? ModStrings.Format(ModStrings.GalaxyTurnsRemaining, ShotTurns(shot))
                     : null;
             }
             catch (Exception)

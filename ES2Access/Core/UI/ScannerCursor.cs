@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ES2Access.Core.Util;
 
 namespace ES2Access.Core.UI
 {
@@ -122,7 +123,7 @@ namespace ES2Access.Core.UI
             int rows = counts == null ? 0 : counts.Categories;
             for (int step = 1; step <= rows; step++)
             {
-                int at = Wrap(_category + delta * step, rows);
+                int at = Cycle.Wrap(_category + delta * step, rows);
                 if (counts.Holds(at))
                 {
                     _category = at;
@@ -146,7 +147,7 @@ namespace ES2Access.Core.UI
             int width = counts == null ? 0 : counts.Width(_category);
             for (int step = 1; step <= width; step++)
             {
-                int at = Wrap(_subcategory + delta * step, width);
+                int at = Cycle.Wrap(_subcategory + delta * step, width);
                 if (counts.Count(_category, at) > 0)
                 {
                     _subcategory = at;
@@ -171,7 +172,7 @@ namespace ES2Access.Core.UI
                 return ScannerAnswer.Empty;
             }
 
-            _index = Wrap(_index + delta, count);
+            _index = Cycle.Wrap(_index + delta, count);
             return ScannerAnswer.Instance;
         }
 
@@ -373,13 +374,6 @@ namespace ES2Access.Core.UI
         {
             _index = 0;
             return Count(counts) == 0 ? ScannerAnswer.Empty : ScannerAnswer.Scope;
-        }
-
-        /// <summary>Positive modulo: the wrap has to work the same way off either end of a list, and
-        /// C#'s own remainder does not.</summary>
-        private static int Wrap(int value, int length)
-        {
-            return length <= 0 ? 0 : ((value % length) + length) % length;
         }
     }
 }

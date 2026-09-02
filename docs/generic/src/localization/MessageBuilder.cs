@@ -165,6 +165,10 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public MessageBuilder PushQuantity(int count)
         {
+            // Asked before the count is, so a spent builder is caught whichever way the count falls:
+            // a caller reusing one is a bug whether or not the quantity it passed happened to be the
+            // one this appends nothing for.
+            CheckNotBuilt();
             if (count > 1)
             {
                 Fragment(ModStrings.Format(ModStrings.Quantity, count));

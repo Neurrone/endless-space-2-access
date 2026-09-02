@@ -610,7 +610,7 @@ namespace ES2Access.UI
             AgeTooltip it = tooltip;
             return () =>
                 Readable(it) != null
-                    ? AgeText.Lines(AgeText.Tooltip(it))
+                    ? AgeText.ContentLines(it)
                     : DrawnTooltip.Lines(it);
         }
 
@@ -1827,14 +1827,14 @@ namespace ES2Access.UI
 
                 AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
                 Add(lines, label == null ? null : AgeText.Label(label));
-                AgeTooltip tooltip = Readable(Raw(widget));
-                if (tooltip != null)
+                // Through the library's own reading rather than a second copy of its first half: what
+                // the player would read on this tooltip, off the widget where the words are there and
+                // off the drawn tooltip window where they are not (<see cref="TooltipLines"/>).
+                Func<IList<string>> read = TooltipLines(Raw(widget));
+                IList<string> words = read == null ? null : read();
+                for (int i = 0; words != null && i < words.Count; i++)
                 {
-                    IList<string> words = AgeText.Lines(AgeText.Tooltip(tooltip));
-                    for (int i = 0; words != null && i < words.Count; i++)
-                    {
-                        Add(lines, words[i]);
-                    }
+                    Add(lines, words[i]);
                 }
 
                 IList<AgeTransform> children = widget.Children;

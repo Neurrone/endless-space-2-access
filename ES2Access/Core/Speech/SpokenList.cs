@@ -17,6 +17,42 @@ namespace ES2Access.Core.Speech
     /// </summary>
     public static class SpokenList
     {
+        /// <summary>
+        /// The items as one comma-separated line, in the order they were handed over - the plain list,
+        /// without the conjunction <see cref="Join"/> closes an enumeration with.
+        ///
+        /// The one home for "several things said as one line": a panel's fields, a strip's repeated
+        /// items, the arcs drawn from a technology, and the head of an enumeration
+        /// (<see cref="Join"/>) are all this. Blank items are dropped and every survivor is trimmed,
+        /// because a label the game has blanked keeps the spacing of the text it used to hold and a
+        /// list item of one space reads as a stumble between two real ones.
+        ///
+        /// Nothing to say answers NULL rather than an empty string, and the distinction is load
+        /// bearing for a passive announcer: nothing to say means the surface has not been filled in
+        /// yet, so the announcer must ask again next frame rather than record a reading it never made.
+        /// </summary>
+        public static string Items(IList<string> items)
+        {
+            return Items(items, items == null ? 0 : items.Count);
+        }
+
+        /// <summary>The same line made of the FIRST <paramref name="count"/> of them - for a caller
+        /// holding back the last item to close the list with.</summary>
+        public static string Items(IList<string> items, int count)
+        {
+            MessageBuilder message = new MessageBuilder();
+            for (int i = 0; items != null && i < count && i < items.Count; i++)
+            {
+                string item = items[i] == null ? null : items[i].Trim();
+                if (!string.IsNullOrEmpty(item))
+                {
+                    message.ListItem(item);
+                }
+            }
+
+            return message.Build();
+        }
+
         /// <summary>The items as one phrase, or null if there are none. Empty items are the caller's
         /// business: everything handed in is said.</summary>
         public static string Join(IList<string> items)
@@ -36,13 +72,11 @@ namespace ES2Access.Core.Speech
                 return ModStrings.Format(ModStrings.ListPair, items[0], items[1]);
             }
 
-            MessageBuilder head = new MessageBuilder();
-            for (int i = 0; i < items.Count - 1; i++)
-            {
-                head.ListItem(items[i]);
-            }
-
-            return ModStrings.Format(ModStrings.ListFinal, head.Build(), items[items.Count - 1]);
+            return ModStrings.Format(
+                ModStrings.ListFinal,
+                Items(items, items.Count - 1),
+                items[items.Count - 1]
+            );
         }
     }
 }

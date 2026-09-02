@@ -211,7 +211,7 @@ namespace ES2Access.UI
             AgeTransform titled = title == null ? null : title.AgeTransform;
             if (titled != null && Explained(AgeWidgets.Raw(titled)))
             {
-                cells.Add(Cells.Readout(titled, keyPrefix + titled.name + "/title"));
+                cells.Add(Cells.GatheredReadout(titled, keyPrefix + titled.name + "/title"));
             }
 
             Collect(cells, panel.ContentGroup, keyPrefix, 0, panel, special, transparent, titled);

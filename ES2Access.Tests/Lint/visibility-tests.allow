@@ -128,10 +128,11 @@ ES2Access/Screens/FleetPanel.cs | 1 | || !AgeWidgets.Visible(window.HeroAndShips
 ES2Access/Screens/Galaxy/ConstellationRows.cs | 1 | !AgeWidgets.Visible(group)
 ES2Access/Screens/Galaxy/ConstellationRows.cs | 1 | || !AgeWidgets.Visible(mapper.AgeTransform)
 
-ES2Access/Screens/Galaxy/FleetRows.cs | 2 | && AgeWidgets.Visible(label.AgeTransform)
+ES2Access/Screens/Galaxy/FleetRows.cs | 1 | && AgeWidgets.Visible(label.AgeTransform)
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (buttons == null || !AgeWidgets.Visible(group.AgeTransform))
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (dock.DockingSlot == null || !AgeWidgets.Visible(dock.AgeTransform))
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (widget == null || group == null || !AgeWidgets.Visible(widget))
+ES2Access/Screens/Galaxy/FleetRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransform)
 
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | if (child == null || !AgeWidgets.Visible(child))
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | return AgeWidgets.Visible(background) ? AgeText.Label(label) : null;
@@ -151,8 +152,8 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | if (table == null || !AgeWidgets.Vi
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | return circle != null && circle.Visible ? circle : null;
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | || !AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
 
-ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | && AgeWidgets.Painted(label.EmpireNameLine)
-ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | AgeWidgets.Visible(label.AgeTransform)
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | && AgeWidgets.Painted(l.EmpireNameLine)
+ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | AgeWidgets.Visible(l.AgeTransform)
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | || !AgeWidgets.Painted(label.BattleLine)
 ES2Access/Screens/Galaxy/ScanDiplomacy.cs | 1 | || !AgeWidgets.Visible(label.AgeTransform)
 
@@ -183,8 +184,8 @@ ES2Access/Screens/Galaxy/ScanLens.cs | 1 | || !AgeWidgets.Visible(AgeWidgets.Tra
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | || !AgeWidgets.Visible(bars.AgeTransform)
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | || !AgeWidgets.Visible(panel.AgeTransform)
 
-ES2Access/Screens/Galaxy/ScanRows.cs | 1 | && AgeWidgets.Visible(label.AgeTransform)
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | if (table == null || !AgeWidgets.Painted(table))
+ES2Access/Screens/Galaxy/ScanRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransform)
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return item != null && item.IsBound && AgeWidgets.Painted(widget) ? widget : null;
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return rating == null || !AgeWidgets.Painted(rating.AgeTransform)
 
@@ -252,6 +253,7 @@ ES2Access/Screens/HeroInspectionScreen.cs | 1 | && AgeWidgets.Painted(dot)
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | && AgeWidgets.Visible(child)
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (!AgeWidgets.Painted(box))
 ES2Access/Screens/HeroInspectionScreen.cs | 2 | if (!AgeWidgets.Painted(row))
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (!AgeWidgets.Visible(icon))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (AgeWidgets.Painted(lines[i]))
 ES2Access/Screens/HeroInspectionScreen.cs | 2 | if (box == null || !AgeWidgets.Visible(box.AgeTransform))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(card.AgeTransform))
@@ -259,7 +261,6 @@ ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (child == null || !AgeWidgets
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (item == null || !AgeWidgets.Painted(widget))
 ES2Access/Screens/HeroInspectionScreen.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (tree.SkillTreeDefinition == null || !AgeWidgets.Visible(icon))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | return widget != null && AgeWidgets.Visible(widget) ? widget : null;
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Painted(relic.AgeTransform)

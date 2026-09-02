@@ -976,7 +976,9 @@ namespace ES2Access.Screens
                     // Content: which face reads as the lit one. Alpha is what the game writes to say so.
                     if (face != null && face.Alpha > face.FadeOnDisableFactor + 0.001f)
                     {
-                        return ModStrings.Format(ModStrings.Fraction, i + 1, faces.Length);
+                        // The mod's one "N of M" idiom rather than the template by hand, so the lit
+                        // face reads the way every other position in a set does.
+                        return new MessageBuilder().PushFraction(i + 1, faces.Length).Build();
                     }
                 }
 

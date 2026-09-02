@@ -370,18 +370,7 @@ namespace ES2Access.Screens
             }
 
             Func<IList<string>> words = AgeWidgets.TooltipLines(TableSheet.TooltipOf(cell));
-            return words == null ? null : Phrase(words());
-        }
-
-        private static string Phrase(IList<string> lines)
-        {
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; lines != null && i < lines.Count; i++)
-            {
-                message.ListItem(lines[i]);
-            }
-
-            return message.Build();
+            return words == null ? null : SpokenList.Items(words());
         }
 
         /// <summary>The events themselves: the lines the game draws inside a row's name cell under the

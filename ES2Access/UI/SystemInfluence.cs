@@ -158,7 +158,7 @@ namespace ES2Access.UI
 
                 ColonizedStarSystem source = node.SystemWhichInfluences;
                 Empire influencer = source == null ? null : source.Empire;
-                if (influencer == null || Held(OwnersAt(node, empire), influencer))
+                if (influencer == null || EmpireIndex.Holds(OwnersAt(node, empire), influencer))
                 {
                     return null;
                 }
@@ -220,8 +220,8 @@ namespace ES2Access.UI
                     if (
                         behind == null
                         || ReferenceEquals(behind, winner)
-                        || Held(owners, behind)
-                        || (reaching != null && Held(reaching, behind))
+                        || EmpireIndex.Holds(owners, behind)
+                        || (reaching != null && EmpireIndex.Holds(reaching, behind))
                     )
                     {
                         continue;
@@ -446,7 +446,7 @@ namespace ES2Access.UI
                 return -1;
             }
 
-            if (!Held(known, behind))
+            if (!EmpireIndex.Holds(known, behind))
             {
                 known.Add(behind);
             }
@@ -460,13 +460,10 @@ namespace ES2Access.UI
             List<Empire> empires = new List<Empire>(indexes.Length);
             for (int i = 0; i < indexes.Length; i++)
             {
-                for (int k = 0; k < known.Count; k++)
+                Empire behind = EmpireIndex.Find(known, indexes[i]);
+                if (behind != null)
                 {
-                    if (known[k].Index == indexes[i])
-                    {
-                        empires.Add(known[k]);
-                        break;
-                    }
+                    empires.Add(behind);
                 }
             }
 
@@ -525,18 +522,31 @@ namespace ES2Access.UI
             return names;
         }
 
-        /// <summary>Whether this colony's circle covers that node - the game's own comparison, squared
-        /// on both sides so nothing takes a square root, and the boundary inside as the game has
-        /// it.</summary>
+        /// <summary>Whether this colony's circle covers that node - <see cref="InfluenceCell.Reaches"/>
+        /// asked of a rectangle of no size, which is what a POINT is (the same degenerate rect the
+        /// ground sweep passes it). One implementation of "is this place inside that circle", so a
+        /// system's reading and the map's own ground can never disagree about the boundary.</summary>
         private static bool Reaches(GameNode node, ColonizedStarSystem colony, float radius)
         {
             GameNode from = colony.Node;
-            if (from == null || radius <= 0f)
+            if (from == null)
             {
                 return false;
             }
 
-            return (node.GalaxyPosition - from.GalaxyPosition).SquareMagnitude <= radius * radius;
+            InfluenceSource source = new InfluenceSource
+            {
+                X = from.GalaxyPosition.X,
+                Y = from.GalaxyPosition.Y,
+                Radius = radius,
+            };
+            return InfluenceCell.Reaches(
+                source,
+                node.GalaxyPosition.X,
+                node.GalaxyPosition.Y,
+                node.GalaxyPosition.X,
+                node.GalaxyPosition.Y
+            );
         }
 
         /// <summary>
@@ -602,7 +612,7 @@ namespace ES2Access.UI
                     colony.Empire != null
                     && (int)colony.Visibility[empire] >= (int)EntityVisibility.Layer.Known
                     && colony.State != StarSystemState.Ghost
-                    && !Held(owners, colony.Empire)
+                    && !EmpireIndex.Holds(owners, colony.Empire)
                 )
                 {
                     owners.Add(colony.Empire);
@@ -610,19 +620,6 @@ namespace ES2Access.UI
             }
 
             return owners;
-        }
-
-        private static bool Held(List<Empire> empires, Empire empire)
-        {
-            for (int i = 0; i < empires.Count; i++)
-            {
-                if (ReferenceEquals(empires[i], empire))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
     }
 }

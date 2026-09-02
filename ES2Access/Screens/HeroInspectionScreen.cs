@@ -667,8 +667,13 @@ namespace ES2Access.Screens
                 for (int i = 0; i < trees.Length; i++)
                 {
                     HeroSkillTreeItem tree = trees[i];
-                    AgeTransform icon = tree == null ? null : AgeWidgets.Transform(tree.IconImage);
-                    if (tree.SkillTreeDefinition == null || !AgeWidgets.Visible(icon))
+                    if (tree == null || tree.SkillTreeDefinition == null)
+                    {
+                        continue;
+                    }
+
+                    AgeTransform icon = AgeWidgets.Transform(tree.IconImage);
+                    if (!AgeWidgets.Visible(icon))
                     {
                         continue;
                     }

@@ -248,9 +248,20 @@ namespace ES2Access.Core.UI
             return source.Radius > 0.0 && Inside(source, x, y);
         }
 
-        /// <summary>The game's own strength field: nought outside the hard radius, and inside it the
-        /// falloff the repository computes before comparing sources
-        /// (<c>ColonizedStarSystemRepository.TryGetInfluence</c> :119-121).</summary>
+        /// <summary>
+        /// The game's own strength field: nought outside the hard radius, and inside it the falloff the
+        /// repository computes before comparing sources
+        /// (<c>decompiled/Assembly-CSharp/ColonizedStarSystemRepository.cs:117-121</c> -
+        /// <c>TryGetInfluence</c>'s square-magnitude gate and
+        /// <c>(1 - (d/r)^InfluenceStrenghtPower) * r</c>).
+        ///
+        /// Restated rather than called, and there is nothing to call instead: the repository answers
+        /// WHOSE influence stands at a point, never how strong it is there, and the certificate needs
+        /// the field itself to compare two sources over a whole cell. The exponent is the game's own
+        /// <c>InfluenceStrenghtPower</c>, passed in, so the only thing written down here is the shape.
+        /// <c>InfluenceCellTests.StrengthIsTheGamesOwnFalloff</c> pins that shape against the
+        /// decompiled line, which is the guard a restatement gets in place of a call.
+        /// </summary>
         public static double Strength(
             InfluenceSource source,
             double x,

@@ -1957,7 +1957,6 @@ namespace ES2Access.Screens
             DepartmentOfForeignAffairs foreign
         )
         {
-            HashSet<GameEntityGUID> mine = Mine(empire);
             HashSet<GameEntityGUID> homes = Homes(empire);
             IColonizedStarSystemRepositoryService colonies =
                 Services.GetService<IColonizedStarSystemRepositoryService>();
@@ -1968,7 +1967,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                int affiliation = mine.Contains(node.GUID)
+                int affiliation = Mine(colonies, node, empire)
                     ? ScopeFriendly
                     : Scope(Owner(node, empire), empire, foreign);
                 int scopes = ScannerScopes.System(
@@ -2707,28 +2706,20 @@ namespace ES2Access.Screens
             return interior == null ? null : interior.HomeSystemNode;
         }
 
-        /// <summary>The systems that are the player's OWN - the same list the map's tree puts in its
-        /// first region (<c>DepartmentOfTheInterior.ColonizedStarSystems</c>), which counts an outpost
-        /// as yours where the label's colour does not: a place you hold is friendly whether or not it
-        /// has grown into a colony yet.</summary>
-        private static HashSet<GameEntityGUID> Mine(Empire empire)
+        /// <summary>Whether this system is the player's OWN - the same claim the map's tree puts in its
+        /// first region, asked of the repository's own index rather than by walking the empire's
+        /// colony list into a set. It counts an outpost as yours where the label's colour does not: a
+        /// place you hold is friendly whether or not it has grown into a colony yet.</summary>
+        private static bool Mine(
+            IColonizedStarSystemRepositoryService colonies,
+            StarSystemNode node,
+            Empire empire
+        )
         {
-            HashSet<GameEntityGUID> mine = new HashSet<GameEntityGUID>();
-            DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
-            if (interior == null)
-            {
-                return mine;
-            }
-
-            foreach (ColonizedStarSystem colony in interior.ColonizedStarSystems)
-            {
-                if (colony.Node != null)
-                {
-                    mine.Add(colony.Node.GUID);
-                }
-            }
-
-            return mine;
+            ColonizedStarSystem held;
+            return colonies != null
+                && empire != null
+                && colonies.TryGetValue(empire, node.NodePosition, out held);
         }
 
         /// <summary>

@@ -201,7 +201,7 @@ namespace ES2Access.Core.UI
         {
             if (_resultIndices.Count == 0) return;
             int count = _resultIndices.Count;
-            _resultCursor = ((_resultCursor + direction) % count + count) % count;
+            _resultCursor = Cycle.Wrap(_resultCursor + direction, count);
             AnnounceCurrentResult();
         }
 

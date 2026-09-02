@@ -1258,18 +1258,24 @@ namespace ES2Access.Screens
         /// the ghost is not what the map's label is showing.</summary>
         private static bool IsOutpost(StarSystemNode node, Empire empire)
         {
-            DepartmentOfTheInterior interior =
-                empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
-            if (interior == null)
+            IColonizedStarSystemRepositoryService colonies =
+                Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
+            if (colonies == null || empire == null || node == null)
             {
                 return false;
             }
 
-            IList<ColonizedStarSystem> systems = interior.ColonizedStarSystems;
-            for (int i = 0; systems != null && i < systems.Count; i++)
+            // The repository's own index of what stands at this NODE, rather than a walk of every
+            // colony the empire holds. Not the by-empire lookup beside it (<see cref="Manageable"/>
+            // uses that one): it answers with the first entry this empire has here, and the ghost is
+            // an entry - so the claim it names would be the one this walk exists to look past.
+            foreach (ColonizedStarSystem system in colonies.GetValues(node.NodePosition))
             {
-                ColonizedStarSystem system = systems[i];
-                if (system != null && system.Node == node && system.State != StarSystemState.Ghost)
+                if (
+                    system != null
+                    && ReferenceEquals(system.Empire, empire)
+                    && system.State != StarSystemState.Ghost
+                )
                 {
                     return system.State == StarSystemState.Outpost;
                 }

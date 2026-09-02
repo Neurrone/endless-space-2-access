@@ -137,13 +137,7 @@ namespace ES2Access.Core.Speech
         /// bands across a row are one fact with three parts, not three facts.</summary>
         public static string Items(IList<string> items)
         {
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                message.ListItem(items[i]);
-            }
-
-            return message.Build();
+            return SpokenList.Items(items);
         }
 
         /// <summary>The parts of one item joined the way the item is drawn: a picture, a caption and a

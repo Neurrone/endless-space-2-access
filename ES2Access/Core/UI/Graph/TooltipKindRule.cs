@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
 
 namespace ES2Access.Core.UI.Graph
@@ -99,26 +100,7 @@ namespace ES2Access.Core.UI.Graph
 
         private static bool Own(IList<string> alsoSpoken, string line)
         {
-            for (int i = 0; alsoSpoken != null && i < alsoSpoken.Count; i++)
-            {
-                if (TextUtil.IsBlank(alsoSpoken[i]))
-                {
-                    continue;
-                }
-
-                if (
-                    string.Equals(
-                        alsoSpoken[i].Trim(),
-                        line == null ? null : line.Trim(),
-                        StringComparison.OrdinalIgnoreCase
-                    )
-                )
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return SpokenText.Mentions(alsoSpoken, line);
         }
     }
 }

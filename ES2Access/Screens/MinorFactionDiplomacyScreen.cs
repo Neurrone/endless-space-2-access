@@ -85,10 +85,11 @@ namespace ES2Access.Screens
                     AgeText.Title(WindowTitleKey)
                     ?? ModStrings.Get(ModStrings.ScreenMinorDiplomacy);
 
+                // Through the builder rather than by gluing the separator on: the title and the faction
+                // it is about are two list items, and which mark joins two list items is the one thing
+                // a translation owns about this sentence.
                 string drawn = window == null ? null : Words(window.EmpireNameLabel);
-                return string.IsNullOrEmpty(drawn)
-                    ? title
-                    : title + ModStrings.Get(ModStrings.ListSeparator) + drawn;
+                return new MessageBuilder().ListItem(title).ListItem(drawn).Build();
             }
         }
 
@@ -315,7 +316,7 @@ namespace ES2Access.Screens
                 && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget))
             )
             {
-                _cells.Add(Cells.Readout(widget, key));
+                _cells.Add(Cells.GatheredReadout(widget, key));
             }
         }
 
