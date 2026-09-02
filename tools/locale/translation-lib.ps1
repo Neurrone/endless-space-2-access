@@ -263,7 +263,7 @@ function Get-ModStringsEntries([string]$root, $englishKeys) {
 $script:TracedPluralPairs = @(
     @{ Site = 'ES2Access/UI/SystemLabelReadout.cs'; One = 'GalaxySystemFriendlyShip'; Many = 'GalaxySystemFriendlyShips' },
     @{ Site = 'ES2Access/UI/SystemLabelReadout.cs'; One = 'GalaxySystemHostileShip'; Many = 'GalaxySystemHostileShips' },
-    @{ Site = 'ES2Access/Core/Speech/BattleText.cs'; One = 'BattleFireMissedClause'; Many = 'BattleFireMissedClauseMany' }
+    @{ Site = 'ES2Access/ES2/Speech/BattleText.cs'; One = 'BattleFireMissedClause'; Many = 'BattleFireMissedClauseMany' }
 )
 
 <#
