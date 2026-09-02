@@ -774,13 +774,8 @@ namespace ES2Access.UI
             string element = index >= 0 && index < CategoryTitles.Length
                 ? CategoryTitles[index]
                 : null;
-            string title = element == null ? null : AgeText.Clean(Gui.GetTitle(element));
-            if (!string.IsNullOrEmpty(title) && title[0] != '%')
-            {
-                return title;
-            }
-
-            return CardActions.FirstLine(tooltip);
+            string title = element == null ? null : AgeText.Title(Gui.GetTitle(element));
+            return title ?? CardActions.FirstLine(tooltip);
         }
 
         private static void AddObsolete(
@@ -987,7 +982,7 @@ namespace ES2Access.UI
                 SidePanels.Content(cells, table, keys, Stats, null);
                 for (int i = 0; i < cells.Count; i++)
                 {
-                    (Under(cells[i].Widget, ranges) ? _rangeCells : _combatCells).Add(cells[i]);
+                    (AgeWidgets.Under(cells[i].Widget, ranges) ? _rangeCells : _combatCells).Add(cells[i]);
                 }
 
                 _namedStats.Clear();
@@ -1036,9 +1031,8 @@ namespace ES2Access.UI
         /// statistic itself, which is the same string the hidden accuracy figure is named from.</summary>
         private static void EmitRanges(GraphBuilder builder, List<Cell> cells)
         {
-            string title = AgeText.Clean("%AccuracyTitle");
-            bool named =
-                !string.IsNullOrEmpty(title) && title[0] != '%' && cells.Count > 0;
+            string title = AgeText.Title("%AccuracyTitle");
+            bool named = title != null && cells.Count > 0;
             if (named)
             {
                 builder.PushContext(title);
@@ -1551,9 +1545,7 @@ namespace ES2Access.UI
                 string[] names = new string[categories.Length];
                 for (int i = 0; i < categories.Length; i++)
                 {
-                    string title = AgeText.Clean(Gui.GetTitle(categories[i]));
-                    names[i] =
-                        string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+                    names[i] = AgeText.Title(Gui.GetTitle(categories[i]));
                 }
 
                 SlotOrder.Alphabetical(names);
@@ -1646,8 +1638,8 @@ namespace ES2Access.UI
             string[] categories = slot.GuiSlot.ModuleTypeRestrictions;
             for (int i = 0; categories != null && i < categories.Length; i++)
             {
-                string title = AgeText.Clean(Gui.GetTitle(categories[i]));
-                if (!string.IsNullOrEmpty(title) && title[0] != '%')
+                string title = AgeText.Title(Gui.GetTitle(categories[i]));
+                if (title != null)
                 {
                     Add(message, title);
                 }
@@ -1692,7 +1684,7 @@ namespace ES2Access.UI
         /// is only ever one of it.</summary>
         private static string SlotPairing(ShipDesignEditionSlotItem slot)
         {
-            return Drawn(slot.SlotPairingFlag) ? Title("%PanelFeatureSlotSymetricalTitle") : null;
+            return Drawn(slot.SlotPairingFlag) ? AgeText.Title("%PanelFeatureSlotSymetricalTitle") : null;
         }
 
         /// <summary>Whether the slot takes a heavy version of the module, in the game's own words for
@@ -1703,7 +1695,7 @@ namespace ES2Access.UI
         /// sighted player reads and a dump cannot, so the slot's own flag is the gate.</summary>
         private static string SlotHeavyMount(ShipDesignEditionSlotItem slot)
         {
-            return slot.GuiSlot.IsLarge ? Title("%PanelFeatureSlotLargeTitle") : null;
+            return slot.GuiSlot.IsLarge ? AgeText.Title("%PanelFeatureSlotLargeTitle") : null;
         }
 
         /// <summary>The resource the slot itself costs on top of the module, which the game draws as a
@@ -1722,15 +1714,6 @@ namespace ES2Access.UI
         private static bool Drawn(AgeTransform marker)
         {
             return marker != null && marker.Visible;
-        }
-
-        /// <summary>The game's own words for a fact it drew as a picture, or nothing when the corpus
-        /// has no such string: the localizer hands an unknown key straight back, and a "%key" is text
-        /// the game never finished writing.</summary>
-        private static string Title(string key)
-        {
-            string title = AgeText.Clean(key);
-            return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
         }
 
         /// <summary>
@@ -2084,31 +2067,6 @@ namespace ES2Access.UI
             return true;
         }
 
-        /// <summary>Whether a widget is drawn inside a band - which is how the shape walk's cells are
-        /// split between the regions of the statistics box, whose bands are the game's own grouping and
-        /// not something a rect could answer.</summary>
-        private static bool Under(AgeTransform widget, AgeTransform band)
-        {
-            if (band == null)
-            {
-                return false;
-            }
-
-            AgeTransform at = widget;
-            int guard = 0;
-            while (at != null && guard++ < 12)
-            {
-                if (ReferenceEquals(at, band))
-                {
-                    return true;
-                }
-
-                at = at.Parent;
-            }
-
-            return false;
-        }
-
         /// <summary>Which child of a band a widget sits in, for splitting a box by the groups the game
         /// laid it out in rather than by name.</summary>
         private static AgeTransform BandOf(AgeTransform band, AgeTransform inside)
@@ -2194,7 +2152,7 @@ namespace ES2Access.UI
         // The game's own handler for the name box gaining the keyboard, which clears its "type a name
         // here" prompt the way a click on it does. Resolved once.
         private static readonly System.Reflection.MethodInfo NameFieldGainFocus =
-            OptionsScreen.Handler(
+            GameHandlers.Method(
                 typeof(ShipDesignEditionPanel),
                 "OnNameTextFieldGainFocusCb"
             );

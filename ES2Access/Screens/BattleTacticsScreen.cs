@@ -703,16 +703,7 @@ namespace ES2Access.Screens
 
         private static PlayCardDeckModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<PlayCardDeckModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<PlayCardDeckModalWindow>();
         }
     }
 }

@@ -149,26 +149,10 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // In the order they are drawn, which for a table the game arranges is top to bottom.
-            foreach (List<Cell> row in AgeLayout.Rows(_cells, CellWidget))
-            {
-                for (int i = 0; i < row.Count; i++)
-                {
-                    builder.StartRow();
-                    builder.AddItem(Nodes.Drawn(row[i].Id, row[i].Vtable, row[i].Widget));
-                    builder.EndRow();
-                }
-            }
+            // In the order they are drawn, which for a table the game arranges is top to bottom - one
+            // graph row per drawn band, and the game draws this list one line to a band.
+            Cells.Emit(builder, _cells);
         }
-
-        private sealed class Cell
-        {
-            public AgeTransform Widget;
-            public ControlId Id;
-            public NodeVtable Vtable;
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
 
         /// <summary>One line of the list: what would be built, what it would cost and how long it
         /// would take - the tooltip the game hangs on the line - and the game's own reasons where it
@@ -221,16 +205,11 @@ namespace ES2Access.Screens
             // off the wrapper the tooltip carries, as its failure panel does.
             GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Operable(it.AgeTransform));
             AgeWidgets.PointAt(vtable, item.AgeTransform);
-            cells.Add(
-                new Cell
-                {
-                    Widget = item.AgeTransform,
-                    Id = ControlId.For(
-                        item,
-                        "planet-constructible/" + constructible.Name
-                    ),
-                    Vtable = vtable,
-                }
+            Cells.Add(
+                cells,
+                item.AgeTransform,
+                ControlId.For(item, "planet-constructible/" + constructible.Name),
+                vtable
             );
         }
 

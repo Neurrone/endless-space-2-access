@@ -69,7 +69,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.quests"; }
+            get { return ModStrings.ScreenQuests; }
         }
 
         /// <summary>Over the view levels it is drawn on top of, beside the technology wheel and the
@@ -203,9 +203,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                SidePanelsWindow panels = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
-                    : null;
+                SidePanelsWindow panels = GameWindows.Of<SidePanelsWindow>();
                 if (panels == null)
                 {
                     return;
@@ -442,7 +440,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(FiltersStop);
-            AddReadout(builder, Widget(JournalHeading()), "quests:heading");
+            AddReadout(builder, AgeWidgets.Transform(JournalHeading()), "quests:heading");
 
             IList<AgeTransform> toggles = table.Children;
             for (int i = 0; toggles != null && i < toggles.Count; i++)
@@ -785,8 +783,8 @@ namespace ES2Access.Screens
             try
             {
                 builder.BeginStop(DetailStop);
-                AddReadout(builder, Widget(OptionsScreen.LabelIn(panel.AgeTransform)), "quests:selected-heading");
-                AddReadout(builder, Widget(panel.Title), "quests:selected-title");
+                AddReadout(builder, AgeWidgets.Transform(OptionsScreen.LabelIn(panel.AgeTransform)), "quests:selected-heading");
+                AddReadout(builder, AgeWidgets.Transform(panel.Title), "quests:selected-title");
                 AddMinorFaction(builder, window);
                 AddLore(builder, panel);
                 AddObjective(builder, panel);
@@ -1003,7 +1001,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeTransform title = Widget(OptionsScreen.LabelIn(group));
+            AgeTransform title = AgeWidgets.Transform(OptionsScreen.LabelIn(group));
 
             QuestRewardsTable rewards = panel.Rewards;
             AgeTransform table = null;
@@ -1185,30 +1183,9 @@ namespace ES2Access.Screens
             return at;
         }
 
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static NarrativeScreen Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<NarrativeScreen>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<NarrativeScreen>();
         }
     }
 }

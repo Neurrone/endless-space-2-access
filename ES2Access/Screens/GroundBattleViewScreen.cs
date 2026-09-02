@@ -43,15 +43,6 @@ namespace ES2Access.Screens
 
         private const string SkipTitleKey = "%GroundBattleScreenSkipTitle";
 
-        private const string ScreenNameKey = "screen.ground-battle";
-        private const string RoundKey = "ground-battle.round";
-        private const string BombardmentKey = "ground-battle.bombardment";
-        private const string AssaultKey = "ground-battle.assault";
-        private const string YourTroopLostKey = "ground-battle.your-troop-lost";
-        private const string YourTroopsLostKey = "ground-battle.your-troops-lost";
-        private const string EnemyTroopLostKey = "ground-battle.enemy-troop-lost";
-        private const string EnemyTroopsLostKey = "ground-battle.enemy-troops-lost";
-
         private static readonly object ControlsStop = "ground-battle:controls";
 
         private readonly StepWatch _act = new StepWatch();
@@ -70,7 +61,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.ground-battle"; }
+            get { return ModStrings.ScreenGroundBattle; }
         }
 
         /// <summary>One of the game's view levels over the map, like the space battle and the galaxy - no
@@ -92,7 +83,7 @@ namespace ES2Access.Screens
                         ? null
                         : AgeText.Label(window.IntroductionLocationLabel);
                     return string.IsNullOrEmpty(where)
-                        ? BattleText.Optional(ScreenNameKey)
+                        ? BattleText.Optional(ModStrings.ScreenGroundBattle)
                         : where;
                 }
                 catch (Exception)
@@ -189,7 +180,7 @@ namespace ES2Access.Screens
                     2,
                     new MessageBuilder()
                         .ListItem(AgeText.Label(window.ConclusionEndStatusTitle))
-                        .ListItem(Visible(window.ConclusionEndStatusSubTitle))
+                        .ListItem(AgeWidgets.DrawnLabel(window.ConclusionEndStatusSubTitle))
                         .Build()
                 );
                 return;
@@ -249,11 +240,11 @@ namespace ES2Access.Screens
             string said = null;
             if (phase == GroundBattleViewer.PhaseType.BombardmentPhase)
             {
-                said = BattleText.Optional(BombardmentKey);
+                said = BattleText.Optional(ModStrings.GroundBattleBombardment);
             }
             else if (phase == GroundBattleViewer.PhaseType.AttackPhase)
             {
-                said = BattleText.Optional(AssaultKey);
+                said = BattleText.Optional(ModStrings.GroundBattleAssault);
             }
 
             _phase.Told(step);
@@ -285,7 +276,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string said = BattleText.Optional(RoundKey, round + 1);
+            string said = BattleText.Optional(ModStrings.GroundBattleRound, round + 1);
             if (string.IsNullOrEmpty(said))
             {
                 return;
@@ -317,11 +308,19 @@ namespace ES2Access.Screens
 
             float now = Time.realtimeSinceStartup;
             Voice.Say(
-                BattleText.Losses(_yourTroops.Due(now), YourTroopLostKey, YourTroopsLostKey),
+                BattleText.Losses(
+                    _yourTroops.Due(now),
+                    ModStrings.GroundBattleYourTroopLost,
+                    ModStrings.GroundBattleYourTroopsLost
+                ),
                 false
             );
             Voice.Say(
-                BattleText.Losses(_enemyTroops.Due(now), EnemyTroopLostKey, EnemyTroopsLostKey),
+                BattleText.Losses(
+                    _enemyTroops.Due(now),
+                    ModStrings.GroundBattleEnemyTroopLost,
+                    ModStrings.GroundBattleEnemyTroopsLost
+                ),
                 false
             );
         }
@@ -456,13 +455,6 @@ namespace ES2Access.Screens
             Cells.Add(_cells, button, ControlId.For(label, key), vtable);
         }
 
-        /// <summary>What a label SAYS while it is drawn - a string, not a node.</summary>
-        private static string Visible(AgePrimitiveLabel label)
-        {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
-            return AgeWidgets.Visible(widget) ? AgeText.Label(label) : null;
-        }
-
         /// <summary>Whether a phase's whole band is being drawn - flow control for the readings under
         /// it, each of which walks a panel of its own.</summary>
         private static bool Shown(AgeTransform group)
@@ -484,36 +476,14 @@ namespace ES2Access.Screens
 
         private static global::GroundBattleScreen Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::GroundBattleScreen>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<global::GroundBattleScreen>();
         }
 
         /// <summary>The viewer's own round counter, which it keeps private - the only thing about a ground
         /// battle this screen cannot ask for.</summary>
-        private static readonly FieldInfo RoundIndex = Field("currentRoundIndex");
-
-        private static FieldInfo Field(string name)
-        {
-            try
-            {
-                return typeof(GroundBattleViewer).GetField(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("ground battle: looking up " + name + " threw: " + e);
-                return null;
-            }
-        }
+        private static readonly FieldInfo RoundIndex = GameHandlers.Field(
+            typeof(GroundBattleViewer),
+            "currentRoundIndex"
+        );
     }
 }

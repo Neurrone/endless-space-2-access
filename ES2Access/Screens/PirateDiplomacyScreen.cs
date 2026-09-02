@@ -45,7 +45,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.pirate-diplomacy"; }
+            get { return ModStrings.ScreenPirateDiplomacy; }
         }
 
         /// <summary>Beside the minor-faction window, which it can never be up with - both are exclusive
@@ -93,21 +93,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && window.PirateEmpire != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(GuiModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -220,7 +206,7 @@ namespace ES2Access.Screens
                     );
                 }
 
-                Cells.AddReadout(_cells, Of(window.StandingLabel), Keys + "standing");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.StandingLabel), Keys + "standing");
             }
             catch (Exception e)
             {
@@ -249,7 +235,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             try
             {
-                Cells.AddReadout(_cells, Of(window.NextFleetCooldownLabel), Keys + "cooldown");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.NextFleetCooldownLabel), Keys + "cooldown");
                 Line(window.NextFleetHealthLabel, "%ShipStatHealthTitle", "health");
                 Line(
                     window.NextFleetOffenseLabel,
@@ -296,9 +282,9 @@ namespace ES2Access.Screens
         /// The caption is a row rather than the band's name because the sentence explaining what the
         /// track measures hangs on the LABEL itself, not on the group around it, and nothing else here
         /// would carry it. The marks are the shared circle track (<see cref="ThresholdTracks"/>); what
-        /// each one SAYS is worked out here, because the window draws neither half of it: it overwrites
-        /// every circle's figure with the mark's ordinal (<c>RefreshReinforcementsThresholdItem</c>
-        /// :473) and shows the distance only as a bar filling behind the circle.
+        /// each one SAYS is worked out here, because the window overwrites every circle's figure with
+        /// the mark's ordinal (<c>RefreshReinforcementsThresholdItem</c> :473) and shows the distance
+        /// only as a bar filling behind the circle.
         /// </summary>
         private void Thresholds(PirateDiplomacyModalWindow window)
         {
@@ -314,10 +300,6 @@ namespace ES2Access.Screens
                 Keys + "reinforcements-title"
             );
 
-            IPiratesManagementService pirates = Pirates();
-            PirateFleetReinforcement[] marks = Marks(pirates);
-            float stock = pirates == null ? 0f : pirates.PirateReinforcementsStock;
-            float below = 0f;
             IList<AgeTransform> children = AgeWidgets.DrawnChildren(
                 window.ReinforcementsThresholdsTable
             );
@@ -329,10 +311,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                float min = below;
-                float max = marks != null && i < marks.Length ? min + marks[i].Cost : min;
-                below = max;
-                ThresholdTracks.Add(_cells, at, Mark(at, i, min, max, stock), Keys + "threshold/" + i);
+                ThresholdTracks.Add(_cells, at, Mark(at, i), Keys + "threshold/" + i);
             }
         }
 
@@ -340,62 +319,51 @@ namespace ES2Access.Screens
         /// What one mark on the firepower track says: which mark it is, and either that the pirates
         /// have banked it or how far along its own stretch of the track they are.
         ///
-        /// The thresholds are CUMULATIVE costs, so a mark's stretch runs from everything below it to
-        /// its own total, and the percentage is of that stretch - which is exactly what the bar behind
-        /// the circle draws (<c>ThresholdItem.Bind</c> :26-52 fills it by the same fraction). The
-        /// number is the reading, not the arithmetic behind it: the raw stock and cost are the game's
-        /// own bookkeeping and are never spoken (owner ruling 2026-08-30).
+        /// Both halves are READ OFF the widgets the game filled, never recomputed from the costs. The
+        /// bar snaps at both ends (<c>ThresholdItem.Bind</c> :26-49): a fraction at or below the
+        /// item's own <c>minRatio</c> draws empty and one at or above <c>1 - minRatio</c> draws full,
+        /// so arithmetic over the same stock and costs announced a figure the bar was not drawing near
+        /// either end of every mark. The filled length is the same <c>PercentRight</c>/
+        /// <c>PercentLeft</c> pair <see cref="NegotiationScreen"/> reads its own notches from, and the
+        /// circle is the game's own "this one is banked": full alpha once the mark is reached and 0.3
+        /// while it is still filling (:51).
         ///
-        /// With no costs to divide by, the mark is left at nothing banked. That cannot be met on a
-        /// drawn track - the game populates the table from the same method that reads the service for
-        /// every circle (:413-429), so a circle exists only where the costs answered.
+        /// The number is the reading, not the arithmetic behind it: the raw stock and cost are the
+        /// game's own bookkeeping and are never spoken (owner ruling 2026-08-30).
+        ///
+        /// Nothing at all where the item carries no <c>ThresholdItem</c>. That cannot be met on a
+        /// drawn track - the game dereferences the component for every circle it binds (:470) - and a
+        /// mark with no bar to read has no distance to give.
         /// </summary>
-        private static string Mark(AgeTransform widget, int index, float min, float max, float stock)
+        private static string Mark(AgeTransform widget, int index)
         {
+            ThresholdItem item = widget == null ? null : widget.GetComponent<ThresholdItem>();
+            if (item == null)
+            {
+                return null;
+            }
+
             string drawn = AgeWidgets.TextOf(widget);
             string ordinal = string.IsNullOrEmpty(drawn) ? (index + 1).ToString() : drawn;
-            if (max > min && stock >= max)
+            // Content read: the circle's alpha is the game's own word for "banked", not a
+            // question about whether the mark is on the screen.
+            if (item.Circle != null && item.Circle.Alpha >= 1f)
             {
                 return ModStrings.Format(ModStrings.PirateThresholdReached, ordinal);
             }
 
-            double filled = max > min ? (stock - min) / (max - min) : 0.0;
-            filled = filled < 0.0 ? 0.0 : (filled > 1.0 ? 1.0 : filled);
+            // Content read: the two bars are one length drawn twice - the filled part measured from
+            // the right, the remainder from the left - and which of them is drawn is what says which
+            // one carries the figure, the game hiding the filled one where there is nothing to fill
+            // (:32-35).
+            float filled = AgeWidgets.Paints(item.ProgressCurrent)
+                ? item.ProgressCurrent.PercentRight
+                : (item.ProgressOverall == null ? 0f : item.ProgressOverall.PercentLeft);
             return ModStrings.Format(
                 ModStrings.PirateThresholdProgress,
                 ordinal,
-                (int)Math.Round(filled * 100.0)
+                (int)Math.Round(filled)
             );
-        }
-
-        /// <summary>The service the window reads the pirates' banked firepower from, fetched the
-        /// window's own way (:293) - its handle on the service is private, so there is nothing to
-        /// borrow.</summary>
-        private static IPiratesManagementService Pirates()
-        {
-            try
-            {
-                return Amplitude.Unity.Framework.Services.GetService<IPiratesManagementService>();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>The reinforcements the next fleet can earn, in the order the track draws them -
-        /// each one's <c>Cost</c> is what the mark above it adds to the total.</summary>
-        private static PirateFleetReinforcement[] Marks(IPiratesManagementService pirates)
-        {
-            try
-            {
-                PirateFleetSpawn spawn = pirates == null ? null : pirates.SelectedPirateFleetSpawn;
-                return spawn == null ? null : spawn.Reinforcements;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private void AddToggle(AgeControlToggle toggle)
@@ -536,36 +504,20 @@ namespace ES2Access.Screens
             builder.PopContext();
         }
 
+        /// <summary>What a control is called: the words it draws, else the title the game gave its
+        /// tooltip, else that tooltip.s own first line (<see cref="CardActions.FirstLine"/>, which is
+        /// where the words-are-really-on-the-widget test lives).</summary>
         private static string Named(AgeTransform widget, AgeTooltip tooltip)
         {
             string drawn = AgeWidgets.TextOf(widget);
-            return string.IsNullOrEmpty(drawn) ? AgeWidgets.TooltipTitle(tooltip) : drawn;
-        }
-
-        private static AgeTransform Of(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return string.IsNullOrEmpty(drawn)
+                ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
+                : drawn;
         }
 
         private static PirateDiplomacyModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<PirateDiplomacyModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<PirateDiplomacyModalWindow>();
         }
     }
 }

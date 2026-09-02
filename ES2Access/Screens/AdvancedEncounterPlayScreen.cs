@@ -120,36 +120,6 @@ namespace ES2Access.Screens
         private const string RetreatTitleKey = "%NotificationBattleSetupRetreatButtonTitle";
         private const string WatchToggleTitleKey = "%NotificationBattleSetupWatchToggleTitle";
 
-        /// <summary>The mod's own, for the things the game names nowhere - the four bands Tab crosses
-        /// and the two roster switches. All are asked for optionally: a build without the phrase
-        /// leaves that line out rather than reading a key.</summary>
-        private const string TacticsKey = "battle.tactics";
-        private const string YourFleetsKey = "battle.your-fleets";
-        private const string EnemyFleetsKey = "battle.enemy-fleets";
-        private const string StatsKey = "battle.stats";
-        private const string ShowYourFleetsKey = "battle.show-your-fleets";
-        private const string ShowEnemyFleetsKey = "battle.show-enemy-fleets";
-        private const string TimeLeftKey = "battle.time-left";
-
-        /// <summary>What the four stats pages are called, and what each of them says. The game names
-        /// none of this: its four switches are wordless icons with a description apiece, and every
-        /// figure on every page is a coloured arc with no number written anywhere on it.</summary>
-        private const string StatsTrajectoriesKey = "battle.stats-trajectories";
-        private const string StatsMilitaryKey = "battle.stats-military";
-        private const string StatsDamageKey = "battle.stats-damage";
-        private const string StatsRangeKey = "battle.stats-range";
-        private const string FlotillaRangeKey = "battle.flotilla-range";
-        private const string EnergyShareKey = "battle.energy-damage-share";
-        private const string ProjectileShareKey = "battle.projectile-damage-share";
-        private const string EnergyThreatKey = "battle.energy-bigger-threat";
-        private const string ProjectileThreatKey = "battle.projectile-bigger-threat";
-        private const string ShortRangeShareKey = "battle.short-range-share";
-        private const string MediumRangeShareKey = "battle.medium-range-share";
-        private const string LongRangeShareKey = "battle.long-range-share";
-        private const string ShortRangeMattersKey = "battle.short-range-matters";
-        private const string MediumRangeMattersKey = "battle.medium-range-matters";
-        private const string LongRangeMattersKey = "battle.long-range-matters";
-
         /// <summary>The game's own sentence for a range, which it writes as "{0} Range" over the bare
         /// name a range localizes to.</summary>
         private const string RangeTitleKey = "%AdvancedPlayFlotillaOptimalRangeTitle";
@@ -321,7 +291,7 @@ namespace ES2Access.Screens
         private void Tactics(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(TacticsRegion);
-            bool named = Context(builder, TacticsKey, true);
+            bool named = Context(builder, ModStrings.BattleTactics, true);
             try
             {
                 Plans(builder, window.PlayerPlaySelectionTable, "advanced-play/plan");
@@ -338,7 +308,7 @@ namespace ES2Access.Screens
         private void Yours(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(YoursRegion);
-            bool named = Context(builder, YourFleetsKey);
+            bool named = Context(builder, ModStrings.BattleYourFleets);
             try
             {
                 Leader(builder, window.PlayerBattleGroupInfoPanel, "advanced-play/yours");
@@ -360,7 +330,7 @@ namespace ES2Access.Screens
         private void Theirs(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(TheirsRegion);
-            bool named = Context(builder, EnemyFleetsKey);
+            bool named = Context(builder, ModStrings.BattleEnemyFleets);
             try
             {
                 Leader(builder, window.EnemyBattleGroupInfoPanel, "advanced-play/theirs");
@@ -492,7 +462,7 @@ namespace ES2Access.Screens
             BattleRosters.FlotillaExtras extras
         )
         {
-            BattleRosters.Roster(builder, Widget(panel), prefix, extras);
+            BattleRosters.Roster(builder, AgeWidgets.Transform(panel), prefix, extras);
         }
 
         /// <summary>
@@ -521,7 +491,7 @@ namespace ES2Access.Screens
             return new BattleRosters.FlotillaExtras
             {
                 Drawn = line => AgeWidgets.DrawnLabel(CommandPoints(Card(it, line))),
-                Tooltip = line => AgeWidgets.Raw(Widget((GuiPanel)Card(it, line))),
+                Tooltip = line => AgeWidgets.Raw(AgeWidgets.Transform((GuiPanel)Card(it, line))),
                 Row = (line, vtable) => Destination(it, line, vtable),
                 Ship = (line, item, vtable) => Arrangeable(it, line, item, vtable),
             };
@@ -744,7 +714,6 @@ namespace ES2Access.Screens
             }
         }
 
-
         /// <summary>
         /// The figures: the four pages of stats the window keeps behind its four switches, and the
         /// fighters line the window writes under them.
@@ -757,7 +726,7 @@ namespace ES2Access.Screens
         private void Figures(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             builder.SetRegion(FiguresRegion);
-            bool named = Context(builder, StatsKey, true);
+            bool named = Context(builder, ModStrings.BattleStats, true);
             try
             {
                 Pages(builder, window);
@@ -963,15 +932,7 @@ namespace ES2Access.Screens
         /// <summary>Which page's row the cursor is on, or -1 for anywhere else.</summary>
         private static int FocusedPage()
         {
-            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
-            string structural = key == null ? null : key.StructuralKey as string;
-            if (structural == null || !structural.StartsWith(StatPageKey, StringComparison.Ordinal))
-            {
-                return -1;
-            }
-
-            int page;
-            return int.TryParse(structural.Substring(StatPageKey.Length), out page) ? page : -1;
+            return ModEntry.Navigator == null ? -1 : ModEntry.Navigator.FocusedIndex(StatPageKey);
         }
 
         /// <summary>The four pages, as the things they say rather than as the order the prefab happens
@@ -992,17 +953,20 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform panel = Panel(window, index);
-                if (panel != null && panel == Widget(window.BattlePowerGauge))
+                if (panel != null && panel == AgeWidgets.Transform(window.BattlePowerGauge))
                 {
                     return Stats.Military;
                 }
 
-                if (panel != null && panel == Parent(Widget(window.EnergyPowerGauge)))
+                if (panel != null && panel == Parent(AgeWidgets.Transform(window.EnergyPowerGauge)))
                 {
                     return Stats.Damage;
                 }
 
-                if (panel != null && panel == Parent(Widget(window.ShortRangePowerGauge)))
+                if (
+                    panel != null
+                    && panel == Parent(AgeWidgets.Transform(window.ShortRangePowerGauge))
+                )
                 {
                     return Stats.Ranges;
                 }
@@ -1022,13 +986,13 @@ namespace ES2Access.Screens
             switch (page)
             {
                 case Stats.Military:
-                    return StatsMilitaryKey;
+                    return ModStrings.BattleStatsMilitary;
                 case Stats.Damage:
-                    return StatsDamageKey;
+                    return ModStrings.BattleStatsDamage;
                 case Stats.Ranges:
-                    return StatsRangeKey;
+                    return ModStrings.BattleStatsRange;
                 default:
-                    return StatsTrajectoriesKey;
+                    return ModStrings.BattleStatsTrajectories;
             }
         }
 
@@ -1074,32 +1038,59 @@ namespace ES2Access.Screens
                     Figure(vtable, () => BalanceText(it));
                     return;
                 case Stats.Damage:
-                    Figure(vtable, () => BattleArcs.Shares(it.EnergyPowerGauge, EnergyShareKey));
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.PhysicalPowerGauge, ProjectileShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.EnergyPowerGauge,
+                                ModStrings.BattleEnergyDamageShare
+                            )
+                    );
+                    Figure(
+                        vtable,
+                        () =>
+                            BattleArcs.Shares(
+                                it.PhysicalPowerGauge,
+                                ModStrings.BattleProjectileDamageShare
+                            )
                     );
                     Figure(
                         vtable,
                         () =>
                             BattleArcs.Thickest(
                                 new[] { it.EnergyPowerGauge, it.PhysicalPowerGauge },
-                                new[] { EnergyThreatKey, ProjectileThreatKey }
+                                new[]
+                                {
+                                    ModStrings.BattleEnergyBiggerThreat,
+                                    ModStrings.BattleProjectileBiggerThreat,
+                                }
                             )
                     );
                     return;
                 case Stats.Ranges:
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.ShortRangePowerGauge, ShortRangeShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.ShortRangePowerGauge,
+                                ModStrings.BattleShortRangeShare
+                            )
                     );
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.MediumRangePowerGauge, MediumRangeShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.MediumRangePowerGauge,
+                                ModStrings.BattleMediumRangeShare
+                            )
                     );
                     Figure(
                         vtable,
-                        () => BattleArcs.Shares(it.LongRangePowerGauge, LongRangeShareKey)
+                        () =>
+                            BattleArcs.Shares(
+                                it.LongRangePowerGauge,
+                                ModStrings.BattleLongRangeShare
+                            )
                     );
                     Figure(
                         vtable,
@@ -1113,9 +1104,9 @@ namespace ES2Access.Screens
                                 },
                                 new[]
                                 {
-                                    ShortRangeMattersKey,
-                                    MediumRangeMattersKey,
-                                    LongRangeMattersKey,
+                                    ModStrings.BattleShortRangeMatters,
+                                    ModStrings.BattleMediumRangeMatters,
+                                    ModStrings.BattleLongRangeMatters,
                                 }
                             )
                     );
@@ -1196,10 +1187,10 @@ namespace ES2Access.Screens
             AgeTransform panel
         )
         {
-            AgeTransform balance = Widget(window.BattlePowerGauge);
-            AgeTransform energy = Widget(window.EnergyPowerGauge);
-            AgeTransform physical = Widget(window.PhysicalPowerGauge);
-            AgeTransform shortRange = Widget(window.ShortRangePowerGauge);
+            AgeTransform balance = AgeWidgets.Transform(window.BattlePowerGauge);
+            AgeTransform energy = AgeWidgets.Transform(window.EnergyPowerGauge);
+            AgeTransform physical = AgeWidgets.Transform(window.PhysicalPowerGauge);
+            AgeTransform shortRange = AgeWidgets.Transform(window.ShortRangePowerGauge);
             if (panel != null && panel == balance)
             {
                 return new[] { balance };
@@ -1215,8 +1206,8 @@ namespace ES2Access.Screens
                 return new[]
                 {
                     shortRange,
-                    Widget(window.MediumRangePowerGauge),
-                    Widget(window.LongRangePowerGauge),
+                    AgeWidgets.Transform(window.MediumRangePowerGauge),
+                    AgeWidgets.Transform(window.LongRangePowerGauge),
                 };
             }
 
@@ -1250,7 +1241,7 @@ namespace ES2Access.Screens
                 }
 
                 return OptionalText.Phrase(
-                    FlotillaRangeKey,
+                    ModStrings.BattleFlotillaRange,
                     index + 1,
                     Gui.Localize(RangeTitleKey, Gui.GetLocalizedTitle(range))
                 );
@@ -1303,10 +1294,15 @@ namespace ES2Access.Screens
         private void Controls(GraphBuilder builder, AdvancedEncounterPlayModalWindow window)
         {
             _cells.Clear();
-            Checkbox(window.ShowYourFleetsToggle, ShowYourFleetsKey, null, "advanced-play:show-yours");
+            Checkbox(
+                window.ShowYourFleetsToggle,
+                ModStrings.BattleShowYourFleets,
+                null,
+                "advanced-play:show-yours"
+            );
             Checkbox(
                 window.ShowEnemyFleetsToggle,
-                ShowEnemyFleetsKey,
+                ModStrings.BattleShowEnemyFleets,
                 null,
                 "advanced-play:show-theirs"
             );
@@ -1439,7 +1435,7 @@ namespace ES2Access.Screens
             if (
                 gauge == null
                 || notification == null
-                || OptionalText.Phrase(TimeLeftKey, 0) == null
+                || OptionalText.Phrase(ModStrings.BattleTimeLeft, 0) == null
             )
             {
                 return;
@@ -1462,7 +1458,7 @@ namespace ES2Access.Screens
             try
             {
                 return OptionalText.Phrase(
-                    TimeLeftKey,
+                    ModStrings.BattleTimeLeft,
                     UnityEngine.Mathf.Clamp(
                         UnityEngine.Mathf.RoundToInt(notification.GetTimeLeftRatio() * 100f),
                         0,
@@ -1484,31 +1480,9 @@ namespace ES2Access.Screens
             string method
         )
         {
-            try
-            {
-                AgeControlButton[] buttons =
-                    window.AgeTransform.GetComponentsInChildren<AgeControlButton>(true);
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    AgeControlButton button = buttons[i];
-                    if (
-                        button != null
-                        && button.OnActivateMethod == method
-                        // Candidate choice, not existence: several buttons share a handler and the drawn
-                        // one is the live one. The gate can only drop a node, never pick.
-                        && AgeWidgets.Visible(button.AgeTransform)
-                    )
-                    {
-                        return button.AgeTransform;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("advanced play: looking for " + method + " threw: " + e);
-            }
-
-            return null;
+            return AgeWidgets.Transform(
+                AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, method)
+            );
         }
 
         /// <summary>Who is leading this side, and the hero commanding it where there is one - the portrait
@@ -1688,42 +1662,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Widget(GuiPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(BattlePowerGauge gauge)
-        {
-            try
-            {
-                return gauge == null ? null : gauge.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static AdvancedEncounterPlayModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<AdvancedEncounterPlayModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<AdvancedEncounterPlayModalWindow>();
         }
 
         /// <summary>Where this screen is drawn, for the tooltip audit (see

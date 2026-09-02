@@ -49,16 +49,16 @@ namespace ES2Access.UI
                 AgeTransform left = gauge.LeftGauge;
                 AgeTransform right = gauge.RightGauge;
                 // Content: which half of the gauge contributes its figure to the phrase.
-                if (left != null && left.Visible)
+                if (AgeWidgets.Paints(left))
                 {
-                    message.ListItem(AgeText.Clean(ProjectileTitle));
+                    message.ListItem(AgeText.Title(ProjectileTitle));
                     message.Fragment(Percent(50f - left.PercentLeft));
                 }
 
                 // Content: the same for the other half.
-                if (right != null && right.Visible)
+                if (AgeWidgets.Paints(right))
                 {
-                    message.ListItem(AgeText.Clean(EnergyTitle));
+                    message.ListItem(AgeText.Title(EnergyTitle));
                     message.Fragment(Percent(right.PercentRight - 50f));
                 }
 
@@ -105,11 +105,15 @@ namespace ES2Access.UI
         // buffer because the tooltip is taken out of it before the next call.
         private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(2);
 
-        /// <summary>How far one half was pushed out, as the share of the whole bar it stands for.
-        /// </summary>
+        /// <summary>How far one half was pushed out, as the share of the whole bar it stands for -
+        /// through the shared percent template, because "%" is a sign rather than a word and screen
+        /// readers differ on whether they voice one at all.</summary>
         private static string Percent(float reach)
         {
-            return (int)Math.Abs(Math.Round(reach * 2f)) + "%";
+            return ModStrings.Format(
+                ModStrings.Percent,
+                (int)Math.Abs(Math.Round(reach * 2f))
+            );
         }
     }
 }

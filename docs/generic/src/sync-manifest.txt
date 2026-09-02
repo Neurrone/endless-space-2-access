@@ -71,3 +71,4 @@ docs/generic/src/speech/NativeLoader.cs | ES2Access/Core/Native/NativeLoader.cs
 docs/generic/src/speech/PrismNative.cs | ES2Access/Core/Speech/PrismNative.cs
 docs/generic/src/speech/PrismSpeech.cs | ES2Access/Core/Speech/PrismSpeech.cs
 docs/generic/src/engine-example/AgeWidgets.cs | ES2Access/UI/AgeWidgets.cs
+docs/generic/src/hot-reload/ModPatch.cs | ES2Access/UI/ModPatch.cs

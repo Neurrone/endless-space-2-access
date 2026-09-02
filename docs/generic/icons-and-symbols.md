@@ -31,7 +31,7 @@ table as every other mod phrase, so names are reviewable, editable, and translat
 everything else). Seed the names from the game's own localized titles where the concept is
 unambiguous; where the game's data is ambiguous, choose the shortest accurate noun and flag
 it for the owner's review. Variants collapse to one concept through an explicit alias map —
-colored/size/style variants of the dust icon are all `icon.dust` — by listed aliases, never
+in ES2, colored/size/style variants of the Dust (currency) icon are all `icon.dust` — by listed aliases, never
 by string heuristics guessing at suffixes.
 
 Resolution at speak time is then a pure table lookup. **No unmapped icons by design**: an

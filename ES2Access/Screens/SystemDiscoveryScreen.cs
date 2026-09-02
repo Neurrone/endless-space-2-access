@@ -46,7 +46,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.system-discovery"; }
+            get { return ModStrings.ScreenSystemDiscovery; }
         }
 
         /// <summary>The same layer as the galaxy, the system page and the planet page: these are the

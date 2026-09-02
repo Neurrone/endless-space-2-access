@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.Screens;
 using ES2Access.UI.Input;
 
 namespace ES2Access.UI
@@ -1606,6 +1607,222 @@ namespace ES2Access.UI
             {
                 return false;
             }
+        }
+
+        // ---- the two cells a table draws a CONTROL in ----
+
+        /// <summary>
+        /// A cell the game drew a BUTTON in rather than a figure - the Empire page's status,
+        /// population, construction and hangar columns, its assigned-hero column and the Military
+        /// page's, which are what open the panels under the table.
+        ///
+        /// Null for every other column, which is the shared value cell. Enter here is the cell's own
+        /// click carried on to the row's toggle, which is the two-step the mouse makes: the cell button
+        /// records which cell was hit and the toggle's handler reads it and opens the matching panel.
+        ///
+        /// The cell is still a cell - it says the figure it is drawing and not its heading, which the
+        /// sheet speaks as the edge - and it is read here rather than by the ordinary value path only
+        /// because a REFUSAL lives on the cell: the construction column of an outpost or a ghost is
+        /// switched off with the game's own sentence about why, while the row it sits in is perfectly
+        /// available. The sentence is read off the first tooltip-bearing CHILD
+        /// (<see cref="RefusalTooltip"/>) rather than off the cell, because that is where the game
+        /// writes it; the Military page's copy of this asked the cell alone and refused silently.
+        ///
+        /// Its own "unavailable" covers the row's, since the row's own answer is one of the three this
+        /// cell asks - so the sheet leaves the shared one off (<see cref="SaysRowRefusal"/>).
+        /// </summary>
+        public NodeVtable ButtonCell(AgeTransform cell, GuiTableHeader header, Func<bool> enabled)
+        {
+            AgeControlButton button = CellButton(cell);
+            if (button == null)
+            {
+                return null;
+            }
+
+            AgeTransform it = cell;
+            AgeControlButton press = button;
+            GuiTableHeader heading = header;
+            Func<bool> rowEnabled = enabled;
+            Func<bool> operable = () =>
+                rowEnabled() && AgeWidgets.Operable(press.AgeTransform) && AgeWidgets.Enabled(it);
+            AgeTooltip tooltip = TooltipOf(cell);
+            AgeTooltip reason = RefusalTooltip(cell) ?? tooltip;
+            NodeVtable vtable = new NodeVtable
+            {
+                // Named as the button it is, unlike the figures beside it: the game draws a click
+                // target in these columns and the whole point of the column is what pressing it
+                // opens, so the role word is the only thing that says the cell can be pressed at all.
+                ControlType = ControlTypes.Button,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.ValuePart(() => CellText(it)),
+                    GraphNodes.DisabledPart(operable),
+                },
+                Sections = GraphNodes.Sections(() => CellFacts(heading, it), tooltip),
+                OnActivate = () =>
+                {
+                    if (operable())
+                    {
+                        AgeWidgets.PressPropagating(press);
+                    }
+                },
+            };
+            GraphNodes.AddRefusal(vtable, reason, operable);
+            return SaysRowRefusal(vtable);
+        }
+
+        /// <summary>The button a cell carries, where it has one the game is drawing. A column can carry
+        /// a dummy with no handler at all - the Empire page's resources column does - which is not one
+        /// of these: pressing it does what a click on any plain cell does, and that is the sheet's own
+        /// job.</summary>
+        private static AgeControlButton CellButton(AgeTransform cell)
+        {
+            try
+            {
+                if (cell == null)
+                {
+                    return null;
+                }
+
+                AgeControlButton button = cell.GetComponentInChildren<AgeControlButton>(true);
+                // Different widget: the search reaches HIDDEN children on purpose (a cell holds the
+                // controls of every shape its column can take), so which of them the game is drawing
+                // is the answer to "is this cell a button at all" - and it is asked of the button,
+                // never of the cell the gate will ask about.
+                return button != null
+                    && !string.IsNullOrEmpty(button.OnActivateMethod)
+                    && button.AgeTransform.Visible
+                    ? button
+                    : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Where a refused cell's reason is written. The construction column puts its sentence
+        /// on the label it draws INSTEAD of the construction ("this system is an outpost"), not on the
+        /// cell, so the first tooltip with words in it under the cell is the one that answers.</summary>
+        private static AgeTooltip RefusalTooltip(AgeTransform cell)
+        {
+            try
+            {
+                IList<AgeTransform> children = cell == null ? null : cell.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    AgeTransform child = children[i];
+                    // Different widget: which of the cell's alternative children the game is drawing
+                    // decides whose sentence the refusal is. The children the column is not using this
+                    // row keep the last row's words.
+                    if (child == null || !child.Visible)
+                    {
+                        continue;
+                    }
+
+                    AgeTooltip tooltip = AgeWidgets.Raw(child);
+                    if (tooltip != null && AgeWidgets.Readable(tooltip) != null)
+                    {
+                        return tooltip;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The automation-policy cell, where the game draws a DROP LIST rather than a readout - the
+        /// same cell the Empire page's systems table and the system-selection modal both draw, and the
+        /// same treatment: where the game leaves it operable the cell is a combo box and Enter opens
+        /// the list, and a policy the game has switched off is a readout of what the system is doing
+        /// instead.
+        ///
+        /// Null for every other column. Like every other cell it does not say its own heading - the
+        /// crossed edge does - but the list it opens is still TITLED with it, because that window is
+        /// somewhere the player has been taken. Its own availability is the DROP LIST's rather than the
+        /// row's, so it is not stamped with <see cref="SaysRowRefusal"/> and keeps the shared word.
+        /// </summary>
+        public NodeVtable PolicyCell(AgeTransform cell, GuiTableHeader header, Func<bool> enabled)
+        {
+            AgeControlDropList list = DropList(cell);
+            if (list == null || !AgeWidgets.Operable(list.AgeTransform) || !enabled())
+            {
+                return null;
+            }
+
+            AgeControlDropList it = list;
+            AgeTransform widget = cell;
+            GuiTableHeader heading = header;
+            return GraphNodes.ComboBox(
+                null,
+                () => CellText(widget),
+                () => SettingRows.OpenList(it, HeaderName(heading)),
+                () => AgeWidgets.Operable(it.AgeTransform),
+                TooltipOf(widget),
+                () => CellFacts(heading, widget)
+            );
+        }
+
+        private static AgeControlDropList DropList(AgeTransform cell)
+        {
+            try
+            {
+                return cell == null ? null : cell.GetComponentInChildren<AgeControlDropList>();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // ---- what a line stands for ----
+
+        /// <summary>
+        /// The model object a line stands for, off the wrapper the table binds - the answer every
+        /// screen with a table needs and each of the seven wrote for itself.
+        ///
+        /// A <c>GuiTableLine</c> carries the GAME's wrapper in <c>Data</c>, and a wrapper is rebuilt on
+        /// every refresh, so it is the model underneath it that identifies the row across refreshes
+        /// (which is what <see cref="RowObject"/> is for). The sheet deliberately hands the line to its
+        /// host without unwrapping it - only the host knows which wrapper its table binds - so this is
+        /// the unwrapping written once and named per screen at the point of use.
+        /// </summary>
+        public static RowObject Model<TWrapper>(Func<TWrapper, object> model)
+            where TWrapper : class
+        {
+            return line =>
+            {
+                try
+                {
+                    TWrapper wrapper = line == null ? null : line.Data as TWrapper;
+                    return wrapper == null ? null : model(wrapper);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            };
+        }
+
+        /// <summary>What a row is called when its name column draws nothing - the model's own name off
+        /// the same wrapper, cleaned of the game's markup exactly as a drawn label would be.</summary>
+        public static RowLabel Name<TWrapper>(Func<TWrapper, string> name)
+            where TWrapper : class
+        {
+            return line =>
+            {
+                try
+                {
+                    TWrapper wrapper = line == null ? null : line.Data as TWrapper;
+                    return wrapper == null ? null : AgeText.Clean(name(wrapper));
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            };
         }
     }
 }

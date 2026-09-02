@@ -73,27 +73,11 @@ namespace ES2Access.Screens
         private const string FlotillaNameKey = "%FlotillaNameTitle";
         private const string PlanTitleKey = "%NotificationBattleReportSelectedPlayTitle";
 
-        /// <summary>The mod's own, for the things the game names nowhere: which side a damage panel
-        /// belongs to, the two switches that swap the phase panel for a roster, and which side is
-        /// holding the morale bonus (the game says that with an empire COLOUR, which speech has not
-        /// got). "Tactics" is the same key the advanced SETUP window names its own hand of plans with,
-        /// so the two windows say the same word for the same thing.</summary>
-        private const string TacticsKey = "battle.tactics";
-        private const string YourMoraleKey = "battle.your-morale-bonus";
-        private const string EnemyMoraleKey = "battle.enemy-morale-bonus";
-        private const string YourDamageKey = "battle.your-damage";
-        private const string EnemyDamageKey = "battle.enemy-damage";
-        private const string YourFleetsKey = "battle.your-fleets";
-        private const string EnemyFleetsKey = "battle.enemy-fleets";
-        private const string ShowYourFleetsKey = "battle.show-your-fleets";
-        private const string ShowEnemyFleetsKey = "battle.show-enemy-fleets";
-        private const string ScreenNameKey = "screen.battle-report-advanced";
-
         private readonly List<Cell> _cells = new List<Cell>();
 
         public override string Key
         {
-            get { return "screen.battle-report-advanced"; }
+            get { return ModStrings.ScreenAdvancedBattleReport; }
         }
 
         /// <summary>Over the notification popup it is opened from and returns to, and under the
@@ -114,7 +98,7 @@ namespace ES2Access.Screens
                     AdvancedEncounterReportModalWindow window = Window();
                     string title = window == null ? null : AgeText.Label(window.BattleTitle);
                     return string.IsNullOrEmpty(title)
-                        ? BattleText.Optional(ScreenNameKey)
+                        ? BattleText.Optional(ModStrings.ScreenAdvancedBattleReport)
                         : title;
                 }
                 catch (Exception)
@@ -188,7 +172,7 @@ namespace ES2Access.Screens
             Note(builder, window.BattleTitle, "battle-advanced/outcome");
             BattleNotifications.Balance(
                 builder,
-                Widget(window.BattlePowerGauge),
+                AgeWidgets.Transform(window.BattlePowerGauge),
                 window.PlayerEncounterGroup,
                 window.EnemyEncounterGroup,
                 false,
@@ -202,7 +186,7 @@ namespace ES2Access.Screens
                 builder,
                 window,
                 window.PlayerEncounterGroup,
-                YourMoraleKey,
+                ModStrings.BattleYourMoraleBonus,
                 "battle-advanced/your-morale"
             );
             Squadrons(builder, window, true, "battle-advanced/your-squadrons");
@@ -214,7 +198,7 @@ namespace ES2Access.Screens
                 builder,
                 window,
                 window.EnemyEncounterGroup,
-                EnemyMoraleKey,
+                ModStrings.BattleEnemyMoraleBonus,
                 "battle-advanced/their-morale"
             );
             Flotillas(builder, window.EnemyFlotillaCard2DContainer, "battle-advanced/their-flotilla");
@@ -471,7 +455,7 @@ namespace ES2Access.Screens
                         : container.GetComponentsInChildren<AdvancedReportPhaseItem>(true);
                 for (int i = 0; phases != null && i < phases.Length; i++)
                 {
-                    AgeTransform icon = Widget(
+                    AgeTransform icon = AgeWidgets.Transform(
                         phases[i] == null ? null : phases[i].MoraleBonusLabel
                     );
                     // Candidate choice, not existence: every fought phase draws the same icon and the
@@ -642,7 +626,7 @@ namespace ES2Access.Screens
             // The same word the advanced SETUP window names its own hand of plans with, from the same
             // key: a stop the player lands in says what it is, and the two windows say the same thing
             // the same way.
-            string name = BattleText.Optional(TacticsKey);
+            string name = BattleText.Optional(ModStrings.BattleTactics);
             bool named = !string.IsNullOrEmpty(name);
             if (named)
             {
@@ -652,14 +636,14 @@ namespace ES2Access.Screens
             Plan(
                 builder,
                 YoursRegion,
-                YourFleetsKey,
+                ModStrings.BattleYourFleets,
                 window.PlayerPlayCardContainer,
                 "battle-advanced/your-plan"
             );
             Plan(
                 builder,
                 TheirsRegion,
-                EnemyFleetsKey,
+                ModStrings.BattleEnemyFleets,
                 window.EnemyPlayCardContainer,
                 "battle-advanced/their-plan"
             );
@@ -992,8 +976,8 @@ namespace ES2Access.Screens
             Roster(
                 builder,
                 YoursRegion,
-                YourFleetsKey,
-                Widget(window.PlayerBattleGroupReportPanel),
+                ModStrings.BattleYourFleets,
+                AgeWidgets.Transform(window.PlayerBattleGroupReportPanel),
                 "battle-advanced/yours",
                 FlotillaCards(window),
                 Rewarded(window)
@@ -1001,8 +985,8 @@ namespace ES2Access.Screens
             Roster(
                 builder,
                 TheirsRegion,
-                EnemyFleetsKey,
-                Widget(window.EnemyBattleGroupReportPanel),
+                ModStrings.BattleEnemyFleets,
+                AgeWidgets.Transform(window.EnemyBattleGroupReportPanel),
                 "battle-advanced/theirs",
                 null,
                 null
@@ -1079,7 +1063,7 @@ namespace ES2Access.Screens
             Gauge(
                 builder,
                 YoursRegion,
-                YourDamageKey,
+                ModStrings.BattleYourDamage,
                 window.PlayerDamageGauge,
                 window.PlayerEncounterGroup,
                 window.PlayerTotalDamageLabel,
@@ -1089,7 +1073,7 @@ namespace ES2Access.Screens
             Gauge(
                 builder,
                 TheirsRegion,
-                EnemyDamageKey,
+                ModStrings.BattleEnemyDamage,
                 window.EnemyDamageGauge,
                 window.EnemyEncounterGroup,
                 window.EnemyTotalDamageLabel,
@@ -1250,7 +1234,7 @@ namespace ES2Access.Screens
                 }
 
                 return BattleText.Optional(
-                    MissedShareKey,
+                    ModStrings.BattleShotsMissed,
                     UnityEngine.Mathf.RoundToInt(
                         UnityEngine.Mathf.Clamp01(1f - hits / shots) * 100f
                     )
@@ -1262,8 +1246,6 @@ namespace ES2Access.Screens
                 return null;
             }
         }
-
-        private const string MissedShareKey = "battle.shots-missed";
 
         private static void Total(
             GraphBuilder builder,
@@ -1410,8 +1392,20 @@ namespace ES2Access.Screens
         private void Controls(GraphBuilder builder, AdvancedEncounterReportModalWindow window)
         {
             _cells.Clear();
-            Checkbox(_cells, window.ShowPlayerFleetsToggle, ShowYourFleetsKey, null, "battle-advanced:show-yours");
-            Checkbox(_cells, window.ShowEnemyFleetsToggle, ShowEnemyFleetsKey, null, "battle-advanced:show-theirs");
+            Checkbox(
+                _cells,
+                window.ShowPlayerFleetsToggle,
+                ModStrings.BattleShowYourFleets,
+                null,
+                "battle-advanced:show-yours"
+            );
+            Checkbox(
+                _cells,
+                window.ShowEnemyFleetsToggle,
+                ModStrings.BattleShowEnemyFleets,
+                null,
+                "battle-advanced:show-theirs"
+            );
             Checkbox(
                 _cells,
                 window.ShowMissedDamageToggle,
@@ -1428,32 +1422,9 @@ namespace ES2Access.Screens
         /// window's own code and a prefab name is a guess.</summary>
         private static AgeTransform Back(AdvancedEncounterReportModalWindow window)
         {
-            try
-            {
-                AgeControlButton[] buttons = window.AgeTransform.GetComponentsInChildren<AgeControlButton>(
-                    true
-                );
-                for (int i = 0; i < buttons.Length; i++)
-                {
-                    AgeControlButton button = buttons[i];
-                    if (
-                        button != null
-                        && button.OnActivateMethod == BackHandler
-                        // Candidate choice, not existence: several buttons share this handler and the
-                        // drawn one is the live one. The gate can only drop a node, never pick.
-                        && AgeWidgets.Visible(button.AgeTransform)
-                    )
-                    {
-                        return button.AgeTransform;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("battle report: looking for the way out threw: " + e);
-            }
-
-            return null;
+            return AgeWidgets.Transform(
+                AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, BackHandler)
+            );
         }
 
         private const string BackHandler = "OnBackCb";
@@ -1585,54 +1556,9 @@ namespace ES2Access.Screens
             builder.AddItem(Nodes.Drawn(ControlId.For(portrait, prefix + "/hero"), vtable, portrait));
         }
 
-        private static AgeTransform Widget(GuiPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(GuiBehaviour behaviour)
-        {
-            try
-            {
-                return behaviour == null ? null : behaviour.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static AdvancedEncounterReportModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<AdvancedEncounterReportModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<AdvancedEncounterReportModalWindow>();
         }
     }
 }

@@ -104,7 +104,7 @@ namespace ES2Access.Screens
         /// </summary>
         public static bool BattleEnding()
         {
-            BattleScreen battle = Window<BattleScreen>();
+            BattleScreen battle = GameWindows.Of<BattleScreen>();
             return battle != null && (battle.Visible || battle.Showing);
         }
 
@@ -258,7 +258,8 @@ namespace ES2Access.Screens
         /// </summary>
         public void SystemInformation(GraphBuilder builder)
         {
-            StarSystemOverviewScanViewWindow window = Window<StarSystemOverviewScanViewWindow>();
+            StarSystemOverviewScanViewWindow window =
+                GameWindows.Of<StarSystemOverviewScanViewWindow>();
             if (window == null || !window.Shown || !AgeWidgets.Visible(window.NodeInfoGroup))
             {
                 return;
@@ -935,7 +936,7 @@ namespace ES2Access.Screens
             try
             {
                 StarSystemOverviewScanViewWindow window =
-                    Window<StarSystemOverviewScanViewWindow>();
+                    GameWindows.Of<StarSystemOverviewScanViewWindow>();
                 AgeControlToggle toggle = window == null ? null : window.SystemInfoToggle;
                 // Availability: whether there is a panel to be opened or closed at all. The tick is
                 // drawn only where the lens has a system with something to show, and the registry it
@@ -1068,7 +1069,7 @@ namespace ES2Access.Screens
         /// </summary>
         public void Legend(GraphBuilder builder)
         {
-            ScanOverlayWindow window = Window<ScanOverlayWindow>();
+            ScanOverlayWindow window = GameWindows.Of<ScanOverlayWindow>();
             ScanViewWindowCaptionsPanel panel = window == null ? null : window.CaptionsPanel;
             if (
                 window == null
@@ -1285,7 +1286,7 @@ namespace ES2Access.Screens
                     return ModStrings.Get(ModStrings.ScreenScanView);
                 }
 
-                GameOverlayWindow overlay = Window<GameOverlayWindow>();
+                GameOverlayWindow overlay = GameWindows.Of<GameOverlayWindow>();
                 TopTitlePanel panel = overlay == null ? null : overlay.TopTitlePanel;
                 string name = panel == null ? null : AgeText.Label(panel.ScanLabel);
                 if (!string.IsNullOrEmpty(name))
@@ -1348,12 +1349,12 @@ namespace ES2Access.Screens
             }
 
             List<ScanViewWindowHeader> found = new List<ScanViewWindowHeader>();
-            AddHeader(found, Window<DiplomacyScanViewWindow>());
-            AddHeader(found, Window<TradeScanViewWindow>());
-            AddHeader(found, Window<EconomyScanViewWindow>());
-            AddHeader(found, Window<StarSystemOverviewScanViewWindow>());
-            AddHeader(found, Window<StarSystemManagementScanViewWindow>());
-            AddHeader(found, Window<PlanetScanViewWindow>());
+            AddHeader(found, GameWindows.Of<DiplomacyScanViewWindow>());
+            AddHeader(found, GameWindows.Of<TradeScanViewWindow>());
+            AddHeader(found, GameWindows.Of<EconomyScanViewWindow>());
+            AddHeader(found, GameWindows.Of<StarSystemOverviewScanViewWindow>());
+            AddHeader(found, GameWindows.Of<StarSystemManagementScanViewWindow>());
+            AddHeader(found, GameWindows.Of<PlanetScanViewWindow>());
             _headers = found.ToArray();
             return _headers;
         }
@@ -1395,17 +1396,5 @@ namespace ES2Access.Screens
             return _fidsi;
         }
 
-        private static TWindow Window<TWindow>()
-            where TWindow : Amplitude.Unity.Gui.GuiWindow
-        {
-            try
-            {
-                return Gui.GuiServiceAvailable ? Gui.GuiService.GetWindow<TWindow>(false) : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
     }
 }

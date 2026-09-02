@@ -49,8 +49,8 @@ Index and charter: `README.md`.
   it says the wrong thing about every skill on the ring.
 - **The OVERVIEW's wheel is not wordless: it draws a dot per skill the hero has.** Both wheels bind
   the same `HeroSkillTreeItem` → `HeroSkillTreeStageItem` chain, but the overview's dot prefab carries
-  a bare `HeroSkillTreeSkillItemBase` (no toggle, no level arcs, and — measured 2026-09-02 on all 21
-  of Dmitri Lenko's — **no `AgeTooltip` at all**), while the skill page's carries the
+  a bare `HeroSkillTreeSkillItemBase` (no toggle, no level arcs, and **no `AgeTooltip` at all**),
+  while the skill page's carries the
   `HeroSkillTreeSkillItem` subclass with all three. The base class's `Refresh` (:30-33) is the whole
   of the overview's content rule: `Visible = InspectedHero.GetHeroSkillLevel(definition) >= 0`, so a
   painted dot means "unlocked" and nothing else. A LOCKED ring fades its skills table to Alpha 0.25
@@ -58,15 +58,13 @@ Index and charter: `README.md`.
 - **A hero's STARTING skills are in no branch.** `Hero.UnlockedSkills` mixes them with the spent ones
   (starting skills carry `UnlockedTurn = -1`), but their definitions are not in any
   `HeroSkillTreeDefinition.Stages[*].Skills`, so nothing in either wheel draws them — the skill page's
-  own `StartingSkillItemsTable` is the only place they appear. Dmitri Lenko at turn 28 of the stage
-  snapshot: 2 unlocked skills, both starting (`HeroSkill01Terrans04`, `HeroSkill02Terrans04`), and
-  `GetSkillLevel` answering −1 for every one of the 21 branch skills.
+  own `StartingSkillItemsTable` is the only place they appear, and `GetSkillLevel` answers −1 for
+  every branch skill of a hero who has spent nothing.
 - **`GuiHeroSkill` needs the SKILL PAGE's panel**, not the overview's: its `Level`,
   `CurrentSkillLevel` and `NextSkillLevel` all delegate to the `SkillTreeEditionPanel` handed to its
   constructor, and `SkillTreeBasePanel` will not do. The window's own `SkillTreeEditionPanel` stays
-  bound to the hero the whole time the window is open, side page shown or not (measured 2026-09-02
-  with the overview up: `editionVisible=False`, `GuiHero=Dmitri Lenko`), so it is available to build
-  a wrapper from wherever in the window one is wanted.
+  bound to the hero the whole time the window is open, side page shown or not, so it is available to
+  build a wrapper from wherever in the window one is wanted.
 
 
 ## Diplomacy and the sweep
@@ -85,10 +83,9 @@ Index and charter: `README.md`.
   ladder is the fog gate for identity as well as the wording. The wrapper comes from
   `Gui.GuiWrapperProviderService.GetGuiEmpire(empire)` (`FleetsManagementPanel.cs`:144,
   `BattleGroupInfoPanel.cs`:66-70).
-  `Empire.LocalizedName` by itself is the player name of a major and nothing else: measured
-  2026-09-02 on `[Beginner] access test` (turn 36) over all 15 empires, `PirateEmpire#0` and
-  `LesserEmpire#0` are raw internal names, and the three unmet majors hand back "Leaper (AI)",
-  "St Chaoiver (AI)", "Doria (AI)" — names the picture withholds.
+  `Empire.LocalizedName` by itself is the player name of a major and nothing else: a pirate or lesser
+  empire hands back its raw internal name, and an unmet major hands back "⟨name⟩ (AI)" — a name the
+  picture withholds.
   **Mod policy**: ONE shared answer, `EmpireNames.Named(empire)` (`ES2Access/UI/EmpireNames.cs`),
   which delegates to that ladder as the player (`Gui.PlayerEmpire`, no colour, no icon prefix, no
   "you") and cleans the result. Every mod site that speaks an empire's name calls it — the
@@ -108,10 +105,9 @@ Index and charter: `README.md`.
   on hover ONLY for a known, living one: `ShowContextMenu` / `HideContextMenu` gate on
   `IsKnown && !HasBeenEliminated` (decompiled `Assembly-CSharp/DiplomacyScreen.cs`:842-849), and every
   one of those widgets is a descendant of `ContextMenu`. So a reader that takes the labels as they are
-  becomes the fog answering with facts the picture never shows. Measured 2026-08-27 on
-  `[Beginner] access test`: the two unmet cards read `menuAlpha=0` with the mod's own cursor hovering
-  one, and a crop of that card is the silhouette hologram alone — no name text, no diplomatic status,
-  no pressure figure, no footer. **Mod policy**: an unmet or eliminated card says its label, its
+  becomes the fog answering with facts the picture never shows: an unmet card reads `menuAlpha=0`
+  even with a cursor hovering it, and is drawn as the silhouette hologram alone — no name text, no
+  diplomatic status, no pressure figure, no footer. **Mod policy**: an unmet or eliminated card says its label, its
   refusal sentence and its alert marker and nothing else — `DiplomacyScreen.Drawn(EmpireSector)`
   mirrors the game's own predicate and is asked per frame inside the part functions, so a first
   contact (or an elimination) changes what the card says without waiting for a rebuild.
@@ -129,17 +125,14 @@ Index and charter: `README.md`.
   within one scan session (the window is `Shown` at every rung), so the closer lenses — which draw
   no diplomacy at all — ask about the player instead. **Mod policy**: the diplomacy band's rows are
   composed against the watched empire; the owner headings at the closer lenses against the player.
-- **An empire's CENTRE is `DepartmentOfIntelligence.GetEmpirePosition(e)`, `Known`-gated** — the
-  home system where the watching empire has discovered it, else that empire's highest-influence
-  colony they can see (`RefreshEmpirePosition` :479-535). The game draws the identical circle and
-  link in both cases, so **the mod speaks a POSITION and never "home"** (owner ruling 2026-09-01):
-  naming the case would hand a keyboard player a fact the picture withholds.
+- An empire's CENTRE and the `EmpirePosition.Known` gate behind it are in `galaxy-map.md`; the band
+  composes against them.
 - **The band's curved SPOKES belong to the WATCHED empire and are gated by THAT empire's
   knowledge** (`GalaxyStarSystem.UpdateDiplomaticScanView` :900-983): one curve per colonized
   system of the watched empire where the colony is visible to them (`Visibility >= 1`) and the node
   is `Revealed` to them (`Exploration >= 4`), and never at their own home system, whose curve would
-  have no length and is never shown. Verified live and optically 2026-09-01: pointed at Leaper the
-  lens drew five curves, four of them at systems the PLAYER has never explored. So it is genuinely
+  have no length and is never shown. Verified live and optically: pointed at a foreign empire the
+  lens draws curves at systems the PLAYER has never explored. So it is genuinely
   an intelligence tool for locating a watched empire's holdings, and the mod mirrors it exactly —
   naming a star only where the player's own knowledge names it.
 - **The swap toggle is drawn in exactly one place**: inside the empire-name line of a diplomacy
@@ -154,7 +147,7 @@ Index and charter: `README.md`.
   alive, in-encounter fleets) is what decides the label is drawn at all.
 - **Closing an unsigned negotiation still posts an order**, and `EvaluationAnnotation` is
   discarded on the way.
-- `AcademyModalWindow`'s Bind can WEDGE the window (recovery in test-recipes), and
+- `AcademyModalWindow`'s Bind can WEDGE the window, and
   `PirateDiplomacy.Refresh` throws outright when there are no pirate systems.
 - `Gui.FormatFailureInfos` returns the BASE text when every failure is ignorable — an empty-looking
   refusal that is really "nothing to report".
@@ -170,9 +163,7 @@ Index and charter: `README.md`.
   and Academy wars and **never a pirate state**: pirates are hostile by disposition, not by a war
   state, so any "at war with" test that must include them needs the pirate branch written out (the
   scanner treats a `PirateEmpire` as an enemy unless its state is `Pirate.Peace`). The player's
-  relation to their OWN empire has a null `State` — ask identity first. Measured on `[Beginner]
-  test`: three unmet majors (`Major.Unknown`), nine minors (`Minor.Unknown`/`Cordial`), one
-  `LesserEmpire` (`Lesser.Default`) and one `PirateEmpire` (`Pirate.Neutral`). (The map's own
+  relation to their OWN empire has a null `State` — ask identity first. (The map's own
   friend/neutral/enemy split is a different and cruder comparison — `fleets.md`.)
 - **The minor-civilization window captions every band itself, and three of the captions carry a
   sentence.** `%MinorFactionDiplomacyModalWindowTitle` "Minor Civilization diplomacy" (+
@@ -198,9 +189,8 @@ Index and charter: `README.md`.
   `%DiplomaticRelationStateMinor<State>Description`, and the game's own title for the state is that
   key with `Description` swapped for `Title` (`%DiplomaticRelationStateMinorCordialTitle` =
   "CORDIAL"). Nothing in the game names them as bands, so the mod composes each name as "CORDIAL (25)" —
-  the state's own Title key plus the segment's measured threshold
-  (`test-recipes/modals-and-outgame.md`), the sentence announced after it under the kind
-  rule. The Academy window has the identical field and the same gap.
+  the state's own Title key plus the segment's measured threshold, the sentence announced after it
+  under the kind rule. The Academy window has the identical field and the same gap.
 - **The Academy's trend label carries a COMPUTED tooltip, not the gloss.**
   `AcademyDiplomacyModalWindow` :343-368 writes the eight per-turn contributions into
   `RelationTrendLabel`'s own tooltip, so the "outermost first, own last" tooltip walk finds a

@@ -67,15 +67,9 @@ namespace ES2Access.Core.Speech
                 return ModStrings.Format(ModStrings.GalaxySystemInfluenceContested, names[0]);
             }
 
-            MessageBuilder others = new MessageBuilder();
-            for (int i = 0; i < names.Count - 1; i++)
-            {
-                others.ListItem(names[i]);
-            }
-
             return ModStrings.Format(
                 ModStrings.GalaxySystemInfluenceContestedList,
-                others.Build(),
+                SpokenList.Items(names, names.Count - 1),
                 names[names.Count - 1]
             );
         }
@@ -159,13 +153,11 @@ namespace ES2Access.Core.Speech
                 return ModStrings.Format(one, names[0]);
             }
 
-            MessageBuilder others = new MessageBuilder();
-            for (int i = 0; i < names.Count - 1; i++)
-            {
-                others.ListItem(names[i]);
-            }
-
-            return ModStrings.Format(list, others.Build(), names[names.Count - 1]);
+            return ModStrings.Format(
+                list,
+                SpokenList.Items(names, names.Count - 1),
+                names[names.Count - 1]
+            );
         }
 
         /// <summary>A radius as the player hears it: one decimal, and the trailing zero KEPT - the two

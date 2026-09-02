@@ -477,7 +477,7 @@ namespace ES2Access.Screens
                 () => it.LocalizedName,
                 () => Select(it),
                 null,
-                Raw(lozenge),
+                AgeWidgets.Raw(lozenge),
                 // The rest of the journey, turn by turn, for whoever wants to know where this
                 // fleet will be sleeping tonight (<see cref="FleetRoute"/>).
                 () => FleetRoute.CommittedLines(it)
@@ -523,7 +523,7 @@ namespace ES2Access.Screens
             }
             if (lozenge != null)
             {
-                PointAt(vtable, lozenge);
+                AgeWidgets.PointAt(vtable, lozenge);
             }
 
             // This row is the fleet's ONE subject-bearing node: the caller keys it on the fleet's own
@@ -981,7 +981,7 @@ namespace ES2Access.Screens
                 message.ListItem(
                     ModStrings.Format(
                         ModStrings.GalaxyFleetMovement,
-                        Amount(fleet.CurrentMovementPoints, false, 0)
+                        GlobalHud.Amount(fleet.CurrentMovementPoints, false, 0)
                     )
                 );
                 return message.Build();
@@ -1051,7 +1051,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < docks.Length; i++)
                 {
                     DockLabel dock = docks[i];
-                    if (dock.DockingSlot == null || !Visible(dock.AgeTransform))
+                    if (dock.DockingSlot == null || !AgeWidgets.Visible(dock.AgeTransform))
                     {
                         continue;
                     }
@@ -1072,7 +1072,7 @@ namespace ES2Access.Screens
                     if (
                         label.GalaxyFleet != null
                         && label.GalaxyFleet.Fleet.GUID == fleet.GUID
-                        && Visible(label.AgeTransform)
+                        && AgeWidgets.Visible(label.AgeTransform)
                     )
                     {
                         return Lozenge(label.FleetLozenge);
@@ -1181,7 +1181,7 @@ namespace ES2Access.Screens
                         () => held.LocalizedName,
                         () => SelectHangar(it),
                         null,
-                        Raw(lozenge)
+                        AgeWidgets.Raw(lozenge)
                     );
                     vtable.Announcements.Add(
                         GraphNodes.ValuePart(
@@ -1190,7 +1190,7 @@ namespace ES2Access.Screens
                     );
                     if (lozenge != null)
                     {
-                        PointAt(vtable, lozenge);
+                        AgeWidgets.PointAt(vtable, lozenge);
                     }
 
                     // Synthetic: a ship in a hangar is read out of the fleet model, which the map draws nothing for.
@@ -1247,27 +1247,14 @@ namespace ES2Access.Screens
         /// DRAWN is the one on whatever the pointer is over, and the label carries two.</summary>
         private static AgeTransform HangarLozenge(GalaxyHangar hangar, HangarLabel[] labels)
         {
-            try
-            {
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    HangarLabel label = labels[i];
-                    if (
-                        label != null
-                        && ReferenceEquals(label.GalaxyHangar, hangar)
-                        && Visible(label.AgeTransform)
-                    )
-                    {
-                        return Lozenge(label.FleetLozenge);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: matching a hangar to its map label threw: " + e);
-            }
-
-            return null;
+            // The drawn policy is VISIBILITY: this window pools its labels the way the fleet labels
+            // do, so a label the map is not drawing is still bound to whatever it last held.
+            HangarLabel found = LabelFor(
+                labels,
+                l => ReferenceEquals(l.GalaxyHangar, hangar),
+                l => AgeWidgets.Visible(l.AgeTransform)
+            );
+            return found == null ? null : Lozenge(found.FleetLozenge);
         }
 
         /// <summary>Select the ships a colony is holding at home, exactly as clicking their lozenge does
@@ -1330,7 +1317,7 @@ namespace ES2Access.Screens
                 MergedFleetLabels group = merged[i];
                 DualGarrisonsLabelButtons buttons =
                     group == null ? null : group.GarrisonsButtons;
-                if (buttons == null || !Visible(group.AgeTransform))
+                if (buttons == null || !AgeWidgets.Visible(group.AgeTransform))
                 {
                     continue;
                 }
@@ -1355,7 +1342,7 @@ namespace ES2Access.Screens
             AgeTransform widget = Lozenge(button);
             AgeTooltip tooltip = button == null ? null : button.Tooltip;
             GuiFleetGroup group = tooltip == null ? null : tooltip.Target as GuiFleetGroup;
-            if (widget == null || group == null || !Visible(widget))
+            if (widget == null || group == null || !AgeWidgets.Visible(widget))
             {
                 return null;
             }

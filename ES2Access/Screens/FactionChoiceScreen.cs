@@ -59,7 +59,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.faction-choice"; }
+            get { return ModStrings.ScreenFactionChoice; }
         }
 
         /// <summary>Over the lobby that opens it, and under everything a control of its own can raise -
@@ -173,7 +173,7 @@ namespace ES2Access.Screens
             try
             {
                 _cells.Clear();
-                IList<AgeTransform> children = Children(window.FactionsTable);
+                IList<AgeTransform> children = AgeWidgets.DrawnChildren(window.FactionsTable);
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     if (SettingRows.Drawn(children[i]) && Get<FactionCard>(children[i]) != null)
@@ -244,7 +244,7 @@ namespace ES2Access.Screens
         private void BuildCustomButtons(GraphBuilder builder, FactionChoiceModalWindow window)
         {
             builder.BeginStop(CustomStop);
-            AddBand(builder, Parent(Transform(window.AddFactionButton)), "faction-choice:custom/");
+            AddBand(builder, AgeWidgets.Parent(AgeWidgets.Transform(window.AddFactionButton)), "faction-choice:custom/");
         }
 
         // ---- what the chosen faction is ----
@@ -265,12 +265,12 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildHulls(GraphBuilder builder, FactionChoiceModalWindow window)
         {
-            AgeTransform title = Transform(window.HullTitle);
+            AgeTransform title = AgeWidgets.Transform(window.HullTitle);
 
             // Three levels up, not two: the hull's name sits in a title group inside the band's
             // content, and stopping a level short takes the heading from the hull itself - which read
             // "Karga-class, Karga-class".
-            AgeTransform group = Parent(Parent(Parent(title)));
+            AgeTransform group = AgeWidgets.Parent(AgeWidgets.Parent(AgeWidgets.Parent(title)));
             if (!SettingRows.Drawn(title))
             {
                 return;
@@ -291,7 +291,7 @@ namespace ES2Access.Screens
             // come to read it.
             builder.LandStopOn(ControlId.Structural(HullKey + CurrentHull(window)));
 
-            bool named = Push(builder, group);
+            bool named = Push(builder, group, "faction-choice:hulls/title");
             try
             {
                 for (int i = 0; i < count; i++)
@@ -312,7 +312,7 @@ namespace ES2Access.Screens
                         },
                         Sections = sections,
                     };
-                    AgeWidgets.PointAt(vtable, Holder(tooltip) ?? title);
+                    AgeWidgets.PointAt(vtable, AgeWidgets.TooltipOwner(tooltip) ?? title);
 
                     // Not SetStart: that is the whole GRAPH's landing, and the page's is the faction
                     // card the game has selected. Which hull row this one stop opens on is the
@@ -331,7 +331,7 @@ namespace ES2Access.Screens
             }
             finally
             {
-                Pop(builder, named);
+                Captions.Pop(builder, named);
             }
         }
 
@@ -386,18 +386,11 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Which hull's row the cursor is on, or -1 for anywhere else.</summary>
+        /// <summary>Which hull.s row the cursor is on, or -1 for anywhere else.</summary>
         private static int FocusedHull()
         {
-            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
-            string structural = key == null ? null : key.StructuralKey as string;
-            if (structural == null || !structural.StartsWith(HullKey, StringComparison.Ordinal))
-            {
-                return -1;
-            }
-
-            int index;
-            return int.TryParse(structural.Substring(HullKey.Length), out index) ? index : -1;
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator == null ? -1 : navigator.FocusedIndex(HullKey);
         }
 
         private const string HullKey = "faction-choice:hull/";
@@ -432,10 +425,7 @@ namespace ES2Access.Screens
 
                 if (cache == null)
                 {
-                    cache = typeof(FactionChoiceModalWindow).GetField(
-                        name,
-                        BindingFlags.Instance | BindingFlags.NonPublic
-                    );
+                    cache = GameHandlers.Field(typeof(FactionChoiceModalWindow), name);
                 }
 
                 return cache == null ? null : cache.GetValue(window);
@@ -447,34 +437,20 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The widget a tooltip hangs on - what has to be pointed at for the game to draw
-        /// it.</summary>
-        private static AgeTransform Holder(AgeTooltip tooltip)
-        {
-            try
-            {
-                return tooltip == null ? null : tooltip.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>The affinity and traits band: the two lines the faction is summarised by, then the
         /// two lists the game draws side by side - each under the heading it drew above it, so "Raia"
         /// is heard as a starting planet rather than as an unexplained word.</summary>
         private void BuildTraits(GraphBuilder builder, FactionChoiceModalWindow window)
         {
-            AgeTransform affinity = Parent(Transform(window.AffinityLabel));
-            AgeTransform content = Parent(affinity);
+            AgeTransform affinity = AgeWidgets.Parent(AgeWidgets.Transform(window.AffinityLabel));
+            AgeTransform content = AgeWidgets.Parent(affinity);
             if (!SettingRows.Drawn(affinity))
             {
                 return;
             }
 
             builder.BeginStop(TraitsStop);
-            bool named = Push(builder, Parent(content));
+            bool named = Push(builder, AgeWidgets.Parent(content), "faction-choice:traits/title");
             try
             {
                 // Three bands drawn one under the other, and Alt+up/down jumps between them. Regions
@@ -485,7 +461,7 @@ namespace ES2Access.Screens
                 SettingRows.AddReadout(builder, affinity, "faction-choice:affinity");
                 SettingRows.AddReadout(
                     builder,
-                    Parent(Transform(window.MajorPopulationLabel)),
+                    AgeWidgets.Parent(AgeWidgets.Transform(window.MajorPopulationLabel)),
                     "faction-choice:population"
                 );
 
@@ -493,7 +469,7 @@ namespace ES2Access.Screens
                 // the band that carry a tooltip of their own, which is what tells them apart from the
                 // summary lines above and the scroll views below - no prefab name needed.
                 _titles.Clear();
-                IList<AgeTransform> children = Children(content);
+                IList<AgeTransform> children = AgeWidgets.DrawnChildren(content);
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     if (SettingRows.Drawn(children[i]) && AgeWidgets.Raw(children[i]) != null)
@@ -516,7 +492,7 @@ namespace ES2Access.Screens
             finally
             {
                 builder.SetRegion(null);
-                Pop(builder, named);
+                Captions.Pop(builder, named);
             }
         }
 
@@ -542,7 +518,7 @@ namespace ES2Access.Screens
 
             try
             {
-                IList<AgeTransform> children = Children(table);
+                IList<AgeTransform> children = AgeWidgets.DrawnChildren(table);
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     SettingRows.AddReadout(builder, children[i], key + i);
@@ -564,7 +540,7 @@ namespace ES2Access.Screens
         private void BuildDescription(GraphBuilder builder, FactionChoiceModalWindow window)
         {
             AgePrimitiveLabel text = window.FactionDescription;
-            AgeTransform group = Parent(Transform(window.FactionDescriptionScrollView));
+            AgeTransform group = AgeWidgets.Parent(AgeWidgets.Transform(window.FactionDescriptionScrollView));
             AgePrimitiveLabel title = OptionsScreen.LabelIn(group);
             if (text == null || group == null || !SettingRows.Drawn(group))
             {
@@ -578,15 +554,15 @@ namespace ES2Access.Screens
             // paragraph itself. The game draws this text permanently rather than behind a hover, and
             // text the game always shows is text the player always hears; the buffer keeps the same
             // words as separate lines to walk. The tooltip on the heading ("The background story for
-            // this faction") is DECLARED here rather than dropped - it is the row.s own, and it reads
+            // this faction") is DECLARED here rather than dropped - it is the row's own, and it reads
             // by its own kind like every other.
             NodeVtable vtable = GraphNodes.Readout(
                 () => AgeText.Label(heading),
                 () => AgeText.Label(lore),
                 () => Lore(heading, lore),
-                AgeWidgets.Raw(Transform(title))
+                AgeWidgets.Raw(AgeWidgets.Transform(title))
             );
-            AgeWidgets.PointAt(vtable, Transform(title));
+            AgeWidgets.PointAt(vtable, AgeWidgets.Transform(title));
 
             builder.BeginStop(DescriptionStop);
             builder.AddItem(Nodes.Drawn(ControlId.For(text, "faction-choice:description"), vtable, text));
@@ -599,14 +575,14 @@ namespace ES2Access.Screens
         /// of them in fact commit is on the test script, not pasted over what the game wrote.</summary>
         private void BuildActions(GraphBuilder builder, FactionChoiceModalWindow window)
         {
-            AddBand(builder, Parent(Transform(window.ValidateButton)), "faction-choice:button/");
+            AddBand(builder, AgeWidgets.Parent(AgeWidgets.Transform(window.ValidateButton)), "faction-choice:button/");
         }
 
         /// <summary>Every drawn button of a band, one node per row.</summary>
         private void AddBand(GraphBuilder builder, AgeTransform band, string key)
         {
             _cells.Clear();
-            IList<AgeTransform> children = Children(band);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(band);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 _cells.Add(children[i]);
@@ -617,31 +593,22 @@ namespace ES2Access.Screens
 
         // ---- shared ----
 
-        /// <summary>Push the heading a band was drawn under, if it drew one.</summary>
-        private static bool Push(GraphBuilder builder, AgeTransform group)
+        /// <summary>Push the heading a band was drawn under, if it drew one - and declare it as the
+        /// band.s first row where the game hung an explanation on it (<see cref="Captions"/>). The
+        /// heading is the LABEL inside the band, which is where these prefabs draw it.</summary>
+        private static bool Push(GraphBuilder builder, AgeTransform group, string key)
         {
-            string title = AgeText.Label(OptionsScreen.LabelIn(group));
-            if (string.IsNullOrEmpty(title))
-            {
-                return false;
-            }
-
-            builder.PushContext(title);
-            return true;
-        }
-
-        private static void Pop(GraphBuilder builder, bool named)
-        {
-            if (named)
-            {
-                builder.PopContext();
-            }
+            return Captions.Push(
+                builder,
+                AgeWidgets.Transform(OptionsScreen.LabelIn(group)),
+                key
+            );
         }
 
         /// <summary>The band the grid was drawn in, for the heading over it.</summary>
         private static AgeTransform Group(FactionChoiceModalWindow window)
         {
-            return Parent(Transform(window.FactionsTableScrollView));
+            return AgeWidgets.Parent(AgeWidgets.Transform(window.FactionsTableScrollView));
         }
 
         /// <summary>The band's own words, for the review buffer: the heading the game drew over it and
@@ -661,28 +628,7 @@ namespace ES2Access.Screens
 
         private static FactionChoiceModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<FactionChoiceModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? "?" : widget.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
+            return GameWindows.Of<FactionChoiceModalWindow>();
         }
 
         private static T Get<T>(AgeTransform widget)
@@ -698,38 +644,5 @@ namespace ES2Access.Screens
             }
         }
 
-        private static IList<AgeTransform> Children(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Children;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(AgeControl control)
-        {
-            return AgeWidgets.Transform(control);
-        }
-
-        private static AgeTransform Transform(AgePrimitiveLabel label)
-        {
-            return SettingRows.TransformOf(label);
-        }
     }
 }

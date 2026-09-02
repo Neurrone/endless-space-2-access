@@ -49,9 +49,9 @@ namespace ES2Access.UI
         {
             return new string[]
             {
-                Localized("%NegotiationModalWindowTermNameHeaderTitle"),
-                Localized("%NegotiationModalWindowTermTypeHeaderTitle"),
-                Localized("%NegotiationModalWindowTermCostHeaderTitle"),
+                AgeText.Title("%NegotiationModalWindowTermNameHeaderTitle"),
+                AgeText.Title("%NegotiationModalWindowTermTypeHeaderTitle"),
+                AgeText.Title("%NegotiationModalWindowTermCostHeaderTitle"),
             };
         }
 
@@ -688,23 +688,14 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The word the game keeps for one of its own elements, guarded the way every other
+        /// borrowed title is (<see cref="AgeText.Title"/>): a key it never finished writing is
+        /// silence, not "%TermTypeFilter...".</summary>
         private static string Title(string guiElementName)
         {
             try
             {
-                return AgeText.Clean(Gui.GetLocalizedTitle(guiElementName));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string Localized(string key)
-        {
-            try
-            {
-                return AgeText.Clean(Gui.Localize(key));
+                return AgeText.Title(Gui.GetLocalizedTitle(guiElementName));
             }
             catch (Exception)
             {

@@ -54,7 +54,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.fleet-selection"; }
+            get { return ModStrings.ScreenFleetSelection; }
         }
 
         /// <summary>Over the Academy page that opens it and the galaxy underneath, and below everything
@@ -204,33 +204,13 @@ namespace ES2Access.Screens
 
         /// <summary>The fleet a row stands for. The wrapper the table binds is rebuilt on every refresh,
         /// so it is the fleet underneath it that identifies the row.</summary>
-        private static Fleet FleetOf(GuiTableLine line)
-        {
-            try
-            {
-                GuiGarrison wrapper = line == null ? null : line.Data as GuiGarrison;
-                return wrapper == null ? null : wrapper.Fleet;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowObject FleetOf =
+            TableSheet.Model<GuiGarrison>(wrapper => wrapper.Fleet);
 
         /// <summary>What the row is called when the name column draws nothing - the fleet's own name.
         /// </summary>
-        private static string FleetName(GuiTableLine line)
-        {
-            try
-            {
-                GuiGarrison wrapper = line == null ? null : line.Data as GuiGarrison;
-                return wrapper == null ? null : AgeText.Clean(wrapper.LocalizedName);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel FleetName =
+            TableSheet.Name<GuiGarrison>(wrapper => wrapper.LocalizedName);
 
         private static string NameOf(AgeTransform widget)
         {
@@ -284,16 +264,7 @@ namespace ES2Access.Screens
 
         private static FleetSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<FleetSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<FleetSelectionModalWindow>();
         }
     }
 }

@@ -142,7 +142,7 @@ namespace ES2Access.Screens
         /// tooltip. The window does not expose the label, so it is found where it is drawn.</summary>
         private void BuildHeading(GraphBuilder builder, StarSystemPopulationModalWindow window)
         {
-            AgeTransform title = Named(Root(window), "TitleLabel");
+            AgeTransform title = WindowShape.TitleWidget(window);
             if (title == null)
             {
                 return;
@@ -300,19 +300,8 @@ namespace ES2Access.Screens
         /// <summary>The party a row stands for. The wrapper the table binds is built afresh on every
         /// refresh (<c>RefreshPoliticsInfoByPopulation</c> :121-143), so it is the party underneath it
         /// that identifies the row.</summary>
-        private static object RowOf(GuiTableLine line)
-        {
-            try
-            {
-                GuiPoliticsInfoByPopulation wrapper =
-                    line == null ? null : line.Data as GuiPoliticsInfoByPopulation;
-                return wrapper == null ? null : wrapper.TargetGuiPolitics;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowObject RowOf =
+            TableSheet.Model<GuiPoliticsInfoByPopulation>(wrapper => wrapper.TargetGuiPolitics);
 
         /// <summary>What a population column is called: the heading draws a portrait and leaves the raw
         /// key of a string the game never wrote in its label, so the name comes off the wrapper the game
@@ -370,18 +359,7 @@ namespace ES2Access.Screens
             }
 
             Func<IList<string>> words = AgeWidgets.TooltipLines(TableSheet.TooltipOf(cell));
-            return words == null ? null : Phrase(words());
-        }
-
-        private static string Phrase(IList<string> lines)
-        {
-            MessageBuilder message = new MessageBuilder();
-            for (int i = 0; lines != null && i < lines.Count; i++)
-            {
-                message.ListItem(lines[i]);
-            }
-
-            return message.Build();
+            return words == null ? null : SpokenList.Items(words());
         }
 
         /// <summary>The events themselves: the lines the game draws inside a row's name cell under the

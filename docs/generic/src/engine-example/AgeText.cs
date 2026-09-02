@@ -63,6 +63,26 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The game's own word for a key it keeps in its corpus - a column heading, a card's caption,
+        /// the name of a fact it drew only as a picture - or null where the corpus has no such string.
+        ///
+        /// The null is the whole point, and is why this is one place rather than twenty-five. The
+        /// localizer hands an unknown key straight BACK, so a caller that speaks the answer unguarded
+        /// reads "%HeroCardLevelTitle" aloud; eight sites did. A key the game never finished writing is
+        /// silence: the caller's own fallback - a different key, a drawn label, nothing at all - is a
+        /// better line than the key.
+        ///
+        /// Empty is the same answer as unresolved, for the same reason. The localize step is
+        /// <see cref="Clean"/>'s own, which is also what strips the colour markup and names the inline
+        /// icons, so a title reads exactly as any other AGE string does.
+        /// </summary>
+        public static string Title(string key)
+        {
+            string title = Clean(key);
+            return string.IsNullOrEmpty(title) || Gui.IsLocalizationKey(title) ? null : title;
+        }
+
+        /// <summary>
         /// A label's spoken text. <c>TranslatedText</c> is the post-localization, post-markup string
         /// the label actually renders; <c>Text</c> is what was assigned, which for a data-driven
         /// caption is still a <c>%key</c>.
@@ -269,15 +289,10 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                if (text[i] == '#')
+                int past = PastMarkup(text, i);
+                if (past != i)
                 {
-                    int close = text.IndexOf('#', i + 1);
-                    if (close < 0)
-                    {
-                        return text;
-                    }
-
-                    i = close + 1;
+                    i = past;
                     continue;
                 }
 
@@ -387,6 +402,25 @@ namespace ES2Access.UI
             }
 
             return lines;
+        }
+
+        /// <summary>
+        /// A tooltip's OWN written words as spoken lines - what the game bound onto the tooltip itself,
+        /// and nothing that a renderer would assemble on hover.
+        ///
+        /// The named form of <c>Lines(Tooltip(t))</c>, and the name is the point: the mod has two
+        /// readings of a tooltip and they answer differently for a class-backed one.
+        /// <c>AgeWidgets.TooltipLines</c> is the reading for a caller who wants what the PLAYER would
+        /// read, falling back to the drawn tooltip window where the words are assembled. This one is
+        /// for a caller that deliberately wants only the written content - a name read off a tooltip
+        /// at declare time, a panel walked without hovering anything - where the drawn-window fallback
+        /// would answer either nothing or, worse, whatever the pointer happens to be over. Written out
+        /// at a call site, the two are one call apart and indistinguishable; named, the choice is on
+        /// the page.
+        /// </summary>
+        public static IList<string> ContentLines(AgeTooltip tooltip)
+        {
+            return Lines(Tooltip(tooltip));
         }
 
         /// <summary>The tooltip attached to <paramref name="transform"/>, if it has one.</summary>
@@ -586,15 +620,12 @@ namespace ES2Access.UI
             while (i < text.Length)
             {
                 char c = text[i];
-                if (c == '#')
+                int past = PastMarkup(text, i);
+                if (past != i)
                 {
-                    int close = text.IndexOf('#', i + 1);
-                    if (close >= 0)
-                    {
-                        Flush(words, word);
-                        i = close + 1;
-                        continue;
-                    }
+                    Flush(words, word);
+                    i = past;
+                    continue;
                 }
 
                 if (char.IsLetterOrDigit(c))
@@ -680,27 +711,19 @@ namespace ES2Access.UI
         // and the word it belongs to and is stripped later, so the character that will actually end
         // up adjacent is the one on the far side of any run of #...# pairs. "\0" when nothing but
         // markup remains - IsLetterOrDigit says no, so no space is added.
+        //
+        // The only markup skip that runs BACKWARDS, over what has been written so far rather than
+        // over the source string - so it hands the eight characters ending here to
+        // <see cref="PastMarkup"/> rather than applying that method's rule a second time.
         private static char EffectiveBefore(StringBuilder result)
         {
             int i = result.Length - 1;
-            while (i >= 0 && result[i] == '#')
+            while (
+                i >= MarkupRun - 1
+                && PastMarkup(result.ToString(i - MarkupRun + 1, MarkupRun), 0) != 0
+            )
             {
-                int open = -1;
-                for (int j = i - 1; j >= 0; j--)
-                {
-                    if (result[j] == '#')
-                    {
-                        open = j;
-                        break;
-                    }
-                }
-
-                if (open < 0)
-                {
-                    break;
-                }
-
-                i = open - 1;
+                i -= MarkupRun;
             }
 
             return i >= 0 ? result[i] : '\0';
@@ -709,18 +732,40 @@ namespace ES2Access.UI
         private static char EffectiveAfter(string text, int index)
         {
             int i = index;
-            while (i < text.Length && text[i] == '#')
+            int past;
+            while ((past = PastMarkup(text, i)) != i)
             {
-                int close = text.IndexOf('#', i + 1);
-                if (close < 0)
-                {
-                    break;
-                }
-
-                i = close + 1;
+                i = past;
             }
 
             return i < text.Length ? text[i] : '\0';
+        }
+
+        /// <summary>How long a colour-markup run is: <c>#RRGGBB#</c> and <c>#REVERT#</c> alike are
+        /// eight characters, opening hash to closing hash.</summary>
+        private const int MarkupRun = 8;
+
+        /// <summary>
+        /// Where a colour-markup run opening at <paramref name="index"/> ends, or
+        /// <paramref name="index"/> unchanged where nothing markup-shaped opens there - the ONE place
+        /// this class decides what is markup and what is text the player is meant to read.
+        ///
+        /// The rule is the engine's, and it is positional and exact
+        /// (<c>AgeUtils.CleanLine</c>, <c>decompiled/Assembly-CSharp-firstpass/AgeUtils.cs:311-319</c>:
+        /// a <c>#</c> whose eighth character is also a <c>#</c> is removed whole, and nothing else is
+        /// touched). Matching it matters in both directions: a <c>#</c> with no partner eight along is
+        /// LITERAL and stays on the screen, so "#1 in the galaxy" and "Ref #4432#8801" must be read
+        /// with their hashes and with everything between them, which a scan to "the next #, however
+        /// far off" silently swallowed.
+        /// </summary>
+        private static int PastMarkup(string text, int index)
+        {
+            return index >= 0
+                && index + MarkupRun <= text.Length
+                && text[index] == '#'
+                && text[index + MarkupRun - 1] == '#'
+                ? index + MarkupRun
+                : index;
         }
 
         /// <summary>

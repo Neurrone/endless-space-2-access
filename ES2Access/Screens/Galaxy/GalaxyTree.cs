@@ -772,37 +772,65 @@ namespace ES2Access.Screens
             return MapCoordinates.ReadingOrder(leftEast, leftNorth, rightEast, rightNorth);
         }
 
-        /// <summary>The on-map label carrying this system's tooltip - matched by the node reference
-        /// the label was bound to, with the entity's own identity as a fallback for the rare case the
-        /// window rebuilt its labels from a copy rather than the same instance this stop is holding.
+        /// <summary>
+        /// THE LABEL WALK: which of a label window's pooled labels is the one standing for this thing.
+        ///
+        /// Every family on the map asks it - systems, constellations, probes, missiles, pins, hangars,
+        /// the two lens layers - and each of them wrote the same loop, which is how they came to
+        /// disagree about the one thing that varies. <paramref name="matches"/> is what the label was
+        /// BOUND to, which differs per family and is the caller's own business.
+        /// <paramref name="drawn"/> is the DRAWN-NESS POLICY, and it is stated per call rather than
+        /// assumed here because the windows behave differently: some cull their labels by camera
+        /// position and leave the culled ones bound to whatever star they last stood over, so a match
+        /// on a culled label names the wrong thing and the caller must say so; others keep no such
+        /// pool, and testing them would drop a label the map is drawing. Null means "no policy" - any
+        /// bound label answers.
+        ///
+        /// The FIRST match wins, so a caller wanting a fallback rule (match on the reference, else on
+        /// the entity's identity) calls twice with two predicates rather than nesting two loops.
+        ///
+        /// Never throws: a label pool read mid-rebuild is a real state, and the answer for it is that
+        /// the map is drawing nothing for this thing yet.
         /// </summary>
-        private static StarSystemLabel LabelFor(StarSystemNode node, StarSystemLabel[] labels)
+        private static TLabel LabelFor<TLabel>(
+            IList<TLabel> labels,
+            Func<TLabel, bool> matches,
+            Func<TLabel, bool> drawn
+        )
+            where TLabel : class
         {
             try
             {
-                for (int i = 0; i < labels.Length; i++)
+                for (int i = 0; labels != null && i < labels.Count; i++)
                 {
-                    if (ReferenceEquals(labels[i].StarSystemNode, node))
+                    TLabel label = labels[i];
+                    if (label != null && (drawn == null || drawn(label)) && matches(label))
                     {
-                        return labels[i];
-                    }
-                }
-
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    StarSystemNode candidate = labels[i].StarSystemNode;
-                    if (candidate != null && candidate.GUID == node.GUID)
-                    {
-                        return labels[i];
+                        return label;
                     }
                 }
             }
             catch (Exception e)
             {
-                Log.Warn("galaxy: matching a system to its map label threw: " + e);
+                Log.Warn("galaxy: matching a thing to its map label threw: " + e);
             }
 
             return null;
+        }
+
+        /// <summary>The on-map label carrying this system's tooltip - matched by the node reference
+        /// the label was bound to, with the entity's own identity as a fallback for the rare case the
+        /// window rebuilt its labels from a copy rather than the same instance this stop is holding.
+        /// No drawn policy: this window keeps a label per system rather than a pool it re-binds, so a
+        /// bound label is this system's whether or not the camera has it in frame.</summary>
+        private static StarSystemLabel LabelFor(StarSystemNode node, StarSystemLabel[] labels)
+        {
+            return LabelFor(labels, l => ReferenceEquals(l.StarSystemNode, node), null)
+                ?? LabelFor(
+                    labels,
+                    l => l.StarSystemNode != null && l.StarSystemNode.GUID == node.GUID,
+                    null
+                );
         }
 
         private static readonly StarSystemLabel[] NoLabels = new StarSystemLabel[0];

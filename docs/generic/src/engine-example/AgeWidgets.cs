@@ -34,6 +34,171 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The widget under one of the handle types a screen holds INSTEAD of a control: a prefab
+        /// field typed as the panel, the behaviour or the primitive it wired, which nine screens each
+        /// unwrapped with their own try-wrapped one-liner.
+        ///
+        /// Overloads rather than one generic because the hierarchies are unrelated - <c>GuiPanel</c>,
+        /// <c>GuiBehaviour</c>, <c>AgePrimitive</c> and <see cref="AgeControl"/> each declare their OWN
+        /// <c>AgeTransform</c> property, so there is nothing common to constrain on. Every label,
+        /// sector and image arrives through the <c>AgePrimitive</c> overload; the game's own
+        /// global-namespace <c>GuiPanel</c>/<c>GuiBehaviour</c> subclasses and the components built on
+        /// them (<c>BattlePowerGauge</c>) arrive through their bases.
+        ///
+        /// The try is not decoration: these are live scene objects, <c>AgePrimitive</c>'s getter falls
+        /// back to a <c>GetComponent</c>, and a destroyed object costs the caller the widget rather
+        /// than the frame.
+        /// </summary>
+        public static AgeTransform Transform(Amplitude.Unity.Gui.GuiPanel panel)
+        {
+            try
+            {
+                return panel == null ? null : panel.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The widget under a <c>GuiBehaviour</c> handle - see
+        /// <see cref="Transform(Amplitude.Unity.Gui.GuiPanel)"/>.</summary>
+        public static AgeTransform Transform(Amplitude.Unity.Gui.GuiBehaviour behaviour)
+        {
+            try
+            {
+                return behaviour == null ? null : behaviour.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The widget under a primitive - a label, a sector, an image. See
+        /// <see cref="Transform(Amplitude.Unity.Gui.GuiPanel)"/>.</summary>
+        public static AgeTransform Transform(AgePrimitive primitive)
+        {
+            try
+            {
+                return primitive == null ? null : primitive.AgeTransform;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The widget one step up, or null - the guarded form of <c>AgeTransform.Parent</c>,
+        /// which five screens each wrapped for themselves. A walk UP a prefab is the one place a null
+        /// step is ordinary: it is how the walk finds out it has reached the top.</summary>
+        public static AgeTransform Parent(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? null : widget.Parent;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What the PREFAB calls this widget - the engine object's own name, which is what a
+        /// stop's id is built from where the game gives the mod nothing else to key on. "?" for a
+        /// widget that is not there, so a key is always writable and two missing widgets key alike.
+        /// Never spoken: this is a prefab name, not a word in anybody's language.</summary>
+        public static string NameOf(AgeTransform widget)
+        {
+            try
+            {
+                return widget == null ? "?" : widget.name;
+            }
+            catch (Exception)
+            {
+                return "?";
+            }
+        }
+
+        /// <summary>
+        /// Whether <paramref name="ancestor"/> is <paramref name="widget"/> itself or somewhere above
+        /// it in the parent chain - the "was this drawn inside that" question a dozen screens each
+        /// answered with a loop of their own, under four different depth caps.
+        ///
+        /// Reflexive on purpose: every caller means "is it in there", and a container asked about
+        /// itself is in there.
+        ///
+        /// The bound is this class's own <see cref="MaxAncestors"/> and is deliberately not the
+        /// caller's to choose (owner ruling). A cap is a guard against a scene graph that loops, not a
+        /// per-screen tuning knob - and a shallow one does not fail, it answers "not under" about a
+        /// widget that is, which is how a four-level copy lost a whole panel's worth of labels.
+        /// </summary>
+        public static bool Under(AgeTransform widget, AgeTransform ancestor)
+        {
+            try
+            {
+                if (widget == null || ancestor == null)
+                {
+                    return false;
+                }
+
+                AgeTransform at = widget;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    if (ReferenceEquals(at, ancestor))
+                    {
+                        return true;
+                    }
+
+                    at = at.Parent;
+                }
+
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// The child of <paramref name="ancestor"/> that <paramref name="widget"/> was drawn under -
+        /// the "which card is this one in" form of <see cref="Under"/>, for a caller that needs the
+        /// branch rather than the yes.
+        ///
+        /// null when the two are unrelated, and null when they are the SAME widget: a widget is not
+        /// its own child, and a caller sorting things into a container's children has nowhere to file
+        /// the container itself.
+        /// </summary>
+        public static AgeTransform Ancestor(AgeTransform widget, AgeTransform ancestor)
+        {
+            try
+            {
+                if (widget == null || ancestor == null)
+                {
+                    return null;
+                }
+
+                AgeTransform at = widget;
+                for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+                {
+                    if (ReferenceEquals(at.Parent, ancestor))
+                    {
+                        return at;
+                    }
+
+                    at = at.Parent;
+                }
+
+                return null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Whether a ROOT is switched on - a screen's window, a panel, the group a walk is about to
         /// descend into. A control inside a group the window has collapsed is still marked visible
         /// itself, so the chain above it is what says whether the player can see it.
@@ -191,6 +356,33 @@ namespace ES2Access.UI
             {
                 return null;
             }
+        }
+
+        /// <summary>
+        /// How many of a container's children the game is really DRAWING - the same rule a walk
+        /// applies, counted instead of visited.
+        ///
+        /// Seven screens counted this for themselves under three different drawn-tests, and the three
+        /// that asked <see cref="Visible"/> over-count exactly where the number is the reading: a
+        /// pooled table retires a surplus row by FADING it, leaving it visible and holding the
+        /// previous binding's words, so "four planets" is spoken over a lens showing two. The
+        /// container is gated with <see cref="DrawnChildren"/> and each child with
+        /// <see cref="DrawnChild"/>, which makes a container the window has put away zero rather than
+        /// whatever it last held.
+        /// </summary>
+        public static int DrawnCount(AgeTransform container)
+        {
+            IList<AgeTransform> children = DrawnChildren(container);
+            int drawn = 0;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (DrawnChild(children, i) != null)
+                {
+                    drawn++;
+                }
+            }
+
+            return drawn;
         }
 
         public static bool Enabled(AgeTransform widget)
@@ -418,7 +610,7 @@ namespace ES2Access.UI
             AgeTooltip it = tooltip;
             return () =>
                 Readable(it) != null
-                    ? AgeText.Lines(AgeText.Tooltip(it))
+                    ? AgeText.ContentLines(it)
                     : DrawnTooltip.Lines(it);
         }
 
@@ -1136,6 +1328,69 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The button the prefab wired to <paramref name="handler"/> somewhere under
+        /// <paramref name="root"/>, preferring one the player can SEE and, among those, the SMALLEST.
+        ///
+        /// Both tie-breaks come from one measurement (the hero overview's pencils): a prefab
+        /// routinely wires several buttons to a single handler - the little glyph drawn in a box's
+        /// heading, and the invisible sheet stretched over the whole box behind it - and the one worth
+        /// naming and pointing a cursor at is the drawn one, the smaller of two drawn ones being the
+        /// glyph rather than the hit area. Eight copies of this lookup existed and five took the first
+        /// match whatever its size, which is how a cursor ends up on a rectangle the player cannot see
+        /// while the button beside it goes undeclared.
+        ///
+        /// Falls back to the first match when nothing matching is drawn, so a caller reading a window
+        /// mid-fade still finds its button rather than reporting the page has none.
+        /// </summary>
+        public static AgeControlButton WiredTo(AgeTransform root, string handler)
+        {
+            try
+            {
+                if (root == null || string.IsNullOrEmpty(handler))
+                {
+                    return null;
+                }
+
+                AgeControlButton[] buttons = root.GetComponentsInChildren<AgeControlButton>(true);
+                AgeControlButton first = null;
+                AgeControlButton drawn = null;
+                float smallest = float.MaxValue;
+                for (int i = 0; buttons != null && i < buttons.Length; i++)
+                {
+                    AgeControlButton button = buttons[i];
+                    if (button == null || button.OnActivateMethod != handler)
+                    {
+                        continue;
+                    }
+
+                    if (first == null)
+                    {
+                        first = button;
+                    }
+
+                    AgeTransform widget = Transform(button);
+                    if (!Visible(widget))
+                    {
+                        continue;
+                    }
+
+                    float area = widget.Width * widget.Height;
+                    if (area < smallest)
+                    {
+                        smallest = area;
+                        drawn = button;
+                    }
+                }
+
+                return drawn ?? first;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static AgeControlButton Button(AgeTransform widget)
         {
             try
@@ -1572,14 +1827,14 @@ namespace ES2Access.UI
 
                 AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
                 Add(lines, label == null ? null : AgeText.Label(label));
-                AgeTooltip tooltip = Readable(Raw(widget));
-                if (tooltip != null)
+                // Only the words written onto the tooltip itself (the same gate and split
+                // <see cref="TooltipLines"/> uses for its first half), never the drawn tooltip
+                // window: this walk reads an unmodelled panel, and the window draws whatever the
+                // pointer is parked on, which is not this panel's text.
+                IList<string> words = AgeText.ContentLines(Readable(Raw(widget)));
+                for (int i = 0; words != null && i < words.Count; i++)
                 {
-                    IList<string> words = AgeText.Lines(AgeText.Tooltip(tooltip));
-                    for (int i = 0; words != null && i < words.Count; i++)
-                    {
-                        Add(lines, words[i]);
-                    }
+                    Add(lines, words[i]);
                 }
 
                 IList<AgeTransform> children = widget.Children;
@@ -1815,7 +2070,7 @@ namespace ES2Access.UI
             // Alpha 0 with Visible still true (AgeTransform.RefreshChildrenIList), and the parked
             // item keeps its old wrapper on its tooltip - so an item that draws nothing must say
             // nothing, or it answers with the previous binding's name.
-            if (widget == null || widget.Alpha < 0.01f)
+            if (!Paints(widget))
             {
                 return null;
             }
@@ -1838,7 +2093,7 @@ namespace ES2Access.UI
 
             try
             {
-                if (!widget.Visible || widget.Alpha < 0.01f)
+                if (!Paints(widget))
                 {
                     return null;
                 }

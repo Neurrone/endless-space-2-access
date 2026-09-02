@@ -766,8 +766,16 @@ namespace ES2Access.UI
         /// hangs on, or the line already carries the same tooltip. Keeping it as a reviewed section
         /// would promise a buffer entry that stays empty, which is the defect this sink exists to
         /// remove rather than move.
+        ///
+        /// The drawn-ness question is asked ONCE, here, for both doors - a piece the game is not
+        /// drawing is not a node whichever kind of tooltip it carries, and letting each door ask its
+        /// own let the two disagree about the same piece. <paramref name="revealedOnHover"/> is the
+        /// exemption, stated by the caller rather than assumed: a strip the surface keeps hidden until
+        /// a mouse asks for it is hidden at every moment this mod is asked about it, so a drawn test
+        /// there would delete exactly the content the mod exists to hand over
+        /// (<see cref="AddRevealed"/> is the same exemption at the other door).
         /// </summary>
-        public static Carried Split(IList<AgeTooltip> tooltips)
+        public static Carried Split(IList<AgeTooltip> tooltips, bool revealedOnHover = false)
         {
             Carried carried = new Carried();
             int last = tooltips == null ? -1 : tooltips.Count - 1;
@@ -780,13 +788,18 @@ namespace ES2Access.UI
                     break;
                 }
 
-                List<Dossier> into = carried.Children ?? new List<Dossier>(1);
                 AgeTransform on = AgeWidgets.TooltipOwner(tooltip);
+                if (!revealedOnHover && !Admitted(on))
+                {
+                    continue;
+                }
+
+                List<Dossier> into = carried.Children ?? new List<Dossier>(1);
                 // Both kinds through one sink: a renderer-assembled dossier first, then the plain
                 // sentence, because only one of the two tests can pass for a given tooltip and asking
                 // both is what makes "every other tooltip becomes an entry" true of either kind.
                 Add(into, tooltip, on);
-                AddPlain(into, tooltip, on);
+                Plain(into, tooltip, on, null);
                 if (into.Count > 0)
                 {
                     carried.Children = into;
@@ -815,7 +828,7 @@ namespace ES2Access.UI
                 // with its previous binding's words still on it, and naming a dossier off those words
                 // calls it by the last thing the widget held. The same test <see cref="AgeWidgets.ItemText"/>
                 // makes for the same reason.
-                if (widget == null || widget.Alpha < 0.01f)
+                if (!AgeWidgets.Paints(widget))
                 {
                     return null;
                 }
@@ -873,12 +886,27 @@ namespace ES2Access.UI
             Func<string> name = null
         )
         {
+            if (Admitted(anchor))
+            {
+                Plain(into, tooltip, anchor, name);
+            }
+        }
+
+        /// <summary>The same, for a caller that has ALREADY asked whether the game is drawing the
+        /// anchor - <see cref="Split"/>, which asks that question once for both of its doors rather
+        /// than letting each door ask its own.</summary>
+        private static void Plain(
+            List<Dossier> into,
+            AgeTooltip tooltip,
+            AgeTransform anchor,
+            Func<string> name
+        )
+        {
             if (
                 into == null
                 || tooltip == null
                 || AgeWidgets.Readable(tooltip) == null
                 || !AgeWidgets.Draws(tooltip)
-                || !Admitted(anchor)
             )
             {
                 return;

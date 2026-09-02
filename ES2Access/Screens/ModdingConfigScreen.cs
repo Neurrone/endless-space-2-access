@@ -60,7 +60,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.modding"; }
+            get { return ModStrings.ScreenModding; }
         }
 
         protected override string Prefix
@@ -70,7 +70,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.modding"; }
+            get { return ModStrings.ScreenModding; }
         }
 
         /// <summary>The library, because picking a mod is what the page is for - not the web link that

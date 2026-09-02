@@ -44,71 +44,31 @@ namespace ES2Access.UI.Input
     /// </summary>
     internal static class GameKeyboardHandover
     {
-        private static Harmony _harmony;
-        private static bool _reportedFailure;
+        private static readonly ModPatch Patches = new ModPatch(
+            "keyboardhandover",
+            "the game's focused-control key dispatch"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.keyboardhandover." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch =>
+                {
+                    foreach (MethodInfo dispatch in KeyDispatches())
+                    {
+                        patch.Prefix(
+                            dispatch,
+                            typeof(GameKeyboardHandover),
+                            "SkipWhenTheModAlreadyUsedTheKey"
+                        );
+                    }
+                }
             );
-
-            try
-            {
-                HarmonyMethod prefix = new HarmonyMethod(
-                    typeof(GameKeyboardHandover).GetMethod(
-                        "SkipWhenTheModAlreadyUsedTheKey",
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                );
-
-                foreach (MethodInfo dispatch in KeyDispatches())
-                {
-                    harmony.Patch(dispatch, prefix);
-                }
-
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, the mod's Enter goes on committing the box it opened. Worth saying loudly
-                // and not worth refusing to start over.
-                Log.Error("the game's focused-control key dispatch could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error(
-                    "the game's focused-control key dispatch could not be unpatched: " + e
-                );
-            }
+            Patches.Remove();
         }
 
         /// <summary>
@@ -154,13 +114,14 @@ namespace ES2Access.UI.Input
                 // the edit. What the game would do with it is its VALIDATE, which is the SCREEN's
                 // action (the save-name box writes a save and closes the whole screen); the edit ends
                 // here instead and the surface is left standing.
-                if (
-                    (
-                        UnityEngine.Input.GetKeyDown(KeyCode.Return)
-                        || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)
-                    )
-                    && Screens.TextFieldEditor.CommitInsteadOfTheGamesValidate(__instance)
-                )
+                //
+                // The whole of the engine's own condition, not just its two key codes
+                // (<c>AgeControlTextField.KeyDown</c>,
+                // <c>decompiled/Assembly-CSharp-firstpass/AgeControlTextField.cs:78</c>): a field the
+                // prefab wired no validate callback onto does NOT validate on Return - the engine
+                // falls through to its key-down callback or to the base handler - so intercepting the
+                // key there was the mod standing in front of a door the game does not have.
+                if (Validates(__instance))
                 {
                     return false;
                 }
@@ -171,17 +132,29 @@ namespace ES2Access.UI.Input
             {
                 // Runs inside the engine's own dispatch: let the key through rather than throw into
                 // it, and say so once instead of once per press.
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn(
-                        "deciding whether the mod had already used a key threw, leaving it to the "
-                            + "game: " + e
-                    );
-                }
-
+                Patches.Report(
+                    "deciding whether the mod had already used a key threw, leaving it to the game",
+                    e
+                );
                 return true;
             }
+        }
+
+        /// <summary>Whether this press is the one the engine would VALIDATE on, and whether the mod's
+        /// own commit should stand in for it. The engine's condition verbatim
+        /// (<c>decompiled/Assembly-CSharp-firstpass/AgeControlTextField.cs:78</c>) - the two Return
+        /// keys, a validate callback switched on, an object to send it to, and a method name to send -
+        /// and then the mod's own question about this field.</summary>
+        private static bool Validates(AgeControlTextField field)
+        {
+            return (
+                    UnityEngine.Input.GetKeyDown(KeyCode.Return)
+                    || UnityEngine.Input.GetKeyDown(KeyCode.KeypadEnter)
+                )
+                && field.UseValidateCallback
+                && field.OnValidateObject != null
+                && !string.IsNullOrEmpty(field.OnValidateMethod)
+                && Screens.TextFieldEditor.CommitInsteadOfTheGamesValidate(field);
         }
 
         /// <summary>
@@ -224,11 +197,7 @@ namespace ES2Access.UI.Input
             }
             catch (Exception e)
             {
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn("checking who holds the keyboard threw: " + e);
-                }
+                Patches.Report("checking who holds the keyboard threw", e);
             }
         }
     }

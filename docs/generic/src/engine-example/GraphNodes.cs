@@ -201,7 +201,7 @@ namespace ES2Access.UI
         private static string Refusal(AgeTooltip tooltip)
         {
             string written = RefusalText.Compose(
-                AgeText.Lines(AgeText.Tooltip(tooltip)),
+                AgeText.ContentLines(tooltip),
                 MouseInstruction()
             );
             return written ?? TargetRefusal(tooltip);

@@ -39,7 +39,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.main-menu"; }
+            get { return ModStrings.ScreenMainMenu; }
         }
 
         public override string ScreenName
@@ -95,7 +95,7 @@ namespace ES2Access.Screens
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(entry.TitleLabel),
                     () => Click(name),
-                    () => Enabled(entry.AgeTransform),
+                    () => AgeWidgets.Operable(entry.AgeTransform),
                     entry.Tooltip
                 );
                 vtable.OnFocusVisual = () =>
@@ -130,7 +130,7 @@ namespace ES2Access.Screens
                     NodeVtable subVtable = GraphNodes.Button(
                         () => AgeText.Label(sub.TitleLabel),
                         () => Click(subName),
-                        () => Enabled(sub.AgeTransform),
+                        () => AgeWidgets.Operable(sub.AgeTransform),
                         sub.Tooltip
                     );
                     // The flyout being open is the parent's business, so a step between sub-entries
@@ -183,7 +183,7 @@ namespace ES2Access.Screens
             AgeTransform widget = AgeWidgets.Transform(link);
             if (
                 widget == null
-                || !Visible(banner.AgeTransform)
+                || !AgeWidgets.Visible(banner.AgeTransform)
                 || string.IsNullOrEmpty(AgeText.Label(headline))
             )
             {
@@ -215,14 +215,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// The mod's own settings, right after the game's Options entry.
-        ///
-        /// Called from BOTH branches above because Options is one of the entries that opens onto
-        /// sub-entries: putting the call in the flat branch alone measured as declaring nothing at
-        /// all here (the entry is a GROUP, and the node has to land after the group closes so that
-        /// it is a sibling of Options rather than one of its flyout entries).
-        /// </summary>
         /// <summary>What an entry is keyed under. The mod's own settings entry - a real entry of the
         /// menu's own now (<see cref="ModSettingsMenuEntry"/>) - keeps the key it had while nothing
         /// was drawn for it.</summary>
@@ -294,7 +286,7 @@ namespace ES2Access.Screens
             {
                 foreach (MainMenuItem item in window.MainMenuItemsContainer.GetChildren<MainMenuItem>(false))
                 {
-                    if (item != null && Visible(item.AgeTransform))
+                    if (item != null && AgeWidgets.Visible(item.AgeTransform))
                     {
                         items.Add(item);
                     }
@@ -324,7 +316,7 @@ namespace ES2Access.Screens
                 {
                     // The game hides sub-entries that do not apply this session (the tutorial prompt
                     // once you have played, a mod configuration that is already loaded).
-                    if (sub != null && Visible(sub.AgeTransform))
+                    if (sub != null && AgeWidgets.Visible(sub.AgeTransform))
                     {
                         subItems.Add(sub);
                     }
@@ -362,37 +354,9 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Whether a widget is really on screen: its own visibility and every ancestor's -
-        /// the menu shows and hides whole containers as it swaps between its pages.</summary>
-        private static bool Visible(AgeTransform transform)
-        {
-            return AgeWidgets.Visible(transform);
-        }
-
-        private static bool Enabled(AgeTransform transform)
-        {
-            try
-            {
-                return transform != null && transform.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         private static GameMainMenu Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GameMainMenu>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GameMainMenu>();
         }
 
         private static GuiManager GuiService()

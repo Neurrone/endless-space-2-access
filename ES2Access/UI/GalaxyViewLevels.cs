@@ -1111,17 +1111,7 @@ namespace ES2Access.UI
         /// </summary>
         private static GalaxyNode Drawn(GameNode node)
         {
-            try
-            {
-                IGalaxyEntityFactoryService entities =
-                    Services.GetService<IGalaxyEntityFactoryService>();
-                GameObject entity = entities == null ? null : entities[node.GUID];
-                return entity == null ? null : entity.GetComponent<GalaxyNode>();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GalaxyEntities.Component<GalaxyNode>(node.GUID);
         }
 
         /// <summary>Open a system's management page - the game's own route into it, the one its label's
@@ -1157,16 +1147,13 @@ namespace ES2Access.UI
             try
             {
                 GalaxyView galaxy = GalaxyViewOf();
-                IGalaxyEntityFactoryService entities =
-                    Services.GetService<IGalaxyEntityFactoryService>();
-                if (galaxy == null || entities == null || planet == null)
+                if (galaxy == null || planet == null)
                 {
                     return false;
                 }
 
-                GameObject entity = entities[planet.GUID];
                 AbstractGalaxyPlanet drawn =
-                    entity == null ? null : entity.GetComponent<AbstractGalaxyPlanet>();
+                    GalaxyEntities.Component<AbstractGalaxyPlanet>(planet.GUID);
                 if (drawn == null)
                 {
                     return false;

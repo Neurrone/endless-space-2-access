@@ -57,7 +57,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.dlc"; }
+            get { return ModStrings.ScreenDlc; }
         }
 
         protected override string Prefix
@@ -67,7 +67,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.dlc"; }
+            get { return ModStrings.ScreenDlc; }
         }
 
         /// <summary>The tabs, because they decide what the rest of the page is.</summary>
@@ -98,18 +98,10 @@ namespace ES2Access.Screens
             // Which of the three kinds is being listed, in the game's own tab word: the list itself
             // says nothing about it, so a player who tabbed straight past the bar would be reading an
             // unnamed list. Spoken once, on the way in.
-            string tab = SelectedTab(window);
-            bool named = !string.IsNullOrEmpty(tab);
-            if (named)
-            {
-                builder.PushContext(tab);
-            }
+            bool named = Captions.Push(builder, null, null, SelectedTab(window));
 
             Items(builder, window);
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
 
             builder.BeginStop(ActionsStop);
             Buttons(builder, window);

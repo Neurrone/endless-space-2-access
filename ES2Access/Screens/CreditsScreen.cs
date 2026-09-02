@@ -45,7 +45,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.credits"; }
+            get { return ModStrings.ScreenCredits; }
         }
 
         protected override string Prefix
@@ -55,7 +55,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.credits"; }
+            get { return ModStrings.ScreenCredits; }
         }
 
         protected override GuiWindow Window()

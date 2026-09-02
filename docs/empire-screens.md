@@ -8,9 +8,9 @@ Index and charter: `README.md`.
 - Government: **the Validate button's missing-technology hint is the LAST of three refusals**, so a
   save can refuse the change without ever lighting the hint. `GovernmentModalWindow.Refresh`
   :204-214 tries `GovernmentChangeLocked`, then `GovernmentChangeCooldown`, then
-  `MustHaveTechnology`, and only the third reaches `FormatButtonHint`. Measured in `unlocked`:
-  `Enable` false, `IsHintActive` false, the `GuiButtonHint` component present but with no technology
-  in it (`GuiButtonHint.IsActive()` is exactly `GuiTechnology != null`). Under a hint the game's
+  `MustHaveTechnology`, and only the third reaches `FormatButtonHint` — under the first two the
+  `GuiButtonHint` component is present with no technology in it and `IsHintActive` reads false
+  (`GuiButtonHint.IsActive()` is exactly `GuiTechnology != null`). Under a hint the game's
   `OnValidateCb` :379-395 does hint-jump AND close, both gated on the physically held Control —
   which no injected key can reproduce, so that pair is manual-script only.
 - Senate: **hovering a senator card and hovering a party row are the SAME highlight**
@@ -67,10 +67,9 @@ Index and charter: `README.md`.
 - Economy and the development window: **one property gates BOTH strategic grids** —
   `SimulationProperties.Empire.CanUseStrategicForRecipe` (Material Expertise): `EconomyPanel.Refresh`
   sets `StrategicsGroup.Visible` from it every refresh, and the development window's strategic
-  component grid derives from the same predicate. Measured 2026-08-19: unlike the descriptor-driven
+  component grid derives from the same predicate. Unlike the descriptor-driven
   properties that shrug writes off, this one DOES stick under `SetPropertyBaseValue` +
-  `Refresh(false)` — set it and the game draws the real grid itself, set it back and it is gone
-  (the sighting route is in test-recipes).
+  `Refresh(false)` — set it and the game draws the real grid itself, set it back and it is gone.
 - Economy, luxuries: **a luxury the empire has not located is drawn ANONYMOUSLY, on purpose.**
   `GuiResource` (:108-133) substitutes a placeholder in every drawn thing about it: `GetName` →
   `UnknownLuxury`, `GetImage` → the single shared `UnknownLuxurySmall` texture, `GetColor` → the

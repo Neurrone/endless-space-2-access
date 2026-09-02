@@ -290,7 +290,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.target-selection"; }
+            get { return ModStrings.ScreenTargetSelection; }
         }
 
         /// <summary>Over the galaxy page and the fleet panel the order was given from, and under the
@@ -307,7 +307,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.target-selection"; }
+            get { return ModStrings.ScreenTargetSelection; }
         }
 
         protected override GuiWindow Showing()
@@ -378,16 +378,7 @@ namespace ES2Access.Screens
 
         private static TargetSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<TargetSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<TargetSelectionModalWindow>();
         }
     }
 
@@ -396,7 +387,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.ground-target-selection"; }
+            get { return ModStrings.ScreenGroundTargetSelection; }
         }
 
         /// <summary>Its own number rather than the space box's: the two are separate windows and nothing
@@ -413,7 +404,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.ground-target-selection"; }
+            get { return ModStrings.ScreenGroundTargetSelection; }
         }
 
         protected override GuiWindow Showing()
@@ -484,16 +475,7 @@ namespace ES2Access.Screens
 
         private static GroundBattleTargetSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GroundBattleTargetSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GroundBattleTargetSelectionModalWindow>();
         }
     }
 }

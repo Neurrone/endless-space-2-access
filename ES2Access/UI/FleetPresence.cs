@@ -377,7 +377,7 @@ namespace ES2Access.UI
                 return fleet.IsAutomated
                     || fleet.Visibility == null
                     || empire == null
-                    || (int)fleet.Visibility[empire] >= 3;
+                    || (int)fleet.Visibility[empire] >= (int)EntityVisibility.Layer.Visible;
             }
             catch (Exception)
             {
@@ -387,10 +387,19 @@ namespace ES2Access.UI
 
         /// <summary>The extra test the fleet label window makes before drawing a label at all
         /// (<c>FleetLabelsWindow.ShowAllLabels</c>): the repository holds the fleets that exist on the
-        /// map, this is the one that says whether this empire may look at them.</summary>
+        /// map, this is the one that says whether this empire may look at them.
+        ///
+        /// Guarded the way <see cref="ShowsShipCount"/> is, and for the same reasons: a fleet with no
+        /// visibility table at all, and a player who is not a major empire (a spectator, a loading
+        /// frame), are both states the indexer throws in rather than answers. Unanswerable is treated
+        /// as VISIBLE here, matching the sibling: the window's test is what withholds a label, and a
+        /// mod that cannot ask it must not withhold one on its own account.</summary>
         private static bool Drawn(Fleet fleet)
         {
-            return (int)fleet.Visibility[Gui.PlayerEmpire as MajorEmpire] >= 2;
+            MajorEmpire empire = Gui.PlayerEmpire as MajorEmpire;
+            return fleet.Visibility == null
+                || empire == null
+                || (int)fleet.Visibility[empire] >= (int)EntityVisibility.Layer.Marked;
         }
 
         /// <summary>Whether the leg a fleet is currently flying is this lane, taken either way round.
@@ -621,7 +630,7 @@ namespace ES2Access.UI
                 message.ListItem(Title(garrisons));
                 for (int j = 0; j < garrisons.Count; j++)
                 {
-                    message.ListItem(garrisons[j].LocalizedName);
+                    message.ListItem(AgeText.Clean(garrisons[j].LocalizedName));
                 }
 
                 lines.Add(message.Build());

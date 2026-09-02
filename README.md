@@ -64,8 +64,7 @@ screen reader game accessibility mods, for which ES2 is the test vehicle.
 
 While the game runs, a dev server at `http://127.0.0.1:8771` provides state inspection, speech
 capture, a C# REPL, input injection, hot reload and save loading. Read `docs/dev-loop.md` — it
-is the loop itself (per-screen recipes are in `docs/test-recipes/`; `docs/README.md`
-indexes the rest). Only `ES2Access.dll` hot-reloads (`POST /reload` after a build);
+is the loop itself (`docs/README.md` indexes the rest; the regression walk is `walks/`). Only `ES2Access.dll` hot-reloads (`POST /reload` after a build);
 changes to `ES2Access.Loader` need a game restart.
 
 ### Repo layout

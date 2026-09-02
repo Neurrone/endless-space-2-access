@@ -227,18 +227,9 @@ namespace ES2Access.Screens
         private static string Question()
         {
             MessageBoxNonBlockingWindow window = Window();
-            if (window == null)
-            {
-                return null;
-            }
-
-            MessageBuilder message = new MessageBuilder();
-            foreach (string line in AgeText.Lines(AgeText.Label(window.MessageLabel)))
-            {
-                message.Fragment(line);
-            }
-
-            return message.Build();
+            return window == null
+                ? null
+                : SettingRows.OneLine(AgeText.Label(window.MessageLabel));
         }
 
         /// <summary>The question as the review buffer holds it: its heading, then its message a line at a
@@ -288,16 +279,7 @@ namespace ES2Access.Screens
 
         private static MessageBoxNonBlockingWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<MessageBoxNonBlockingWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<MessageBoxNonBlockingWindow>();
         }
     }
 }

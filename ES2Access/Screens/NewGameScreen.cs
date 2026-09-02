@@ -49,7 +49,6 @@ namespace ES2Access.Screens
         /// twice for nothing.</summary>
         private const int LockSettleFrames = 10;
 
-
         /// <summary>The game's own names for the two controls the lobby draws without a caption: the
         /// faction list beside a portrait and the wordless colour swatch next to it. Both are named in
         /// the localization corpus under the thing they change, which is where a control with no words
@@ -78,7 +77,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.new-game"; }
+            get { return ModStrings.ScreenNewGame; }
         }
 
         /// <summary>The same layer as the main menu it replaces: it is the other full-screen out-game
@@ -175,7 +174,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeTransform connecting = Transform(window.AfterJoinLoadingPanel);
+            AgeTransform connecting = AgeWidgets.Transform(window.AfterJoinLoadingPanel);
             if (connecting == null || !SettingRows.Drawn(connecting))
             {
                 _connectingTold = false;
@@ -242,7 +241,7 @@ namespace ES2Access.Screens
 
             BuildConnecting(builder, window);
 
-            IList<AgeTransform> categories = Children(window.CategoryPanelsContainer);
+            IList<AgeTransform> categories = AgeWidgets.DrawnChildren(window.CategoryPanelsContainer);
             for (int i = 0; categories != null && i < categories.Count; i++)
             {
                 BuildCategory(builder, categories[i]);
@@ -258,7 +257,7 @@ namespace ES2Access.Screens
         /// contributes nothing and the page grows into itself as the slots land.</summary>
         private static void BuildConnecting(GraphBuilder builder, GameNewGame window)
         {
-            AgeTransform panel = Transform(window.AfterJoinLoadingPanel);
+            AgeTransform panel = AgeWidgets.Transform(window.AfterJoinLoadingPanel);
             if (panel == null || !SettingRows.Drawn(panel))
             {
                 return;
@@ -291,10 +290,10 @@ namespace ES2Access.Screens
             // guessed at, since it is a field of the panel and not the label.
             bool named = Captions.Push(
                 builder,
-                Transform(panel.CategoryNameLabel),
+                AgeWidgets.Transform(panel.CategoryNameLabel),
                 "newgame:cat/" + key + "/title",
                 null,
-                Transform(panel.CategoryTooltip)
+                AgeWidgets.TooltipOwner(panel.CategoryTooltip)
             );
 
             try
@@ -318,7 +317,7 @@ namespace ES2Access.Screens
         private void BuildEntries(GraphBuilder builder, NewGameCategoryPanel panel, string key)
         {
             _entries.Clear();
-            IList<AgeTransform> children = Children(panel.NewGameEntriesTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.NewGameEntriesTable);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (SettingRows.Drawn(children[i]))
@@ -391,7 +390,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddChatHistory(GraphBuilder builder, NewGameChatPanel chat)
         {
-            AgeTransform lines = Transform(chat.ChatLinesScrollView);
+            AgeTransform lines = AgeWidgets.Transform(chat.ChatLinesScrollView);
             if (lines == null || !SettingRows.Drawn(lines))
             {
                 return;
@@ -417,7 +416,7 @@ namespace ES2Access.Screens
         private void BuildEmpireSlot(GraphBuilder builder, NewGameEmpireSlotPanel panel)
         {
             PlayerCompetitorSlot slot = panel.PlayerCompetitorSlot;
-            if (slot == null || !SettingRows.Drawn(Transform(slot)))
+            if (slot == null || !SettingRows.Drawn(AgeWidgets.Transform(slot)))
             {
                 return;
             }
@@ -466,7 +465,7 @@ namespace ES2Access.Screens
         private void BuildCompetitors(GraphBuilder builder, NewGameCompetitorSlotsPanel panel)
         {
             _slots.Clear();
-            IList<AgeTransform> children = Children(panel.OtherCompetitorSlotsTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.OtherCompetitorSlotsTable);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (SettingRows.Drawn(children[i]) && Get<CompetitorSlot>(children[i]) != null)
@@ -514,7 +513,7 @@ namespace ES2Access.Screens
             // before hearing what is true of them.
             AddStateIcon(
                 builder,
-                Transform(slot.HostIcon),
+                AgeWidgets.Transform(slot.HostIcon),
                 key + "/host",
                 () => ModStrings.Get(ModStrings.NewGameHost)
             );
@@ -547,7 +546,7 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildSlotStates(GraphBuilder builder, CompetitorSlot slot, string key)
         {
-            IList<AgeTransform> states = Children(slot.StatesTable);
+            IList<AgeTransform> states = AgeWidgets.DrawnChildren(slot.StatesTable);
             for (int i = 0; states != null && i < states.Count; i++)
             {
                 AgeTransform widget = states[i];
@@ -560,11 +559,11 @@ namespace ES2Access.Screens
                 {
                     SettingRows.AddReadout(builder, widget, key + "/difficulty");
                 }
-                else if (widget == Transform(slot.JoinButton))
+                else if (widget == AgeWidgets.Transform(slot.JoinButton))
                 {
                     SettingRows.AddButton(builder, slot.JoinButton, key + "/join");
                 }
-                else if (widget == Transform(slot.KickButton))
+                else if (widget == AgeWidgets.Transform(slot.KickButton))
                 {
                     // Named by the mod for the same reason the lock is: the game draws a symbol whose
                     // only words are the mouse instruction on its tooltip, and "Click to kick this
@@ -576,7 +575,7 @@ namespace ES2Access.Screens
                         key + "/kick"
                     );
                 }
-                else if (widget == Transform(slot.LockToggle))
+                else if (widget == AgeWidgets.Transform(slot.LockToggle))
                 {
                     AddLockToggle(builder, slot.LockToggle, key + "/lock");
                 }
@@ -626,7 +625,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            AgeTransform widget = Transform(button);
+            AgeTransform widget = AgeWidgets.Transform(button);
             if (button == null || !SettingRows.Drawn(widget))
             {
                 return;
@@ -652,7 +651,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            AgeTransform widget = Transform(toggle);
+            AgeTransform widget = AgeWidgets.Transform(toggle);
             if (toggle == null || !SettingRows.Drawn(widget))
             {
                 return;
@@ -687,8 +686,8 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, GameNewGame window)
         {
             _entries.Clear();
-            AgeTransform band = Parent(Transform(window.StartButton));
-            IList<AgeTransform> children = Children(band);
+            AgeTransform band = AgeWidgets.Parent(AgeWidgets.Transform(window.StartButton));
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(band);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (SettingRows.Drawn(children[i]) && AgeWidgets.Button(children[i]) != null)
@@ -711,14 +710,14 @@ namespace ES2Access.Screens
             string key
         )
         {
-            AgeTransform widget = Transform(list);
+            AgeTransform widget = AgeWidgets.Transform(list);
             if (list == null || !SettingRows.Drawn(widget))
             {
                 return;
             }
 
             string title = titleKey;
-            SettingRows.AddCombo(builder, list, () => Localized(title), null, key);
+            SettingRows.AddCombo(builder, list, () => AgeText.Title(title), null, key);
         }
 
         /// <summary>One of the deluxe-edition skin boxes: the group carries the caption and the
@@ -755,7 +754,7 @@ namespace ES2Access.Screens
         /// with nothing in it does not exist.</summary>
         private void BuildUnmodelled(GraphBuilder builder, AgeTransform widget, string key)
         {
-            IList<AgeTransform> children = Children(widget);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(widget);
             bool any = false;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -766,12 +765,12 @@ namespace ES2Access.Screens
                 }
 
                 any = true;
-                SettingRows.AddReadout(builder, child, "newgame:" + key + "/" + Name(widget) + "/" + i);
+                SettingRows.AddReadout(builder, child, "newgame:" + key + "/" + AgeWidgets.NameOf(widget) + "/" + i);
             }
 
             if (!any && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
             {
-                SettingRows.AddReadout(builder, widget, "newgame:" + key + "/" + Name(widget));
+                SettingRows.AddReadout(builder, widget, "newgame:" + key + "/" + AgeWidgets.NameOf(widget));
             }
         }
 
@@ -779,28 +778,7 @@ namespace ES2Access.Screens
 
         internal static GameNewGame Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GameNewGame>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string Localized(string key)
-        {
-            try
-            {
-                return AgeText.Clean(key);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GameNewGame>();
         }
 
         private static string CategoryKey(NewGameCategoryPanel panel)
@@ -815,99 +793,12 @@ namespace ES2Access.Screens
             }
         }
 
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? "?" : widget.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
         private static T Get<T>(AgeTransform widget)
             where T : UnityEngine.Component
         {
             try
             {
                 return widget == null ? null : widget.GetComponent<T>();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static IList<AgeTransform> Children(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Children;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(AgeControl control)
-        {
-            return AgeWidgets.Transform(control);
-        }
-
-        private static AgeTransform Transform(AgeTooltip tooltip)
-        {
-            return SettingRows.TransformOf(tooltip);
-        }
-
-        private static AgeTransform Transform(AgePrimitiveLabel label)
-        {
-            return SettingRows.TransformOf(label);
-        }
-
-        private static AgeTransform Transform(GuiPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(AgePrimitiveImage image)
-        {
-            try
-            {
-                return image == null ? null : image.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(CompetitorSlot slot)
-        {
-            try
-            {
-                return slot == null ? null : slot.AgeTransform;
             }
             catch (Exception)
             {
@@ -929,16 +820,11 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Transform(AgeTransform widget)
-        {
-            return widget;
-        }
-
         /// <summary>The band a label was drawn in - the group holding the icon that captions it and the
         /// words themselves.</summary>
         private static AgeTransform Owner(AgePrimitiveLabel label)
         {
-            return Parent(Transform(label));
+            return AgeWidgets.Parent(AgeWidgets.Transform(label));
         }
     }
 }

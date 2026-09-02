@@ -82,6 +82,20 @@ namespace ES2Access.UI
             return _shape == null ? Nothing : _shape;
         }
 
+        /// <summary>Let go of the galaxy this was measured from - mod teardown. The next ask measures
+        /// afresh, which is what an unmeasured cache does anyway.</summary>
+        public static void Forget()
+        {
+            _of = null;
+            _measured = false;
+            _edges = null;
+            _shape = null;
+            _west = 0.0;
+            _east = 0.0;
+            _south = 0.0;
+            _north = 0.0;
+        }
+
         private static void Ensure()
         {
             object game = Gui.Game;

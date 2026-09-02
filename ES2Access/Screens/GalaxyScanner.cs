@@ -770,6 +770,14 @@ namespace ES2Access.Screens
 
         private static ScannerKindIndex[] _kindIndex;
 
+        /// <summary>Let go of the per-category kind indexes - mod teardown. They are built from the
+        /// game's own definitions on the first press of each category and rebuilt on the next.
+        /// </summary>
+        public static void Reset()
+        {
+            _kindIndex = null;
+        }
+
         /// <summary>One datatable's whole contents, or null where the game has not loaded it - which
         /// is the honest answer on a machine where the datatables failed, and leaves that category
         /// offering the columns it writes down for itself.</summary>
@@ -1949,7 +1957,6 @@ namespace ES2Access.Screens
             DepartmentOfForeignAffairs foreign
         )
         {
-            HashSet<GameEntityGUID> mine = Mine(empire);
             HashSet<GameEntityGUID> homes = Homes(empire);
             IColonizedStarSystemRepositoryService colonies =
                 Services.GetService<IColonizedStarSystemRepositoryService>();
@@ -1960,9 +1967,9 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                int affiliation = mine.Contains(node.GUID)
+                int affiliation = Mine(colonies, node, empire)
                     ? ScopeFriendly
-                    : Scope(Owner(colonies, node, empire), empire, foreign);
+                    : Scope(Owner(node, empire), empire, foreign);
                 int scopes = ScannerScopes.System(
                     affiliation,
                     node is SpecialNode,
@@ -2699,61 +2706,36 @@ namespace ES2Access.Screens
             return interior == null ? null : interior.HomeSystemNode;
         }
 
-        /// <summary>The systems that are the player's OWN - the same list the map's tree puts in its
-        /// first region (<c>DepartmentOfTheInterior.ColonizedStarSystems</c>), which counts an outpost
-        /// as yours where the label's colour does not: a place you hold is friendly whether or not it
-        /// has grown into a colony yet.</summary>
-        private static HashSet<GameEntityGUID> Mine(Empire empire)
-        {
-            HashSet<GameEntityGUID> mine = new HashSet<GameEntityGUID>();
-            DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
-            if (interior == null)
-            {
-                return mine;
-            }
-
-            foreach (ColonizedStarSystem colony in interior.ColonizedStarSystems)
-            {
-                if (colony.Node != null)
-                {
-                    mine.Add(colony.Node.GUID);
-                }
-            }
-
-            return mine;
-        }
-
-        /// <summary>
-        /// Whose system this is, by the map's own rule for whose colour it paints on the label
-        /// (<c>StarSystemLabel.RebuildColonizedStarSystemsList</c>): among the colonies standing at
-        /// the node, the ones this empire can see at all, preferring its own, and only those that are
-        /// a COLONY rather than an outpost or a ruin. A node with none has no owner and is nobody's.
-        /// </summary>
-        private static Empire Owner(
+        /// <summary>Whether this system is the player's OWN - the same claim the map's tree puts in its
+        /// first region, asked of the repository's own index rather than by walking the empire's
+        /// colony list into a set. It counts an outpost as yours where the label's colour does not: a
+        /// place you hold is friendly whether or not it has grown into a colony yet.</summary>
+        private static bool Mine(
             IColonizedStarSystemRepositoryService colonies,
             StarSystemNode node,
             Empire empire
         )
         {
-            if (colonies == null)
-            {
-                return null;
-            }
+            ColonizedStarSystem held;
+            return colonies != null
+                && empire != null
+                && colonies.TryGetValue(empire, node.NodePosition, out held);
+        }
 
-            ColonizedStarSystem main = null;
-            foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
-            {
-                if (
-                    (int)colony.Visibility[empire] >= 1
-                    && (main == null || !ReferenceEquals(main.Empire, empire))
-                    && colony.State == StarSystemState.Colony
-                )
-                {
-                    main = colony;
-                }
-            }
-
-            return main == null ? null : main.Empire;
+        /// <summary>
+        /// Whose system this is for the affiliation buckets: the strongest claim standing there that
+        /// the player is being shown (<see cref="GalaxyHudScreen.VisibleColony"/>), which counts an
+        /// OUTPOST. One rule, shared with the map's own rows, rather than a second copy that filed a
+        /// place under "neutral" while the row beside it named the empire holding it.
+        ///
+        /// Deliberately the wider of the game's two rules. The narrow one is what the label PAINTS,
+        /// and a player sweeping for somebody's territory is asking who is on the ground, not whose
+        /// colour is on the name.
+        /// </summary>
+        private static Empire Owner(StarSystemNode node, Empire empire)
+        {
+            ColonizedStarSystem claim = GalaxyHudScreen.VisibleColony(node, empire);
+            return claim == null ? null : claim.Empire;
         }
 
         /// <summary>
@@ -2765,7 +2747,8 @@ namespace ES2Access.Screens
         /// exactly the faction sitting in the player's own back garden - which is the one a player
         /// sweeping this scope most wants to find.
         ///
-        /// The gate is the same one the ownership answer uses, <c>Visibility[empire] >= 1</c>, so
+        /// The gate is the same one the ownership answer uses,
+        /// <c>Visibility[empire] >= EntityVisibility.Layer.Known</c>, so
         /// nothing here names a faction the map has not shown the player.
         /// </summary>
         private static bool Minor(
@@ -2781,7 +2764,10 @@ namespace ES2Access.Screens
 
             foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
             {
-                if ((int)colony.Visibility[empire] >= 1 && colony.Empire is MinorEmpire)
+                if (
+                    (int)colony.Visibility[empire] >= (int)EntityVisibility.Layer.Known
+                    && colony.Empire is MinorEmpire
+                )
                 {
                     return true;
                 }

@@ -168,6 +168,7 @@ namespace ES2Access.UI
         public static List<PopulationSlots.Slot> Slots(
             Planet planet,
             ColonizedPlanet colony,
+            PlanetPopulationEnumerator markers,
             int drawn,
             List<Population> units
         )
@@ -207,7 +208,7 @@ namespace ES2Access.UI
                     units.Count,
                     colony.MaxPopulation,
                     colony.MaxPopulationUnderOverPopulation,
-                    OverpopulationDrawn(colony),
+                    OverpopulationDrawn(markers, colony),
                     slots
                 );
             }
@@ -219,16 +220,38 @@ namespace ES2Access.UI
             return slots;
         }
 
-        /// <summary>Whether the game would draw the overpopulation arc over this colony's ring, which
-        /// is what decides whether the slots past its comfortable maximum are a band of their own - the
-        /// four conditions <c>PlanetPopulationEnumeratorRadial.RefreshOverpopulation</c> puts on the
-        /// sector's visibility, asked here rather than re-derived, so a mode of play where the arc
-        /// means nothing (an empire that runs on honour, a system somebody else is exploiting) reads as
-        /// one plain band of slots exactly as it is drawn.</summary>
-        public static bool OverpopulationDrawn(ColonizedPlanet colony)
+        /// <summary>
+        /// Whether the game is drawing the overpopulation arc over this ring, which is what decides
+        /// whether the slots past the colony's comfortable maximum are a band of their own - so that a
+        /// mode of play where the arc means nothing (an empire that runs on honour, a system somebody
+        /// else is exploiting) reads as one plain band of slots exactly as it is drawn.
+        ///
+        /// Asked of the SECTOR the game draws the arc with, whose visibility
+        /// <c>PlanetPopulationEnumeratorRadial.RefreshOverpopulation</c> (:124-136) writes from those
+        /// conditions - one question of the drawing instead of four restatements of the rule. The
+        /// conditions are still written out below for a ring drawn by an enumerator that has no such
+        /// sector: only the RADIAL enumerator draws an arc, and a page whose prefab wires the plain
+        /// one has nothing to ask.
+        /// </summary>
+        public static bool OverpopulationDrawn(
+            PlanetPopulationEnumerator markers,
+            ColonizedPlanet colony
+        )
         {
             try
             {
+                PlanetPopulationEnumeratorRadial radial =
+                    markers as PlanetPopulationEnumeratorRadial;
+                AgePrimitiveSector sector = radial == null ? null : radial.OverPopulationSector;
+                if (sector != null && sector.AgeTransform != null)
+                {
+                    // Banding input: whether the arc is drawn is what splits the ring's slots into an
+                    // overpopulation band or leaves them one plain band. The flag the game itself
+                    // wrote, not the ancestry - the caller has already established that the ring is
+                    // being drawn, and a whole card fading in must not turn a band off.
+                    return sector.AgeTransform.Visible;
+                }
+
                 ColonizedStarSystem system = colony.ColonizedStarSystem;
                 return system != null
                     && system.State != StarSystemState.Lost
@@ -243,7 +266,13 @@ namespace ES2Access.UI
 
         /// <summary>The game's own word for each band of the ring - the three colours a player cannot
         /// see, heard as three regions instead. Shared, because both pages that draw a ring band it the
-        /// same way and a band named differently on two pages is two facts about one picture.</summary>
+        /// same way and a band named differently on two pages is two facts about one picture.
+        ///
+        /// The three words are the GAME's own, taken straight from its localization rather than given
+        /// mod keys of their own - an owner ruling of 2026-08-26, and a deliberate departure from this
+        /// mod's usual "every phrase it authors is a ModStrings key". The game already draws all three
+        /// words for these very things, so borrowing them costs the player no new vocabulary and costs
+        /// the translators nothing at all.</summary>
         public static string BandName(PopulationSlots.Band band)
         {
             string key = PopulationBandTitle;
@@ -256,7 +285,7 @@ namespace ES2Access.UI
                 key = LockedBandTitle;
             }
 
-            return AgeText.Clean(Gui.Localize(key));
+            return AgeText.Title(key);
         }
 
         private const string PopulationBandTitle = "%PlanetScreenPopulationTitle";
@@ -266,22 +295,33 @@ namespace ES2Access.UI
         // ---- how many one press carries ----
 
         /// <summary>
-        /// How many units one press on the slot at <paramref name="index"/> picks up - the game's own
-        /// marker RANK, which is what its drag carries (<c>PopulationEnumerator.DragInfo.Quantity =
-        /// populationMarker.Rank</c>, :247).
+        /// How many units one press on a slot picks up - the marker's own RANK, which is exactly what
+        /// the game's drag carries (<c>PopulationEnumerator.DragInfo.Quantity =
+        /// populationMarker.Rank</c>, :247) and which the game publishes on the marker it drew
+        /// (<c>PopulationMarker.Rank</c> :29).
         ///
         /// The ring lays one marker per unit out grouped by affinity, and numbers the markers of one
         /// affinity's contiguous run DOWNWARDS: the first of N carries N, the last carries one
-        /// (<c>ShowPopulationMarkers</c> :188-203). So a marker's rank is simply how many markers of
-        /// the same people are at it or after it - which is what this counts, off the caller's own
-        /// unit list, whose entries repeat one <c>Population</c> object per unit in exactly the ring's
-        /// order.
+        /// (<c>ShowPopulationMarkers</c> :188-203). So one press moves a WHOLE tail of one affinity
+        /// and never mixes two, which is the game's rule rather than a simplification.
         ///
-        /// One press therefore moves a WHOLE tail of one affinity and never mixes two, which is the
-        /// game's rule rather than a simplification: a drag carries one affinity.
+        /// The same run counted off <paramref name="units"/> is the fallback, for the frames where the
+        /// ring is not drawing a marker for the slot the row stands for - a refresh in progress, or a
+        /// world nobody has settled, whose ring is markers with nobody in them. That list repeats one
+        /// <c>Population</c> object per unit in exactly the ring's order, so counting how many of the
+        /// same people are at <paramref name="index"/> or after it reproduces the rank.
         /// </summary>
-        public static int Carried(IList<Population> units, int index)
+        public static int Carried(PopulationMarker marker, IList<Population> units, int index)
         {
+            try
+            {
+                if (marker != null && marker.Rank > 0)
+                {
+                    return marker.Rank;
+                }
+            }
+            catch (Exception) { }
+
             if (units == null || index < 0 || index >= units.Count)
             {
                 return 1;

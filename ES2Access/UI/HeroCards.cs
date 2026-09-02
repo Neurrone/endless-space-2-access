@@ -51,7 +51,12 @@ namespace ES2Access.UI
         private const string SenatorTitle = "%HeroCardPoliticalLeaderTitle";
 
         private const string ExperienceTitle = "%HeroCardExperienceTitle";
-        private const string LevelTitle = "%HeroCardLevelTitle";
+
+        /// <summary>Public because the tooltip reader also has to recognise the caption the card draws
+        /// ABOVE the level, which it can only do by the key the label still holds
+        /// (<see cref="TooltipFeatures"/>); the WORD itself is <see cref="LevelCaption"/>.</summary>
+        public const string LevelTitle = "%HeroCardLevelTitle";
+
         private const string UnspentPointsTitle = "%HeroInspectionRemainingSkillPointsTitle";
         private const string UpkeepTitle = "%HeroCardUpkeepTitle";
         private const string CooldownTitle = "%AssignmentCooldownBaseDurationTitle";
@@ -104,22 +109,18 @@ namespace ES2Access.UI
         /// the card's readout rather than leaving it to the tooltip rule; null on every card whose
         /// <c>DisplayDescription</c> is off, which is most of them.
         /// </summary>
-        public static Func<string> Description(HeroDetailedCard card)
+        public static string Description(HeroDetailedCard card)
         {
-            HeroDetailedCard it = card;
-            return () =>
+            try
             {
-                try
-                {
-                    return it == null || !it.DisplayDescription
-                        ? null
-                        : AgeText.Label(it.DescriptionLabel);
-                }
-                catch (Exception)
-                {
-                    return null;
-                }
-            };
+                return card == null || !card.DisplayDescription
+                    ? null
+                    : AgeText.Label(card.DescriptionLabel);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         /// <summary>The card's declared content: its whole drawn face as buffer lines, then the card's
@@ -220,6 +221,13 @@ namespace ES2Access.UI
         // caller consumes it before the next card is read.
         private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(12);
 
+        /// <summary>Empty the scratch - mod teardown. What the last sweep left in it is a card's
+        /// tooltips, which are the game's own objects.</summary>
+        public static void Forget()
+        {
+            Scratch.Clear();
+        }
+
         /// <summary>
         /// Everything the card is showing, band by band in the order the card DRAWS them - which is the
         /// order <c>Refresh</c> writes them in everywhere but the definition band (see
@@ -304,7 +312,7 @@ namespace ES2Access.UI
             if (Drawn(card.PoliticalLeaderLine))
             {
                 string senator = AgeText.Label(card.PoliticalLeaderLabel);
-                Add(lines, null, string.IsNullOrEmpty(senator) ? Localized(SenatorTitle) : senator);
+                Add(lines, null, string.IsNullOrEmpty(senator) ? AgeText.Title(SenatorTitle) : senator);
             }
 
             Add(lines, null, AgeText.Label(card.AffinityLabel));
@@ -317,11 +325,11 @@ namespace ES2Access.UI
         /// (<c>RefreshExperience</c> :358-369).</summary>
         private static void Experience(HeroDetailedCard card, List<string> lines)
         {
-            Add(lines, Localized(ExperienceTitle), AgeText.Label(card.ExperienceLabel));
-            Add(lines, Localized(LevelTitle), AgeText.Label(card.LevelLabel));
+            Add(lines, AgeText.Title(ExperienceTitle), AgeText.Label(card.ExperienceLabel));
+            Add(lines, AgeText.Title(LevelTitle), AgeText.Label(card.LevelLabel));
             if (Drawn(card.UnspentSkillsGroup))
             {
-                Add(lines, Localized(UnspentPointsTitle), AgeText.Label(card.UnspentSkillsValue));
+                Add(lines, AgeText.Title(UnspentPointsTitle), AgeText.Label(card.UnspentSkillsValue));
             }
         }
 
@@ -377,7 +385,7 @@ namespace ES2Access.UI
             for (int i = 0; i < found.Length; i++)
             {
                 AgeTransform at = found[i] == null ? null : found[i].AgeTransform;
-                if (at == null || !Drawn(at) || Under(at, container))
+                if (at == null || !Drawn(at) || AgeWidgets.Under(at, container))
                 {
                     continue;
                 }
@@ -392,39 +400,23 @@ namespace ES2Access.UI
             return null;
         }
 
-        private static bool Under(AgeTransform widget, AgeTransform container)
-        {
-            AgeTransform at = widget;
-            for (int depth = 0; at != null && depth < 8; depth++)
-            {
-                if (ReferenceEquals(at, container))
-                {
-                    return true;
-                }
-
-                at = at.Parent;
-            }
-
-            return false;
-        }
-
         /// <summary>What the hero costs and what they are doing: upkeep, the assignment's own name and
         /// the sentence the game wrote about it, the cooldown while the card is drawing one, and the
         /// relics a Templar hero carries (<c>RefreshAssignment</c> :372-401 draws each group by its own
         /// condition, so what is DRAWN is the question, not what the hero has).</summary>
         private static void Assignment(HeroDetailedCard card, List<string> lines)
         {
-            Add(lines, Localized(UpkeepTitle), AgeText.Label(card.UpkeepLabel));
+            Add(lines, AgeText.Title(UpkeepTitle), AgeText.Label(card.UpkeepLabel));
             Add(lines, null, AgeText.Label(card.AssignmentLabel));
             AddTooltip(lines, Tooltip(card, card.AssignmentTooltip));
             if (Drawn(card.Cooldown))
             {
-                Add(lines, Localized(CooldownTitle), AgeText.Label(card.CooldownLabel));
+                Add(lines, AgeText.Title(CooldownTitle), AgeText.Label(card.CooldownLabel));
             }
 
             if (Drawn(card.RelicsGroup))
             {
-                Add(lines, Localized(RelicsTitle), AgeText.Label(card.RelicsLabel));
+                Add(lines, AgeText.Title(RelicsTitle), AgeText.Label(card.RelicsLabel));
             }
         }
 
@@ -452,28 +444,7 @@ namespace ES2Access.UI
         /// prefab does not draw one.</summary>
         public static AgeControlButton Wired(HeroDetailedCard card, string handler)
         {
-            try
-            {
-                if (card == null)
-                {
-                    return null;
-                }
-
-                AgeControlButton[] found = card.GetComponentsInChildren<AgeControlButton>(true);
-                for (int i = 0; i < found.Length; i++)
-                {
-                    if (found[i] != null && found[i].OnActivateMethod == handler)
-                    {
-                        return found[i];
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("hero card: looking for the '" + handler + "' button threw: " + e);
-            }
-
-            return null;
+            return AgeWidgets.WiredTo(AgeWidgets.Transform(card), handler);
         }
 
         private static void Button(
@@ -485,23 +456,7 @@ namespace ES2Access.UI
             string key
         )
         {
-            AgeControlButton button = Wired(card, handler);
-            AgeTransform widget = AgeWidgets.Transform(button);
-            if (widget == null || !AgeWidgets.Operable(widget))
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Button(
-                () => Localized(titleKey),
-                () => AgeWidgets.PressPropagating(it),
-                () => AgeWidgets.Operable(AgeWidgets.Transform(it)),
-                tooltip
-            );
-            AgeWidgets.Point(vtable, it);
-            Cells.Add(cells, widget, ControlId.For(button, keyPrefix + "/" + key), vtable);
+            PanelButtons.Add(cells, Wired(card, handler), titleKey, keyPrefix, key, true);
         }
 
         /// <summary>A tooltip only where the card is keeping its tooltips at all: <c>HasTooltips</c> off
@@ -530,19 +485,15 @@ namespace ES2Access.UI
         /// alike whatever language the game is in.</summary>
         public static string LevelCaption()
         {
-            return Localized(LevelTitle);
+            return AgeText.Title(LevelTitle);
         }
 
-        private static string Localized(string key)
+        /// <summary>The game's word for what a hero costs, for the other places that draw the figure
+        /// bare - the tooltip reader's naming pass among them. One caller of the key, for the reason
+        /// <see cref="LevelCaption"/> is one.</summary>
+        public static string UpkeepCaption()
         {
-            try
-            {
-                return AgeText.Clean(Gui.Localize(key));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return AgeText.Title(UpkeepTitle);
         }
 
         private static void Add(List<string> lines, string caption, string value)

@@ -45,7 +45,7 @@ namespace ES2Access.Screens
     {
         public override string Key
         {
-            get { return "screen.message-box"; }
+            get { return ModStrings.ScreenMessageBox; }
         }
 
         /// <summary>Above every ordinary screen: a modal is on top of whatever raised it, and this
@@ -126,7 +126,7 @@ namespace ES2Access.Screens
             // what keeps it from being said twice.
             SettingRows.AddReadout(
                 builder,
-                SettingRows.TransformOf(window.TitleLabel),
+                AgeWidgets.Transform(window.TitleLabel),
                 "messagebox:heading"
             );
 
@@ -159,11 +159,11 @@ namespace ES2Access.Screens
             for (int i = 0; i < choices.Count; i++)
             {
                 Choice choice = choices[i];
-                AgeTooltip tooltip = TooltipOf(choice.Button);
+                AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(choice.Button));
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(choice.Caption),
                     () => Click(choice),
-                    () => Enabled(choice.Button),
+                    () => AgeWidgets.Operable(AgeWidgets.Transform(choice.Button)),
                     tooltip
                 );
                 if (tooltip == null)
@@ -230,7 +230,12 @@ namespace ES2Access.Screens
             Action fallback
         )
         {
-            if (!Visible(button) || string.IsNullOrEmpty(AgeText.Label(caption)))
+            // The box hides whole containers to lay out its two-, three- and four-button shapes, so a
+            // button of a shape that is not in use reports itself visible: the ancestry answers.
+            if (
+                !AgeWidgets.Visible(AgeWidgets.Transform(button))
+                || string.IsNullOrEmpty(AgeText.Label(caption))
+            )
             {
                 return;
             }
@@ -289,17 +294,16 @@ namespace ES2Access.Screens
             try
             {
                 AgeControlButton button = choice.Button;
+                // The wiring is tested here rather than left to the press: an UNWIRED button is what
+                // sends the answer down the window's own input route instead, and a press that
+                // quietly did nothing would take that fallback away.
                 if (
                     button != null
                     && button.OnActivateObject != null
                     && !string.IsNullOrEmpty(button.OnActivateMethod)
                 )
                 {
-                    button.OnActivateObject.SendMessage(
-                        button.OnActivateMethod,
-                        button.gameObject,
-                        SendMessageOptions.DontRequireReceiver
-                    );
+                    AgeWidgets.Press(button);
                     return;
                 }
 
@@ -347,18 +351,9 @@ namespace ES2Access.Screens
         private static string Question()
         {
             MessageBoxWindow window = Window();
-            if (window == null)
-            {
-                return null;
-            }
-
-            MessageBuilder message = new MessageBuilder();
-            foreach (string line in AgeText.Lines(AgeText.Label(window.MessageLabel)))
-            {
-                message.Fragment(line);
-            }
-
-            return message.Build();
+            return window == null
+                ? null
+                : SettingRows.OneLine(AgeText.Label(window.MessageLabel));
         }
 
         private static string Heading()
@@ -407,53 +402,9 @@ namespace ES2Access.Screens
             return lines;
         }
 
-        private static AgeTooltip TooltipOf(AgeControlButton button)
-        {
-            try
-            {
-                return button == null || button.AgeTransform == null
-                    ? null
-                    : button.AgeTransform.AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>Whether a button is really on screen: its own visibility and every ancestor's -
-        /// the box hides whole containers to lay out the two-, three- and four-button shapes.</summary>
-        private static bool Visible(AgeControlButton button)
-        {
-            return AgeWidgets.Visible(AgeWidgets.Transform(button));
-        }
-
-        private static bool Enabled(AgeControlButton button)
-        {
-            try
-            {
-                return button != null
-                    && button.AgeTransform != null
-                    && button.AgeTransform.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         private static MessageBoxWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<MessageBoxWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<MessageBoxWindow>();
         }
     }
 }

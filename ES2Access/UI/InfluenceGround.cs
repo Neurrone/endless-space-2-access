@@ -421,7 +421,7 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                tile.Taker = Behind(reading.Empires[i], known);
+                tile.Taker = EmpireIndex.Find(known, reading.Empires[i]);
                 break;
             }
 
@@ -494,19 +494,6 @@ namespace ES2Access.UI
             }
 
             into.Add(answer);
-        }
-
-        private static Empire Behind(int index, List<Empire> known)
-        {
-            for (int i = 0; i < known.Count; i++)
-            {
-                if (known[i].Index == index)
-                {
-                    return known[i];
-                }
-            }
-
-            return null;
         }
     }
 }

@@ -144,7 +144,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.economy"; }
+            get { return ModStrings.ScreenEconomy; }
         }
 
         /// <summary>Above the view levels it is drawn over, beside the empire summary and the senate: the
@@ -159,7 +159,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("EconomyScreen");
                 return string.IsNullOrEmpty(title) ? ModStrings.Get(ModStrings.ScreenEconomy) : title;
             }
         }
@@ -445,7 +445,7 @@ namespace ES2Access.Screens
             Band(_bands, GroupOf(panel.LuxuriesPanel));
             Band(_bands, panel.StrategicsGroup);
             Band(_bands, GroupOf(panel.RecipesPanel));
-            _bands.Sort(InReadingOrder);
+            _bands.Sort(AgeLayout.TopThenLeft);
 
             for (int i = 0; i < _bands.Count; i++)
             {
@@ -656,8 +656,7 @@ namespace ES2Access.Screens
 
                 Amplitude.Unity.Gui.ExtendedGuiElement element =
                     Gui.GetExtendedGuiElement(resource.TargetEffect);
-                string title = element == null ? null : AgeText.Clean(Gui.Localize(element.Title));
-                return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+                return element == null ? null : AgeText.Title(element.Title);
             }
             catch (Exception)
             {
@@ -718,8 +717,8 @@ namespace ES2Access.Screens
             MessageBuilder names = new MessageBuilder();
             for (int i = 0; i < keys.Length; i++)
             {
-                string name = AgeText.Clean(Gui.Localize(keys[i]));
-                if (string.IsNullOrEmpty(name) || name[0] == '%')
+                string name = AgeText.Title(keys[i]);
+                if (name == null)
                 {
                     return null;
                 }
@@ -794,7 +793,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => label),
-                    GraphNodes.ValuePart(() => StockAndNet(it.StockLabel, it.NetLabel)),
+                    GraphNodes.ValuePart(() => ResourceRows.Figures(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
@@ -802,21 +801,6 @@ namespace ES2Access.Screens
             return vtable;
         }
 
-
-        /// <summary>A stock and what the next turn does to it, as the game drew the two numbers - the
-        /// same phrasing the empire banner reads its own stocks with, so the second figure is heard as a
-        /// rate rather than as a second holding.</summary>
-        private static string StockAndNet(AgePrimitiveLabel stock, AgePrimitiveLabel net)
-        {
-            string held = AgeText.Label(stock);
-            string rate = AgeText.Label(net);
-            if (string.IsNullOrEmpty(rate))
-            {
-                return held;
-            }
-
-            return ModStrings.Format(ModStrings.GalaxyStockAndNet, held, rate);
-        }
 
         /// <summary>
         /// The system development projects: one line per slot the empire has, or the one line saying it
@@ -2587,13 +2571,11 @@ namespace ES2Access.Screens
             return heading == null ? null : AgeWidgets.TextOf(heading);
         }
 
-        /// <summary>Close the box's name off again, so the next box is not declared inside it.</summary>
+        /// <summary>Close the box's name off again, so the next box is not declared inside it - the
+        /// shared pop-if-pushed (<see cref="Captions.Pop"/>).</summary>
         private static void Unname(GraphBuilder builder, bool named)
         {
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
         }
 
         /// <summary>What a marketplace panel is called: the heading it draws if it draws one, else a word
@@ -2615,23 +2597,24 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The label a marketplace panel writes its own name into. The prefabs call it
-        /// "PanelTitle"; "Title" is what the economy tab's boxes call theirs, and it is kept as the
-        /// fallback so one lookup answers for both.</summary>
+        /// "PanelTitle"; "Title" is what the economy tab's boxes call theirs, and both are handed to
+        /// the shared search (<see cref="WindowShape.TitleWidget"/>) so one lookup answers for both.
+        /// </summary>
         private static AgeTransform PanelCaption(GuiPanel panel)
         {
             try
             {
-                AgeTransform at = panel == null ? null : panel.AgeTransform;
-                return at == null
+                return panel == null
                     ? null
-                    : AgeWidgets.ChildNamed(at, "PanelTitle", 2)
-                        ?? AgeWidgets.ChildNamed(at, "Title", 2);
+                    : WindowShape.TitleWidget(panel.AgeTransform, PanelTitleNames);
             }
             catch (Exception)
             {
                 return null;
             }
         }
+
+        private static readonly string[] PanelTitleNames = { "PanelTitle", "Title" };
 
         /// <summary>The heading the game writes across a marketplace panel, as that panel's first line -
         /// but only where it carries the sentence explaining the panel, which is the standing rule for a
@@ -2688,19 +2671,8 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly Comparison<AgeTransform> InReadingOrder = (left, right) =>
-        {
-            UnityEngine.Rect a = left.GetGlobalPosition();
-            UnityEngine.Rect b = right.GetGlobalPosition();
-            int rows = a.y.CompareTo(b.y);
-            return rows != 0 ? rows : a.x.CompareTo(b.x);
-        };
-
         private static readonly Comparison<GuiPanel> PanelsInReadingOrder = (left, right) =>
-            InReadingOrder(left.AgeTransform, right.AgeTransform);
-
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
+            AgeLayout.TopThenLeft(left.AgeTransform, right.AgeTransform);
 
         // ---- reading the window ----
 
@@ -2725,46 +2697,17 @@ namespace ES2Access.Screens
         /// <summary>The thing a market row stands for. The wrapper the table binds is rebuilt whenever
         /// the section refreshes and the line widget is pooled, so it is the tradable underneath that
         /// identifies the row.</summary>
-        private static object TradableOf(GuiTableLine line)
-        {
-            try
+        private static readonly TableSheet.RowObject TradableOf = TableSheet.Model<IGuiTradable>(
+            tradable =>
             {
-                IGuiTradable tradable =
-                    line == null ? null : line.Data as IGuiTradable;
                 GuiBuyable buyable = tradable as GuiBuyable;
                 return buyable != null ? (object)buyable.Tradable : tradable;
             }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        );
 
         /// <summary>What a market row is called when its name column draws nothing.</summary>
-        private static string TradableName(GuiTableLine line)
-        {
-            try
-            {
-                IGuiTradable tradable = line == null ? null : line.Data as IGuiTradable;
-                return tradable == null ? null : AgeText.Clean(tradable.Title);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("EconomyScreen"));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
+        private static readonly TableSheet.RowLabel TradableName =
+            TableSheet.Name<IGuiTradable>(tradable => tradable.Title);
 
         private static global::EconomyScreen Window()
         {

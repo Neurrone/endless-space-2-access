@@ -522,16 +522,7 @@ namespace ES2Access.Screens
 
         private static RecipeCreationModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<RecipeCreationModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<RecipeCreationModalWindow>();
         }
     }
 }

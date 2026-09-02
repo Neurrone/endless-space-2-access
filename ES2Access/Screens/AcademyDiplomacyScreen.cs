@@ -44,7 +44,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.academy-diplomacy"; }
+            get { return ModStrings.ScreenAcademyDiplomacy; }
         }
 
         /// <summary>Shared with the Academy's own window, above the hero inspection window at 45.</summary>
@@ -95,21 +95,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && window.Academy != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(GuiModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -143,15 +129,27 @@ namespace ES2Access.Screens
                 // beside it says nothing at all on its own, and the game DOES title that one
                 // (%AcademyRelationPointsTitle) - so it is captioned, the same ruling the minor
                 // window's figures are read under (owner 2026-08-22).
-                Cells.AddReadout(_cells, Of(window.RelationLabel), Keys + "relation");
+                Cells.AddReadout(
+                    _cells,
+                    AgeWidgets.Transform(window.RelationLabel),
+                    Keys + "relation"
+                );
                 Cells.AddStat(
                     _cells,
                     window.RelationTrendLabel,
                     "%AcademyRelationPointsTitle",
                     Keys + "trend"
                 );
-                Cells.AddReadout(_cells, Of(window.RelationEffectsLabel), Keys + "effects");
-                Cells.AddReadout(_cells, Of(window.RelationEffectNoneLabel), Keys + "no-effects");
+                Cells.AddReadout(
+                    _cells,
+                    AgeWidgets.Transform(window.RelationEffectsLabel),
+                    Keys + "effects"
+                );
+                Cells.AddReadout(
+                    _cells,
+                    AgeWidgets.Transform(window.RelationEffectNoneLabel),
+                    Keys + "no-effects"
+                );
                 AgeTransform power = window.AcademyPowerGauge == null
                     ? null
                     : window.AcademyPowerGauge.AgeTransform;
@@ -269,18 +267,6 @@ namespace ES2Access.Screens
 
             Cells.EmitLinear(builder, _cells);
             builder.PopContext();
-        }
-
-        private static AgeTransform Of(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static AcademyDiplomacyModalWindow Window()

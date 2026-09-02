@@ -106,7 +106,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.diplomacy"; }
+            get { return ModStrings.ScreenDiplomacy; }
         }
 
         /// <summary>The eighth of the icon strip's screens, drawn over whichever view level is
@@ -121,7 +121,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("DiplomacyScreen");
                 return string.IsNullOrEmpty(title)
                     ? ModStrings.Get(ModStrings.ScreenDiplomacy)
                     : title;
@@ -816,25 +816,11 @@ namespace ES2Access.Screens
             }
         }
 
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("DiplomacyScreen"));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static global::DiplomacyScreen Window()
         {
             try
             {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::DiplomacyScreen>(false)
-                    : null;
+                return GameWindows.Of<global::DiplomacyScreen>();
             }
             catch (Exception)
             {

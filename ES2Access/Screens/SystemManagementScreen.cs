@@ -89,7 +89,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.star-system"; }
+            get { return ModStrings.ScreenStarSystem; }
         }
 
         /// <summary>The same layer as the galaxy: it is the other half of the same map, and the two are
@@ -115,8 +115,8 @@ namespace ES2Access.Screens
             get
             {
                 string system = SystemTitle();
-                string page = AgeText.Clean(Gui.Localize(SystemManagementTitleKey));
-                if (string.IsNullOrEmpty(system) || string.IsNullOrEmpty(page) || page[0] == '%')
+                string page = AgeText.Title(SystemManagementTitleKey);
+                if (string.IsNullOrEmpty(system) || page == null)
                 {
                     return ModStrings.Get(ModStrings.ScreenStarSystem);
                 }
@@ -1332,8 +1332,8 @@ namespace ES2Access.Screens
         /// The item draws a picture and a figure, and everything else about the resource is a dossier
         /// the renderer assembles from the wrapper it binds (<c>ResourceDepositItem.Refresh</c> :36-42
         /// sets the class, the target and the failure sentences), so the card's line
-        /// (<see cref="AddDeposits"/>) says which resource and how much of it, and this is where the
-        /// rest of it is read. The pooled table's retired items keep the PREVIOUS planet's wrapper on
+        /// (<see cref="PlanetCardLines"/>) says which resource and how much of it, and this is where
+        /// the rest of it is read. The pooled table's retired items keep the PREVIOUS planet's wrapper on
         /// their tooltip, so each item is asked the gate's own drawing test at ADMISSION - the one
         /// place early enough to stop a ghost winning the dedupe.
         /// </summary>
@@ -1598,7 +1598,9 @@ namespace ES2Access.Screens
                 // was found on it, and the curiosities still to be looked into. The curiosities are
                 // buttons and are child nodes of their own, so only the rest of the table is read here.
                 AddWidgetLines(lines, label.PlanetCuriositiesTable, SkipCuriosities);
-                AddDeposits(lines, label);
+                // What the world is sitting on. The same reader: a deposit item writes its resource's
+                // name nowhere on itself, and the shared reading knows to ask its wrapper.
+                AddWidgetLines(lines, label.ResourceDepositsGroup);
                 AddDepletion(lines, label);
                 AddWidgetLines(lines, label.ImprovementStatus);
                 AddFidsi(lines, label);
@@ -1610,65 +1612,6 @@ namespace ES2Access.Screens
             }
 
             return lines;
-        }
-
-        /// <summary>
-        /// What the world is sitting on: one line per deposit the card is drawing, each the resource's
-        /// own name bound to the figure beside it.
-        ///
-        /// The generic reader cannot do this one. A deposit item draws an icon and a bare amount and
-        /// writes the resource's NAME nowhere on itself (<c>ResourceDepositItem.Refresh</c> :28-42 fills
-        /// <c>AmountLabel</c> and leaves the prefab's <c>TitleLabel</c> to the prefabs that have one) -
-        /// it keeps the name on the wrapper it hangs on its own tooltip, so a line read off the drawn
-        /// text alone was the number by itself, "3" and "2" with nothing saying of what. Both of the
-        /// card's shapes fill this same table (<c>PlanetLabel_SystemManagement.Refresh</c> :536-547),
-        /// so a settled world and an unsettled one both read here.
-        ///
-        /// The table is POOLED - <c>ReserveChildren</c> + <c>RefreshChildrenIList</c> retire a surplus
-        /// item by fading it to alpha 0 with <c>Visible</c> still true - and a retired item keeps the
-        /// PREVIOUS planet's resource on its tooltip, so the walk asks the engine's own drawing test of
-        /// each child (<see cref="AgeWidgets.Paints"/>, the same rule as
-        /// <c>SidePanels.Collect</c>) rather than the visibility flag.
-        /// </summary>
-        private static void AddDeposits(List<string> lines, PlanetLabel_SystemManagement label)
-        {
-            AgeTransform group = label.ResourceDepositsGroup;
-            // Content: which lines the card is read with. Lines, not nodes - nothing here is declared.
-            if (group == null || !AgeWidgets.Visible(group))
-            {
-                return;
-            }
-
-            IList<AgeTransform> children = group.Children;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                AgeTransform child = AgeWidgets.DrawnChild(children, i);
-                if (child == null)
-                {
-                    continue;
-                }
-
-                ResourceDepositItem item = child.GetComponent<ResourceDepositItem>();
-                if (item == null)
-                {
-                    AddLine(lines, AgeWidgets.ItemText(child));
-                    continue;
-                }
-
-                string name = Drawn(item.TitleLabel);
-                if (string.IsNullOrEmpty(name))
-                {
-                    name = AgeWidgets.TooltipTitle(item.Tooltip);
-                }
-
-                string amount = Drawn(item.AmountLabel);
-                AddLine(
-                    lines,
-                    string.IsNullOrEmpty(name)
-                        ? amount
-                        : ModStrings.Format(ModStrings.CaptionedColon, name, amount)
-                );
-            }
         }
 
         /// <summary>
@@ -1784,10 +1727,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What the carried thing IS here, so that a population unit cannot be dropped into a
-        /// fleet and a ship cannot be dropped onto a planet.</summary>
-        public const string PopulationKind = PopulationMoves.Kind;
-
         /// <summary>The colony this card is for WHOEVER owns it - the same object the card binds its
         /// population ring to (<c>PlanetLabel.BindPlanet</c> takes it straight off
         /// <c>Planet.ColonizedPlanet</c>, so an enemy outpost's card holds the enemy's colony), and so
@@ -1808,15 +1747,7 @@ namespace ES2Access.Screens
         /// unsettled world, or of somebody else's colony, is neither a source nor a target.</summary>
         private static ColonizedPlanet Settled(PlanetLabel_SystemManagement label)
         {
-            try
-            {
-                ColonizedPlanet colony = label == null ? null : label.ColonizedPlanet;
-                return colony != null && colony.Empire == Gui.PlayerEmpire ? colony : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return PopulationRings.Settled(Colony(label));
         }
 
         /// <summary>
@@ -1863,7 +1794,8 @@ namespace ES2Access.Screens
             return PopulationMoves.Slots(
                 ring.Card == null ? null : ring.Card.Planet,
                 ring.Colony,
-                DrawnMarkers(ring),
+                ring.Markers,
+                AgeWidgets.DrawnCount(MarkerContainer(ring)),
                 units
             );
         }
@@ -1934,62 +1866,12 @@ namespace ES2Access.Screens
         {
             try
             {
-                ColonizedPlanet ghost = label == null ? null : label.GhostColonizedPlanet;
-                return ghost != null && ghost.Empire == Gui.PlayerEmpire ? ghost : null;
+                return PopulationRings.Settled(label == null ? null : label.GhostColonizedPlanet);
             }
             catch (Exception)
             {
                 return null;
             }
-        }
-
-        /// <summary>How many markers the ring the game is DRAWING is showing. The container keeps its
-        /// retired markers as invisible children (<c>PopulationEnumerator.HideAllPopulationMarkers</c>
-        /// pools them without unparenting), so the visible ones are the ring - and they are in slot
-        /// order, because the enumerator sets each one's sibling index to its own slot and sorts.
-        /// </summary>
-        private static int DrawnMarkers(Ring ring)
-        {
-            AgeTransform container = MarkerContainer(ring);
-            IList<AgeTransform> markers = container == null ? null : container.Children;
-            int drawn = 0;
-            for (int i = 0; markers != null && i < markers.Count; i++)
-            {
-                if (AgeWidgets.DrawnChild(markers, i) != null)
-                {
-                    drawn++;
-                }
-            }
-
-            return drawn;
-        }
-
-        /// <summary>The widget the ring is drawing for one slot, which is where that slot's dossier
-        /// belongs on the screen. Null where the ring and the model disagree about how many slots
-        /// there are - a frame in the middle of a refresh - and the dossier then falls back to the
-        /// scratch carrier's own corner.</summary>
-        private static AgeTransform DrawnMarker(Ring ring, int index)
-        {
-            AgeTransform container = MarkerContainer(ring);
-            IList<AgeTransform> markers = container == null ? null : container.Children;
-            int seen = 0;
-            for (int i = 0; markers != null && i < markers.Count; i++)
-            {
-                AgeTransform marker = AgeWidgets.DrawnChild(markers, i);
-                if (marker == null)
-                {
-                    continue;
-                }
-
-                if (seen == index)
-                {
-                    return marker;
-                }
-
-                seen++;
-            }
-
-            return null;
         }
 
         /// <summary>The markers of the ring the row is being read from, or null where the game is not
@@ -2017,31 +1899,10 @@ namespace ES2Access.Screens
                 : label.PlanetPopulationEnumeratorFocused;
         }
 
-        /// <summary>
-        /// A row per SLOT of the card's population ring, in the three bands the ring draws them in.
-        ///
-        /// The ring is a picture: one marker per place a unit of population can live, coloured for
-        /// who is in it and for what kind of place it is. A row per AFFINITY - what this was until
-        /// 2026-08-26 - said who lived on the world and nothing about how much room there was, which
-        /// is the question the ring is on the card to answer. A row per slot says both, and the three
-        /// colours become three REGIONS the player steps between, named in the game's own words.
-        ///
-        /// The bands are contiguous by construction, so each is opened once and the region and the
-        /// context are closed on the way out of it.
-        ///
-        /// <paramref name="canCarry"/> is where a unit can be picked up, which is only where there is
-        /// somewhere to put it down - and only on the player's OWN colony, because the game moves
-        /// nobody else's population. One press carries what the GAME's own drag would carry from that
-        /// marker: itself and every marker of the same people after it round the ring
-        /// (<see cref="PopulationMoves.Carried"/>), so the first Imperial of five carries five and the
-        /// last carries one. What is carried is captured then, because the row is rebuilt every frame
-        /// and those people may have left the planet by the time it is dropped.
-        ///
-        /// A FILLED slot is also a drop target, and dropping onto it is the game's SWAP: the affinity
-        /// standing there is named as the one to send back the other way, which is what the mouse sets
-        /// by hovering a marker mid-drag (<c>PopulationEnumerator</c> :275). A plain add is the CARD's
-        /// own drop, one level up.
-        /// </summary>
+        /// <summary>The card's ring as rows, in the bands the ring draws them in
+        /// (<see cref="PopulationRings.Add"/>). What is passed is what is the PAGE's own: which
+        /// container the ring is drawn in, whose people fill it, where a drop lands, and what this
+        /// page's drop does. Everything both pages that draw a ring say alike is said there.</summary>
         private static void AddPopulationSlots(
             GraphBuilder builder,
             Ring ring,
@@ -2050,385 +1911,24 @@ namespace ES2Access.Screens
             bool canCarry
         )
         {
-            if (slots.Count == 0)
-            {
-                return;
-            }
-
-            string keyPrefix = ring.Key;
-            bool carry = canCarry && ring.Destination != null;
-            object outer = builder.Region;
-            int total = slots.Count;
-            bool inBand = false;
-            PopulationSlots.Band band = PopulationSlots.Band.Population;
-            try
-            {
-                for (int i = 0; i < slots.Count; i++)
+            Ring on = ring;
+            PopulationRings.Add(
+                builder,
+                new PopulationRings.Ring
                 {
-                    PopulationSlots.Slot slot = slots[i];
-                    if (!inBand || band != slot.Kind)
-                    {
-                        if (inBand)
-                        {
-                            builder.PopContext();
-                        }
-
-                        band = slot.Kind;
-                        inBand = true;
-                        builder.SetRegion(keyPrefix + "/" + band);
-                        builder.PushContext(BandName(band));
-                    }
-
-                    AddPopulationSlot(builder, ring, units, slot, total, carry);
-                }
-            }
-            finally
-            {
-                if (inBand)
-                {
-                    builder.PopContext();
-                }
-
-                builder.SetRegion(outer);
-            }
-        }
-
-        /// <summary>
-        /// One slot of the ring.
-        ///
-        /// What it SAYS is where it is and who is in it; which band it is in is said by the region it
-        /// is read in, so no row here carries an "overpopulated" or a "locked" word of its own.
-        ///
-        /// What it CARRIES is the dossier the game hangs on that marker, on a carrier of this mod's
-        /// own (<see cref="ScratchTooltips"/>) because the ring the player is navigating is the SIMPLE
-        /// one, whose markers the game binds no tooltip to at all - only the detailed ring it swaps in
-        /// under a mouse gets them (<c>PopulationMarker.Bind</c> does all of it under
-        /// <c>IsDetailed</c>). The carrier is parked over the marker's own place on the ring, so the
-        /// panel appears beside the picture it explains.
-        ///
-        /// A FILLED slot under the overpopulation arc carries two things at once - who lives there,
-        /// and what having them there costs - so the dossier is the row's and the arc's sentence
-        /// becomes the one child in its "Tooltips" region.
-        /// </summary>
-        private static void AddPopulationSlot(
-            GraphBuilder builder,
-            Ring ring,
-            List<Population> units,
-            PopulationSlots.Slot slot,
-            int total,
-            bool canCarry
-        )
-        {
-            PlanetLabel_SystemManagement label = ring.Card;
-            ColonizedPlanet colony = ring.Colony;
-            Population unit = slot.Unit >= 0 && slot.Unit < units.Count ? units[slot.Unit] : null;
-            string key = ring.Key + "/" + slot.Rank;
-            int rank = slot.Rank;
-            int outOf = total;
-            bool empty = unit == null && slot.Kind != PopulationSlots.Band.Locked;
-            // An UNSETTLED world's ring is all one band of empty slots
-            // (<see cref="PopulationSlots.BuildUnsettled"/>), so the row's position in its region is
-            // already its rank and saying it again in the label made every row read "Empty slot 1 of
-            // 6, 1 of 6". A COLONIZED card keeps the numbered phrase: there the ring is split into
-            // bands, so a row's position within its band is not its rank round the ring.
-            bool vacant = colony == null && empty;
-            AgeTooltip carrier = SlotCarrier(ring, slot, unit);
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(
-                        () =>
-                            vacant
-                                ? ModStrings.Get(ModStrings.SystemPopulationSlotVacant)
-                                : ModStrings.Format(
-                                    empty
-                                        ? ModStrings.SystemPopulationSlotEmpty
-                                        : ModStrings.SystemPopulationSlot,
-                                    rank,
-                                    outOf
-                                )
-                    ),
-                    GraphNodes.ValuePart(() => unit == null ? null : PopulationName(unit)),
+                    Planet = ring.Card == null ? null : ring.Card.Planet,
+                    Colony = ring.Colony,
+                    Destination = ring.Destination,
+                    Markers = MarkerContainer(ring),
+                    Key = ring.Key,
+                    Scratch = ring.Scratch,
+                    Accepts = cargo => AcceptsPopulation(on, cargo),
+                    Drop = (cargo, replaced) => DropPopulation(on, cargo, replaced),
                 },
-                Sections = GraphNodes.Sections(
-                    GraphNodes.TooltipSection(carrier)
-                ),
-            };
-
-            if (carrier != null)
-            {
-                AgeWidgets.PointAt(vtable, carrier.AgeTransform);
-            }
-
-            // EVERY slot of the player's own ring that is not LOCKED takes a drop, and which KIND of
-            // drop it is is who is standing in it: an occupied slot is the game's swap (the affinity
-            // there is the one sent back the other way), an empty one is the plain add the card
-            // itself takes. The empty rows are not a nicety - a player carrying somebody walks the
-            // ring looking for a free place to put them, so the free place is where the drop must be;
-            // offering it only on the card's header was a gap the owner met at once (2026-08-29).
-            // The game's add is not per-slot either way: the server places the people, and the row is
-            // only where the gesture is aimed.
-            if (ring.Destination != null && slot.Kind != PopulationSlots.Band.Locked)
-            {
-                if (canCarry && colony != null && unit != null)
-                {
-                    ColonizedPlanet source = colony;
-                    Population held = unit;
-                    int carried = PopulationMoves.Carried(units, slot.Unit);
-                    vtable.OnPickUp = () => PopulationMoves.Pick(source, held, carried);
-                }
-
-                Ring on = ring;
-                StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
-                vtable.DropKind = PopulationKind;
-                vtable.DropAccepts = cargo => AcceptsPopulation(on, cargo);
-                vtable.OnDrop = cargo => DropPopulation(on, cargo, replaced);
-            }
-
-            List<TooltipChildren.Dossier> nested = SlotDossiers(ring, slot, unit);
-            if (nested.Count == 0)
-            {
-                // Synthetic: a slot is read out of the colony's own model - the ring draws a marker
-                // per unit and nothing per empty slot - so the enumeration is the honesty here.
-                builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
-                return;
-            }
-
-            ControlId id = ControlId.Structural(key);
-            vtable.ControlType = ControlTypes.Group;
-            // Synthetic for the same reason as the leaf above.
-            builder.BeginGroup(Nodes.Synthetic(id, vtable));
-            if (builder.IsExpanded(id))
-            {
-                TooltipChildren.Emit(builder, key, nested, TooltipChildren.Actions(builder, key));
-            }
-
-            builder.EndGroup();
-        }
-
-        /// <summary>The sentence a slot carries BESIDE its own dossier, which is only ever the one: a
-        /// filled slot under the overpopulation arc, whose row is already the population's dossier and
-        /// whose arc still has something to say about it.</summary>
-        private static List<TooltipChildren.Dossier> SlotDossiers(
-            Ring ring,
-            PopulationSlots.Slot slot,
-            Population unit
-        )
-        {
-            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(1);
-            if (unit == null || slot.Kind != PopulationSlots.Band.Overpopulation)
-            {
-                return found;
-            }
-
-            AgeTooltip carrier = OverpopulationCarrier(ring, slot.Rank);
-            if (carrier != null)
-            {
-                TooltipChildren.AddPlain(found, carrier, carrier.AgeTransform);
-            }
-
-            return found;
-        }
-
-        /// <summary>Whichever dossier the ring hangs on this slot: the population's for a filled one,
-        /// the arc's sentence for an empty one under the arc, the game's word about what would unlock
-        /// it for a locked one - and nothing at all for an ordinary empty place, which the game
-        /// explains nowhere either.</summary>
-        private static AgeTooltip SlotCarrier(
-            Ring ring,
-            PopulationSlots.Slot slot,
-            Population unit
-        )
-        {
-            if (unit != null)
-            {
-                return PopulationCarrier(ring, slot.Rank, unit);
-            }
-
-            if (slot.Kind == PopulationSlots.Band.Locked)
-            {
-                return LockedCarrier(ring, slot.Rank);
-            }
-
-            return slot.Kind == PopulationSlots.Band.Overpopulation
-                ? OverpopulationCarrier(ring, slot.Rank)
-                : null;
-        }
-
-        /// <summary>A carrier bound exactly as <c>PopulationMarker.Bind</c> binds the game's own
-        /// detailed marker - the same class, the same wrapper, the same context - so the tooltip
-        /// window assembles the population's own dossier for a ring that is drawing no tooltips.
-        /// </summary>
-        private static AgeTooltip PopulationCarrier(Ring ring, int rank, Population unit)
-        {
-            try
-            {
-                ColonizedPlanet colony = ring.Colony;
-                AgeTooltip carrier;
-                bool rebind = ScratchTooltips.Rebind(
-                    SlotKey(ring, rank),
-                    SlotStamp(colony, (string)unit.Affinity, unit.Count),
-                    out carrier
-                );
-                if (rebind && carrier != null)
-                {
-                    GuiPopulation wrapper = PopulationMoves.Wrap(colony.Empire, unit);
-                    carrier.Class = "Population";
-                    carrier.Content = wrapper.Title;
-                    carrier.Target = wrapper;
-                    carrier.Context = wrapper.EmpirePopulationSimulationObject;
-                }
-
-                Park(carrier, ring, rank);
-                return carrier;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: binding a population slot's dossier threw: " + e);
-                return null;
-            }
-        }
-
-        /// <summary>A carrier holding the sentence the game writes on the overpopulation arc's own
-        /// icon (<c>PlanetPopulationEnumeratorRadial.RefreshOverpopulation</c>), which is plain text
-        /// under no class - so it is bound as plain text under no class here. The game picks its
-        /// singular or plural by how many slots the arc covers, and so does this.</summary>
-        private static AgeTooltip OverpopulationCarrier(Ring ring, int rank)
-        {
-            try
-            {
-                ColonizedPlanet colony = ring.Colony;
-                int covered = colony.MaxPopulation - colony.MaxPopulationUnderOverPopulation;
-                AgeTooltip carrier;
-                bool rebind = ScratchTooltips.Rebind(
-                    SlotKey(ring, rank) + "/overpopulation",
-                    covered,
-                    out carrier
-                );
-                if (rebind && carrier != null)
-                {
-                    carrier.Class = string.Empty;
-                    carrier.Target = null;
-                    carrier.Context = null;
-                    carrier.Content = Gui.Localize(
-                        covered == 1 ? OverpopulationSentence : OverpopulationSentencePlural
-                    );
-                }
-
-                Park(carrier, ring, rank);
-                return carrier;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: binding an overpopulation slot's sentence threw: " + e);
-                return null;
-            }
-        }
-
-        /// <summary>A carrier bound as the game binds a locked marker: its own simple panel naming the
-        /// project that would raise this world's maximum.</summary>
-        private static AgeTooltip LockedCarrier(Ring ring, int rank)
-        {
-            try
-            {
-                AgeTooltip carrier;
-                bool rebind = ScratchTooltips.Rebind(
-                    SlotKey(ring, rank) + "/locked",
-                    1L,
-                    out carrier
-                );
-                if (rebind && carrier != null)
-                {
-                    carrier.Class = "Simple";
-                    carrier.Target = null;
-                    carrier.Context = null;
-                    carrier.Content = LockedSentence;
-                }
-
-                Park(carrier, ring, rank);
-                return carrier;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("system: binding a locked slot's sentence threw: " + e);
-                return null;
-            }
-        }
-
-        /// <summary>Put a slot's carrier where the ring draws that slot, so the panel opens beside the
-        /// marker rather than at the screen's corner. The corner is the fallback and is what
-        /// <see cref="ScratchTooltips.Rebind"/> has already set, so a slot the ring is not drawing
-        /// this frame simply keeps it.</summary>
-        private static void Park(AgeTooltip carrier, Ring ring, int rank)
-        {
-            AgeTransform marker = DrawnMarker(ring, rank - 1);
-            if (marker != null)
-            {
-                ScratchTooltips.PlaceOver(carrier, marker);
-            }
-        }
-
-        /// <summary>A carrier's own key. It carries the RING as well as the world, because a card
-        /// drawing a Sanctuary draws two rings over the same planet and one key for both would hand the
-        /// Sanctuary's slot 1 whatever the world's slot 1 was last bound with.</summary>
-        private static string SlotKey(Ring ring, int rank)
-        {
-            return "population-slot/" + ring.Card.Planet.GUID + "/" + ring.Scratch + rank;
-        }
-
-        /// <summary>What a population slot's dossier depends on: the empire's turn, and who is in the
-        /// slot. Rebinding on anything less would reset the tooltip controller's countdown every
-        /// frame and the panel would never finish appearing.</summary>
-        private static long SlotStamp(ColonizedPlanet colony, string affinity, int count)
-        {
-            long stamp = 17L;
-            for (int i = 0; affinity != null && i < affinity.Length; i++)
-            {
-                stamp = (stamp * 31L) + affinity[i];
-            }
-
-            try
-            {
-                Game game = Gui.Game;
-                stamp = (stamp * 1000003L) + (game == null ? 0L : game.Turn);
-            }
-            catch (Exception) { }
-
-            return (stamp * 97L) + count;
-        }
-
-        /// <summary>
-        /// What a band of slots is called.
-        ///
-        /// The three words are the GAME's own, taken straight from its localization rather than given
-        /// mod keys of their own - an owner ruling of 2026-08-26, and a deliberate departure from this
-        /// mod's usual "every phrase it authors is a ModStrings key". The game already draws all three
-        /// words for these very things, so borrowing them costs the player no new vocabulary and costs
-        /// the translators nothing at all.
-        /// </summary>
-        private static string BandName(PopulationSlots.Band band)
-        {
-            return PopulationMoves.BandName(band);
-        }
-
-        private const string OverpopulationSentence = "%PlanetLabelOverPopulationDescription";
-        private const string OverpopulationSentencePlural =
-            "%PlanetLabelOverPopulationDescriptionPlural";
-        private const string LockedSentence = "%PopulationEnumeratorLockedDescription";
-
-        /// <summary>The game's own word for an affinity - what its marker's tooltip is titled with.
-        /// </summary>
-        private static string PopulationName(Population population)
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle(population.Affinity));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+                units,
+                slots,
+                canCarry
+            );
         }
 
         /// <summary>
@@ -2595,7 +2095,7 @@ namespace ES2Access.Screens
                                     : PopulationSlots.Band.Population)
                         );
                         builder.PushContext(
-                            BandName(
+                            PopulationMoves.BandName(
                                 locked
                                     ? PopulationSlots.Band.Locked
                                     : PopulationSlots.Band.Population
@@ -2651,7 +2151,7 @@ namespace ES2Access.Screens
                                 outOf
                             )
                     ),
-                    GraphNodes.ValuePart(() => unit == null ? null : PopulationName(unit)),
+                    GraphNodes.ValuePart(() => unit == null ? null : PopulationRings.PopulationName(unit)),
                 },
                 Sections = GraphNodes.Sections(GraphNodes.TooltipSection(SlotSentence(marker))),
             };
@@ -2660,7 +2160,7 @@ namespace ES2Access.Screens
             if (unit != null)
             {
                 Population held = unit;
-                int carried = PopulationMoves.Carried(units, index);
+                int carried = PopulationMoves.Carried(it, units, index);
                 vtable.OnPickUp = () => PopulationMoves.Pick(port, held, carried);
             }
 
@@ -2668,7 +2168,7 @@ namespace ES2Access.Screens
             {
                 SpaceportSidePanel host = panel;
                 StaticString replaced = unit == null ? StaticString.Empty : unit.Affinity;
-                vtable.DropKind = PopulationKind;
+                vtable.DropKind = PopulationMoves.Kind;
                 vtable.DropAccepts = cargo => PortTakes(host, cargo, unit != null);
                 vtable.OnDrop = cargo => DropIntoSpaceport(host, cargo, replaced);
             }
@@ -3447,7 +2947,7 @@ namespace ES2Access.Screens
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => FirstLine(tooltip)),
+                    GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
                 },
                 Sections = GraphNodes.Sections(
                     GraphNodes.TooltipSection(tooltip)
@@ -3693,7 +3193,7 @@ namespace ES2Access.Screens
                     ResourceItem row = item;
                     NodeVtable vtable = GraphNodes.Readout(
                         () => AgeText.Clean(it.Title),
-                        () => ResourceFigures(row, it),
+                        () => ResourceRows.Figures(row),
                         null,
                         item.Tooltip
                     );
@@ -3715,39 +3215,6 @@ namespace ES2Access.Screens
             {
                 Log.Warn("system: reading the colony panel's resources threw: " + e);
             }
-        }
-
-        /// <summary>What one resource row says about its numbers: whichever of the holding and the
-        /// per-turn change the row is actually DRAWING, in the game's own number formatting - both,
-        /// the rate alone (which is all this panel ever draws), the holding alone, or nothing at all.
-        ///
-        /// The labels decide WHICH figures are said and the cache decides WHAT they say: a label is
-        /// animated towards its target, so its own text mid-slide is a number the game never settled
-        /// on, while a hidden label keeps whatever it was last bound with and would invent a figure
-        /// that is nowhere on the screen.
-        ///
-        /// Decimals follow the item's own rule for each label (<c>ResourceItem.Refresh</c> :110-144):
-        /// one below ten, none above.</summary>
-        private static string ResourceFigures(ResourceItem item, GuiLocatedResource resource)
-        {
-            float stock = resource.GetStockValueFromCache();
-            float net = resource.GetNetValueFromCache();
-            bool heldDrawn = AgeWidgets.DrawnLabel(item.StockLabel) != null;
-            bool rateDrawn = AgeWidgets.DrawnLabel(item.NetLabel) != null;
-            if (heldDrawn && rateDrawn)
-            {
-                return GlobalHud.StockAndNet(stock, net, stock < 10f ? 1 : 0);
-            }
-
-            if (rateDrawn)
-            {
-                return ModStrings.Format(
-                    ModStrings.SystemNetPerTurn,
-                    GlobalHud.Amount(net, true, net < 10f ? 1 : 0)
-                );
-            }
-
-            return heldDrawn ? GlobalHud.Amount(stock, false, stock < 10f ? 1 : 0) : null;
         }
 
         /// <summary>How many wrecked Arks are drifting in this system, which is the only thing the
@@ -3877,22 +3344,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static AgeTransform BannerButton(ColonyInfoSidePanel panel, string handler)
         {
-            AgeTransform banner = panel.SystemBanner;
-            if (banner == null)
-            {
-                return null;
-            }
-
-            AgeControlButton[] buttons = banner.GetComponentsInChildren<AgeControlButton>(true);
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == handler)
-                {
-                    return buttons[i].AgeTransform;
-                }
-            }
-
-            return null;
+            return AgeWidgets.Transform(AgeWidgets.WiredTo(panel.SystemBanner, handler));
         }
 
         /// <summary>The game's own word for what the badge in the banner's corner is - it draws the
@@ -3901,22 +3353,9 @@ namespace ES2Access.Screens
 
         private static AgeTransform ImprovementsButton(ColonyInfoSidePanel panel)
         {
-            AgeTransform group = panel.SystemUpkeepGroup;
-            if (group == null)
-            {
-                return null;
-            }
-
-            AgeControlButton[] buttons = group.GetComponentsInChildren<AgeControlButton>(true);
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == "OnImprovementsCb")
-                {
-                    return buttons[i].AgeTransform;
-                }
-            }
-
-            return null;
+            return AgeWidgets.Transform(
+                AgeWidgets.WiredTo(panel.SystemUpkeepGroup, "OnImprovementsCb")
+            );
         }
 
         // ---- reading a panel nobody has modelled ----
@@ -4358,36 +3797,19 @@ namespace ES2Access.Screens
                 && ReferenceEquals(widget, population.HapinessGroup.AgeTransform.Parent);
         }
 
-        /// <summary>One kind of person living here. The entry draws their symbol and how many of them
-        /// there are and never writes what they are called; the game keeps that name on the wrapper hung
-        /// on the tooltip - which is on the SYMBOL inside the entry and not on the entry, so the pointer
-        /// is aimed at the tooltip rather than at the row (measured: the row carries no tooltip of its
-        /// own, and pointing at it left this row's review buffer with the dossier nowhere).</summary>
+        /// <summary>One kind of person living here, read as every panel that lists them reads one
+        /// (<see cref="PopulationRows.Count"/>).</summary>
         private static Cell PopulationCell(
             AgeTransform widget,
             PopulationCount unit,
             string keyPrefix
         )
         {
-            AgeTooltip tooltip = unit.Tooltip;
-            AgePrimitiveLabel count = unit.Count;
-            // The entry's own click opens the empire's population window
-            // (<c>PopulationCount.OnClickCb</c>) - the same window the senate's census button opens,
-            // which <see cref="PopulationScreen"/> already said these rows opened while no row here
-            // declared any action at all.
-            AgeTransform at = widget;
-            NodeVtable vtable = GraphNodes.Button(
-                () => AgeWidgets.TooltipTitle(tooltip),
-                () => AgeWidgets.Press(at),
-                () => AgeWidgets.Operable(at),
-                tooltip
-            );
-            vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => AgeText.Label(count)));
             return new Cell
             {
                 Widget = widget,
                 Id = ControlId.For(widget, keyPrefix + widget.name + "/population"),
-                Vtable = vtable,
+                Vtable = PopulationRows.Count(widget, unit, unit.Tooltip),
             };
         }
 
@@ -4499,17 +3921,21 @@ namespace ES2Access.Screens
             };
         }
 
+        /// <summary>What this system's approval figure is CALLED - which is a different word for an
+        /// empire that runs on honour. The game answers it with one system-level member,
+        /// <c>IHappinessProvider.HappinessTag</c> (<c>ColonizedStarSystem</c> :241), which is the name
+        /// of the gui element the panel writes into its own tooltip
+        /// (<c>HappinessSidePanelItem.Refresh</c> :29) - so the word is the game's own rather than this
+        /// mod picking between two empire properties by re-asking <c>CanUseHonor</c>.</summary>
         private static string ApprovalName(ColonyPopulationSidePanel panel)
         {
             try
             {
                 IHappinessProvider system =
                     panel == null ? null : panel.ColonizedStarSystem as IHappinessProvider;
-                StaticString property =
-                    system != null && system.CanUseHonor
-                        ? SimulationProperties.Empire.Obedience
-                        : SimulationProperties.Empire.Happiness;
-                return AgeText.Clean(Gui.GetLocalizedTitle(property));
+                return system == null
+                    ? null
+                    : AgeText.Clean(Gui.GetLocalizedTitle(system.HappinessTag));
             }
             catch (Exception)
             {
@@ -4533,7 +3959,9 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(
-                        () => FirstLine(kind) ?? AgeText.Label(it.NextPopulationLabel)
+                        () =>
+                            CardActions.FirstLine(kind)
+                            ?? AgeText.Label(it.NextPopulationLabel)
                     ),
                     GraphNodes.ValuePart(() => Drawn(it.TurnsBeforeNextPop)),
                     GraphNodes.ValuePart(() => Drawn(it.NextPopulationDestinationLabel)),
@@ -4614,19 +4042,13 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>A drawn-but-blank label answers null here rather than the empty string
+        /// <see cref="AgeWidgets.DrawnLabel"/> keeps the two cases apart with: one caller falls back to
+        /// the wrapper's title with ?? for an effect line drawn as a bare picture.</summary>
         private static string Drawn(AgePrimitiveLabel label)
         {
-            try
-            {
-                // A drawn-but-blank label answers null here rather than empty: one caller falls back
-                // to the wrapper's title with ?? for an effect line drawn as a bare picture.
-                string drawn = AgeWidgets.DrawnLabel(label);
-                return string.IsNullOrEmpty(drawn) ? null : drawn;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            string drawn = AgeWidgets.DrawnLabel(label);
+            return string.IsNullOrEmpty(drawn) ? null : drawn;
         }
 
         /// <summary>
@@ -4650,7 +4072,7 @@ namespace ES2Access.Screens
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => FirstLine(tooltip)),
+                    GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
                     GraphNodes.ValuePart(() => SensitivityText(it, true)),
                 },
                 // The graph.s tooltip opens with the sentence that is already the row.s NAME and then
@@ -4900,39 +4322,15 @@ namespace ES2Access.Screens
             Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
+        /// <summary>One line per thing a card's table is drawing, the way both pages that draw a planet
+        /// card read one (<see cref="PlanetCardLines.Add"/>).</summary>
         private static void AddWidgetLines(
             List<string> lines,
             AgeTransform widget,
             Func<AgeTransform, bool> skip = null
         )
         {
-            if (widget == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            IList<AgeTransform> children = widget.Children;
-            if (children == null || children.Count == 0)
-            {
-                AddLine(lines, AgeWidgets.ItemText(widget));
-                return;
-            }
-
-            // A table of things - the traits, the anomalies - reads one line per thing, which is how it
-            // is drawn and how it is reviewed. What each item SAYS, not the text on it: a findings table
-            // is a row of bare icons, and reading it as text read nothing at all.
-            //
-            // These tables are POOLED (ReserveChildren + RefreshChildrenIList), so the CHILD is asked
-            // the engine's own drawing test rather than the visibility flag a retired item keeps - the
-            // same rule and the same reason as SidePanels.Collect. The entry gate above stays the
-            // visibility chain, because a table that is itself fading in still has content to read.
-            for (int i = 0; i < children.Count; i++)
-            {
-                if (AgeWidgets.Paints(children[i]) && (skip == null || !skip(children[i])))
-                {
-                    AddLine(lines, AgeWidgets.ItemText(children[i]));
-                }
-            }
+            PlanetCardLines.Add(lines, widget, skip);
         }
 
         /// <summary>A table item the card offers as a button of its own, and so is not a line of the
@@ -4951,10 +4349,7 @@ namespace ES2Access.Screens
 
         private static void AddLine(List<string> lines, string line)
         {
-            if (!string.IsNullOrEmpty(line) && !lines.Contains(line))
-            {
-                lines.Add(line);
-            }
+            PlanetCardLines.AddLine(lines, line);
         }
 
         private static void Add(List<string> lines, Func<IList<string>> source)
@@ -4973,13 +4368,6 @@ namespace ES2Access.Screens
                 }
             }
             catch (Exception) { }
-        }
-
-        /// <summary>The first thing a tooltip says - what a control with no caption of its own is
-        /// called, in the game's words.</summary>
-        private static string FirstLine(AgeTooltip tooltip)
-        {
-            return CardActions.FirstLine(tooltip);
         }
 
         /// <summary>The caption written beside a control - a drop list's own name, which the game draws

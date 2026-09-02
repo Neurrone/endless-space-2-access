@@ -293,18 +293,7 @@ namespace ES2Access.UI
                 // really ON, which is what this used to say - for a row whose dossier hangs on an icon
                 // inside it, pointing at the row draws nothing at all.
 
-                if (vtable.OnSelectToggle == null && AgeWidgets.Hinted(at))
-                {
-                    AgeTransform hint = at;
-                    vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
-                    NodeHints.Add(
-                        vtable,
-                        ModStrings.HintMissingTechnology,
-                        UiActions.SelectToggle,
-                        0,
-                        () => AgeWidgets.Hinted(hint)
-                    );
-                }
+                Cells.WireHintGesture(vtable, at);
 
                 // The colony card's curiosity: the game's own ALT-click queues the expedition at the
                 // FRONT of the system's queue, and the modified click's fall back cannot carry it -
@@ -410,18 +399,28 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The first sentence of a tooltip whose words are on the widget - what the game wrote
-        /// to explain a control it named nowhere else.</summary>
-        public static string FirstLine(AgeTooltip tooltip)
+        /// <summary>
+        /// The first sentence a tooltip carries - what the game wrote to explain a control it named
+        /// nowhere else, and the one naming rung every surface in the mod climbs.
+        ///
+        /// <paramref name="readableOnly"/> is which tooltips are allowed to answer, and it is a real
+        /// choice rather than a caution. TRUE is the naming rung proper: only a tooltip with no class
+        /// on it answers, because a class-backed one has no words until the pointer is over it and a
+        /// name that is empty except while hovered is worse than no name. FALSE is for a caller that
+        /// wants whatever the game happened to write onto the tooltip WHATEVER renderer it also names
+        /// - the map labels do this, where the words themselves still reach the player as the node's
+        /// own sections and this is only being read for a NAME.
+        /// </summary>
+        public static string FirstLine(AgeTooltip tooltip, bool readableOnly = true)
         {
             try
             {
-                if (AgeWidgets.Readable(tooltip) == null)
+                if (readableOnly && AgeWidgets.Readable(tooltip) == null)
                 {
                     return null;
                 }
 
-                IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+                IList<string> lines = AgeText.ContentLines(tooltip);
                 return lines != null && lines.Count > 0 ? lines[0] : null;
             }
             catch (Exception)

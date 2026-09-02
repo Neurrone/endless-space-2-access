@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using ES2Access.Core.Util;
 using HarmonyLib;
 
 namespace ES2Access.UI.Input
@@ -34,70 +33,27 @@ namespace ES2Access.UI.Input
     /// </summary>
     internal static class ChatEscape
     {
-        private static Harmony _harmony;
-        private static bool _reportedFailure;
+        private static readonly ModPatch Patches = new ModPatch(
+            "chatescape",
+            "the chat panel's input handler"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.chatescape." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch =>
+                {
+                    foreach (MethodInfo handler in Handlers())
+                    {
+                        patch.Prefix(handler, typeof(ChatEscape), "StepOutInsteadOfClosing");
+                    }
+                }
             );
-
-            try
-            {
-                HarmonyMethod prefix = new HarmonyMethod(
-                    typeof(ChatEscape).GetMethod(
-                        "StepOutInsteadOfClosing",
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                );
-
-                foreach (MethodInfo handler in Handlers())
-                {
-                    harmony.Patch(handler, prefix);
-                }
-
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, Escape closes chat as the game always did - the chat page is then only
-                // up for as long as the player keeps typing, which is worth saying loudly and not
-                // worth refusing to start over.
-                Log.Error("the chat panel's input handler could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the chat panel's input handler could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         /// <summary>Where the game answers an input action for the in-game chat panel. Internal rather
@@ -180,15 +136,10 @@ namespace ES2Access.UI.Input
             {
                 // Runs inside the game's own input dispatch: let the panel answer rather than throw
                 // into it, and say so once instead of once per press.
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn(
-                        "deciding what Escape means in the chat box threw, leaving it to the game: "
-                            + e
-                    );
-                }
-
+                Patches.Report(
+                    "deciding what Escape means in the chat box threw, leaving it to the game",
+                    e
+                );
                 return true;
             }
         }

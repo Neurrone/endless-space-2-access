@@ -336,12 +336,9 @@ namespace ES2Access.UI
         {
             try
             {
-                IGalaxyEntityFactoryService entities =
-                    Services.GetService<IGalaxyEntityFactoryService>();
-                GameObject entity = entities == null ? null : entities[lane.GUID];
                 GalaxyLinkCursorTarget[] halves =
-                    entity == null ? null : entity.GetComponents<GalaxyLinkCursorTarget>();
-                if (halves == null || halves.Length == 0)
+                    GalaxyEntities.Components<GalaxyLinkCursorTarget>(lane.GUID);
+                if (halves.Length == 0)
                 {
                     return null;
                 }
@@ -578,12 +575,7 @@ namespace ES2Access.UI
 
             try
             {
-                IGalaxyEntityFactoryService entities =
-                    Services.GetService<IGalaxyEntityFactoryService>();
-                GameObject entity = entities == null ? null : entities[node.GUID];
-                return entity == null
-                    ? null
-                    : entity.GetComponent<GalaxyStarSystemCursorTarget>();
+                return GalaxyEntities.Component<GalaxyStarSystemCursorTarget>(node.GUID);
             }
             catch (Exception)
             {

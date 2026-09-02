@@ -331,8 +331,20 @@ namespace ES2Access.UI
                 float cost = pathfinding
                     .GetTransitionCost(fleet.GeneratePathfindingData(), near, far, settings)
                     .Cost;
-                if (!float.IsInfinity(cost) && path.AddMovement(far, pathfinding))
+                if (!float.IsInfinity(cost))
                 {
+                    // The game's own handling of a step it has already PRICED
+                    // (<c>GalaxyGarrisonCursor.GetGalaxyPathToLink</c>
+                    // :396-414): a finite cost means the step is allowed, so the path is the answer,
+                    // and a refusal from AddMovement is a fault in the path builder rather than
+                    // anything the player did - the game logs it and hands the path back. Reading it
+                    // as a refusal instead sent the caller down the diplomatic diagnosis below and
+                    // told the player their borders were closed when nothing of the sort had happened.
+                    if (!path.AddMovement(far, pathfinding))
+                    {
+                        Log.Warn("galaxy: could not add a new movement to a path onto a starlane");
+                    }
+
                     return path;
                 }
 
@@ -493,7 +505,8 @@ namespace ES2Access.UI
             if (
                 goal != start
                 && fleet.Position.NodePosition == NodePosition.Invalid
-                && (int)from.Exploration[fleet.Empire] < 3
+                && (int)from.Exploration[fleet.Empire]
+                    < (int)EntityExploration.State.PartiallyRevealed
             )
             {
                 FailureInfo.Add(FailureFlags.NextNodeUnknown, failureInfos);

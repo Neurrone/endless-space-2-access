@@ -54,8 +54,15 @@ namespace ES2Access.UI
                 if (owner.Index == Gui.PlayerEmpire.Index)
                 {
                     message.ListItemForcedComma(Yield(wrapper));
+                    // The turn count as a whole phrase, the same one every other countdown in the
+                    // galaxy reading uses. The game draws it as a figure beside a turn ICON, and a
+                    // picture is not a word: glued to the number it read as "5 Turn", which is the
+                    // icon's name standing in for a sentence nobody wrote.
                     message.ListItemForcedComma(
-                        AgeText.Clean(wrapper.MiningRemainingTurns + "[turn]")
+                        ModStrings.Format(
+                            ModStrings.GalaxyTurnsRemaining,
+                            wrapper.MiningRemainingTurns
+                        )
                     );
                 }
 
@@ -69,24 +76,24 @@ namespace ES2Access.UI
         }
 
         /// <summary>What the probe is pulling out, in the game's own amounts and its own resource
-        /// symbols, joined the way the feature joins them.</summary>
+        /// symbols, joined the way every other run of fragments in the mod is joined - through the
+        /// builder, whose separator a translation owns. Written with hard-coded spaces, this was one
+        /// of the few places a language that joins differently could not.</summary>
         private static string Yield(GuiPlanet planet)
         {
-            string text = string.Empty;
+            MessageBuilder amounts = new MessageBuilder();
             foreach (KeyValuePair<string, float> item in planet.MiningValuesBySymbol)
             {
-                if (text.Length > 0)
-                {
-                    text += " ";
-                }
-
-                text +=
+                amounts.Fragment(
                     Gui.FormatAmount(item.Value, false, Gui.Rounding.Floor, true, 1)
-                    + " "
-                    + item.Key;
+                );
+                amounts.Fragment(item.Key);
             }
 
-            return AgeText.Clean(text);
+            // Cleaned as one string at the end rather than fragment by fragment: the symbols are icon
+            // tokens, and the substitution that turns them into words looks at what sits either side
+            // of the seam to decide whether a space belongs there.
+            return AgeText.Clean(amounts.Build());
         }
     }
 }

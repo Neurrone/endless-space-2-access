@@ -1,6 +1,5 @@
 using System;
-using System.Reflection;
-using ES2Access.Core.Util;
+using ES2Access.UI;
 using HarmonyLib;
 using UnityEngine;
 
@@ -63,102 +62,60 @@ namespace ES2Access.Screens
         /// mod pans, and a pan that follows the cursor is not a place to send the cursor.</summary>
         public static bool Suppressed;
 
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "galaxylocate",
+            "the game's go-and-look-at-this calls"
+        );
+
         private static Request _wanted;
-        private static bool _reportedFailure;
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.galaxylocate." + Guid.NewGuid().ToString("N")
+            // The concrete class, not the interface every caller names: an interface method has no
+            // body to patch, and the game has exactly one implementation of this service. Each of
+            // the three is optional, so a signature this game's build does not have costs the other
+            // two nothing.
+            Patches.Install(
+                patch =>
+                {
+                    Hook(
+                        patch,
+                        "RequestGalaxyOverviewViewLevel",
+                        new[] { typeof(IGameEntityWithGalaxyPosition) },
+                        "RememberEntity"
+                    );
+                    Hook(
+                        patch,
+                        "RequestGalaxyOverviewViewLevel",
+                        new[] { typeof(Vector3) },
+                        "RememberPosition"
+                    );
+                    Hook(
+                        patch,
+                        "ShowQuestLocation",
+                        new[] { typeof(Quest), typeof(QuestStep) },
+                        "RememberQuest"
+                    );
+                }
             );
-
-            try
-            {
-                // The concrete class, not the interface every caller names: an interface method has no
-                // body to patch, and the game has exactly one implementation of this service.
-                Hook(
-                    harmony,
-                    "RequestGalaxyOverviewViewLevel",
-                    new[] { typeof(IGameEntityWithGalaxyPosition) },
-                    "RememberEntity"
-                );
-                Hook(
-                    harmony,
-                    "RequestGalaxyOverviewViewLevel",
-                    new[] { typeof(Vector3) },
-                    "RememberPosition"
-                );
-                Hook(
-                    harmony,
-                    "ShowQuestLocation",
-                    new[] { typeof(Quest), typeof(QuestStep) },
-                    "RememberQuest"
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, every one of those buttons still moves the camera; what is lost is the
-                // cursor following it. Worth saying and not worth refusing to start over.
-                Log.Error("the game's go-and-look-at-this calls could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
-        /// <summary>One of the three, patched - or logged and skipped, so a signature this game's build
-        /// does not have costs the other two nothing.</summary>
-        private static void Hook(Harmony harmony, string name, Type[] parameters, string postfix)
+        private static void Hook(ModPatch patch, string name, Type[] parameters, string postfix)
         {
-            MethodInfo method = AccessTools.Method(typeof(GuiManager), name, parameters);
-            if (method == null)
-            {
-                Log.Warn("galaxy locate: the game has no " + name + " with that signature");
-                return;
-            }
-
-            harmony.Patch(
-                method,
-                postfix: new HarmonyMethod(
-                    typeof(GalaxyLocate).GetMethod(
-                        postfix,
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                )
+            patch.Hook(
+                AccessTools.Method(typeof(GuiManager), name, parameters),
+                name,
+                typeof(GalaxyLocate),
+                null,
+                postfix
             );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             _wanted = null;
-            _reportedFailure = false;
             Suppressed = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the game's go-and-look-at-this calls could not be unpatched: " + e);
-            }
         }
 
         /// <summary>The place the game last asked to be looked at, left where it is - for a page that
@@ -256,11 +213,7 @@ namespace ES2Access.Screens
 
         private static void Report(Exception e)
         {
-            if (!_reportedFailure)
-            {
-                _reportedFailure = true;
-                Log.Warn("remembering where the game located threw: " + e);
-            }
+            Patches.Report("remembering where the game located threw", e);
         }
     }
 }

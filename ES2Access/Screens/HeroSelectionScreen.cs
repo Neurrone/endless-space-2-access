@@ -65,7 +65,7 @@ namespace ES2Access.Screens
         /// nobody would walk to.</summary>
         public override string ScreenName
         {
-            get { return Title(Window()); }
+            get { return WindowShape.Title(Window()); }
         }
 
         /// <summary>The cards: they are drawn first, Tab does not wrap, and the card already picked is
@@ -97,7 +97,7 @@ namespace ES2Access.Screens
                     _arrived = window.Shown && window.IsReady;
                 }
 
-                return _arrived && !Buried(window);
+                return _arrived && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -106,33 +106,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// Whether the game has put another modal on top of this one - which for a modal is not being
-        /// COVERED but being HIDDEN: the stack is exclusive, so opening the inspection window this
-        /// window's own Inspect button opens takes this one off the screen entirely (measured:
-        /// <c>heroSel.Shown=False, AgeTransform.Visible=False</c> while the inspection window is up).
-        /// Keeping the keyboard here would leave the player pressing Enter on a Confirm they cannot see.
-        ///
-        /// Asked of the game's own record of which modal is on top (<c>GuiManager.ModalOnTop</c>, written
-        /// by <c>ModalWindow_VisibilityChanged</c> :1750-1765) rather than of this window's visibility,
-        /// because the two answers differ on the frame that matters: while this window is closing,
-        /// visibility is already false and there is no modal on top at all - and leaving THEN is the
-        /// departure that must wait for the unbind, or the page underneath reads every control unavailable
-        /// (the <see cref="ImprovementsModalScreen"/> measurement).
-        /// </summary>
-        private static bool Buried(HeroSelectionModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
 
         public override void Build(GraphBuilder builder)
         {
@@ -337,31 +310,6 @@ namespace ES2Access.Screens
 
         // ---- reading the window ----
 
-        /// <summary>The window's own title, found where it is drawn: the class exposes its cards and two
-        /// of its buttons and nothing else.</summary>
-        private static string Title(HeroSelectionModalWindow window)
-        {
-            try
-            {
-                if (window == null)
-                {
-                    return null;
-                }
-
-                AgePrimitiveLabel[] labels =
-                    window.GetComponentsInChildren<AgePrimitiveLabel>(true);
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    if (labels[i] != null && labels[i].name == "WindowTitle")
-                    {
-                        return AgeText.Label(labels[i]);
-                    }
-                }
-            }
-            catch (Exception) { }
-
-            return null;
-        }
 
         private static HeroDetailedCard Card(AgeTransform widget)
         {

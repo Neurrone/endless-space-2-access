@@ -160,16 +160,8 @@ namespace ES2Access.Screens
         /// </summary>
         private static ControlId CurrentRow()
         {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return node == null ? null : node.Id;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator == null ? null : navigator.FocusedKey;
         }
 
         /// <summary>Whether an editor has been asked for and the keyboard has not changed hands yet.
@@ -248,7 +240,7 @@ namespace ES2Access.Screens
                     age.FocusedControl = field;
                 }
 
-                OptionsScreen.Call(gainFocus, owner, OptionsScreen.NoSender);
+                GameHandlers.Call(gainFocus, owner, GameHandlers.NoSender);
                 if (Typing(field))
                 {
                     Begin(field, before, row, options);
@@ -305,16 +297,8 @@ namespace ES2Access.Screens
 
         private static bool OnRow(ControlId id)
         {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return id != null && node != null && id.Equals(node.Id);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator != null && navigator.CursorIsOn(id);
         }
 
         // ---- the live edit ----
@@ -647,6 +631,10 @@ namespace ES2Access.Screens
         {
             Clear();
             _reportedFailure = false;
+            // And the armed commit. The patch that consumes it comes off one step earlier in
+            // <c>ModEntry.Stop</c>, so an unload between the key going down and its release would
+            // otherwise arm the NEXT load's first focus change as a commit.
+            CommitTheNextRelease = false;
         }
 
         /// <summary>The box's text exactly as the engine holds it - not the cleaned reading, because a
@@ -675,9 +663,9 @@ namespace ES2Access.Screens
             {
                 if (_caret == null)
                 {
-                    _caret = typeof(AgeControlTextArea).GetField(
-                        "cursorPositionInText",
-                        BindingFlags.Instance | BindingFlags.NonPublic
+                    _caret = GameHandlers.Field(
+                        typeof(AgeControlTextArea),
+                        "cursorPositionInText"
                     );
                 }
 

@@ -74,13 +74,13 @@ namespace ES2Access.Core.Speech
         }
 
         /// <summary>One axis' offset as the whole number it is spoken as: nearest, midpoints away from
-        /// zero. Written out rather than taken from the framework so the rule is the one the tests
-        /// state, on every runtime this mod is loaded into.</summary>
+        /// zero - the mod's one rounding policy, the same
+        /// <c>MidpointRounding.AwayFromZero</c> every other place in <c>Core</c> that turns a measured
+        /// figure into a spoken one uses. Named rather than written out at each call site because
+        /// "which way does a half go" is the kind of rule two copies drift on.</summary>
         public static int Round(double offset)
         {
-            return offset < 0.0
-                ? (int)System.Math.Ceiling(offset - 0.5)
-                : (int)System.Math.Floor(offset + 0.5);
+            return (int)System.Math.Round(offset, System.MidpointRounding.AwayFromZero);
         }
     }
 }

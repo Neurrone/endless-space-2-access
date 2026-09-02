@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ES2Access.Core.UI;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI.Input;
 
@@ -57,29 +57,20 @@ namespace ES2Access.UI
 
         /// <summary>
         /// Declare one control - and give it the gesture this game hangs on the controls it has switched
-        /// OFF: the Ctrl+click that locates the technology the control is missing.
+        /// OFF: the Ctrl+click that locates the technology the control is missing
+        /// (<see cref="WireHintGesture"/>, which owns the rule and the reasons).
         ///
-        /// Sixteen prefabs use that trick, and on every one of them the screen's own click is gated away
-        /// (<see cref="AgeWidgets.Offered"/> answers false for exactly it), so the shared Ctrl+Enter fall
-        /// back to the plain click would replay a control that does nothing. The gesture therefore has to
-        /// be WIRED - and this is the one call that takes a whole VTABLE, so it is wired here
-        /// once instead of on every screen that draws a hintable control. It is NOT every cell: the
+        /// Wired HERE because this is the one call that takes a whole VTABLE. It is NOT every cell: the
         /// factory methods below (<see cref="Control"/>, <see cref="Readout"/>, <see cref="AddControl"/>,
         /// <see cref="AddReadout"/>, <see cref="AddStat"/>) hand the caller a finished <see cref="Cell"/>
         /// and are appended to the list directly, so a control declared that way keeps the shared fall
         /// back to its plain click - which is right where the game's own handler branches on the held
         /// Control and does more than the jump (the government window's Validate is the worked case:
         /// <c>GovernmentModalWindow.OnValidateCb</c> :379-395 activates the hint AND closes the window,
-        /// and only the replayed click gets both). The other way a widget becomes
-        /// a node is a card's own button (<see cref="CardActions.Emit"/>), which wires the same three
-        /// lines for the same reason: keep the two in step, or the family that skips them answers the
-        /// gesture with silence. A screen that
-        /// wired a Ctrl gesture of its own keeps it: this only fills an empty slot, and it fills it only
-        /// where the hint is actually on the declared widget (a row whose hint hangs off a CHILD names
-        /// the child itself, the way the troop list's locked type does).
-        ///
-        /// Asked per cell per rebuild because a hint comes and goes with the player's research: it is one
-        /// <c>GetComponent</c> on a widget the screen has already read several times over.
+        /// and only the replayed click gets both). The other way a widget becomes a node is a card's own
+        /// button (<see cref="CardActions.Emit"/>), which makes the same call for the same reason. The
+        /// hint has to be on the DECLARED widget: a row whose hint hangs off a CHILD names the child
+        /// itself, the way the troop list's locked type does.
         ///
         /// Answers the cell it appended, for the caller that has more to say about it than the four
         /// arguments carry - a card handing over the <see cref="Cell.Dossiers"/> that turn it into a
@@ -92,26 +83,48 @@ namespace ES2Access.UI
             NodeVtable vtable
         )
         {
-            if (vtable != null && vtable.OnSelectToggle == null && AgeWidgets.Hinted(widget))
-            {
-                AgeTransform hint = widget;
-                vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
-                // And a line saying so, since the gesture is the one thing a control in this state
-                // still does and nothing on the control says it. Gated on the hint being live, so it
-                // goes with the technology the player has just researched.
-                NodeHints.Add(
-                    vtable,
-                    ModStrings.HintMissingTechnology,
-                    UiActions.SelectToggle,
-                    0,
-                    () => AgeWidgets.Hinted(hint)
-                );
-            }
-
+            WireHintGesture(vtable, widget);
             ScrollIntoView.Anchor(vtable, widget);
             Cell cell = new Cell { Widget = widget, Id = id, Vtable = vtable };
             cells.Add(cell);
             return cell;
+        }
+
+        /// <summary>
+        /// Give a node the missing-technology gesture, where the widget it stands on is carrying one.
+        ///
+        /// A control the game has made unavailable this way answers no ordinary click
+        /// (<see cref="AgeWidgets.Offered"/> is false for exactly it), so the shared fall back to a
+        /// plain click would replay a control that does nothing; the gesture has to be WIRED. Both
+        /// places a widget becomes a node - a cell (<see cref="Add"/>) and a card's own button
+        /// (<see cref="CardActions.Emit"/>) - need it, and needed it identically, which is why the
+        /// three lines live here instead of twice over: a family that skipped them answered the
+        /// gesture with silence.
+        ///
+        /// It fills an EMPTY slot only. A screen that wired a Ctrl gesture of its own keeps it.
+        ///
+        /// The hint LINE goes on with the gesture, since the gesture is the one thing a control in
+        /// this state still does and nothing on the control says so. Gated on the hint still being
+        /// live, so it goes away with the technology the player has just researched. Asked per node
+        /// per rebuild, because that is when a hint appears and disappears; it is one
+        /// <c>GetComponent</c> on a widget the screen has already read.
+        /// </summary>
+        public static void WireHintGesture(NodeVtable vtable, AgeTransform widget)
+        {
+            if (vtable == null || vtable.OnSelectToggle != null || !AgeWidgets.Hinted(widget))
+            {
+                return;
+            }
+
+            AgeTransform hint = widget;
+            vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
+            NodeHints.Add(
+                vtable,
+                ModStrings.HintMissingTechnology,
+                UiActions.SelectToggle,
+                0,
+                () => AgeWidgets.Hinted(hint)
+            );
         }
 
         /// <summary>
@@ -400,7 +413,7 @@ namespace ES2Access.UI
         /// them in the order the game drew them and the pointer is aimed at the last one's owner, which
         /// is what makes it DRAW (aiming at the container draws nothing at all).
         /// </summary>
-        public static Cell Readout(AgeTransform widget, string key)
+        public static Cell GatheredReadout(AgeTransform widget, string key)
         {
             return Readout(widget, key, false);
         }

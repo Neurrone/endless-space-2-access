@@ -59,7 +59,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.load-save"; }
+            get { return ModStrings.ScreenLoadSave; }
         }
 
         /// <summary>Above the pause menu that opens it, below the loading screen it leads to and
@@ -150,7 +150,7 @@ namespace ES2Access.Screens
             // Where the field's own stop goes is the same question the cloud toggle answers - which
             // side of the table the window drew it on - so the two are asked the same way and neither
             // is listed. In the save skin the field is below, which is what makes it the middle stop.
-            bool fieldAbove = Above(FieldTransform(window.SaveNameTextField), table);
+            bool fieldAbove = Above(AgeWidgets.Transform(window.SaveNameTextField), table);
 
             if (fieldAbove)
             {
@@ -265,7 +265,7 @@ namespace ES2Access.Screens
         private ControlId AddNameField(GraphBuilder builder, LoadSaveModalWindow window)
         {
             AgeControlTextField field = window.SaveNameTextField;
-            if (!Visible(field))
+            if (!AgeWidgets.Visible(AgeWidgets.Transform(field)))
             {
                 return null;
             }
@@ -314,167 +314,54 @@ namespace ES2Access.Screens
             foreach (AgeControlButton entry in commands)
             {
                 AgeControlButton command = entry;
-                AgeTooltip tooltip = TooltipOf(command);
+                AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(command));
                 NodeVtable vtable = GraphNodes.Button(
                     () => Caption(command),
-                    () => Press(command),
-                    () => Enabled(TransformOf(command)),
+                    () => AgeWidgets.Press(command),
+                    () => AgeWidgets.Operable(AgeWidgets.Transform(command)),
                     tooltip
                 );
                 vtable.OnFocusVisual = () => PointerFocus.MoveTo(command, tooltip);
                 vtable.OnBlurVisual = ReleasePointer;
 
                 builder.AddItem(Nodes.Drawn(
-                    ControlId.For(command, "loadsave:command/" + KeyOf(command)),
+                    ControlId.For(
+                        command,
+                        "loadsave:command/" + SettingRows.ButtonBar.KeyOf(command)
+                    ),
                     vtable,
                     command
                 ));
             }
         }
 
-        /// <summary>The wired buttons the window is drawing below its table, left to right. The
-        /// header row's sort buttons are level with the table and the backdrop is wired to nothing, so
-        /// neither is a command.</summary>
+        /// <summary>The wired buttons the window is drawing below its table, left to right - the
+        /// shared bar reading (<see cref="SettingRows.ButtonBar"/>) with the one thing that is this
+        /// window's own: the header row's sort buttons are level with the table and so are not
+        /// commands. The backdrop is wired to nothing, which the bar itself drops.</summary>
         private List<AgeControlButton> Commands(LoadSaveModalWindow window)
         {
-            List<AgeControlButton> commands = new List<AgeControlButton>();
             AgeTransform table = TableTransform(window);
-            if (table == null)
-            {
-                return commands;
-            }
-
-            foreach (AgeControlButton button in Buttons(window))
-            {
-                AgeTransform transform = TransformOf(button);
-                // Banding input, not existence: what follows asks which BAND the button sits in and
-                // then orders and counts the row aloud, and a button of the skin that is not in use
-                // keeps its old rectangle - so it would join a band and shift the count whether or not
-                // the gate later dropped its node.
-                if (
-                    button == null
-                    || transform == null
-                    || !Visible(transform)
-                    || AgeLayout.Band(transform, table) != 1
-                )
-                {
-                    continue;
-                }
-
-                // Placed by where it is drawn rather than sorted afterwards, so two buttons in the
-                // same place keep the order they were found in.
-                float x = LeftEdge(transform);
-                int at = commands.Count;
-                while (at > 0 && LeftEdge(TransformOf(commands[at - 1])) > x)
-                {
-                    at--;
-                }
-
-                commands.Insert(at, button);
-            }
-
-            return commands;
+            return table == null
+                ? new List<AgeControlButton>()
+                : _bar.Drawn(
+                    window,
+                    button => AgeLayout.Band(AgeWidgets.Transform(button), table) == 1
+                );
         }
 
-        // The window's wired buttons, and which window they were found on. Held per screen instance,
-        // so a hot reload starts with nothing remembered; the window builds its bar once when it loads
-        // and never rebuilds it, so walking the whole window on every navigation operation would be
-        // paid for an answer that cannot have changed. What DOES change - which of them are drawn,
-        // where, and whether they are available - is read live every time.
-        private LoadSaveModalWindow _buttonsFrom;
-        private List<AgeControlButton> _buttons;
-
-        private List<AgeControlButton> Buttons(LoadSaveModalWindow window)
-        {
-            if (ReferenceEquals(_buttonsFrom, window) && _buttons != null && AllAlive(_buttons))
-            {
-                return _buttons;
-            }
-
-            _buttonsFrom = window;
-            _buttons = Collect(window);
-            return _buttons;
-        }
-
-        private static List<AgeControlButton> Collect(LoadSaveModalWindow window)
-        {
-            List<AgeControlButton> buttons = new List<AgeControlButton>();
-            try
-            {
-                foreach (
-                    AgeControlButton button in window.GetComponentsInChildren<AgeControlButton>(true)
-                )
-                {
-                    if (button != null && !string.IsNullOrEmpty(button.OnActivateMethod))
-                    {
-                        buttons.Add(button);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: finding the window's buttons threw: " + e);
-            }
-
-            return buttons;
-        }
-
-        private static bool AllAlive(List<AgeControlButton> buttons)
-        {
-            for (int i = 0; i < buttons.Count; i++)
-            {
-                if (buttons[i] == null)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private readonly SettingRows.ButtonBar _bar = new SettingRows.ButtonBar("load save");
 
         /// <summary>A command's name: the caption it is showing, or - for one drawn as a symbol - the
         /// first line of what its tooltip calls it, so no command is announced as nothing.</summary>
         private static string Caption(AgeControlButton button)
         {
-            string text = AgeText.Label(OptionsScreen.LabelIn(TransformOf(button)));
-            if (!string.IsNullOrEmpty(text))
-            {
-                return text;
-            }
-
-            IList<string> lines = AgeText.Lines(AgeText.Tooltip(TooltipOf(button)));
-            return lines.Count > 0 ? lines[0] : null;
-        }
-
-        private static string KeyOf(AgeControlButton button)
-        {
-            try
-            {
-                return button.name + "/" + button.OnActivateMethod;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
-        private static void Press(AgeControlButton button)
-        {
-            try
-            {
-                if (button.OnActivateObject != null)
-                {
-                    button.OnActivateObject.SendMessage(
-                        button.OnActivateMethod,
-                        button.gameObject,
-                        SendMessageOptions.DontRequireReceiver
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: pressing " + KeyOf(button) + " threw: " + e);
-            }
+            string text = AgeText.Label(
+                OptionsScreen.LabelIn(AgeWidgets.Transform(button))
+            );
+            return string.IsNullOrEmpty(text)
+                ? CardActions.FirstLine(AgeWidgets.Raw(AgeWidgets.Transform(button)))
+                : text;
         }
 
         // ---- the cloud toggle ----
@@ -505,8 +392,8 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Checkbox(
                 () => CloudCaption(group),
                 () => State(control),
-                () => Flip(control),
-                () => Enabled(TransformOf(control)),
+                () => AgeWidgets.Toggle(control),
+                () => AgeWidgets.Operable(AgeWidgets.Transform(control)),
                 window.CloudToggleTooltip
             );
             // The aim is the door's now (GraphNodes.Aim, from the tooltip handed to the factory above):
@@ -530,26 +417,6 @@ namespace ES2Access.Screens
         {
             string text = AgeText.Label(OptionsScreen.LabelIn(group));
             return string.IsNullOrEmpty(text) ? ModStrings.Get(ModStrings.LoadSaveCloud) : text;
-        }
-
-        private static void Flip(AgeControlToggle toggle)
-        {
-            try
-            {
-                toggle.State = !toggle.State;
-                if (toggle.OnSwitchObject != null && !string.IsNullOrEmpty(toggle.OnSwitchMethod))
-                {
-                    toggle.OnSwitchObject.SendMessage(
-                        toggle.OnSwitchMethod,
-                        toggle.gameObject,
-                        SendMessageOptions.DontRequireReceiver
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("load save: flipping the cloud toggle threw: " + e);
-            }
         }
 
         // ---- reading the window ----
@@ -593,18 +460,6 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform FieldTransform(AgeControlTextField field)
-        {
-            try
-            {
-                return field == null ? null : field.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>Whether a widget is drawn clear above the table. False for anything that is not
         /// drawn at all, so a hidden control does not decide where the reachable ones go.</summary>
         private static bool Above(AgeTransform widget, AgeTransform table)
@@ -612,73 +467,11 @@ namespace ES2Access.Screens
             return widget != null && table != null && AgeLayout.Band(widget, table) < 0;
         }
 
-        private static AgeTransform TransformOf(AgeControl control)
-        {
-            try
-            {
-                return control == null ? null : control.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTooltip TooltipOf(AgeControl control)
-        {
-            AgeTransform transform = TransformOf(control);
-            try
-            {
-                return transform == null ? null : transform.AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static bool State(AgeControlToggle toggle)
         {
             try
             {
                 return toggle != null && toggle.State;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Visible(AgeControl control)
-        {
-            return Visible(TransformOf(control));
-        }
-
-        /// <summary>Whether a widget is really drawn: its own visibility and every ancestor's. The
-        /// window swaps skins by hiding whole containers, so a control in the skin that is not in use
-        /// reports itself perfectly visible while nothing of it is on screen.</summary>
-        private static bool Visible(AgeTransform transform)
-        {
-            return AgeWidgets.Visible(transform);
-        }
-
-        private static float LeftEdge(AgeTransform transform)
-        {
-            try
-            {
-                return transform == null ? 0f : transform.GetGlobalPosition().x;
-            }
-            catch (Exception)
-            {
-                return 0f;
-            }
-        }
-
-        private static bool Enabled(AgeTransform transform)
-        {
-            try
-            {
-                return transform != null && transform.Enable;
             }
             catch (Exception)
             {
@@ -733,7 +526,7 @@ namespace ES2Access.Screens
 
         // The window's own handler, reached the way the drop list screen reaches the options window's:
         // resolved once, replayed with the argument its click path passes.
-        private static readonly MethodInfo NameFieldGainFocus = OptionsScreen.Handler(
+        private static readonly MethodInfo NameFieldGainFocus = GameHandlers.Method(
             typeof(LoadSaveModalWindow),
             "OnSaveNameTextFieldGainFocusCb"
         );

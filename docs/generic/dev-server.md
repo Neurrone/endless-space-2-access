@@ -254,7 +254,7 @@ to press, what should be heard, and what a sighted observer should see.
 
 [`src/dev-server/`](src/dev-server/) — server core (`DevServer.cs`, `DevHttpServer.cs`),
 main-thread queue, evaluator, raw GUI dump (`GuiDump.cs`), frame-exact waits
-(`PredicateWaits.cs`), log tap, ring buffer, and the mod-registered routes (`ModRoutes.cs`,
-`SpeechLog.cs`). [`AgeDump.cs`](src/dev-server/AgeDump.cs) is ES2 Access's interpreted dump —
+(`PredicateWaits.cs`), log tap, ring buffer, the mod-registered routes (`ModRoutes.cs`,
+`SpeechLog.cs`) and the accessible-tree dump behind `/gui/graph` (`GraphDump.cs`). [`AgeDump.cs`](src/dev-server/AgeDump.cs) is ES2 Access's interpreted dump —
 game-specific by nature, included as the model to imitate, not code to copy. Launch/test
 script: [`src/bootstrap/run-game.ps1`](src/bootstrap/run-game.ps1).

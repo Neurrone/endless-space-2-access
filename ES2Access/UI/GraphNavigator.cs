@@ -145,6 +145,53 @@ namespace ES2Access.UI
             get { return _state == null ? null : _state.CurKey; }
         }
 
+        /// <summary>Whether the cursor is standing on this exact node. Compared by structural key
+        /// (<see cref="ControlId"/>'s own equality), because that is what survives a rebuild - the node
+        /// the screen built last frame does not.</summary>
+        public bool CursorIsOn(ControlId id)
+        {
+            return id != null && id.Equals(FocusedKey);
+        }
+
+        /// <summary>
+        /// The index the focused node's structural key carries after <paramref name="prefix"/>, or -1
+        /// when the cursor is anywhere else.
+        ///
+        /// A screen that acts on "the row the player is on" reads it off the key rather than off a
+        /// remembered index, because the cursor moves for reasons the screen never hears about: a
+        /// type-ahead landing, a rebuild that renumbered nothing, a jump from another feature. It is
+        /// also the guard that keeps a graph dump or a search pass from choosing something nobody
+        /// asked for.
+        ///
+        /// The remainder is trimmed at the first <c>/</c>, so a cursor on something NESTED under the
+        /// row - the row's own button, one of its entries - still answers the row's index. Three of the
+        /// four screens that wrote this parsed the whole remainder instead and answered -1 there, which
+        /// is a feature that works on a row and stops working one step inside it.
+        /// </summary>
+        public int FocusedIndex(string prefix)
+        {
+            ControlId key = FocusedKey;
+            string structural = key == null ? null : key.StructuralKey as string;
+            if (
+                structural == null
+                || string.IsNullOrEmpty(prefix)
+                || !structural.StartsWith(prefix, StringComparison.Ordinal)
+            )
+            {
+                return -1;
+            }
+
+            string rest = structural.Substring(prefix.Length);
+            int slash = rest.IndexOf('/');
+            if (slash >= 0)
+            {
+                rest = rest.Substring(0, slash);
+            }
+
+            int index;
+            return int.TryParse(rest, out index) ? index : -1;
+        }
+
         /// <summary>The render the cursor is standing in - the last one built, which every dispatch and
         /// every frame's <see cref="EnsureFocus"/> refreshes. For a caller that wants to read what a
         /// control OTHER than the focused one is saying (a global key speaking a button's refusal from

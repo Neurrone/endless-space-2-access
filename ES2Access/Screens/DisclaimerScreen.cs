@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
 
@@ -42,7 +43,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.disclaimer"; }
+            get { return ModStrings.ScreenDisclaimer; }
         }
 
         protected override string Prefix
@@ -52,7 +53,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.disclaimer"; }
+            get { return ModStrings.ScreenDisclaimer; }
         }
 
         /// <summary>What there is to answer, which has to be read before the answer is given.</summary>

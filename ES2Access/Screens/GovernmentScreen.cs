@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -50,7 +51,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.government"; }
+            get { return ModStrings.ScreenGovernment; }
         }
 
         /// <summary>Over the senate that opens it, and under the message box anything here could raise.
@@ -137,23 +138,27 @@ namespace ES2Access.Screens
         private void BuildCurrent(GraphBuilder builder, GovernmentModalWindow window)
         {
             builder.BeginStop(CurrentStop);
-            bool named = Caption(
+            bool named = Captions.Push(
                 builder,
-                Shown(window.ActiveGovernmentTitle) ?? Shown(window.NextGovernmentTitle)
+                Shown(window.ActiveGovernmentTitle) ?? Shown(window.NextGovernmentTitle),
+                "government:current/title"
             );
 
             _cells.Clear();
             AddCard(_cells, window.ActiveGovernmentItem, "government:active");
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         private void BuildChoices(GraphBuilder builder, GovernmentModalWindow window)
         {
             builder.BeginStop(ChoicesStop);
-            bool named = Caption(
+            bool named = Captions.Push(
                 builder,
-                Shown(AgeWidgets.ChildNamed(window.GovernmentSelectionGroup, "SelectionTitleGroup", 2))
+                Shown(
+                    AgeWidgets.ChildNamed(window.GovernmentSelectionGroup, "SelectionTitleGroup", 2)
+                ),
+                "government:choices/title"
             );
 
             _cells.Clear();
@@ -169,29 +174,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
-        }
-
-        /// <summary>The caption the window draws over a band, as the band's own name. A caption the
-        /// game left empty pushes nothing, so the band is never announced under a blank level.</summary>
-        private static bool Caption(GraphBuilder builder, AgeTransform widget)
-        {
-            string text = widget == null ? null : AgeWidgets.TextOf(widget);
-            if (string.IsNullOrEmpty(text))
-            {
-                return false;
-            }
-
-            builder.PushContext(text);
-            return true;
-        }
-
-        private static void Unname(GraphBuilder builder, bool named)
-        {
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
         }
 
         /// <summary>Which of the two title widgets the window is DRAWING - the caption a context is
@@ -269,7 +252,7 @@ namespace ES2Access.Screens
                 for (int i = 0; bands != null && i < bands.Count; i++)
                 {
                     AgeTransform band = bands[i];
-                    if (band != null && !Holds(band, title))
+                    if (band != null && !AgeWidgets.Under(title, band))
                     {
                         Lines(band, lines, 3);
                     }
@@ -371,24 +354,6 @@ namespace ES2Access.Screens
             }
         }
 
-        private static bool Holds(AgeTransform band, AgeTransform label)
-        {
-            if (label == null)
-            {
-                return false;
-            }
-
-            for (AgeTransform at = label; at != null; at = at.Parent)
-            {
-                if (ReferenceEquals(at, band))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         /// <summary>What the empire has to spend and how content it is, along the bottom - and, once a
         /// government is chosen, how long the anarchy between the two would last. The two money boxes
         /// answer a click only in the developers' god mode, so they are readouts.</summary>
@@ -396,8 +361,10 @@ namespace ES2Access.Screens
         {
             builder.BeginStop(ResourcesStop);
             _cells.Clear();
-            AddTotal(_cells, Parent(window.EmpireMoneyLabel), "government:money");
-            AddTotal(_cells, Parent(window.EmpirePointLabel), "government:influence");
+            AgeTransform money = AgeWidgets.Transform(window.EmpireMoneyLabel);
+            AgeTransform influence = AgeWidgets.Transform(window.EmpirePointLabel);
+            AddTotal(_cells, money == null ? null : money.Parent, "government:money");
+            AddTotal(_cells, influence == null ? null : influence.Parent, "government:influence");
             AddTotal(_cells, window.EmpireHappinessGroup, "government:approval");
             Cells.AddReadout(_cells, window.AnarchyDurationGroup, "government:anarchy");
             Cells.EmitLinear(builder, _cells);
@@ -443,32 +410,9 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
-        private static AgeTransform Parent(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null || label.AgeTransform == null
-                    ? null
-                    : label.AgeTransform.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static GovernmentModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GovernmentModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GovernmentModalWindow>();
         }
     }
 }

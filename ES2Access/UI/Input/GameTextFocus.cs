@@ -1,6 +1,5 @@
 using System;
 using System.Reflection;
-using ES2Access.Core.Util;
 using ES2Access.Screens;
 using HarmonyLib;
 
@@ -30,69 +29,27 @@ namespace ES2Access.UI.Input
     /// </summary>
     internal static class GameTextFocus
     {
-        private static Harmony _harmony;
-        private static bool _reportedFailure;
+        private static readonly ModPatch Patches = new ModPatch(
+            "textfocus",
+            "the game's keyboard-focus setter"
+        );
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.textfocus." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch =>
+                {
+                    foreach (MethodInfo setter in FocusSetters())
+                    {
+                        patch.Prefix(setter, typeof(GameTextFocus), "NoticeAnEditEnding");
+                    }
+                }
             );
-
-            try
-            {
-                HarmonyMethod prefix = new HarmonyMethod(
-                    typeof(GameTextFocus).GetMethod(
-                        "NoticeAnEditEnding",
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                );
-
-                foreach (MethodInfo setter in FocusSetters())
-                {
-                    harmony.Patch(setter, prefix);
-                }
-
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, an edit ends silently and a cancel keeps whatever was typed - worth
-                // saying loudly and not worth refusing to start over.
-                Log.Error("the game's keyboard-focus setter could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the game's keyboard-focus setter could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         /// <summary>Internal rather than private so the dev server can report whether it is still
@@ -127,11 +84,7 @@ namespace ES2Access.UI.Input
             {
                 // Runs inside the engine's own focus handling: never throw into it, and say so once
                 // instead of once per focus change.
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn("deciding how an edit ended threw: " + e);
-                }
+                Patches.Report("deciding how an edit ended threw", e);
             }
         }
     }

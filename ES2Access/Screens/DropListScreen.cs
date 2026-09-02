@@ -89,11 +89,13 @@ namespace ES2Access.Screens
             return control != null && ReferenceEquals(control, _focus);
         }
 
-        /// <summary>Forget any open list - the mod is going away.</summary>
+        /// <summary>Forget any open list - the mod is going away - and the tooltips the last entry
+        /// read left in the scratch.</summary>
         public static void Reset()
         {
             _open = null;
             ReleaseFocus();
+            Scratch.Clear();
         }
 
         public override string Key
@@ -209,7 +211,7 @@ namespace ES2Access.Screens
 
             try
             {
-                OptionsScreen.Call(OpenPopup, list);
+                GameHandlers.Call(OpenPopup, list);
                 TakeFocus(list);
             }
             catch (Exception e)
@@ -286,7 +288,7 @@ namespace ES2Access.Screens
                 // gone, and only the highlight still needs putting back.
                 if (list.MenuActive)
                 {
-                    OptionsScreen.Call(ClosePopup, list, false);
+                    GameHandlers.Call(ClosePopup, list, false);
                 }
 
                 if (list.PopupMenu != null)
@@ -390,7 +392,7 @@ namespace ES2Access.Screens
                 vtable.PointsAt = () => AgeWidgets.Raw(under);
 
                 // Synthetic where the list has no drawn entry to stand on: the engine builds a drop
-                // list's rows on demand, and the mod.s own row then answers for a model entry.
+                // list's rows on demand, and the mod's own row then answers for a model entry.
                 builder.AddItem(
                     entry != null
                         ? (NodeDeclaration)Nodes.Drawn(
@@ -595,12 +597,12 @@ namespace ES2Access.Screens
         // The game's own way in and out of a popup, and the handler a click on an entry reaches.
         // Resolved once: every entry of every list would otherwise pay for the lookup on every
         // navigation operation.
-        private static readonly MethodInfo OpenPopup = OptionsScreen.Handler(
+        private static readonly MethodInfo OpenPopup = GameHandlers.Method(
             typeof(AgeControlDropList),
             "OpenPopupMenu"
         );
 
-        private static readonly MethodInfo ClosePopup = OptionsScreen.Handler(
+        private static readonly MethodInfo ClosePopup = GameHandlers.Method(
             typeof(AgeControlDropList),
             "ClosePopupMenu"
         );

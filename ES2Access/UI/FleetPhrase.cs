@@ -63,7 +63,7 @@ namespace ES2Access.UI
             try
             {
                 MessageBuilder message = new MessageBuilder();
-                message.Fragment(fleet.LocalizedName);
+                message.Fragment(AgeText.Clean(fleet.LocalizedName));
                 message.ListItemForcedComma(withOwner ? Describe(fleet) : Aboard(fleet));
                 return message.Build();
             }
@@ -231,21 +231,18 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Whose the fleet LOOKS like - the game's own question
-        /// (<c>GuiFleetGroup.Empire</c>): the player's own fleets are theirs, and everybody else's is
-        /// the empire it is flying the colours of, so a disguised fleet reads as whoever it is
-        /// pretending to be until the disguise is seen through.</summary>
+        /// <summary>Whose the fleet LOOKS like - ASKED of the game rather than restated
+        /// (<c>GuiFleetGroup.Empire</c>, the same member <c>FleetPresence.Standing</c> calls): the
+        /// player's own fleets are theirs, and everybody else's is the empire it is flying the colours
+        /// of, so a disguised fleet reads as whoever it is pretending to be until the disguise is seen
+        /// through.</summary>
         public static Empire DisplayedOwner(Fleet fleet)
         {
             try
             {
-                if (fleet == null)
-                {
-                    return null;
-                }
-
-                Empire player = Gui.PlayerEmpire;
-                return ReferenceEquals(fleet.Empire, player) ? fleet.Empire : fleet.DisplayedEmpire;
+                return fleet == null
+                    ? null
+                    : new GuiFleetGroup(new List<Garrison> { fleet }).Empire;
             }
             catch (Exception)
             {
@@ -363,7 +360,9 @@ namespace ES2Access.UI
 
             if (!automated)
             {
-                return ship.ShipDesign == null ? null : ship.ShipDesign.LocalizedName;
+                return ship.ShipDesign == null
+                    ? null
+                    : AgeText.Clean(ship.ShipDesign.LocalizedName);
             }
 
             string size = AgeText.Clean(

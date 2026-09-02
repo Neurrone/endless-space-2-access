@@ -1106,11 +1106,19 @@ namespace ES2Access
                 FleetRoute.Reset();
             });
 
+            // The ladders themselves are a static list of ids plus whatever crossing was in the air:
+            // per-page state is given back by the page, this is what nobody else owns.
+            Step("zoom ladders", ZoomLadder.Reset);
+
             // Same shape: the map's coordinate origin is a cached read, and letting go of it only
             // drops the empire it was taken from.
             Step("galaxy coordinates", GalaxyCoordinates.Forget);
             // And the constellation outlines derived from it, which hold the galaxy's own nodes.
             Step("constellation map", ConstellationMap.Forget);
+            // And the box the map was measured into, and the probe corridors read inside it - both
+            // cached per game and both holding the galaxy they were taken from.
+            Step("galaxy frame", GalaxyFrame.Forget);
+            Step("probe corridors", ProbeContext.Forget);
             // A constellation NAME the mod was holding drawn is a change to what the game is showing,
             // so it is put back rather than merely let go of - a reload that left one drawn would leave
             // it drawn for the rest of the session with nothing left to take it down.
@@ -1124,6 +1132,16 @@ namespace ES2Access
             // this only drops the record of it. A key capture has no such hook - the game holds the
             // keyboard, not us - so it is ended here, binding nothing.
             Step("drop list", DropListScreen.Reset);
+            // The lists a per-frame build reuses rather than allocates: each still holds whatever the
+            // last build put in it, which is the game's own widgets.
+            Step("build scratch", () =>
+            {
+                SystemPanels.Forget();
+                HeroCards.Forget();
+                SettingRows.Forget();
+            });
+            // And the gate's per-screen drop predicates, which are delegates into this assembly.
+            Step("node gate", NodeGate.Forget);
             Step("table filter", TableFilterScreen.Reset);
             Step("key capture", OptionsScreen.ReleaseCapture);
             // The mod's own settings window is a GameObject in one of the game's window stacks and
@@ -1200,6 +1218,10 @@ namespace ES2Access
             // chose is already on disk (the window wrote it when it hid), so this only lets go.
             Step("bindings", ModBindings.Reset);
             Step("scanner categories", ScannerCustomSettings.Reset);
+            // The indexes each category was searched through, built from the game's own definitions.
+            Step("scanner kinds", GalaxyScanner.Reset);
+            // And one localized word the map's probe rows cached for the life of the assembly.
+            Step("probe name", GalaxyHudScreen.ForgetProbeName);
             Step("scanner directions", ScannerDirectionSettings.Reset);
             // Every bookmark a saved campaign has is already on disk (the set wrote it), so this only
             // lets go of the game the store was watching.
@@ -1211,12 +1233,20 @@ namespace ES2Access
 
             Step("speech", () =>
             {
+                // The dev routes release this themselves where they are running at all; nulling it
+                // here is what covers a load that had no dev server, and a route registration that
+                // failed halfway.
+                PrismSpeech.Observer = null;
                 if (Speech != null)
                 {
                     Speech.Shutdown();
                     Speech = null;
                 }
             });
+
+            // Last of all, because every step above logs through them: the sinks are delegates over
+            // the loader's own logger, and this assembly must not be left holding them.
+            Step("log sinks", Log.Reset);
         }
 
         /// <summary>

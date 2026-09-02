@@ -1,10 +1,8 @@
 # Roadmap — work remaining
 
 Only work still to be done lives here (owner rule), in three sections: what is left to
-build, what waits on an owner ruling, and a pointer index of what has shipped. What a
-fixture cannot show and how to test a shipped screen: `docs/test-recipes/README.md`. Mechanisms:
-the game-facts topic files indexed in `docs/README.md`. Layers and keys:
-`docs/interaction.md`. The shipped index is pointers
+build, what waits on an owner ruling, and a pointer index of what has shipped. Mechanisms:
+the game-facts topic files indexed in `docs/README.md`. The shipped index is pointers
 only — a row may name a screen and its mod file, nothing else; notes about a shipped screen
 belong in the files above.
 
@@ -12,8 +10,7 @@ belong in the files above.
 
 - **Zoom bands and scan lenses — what the plan left open.** The plan itself shipped whole
   2026-09-01 (six stages; the spec is `scan-modes-design-proposal.md`, the pointer row is in
-  Shipped, the per-screen recipes are in `test-recipes/galaxy-map.md` and
-  `.../inspect-and-influence.md`). What is left:
+  Shipped). What is left:
   - **MANUAL, at the machine**: `scan-modes-manual-test.md` — every step only a human can run,
     chiefly the physical PageUp/PageDown re-seat pair, and a FIXTURE-BLOCKED section naming the
     save each blocked item needs.
@@ -28,8 +25,7 @@ belong in the files above.
     both modes is still provisional; adrift fleets below level 5; and the `[traitor]` glyph in the
     repartition toggle's failure sentence, which reads as nothing.
   - **FLAGGED, for the owner**: the System lens (levels 11–13) paints NO owner for the surrounding
-    systems — measured, all 86 scan labels unpainted at step 11 where the same camera paints 6 at
-    step 8 — so the owner grouping the tree keeps there is a deliberate deviation for shape
+    systems — so the owner grouping the tree keeps there is a deliberate deviation for shape
     continuity rather than parity; the alternative (a flat system list at 11–13) needs a ruling.
   - **AWAITING SIGN-OFF (round 4, 2026-09-02)**: `scan.system-rank-history` = "Rank history", the
     name of the rank block's second region — the game captions its curves nothing, so this is the
@@ -65,7 +61,7 @@ belong in the files above.
   score screen, the outro cutscene — plus the journal's first finished-game row (which also
   unlocks measuring the journal filter menu's effect on rows and the per-column filter
   buttons with rows): one finished scratch game via the `OrderEliminateEmpire` route
-  (test-recipes) closes all of it. (3) A cutscene sighting — no faction intro played on the
+  closes all of it. (3) A cutscene sighting — no faction intro played on the
   2026-08-24 scratch launch; the colonization-cutscene route (a colony ship settling) is the
   untried alternative. Pending-live checks riding these fixtures: the negotiation window's
   Close button (needs a diplomatic contact), the merged-fleet-lozenge aim re-commit (two
@@ -96,7 +92,7 @@ belong in the files above.
   The other three consumers await a live walk: the Academy's card strip
   (`AcademyScreen.AddCard`), the hero-selection modal (`HeroSelectionScreen.AddCard`) and the
   hero-inspection overview card (`HeroInspectionScreen.BuildCard`). The Academy is blocked on
-  every fixture AND on a turn-29 personal save, for a second reason beyond the tutorial gate:
+  every save reached so far, for a second reason beyond the tutorial gate:
   `AcademyScreen.HeroCardsTable` has no children until the empire OWNS a hero, so the strip
   draws no card to hang dossiers under. Two of the three also need a card the recruitment
   prefab never draws - the health and assignment bands, whose plain-worded explanations become
@@ -112,18 +108,12 @@ belong in the files above.
   Active Events panel; multi-slot recipe projects; the strategics grid; diplomacy side
   panels/metaplot and the three diplomacy modals; the victory family; DLC modals;
   join-game rows; a mod-manager library with a
-  mod installed. The marketplace half of the economy page was recut and then restructured on
-  the owner's live turn-27 session (2026-08-30): each trading panel is one stop named by the
-  game's Sell/Buy word with heading/Filters/Available regions, its trade strip a stop of its
-  own named after what is being traded, the sell list and the tax box one per row, the buy
-  list still a table (its columns are the section's own declared set), and the price graph a
-  table of its own stop with newest-turn-first columns. Focusing a history row also scrolls the
-  buy table to that resource's line — implemented, and NEVER ONCE FIRED: no fixture has a buy
+  mod installed. On the marketplace, focusing a history row also scrolls the
+  buy table to that resource's line — implemented, and NEVER ONCE FIRED: no save reached has a buy
   section taller than its viewport, so only the already-visible no-op path has been exercised.
   Remaining there: the
   Ships/Heroes sections — and so both the ship spawn-point picker and a ten-column buy table
-  — the tax box's owner form and the graph's no-data branch; no fixture draws any of them
-  (`test-recipes/empire-screens.md`, **The marketplace tab**).
+  — the tax box's owner form and the graph's no-data branch; no save has drawn any of them.
 - Colony info side panel (declared 2026-08-19, forced-show verified): remaining is the
   live sighting of each conditional state — siege/blockade/invasion/conversion/frozen,
   partial ownership, an exploiting system's resources, wrecked arks, temporary effects,
@@ -173,8 +163,8 @@ belong in the files above.
   r50): the acts, the phases, the losses, the progress quarters, the outcome word and the whole
   exchange of fire are verified on a watched re-run of the Sabel battle, but reinforcements arriving
   mid-fight, a ship repairing, a battle effect, a medal, the two shield-absorption clauses and
-  citadel fire have never been heard — that report holds none of what feeds them (the measurements
-  are in `test-recipes/battles.md`, **Fixture-blocked**). Needs a battle with reinforcements, shields
+  citadel fire have never been heard — that report holds none of what feeds them. Needs a battle
+  with reinforcements, shields
   that hold, a medal earned, and a defended system.
 - The repair line's own premise is unmeasured (same stage): it is written against a positive `Health`
   delta on an `EncounterShipSection`, chosen because that is the level the stream writes hull at
@@ -183,8 +173,8 @@ belong in the files above.
   to be right. First battle with a repair, check the figure against the ship's own health bar.
 - Advanced-play fleet arrangement (2026-08-29 stage shipped the ship lock and the carry): a
   successful CROSS-FLOTILLA move and the juggernaut SWAP are both unverified — the fixture has one
-  valid flotilla, so every drop it can reach is a refusal. Needs a 5+ CP fleet battle: the manual
-  lines are in `test-recipes/battles.md` (ADVANCED block). Two things ride on it — whether
+  valid flotilla, so every drop it can reach is a refusal. Needs a 5+ CP fleet battle. Two things
+  ride on it — whether
   `BattleGroupSetupPanel`'s roster lines redraw after a drop (only the 2D flotilla cards are proven
   to), and whether the swap is worth advertising, since `DropAccepts` is the game's
   `CanAddShipItem` and that branch succeeds where it says no, so the swap works and no row offers it.
@@ -227,15 +217,7 @@ belong in the files above.
   show-location handlers are code-verified against the decompiled overrides only, and no
   fixture raises the windows.
 - Galaxy-label gaps: pin-message editing (the constellation ownership bonus shipped 2026-09-01).
-- Input batch (code landed 2026-08-22, LIVE-VERIFIED 2026-08-22 on `[Beginner] test` — recipes in
-  `test-recipes/galaxy-map.md`): single-press tree arrows, the six place keys incl.
-  Ctrl+Alt+E, Alt+Left/Right paging on four screens, the star-system pair as nodes, chord labels,
-  the election winner rows. Verified by injection: the arrows one press each way on the galaxy
-  tree and the research wheel (`OnFollow` lane travel unchanged), all six place keys (landing
-  identical to Tab's, silent and cursor-unmoved where the stop is absent), paging on the system
-  page (Dusay ↔ Heka), the planet page (wraps) and a notification popup (silent, pair switched
-  off), every chord label off the game's own `%KeyCode*` names, and `ui.endTurn` (turn 21 → 22,
-  itself silent, the game's idle-system prompt on the first press). Still open: the CHORD half is
+- Input batch: verified by injection only. Still open: the CHORD half is
   UNPROVEN — `POST /key` answers 409 while the desktop is locked, and `DevProbe.Chord` cannot
   answer it (its `Claimed` is asked per KeyCode, and type-ahead claims every letter on every mod
   screen), so "Ctrl+G reaches the mod, not the game" is a manual-test line; whether a childless
@@ -248,34 +230,14 @@ belong in the files above.
 - The camera-rule keys are unproven as PHYSICAL keys (2026-08-23 stage: `POST /key` answered
   409 throughout) — Backslash, Ctrl+L and the scanner chords were exercised only as injected
   actions.
-- Scanner (shipped, taxonomy v2 2026-08-16, Contested Influence added 2026-08-21, taxonomy v3
-  2026-08-22, three CUSTOM slots AFTER them 2026-08-23, moved from in front 2026-08-24): THIRTEEN categories in the owner's order — systems, colonizable planets, unexplored,
-  anomalies, curiosities, luxury resources, strategic resources, contested influence, fleets,
-  probes, ally pins, obliterator missiles, quest
-  markers (system-anchored ones only, owner's ruling 2026-08-17: a marker with no system is not
-  listed, since the go-to would have nowhere to land) — the "all"-only ones skipped while
-  empty. Systems include SPECIAL nodes (the tree's 13 rows, not 12) and have seven
-  subcategories: all / friendly / neutral / enemy / homeworld / minor factions / special, with
-  many-to-many membership. The six v3 categories were LIVE-VERIFIED 2026-08-22 on `[Beginner] test`:
-  colonizable (7 unoccupied / 1 occupied, both counts matching an `IsColonizable` oracle),
-  unexplored (2 lanes, numbering identical to the tree's), anomalies (12 in "all" = 10 kinds),
-  curiosities (16 = 5 kinds), luxury (10 = 2 kinds), strategic (5 = 3 kinds), all kinds
-  alphabetical, memory by NAME proved across a category round trip, and Alt+Home landing on the
-  planet's/lane's own node with the camera brought in (fleet, probe: node focus + camera slide;
-  inspect cursor up: cell jump only). Cost: 32 ms on the session's first press, 5-8 ms after, 30
-  colonizability checks (= 19 planet TYPES + 11 unsettled able worlds, against 33 planets).
-  CONTESTED INFLUENCE has no rows on this fixture either (169 ground tiles swept, 0 contested), so
-  what its live pass proved is the empty-skip, not the row wording.
-  Remaining: FOREIGN homeworlds have never been heard (no fixture where
-  `EmpirePosition.Known` is true — ES2 facts), and quest markers, pins and missiles have never
-  been heard at all (no fixture draws one). Open judgment call for the owner: MINOR-faction home
-  systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came from iterates
-  major empires only) — including them would add ~9 fixture systems to that scope.
+- Scanner: CONTESTED INFLUENCE rows, FOREIGN homeworlds (needs `EmpirePosition.Known` true), and
+  quest markers, pins and missiles have never been heard. Open judgment call for the owner:
+  MINOR-faction home systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came
+  from iterates major empires only) — should they be?
 - Quest markers are proved by SYNTHETIC markers only: the marker nodes, the open-space rows,
   the scanner category, the inspect-cell reading and the quest locate were all exercised by
-  registering markers by hand (recipe in `docs/test-recipes/galaxy-map.md`), because both
-  saves carry zero markers on every in-progress quest. Neither save has a mid-lane fleet
-  either, so a real free-floating marker on a fleet crossing a lane has never been seen — the
+  registering markers by hand, because no save reached carries a marker on any in-progress quest.
+  A real free-floating marker on a fleet crossing a lane has never been seen — the
   open-space case was forced with a marker bound to a Ship.
 - Ally pins and obliterator missiles are label-free too (2026-08-16, owner-ruled): enumerated from
   the simulation under the game's own knowledge gates, every word recomposed from the entity, and
@@ -286,13 +248,9 @@ belong in the files above.
 - Mining probes (shipped 2026-08-16): the planet rows on the galaxy map and the empire screen say
   the sentence the game keeps in the planet dossier, with the game's own gates. Fixture-blocked
   live: no save has a mining probe.
-- Inspect mode (shipped): the drawn cursor is a MOD-DRAWN screen-space square (2026-08-17,
-  `InspectMarker` — the borrowed line/circle/quad renderers are all retired and the saga is closed
-  in ES2 facts). Colour, alpha and thickness are now the mod's to choose, and a ~26 px floor keeps a
-  1×1 cell visible at full overview. Remaining: the mode's camera does not zoom out with the cursor,
-  so a size-11 cell close in is still wider than the viewport (the square's off-screen edges simply
-  clip). Its cell reading carries obliterator missiles and ally pins, which remain
-  fixture-unreachable and have never been heard.
+- Inspect mode: the mode's camera does not zoom out with the cursor, so a size-11 cell close in is
+  wider than the viewport (the square's off-screen edges simply clip). Its cell reading carries
+  obliterator missiles and ally pins, neither ever heard.
 - Enter on a fleet-only inspect cell once failed to take the selection while an EMPTY
   `GalaxyGarrisonCursor` was already up (seen once; resetting the cursor cleared it) — never
   reproduced, cause unknown.
@@ -310,9 +268,8 @@ belong in the files above.
   cursor-targets; `HackingOperationCursor` route building rides the Penumbra wait; the
   instruction banner can speak the previous mode's caption for a frame (cheap fix: skip
   an instruction that is not the current cursor's).
-- Fleet-panel focus handover (shipped — `docs/fleets.md`), still unverified: a fleet
-  destroyed in combat while its panel is up, and the obliterator paths (no Behemoth in
-  any save). All three fixture saves are missing from disk (`test-recipes/fixtures.md`).
+- Fleet-panel focus handover, still unverified: a fleet destroyed in combat while its panel is up,
+  and the obliterator paths (no Behemoth in any save).
 - Chat: the child screen ships whole (tabs, message log, box, the page-level new-message
   button) and is verified in a single-player fixture; what no fixture here has shown is the
   MULTIPLAYER half — the alliance tab, the new-message button actually being raised (in
@@ -320,14 +277,13 @@ belong in the files above.
   unverified live), whispers and alliance sending.
 - Assigned-governor side panel: `Special` case for its three bare readouts (needs a save
   with a governor).
-- Loading screen rows (shipped 2026-09-02 — `test-recipes/modals-and-outgame.md`): the
-  MULTIPLAYER player-status rows are declared off the drawn table and never sighted; the group
+- Loading screen rows: the MULTIPLAYER player-status rows are declared off the drawn table and never sighted; the group
   is `Visible = false` in every single-player load (`LoadingWindow.OnBeginShow`), so their
   place in the reading order (top of the screen, above the status lines) is code-measured only.
 - Skill-tree type-ahead: EVERY screen now searches what its collapsed branches would declare
   (`GraphBuilder.ExpandAll`), so this should be covered by construction - it is still unverified
-  live, but no longer for want of a fixture: the stage snapshot's Dmitri Lenko has all three
-  branches and the skill page walks them (2026-09-02). The `POST /type` run is simply not yet made.
+  live, but no longer for want of a save: a hero with all three branches walks the skill page.
+  The `POST /type` run is simply not yet made.
 - Galaxy-map audit remainder (2026-08-20): `StarSystemLabel`'s 32 public widget fields are
   now fully covered (bars wording awaits owner approval; exploration-winner and shared-system
   readings are fixture-blocked to mid-game saves). Still open from the audit: the Riftborn
@@ -343,7 +299,7 @@ belong in the files above.
   then the tree stop's "Skill Tree" context) — user ruling pending on which line yields.
 - `DevProbe.Tooltip()` answered `{"error":"No token to close. Path ''."}` on the research
   wheel's play-deck child (2026-08-22); the cause was never chased, and the workaround is
-  the one retained in `docs/test-recipes/galaxy-map.md`.
+  the one retained with the research-wheel notes.
 - Panel-feature components are largely unjudged: of the 149 classes (`gui.md`), seven have typed readers
   and three more were source-checked and cleared; the rest fall to the default reader, which
   names itself in the log and in `DevProbe.Tooltip().defaultRead`. The next play session's
@@ -384,9 +340,8 @@ belong in the files above.
   a row only where it carries a tooltip — the `Captions` doc comment,
   `ES2Access/UI/Captions.cs`) has been applied to
   minor diplomacy, the population overview, the economy/senate/recipe/negotiation headings, and
-  (2026-08-22) the Academy and pirate diplomacy ACTION bands — neither window opens in
-  `[Beginner] test`, so the Academy's stays prefab-verified while the pirate window's was confirmed
-  live on 2026-08-30 (on a save that has contacted a Lair). The Academy's own "Status" caption over its
+  (2026-08-22) the Academy and pirate diplomacy ACTION bands — the Academy's stays prefab-verified
+  while the pirate window's was confirmed live. The Academy's own "Status" caption over its
   relation panel is NOT converted: its stop still reads the mod's `academy.relation`, and swapping it
   for the game's word is an owner call bundled with the rest of that screen's wording. Left
   as they are, with reasons: `SidePanels.Effects` (:411-450) declares a `PanelFeatureEffects`
@@ -414,68 +369,45 @@ belong in the files above.
 - `HauntCirclesTable` (`HauntCircleItem`) at systems zoom is unmeasured — no fixture draws one.
 - Fixture-blocked live and proved by structure only: the planet card's three in-progress
   buttons, the pirate lair, `OutpostCancelIcon`, `HauntIcon`, and every signal line in
-  `AddSignals` (no juggernaut, no ghost colony, no unique world, no outpost in trouble on
-  `[Beginner] test`). Two more of the same shape from 2026-08-27: an ELIMINATED empire's
-  diplomacy card (every empire in both saves is alive, so only the unmet half of the
+  `AddSignals` (no juggernaut, no ghost colony, no unique world, no outpost in trouble seen yet).
+  Two more of the same shape: an ELIMINATED empire's
+  diplomacy card (every empire in every save reached is alive, so only the unmet half of the
   `IsKnown && !HasBeenEliminated` gate has been heard), and a technology stage whose new
   unlock `actions` region also holds a DEED node (Military II draws no readable deed).
 - A curiosity in neither of the two Curiosities columns (one already being expedited, or
-  quest-locked) does not exist on `[Beginner] test` — both columns are unproven against a
-  real one.
+  quest-locked) has never been seen — both columns are unproven against a real one.
 - Boot-proof owed: the 208+208 "Could not find GuiWindow named 'LoadSaveModalWindow' /
   'OutGameLoadModalWindow'" errors per session are written while the window registry fills, so
   the fix can only be proved by the next COLD launch — count them in the newest
   `Documents\Endless Space 2\Temporary Files\Diagnostics - *.html`.
-- Custom scanner categories: SHIPPED whole 2026-08-23, and DRAWN 2026-08-24 - the model, the
-  synthesis and the six quick keys (stage 3); the editor (stage 4); and the rebuild that made it a
-  page a sighted player can see (stage 5), then folded onto ONE page (stage 6): the window has four tabs
-  — General, Scanner, Controls and Bookmarks (General and Bookmarks added 2026-09-02) — and the Scanner tab holds three drawn
-  headers that open and shut in
-  place, every row the game's own widget, under the window's own Apply/Cancel. The columns come from
-  the game's DATABASES, so the tab exists on the main menu too (stage 6). The
-  player's own categories come LAST in the category cycle, not first (stage 5 - first was where an
-  unconfigured slot answered the very first scanner press with "none found"). What is left is
-  MANUAL: the six physical quick keys and the typing half of a text row (the harness can write a
-  game field's text but cannot press a key at it).
-- The General tab, shortened scanner directions and the DRAWN settings entry: SHIPPED 2026-09-02.
-  The window opens on a General tab whose one row exposes the BepInEx `[Speech]
-  cutsceneDescriptions` setting; the Scanner tab's first row is "Shortened directions" (off by
-  default, "1w, 9s" for "1 west, 9 south" on scanner results only); and the settings entry on both
-  menus is a real drawn entry titled "Mod Settings" and tooltipped "Endless Space 2 accessibility
-  mod settings", added to each menu's own entry list rather than declared synthetically. The
-  General tab itself carries no tooltip. The BepInEx FILE write behind the cut-scene row is
-  proved (2026-09-02, after a restart: the config line went false on Apply and back to true).
-  What is left is MANUAL: a real MOUSE PICK on either entry (the wiring is replay-proved, the
-  engine's hit test is not). Open question: whether the pause-menu entry should keep the Options
-  gear icon it was cloned from.
-- The Bookmarks tab: SHIPPED 2026-09-02 - the window's third tab, ahead of Controls, holding no setting,
-  saying where this campaign's map bookmarks are kept and offering "Copy bookmarks to clipboard"
-  and "Open bookmarks folder" (`docs/test-recipes/mod-settings.md`, **The Bookmarks tab**). What is
-  left is MANUAL: `Process.Start` on a folder is Windows-verified only (Mac and Linux unproven),
-  and pasting the clipboard into another application was never tried - only read back inside the
-  game. Open questions: the tab's own tooltip wording ("Share this game's map bookmarks") and the
-  after-press line ("Bookmarks copied to the clipboard"), both proposed rather than ruled; whether
-  a failed copy should say anything (it logs and is silent today); and what the caption should say
-  on state 4, where the drawn label truncates a full Windows path the announcement reads whole.
-- Rebindable mod keys: SHIPPED 2026-08-23 - the mod's own Controls tab (stage 2a), the
-  three-column binding table with Delete-to-clear, the Escape cancel and the two-way mod/game
-  overlap warning (stage 2b, rulings 6/9/10), on the game's own Controls tab alike; and, from stage
-  6, a capture that lands on the chord already bound still SPEAKS, the overlap warning has a Cancel
-  that reverts, and Reset to Defaults resets the mod's keys. The physical-key half is VERIFIED as of
-  stage 7 (2026-08-24, `POST /key` with the game foregrounded): Enter to capture, a chord committing
-  and being spoken, Escape cancelling a capture, and the reported vanish - which was the clone being
-  asked for input AHEAD of the message box, fixed by registering it beside the game's own options
-  window (ES2 facts). The tab became SIX captioned tables and its wording was reworked
-  2026-09-02 (layout in `ES2Access/UI/Input/KeybindLayout.cs`, most rows now tooltip-less). What is
-  left is the MANUAL pass over the physical LETTER keys (type-ahead on the settings pages).
+- Custom scanner categories: what is left is MANUAL — the six physical quick keys and the typing
+  half of a text row (the harness can write a game field's text but cannot press a key at it).
+- The settings entry on both menus: what is left is MANUAL — a real MOUSE PICK on either entry (the
+  wiring is replay-proved, the engine's hit test is not). Open question: whether the pause-menu
+  entry should keep the Options gear icon it was cloned from.
+- The Bookmarks tab: what is left is MANUAL — `Process.Start` on a folder is Windows-verified only
+  (Mac and Linux unproven), and pasting the clipboard into another application was never tried,
+  only read back inside the game. Open questions: the tab's own tooltip wording ("Share this game's
+  map bookmarks") and the after-press line ("Bookmarks copied to the clipboard"), both proposed
+  rather than ruled; whether a failed copy should say anything (it logs and is silent today); and
+  what the caption should say on state 4, where the drawn label truncates a full Windows path the
+  announcement reads whole.
+- Rebindable mod keys: what is left is the MANUAL pass over the physical LETTER keys (type-ahead on
+  the settings pages).
 - The contextual prompt's component tables: modelled from the four data-defined shapes, but no
   fixture draws a table with ROWS — re-measure when one can be sighted.
 - `StockAndNet` now exists in three copies (GlobalHud, EconomyScreen, JuggernautSpecializationScreen)
   — hoist the visibility-correct one and drop the others.
-- **Expansion surfaces — each needs its expansion's CONTENT to sight** (2026-08-12 audit,
-  `docs/audit-dlc-mechanics.md`). Whether a session can reach them is a property of the machine and
-  the save, never of this file: probe it live at the start of a stage
-  (`docs/test-recipes/fixtures.md`, "Which expansions this session can reach") and pick the work accordingly. Some of these are measurable without the
+- The star system label's traitors group (`TraitorsGroup` / `SystemTraitorsActionItem`) is read by
+  no mod screen at all.
+- Two bare-number sites left: the marketplace's salable items (`ES2Access/Screens/EconomyScreen.cs`
+  ~:1222) and the recipe screen's stock rows (`ES2Access/Screens/RecipeCreationScreen.cs` ~:223)
+  both speak a `StockLabel` figure with nothing saying what it counts.
+- Multiplayer surfaces that cannot be tested solo: the lobby's kick / lock / ready controls, and
+  in-game chat with a second player.
+- **Expansion surfaces — each needs its expansion's CONTENT to sight.** Whether a session can reach
+  them is a property of the machine and the save, never of this file: probe it live at the start of
+  a stage and pick the work accordingly. Some of these are measurable without the
   content at all, because the `*_DLC*` datatables bind a window on their own — which is how the
   Behemoth modal got measured:
   - Behemoth family (Supremacy): the specialization modal is a MODEL now, not a floor (layer 29 —
@@ -498,7 +430,7 @@ belong in the files above.
   cannot draw it (ES2 facts); Lumeris — the scrap↔sell swap rows; Cravers —
   planet depletion status + hunting-grounds decay; Vodyani — ark-as-colony walk
   (`ExploitedStarSystem`: does the model need to change at all?), ark docking slots as a
-  drag target, ark population (full list: `docs/audit-factions.md` §4 stages C-D).
+  drag target, ark population.
 
 - The go-and-look audit's remaining bucket, DECLINED in the batch-F stage because every one
   of these effects already has a key: map labels' `OnRequestManagementView` (the label's own
@@ -506,8 +438,7 @@ belong in the files above.
   and Backslash carry it), and the two banner cyclers. They are worth revisiting only if a
   keyboard player reports reaching one of them by no other route.
 
-- Fleet-route surfaces awaiting a live sighting (unit-tested, fixture-blocked in
-  `[Beginner] test`): "Uses portal" / "Uses wormhole" on the preview and their itinerary
+- Fleet-route surfaces awaiting a live sighting (unit-tested, never sighted): "Uses portal" / "Uses wormhole" on the preview and their itinerary
   mentions (no portal, no wormhole tech); the time-bubble start refill; a real citadel
   interception and a real mid-route invalidation for `FleetRouteWatch` (both driven only via
   `/eval` so far); a positive free-movement route for Ctrl+Backslash (tech not researchable
@@ -521,9 +452,8 @@ belong in the files above.
   readout with a real Behemoth (mechanism shipped and verified via take-system; the message
   branch — ETA, star odds, protection warning — is unsighted, no Behemoth fixture).
 
-- Map bookmarks shipped 2026-08-31 (below); what no stage could reach is a MANUAL pass, written
-  out as player steps in `bookmarks-manual-test.md`: a point-bookmark SET from a free fleet or
-  probe (no fixture draws one), the first-save flush on a never-saved campaign, and the physical
+- Map bookmarks: what no stage could reach is a MANUAL pass — a point-bookmark SET from a free
+  fleet or probe (no save reached draws one), the first-save flush on a never-saved campaign, and the physical
   Shift+digit set made with the inspect cell live (the desktop was locked for stage C's `/key`
   pass — the injected path is proven, the real keypress is not). The scan-mode stand-down is gone
   (2026-09-02, owner ruling): jumps are proven in-mode by injection on the owner's save; SETTING a
@@ -553,8 +483,7 @@ belong in the files above.
 - Marketplace SELL rows: the middle-click subtract is covered — the panel's ± buttons are
   declared nodes ("Click: removes 1 unit" / "adds 1 unit", verified live 2026-08-28) and
   the quantity is an edit field (the 2026-08-27 ruling: no Left/Right adjust outside the
-  edit). The recipe line for the marketplace family landed 2026-08-30
-  (`test-recipes/empire-screens.md`, **The marketplace tab**). (Gesture audit, 2026-08-14.)
+  edit). (Gesture audit, 2026-08-14.)
 - Coordination-pin drag (ally pings on the map): the game's drag moves the pin to an
   arbitrary world point; a keyboard drop can only land on a NAMED map object — a semantic
   narrowing that needs a ruling before Space/Enter carry it, or the gesture stays declined
@@ -593,7 +522,7 @@ belong in the files above.
 | Diplomacy / negotiation / minor / pirate | DiplomacyScreen, NegotiationScreen, MinorFactionDiplomacyScreen, PirateDiplomacyScreen |
 | Target pickers / cutscenes / victory trio / journal | TargetSelectionScreen, CutsceneScreen, VictoryScreen, VictoryAchievedScreen, JournalScreen |
 | Dialogs: message box / error / non-blocking / game menu / drop list | MessageBoxScreen, ErrorScreen, NonBlockingMessageScreen, GameMenuScreen, DropListScreen |
-| The mod's own settings window (the game's options modal, cloned; General, Scanner and Controls tabs; a DRAWN entry on both menus) | `ES2Access/UI/ModOptions/` + OptionsScreen |
+| The mod's own settings window (the game's options modal, cloned; General, Scanner, Bookmarks and Controls tabs; a DRAWN entry on both menus) | `ES2Access/UI/ModOptions/` + OptionsScreen |
 | Contextual prompt / Behemoth specialization | ContextualPromptScreen, JuggernautSpecializationScreen |
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
 | Go to location: one galaxy landing, quest markers as nodes, Ctrl+L | GalaxyHudScreen.GoTo, MapLandings, NotificationScreen |

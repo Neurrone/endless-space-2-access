@@ -540,18 +540,8 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            string title = AgeText.Clean(Gui.GetTitle(definitionName));
-            if (Unresolved(title))
-            {
-                title = AgeText.Clean("%" + definitionName + "Title");
-            }
-
-            return Unresolved(title) ? null : title;
-        }
-
-        private static bool Unresolved(string title)
-        {
-            return string.IsNullOrEmpty(title) || title[0] == '%';
+            return AgeText.Title(Gui.GetTitle(definitionName))
+                ?? AgeText.Title("%" + definitionName + "Title");
         }
 
         // ---- the fleets parked here ----
@@ -875,23 +865,10 @@ namespace ES2Access.Screens
 
         // The window keeps the transfer to itself; it is the drag's own call, and going round it would
         // lose the confirmation the game raises for an invisibility-breaking move.
-        private static readonly MethodInfo TransferShips = Transferer();
-
-        private static MethodInfo Transferer()
-        {
-            try
-            {
-                return typeof(global::FleetsScreen).GetMethod(
-                    "TransferShips",
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("fleets: looking up TransferShips threw: " + e);
-                return null;
-            }
-        }
+        private static readonly MethodInfo TransferShips = GameHandlers.Method(
+            typeof(global::FleetsScreen),
+            "TransferShips"
+        );
 
         /// <summary>The line's name, from whichever of the two labels the game drew: a fleet's own
         /// name, or the system a hangar belongs to.</summary>
@@ -1192,16 +1169,7 @@ namespace ES2Access.Screens
 
         private static global::FleetsScreen Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::FleetsScreen>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<global::FleetsScreen>();
         }
     }
 }

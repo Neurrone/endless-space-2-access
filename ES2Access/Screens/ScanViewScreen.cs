@@ -77,7 +77,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.scan-view"; }
+            get { return ModStrings.ScreenScanView; }
         }
 
         /// <summary>Just above the view levels it overlays and well below everything that can be raised
@@ -236,7 +236,8 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildSystemManagement(GraphBuilder builder)
         {
-            StarSystemManagementScanViewWindow window = Window<StarSystemManagementScanViewWindow>();
+            StarSystemManagementScanViewWindow window =
+                GameWindows.Of<StarSystemManagementScanViewWindow>();
             if (window == null || !window.Shown)
             {
                 return;
@@ -394,11 +395,10 @@ namespace ES2Access.Screens
 
         /// <summary>The hero the panel is bound to. Held privately - the panel draws a face and never a
         /// name - so it is read through the field itself, looked up once.</summary>
-        private static readonly System.Reflection.FieldInfo HeroField =
-            typeof(StarSystemManagementScanViewHeroPanel).GetField(
-                "guiHero",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
-            );
+        private static readonly System.Reflection.FieldInfo HeroField = GameHandlers.Field(
+            typeof(StarSystemManagementScanViewHeroPanel),
+            "guiHero"
+        );
 
         private static string HeroName(StarSystemManagementScanViewHeroPanel panel)
         {
@@ -552,33 +552,6 @@ namespace ES2Access.Screens
             }
         }
 
-        private static void AddLine(List<string> lines, string line)
-        {
-            if (!string.IsNullOrEmpty(line))
-            {
-                lines.Add(line);
-            }
-        }
-
-        /// <summary>How many planet labels the lens is drawing.</summary>
-        private static int Planets(IList<AgeTransform> children)
-        {
-            int count = 0;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                PlanetLabel_SystemManagementScanView label =
-                    children[i] == null
-                        ? null
-                        : children[i].GetComponent<PlanetLabel_SystemManagementScanView>();
-                if (label != null && label.Planet != null && AgeWidgets.Visible(label.AgeTransform))
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
         /// <summary>What a planet is putting out, as the lens rings it: each of the five raw outputs the
         /// label draws, named, and the ones it is producing none of left out - the lens hides those
         /// sectors rather than drawing a zero.</summary>
@@ -630,7 +603,7 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildPlanet(GraphBuilder builder)
         {
-            PlanetScanViewWindow window = Window<PlanetScanViewWindow>();
+            PlanetScanViewWindow window = GameWindows.Of<PlanetScanViewWindow>();
             if (window == null || !window.Shown)
             {
                 return;
@@ -650,45 +623,6 @@ namespace ES2Access.Screens
             {
                 Log.Warn("scan: reading the planet lens threw: " + e);
             }
-        }
-
-        /// <summary>How many captioned categories a column is drawing.</summary>
-        private static int Categories(AgeTransform table)
-        {
-            IList<AgeTransform> children = table == null ? null : table.Children;
-            int count = 0;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                PlanetStatsCategoryItem category =
-                    children[i] == null
-                        ? null
-                        : children[i].GetComponent<PlanetStatsCategoryItem>();
-                if (category != null && AgeWidgets.Visible(category.AgeTransform))
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
-        /// <summary>How many of the things left on the planet the lens is drawing. The table is pooled
-        /// and the game hides the entries belonging to the system's own overview rather than removing
-        /// them (<c>PlanetRemainsItem.Refresh</c>), so this is a count of what is PAINTED and never of
-        /// what the table holds.</summary>
-        private static int Remains(AgeTransform table)
-        {
-            IList<AgeTransform> children = table == null ? null : table.Children;
-            int count = 0;
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                if (Remain(children[i]) != null)
-                {
-                    count++;
-                }
-            }
-
-            return count;
         }
 
         private static PlanetRemainsItem Remain(AgeTransform widget)
@@ -797,7 +731,7 @@ namespace ES2Access.Screens
             {
                 MessageBuilder message = new MessageBuilder();
                 IList<string> values = AgeText.Lines(AgeText.Label(line.Value));
-                IList<string> names = Drawn(line.DetailTitle)
+                IList<string> names = !string.IsNullOrEmpty(AgeWidgets.DrawnLabel(line.DetailTitle))
                     ? AgeText.Lines(AgeText.Label(line.DetailTitle))
                     : null;
                 for (int i = 0; values != null && i < values.Count; i++)
@@ -810,7 +744,7 @@ namespace ES2Access.Screens
                     );
                 }
 
-                if (Drawn(line.Unit))
+                if (!string.IsNullOrEmpty(AgeWidgets.DrawnLabel(line.Unit)))
                 {
                     message.ListItem(AgeText.Label(line.Unit));
                 }
@@ -821,13 +755,6 @@ namespace ES2Access.Screens
             {
                 return null;
             }
-        }
-
-        private static bool Drawn(AgePrimitiveLabel label)
-        {
-            return label != null
-                && AgeWidgets.Visible(label.AgeTransform)
-                && !string.IsNullOrEmpty(AgeText.Label(label));
         }
 
         /// <summary>A read-only panel as one node per line of words it draws.</summary>
@@ -844,19 +771,6 @@ namespace ES2Access.Screens
                         GraphBuilder.Label(() => line)
                     )
                 );
-            }
-        }
-
-        private static TWindow Window<TWindow>()
-            where TWindow : Amplitude.Unity.Gui.GuiWindow
-        {
-            try
-            {
-                return Gui.GuiServiceAvailable ? Gui.GuiService.GetWindow<TWindow>(false) : null;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

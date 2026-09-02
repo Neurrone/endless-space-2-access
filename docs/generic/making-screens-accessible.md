@@ -272,6 +272,6 @@ cadence, interrupt feel, whether focus visibly follows) is only ever confirmed t
 
 ## 6. Keep the docs alive
 
-A finished screen updates the PROJECT's living docs in the same change — screen inventory,
-any new helper, key binding, recipe or game-mechanism fact. A screen is not done while its
-lessons exist only in the diff. These generic docs change only when the repo owner asks.
+A finished screen updates the PROJECT's living docs in the same change — any new
+game-mechanism fact or owner ruling the code does not itself state. A screen is not done
+while its lessons exist only in the diff.

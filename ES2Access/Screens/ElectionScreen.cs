@@ -311,7 +311,7 @@ namespace ES2Access.Screens
 
             AddReadout(
                 _cells,
-                Widget(window.GovernmentTitle),
+                AgeWidgets.Transform(window.GovernmentTitle),
                 "election:government",
                 Raw(window.GovernmentTitle)
             );
@@ -434,7 +434,7 @@ namespace ES2Access.Screens
                 // A caption the game draws over SEVERAL controls is a node of its own.
                 AddReadout(
                     _cells,
-                    Widget(panel.ElectionActionTitle),
+                    AgeWidgets.Transform(panel.ElectionActionTitle),
                     "election:action-caption",
                     Raw(panel.ElectionActionTitle)
                 );
@@ -450,11 +450,11 @@ namespace ES2Access.Screens
             {
                 // Exactly one of the two is drawn (ElectionBeforePanel.cs:341-346), so declaring both
                 // by visibility is what puts "Show ... laws" or "Hide" on the page and never both.
-                AddButton(_cells, Widget(panel.ShowPoliticsLawsButton), "show-laws");
-                AddButton(_cells, Widget(panel.HidePoliticsLawsButton), "hide-laws");
+                AddButton(_cells, AgeWidgets.Transform(panel.ShowPoliticsLawsButton), "show-laws");
+                AddButton(_cells, AgeWidgets.Transform(panel.HidePoliticsLawsButton), "hide-laws");
                 // Flow control: whether the card table is walked at all - the scroll view is what the
                 // Hide button collapses, and the cards inside it stay drawn under a collapsed one.
-                if (AgeWidgets.Visible(Widget(panel.PoliticsLawsScrollView)))
+                if (AgeWidgets.Visible(AgeWidgets.Transform(panel.PoliticsLawsScrollView)))
                 {
                     AddLawCards(_cells, panel.PoliticsLawsTable, "election:before/law");
                 }
@@ -469,13 +469,13 @@ namespace ES2Access.Screens
             {
                 AddReadout(
                     _cells,
-                    Widget(panel.EmpireMoneyLabel),
+                    AgeWidgets.Transform(panel.EmpireMoneyLabel),
                     "election:money",
                     Raw(panel.EmpireMoneyLabel)
                 );
                 AddReadout(
                     _cells,
-                    Widget(panel.EmpireInfluenceLabel),
+                    AgeWidgets.Transform(panel.EmpireInfluenceLabel),
                     "election:influence",
                     Raw(panel.EmpireInfluenceLabel)
                 );
@@ -500,7 +500,7 @@ namespace ES2Access.Screens
         private static void AddCandidates(List<Cell> cells, ElectionBeforePanel panel)
         {
             AgeTransform table = panel.CandidateCardsTable;
-            IList<AgeTransform> children = Children(table);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(table);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
@@ -544,7 +544,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddElectionActions(List<Cell> cells, ElectionBeforePanel panel)
         {
-            IList<AgeTransform> children = Children(panel.ElectionActionTogglesTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.ElectionActionTogglesTable);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
@@ -611,7 +611,7 @@ namespace ES2Access.Screens
             // representatives" below (measured on the prefab; neither the label nor the group carries a
             // tooltip, and %TotalElectorsTitle appears nowhere in the game's code). So the group is the
             // line, which is also what puts its header on the page - nothing else here reads it.
-            AgeTransform total = Widget(panel.TotalElectorsValue);
+            AgeTransform total = AgeWidgets.Transform(panel.TotalElectorsValue);
             AgeTransform box = total == null ? null : total.Parent;
             AddReadout(
                 _cells,
@@ -684,7 +684,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddRepresentatives(List<Cell> cells, ElectionLocalPanel panel)
         {
-            IList<AgeTransform> children = Children(panel.SystemRepresentativeTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.SystemRepresentativeTable);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
@@ -737,7 +737,7 @@ namespace ES2Access.Screens
             LocalCounts counts
         )
         {
-            IList<AgeTransform> children = Children(panel.PoliticsCumulativeSupportGaugesTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.PoliticsCumulativeSupportGaugesTable);
             IList<KeyValuePair<PoliticsDefinition, int[]>> parties = counts.Parties;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -836,17 +836,7 @@ namespace ES2Access.Screens
 
         private static FieldInfo Field(string name)
         {
-            try
-            {
-                return typeof(ElectionLocalPanel).GetField(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameHandlers.Field(typeof(ElectionLocalPanel), name);
         }
 
         /// <summary>
@@ -879,8 +869,11 @@ namespace ES2Access.Screens
                 if (_countedField == null || _partiesField == null)
                 {
                     Type type = info.GetType();
-                    _countedField = type.GetField("CumulatedRepresentativesCount");
-                    _partiesField = type.GetField("PoliticsWithLocalScoresAndCumulatedScores");
+                    _countedField = GameHandlers.Field(type, "CumulatedRepresentativesCount");
+                    _partiesField = GameHandlers.Field(
+                        type,
+                        "PoliticsWithLocalScoresAndCumulatedScores"
+                    );
                 }
 
                 if (_countedField == null || _partiesField == null)
@@ -944,7 +937,7 @@ namespace ES2Access.Screens
             // The group or the label, never both (ElectionFinalPanel.cs:143-156).
             AddReadout(
                 _cells,
-                Widget(panel.NoNewLawsLabel),
+                AgeWidgets.Transform(panel.NoNewLawsLabel),
                 "election:no-new-laws",
                 Raw(panel.NoNewLawsLabel)
             );
@@ -952,7 +945,7 @@ namespace ES2Access.Screens
             // group or a scroll view the panel has switched off.
             if (
                 AgeWidgets.Visible(panel.UnlockedLawsGroup)
-                && AgeWidgets.Visible(Widget(panel.UnlockedLawScrollView))
+                && AgeWidgets.Visible(AgeWidgets.Transform(panel.UnlockedLawScrollView))
             )
             {
                 AddLawCards(_cells, panel.UnlockedLawLinesTable, "election:final/law");
@@ -970,7 +963,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             AddReadout(
                 _cells,
-                Widget(panel.NoActionOutcomesLabel),
+                AgeWidgets.Transform(panel.NoActionOutcomesLabel),
                 "election:no-outcomes",
                 Raw(panel.NoActionOutcomesLabel)
             );
@@ -979,7 +972,7 @@ namespace ES2Access.Screens
             {
                 AddReadout(
                     _cells,
-                    Widget(panel.ActionOutcomesLabel),
+                    AgeWidgets.Transform(panel.ActionOutcomesLabel),
                     "election:outcomes-caption",
                     Raw(panel.ActionOutcomesLabel)
                 );
@@ -1031,7 +1024,7 @@ namespace ES2Access.Screens
             ElectionFinalPanel panel
         )
         {
-            IList<AgeTransform> children = Children(panel.WinnerSenatorCardsTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.WinnerSenatorCardsTable);
             int winners = 0;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -1107,7 +1100,7 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = card.PoliticsTooltip ?? AgeWidgets.Raw(widget);
             AgePrimitiveLabel name = card.PoliticsNameLabel;
             AgePrimitiveLabel tier = card.PoliticsExperienceLabel;
-            AgeTransform tierWidget = Widget(tier);
+            AgeTransform tierWidget = AgeWidgets.Transform(tier);
             AgeTransform whole = widget;
             // Content, both times: whether the tier is part of the card's reading, and whether the
             // sentence explaining it is offered as a section. The card's own cell stands on the card.
@@ -1152,7 +1145,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            IList<AgeTransform> children = Children(card.AdditionalPoliticsContainer);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(card.AdditionalPoliticsContainer);
             for (int j = 0; children != null && j < children.Count; j++)
             {
                 AgeTransform child = children[j];
@@ -1185,7 +1178,7 @@ namespace ES2Access.Screens
 
         private static void AddOutcomeLines(List<Cell> cells, ElectionFinalPanel panel)
         {
-            IList<AgeTransform> children = Children(panel.ElectionActionOutcomesTable);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(panel.ElectionActionOutcomesTable);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
@@ -1197,7 +1190,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                AddReadout(cells, Widget(line.OutcomeTitleLabel), "election:outcome/" + i);
+                AddReadout(cells, AgeWidgets.Transform(line.OutcomeTitleLabel), "election:outcome/" + i);
             }
         }
 
@@ -1214,8 +1207,8 @@ namespace ES2Access.Screens
         {
             builder.BeginStop(ActionsStop);
             _cells.Clear();
-            AddButton(_cells, Widget(window.NextStepButton), "next-step");
-            AddButton(_cells, Widget(window.SkipElectionButton), "skip");
+            AddButton(_cells, AgeWidgets.Transform(window.NextStepButton), "next-step");
+            AddButton(_cells, AgeWidgets.Transform(window.SkipElectionButton), "skip");
             Cells.EmitLinear(builder, _cells);
         }
 
@@ -1261,13 +1254,13 @@ namespace ES2Access.Screens
         /// never be mistaken for a caption.</summary>
         private static string Caption(AgeTransform group, AgeTransform bars)
         {
-            IList<AgeTransform> children = Children(group);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(group);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
                 // Content: which of the group's children is the word the bars are announced under - a
                 // caption, not a node.
-                if (child == null || !AgeWidgets.Visible(child) || Holds(child, bars))
+                if (child == null || !AgeWidgets.Visible(child) || AgeWidgets.Under(bars, child))
                 {
                     continue;
                 }
@@ -1282,23 +1275,10 @@ namespace ES2Access.Screens
             return null;
         }
 
-        private static bool Holds(AgeTransform container, AgeTransform widget)
-        {
-            for (AgeTransform at = widget; at != null; at = at.Parent)
-            {
-                if (ReferenceEquals(at, container))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         /// <summary>The step's own question, as its panel drew it.</summary>
         private static void AddPanelTitle(List<Cell> cells, ElectionPanel panel)
         {
-            AddReadout(cells, Widget(panel.PanelTitleLabel), "election:panel-title");
+            AddReadout(cells, AgeWidgets.Transform(panel.PanelTitleLabel), "election:panel-title");
         }
 
         /// <summary>
@@ -1313,7 +1293,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddLawCards(List<Cell> cells, AgeTransform table, string keyPrefix)
         {
-            IList<AgeTransform> children = Children(table);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(table);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform child = children[i];
@@ -1377,24 +1357,9 @@ namespace ES2Access.Screens
         private static string NameOf(AgeTransform widget, AgeTooltip tooltip)
         {
             string drawn = AgeWidgets.TextOf(widget);
-            if (!string.IsNullOrEmpty(drawn))
-            {
-                return drawn;
-            }
-
-            string kept = AgeWidgets.TooltipTitle(tooltip);
-            if (!string.IsNullOrEmpty(kept))
-            {
-                return kept;
-            }
-
-            if (AgeWidgets.Readable(tooltip) == null)
-            {
-                return null;
-            }
-
-            IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
-            return lines.Count > 0 ? lines[0] : null;
+            return string.IsNullOrEmpty(drawn)
+                ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
+                : drawn;
         }
 
         /// <summary>A line the player reads and does not work - what the whole phrase under
@@ -1429,54 +1394,17 @@ namespace ES2Access.Screens
         /// on, which for a card is a child of it rather than the card.</summary>
         private static AgeTransform Anchor(AgeTooltip tooltip, AgeTransform fallback)
         {
-            try
-            {
-                AgeTransform own = tooltip == null ? null : tooltip.AgeTransform;
-                return own ?? fallback;
-            }
-            catch (Exception)
-            {
-                return fallback;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgeControl control)
-        {
-            return AgeWidgets.Transform(control);
+            return AgeWidgets.TooltipOwner(tooltip) ?? fallback;
         }
 
         private static AgeTooltip Raw(AgePrimitiveLabel label)
         {
-            return AgeWidgets.Raw(Widget(label));
+            return AgeWidgets.Raw(AgeWidgets.Transform(label));
         }
 
         private static AgeTooltip Raw(AgeTransform widget)
         {
             return AgeWidgets.Raw(widget);
-        }
-
-        private static IList<AgeTransform> Children(AgeTransform table)
-        {
-            try
-            {
-                return table == null ? null : table.Children;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static T Component<T>(AgeTransform widget)
@@ -1557,16 +1485,7 @@ namespace ES2Access.Screens
 
         private static ElectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<ElectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<ElectionModalWindow>();
         }
     }
 }

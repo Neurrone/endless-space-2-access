@@ -189,10 +189,7 @@ namespace ES2Access.Core.UI.Graph
                     continue;
                 }
 
-                if (
-                    !TextUtil.IsBlank(text)
-                    && string.Equals(text.Trim(), line, StringComparison.OrdinalIgnoreCase)
-                )
+                if (SpokenText.SameLine(text, line))
                 {
                     return true;
                 }
@@ -231,7 +228,7 @@ namespace ES2Access.Core.UI.Graph
                     }
 
                     string line = spoken[i].Trim();
-                    if (AlreadySaid(said, line) || Says(earlier, start, line))
+                    if (AlreadySaid(said, line) || SpokenText.Mentions(earlier, start, line))
                     {
                         continue;
                     }
@@ -255,20 +252,6 @@ namespace ES2Access.Core.UI.Graph
         private static IList<string> Resolve(Func<IList<string>> lines)
         {
             return lines == null ? null : lines();
-        }
-
-        // Whether one of the EARLIER sections already put this line in the readout.
-        private static bool Says(List<string> earlier, int upTo, string line)
-        {
-            for (int i = 0; i < upTo; i++)
-            {
-                if (string.Equals(earlier[i], line, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
     }

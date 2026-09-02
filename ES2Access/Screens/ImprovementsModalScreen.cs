@@ -147,37 +147,11 @@ namespace ES2Access.Screens
             AgeTransform upkeep =
                 window.UpkeepLabel == null ? null : window.UpkeepLabel.AgeTransform;
             _cells.Clear();
-            AddReadout(_cells, HeadingBeside(upkeep), "improvements:title");
+            AddReadout(_cells, WindowShape.TitleWidget(window), "improvements:title");
             AddReadout(_cells, upkeep, "improvements:upkeep");
             Cells.EmitLinear(builder, _cells);
         }
 
-        /// <summary>The window's title, found as the other label in the band the upkeep line is drawn
-        /// in - the window exposes the upkeep label and not the title, and the two are siblings.
-        /// </summary>
-        private static AgeTransform HeadingBeside(AgeTransform upkeep)
-        {
-            try
-            {
-                AgeTransform band = upkeep == null ? null : upkeep.Parent;
-                IList<AgeTransform> children = band == null ? null : band.Children;
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    AgeTransform child = children[i];
-                    if (
-                        child != null
-                        && !ReferenceEquals(child, upkeep)
-                        && child.GetComponent<AgePrimitiveLabel>() != null
-                    )
-                    {
-                        return child;
-                    }
-                }
-            }
-            catch (Exception) { }
-
-            return null;
-        }
 
         // ---- the improvements ----
 

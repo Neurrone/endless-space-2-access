@@ -75,14 +75,15 @@ namespace ES2Access.UI
                     return NoFeatures;
                 }
 
-                AgeTransform table = window.PanelFeaturesTable;
-                if (table == null || !table.Visible)
+                IList<AgeTransform> children = AgeWidgets.DrawnChildren(
+                    window.PanelFeaturesTable
+                );
+                if (children == null)
                 {
                     return NoFeatures;
                 }
 
                 List<TooltipFeatures.Reading> readings = new List<TooltipFeatures.Reading>();
-                List<AgeTransform> children = table.Children;
                 for (int i = 0; i < children.Count; i++)
                 {
                     // Undrawn features are skipped rather than read, and that is load-bearing rather

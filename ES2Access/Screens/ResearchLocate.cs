@@ -1,6 +1,5 @@
 using System;
-using System.Reflection;
-using ES2Access.Core.Util;
+using ES2Access.UI;
 using HarmonyLib;
 
 namespace ES2Access.Screens
@@ -30,82 +29,33 @@ namespace ES2Access.Screens
     /// </summary>
     internal static class ResearchLocate
     {
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "researchlocate",
+            "the game's locate-a-technology call"
+        );
+
         private static GuiTechnology2 _wanted;
-        private static bool _reportedFailure;
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.researchlocate." + Guid.NewGuid().ToString("N")
-            );
-
-            try
-            {
-                MethodInfo focus = AccessTools.Method(
-                    typeof(TechnologyScreen),
-                    "FocusTechnology",
-                    new[] { typeof(GuiTechnology2) }
-                );
-                if (focus == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(TechnologyScreen).FullName,
-                        "FocusTechnology"
-                    );
-                }
-
-                harmony.Patch(
-                    focus,
-                    postfix: new HarmonyMethod(
-                        typeof(ResearchLocate).GetMethod(
-                            "Remember",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
+            Patches.Install(
+                patch =>
+                    patch.Postfix(
+                        AccessTools.Method(
+                            typeof(TechnologyScreen),
+                            "FocusTechnology",
+                            new[] { typeof(GuiTechnology2) }
+                        ),
+                        typeof(ResearchLocate),
+                        "Remember"
                     )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, Control-clicking a hint still opens the wheel looking at the technology;
-                // what is lost is the cursor following the view. Worth saying and not worth refusing to
-                // start over.
-                Log.Error("the game's locate-a-technology call could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
+            );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             _wanted = null;
-            _reportedFailure = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the game's locate-a-technology call could not be unpatched: " + e);
-            }
         }
 
         /// <summary>The technology the game last asked to be looked at, and it is nobody's after that.
@@ -132,11 +82,7 @@ namespace ES2Access.Screens
             }
             catch (Exception e)
             {
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn("remembering the technology the game located threw: " + e);
-                }
+                Patches.Report("remembering the technology the game located threw", e);
             }
         }
     }

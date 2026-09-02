@@ -1,3 +1,5 @@
+using ES2Access.Core.Util;
+
 namespace ES2Access.Core.Speech
 {
     /// <summary>
@@ -122,7 +124,7 @@ namespace ES2Access.Core.Speech
         public static string KeyForBearing(double bearing)
         {
             int arc = (int)System.Math.Floor((bearing + 22.5) / 45.0);
-            return Words[((arc % 8) + 8) % 8];
+            return Words[Cycle.Wrap(arc, Words.Length)];
         }
 
         /// <summary>
@@ -140,7 +142,7 @@ namespace ES2Access.Core.Speech
         public static string KeyForBearing16(double bearing)
         {
             int arc = (int)System.Math.Floor((bearing + 11.25) / 22.5);
-            return Words16[((arc % 16) + 16) % 16];
+            return Words16[Cycle.Wrap(arc, Words16.Length)];
         }
 
         /// <summary>The sixteen-word compass word an offset points in, in the player's language.

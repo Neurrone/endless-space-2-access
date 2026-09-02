@@ -22,6 +22,78 @@ namespace ES2Access.Tests.UI
     {
         private const double Power = 4.0;
 
+        /// <summary>
+        /// The falloff, pinned against the game's own line.
+        ///
+        /// <c>InfluenceCell.Strength</c> is one of the few places the mod RESTATES a game rule instead
+        /// of calling it, because the repository answers whose influence stands at a point and never
+        /// how strong it is there. What it restates is
+        /// <c>decompiled/Assembly-CSharp/ColonizedStarSystemRepository.cs:117-121</c>:
+        ///
+        /// <code>
+        /// if (!(squareMagnitude > maximumInfluenceRadius * maximumInfluenceRadius))
+        /// {
+        ///     float num3 = (float)Math.Sqrt(squareMagnitude) / maximumInfluenceRadius;
+        ///     float num4 = (1f - (float)Math.Pow(num3, InfluenceStrenghtPower)) * maximumInfluenceRadius;
+        /// }
+        /// </code>
+        ///
+        /// So: nothing outside the radius (the boundary itself counts as inside, since the gate is
+        /// <c>!(d² &gt; r²)</c>), the full radius at the centre, and <c>(1 - (d/r)^n)·r</c> between -
+        /// which is falling, and reaches exactly nought at the rim. A source with no radius has no
+        /// field at all.
+        /// </summary>
+        [Fact]
+        public void StrengthIsTheGamesOwnFalloff()
+        {
+            InfluenceSource source = Source(3, 4, 10, 1);
+
+            // The centre: d = 0, so (1 - 0^n)·r is the whole radius.
+            Assert.Equal(10.0, InfluenceCell.Strength(source, 3, 4, Power), 9);
+
+            // Halfway out along one axis: (1 - 0.5^4)·10.
+            Assert.Equal(
+                (1.0 - System.Math.Pow(0.5, Power)) * 10.0,
+                InfluenceCell.Strength(source, 8, 4, Power),
+                9
+            );
+
+            // An arbitrary point inside, computed the game's way from the square magnitude.
+            double square = (6.0 * 6.0) + (8.0 * 8.0);
+            Assert.Equal(
+                (1.0 - System.Math.Pow(System.Math.Sqrt(square) / 10.0, Power)) * 10.0,
+                InfluenceCell.Strength(source, 9, 12, Power),
+                9
+            );
+
+            // The rim is inside the field (the game's gate is not-greater-than) and worth nought
+            // there; a hair beyond it is outside, and outside is nought too.
+            Assert.Equal(0.0, InfluenceCell.Strength(source, 13, 4, Power), 9);
+            Assert.Equal(0.0, InfluenceCell.Strength(source, 13.0001, 4, Power), 9);
+
+            // A source the game gave no radius has no field anywhere, its own centre included.
+            Assert.Equal(0.0, InfluenceCell.Strength(Source(3, 4, 0, 1), 3, 4, Power), 9);
+        }
+
+        /// <summary>The exponent is the game's, not a number written down here: the same point under
+        /// two different <c>InfluenceStrenghtPower</c>s answers two different strengths, so a
+        /// certificate computed with the wrong one would be a proof of nothing.</summary>
+        [Fact]
+        public void TheFalloffExponentIsWhateverTheGamePassesIn()
+        {
+            InfluenceSource source = Source(0, 0, 10, 1);
+            Assert.Equal(
+                (1.0 - System.Math.Pow(0.5, 2.0)) * 10.0,
+                InfluenceCell.Strength(source, 5, 0, 2.0),
+                9
+            );
+            Assert.Equal(
+                (1.0 - System.Math.Pow(0.5, 6.0)) * 10.0,
+                InfluenceCell.Strength(source, 5, 0, 6.0),
+                9
+            );
+        }
+
         [Fact]
         public void ACircleContainsARectangleExactlyWhenItHoldsEveryCorner()
         {

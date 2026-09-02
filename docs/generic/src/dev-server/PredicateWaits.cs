@@ -129,6 +129,24 @@ namespace ES2Access.Loader.Dev
             }
         }
 
+        /// <summary>End every outstanding wait at once, with one reason. The game is going down and
+        /// no frame will ever evaluate them, so each request is answered now rather than waiting out
+        /// its own timeout.</summary>
+        public void AbandonAll(string error)
+        {
+            PredicateWait[] pending;
+            lock (_lock)
+            {
+                pending = _pending.ToArray();
+                _pending.Clear();
+            }
+
+            foreach (PredicateWait wait in pending)
+            {
+                wait.Abandon(error);
+            }
+        }
+
         /// <summary>Ask every pending predicate. Main thread, once per frame.</summary>
         public void Tick()
         {

@@ -89,7 +89,9 @@ namespace ES2Access.UI
         {
             try
             {
-                return visibility != null && empire != null && (int)visibility[empire] >= 3;
+                return visibility != null
+                    && empire != null
+                    && (int)visibility[empire] >= (int)EntityVisibility.Layer.Visible;
             }
             catch (Exception)
             {
@@ -122,13 +124,18 @@ namespace ES2Access.UI
         {
             try
             {
-                if (node == null || empire == null || (int)node.Exploration[empire] < 2)
+                if (
+                    node == null
+                    || empire == null
+                    || (int)node.Exploration[empire] < (int)EntityExploration.State.Identified
+                )
                 {
                     return false;
                 }
 
                 EntityVisibility.Layer layer = node.Visibility[empire];
-                return layer == EntityVisibility.Layer.Known || (int)layer >= 3;
+                return layer == EntityVisibility.Layer.Known
+                    || (int)layer >= (int)EntityVisibility.Layer.Visible;
             }
             catch (Exception)
             {

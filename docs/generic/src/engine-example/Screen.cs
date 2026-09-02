@@ -23,7 +23,10 @@ namespace ES2Access.Screens
     /// </summary>
     public abstract class Screen
     {
-        /// <summary>Stable identity, for logging and for telling two screens apart.</summary>
+        /// <summary>Stable identity, for logging and for telling two screens apart. A screen that also
+        /// has a name to SAY returns the <see cref="Core.Speech.ModStrings"/> constant for it rather
+        /// than spelling the same string twice, so the identity and the phrase cannot drift apart.
+        /// </summary>
         public abstract string Key { get; }
 
         /// <summary>Which screens cover which. The highest layer among the active screens is the one

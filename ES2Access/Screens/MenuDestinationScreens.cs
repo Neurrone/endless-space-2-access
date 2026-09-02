@@ -115,32 +115,21 @@ namespace ES2Access.Screens
         protected void AddTitle(GraphBuilder builder)
         {
             AgeTransform title = WindowShape.TitleWidget(Window(), OutGameTitleNames);
-            Captions.Row(builder, title, Prefix + ":title", Parent(title));
+            Captions.Row(
+                builder,
+                title,
+                Prefix + ":title",
+                title == null ? null : title.Parent
+            );
         }
 
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
+        /// <summary>The registered window of this page, whatever state it is in - the quiet lookup
+        /// and its reasons are <see cref="GameWindows.Of{T}"/>'s; this is the name every destination
+        /// page below already asks it by.</summary>
         protected static T Get<T>()
             where T : GuiWindow
         {
-            try
-            {
-                return Gui.GuiServiceAvailable ? Gui.GuiService.GetWindow<T>(false) : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<T>();
         }
     }
 
@@ -207,7 +196,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.join-game"; }
+            get { return ModStrings.ScreenJoinGame; }
         }
 
         protected override string Prefix
@@ -217,7 +206,7 @@ namespace ES2Access.Screens
 
         protected override string ScreenNameKey
         {
-            get { return "screen.join-game"; }
+            get { return ModStrings.ScreenJoinGame; }
         }
 
         protected override GuiWindow Window()
@@ -318,7 +307,8 @@ namespace ES2Access.Screens
         private void BuildButtons(GraphBuilder builder, JoinGameScreen window)
         {
             _buttons.Clear();
-            AgeTransform band = Parent(window.JoinButton);
+            AgeTransform join = window.JoinButton;
+            AgeTransform band = join == null ? null : join.Parent;
             IList<AgeTransform> children = band == null ? null : band.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -517,16 +507,5 @@ namespace ES2Access.Screens
             return Window() as JoinGameScreen;
         }
 
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
     }
 }

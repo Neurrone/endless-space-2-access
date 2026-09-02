@@ -74,29 +74,28 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   `ResourceDeposits` otherwise. A membership read that ignores it disagrees with the icons for every
   colony of your own.
 - **The card's pooled tables retire items by FADING them** (the general AGE rule is in
-  `gui.md`), and a retired item keeps its old binding. Measured on Osulo III, which has
-  no deposits at all and still answered `AgeWidgets.Draws` = true on two items titled Hyperium and
-  Titanium — the previous planet's. `AgeWidgets.ItemText` already answers null for an alpha-0 item,
+  `gui.md`), and a retired item keeps its old binding: a planet with no deposits at all still
+  answers `AgeWidgets.Draws` = true on the previous planet's items.
+  `AgeWidgets.ItemText` already answers null for an alpha-0 item,
   which is why no buffer line ever spoke one, but `Draws` and the `Visible` test inside
   `TooltipChildren.Add` do not: any collector over one of these tables gates on `AgeWidgets.Painted`,
   and takes its MEMBERSHIP from the model rather than from the table. That includes the tables whose
   items are BUTTONS — `PlanetCuriositiesTable` (`RefreshPlanetCuriosities` :1297) and
   `OutpostActionsTable` (:988) — where a retired item is offered as a stop the player cannot see.
   A retired CURIOSITY item is also NAMELESS — the wrapper that carries the thing's name is the item's
-  `Tooltip.Target`, and a retired one measured null — so it announced as a bare "button, unavailable"
-  (Heka II 2026-08-26: one drawn curiosity, one leftover from another planet).
+  `Tooltip.Target`, and a retired one measured null — so it announced as a bare "button, unavailable".
 - **A drawn deposit item says a NUMBER and nothing else; the resource's name is on the wrapper.**
   `ResourceDepositItem.Refresh` (:28-42) fills `AmountLabel` with the figure and leaves `TitleLabel`
   to the prefabs that have one — the system-management card's does not, so the item's only children
   are an icon and a "Value" label. The name lives on the item's `Tooltip.Target`, a
   `GuiResourceDeposit` whose `Title` is what `AgeWidgets.TooltipTitle` answers. A reader that takes
   the drawn TEXT of these items (`AgeWidgets.ItemText`, which prefers drawn text over the wrapper)
-  therefore reads "3" and "2" with nothing saying of what — measured on Ita III 2026-08-26, and the
+  therefore reads a bare figure with nothing saying of what, which is the
   reason the card's deposit lines are composed per item rather than by the generic table reader.
   The same wrapper is what the item's DOSSIER is assembled from, so one drawn item is worth both a
   captioned line and a "Tooltips" child.
-- **On a COLLAPSED card the info tables draw their icons and fade their captions.** Measured on Ita
-  III 2026-08-26: `PlanetGameplayType000` paints at alpha 1 while its own `Title` child ("Cold")
+- **On a COLLAPSED card the info tables draw their icons and fade their captions.**
+  `PlanetGameplayType000` paints at alpha 1 while its own `Title` child
   sits at alpha 0, and the same holds for the anomaly and curiosity items. So the ITEM is the level
   the drawn-ness question is asked at - `AgeWidgets.ItemText`'s alpha gate is on the item, and
   `AgeTransform.GetChildren`-style text scrapes ignore the caption's own alpha, which is what makes
@@ -131,11 +130,11 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   sentence completes.
 - **The three in-progress juggernaut buttons DO name what they are doing, on the wrapper their own
   tooltip points at** (`PlanetLabel_SystemOrbital` :806-830, :885-900, :960-975 — the
-  player-empire branch, the only one drawn enabled). Measured 2026-08-23:
+  player-empire branch, the only one drawn enabled).
   `InProgressTerraformationButton`'s `Target` is the `IGuiConstructible` of the
-  `PlanetTerraformationDefinition` ("Terraform To Arctic"); `InProgressAnomalyReductionButton`'s is
-  the `AnomalyReductionDefinition`'s ("Reduced Ice-10"); `InProgressRestorationButton`'s is a
-  `GuiEntityAction` over `InitiateRestorePlanetFleetAction` ("Restore planet"). All three are
+  `PlanetTerraformationDefinition`; `InProgressAnomalyReductionButton`'s is
+  the `AnomalyReductionDefinition`'s; `InProgressRestorationButton`'s is a
+  `GuiEntityAction` over `InitiateRestorePlanetFleetAction`. All three are
   `GuiWrapper`s, so `AgeWidgets.TooltipTitle` reads them headlessly with no hover. Their `Content`
   is the same on all three ("Remaining turns: N" + `%PlanetCancelJuggernautActionButtonDescription`)
   which is why the shared sentence names none of them any more.
@@ -186,9 +185,8 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   the ring an EMPTY population map, so `BuildListOfGuiPopulations` adds nothing per unit and counts
   `populationCount → populationMaxCount` null entries: one EMPTY marker per point of room, none of
   them locked (no index ever reaches `populationMaxCount`) and no arc over them (
-  `RefreshOverpopulation` wants a colony). Measured 2026-08-26 in Ita: Ita II (colonizable, max 6)
-  and Ita I (inhospitable, max 3) each paint exactly that many markers, alongside Ita III's colonized
-  5. Inferring "no colony, no ring" from `IsAvailable` is wrong about the picture, and it is how much
+  `RefreshOverpopulation` wants a colony). An uncolonized world paints exactly as many markers as it
+  has room for, alongside a colonized world's filled ring. Inferring "no colony, no ring" from `IsAvailable` is wrong about the picture, and it is how much
   room a world has that a colonization is decided on.
 - **A card the game draws for ANOTHER empire's colony draws that empire's ring, in full.**
   `PlanetLabel.BindPlanet` (:334-340) takes the label's `ColonizedPlanet` straight off
@@ -204,11 +202,9 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   `ColonizedPlanet.Empire.Index == Gui.PlayerEmpire.Index`, and `IDragDropTarget.OnDragDropStarted`
   (:308-315) HIDES the ring of a card that is not the player's for the duration of a drag. Mod
   policy (owner ruling 2026-08-27): mirror the drawing — the foreign card gets the same slot rows,
-  bands and per-slot dossiers, and neither a pick-up nor a drop. Measured 2026-08-27 by lending a
-  Dusay card an AI empire's real colony (recipe in `test-recipes/systems-and-planets.md`): nine
-  rows, "Cravers" in the four filled ones, a Population band of six and an Overpopulation band of
-  three, each filled slot's carrier bound to a `GuiPopulation` whose `PopulationEmpire` resolved
-  from the AI empire's own interior department.
+  bands and per-slot dossiers, and neither a pick-up nor a drop. Verified by lending a card an AI
+  empire's real colony: every filled slot's carrier binds to a `GuiPopulation` whose
+  `PopulationEmpire` resolves from that empire's own interior department.
 - **Moving population is a drag with a STATIC in the middle, and the static is read every frame.**
   `PopulationEnumerator.DragInfo` (a single static `PopulationDragInfo`) is filled by
   `OnPopulationMarkerDragStarted` (:240-253) — whose own two gates are `owner.CanMovePopulation` and
@@ -271,11 +267,7 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   `SpaceportSidePanel.CanBeShown()` is `Spaceport.IsAvailable()`, and that is
   `MaxPopulation > 0 && !(StarSystem is ExploitedStarSystem) && State == Colony && !IsHiddenSystem`
   (`Spaceport.cs:179-182`) — `MaxPopulation` being the `SpaceportCapacity` simulation property, which
-  starts at 0. Measured in `unlocked`: one colonized system (Xiu), `IsAvailable()` false, spaceport
-  population 0, the panel bound but never shown. So the panel, its markers and both directions of its
-  drag are FIXTURE-BLOCKED in every save this repo has — a game played far enough to build the
-  improvement draws it, and both directions were measured there on 2026-08-29 (a level-2 port of
-  capacity three). Its markers are its enumerator's OWN children
+  starts at 0. Until the improvement is built the panel is bound but never shown. Its markers are its enumerator's OWN children
   (`SpaceportPopulationEnumerator.PopMarkersContainer` IS that enumerator's transform, unlike a planet
   card's ring), so a walk that wants them intercepts the enumerator itself; and the panel is a child of
   `SidePanelsWindow/Viewport/SidePanelsTable`, so the shared side-panel sweep picks it up the moment the
@@ -284,8 +276,8 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   `PanelExpandButton` each of the three draws down its left edge runs one handler
   (`StarSystemScreen.OnExpandCb` :736-745): it toggles every `GuiFrameExpander` under the window — so
   one button resizes all three — and flips `IGuiOptionsService.ExpandSystemPanels`, which PERSISTS
-  across sessions. Measured 2026-08-29 on Dusay: the three frames go 177 ↔ 292 (the expander's own
-  `HeightMultiplier` 1.65) and the lists SCROLL rather than losing rows, so the accessible tree the
+  across sessions. The three frames change height by the expander's own `HeightMultiplier` (1.65)
+  and the lists SCROLL rather than losing rows, so the accessible tree the
   page declares is byte-identical in both states (node-id diff of the whole graph: empty), and the
   button itself stays drawn and clickable while collapsed, at the panel's full height with the
   panel's header icon sitting inside it. The button carries no text and no tooltip at all.
@@ -294,8 +286,7 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   it earns no node. The ruling is written into `CoverageAudit.DeliberatelyUnworked`, which counts it
   `inert`, so a later coverage run reports the reason rather than raising it again as an unworked
   control.
-- **The colony banner hides two different buttons.** `ColonyInfoSidePanel.SystemBanner` (48,159
-  327×96 on Dusay) is itself a button — `BackgroundGroup`, `OnSystemBannerClickCb` :915-928 — that
+- **The colony banner hides two different buttons.** `ColonyInfoSidePanel.SystemBanner` is itself a button — `BackgroundGroup`, `OnSystemBannerClickCb` :915-928 — that
   opens `EmpireScreen` at `TabName.SystemsList`, and the little level badge in its corner
   (`LevelGroup`, 333,213 36×36, `OnSystemLevelClickSb` :930-943) opens `EconomyScreen` at
   `TabName.Economy`. Neither carries a word or a tooltip: the banner's tooltip belongs to the LEVEL
@@ -310,10 +301,9 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   is where the game's word for the feature comes from. Each row is a caption, a destination button
   opening `SystemSelectionModalWindow` (`Purpose = "ShipsSpawnPointDestination"`), and a CLEAR button
   the panel shows only while a destination is set (`Refresh` :86-95, :110-119); the destination
-  buttons' tooltips carry the game's own failure sentences through `Gui.FormatFailureInfos`. Measured
-  2026-08-29 by lending it the fixture's own colony: six rows read, the two clear buttons named by
-  their own tooltips, and nothing was mangled but the STOP's name, which fell through to the header
-  icon's sentence until the screen got a branch for it.
+  buttons' tooltips carry the game's own failure sentences through `Gui.FormatFailureInfos`. Read
+  against a lent colony the rows and both clear buttons name themselves; only the STOP's name fell
+  through to the header icon's sentence until the screen got a branch for it.
 - **A planet card's Sanctuary band draws for a RIVAL's ghost too, and its ring is HOVER-ONLY.**
   `PlanetLabel_SystemManagement.RefreshGhostStatus` (:1192-1250) shows `GhostGroup` whenever
   `Planet.GhostColonizedPlanet` exists and the player's visibility on the ghost's system is ≥ 1 — no
@@ -418,9 +408,8 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   is therefore the mod's own counted phrase, said off the MODEL
   (`OutpostMigrationDestinationSystems.Count`, not the drawn digits, which are already a number
   turned into text and cannot choose a plural form), with the game's sentence kept as the row's
-  detail under the ordinary tooltip rule. Only the outposts group is drawn in either fixture
-  (turn 4, Dusay feeding Rigel), so the other two are unnamed because they are fixture-blocked,
-  not because bareness was chosen for them.
+  detail under the ordinary tooltip rule. The emigration and immigration groups have not been seen
+  drawn, so they are unnamed for want of a sighting rather than by choice.
 
 - **`SystemSelectionModalWindow` is a GENERIC "pick one of your systems" window, and its Exit
   commits nothing.** Six panels open the one window with their own `Purpose` and their own
@@ -451,7 +440,7 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
     `Simple` — i.e. the reason is readable off the widget, no drawn tooltip needed. On an
     accepted line the tooltip is left empty (`GuiTableLine.Unbind` releases it), so declaring
     it unconditionally costs nothing.
-  - **Cell tooltips are of both kinds in one row.** Measured on the `SystemListTable`: the five
+  - **Cell tooltips are of both kinds in one row.** On the `SystemListTable` the five
     income columns carry class `SimulationProperty` and Approval carries `StarSystemHappiness`
     (renderer-assembled — indicate + buffer), while Policy and Hangar carry no class and a
     `%…Description` key in `Content` (announce). Population and Construction carry no tooltip
@@ -507,10 +496,9 @@ own.
   `TryGetInfluenceRadius(NodePosition, …)` (:132-173), a dictionary lookup over the colonies at
   that one node plus, in the 4-argument overload, next turn's estimate off
   `StarSystem.SystemNextInfluenceRadiusEstimation`. An OUTPOST projects radius 0 (its descriptor
-  forces `SystemInfluenceRadius` to zero), so the service answers FALSE for it — measured on Heka
-  in `[Beginner] test`. A PIRATE base is the other end of the same trap: its colonies answer TRUE
-  with a radius of **1E-08** and a next-turn estimate of 0 (measured on all four pirate systems in
-  that fixture), so a "> 0" gate lets a reach through that speaks as "0.0". **Mod policy:** a
+  forces `SystemInfluenceRadius` to zero), so the service answers FALSE for it. A PIRATE base is the
+  other end of the same trap: its colonies answer TRUE with a radius of **1E-08** and a next-turn
+  estimate of 0, so a "> 0" gate lets a reach through that speaks as "0.0". **Mod policy:** a
   figure that speaks as zero is no reach at all and says nothing (`InfluenceText.Radius`), the same
   silence an outpost gets. The read surface is `Services.GetService<IInfluenceService>()`.
   **`ColonizedStarSystem.InfluenceState` is a DIPLOMATIC verdict, not the factual comparison**
@@ -522,16 +510,13 @@ own.
   COLOUR is drawn for.
   **Fog obligation:** every one of those values is global simulation state, identical for every
   player. The game's own disk is hidden on `Node.Visibility.IsInvisible(playerEmpire)` (:1926), so
-  the mod gates every influence reading on `MapVisibility.Perceived` — measured: on
-  `[Beginner] test` the sim has radii for 17 systems the player has never seen (Baten 6.58,
-  Lonica 6.34, …) and the mod says nothing about any of them.
+  the mod gates every influence reading on `MapVisibility.Perceived`: the sim carries radii for
+  systems the player has never seen, and the mod says nothing about any of them.
   System CONVERSION by influence is the game's own notification territory
   (`RefreshInfluenceConversion` :175-210 → `EventSystemUnderInfluence`); the mod reports the state,
   not the event.
-  **Restoring the fixture after probing influence: `IInfluenceService.UpdateInfluence()` recomputes
-  every `LastInfluenceValue` and every node's winner from the simulation**, so it is an exact undo
-  for a probe that wrote either — measured 2026-08-21 (graph dump back to byte-identical bar the
-  clock).
+  **`IInfluenceService.UpdateInfluence()` recomputes every `LastInfluenceValue` and every node's
+  winner from the simulation**, so it is an exact undo for a probe that wrote either.
 - **`Planet.IsColonizable(empire)` is two questions, and only one of them is about the planet**
   (`Planet.cs:796-921`, 2026-08-22). `IsEmpireAbleToColonize` picks a colonization constructible
   and checks its prerequisites — and the candidate list is rebuilt from the database by
@@ -554,16 +539,15 @@ own.
   name — `AnomalyDefinition.Name`, `CuriosityDefinition.DisplayedType`, `ResourceDefinition.Name`
   (through `GuiResource.Name`, which is `GuiWrapper.name`, the definition's own `StaticString`).
   So storing a stable per-kind key costs one field on the result and no extra lookup; the fallback
-  of storing the LOCALIZED label was not needed. MEASURED on `[Beginner] test`: the names are
-  `PlanetAnomaly17`, `PlanetAnomaly27Alt`, `PlanetAnomalyNaturalWonder2`, `Luxury5`, `Luxury8`,
-  `Strategic1`, `Strategic2`, `Strategic4` — content-authored ids, not display text.
+  of storing the LOCALIZED label was not needed: the names are content-authored ids
+  (`PlanetAnomaly17`, `Luxury5`, `Strategic2`), not display text.
 - **Which COLUMN a kind is in is a fact about the galaxy, not about the taxonomy**: the derived
   columns are sorted by the localized title, so a saved selector naming a definition is resolved
   by finding a result carrying that internal name and then finding the column carrying that
   result's title. Two definitions that share one localized title share one column, and the second
   one's selector resolves to it — which is the right answer for a player who hears one word.
 - **Composing every colonizable world's description up front costs nothing measurable.**
-  `ScannerCost.Line()` on that fixture (12 star systems, 30 colonizability checks) reads
+  `ScannerCost.Line()` over a small galaxy reads
   **4–7 ms a press** with the descriptions composed eagerly, against the 30 ms the scanner warns
   at — so the lazy path the scanner had for them was an optimization of something that was never
   expensive, and it cost keywords the ability to see a world's type at all.

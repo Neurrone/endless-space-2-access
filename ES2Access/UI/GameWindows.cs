@@ -50,6 +50,53 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// The registered window of this type whatever state it is in, or null - the quiet lookup,
+        /// which about thirty screens wrote a private copy of.
+        ///
+        /// Quiet is the reason it is worth a helper at all. The by-NAME lookup logs an Error per miss
+        /// and the game forwards Errors, with their stacks, to Amplitude's telemetry and into the
+        /// session's diagnostics HTML (see this class's own summary), so a screen asking once a tick
+        /// whether its window is up writes hundreds of error reports about itself while the registry is
+        /// still filling. The by-TYPE lookup has the quiet overload; this wraps it so no screen has to
+        /// remember the <c>false</c>, and swallows the throw a lookup makes before the service exists.
+        ///
+        /// Any state on purpose: a caller reading a window the game has put away - restoring a page,
+        /// reporting on it, patching one of its handlers - wants the object, not the visibility.
+        /// <see cref="Shown{T}"/> is the other question, and the copies that conflated the two are why
+        /// both are named.
+        /// </summary>
+        public static T Of<T>()
+            where T : Amplitude.Unity.Gui.GuiWindow
+        {
+            try
+            {
+                return Gui.GuiServiceAvailable ? Gui.GuiService.GetWindow<T>(false) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The registered window of this type while the game is SHOWING it, else null - the
+        /// form a screen's <c>IsActive</c> asks for. Same quiet lookup as <see cref="Of{T}"/>; the
+        /// <c>Shown</c> test is folded in because the copies that left it out then had it re-tested by
+        /// hand at each call site, and two of them forgot.</summary>
+        public static T Shown<T>()
+            where T : Amplitude.Unity.Gui.GuiWindow
+        {
+            try
+            {
+                T window = Of<T>();
+                return window != null && window.Shown ? window : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>Whether the game has finished registering its windows. Below this every lookup is
         /// a miss, and a state probe that answers from one is describing the loading screen rather
         /// than the game.</summary>

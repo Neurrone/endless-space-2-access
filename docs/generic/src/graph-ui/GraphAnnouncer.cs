@@ -330,10 +330,16 @@ namespace ES2Access.Core.UI.Graph
         // (a control's readout leads with its label: "Game difficulty, menu button").
         private static bool DuplicatesNext(string label, string next)
         {
-            if (!next.StartsWith(label)) return false;
+            // Ordinal on both: this is a comparison of the mod's OWN composition against itself - the
+            // same label written into two parts, and the list separator it wrote between them - so the
+            // running culture has no business in it, and a culture-sensitive StartsWith can call two
+            // identical strings different (or two different ones equal) depending on where the player
+            // lives.
+            if (!next.StartsWith(label, StringComparison.Ordinal)) return false;
             if (next.Length == label.Length) return true;
             string sep = ModStrings.Get(ModStrings.ListSeparator).TrimEnd();
-            return sep.Length > 0 && next.Substring(label.Length).StartsWith(sep);
+            return sep.Length > 0
+                && next.Substring(label.Length).StartsWith(sep, StringComparison.Ordinal);
         }
     }
 }

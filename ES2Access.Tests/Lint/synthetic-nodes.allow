@@ -18,7 +18,6 @@ ES2Access/Screens/DropListScreen.cs | 1 | : Nodes.Synthetic(ControlId.Structural
 
 ES2Access/Screens/EconomyScreen.cs | 2 | builder.AddItem(Nodes.Synthetic(
 
-ES2Access/Screens/EmpireScreen.cs | 1 | Nodes.Synthetic(
 ES2Access/Screens/EmpireScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
 ES2Access/Screens/EmpireScreen.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
@@ -89,12 +88,13 @@ ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(Contro
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:remains/" + i), vtable));
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/" + i), vtable));
 
-ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
-ES2Access/Screens/SystemManagementScreen.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
+ES2Access/Screens/SystemManagementScreen.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/UI/CardActions.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
 
+ES2Access/UI/PopulationRings.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
+ES2Access/UI/PopulationRings.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/UI/SystemPanels.cs | 1 | builder.AddItem(Nodes.Synthetic(
 ES2Access/UI/SystemPanels.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));

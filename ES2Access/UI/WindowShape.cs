@@ -48,6 +48,33 @@ namespace ES2Access.UI
             return AgeWidgets.TextOf(TitleWidget(window, alsoNamed));
         }
 
+        /// <summary>The heading written inside any other band of a window - a PANEL, the group above a
+        /// strip - which is the same search from a different root. Panels name their heading for
+        /// themselves ("Title", "PanelTitle", "OverviewTitle"), so a panel caller passes its own names
+        /// in <paramref name="alsoNamed"/>; the window names are still tried first, for the same reason
+        /// they are on a window.</summary>
+        public static string Title(AgeTransform root, string[] alsoNamed = null)
+        {
+            return AgeWidgets.TextOf(TitleWidget(root, alsoNamed));
+        }
+
+        /// <summary>What the GAME calls a screen, off its own registered name rather than off anything
+        /// drawn - the title the mod announces on arriving at a page, and the same words the game
+        /// writes as the first line of the tooltip on the icon that opens it. Every page whose window
+        /// class the game registers under its own name answers here, so the name is a parameter and not
+        /// a copy per screen.</summary>
+        public static string ScreenTitle(string guiElementName)
+        {
+            try
+            {
+                return AgeText.Clean(Gui.GetLocalizedTitle(guiElementName));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         /// <summary>The widget that heading is written in - the same search, answered as the thing
         /// rather than as its words, for a page that has to declare the heading as a node: a window
         /// title the game hung an explanation on has nowhere else to put those words, since a screen's
@@ -57,7 +84,21 @@ namespace ES2Access.UI
         {
             try
             {
-                AgeTransform root = window == null ? null : window.AgeTransform;
+                return TitleWidget(window == null ? null : window.AgeTransform, alsoNamed);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("window shape: reading the heading threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>That widget, found inside any root - see <see cref="Title(AgeTransform, string[])"/>.
+        /// </summary>
+        public static AgeTransform TitleWidget(AgeTransform root, string[] alsoNamed = null)
+        {
+            try
+            {
                 if (root == null)
                 {
                     return null;
@@ -233,22 +274,42 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The button under a window that the prefab wired to <paramref name="method"/>.
+        /// <summary>
+        /// Whether the game has put another modal on top of this one - which for a modal is not being
+        /// COVERED but being HIDDEN: the stack is exclusive, so opening the window a modal's own button
+        /// opens takes that modal off the screen entirely (measured on the hero selection window:
+        /// <c>heroSel.Shown=False, AgeTransform.Visible=False</c> while the inspection window is up).
+        /// Keeping the keyboard there would leave the player pressing Enter on a Confirm they cannot
+        /// see, which is why every one of the six screens that copied this test used it as an
+        /// <c>IsActive</c> gate.
+        ///
+        /// Asked of the game's own record of which modal is on top (<c>GuiManager.ModalOnTop</c>,
+        /// written by <c>ModalWindow_VisibilityChanged</c> :1750-1765) rather than of the window's own
+        /// visibility, because the two answers differ on the frame that matters: while the window is
+        /// CLOSING, visibility is already false and there is no modal on top at all - and leaving THEN
+        /// is the departure that must wait for the unbind, or the page underneath reads every control
+        /// unavailable (the <c>ImprovementsModalScreen</c> measurement).
         /// </summary>
+        public static bool Buried(GuiModalWindow window)
+        {
+            try
+            {
+                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
+                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
+                return top != null && !ReferenceEquals(top, window);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The button under a window that the prefab wired to <paramref name="method"/>,
+        /// preferring the drawn one - the tie-break and the reason for it are
+        /// <see cref="AgeWidgets.WiredTo"/>'s.</summary>
         private static AgeControlButton Wired(GuiWindow window, string method)
         {
-            AgeTransform root = window == null ? null : window.AgeTransform;
-            AgeControlButton[] buttons =
-                root == null ? null : root.GetComponentsInChildren<AgeControlButton>(true);
-            for (int i = 0; buttons != null && i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == method)
-                {
-                    return buttons[i];
-                }
-            }
-
-            return null;
+            return AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, method);
         }
 
         /// <summary>
@@ -369,7 +430,7 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                if (ReferenceEquals(except[i], widget) || IsUnder(widget, except[i]))
+                if (AgeWidgets.Under(widget, except[i]))
                 {
                     return true;
                 }
@@ -377,27 +438,6 @@ namespace ES2Access.UI
 
             return false;
         }
-
-        private static bool IsUnder(AgeTransform widget, AgeTransform ancestor)
-        {
-            int depth = 0;
-            for (
-                AgeTransform at = widget == null ? null : widget.Parent;
-                at != null && depth++ < MaxAncestors;
-                at = at.Parent
-            )
-            {
-                if (ReferenceEquals(at, ancestor))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
-        private const int MaxAncestors = 32;
 
         private static void Add(List<Cell> cells, AgeControl control, string prefix)
         {

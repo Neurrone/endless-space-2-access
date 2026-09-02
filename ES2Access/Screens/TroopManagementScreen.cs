@@ -414,7 +414,7 @@ namespace ES2Access.Screens
             }
 
             IList<AgeTransform> rows = table.Children;
-            bool regions = Lists(rows) > 1;
+            bool regions = AgeWidgets.DrawnCount(table) > 1;
 
             builder.BeginStop(EvolutionStop);
             if (regions)
@@ -445,24 +445,6 @@ namespace ES2Access.Screens
                 Cells.EmitLinear(builder, _cells);
                 builder.PopContext();
             }
-        }
-
-        /// <summary>How many troop types the column is actually drawing a chain for.</summary>
-        private static int Lists(IList<AgeTransform> rows)
-        {
-            int count = 0;
-            for (int i = 0; rows != null && i < rows.Count; i++)
-            {
-                GroundTroopUpgradeList list =
-                    rows[i] == null ? null : rows[i].GetComponent<GroundTroopUpgradeList>();
-                // A COUNT: how many lists are drawn decides whether the page opens one region or several.
-                if (list != null && AgeWidgets.Visible(list.AgeTransform))
-                {
-                    count++;
-                }
-            }
-
-            return count;
         }
 
         private void AddUpgrades(GroundTroopUpgradeList list, int row)
@@ -917,16 +899,7 @@ namespace ES2Access.Screens
 
         private static GroundTroopManagementModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GroundTroopManagementModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GroundTroopManagementModalWindow>();
         }
     }
 }

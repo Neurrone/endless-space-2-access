@@ -44,7 +44,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.tutorial-selection"; }
+            get { return ModStrings.ScreenTutorialSelection; }
         }
 
         /// <summary>Over the new game screen it is drawn on. Nothing of ours is under it yet and only
@@ -166,7 +166,9 @@ namespace ES2Access.Screens
             AddCard(_cells, window.BeginnerToggle, 0);
             AddCard(_cells, window.AdvancedToggle, 1);
             AddCard(_cells, window.ExpertToggle, 2);
-            Emit(builder, _cells);
+            // One node per row: the three cards are peers of one kind and so are the two buttons
+            // under them, so the line the window drew each set on is a fact about its layout box.
+            Cells.EmitLinear(builder, _cells);
 
             // Focus starts on the cards, not on the heading above them: the heading is also what
             // arriving announces, and hearing it twice in a row is the cost of having it both ways.
@@ -211,7 +213,12 @@ namespace ES2Access.Screens
             );
 
             AgeWidgets.Point(vtable, card);
-            Add(cells, widget, ControlId.For(card, "tutorial-selection:choice/" + index), vtable);
+            Cells.Add(
+                cells,
+                widget,
+                ControlId.For(card, "tutorial-selection:choice/" + index),
+                vtable
+            );
         }
 
         /// <summary>The heading drawn across the top of a card - the topmost of the words on it.
@@ -264,7 +271,7 @@ namespace ES2Access.Screens
             }
             catch (Exception) { }
 
-            Emit(builder, _cells);
+            Cells.EmitLinear(builder, _cells);
         }
 
         private static void AddButton(List<Cell> cells, AgeTransform widget)
@@ -287,7 +294,12 @@ namespace ES2Access.Screens
                 () => AgeWidgets.Operable(it)
             );
             AgeWidgets.Point(vtable, button);
-            Add(cells, widget, ControlId.For(widget, "tutorial-selection:button/" + Name(widget)), vtable);
+            Cells.Add(
+                cells,
+                widget,
+                ControlId.For(widget, "tutorial-selection:button/" + AgeWidgets.NameOf(widget)),
+                vtable
+            );
         }
 
         // ---- shared ----
@@ -345,66 +357,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget.name;
-            }
-            catch (Exception)
-            {
-                return string.Empty;
-            }
-        }
-
-        /// <summary>A control on its way into the graph, still carrying the widget it was read from: the
-        /// rows are worked out from a whole band at once, which cannot be done while declaring it row by
-        /// row.</summary>
-        private sealed class Cell
-        {
-            public AgeTransform Widget;
-            public ControlId Id;
-            public NodeVtable Vtable;
-        }
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
-
-        /// <summary>One node per row, in the order the game drew them. The three cards are peers of one
-        /// kind and so are the two buttons under them: the line the window drew each set on is a fact
-        /// about its layout box, so the player walks the whole page with one key.</summary>
-        private static void Emit(GraphBuilder builder, List<Cell> cells)
-        {
-            foreach (List<Cell> row in AgeLayout.Rows(cells, CellWidget))
-            {
-                foreach (Cell cell in row)
-                {
-                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
-                }
-            }
-        }
-
-        private static void Add(
-            List<Cell> cells,
-            AgeTransform widget,
-            ControlId id,
-            NodeVtable vtable
-        )
-        {
-            cells.Add(new Cell { Widget = widget, Id = id, Vtable = vtable });
-        }
-
         private static TutorialSelectionModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<TutorialSelectionModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<TutorialSelectionModalWindow>();
         }
     }
 }

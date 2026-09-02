@@ -42,7 +42,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.academy-modal"; }
+            get { return ModStrings.ScreenAcademyModal; }
         }
 
         /// <summary>Shared with the Academy's diplomacy window, which it swaps places with.</summary>
@@ -84,21 +84,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && Panels(window) != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(GuiModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -134,7 +120,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(Keys + "panel/" + panel.name);
-            string title = AgeWidgets.TextOf(AgeWidgets.ChildNamed(panel, "Title", 3));
+            string title = WindowShape.Title(panel, PanelTitleNames);
             bool named = !string.IsNullOrEmpty(title);
             if (named)
             {
@@ -157,6 +143,8 @@ namespace ES2Access.Screens
                 builder.PopContext();
             }
         }
+
+        private static readonly string[] PanelTitleNames = { "Title" };
 
         /// <summary>The strip of named ships, while the window is showing it, and the button that switches
         /// to the Academy's diplomacy window. The strip's own stat block is the one thing in it the shape
@@ -322,7 +310,7 @@ namespace ES2Access.Screens
             string key
         )
         {
-            AgeTransform at = label == null ? null : label.AgeTransform;
+            AgeTransform at = AgeWidgets.Transform(label);
             if (at == null)
             {
                 return;
@@ -394,18 +382,7 @@ namespace ES2Access.Screens
 
         private static AgeControlButton Button(GuiWindow window)
         {
-            AgeControlButton[] buttons = window.AgeTransform.GetComponentsInChildren<AgeControlButton>(
-                true
-            );
-            for (int i = 0; buttons != null && i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == SwitchHandler)
-                {
-                    return buttons[i];
-                }
-            }
-
-            return null;
+            return AgeWidgets.WiredTo(window.AgeTransform, SwitchHandler);
         }
     }
 }

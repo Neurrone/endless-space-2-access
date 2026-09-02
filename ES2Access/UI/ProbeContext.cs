@@ -96,6 +96,25 @@ namespace ES2Access.UI
         /// a fleet's vision sweeping, a turn passing - which is why the memo watches that rather than
         /// trying to guess at the events behind it.
         /// </summary>
+        /// <summary>Let go of the fleet, the place and the corridor readings taken for them - mod
+        /// teardown. The memo re-measures on the next ask, which is what an empty one does anyway.
+        /// </summary>
+        public static void Forget()
+        {
+            _fleet = null;
+            _node = null;
+            for (int i = 0; i < Bearings; i++)
+            {
+                _labels[i] = null;
+                _details[i] = null;
+            }
+
+            _revision = int.MinValue;
+            _halfWidth = float.MinValue;
+            _language = null;
+            _reach = 0;
+        }
+
         private static void Ensure(Fleet fleet, StarSystemNode node)
         {
             try

@@ -116,7 +116,11 @@ namespace ES2Access.UI
             public GalaxyPosition Position;
         }
 
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "foreignfleets",
+            "foreign fleets"
+        );
+
         private static FieldInfo _entityField;
         private static IEndTurnService _endTurn;
         private static object _game;
@@ -126,7 +130,6 @@ namespace ES2Access.UI
         private static float _disturbed;
         private static float _adoptUntil;
         private static float _adopted;
-        private static bool _reportedFailure;
 
         private static readonly SettledSight _settled = new SettledSight(SettleSeconds);
         private static readonly Dictionary<ulong, Seen> _seen = new Dictionary<ulong, Seen>();
@@ -135,7 +138,7 @@ namespace ES2Access.UI
         /// </summary>
         public static bool Installed
         {
-            get { return _harmony != null; }
+            get { return Patches.Installed; }
         }
 
         /// <summary>How many foreign fleets are being remembered - what a probe asks to see that a
@@ -238,87 +241,35 @@ namespace ES2Access.UI
 
         public static void Install()
         {
-            Remove();
+            Patches.Install(
+                patch =>
+                {
+                    _entityField = typeof(EntityVisibility).GetField(
+                        "gameEntity",
+                        BindingFlags.Instance | BindingFlags.NonPublic
+                    );
+                    if (_entityField == null)
+                    {
+                        throw new MissingFieldException(
+                            typeof(EntityVisibility).FullName,
+                            "gameEntity"
+                        );
+                    }
 
-            Harmony harmony = new Harmony(
-                "endless.space2.access.foreignfleets." + Guid.NewGuid().ToString("N")
+                    patch.Prefix(Writing(), typeof(ForeignFleetWatch), "LayerChanging");
+                }
             );
-
-            try
-            {
-                _entityField = typeof(EntityVisibility).GetField(
-                    "gameEntity",
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-                if (_entityField == null)
-                {
-                    throw new MissingFieldException(
-                        typeof(EntityVisibility).FullName,
-                        "gameEntity"
-                    );
-                }
-
-                MethodInfo setLayer = Writing();
-                if (setLayer == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(EntityVisibility).FullName,
-                        "SetLayer"
-                    );
-                }
-
-                harmony.Patch(
-                    setLayer,
-                    new HarmonyMethod(
-                        typeof(ForeignFleetWatch).GetMethod(
-                            "LayerChanging",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
-                    )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, a fleet coming into or going out of sight is as silent as it has always
-                // been; the turn-boundary half still works.
-                Log.Error("foreign fleets could not be watched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         /// <summary>Hand everything back: the patch, the turn subscription to a service that outlives
         /// this assembly, and the table.</summary>
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            _reportedFailure = false;
+            Patches.Remove();
             Unsubscribe();
             Forget();
             _game = null;
             _entityField = null;
-
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("foreign fleets could not be unpatched: " + e);
-            }
         }
 
         /// <summary>Start from what is on the screen now, saying nothing about any of it - and go on
@@ -689,6 +640,37 @@ namespace ES2Access.UI
                     Look(fleet, owner, player, announce);
                 }
             }
+
+            DropDestroyed();
+        }
+
+        /// <summary>Let go of a fleet that no longer exists. The sweep walks the EMPIRES' own lists,
+        /// so a fleet lost in a battle simply stops being visited and its row - the fleet, its owner
+        /// and the node it was last standing at - would be held for the rest of the session. Nothing
+        /// is said: a fleet that was destroyed is the game's own battle news.</summary>
+        private static void DropDestroyed()
+        {
+            List<ulong> gone = null;
+            foreach (KeyValuePair<ulong, Seen> pair in _seen)
+            {
+                Fleet fleet = pair.Value.Fleet;
+                if (fleet != null && !fleet.IsDestroyed)
+                {
+                    continue;
+                }
+
+                if (gone == null)
+                {
+                    gone = new List<ulong>();
+                }
+
+                gone.Add(pair.Key);
+            }
+
+            for (int i = 0; gone != null && i < gone.Count; i++)
+            {
+                _seen.Remove(gone[i]);
+            }
         }
 
         private static void Look(Fleet fleet, Empire owner, Empire player, bool announce)
@@ -829,11 +811,7 @@ namespace ES2Access.UI
             {
                 // Runs inside the game's own visibility pass: say so once rather than once per
                 // entity per empire.
-                if (!_reportedFailure)
-                {
-                    _reportedFailure = true;
-                    Log.Warn("foreign fleets: noticing a visibility change threw: " + e);
-                }
+                Patches.Report("foreign fleets: noticing a visibility change threw", e);
             }
         }
     }

@@ -82,7 +82,7 @@ namespace ES2Access.Screens
 
         public override string Key
         {
-            get { return "screen.academy"; }
+            get { return ModStrings.ScreenAcademy; }
         }
 
         /// <summary>Above the view levels it is drawn over, beside the empire summary, the senate, the
@@ -97,7 +97,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = ScreenTitle();
+                string title = WindowShape.ScreenTitle("AcademyScreen");
                 return string.IsNullOrEmpty(title)
                     ? ModStrings.Get(ModStrings.ScreenAcademy)
                     : title;
@@ -877,14 +877,15 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform container = window.HeroCardsTableContainer;
-                AgeTransform group = container == null ? null : container.Parent;
-                return AgeWidgets.ChildNamed(group, "Title", 0);
+                return WindowShape.TitleWidget(AgeWidgets.Parent(container), StripTitleNames);
             }
             catch (Exception)
             {
                 return null;
             }
         }
+
+        private static readonly string[] StripTitleNames = { "Title" };
 
         private static HeroDetailedCard Card(AgeTransform widget)
         {
@@ -905,18 +906,6 @@ namespace ES2Access.Screens
             try
             {
                 return card.HasTooltips ? card.HeroTooltip : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string ScreenTitle()
-        {
-            try
-            {
-                return AgeText.Clean(Gui.GetLocalizedTitle("AcademyScreen"));
             }
             catch (Exception)
             {
