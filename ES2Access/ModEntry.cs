@@ -104,6 +104,14 @@ namespace ES2Access
         public static ModInput Input;
 
         private static ModHost _host;
+
+        /// <summary>The loader, for the few settings whose one store is the BepInEx config file the
+        /// loader owns. Null once the mod has stopped.</summary>
+        public static ModHost Host
+        {
+            get { return _host; }
+        }
+
         private static ModRoutes _routes;
 
         /// <summary>The multiplayer session's narration and its log - every session event this game has

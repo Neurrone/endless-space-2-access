@@ -160,6 +160,17 @@ namespace ES2Access.Core.Speech
 
         /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
         /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
+        /// <summary>What the General tab - the window's first - says about itself. It is where a
+        /// setting that belongs to no other tab lives.</summary>
+        public const string ModSettingsGeneral = "mod-settings.general";
+        public const string ModSettingsGeneralDescription = "mod-settings.general-description";
+
+        /// <summary>The General tab's one row: whether the game's cut scenes are described while
+        /// they play. The setting itself lives in the BepInEx config file, which this row is the
+        /// player's way into.</summary>
+        public const string ModSettingsCutsceneDescriptions =
+            "mod-settings.general.cutscene-descriptions";
+
         /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
         /// language (<see cref="ES2Access.UI.ModOptions.ModOptions.Categories"/>).</summary>
         public const string ModSettingsScanner = "mod-settings.scanner";
@@ -2151,6 +2162,12 @@ namespace ES2Access.Core.Speech
             { ScreenOptions, "Options" },
             { ScreenModSettings, "Mod settings" },
             { ModSettingsEntry, "Mod settings" },
+            { ModSettingsGeneral, "General" },
+            {
+                ModSettingsGeneralDescription,
+                "General settings of the accessibility mod"
+            },
+            { ModSettingsCutsceneDescriptions, "Video descriptions in cut scenes" },
             { ModSettingsScanner, "Scanner" },
             {
                 ModSettingsScannerDescription,

@@ -54,10 +54,14 @@ namespace ES2Access.Loader
 
         /// <summary>Whether the player wants the game's videos described. A BepInEx setting, and
         /// only the loader can own one of those, so the mod asks for the answer rather than for
-        /// the config file.</summary>
+        /// the config file.
+        ///
+        /// Written by the mod's own settings window, which is why there is a setter: the config
+        /// file stays the one store, and BepInEx writes it back on every set.</summary>
         public bool CutsceneDescriptions
         {
             get { return _plugin.CutsceneDescriptions; }
+            set { _plugin.CutsceneDescriptions = value; }
         }
 
         /// <summary>Hands work from HTTP handler threads to the Unity main thread; the loader

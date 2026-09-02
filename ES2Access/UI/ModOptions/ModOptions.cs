@@ -57,10 +57,13 @@ namespace ES2Access.UI.ModOptions
         private static bool _stopped;
 
         /// <summary>
-        /// The window's two tabs, in the order they are drawn - the player's own scanner categories
-        /// first, the mod's key bindings second.
+        /// The window's three tabs, in the order they are drawn - General first, then the player's
+        /// own scanner categories, then the mod's key bindings. General is where a setting that
+        /// belongs to no other tab lives, and it is first because that is where a player looks for
+        /// one; being first also makes it the tab the window OPENS on
+        /// (<see cref="ModOptionsWindow.Load"/> shows the first panel).
         ///
-        /// BOTH EXIST EVERYWHERE, main menu included (owner ruling 2026-08-24). The Scanner tab was
+        /// ALL EXIST EVERYWHERE, main menu included (owner ruling 2026-08-24). The Scanner tab was
         /// in-game only for as long as its columns were a snapshot of the galaxy being played; they
         /// come from the game's DATABASES now (<c>GalaxyScanner.Taxonomy</c>), so there is nothing on
         /// either page that needs a game, and the window no longer has to be rebuilt when the player
@@ -82,6 +85,17 @@ namespace ES2Access.UI.ModOptions
                 if (_categories == null)
                 {
                     _categories = new List<ModCategory>();
+                    _categories.Add(
+                        new ModCategory(
+                            GeneralCategory,
+                            typeof(IModGeneralService),
+                            new ModGeneralService(),
+                            () => ModStrings.Get(ModStrings.ModSettingsGeneral),
+                            () => ModStrings.Get(ModStrings.ModSettingsGeneralDescription),
+                            GeneralRows.Fill
+                        )
+                    );
+
                     _categories.Add(
                         new ModCategory(
                             ScannerEditor.CategoryName,
@@ -112,6 +126,11 @@ namespace ES2Access.UI.ModOptions
         /// <summary>The game's own key for a key-binding page. See <see cref="Categories"/> for why
         /// the mod's tab is called this rather than something of its own.</summary>
         public const string KeybindsCategory = "Controls";
+
+        /// <summary>The General tab's category key - an identifier the window keys its panels and
+        /// toggles by, never a spoken word (the words are <see cref="ModStrings.ModSettingsGeneral"/>,
+        /// written over the tab by <see cref="ModOptionsWindow"/>).</summary>
+        public const string GeneralCategory = "General";
 
         /// <summary>What the game names that page in the player's language, and what its own options
         /// window says about it - the mod's key-binding tab is the game's Controls tab and reads as
@@ -223,6 +242,7 @@ namespace ES2Access.UI.ModOptions
             _attempts = 0;
             ScannerEditor.Forget();
             ScannerRows.Forget();
+            GeneralRows.Forget();
             ModRows.Forget();
             RemoveServices();
             DestroyLeftovers();

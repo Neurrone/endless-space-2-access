@@ -35,10 +35,21 @@ namespace ES2Access.Loader
 
         /// <summary>Whether the mod should describe what the game's videos show. Bound here
         /// because only the loader is a BepInEx plugin; the mod reads it through
-        /// <see cref="ModHost.CutsceneDescriptions"/>.</summary>
+        /// <see cref="ModHost.CutsceneDescriptions"/>.
+        ///
+        /// The setter is what the mod's own settings window writes: BepInEx saves the config file
+        /// on every set (SaveOnConfigSet, left at its default), so the file stays the one store and
+        /// there is nothing of the mod's own to keep in step with it.</summary>
         internal bool CutsceneDescriptions
         {
             get { return _cutsceneDescriptions == null || _cutsceneDescriptions.Value; }
+            set
+            {
+                if (_cutsceneDescriptions != null)
+                {
+                    _cutsceneDescriptions.Value = value;
+                }
+            }
         }
 
         private void Awake()
