@@ -13,18 +13,21 @@ ES2Access/Screens/AcademyModalScreen.cs | 1 | if (panel == null || !AgeWidgets.V
 ES2Access/Screens/AcademyScreen.cs | 1 | AgeTooltip found = child == null || !AgeWidgets.Visible(child)
 ES2Access/Screens/AcademyScreen.cs | 1 | if (band == null || !AgeWidgets.Visible(band))
 
+ES2Access/Screens/AdvancedBattleReportScreen.Damage.cs | 1 | if (gauge == null || !AgeWidgets.Visible(gauge.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.Damage.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+
+ES2Access/Screens/AdvancedBattleReportScreen.Phases.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
+ES2Access/Screens/AdvancedBattleReportScreen.Phases.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel))
+ES2Access/Screens/AdvancedBattleReportScreen.Phases.cs | 1 | if (phase == null || !AgeWidgets.Visible(phase.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.Phases.cs | 1 | if (stat != null && AgeWidgets.Visible(stat.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.Phases.cs | 1 | if (stat == null || !AgeWidgets.Visible(stat.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.Phases.cs | 1 | return container == null || !AgeWidgets.Visible(container)
+
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (card != null && AgeWidgets.Visible(card.AgeTransform))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 2 | if (container == null || !AgeWidgets.Visible(container))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (gauge == null || !AgeWidgets.Visible(gauge.AgeTransform))
+ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (icon != null && AgeWidgets.Visible(icon))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (phase == null || !AgeWidgets.Visible(phase.AgeTransform))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (stat != null && AgeWidgets.Visible(stat.AgeTransform))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (stat == null || !AgeWidgets.Visible(stat.AgeTransform))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
-ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return container == null || !AgeWidgets.Visible(container)
 ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | return widget != null && AgeWidgets.Visible(widget) ? widget : null;
 
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | if (AgeWidgets.Visible(window.EnemyDeckGroup))
@@ -142,7 +145,6 @@ ES2Access/Screens/Galaxy/FleetRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransfo
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | if (child == null || !AgeWidgets.Visible(child))
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | return AgeWidgets.Visible(background) ? AgeText.Label(label) : null;
 
-ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | && AgeWidgets.Painted(label.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | && AgeWidgets.Visible(card.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | && AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | IList<AgeTransform> items = AgeWidgets.Painted(group) ? group.Children : null;
@@ -194,16 +196,19 @@ ES2Access/Screens/Galaxy/ScanRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransfor
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return item != null && item.IsBound && AgeWidgets.Painted(widget) ? widget : null;
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return rating == null || !AgeWidgets.Painted(rating.AgeTransform)
 
-ES2Access/Screens/Galaxy/SystemRows.cs | 1 | bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
-ES2Access/Screens/Galaxy/SystemRows.cs | 1 | if (!AgeWidgets.Painted(item))
-ES2Access/Screens/Galaxy/SystemRows.cs | 1 | if (!AgeWidgets.Visible(table))
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | && AgeWidgets.Painted(label.AgeTransform)
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | if (!AgeWidgets.Painted(item))
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | if (!AgeWidgets.Visible(table))
+
 ES2Access/Screens/Galaxy/SystemRows.cs | 1 | if (button == null || !AgeWidgets.Visible(button))
 
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (AgeWidgets.Painted(items[i]))
+ES2Access/Screens/GalaxyHudScreen.Seats.cs | 1 | if (AgeWidgets.Painted(items[i]))
+ES2Access/Screens/GalaxyHudScreen.Seats.cs | 1 | if (items[i] != null && AgeWidgets.Visible(items[i]))
+ES2Access/Screens/GalaxyHudScreen.Seats.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+
 ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (AgeWidgets.Visible(children[i]))
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (items[i] != null && AgeWidgets.Visible(items[i]))
 ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (label != null && AgeWidgets.Visible(label.AgeTransform))
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
 ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
 ES2Access/Screens/GameMenuScreen.cs | 1 | && item.AgeTransform.Visible
@@ -213,38 +218,43 @@ ES2Access/Screens/GameMenuScreen.cs | 1 | if (item != null && item.AgeTransform 
 ES2Access/Screens/GameMenuScreen.cs | 1 | if (item.LabelLeft != null && item.LabelLeft.AgeTransform.Visible)
 ES2Access/Screens/GameMenuScreen.cs | 1 | if (item.LabelRight != null && item.LabelRight.AgeTransform.Visible)
 
-ES2Access/Screens/GlobalHud.cs | 1 | && AgeWidgets.Visible(child)
-ES2Access/Screens/GlobalHud.cs | 1 | && AgeWidgets.Visible(panel.AgeTransform)
-ES2Access/Screens/GlobalHud.cs | 1 | && AgeWidgets.Visible(panel.ScanGroup);
-ES2Access/Screens/GlobalHud.cs | 1 | AgeTransform area = AgeWidgets.Visible(under) ? under : group;
-ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Painted(button))
-ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(AgeWidgets.Transform(button)))
-ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(action))
-ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(area))
-ES2Access/Screens/GlobalHud.cs | 1 | if (!AgeWidgets.Visible(clock))
-ES2Access/Screens/GlobalHud.cs | 2 | if (!AgeWidgets.Visible(group))
-ES2Access/Screens/GlobalHud.cs | 2 | if (!AgeWidgets.Visible(ring))
-ES2Access/Screens/GlobalHud.cs | 2 | if (!AgeWidgets.Visible(widget))
-ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(AgeWidgets.Transform(endTurn)))
-ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(global))
-ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(item))
-ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(line))
-ES2Access/Screens/GlobalHud.cs | 1 | if (AgeWidgets.Visible(ready))
-ES2Access/Screens/GlobalHud.cs | 2 | if (button == null || !AgeWidgets.Visible(button))
-ES2Access/Screens/GlobalHud.cs | 1 | if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
-ES2Access/Screens/GlobalHud.cs | 1 | if (item == null || !AgeWidgets.Visible(item))
-ES2Access/Screens/GlobalHud.cs | 1 | if (label == null || !AgeWidgets.Visible(label.AgeTransform))
-ES2Access/Screens/GlobalHud.cs | 1 | if (panel == null || !panel.Shown || !AgeWidgets.Visible(panel.AgeTransform))
-ES2Access/Screens/GlobalHud.cs | 1 | if (resource == null || !AgeWidgets.Visible(item.AgeTransform))
-ES2Access/Screens/GlobalHud.cs | 1 | if (ring == null || !ring.Visible)
-ES2Access/Screens/GlobalHud.cs | 1 | if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
-ES2Access/Screens/GlobalHud.cs | 1 | if (toggle.Screen == null || !AgeWidgets.Visible(widget))
-ES2Access/Screens/GlobalHud.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
-ES2Access/Screens/GlobalHud.cs | 4 | if (window == null || !AgeWidgets.Visible(window.AgeTransform))
-ES2Access/Screens/GlobalHud.cs | 1 | return AgeWidgets.Visible(panel.QuestProgressLabel.AgeTransform)
-ES2Access/Screens/GlobalHud.cs | 1 | return panel != null && panel.Shown && AgeWidgets.Visible(panel.AgeTransform);
-ES2Access/Screens/GlobalHud.cs | 1 | || !AgeWidgets.Visible(AgeWidgets.Transform(button))
-ES2Access/Screens/GlobalHud.cs | 1 | || !AgeWidgets.Visible(banner.ResearchGroup)
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | && AgeWidgets.Visible(panel.ScanGroup);
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | if (label == null || !AgeWidgets.Visible(label.AgeTransform))
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | if (panel == null || !panel.Shown || !AgeWidgets.Visible(panel.AgeTransform))
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | if (resource == null || !AgeWidgets.Visible(item.AgeTransform))
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | if (toggle.Screen == null || !AgeWidgets.Visible(widget))
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | || !AgeWidgets.Visible(AgeWidgets.Transform(button))
+ES2Access/Screens/GlobalHud.EmpireBanner.cs | 1 | || !AgeWidgets.Visible(banner.ResearchGroup)
+
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | && AgeWidgets.Visible(child)
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | AgeTransform area = AgeWidgets.Visible(under) ? under : group;
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (!AgeWidgets.Visible(action))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (!AgeWidgets.Visible(area))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (!AgeWidgets.Visible(group))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (!AgeWidgets.Visible(widget))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (AgeWidgets.Visible(item))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (AgeWidgets.Visible(line))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (AgeWidgets.Visible(ready))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | if (item == null || !AgeWidgets.Visible(item))
+ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | return panel != null && panel.Shown && AgeWidgets.Visible(panel.AgeTransform);
+
+ES2Access/Screens/GlobalHud.Quest.cs | 1 | && AgeWidgets.Visible(panel.AgeTransform)
+ES2Access/Screens/GlobalHud.Quest.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
+ES2Access/Screens/GlobalHud.Quest.cs | 1 | return AgeWidgets.Visible(panel.QuestProgressLabel.AgeTransform)
+
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (!AgeWidgets.Painted(button))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (!AgeWidgets.Visible(AgeWidgets.Transform(button)))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (!AgeWidgets.Visible(clock))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (!AgeWidgets.Visible(group))
+ES2Access/Screens/GlobalHud.Turn.cs | 2 | if (!AgeWidgets.Visible(ring))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (!AgeWidgets.Visible(widget))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (AgeWidgets.Visible(AgeWidgets.Transform(endTurn)))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (AgeWidgets.Visible(global))
+ES2Access/Screens/GlobalHud.Turn.cs | 2 | if (button == null || !AgeWidgets.Visible(button))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (ring == null || !ring.Visible)
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
+ES2Access/Screens/GlobalHud.Turn.cs | 4 | if (window == null || !AgeWidgets.Visible(window.AgeTransform))
 
 ES2Access/Screens/GovernmentScreen.cs | 1 | band = band || AgeWidgets.Visible(grandchildren[j]);
 ES2Access/Screens/GovernmentScreen.cs | 1 | child == null || !AgeWidgets.Visible(child) ? null : child.Children;
@@ -333,32 +343,39 @@ ES2Access/Screens/NegotiationScreen.cs | 1 | if (none != null && AgeWidgets.Visi
 ES2Access/Screens/NegotiationScreen.cs | 2 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (table != null && AgeWidgets.Visible(table))
 
-ES2Access/Screens/NotificationScreen.cs | 1 | !Painted(expander.AgeTransform, root)
-ES2Access/Screens/NotificationScreen.cs | 1 | && AgeWidgets.Visible(own.AgeTransform)
+ES2Access/Screens/NotificationScreen.BodyReader.cs | 1 | || !Painted(line.Owner, root)
+
+ES2Access/Screens/NotificationScreen.Controls.cs | 1 | !Painted(expander.AgeTransform, root)
+ES2Access/Screens/NotificationScreen.Controls.cs | 1 | if (!Painted(controls[i].Widget, root))
+ES2Access/Screens/NotificationScreen.Controls.cs | 1 | if (control == null || !AgeWidgets.Visible(control.AgeTransform))
+ES2Access/Screens/NotificationScreen.Controls.cs | 1 | || !Painted(control.AgeTransform, root)
+
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | && Painted(line.Owner, root)
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (child != null && AgeWidgets.Visible(child) && Draws(child, 0))
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (child == null || !child.Visible || !Draws(child, 0))
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (table == null || !Painted(table, root))
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (widget == null || depth > MaxAncestors || !widget.Visible)
+ES2Access/Screens/NotificationScreen.Sheets.cs | 2 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | || !AgeWidgets.Visible(widget)
+
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | && AgeWidgets.Visible(own.AgeTransform)
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (!Painted(controls[i].Widget, root))
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (line == null || !AgeWidgets.Visible(line))
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | panel == null || !AgeWidgets.Visible(panel.AgeTransform)
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | panel == null || !AgeWidgets.Visible(window.RolesPanel)
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | return button != null && AgeWidgets.Visible(button.AgeTransform) ? button : null;
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | return toggle != null && AgeWidgets.Visible(toggle.AgeTransform) ? toggle : null;
+
 ES2Access/Screens/NotificationScreen.cs | 1 | && Painted(button.AgeTransform, Root(window))
-ES2Access/Screens/NotificationScreen.cs | 1 | && Painted(line.Owner, root)
 ES2Access/Screens/NotificationScreen.cs | 1 | if (!AgeWidgets.Paints(at))
-ES2Access/Screens/NotificationScreen.cs | 2 | if (!Painted(controls[i].Widget, root))
 ES2Access/Screens/NotificationScreen.cs | 1 | if (AgeWidgets.Visible(groups[i]))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (child != null && AgeWidgets.Visible(child) && Draws(child, 0))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (child == null || !child.Visible || !Draws(child, 0))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (control == null || !AgeWidgets.Visible(control.AgeTransform))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (line == null || !AgeWidgets.Visible(line))
-ES2Access/Screens/NotificationScreen.cs | 1 | if (table == null || !Painted(table, root))
-ES2Access/Screens/NotificationScreen.cs | 2 | if (widget == null || !AgeWidgets.Visible(widget))
-ES2Access/Screens/NotificationScreen.cs | 2 | if (widget == null || depth > MaxAncestors || !widget.Visible)
-ES2Access/Screens/NotificationScreen.cs | 2 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
+ES2Access/Screens/NotificationScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
+ES2Access/Screens/NotificationScreen.cs | 1 | if (widget == null || depth > MaxAncestors || !widget.Visible)
 ES2Access/Screens/NotificationScreen.cs | 1 | label != null && Painted(label.AgeTransform, Root(window))
-ES2Access/Screens/NotificationScreen.cs | 1 | panel == null || !AgeWidgets.Visible(panel.AgeTransform)
-ES2Access/Screens/NotificationScreen.cs | 1 | panel == null || !AgeWidgets.Visible(window.RolesPanel)
-ES2Access/Screens/NotificationScreen.cs | 1 | return button != null && AgeWidgets.Visible(button.AgeTransform) ? button : null;
-ES2Access/Screens/NotificationScreen.cs | 1 | return toggle != null && AgeWidgets.Visible(toggle.AgeTransform) ? toggle : null;
 ES2Access/Screens/NotificationScreen.cs | 1 | title || (drawn != null && AgeWidgets.Visible(drawn.AgeTransform))
-ES2Access/Screens/NotificationScreen.cs | 1 | || !AgeWidgets.Visible(widget)
 ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(button.AgeTransform, Root(window))
-ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(control.AgeTransform, root)
-ES2Access/Screens/NotificationScreen.cs | 1 | || !Painted(line.Owner, root)
 
 ES2Access/Screens/OptionsScreen.cs | 1 | if (item != null && AgeWidgets.Visible(AgeWidgets.Transform(item)))
 ES2Access/Screens/OptionsScreen.cs | 1 | if (tab != null && tab.Toggle != null && AgeWidgets.Visible(tab.Toggle.AgeTransform))
