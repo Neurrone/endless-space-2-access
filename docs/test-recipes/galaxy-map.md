@@ -1055,26 +1055,57 @@ second region with **Alt+Down** (`ui.regionNext`), and read the dossier nodes th
   lanes the three lanes, Fleets the one fleet; Resources holds `Hyperium`, `Titanium`, `Transvine`;
   Details holds `Osulo` (the system dossier — its header reads "Osulo - Niris" off the LABEL and just
   "Osulo" off the orbital window the camera swaps to). Dusay has the system dossier and no deposits,
-  so it has a Details region and no Resources one.
+  so it has a Details region and no Resources one. **The Actions region is the half that needs the
+  CAMERA**: Diplomacy is a card action off `DiplomacyButton`, which `CardActions.AddRefusable` drops
+  while the label is culled, so a dump taken from anywhere else on the map shows Osulo with no
+  Actions region at all (measured 2026-09-02).
   **A deposit node names its state** — "Transvine, exploited" — off the drawn icon, so the name is
   the bare kind wherever the label is drawing no strip.
+
+**The seven regions as measured, on the owner's own campaign** (turn 28, spoken 13 and 9 alike) —
+four systems, four shapes, and the one door in each. `Dusay` (our colony, building): Actions
+(`<key>/queue`, `Building Interplanetary Transport Network, 3 turns, button`) · Planets 3 · Star
+lanes 3 · Details 2 (`Dusay - Imperials Neurrone` then `This is a faction's home system`, keyed
+`tooltip/0` and `tooltip/2` — the region counts `1 of 2`, `2 of 2` and the gap is the queue's index).
+`Heka` (our colony, empty queue): the same Actions node, reading `Nothing under construction,
+button, Click to queue up a Construction on this system`. `Primus` (no owner): NO Actions region —
+`Manageable` declares no door for a system nobody holds, exactly as before the regions. `Osulo`
+(foreign home system): Actions holds Diplomacy alone. **No "Manage system" stands beside a queue
+node at any band** — the one-door ruling holds. **A region with ONE member says no "N of M"**, the
+same as every other single-member region (`hud:empire/research`). **Alt+Down from a system's own ROW
+leaves the system**: regions are flat within a stop and every system row lives in
+`galaxy:systems/stars`, so the region after it is the first region of the first OPENED system on the
+map (Lors's Planets, with the cursor on Dusay). The chord walks one system's regions only from
+INSIDE it, where it is exact — Actions → Planets → Star lanes → Details and back, each name once.
+**Enter on the queue opens `screen.star-system` and Escape comes back to `<key>/queue` itself**
+(measured 2026-09-02), not to the system's row: the door the player pressed is the node they return
+to, and the camera comes back to the rung it left.
 
 **The system label's pictures are nodes**, one per DRAWN picture, in the label's own order
 (2026-09-01) — sorted since 2026-09-02 into Status, Actions, Resources and Details by the WIDGET each
 was read off (`SystemLabelReadout.Region`), which is why a walk of one region skips index numbers.
-Two catches, both measured on this fixture:
-- **The label's lines are painted only to spoken level 12.** At 13 the map keeps every nameplate
-  bound and fades its body lines to alpha 0 (`PopulationAndQueueLine`, `HomeAndTradingLine`,
-  `DepositsMainLine` — all alpha 0 at camera step 12, all alpha 1 at step 11), so the picture nodes
-  exist at levels ≤12 and vanish at 13. Expanding a system from 7–12 lands the camera at 13
-  (stage 2's graded expansion), so the route to them is: expand, then zoom back out to ≤12 with the
-  branch open. `AgeWidgets.Painted`, never `Visible` — the latter says yes to every faded line.
-- **Type-ahead cannot be the landing.** A snap landing on a dossier child forces level 13
-  (`EnsureBand`), which is exactly where the pictures are not drawn — land on the row and walk in
-  with `ui.regionNext` + `ui.down` instead.
+Two catches:
+- **PAINT DECIDES THE NAME, BINDING DECIDES THE NODE** (measured 2026-09-02 on the owner's own
+  campaign, turn 28). The label's body lines fade to alpha 0 at spoken 13
+  (`PopulationAndQueueLine`, `HomeAndTradingLine`, `DepositsMainLine` — all alpha 0 at camera step
+  12, all alpha 1 at step 11), but the picture NODES do not go with them: existence follows the
+  BOUND label (`SystemLabelReadout.Unvouched`, owner ruling 2026-09-01), so Dusay reads
+  `Actions, Building Interplanetary Transport Network, 3 turns, button` and
+  `Details … This is a faction's home system` at 13 and at 9 alike. What the fade DOES take is the
+  state a name is read off the drawn icon for: Heka's deposits are `Transvine, exploited` /
+  `Dustciduous Trees, not exploited` at 9 and the bare kinds at 13. The gate that really removes
+  these nodes is the label being CULLED — the camera looking elsewhere, `chain=False hidBy=Child` on
+  the walk above — which is why Osulo's `Diplomacy` card action is absent from a dump taken with the
+  camera on Dusay and present (`Actions, Diplomacy, button`) once the camera comes in on Osulo.
+  `AgeWidgets.Painted`, never `Visible` — the latter says yes to every faded line.
+- **Type-ahead cannot be the landing** for a picture's own STATE. A snap landing on a dossier child
+  forces level 13 (`EnsureBand`), which is where the deposit strip is not drawn — land on the row
+  and walk in with `ui.down` instead (`ui.regionNext` from a system's row leaves that system —
+  above).
 
-Route that works: `ui.focusMap`, `POST /type "dusay"`, `ui.back`, `ui.right`,
-`SetZoomHere(10)`, then `ui.regionNext`/`ui.down`. Measured 2026-09-01, before the regions: the
+Route that works: `ui.focusMap`, `POST /type "dusay"`, `ui.back`, `ui.down` for the first region's
+first node and `ui.regionNext` from there; `SetZoomHere(10)` only where a deposit's drawn STATE is
+what is being read. Measured 2026-09-01, before the regions: the
 label's three pictures were `Dusay - Imperials Neurrone` · `Building Infinite Supermarkets, 1 turns`
 · `This is a faction's home system`. They are now three different regions — Details leads with the
 system dossier, Actions holds the queue as the system's one door (`<key>/queue`) and Details ends

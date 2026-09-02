@@ -853,7 +853,9 @@ en route, free-moving, then the hangars) · **Resources** (the deposits) · **De
 probe, temple, slumbering ruins, home system, trading company, exploration winners and haunted
 planets). Each is a `PushContext` level, so the name is said once on the way in and the "N of M"
 counts that region alone; Alt+Up/Down jumps between them and a region the map draws nothing for does
-not exist (the 3–6 bands are Star lanes plus Fleets, the scan lens is Planets, Star lanes, Status).
+not exist (measured 2026-09-02: the 3–6 bands are Star lanes plus Fleets, band 3 alone Star lanes;
+the Trade lens is Planets, Star lanes and Status where a lens icon is drawn, and the System lens,
+which draws no planet cards, is Star lanes and that same Status).
 Which region a label picture belongs to is decided by the WIDGET it was read off
 (`SystemLabelReadout.Region`), never by its words. Dossier nodes keep the keys they had —
 `<key>/tooltip/<i>` indexed over the whole collected list, not over the region — so bookmarks and
