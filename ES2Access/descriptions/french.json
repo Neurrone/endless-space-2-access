@@ -435,16 +435,16 @@
     { "at": 62, "end": 71, "text": "D'immenses portes s'ouvrent à l'autre bout du couloir, découpant un éclatant faisceau de lumière blanche dans l'air poussiéreux. Il balaie les rangées de caissons cryogéniques et illumine la machine solitaire." },
     { "at": 71, "end": 76, "text": "Le robot fixe l'éclat aveuglant." },
     { "at": 76, "end": 81, "text": "Dans une nébuleuse teintée de vert, un astéroïde colossal et évidé rougeoie de feux dorés intérieurs. Un vaisseau élancé en forme d'anneau, l'Argosie, émerge des débris rocheux." },
-    { "at": 81, "end": 89.216, "text": "L'antique vaisseau de colonisation s'éloigne de la carcasse rougeoyante, met le cap vers les étoiles et disparaît dans l'immense obscurité cosmique." }
+    { "at": 81, "end": 89.216, "text": "L'antique vaisseau colonisateur s'éloigne de la carcasse rougeoyante, met le cap vers les étoiles et disparaît dans l'immense obscurité cosmique." }
   ],
   "Vaulters_Outro.LostBack": [
     { "at": 8.21, "end": 8.84, "text": "Des Exilés regardent un vaisseau décoller." },
-    { "at": 11.554, "end": 12.189, "text": "Tout disparaît dans un fondu au noir." },
+    { "at": 11.554, "end": 12.189, "text": "Tout se fond dans le noir." },
     { "at": 23.124, "end": 27.882, "text": "Dans l'espace, un anneau gigantesque flotte en orbite au-dessus d'Auriga. Un soleil éclatant jaillit derrière l'horizon sombre de la planète et projette des rayons vifs dans le vide étoilé." }
   ],
   "Vaulters_Outro.LostNotBack": [
     { "at": 8.515, "end": 9.36, "text": "Le vaisseau-anneau s'élève." },
-    { "at": 25.679, "end": 27.882, "text": "Tout disparaît dans un fondu au noir." }
+    { "at": 25.679, "end": 27.882, "text": "Tout se fond dans le noir." }
   ],
   "Vedt": [
     { "at": 0.5, "end": 3.5, "text": "Dans une savane dorée, de hautes herbes sèches bruissent autour de rochers sombres et rugueux." },
@@ -456,14 +456,14 @@
     { "at": 27.39, "end": 28.386, "text": "Il frappe une table du poing, éparpillant des jetons lumineux." },
     { "at": 40.123, "end": 42.379, "text": "Il rejette les bras en arrière tandis qu'une énergie dorée jaillit de lui, les yeux brillant intensément." },
     { "at": 50.473, "end": 51.959, "text": "En armure de combat, il bondit à travers une explosion en tirant avec une arme." },
-    { "at": 62.326, "end": 66, "text": "La femme esquisse un sourire narquois. Tout disparaît dans un fondu au noir." }
+    { "at": 62.326, "end": 66, "text": "La femme esquisse un sourire narquois. Tout se fond dans le noir." }
   ],
   "Venetians_Outro.LostBack": [
     { "at": 0, "end": 2.137, "text": "Une femme pâle, en robe à col haut, est assise sur un globe lisse et tient une sphère dorée lumineuse." },
-    { "at": 21.114, "end": 28, "text": "La grille dorée lumineuse sous elle s'étend à l'infini dans l'espace. Derrière elle, une vaste nébuleuse étoilée tourbillonne d'un vert éclatant. D'immenses colonnes de lumière s'élèvent de la grille vers le cosmos, la rendant minuscule face à l'étendue infinie. Tout disparaît dans un fondu au noir." }
+    { "at": 21.114, "end": 28, "text": "La grille dorée lumineuse sous elle s'étend à l'infini dans l'espace. Derrière elle, une vaste nébuleuse étoilée tourbillonne d'un vert éclatant. D'immenses colonnes de lumière s'élèvent de la grille vers le cosmos, la rendant minuscule face à l'étendue infinie. Tout se fond dans le noir." }
   ],
   "Venetians_Outro.LostNotBack": [
     { "at": 0, "end": 2.318, "text": "Une femme pâle, en robe à col haut, est assise sur un globe lisse et tient une sphère dorée lumineuse." },
-    { "at": 21.114, "end": 28, "text": "La grille dorée lumineuse sous elle s'étend à l'infini dans l'espace. Derrière elle, une vaste nébuleuse étoilée tourbillonne d'un vert éclatant. D'immenses colonnes de lumière s'élèvent de la grille vers le cosmos, la rendant minuscule face à l'étendue infinie. Tout disparaît dans un fondu au noir." }
+    { "at": 21.114, "end": 28, "text": "La grille dorée lumineuse sous elle s'étend à l'infini dans l'espace. Derrière elle, une vaste nébuleuse étoilée tourbillonne d'un vert éclatant. D'immenses colonnes de lumière s'élèvent de la grille vers le cosmos, la rendant minuscule face à l'étendue infinie. Tout se fond dans le noir." }
   ]
 }
