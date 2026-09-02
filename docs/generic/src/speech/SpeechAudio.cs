@@ -45,6 +45,22 @@ namespace ES2Access.Core.Speech.Mac
             return result;
         }
 
+        /// <summary>Multiply <paramref name="samples"/> by <paramref name="gain"/> in place, holding
+        /// the result to full scale: a gain above 1 makes the voice louder than it renders itself,
+        /// and clips whatever peaks that pushes past [-1, 1].</summary>
+        public static void Scale(float[] samples, float gain)
+        {
+            if (gain == 1f)
+            {
+                return;
+            }
+
+            for (int i = 0; i < samples.Length; i++)
+            {
+                samples[i] = Clamp(samples[i] * gain, -1f, 1f);
+            }
+        }
+
         /// <summary><paramref name="value"/> held to [<paramref name="min"/>, <paramref name="max"/>].</summary>
         public static float Clamp(float value, float min, float max)
         {

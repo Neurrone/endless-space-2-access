@@ -388,8 +388,9 @@ regression test for the clone's modal registration (ES2 facts).
 Third tab, registered only when `Platform.IsMacOS` (`ModOptions.Categories`); Windows shows two
 tabs and none of this. Rows (`SpeechRows.Fill`): a backend combo (System voice /
 VoiceOver-through-Prism), then a "System voice settings" caption over a Voice combo, Speaking
-rate and Speech volume sliders (0-100 step 5), and a "Reset voice and rate to Spoken Content"
-button. Every row edits `settings.cfg`'s `speech.*` keys (`SpeechSettings`) AND the live
+rate and Speech volume sliders (0-100 step 5; volume 70 is the voice's own loudness, above it
+the rendered samples are amplified and clip at full scale, default 80), and a "Reset voice and
+rate to Spoken Content" button. Every row edits `settings.cfg`'s `speech.*` keys (`SpeechSettings`) AND the live
 backend in the same write, so Cancel reverts both through the game's own RestoreSettings and
 Apply-then-hide persists (verified 2026-08-31). With Prism as the live backend the captioned
 rows keep reading and writing the STORED settings but move no live lever (`Speech.Mac` is
