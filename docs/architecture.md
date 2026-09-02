@@ -10,10 +10,7 @@ regenerate with `.\decompile.ps1`. GUI specifics are in `gui.md`.
   (`Assembly-CSharp/EndlessSpace2Application.cs`; base in
   `Assembly-CSharp-firstpass/Amplitude.Unity.Framework/`).
 - **Service locator** — the single most important pattern for mod code:
-  `Amplitude.Unity.Framework.Services.GetService<T>()` (static, callable from anywhere). ~117
-  `I*Service` interfaces: `IGuiService`, `IGameService`, `ISessionService`, `IEventService`,
-  `IInputService`, `ILocalizationService`, `IEndTurnService`,
-  `IPlayerControllerRepositoryService`, `IGameEntityRepositoryService`, …
+  `Amplitude.Unity.Framework.Services.GetService<T>()` (static, callable from anywhere).
 - **Caveat**: services register asynchronously (each manager's `BindServices()` coroutine) and
   are torn down when returning to the main menu. Never cache a service across scene/session
   transitions; re-acquire and null-check, or use the `GetServiceWeakRef<T>()` polling pattern
@@ -30,11 +27,10 @@ regenerate with `.\decompile.ps1`. GUI specifics are in `gui.md`.
 - Per-frame simulation pump while a game is active: `Session.Update()` →
   `GameClient.Update()` (`Assembly-CSharp/Session.cs`).
 - **`IEndTurnService` is `GameManager`, and it OUTLIVES a galaxy; `Gui.Game` is what changes.**
-  Measured 2026-09-02: loading a save from a running session handed back the same
-  `IEndTurnService` instance either side (`GameManager#1110861312`) while `Gui.Game` became a
-  different object (`Game#-1902150656` → `Game#-1543507712`). So a watcher that re-baselines on
+  Loading a save from a running session hands back the same `IEndTurnService` instance either side
+  while `Gui.Game` becomes a different object. So a watcher that re-baselines on
   "my service instance changed" never notices a load at all, and keeps a table keyed by entity
-  GUIDs the new galaxy has already re-used (measured: three stale foreign-fleet rows survived a
+  GUIDs the new galaxy has already re-used (measured: stale foreign-fleet rows survive a
   load). The rule the mod follows (`ForeignFleetWatch.Follow`): the SUBSCRIPTION follows the
   service, the TABLE follows the `Game`. And a galaxy does not finish arriving in the frame its
   `Game` does — a load restores the client's visibility layers by a path that is not
@@ -74,9 +70,7 @@ Services.GetService<IEventService>().EventRaised += (s, e) => {
 };
 ```
 
-~280 concrete event types (`Assembly-CSharp/Event*.cs`): `EventBeginTurn`,
-`EventConstructionCompleted`, `EventBattleWon/Lost`, `EventTechnologyUnlocked`,
-`EventDiplomaticRelationChange`, `EventPlanetColonized`, … Most derive from `EmpireEvent`
+The concrete event types are `Assembly-CSharp/Event*.cs`. Most derive from `EmpireEvent`
 (carries `.Empire`) — filter to the player's empire before narrating.
 
 Alternative higher-level source mirroring the in-game notification list:
@@ -89,8 +83,7 @@ Alternative higher-level source mirroring the in-game notification list:
 - `InputManager` (`Assembly-CSharp/InputManager.cs`, extending
   `Assembly-CSharp-firstpass/Amplitude.Unity.Input/InputManager.cs`). Bindings are declarative
   `InputBinding`s persisted to the registry; every bindable action is a `StaticString` in
-  `Assembly-CSharp/InputAction.cs` (44 actions: `EndTurn`, `EmpireScreen` F1…F8, `QuickSave`,
-  camera controls, …) — effectively the game's full shortcut list.
+  `Assembly-CSharp/InputAction.cs` — a closed set, and effectively the game's full shortcut list.
 - Dispatch (verified): base `InputManager` polls bindings and walks a priority array of
   `IInputHandler`s (`CanHandleInput()` / `HandleInput(inputAction)`); registered priorities:
   ViewManager 1, CameraManager 2, GuiManager 5. The ES2 override of
@@ -109,11 +102,8 @@ var systems = player.GetAgency<DepartmentOfTheInterior>().ColonizedStarSystems;
 var fleets  = player.GetAgency<DepartmentOfDefense>().Fleets;
 ```
 
-Per-empire subsystems are "Departments" (`Assembly-CSharp/Department*.cs`, 15): Interior
-(colonies), Defense (fleets), Science, Industry (construction; raises
-`EventConstructionCompleted`), Treasury, Education (heroes), ForeignAffairs, … Many expose
-collection-change events (`FleetsCollectionChange`, `ActiveHeroesCollectionChange`) — prefer
-subscribing over polling.
+Per-empire subsystems are "Departments" (`Assembly-CSharp/Department*.cs`). Many expose
+collection-change events — prefer subscribing over polling.
 
 All entities (`Fleet`, `Ship`, `ColonizedStarSystem`, `Empire`, …) implement
 `IGameEntity { GameEntityGUID GUID }` and resolve via `IGameEntityRepositoryService`.

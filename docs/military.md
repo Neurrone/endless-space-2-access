@@ -44,7 +44,7 @@ Index and charter: `README.md`.
   invalid (the fresh-Create state); and the designer's resource items are god-mode readouts
   named through `TooltipTitle`.
 - **`RepartitionHorizontalGauge.Refresh` HIDES a half whose value is zero**, so a reading of the
-  hidden half is unfalsifiable until a fixture gives that half a value — which is how a right-hand
+  hidden half is unfalsifiable until that half has a value — which is how a right-hand
   share measured against the bar's far end instead of its middle (163% with energy at 37%) survived a
   whole audit unseen.
 - **The "Projectile-Energy Balance" block draws TWO bars under ONE heading, and both bars take the
@@ -76,8 +76,8 @@ Index and charter: `README.md`.
 - **"Behemoth" in the game's fiction is `Juggernaut` in the code** — grep both spellings or half
   the family is invisible.
 - **Every `GuiTableLine` in the game carries a `DoubleClickButton`** (`GuiTableLine.Bind` :96-99
-  wires it to `OnLineDoubleClickCb` → the table client's `OnLineDoubleClick`) — measured: 14 lines
-  live in `unlocked`, none without one. Only eight classes implement the handler
+  wires it to `OnLineDoubleClickCb` → the table client's `OnLineDoubleClick`) — measured live, with
+  no line lacking one. Only eight classes implement the handler
   (`StarSystemsManagementPanel` :434-441 opens that system's management page, `MilitaryScreen` :511
   shows the fleet on the map, `FleetSelectionModalWindow` :181 and `SystemSelectionModalWindow` :184
   pick and close, `LoadSaveModalWindow` :401 loads or overwrites, `JoinGameScreen` :435, and
@@ -118,8 +118,7 @@ Index and charter: `README.md`.
   POST-mitigation and the shields' share is in its own sub-instructions as
   `DamageReceivedAbsorbedByShield` deltas, written once per accounting level and therefore read as a
   maximum; and `PhaseReports` can skip a phase index outright (measured 0, 1, 2, 4), so the game's own
-  phase numbering has gaps in it. Everything else about the stream, with the counts, is
-  `test-recipes/battles.md`, **What the fight says**.
+  phase numbering has gaps in it.
 - **The advanced report's morale badge is a GROUP fact drawn once per phase.**
   `AdvancedReportPhaseItem.Refresh` (:39-62) asks
   `EncounterGroup.GetPropertyValue(SimulationProperties.EncounterGroup.MoraleBonus)` of each side and
@@ -239,11 +238,9 @@ Index and charter: `README.md`.
   (`GalaxyEncounter.cs:1798`), which runs after the coroutine waits for `Encounter.State` to reach
   `Report`/`Finished` and just BEFORE `State = LoadingWaitForPlayer` (:1844). So for the whole
   `GalaxyEncounterState.Loading` window, `Groups[g].Flotillas[f].Status` and every ship's are the
-  battle's FINAL state; at the pre-roll gate they are Alive again. Measured 2026-08-29 on the owner's
-  Sabel fixture: at the wedge all 8 flotillas read `Alive`, while the phase reports carry exactly two
-  flotilla `EntityStatus=Destroyed` instructions (guid 52, the player's empty reinforcement flotilla,
-  `Index=0`, at t=26.6; guid 5, the pirates' only real flotilla, `Index=1`, at t=63.0 — the last event
-  of the fight). Mod policy it forced: the loss, phase and progress tiers read the model only while
+  battle's FINAL state; at the pre-roll gate they are Alive again — so at the wedge every flotilla
+  reads `Alive` while the phase reports carry the `EntityStatus=Destroyed` instructions for the
+  fight that has already happened. Mod policy it forced: the loss, phase and progress tiers read the model only while
   the stream is being replayed (`SpaceBattleScreen.Playing` — Running/PreparingSkipping/Skipping),
   because before that the model is a spoiler, not a report of what has happened.
 - **`BattleScreen.CurrentMode` is a dead property.** It is declared (`BattleScreen.cs:130`) and

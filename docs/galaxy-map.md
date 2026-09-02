@@ -42,10 +42,9 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   the Academy and quest nodes; what needs doing is the threshold, not the enumeration.
   `GalaxySpecialNodeCursorTarget.VisibleByCurrentEmpire` (:22-27) needs exploration ≥ 3 where
   `GalaxyStarSystemCursorTarget` (:89-94) takes ≥ 2. Mod policy: places = systems + specials, and
-  `GalaxyHudScreen.Perceived` gates a `SpecialNode` at 3 (measured evidence pair: a special and an
-  ordinary node forced to the same exploration 2 answer False and True; counting only non-special
-  nodes made inspect mode's Enter a silent no-op on the Solar Nebula, B10 6805, the one special in
-  `[Beginner] test`). **The Academy and quest sites are NOT `SpecialNode`s** — each is an ordinary
+  `GalaxyHudScreen.Perceived` gates a `SpecialNode` at 3 (a special and an ordinary node forced to
+  the same exploration 2 answer False and True; counting only non-special nodes made inspect mode's
+  Enter a silent no-op on a special). **The Academy and quest sites are NOT `SpecialNode`s** — each is an ordinary
   `StarSystemNode` carrying the `WorldAcademy` / `QuestNodeTag` tag (the label has its own
   `AcademyIconGroup`). `SpecialNode` means the eight stellar-phenomenon kinds (Black Hole,
   Asteroid Field ×2 definitions, Collapsing Star, Solar Nebula, Neutron Star, Nebular Clouds,
@@ -54,12 +53,11 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   `Gui.GetLocalizedTitle(SpecialNodeDefinition.Name)` — e.g. "Solar Nebula" where an ordinary
   star reads "Star System (White Star)"); the label and `LocalizedName` ("B10 6805") never
   say it.
-- **An undiscovered system's label carries `Enable=True` from the prefab.** A sweep of all 87
-  `StarSystemLabel`s found ~80 with `RequestManagementViewButton.Enable == True` and the visibility
+- **An undiscovered system's label carries `Enable=True` from the prefab**, with the visibility
   chain false. Any offer gated on `Enable` alone would exist for the whole galaxy; the drawn-chain
   test has to come first.
 - On the pooled `StarSystemLabel` set only labels whose ROOT `Visible` is true have run their
-  `Refresh*`: 135 of 136 hold prefab-default `Visible=true` on the badge groups, and the
+  `Refresh*`: the badge groups hold the prefab default `Visible=true`, and the
   ancestor walk in `AgeWidgets.Visible` is the only thing keeping them silent.
 - **Pooled label widgets keep the PREVIOUS system's values** (a hidden `TraitorCountLabel` read a
   stale "1"), so every label read is gated on ancestor-walked visibility.
@@ -92,10 +90,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   `MainColonizedStarSystem` only while the state is `Colony` — so the button is drawn dead on an
   OUTPOST of ours, while `RequestStarSystemManagementViewLevel` (:1224-1247) opens the page for any
   system of ours that is not `Lost`. A mod reading "can the player do this" off the button's `Enable`
-  under-offers by exactly the outpost case. Measured turn 18: Heka `enable=False`, repository
-  `State == Outpost`, `IsBlackedOut == false`, and `GalaxyViewLevels.OpenSystem` opens the page —
-  whose outpost half (`OutpostInfoSidePanel`, the outpost-action checkboxes) the system screen already
-  reads. The widget carries no `AgeTooltip` at all (measured on the drawn label), so `Visible &&
+  under-offers by exactly the outpost case; the page's outpost half (`OutpostInfoSidePanel`, the
+  outpost-action checkboxes) the system screen already reads. The widget carries no `AgeTooltip` at all (measured on the drawn label), so `Visible &&
   Operable` answers "is this a colony of mine" without asking the model, and anything declaring the
   button has to bring its own name.
 - **Whose colour a system's label paints, and whose dossier it binds, both count only a full COLONY.**
@@ -154,10 +150,10 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   `DepositsMainLine.Alpha` is 0, so `AgeWidgets.Painted` (which walks ancestors) says false and the
   icons are not on screen. At the systems view level the whole line paints. So `Visible` is NOT the
   test for "the game is drawing this deposit"; `Painted` is.
-- **A planet's circle is drawn at every zoom the system's planets are declared at.** Measured across
-  the whole slider on `[Beginner] test`: `PlanetCirclesTable`'s children keep their `PlanetSimple`
+- **A planet's circle is drawn at every zoom the system's planets are declared at.**
+  `PlanetCirclesTable`'s children keep their `PlanetSimple`
   tooltips even at the constellation band, so the mod's own carrier for a planet dossier is a
-  fallback that this fixture never reaches.
+  fallback that a galaxy drawing its circles never reaches.
 - **`Constellation.Exploration[empire]` is a STALE aggregate**: it recomputes only on
   node-exploration events, counts member systems at node state ≥ 4 (visited, not merely seen),
   and at turn 1 all five constellations read 0 — including the one the empire lives in. It is
@@ -166,18 +162,13 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   label whose `CulledIn` is false, and `MarkLabelsCulling` reruns on every camera-POSITION change
   (`SpecificUpdate`) — a one-shot force is undone by any pan, which is why `ConstellationLabelHold`
   re-asserts per frame; `window.Dirty = true` is a complete reflection-free restore (`Refresh`
-  calls `MarkLabelsCulling` unconditionally). In `unlocked` no `GalaxyConstellation` is ever
-  culled in at ANY camera position. Constellation GUIDs in `unlocked`: Canista 1, Andromeda 72,
-  Vela 264, Herkules 516 (home), Fornax 713.
+  calls `MarkLabelsCulling` unconditionally).
 - **Alpha is not a gate for the constellation tooltip family**: a held label at play zoom is
   `Shown=True, Alpha=0` and its tooltip still fills and reads — `ConstellationLabel.Refresh`
   writes Content/Target/Class regardless of alpha.
-- Live hull-oracle result for `unlocked` (2026-08-20): `regions 5, members 136, outside own
-  hull 0, inside another hull 22, classified elsewhere 0` — the interlock is real (22 members
-  sit inside a neighbour's hull) and the nearest-member tie-break resolves every one.
 - **`EntityExploration.SetState` only ever RAISES a state** (:87-100), so a fog test that needs
   a lower state must write the byte in the by-reference `GetCurrentStates()` array and put it
-  back (test-recipes). `GetCurrentStates()` is public and by-reference — no reflection needed
+  back. `GetCurrentStates()` is public and by-reference — no reflection needed
   to force or restore an exploration byte, because the states array IS the storage.
 - **What is on a PLANET, and who is allowed to know it** (2026-08-22, read from the game; the
   scanner's five world categories are built on exactly these gates and nothing wider):
@@ -217,9 +208,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   would leak every capital in the galaxy. The diplomacy lens draws its home circle off `Known`
   (`GalaxyStarSystem.ContentForDiplomaticScanViewForHomeSystem.Update`) and iterates MAJOR empires
   only. **Mod policy:** a foreign home system is named only when `Known` is true AND the known
-  position is the home system's; minor factions are not asked, matching the lens. Measured in
-  `[Beginner] test` turn 21: all three AI majors read `Known=False` while their stored positions
-  are exactly their (unseen) home systems — Leaper/Baten, St Chaoiver/Jundur, Doria/Lonica.
+  position is the home system's; minor factions are not asked, matching the lens.
 - **A lane leads somewhere UNEXPLORED when the far end is not perceived, not when the lane is
   unrevealed** (2026-08-22). The map draws a link at `MapVisibility.Drawn` (intensity ≥
   PartiallyRevealed), and `GalaxyHudScreen.LanesOf` is the one list every part of the page orders
@@ -242,7 +231,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   a `NodePosition`; anything else - a fleet in mid-lane included - has none, which is what makes a
   marker "out in the open". `QuestMarker.GUID` is its own identity, which is how two markers of two
   quests at one star stay apart. Registering one by hand (`IQuestManagementService.Register` after
-  `Load()`) is the only way to see any of this on either fixture — both have ZERO markers.
+  `Load()`) is the only way to see any of this where a galaxy carries no markers.
 
 ## Lanes, lines and the map's own drawing
 
@@ -279,8 +268,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   fog, so there is no unexplored/remembered distinction to resolve for a point. `GalaxyBounds` on the
   same service is NOT the galaxy's extent — it is that field's rect, scaled 2.5× (`VisibilityController
   .GalaxyBoundsScaleFactor`), so anything wanting "where does the galaxy stop" measures
-  `Galaxy.GameNodes` instead (`[Beginner] test`: x `[-164.0, 22.8]`, y `[-41.5, 88.3]` from home) —
-  as the BOX for anything bounding a move and as the convex HULL for anything describing the shape
+  `Galaxy.GameNodes` instead — as the BOX for anything bounding a move and as the convex HULL for anything describing the shape
   (`GalaxyFrame`; the split and why is under "Probes, targeting modes and the scan view").
   **The game has no UI word for the fog**: "the fog of war" occurs exactly once in the whole English
   corpus, in one quest objective's tooltip, and "miasma" occurs nowhere at all — so a mod that says
@@ -385,8 +373,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **A bearing is read TWICE over two different stretches, and only the approved difference is left**
   (ruled 2026-08-29). The ranges answer "what is out that way" and run to the map's rim however far
   past the probe's reach that is; the leading share answers "what would this launch buy me" and covers
-  only the reach-capped flight (`ProbeFootprint`, reach = `Round(ProbeSpeed × ProbeBaseLifetime)` = 30
-  on `[Beginner] test`, vision half-width `ProbeVisionRange` = 3.5). That scope difference is the
+  only the reach-capped flight (`ProbeFootprint`, reach = `Round(ProbeSpeed × ProbeBaseLifetime)`,
+  vision half-width `ProbeVisionRange` = 3.5). That scope difference is the
   owner's decision and is why "unexplored 49 to the map edge at 59" can sit beside "100 percent
   explored". **The alongside stretches are cut to the tiles the share counts, at BOTH boundaries**: a
   flank sample is the outermost lattice tile on that step's perpendicular that is inside the vision
@@ -398,15 +386,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   sample per side per step taken at exactly the vision radius and then rounded to the lattice, which
   fails both ways: the rounding could push the sample half a tile's diagonal (~0.71) PAST the radius,
   and nothing tested the frame at all, so a rim system's seaward flank reported fog from off the map.
-  Measured on Dusay's southeast bearing, where every tile within 3.5 of the flight is explored: the row
-  said "100 percent explored; fully explored to the map edge at 32" and then read out fifteen alongside
-  stretches, every one of them fog from the 3.5-4.25 ring the probe would fly straight past (52 dark
-  tiles sit in that ring); it now says the first half and stops. The frame half is a rim-system effect
-  and small in the middle of the map — over all 86 systems of `[Beginner] test`, 159 of the 14234 flank
-  samples a bearing actually speaks from move when the frame is applied and 25 change the answer, every
-  one of them DROPPING fog, none adding it. What it sounds like, at Leo on the eastern rim: "North: 17
-  percent explored; unexplored 4 to the map edge at 55; unexplored alongside to the east: 2-4" — where
-  east of Leo is off the map — became the same line without the clause. **A flank with no map on it at
+  The frame half is a rim-system effect and small in the middle of the map, and every sample it moves
+  DROPS fog rather than adding it. **A flank with no map on it at
   all falls silent** rather than reporting the nearest tile it can find: the inward walk ends at the
   line's own tile, which is explored wherever the clause is spoken at all, since a flank is only
   mentioned where the line is light.
@@ -515,7 +496,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   2026-08-11). Everywhere else the key reaches the game and `ScanViewScreen` announces the lens,
   which is what made the hand-back safe; the lens keeps its Mouse2 route. The ONE page that hands
   nothing back is the star-system management page, whose Space the mod claims on every node
-  (owner ruling 2026-08-26, `docs/interaction.md`): the scan button drawn there is what still
+  (owner ruling 2026-08-26): the scan button drawn there is what still
   reaches the lens.
 - **The scan view is a MODE, not a view level**: `IsInNormalView` goes false and only
   `EndTurnWindow` survives, while `TopTitlePanel` keeps the lens-naming label even hidden.
@@ -558,9 +539,9 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   merge** (three materials: open/blockaded/mixed; the blockade flag ACCUMULATES down a route's
   path, and a route blockaded at either end draws blockaded from its first leg — the picture,
   so the mod copies it). It computes once on entering scan view and never refreshes mid-mode;
-  the Economy lens legend captions only two of the three colours. The fixture cannot create a
-  trading company (`CreateTradingCompanyPreprocessor` needs the HQ tech AND the improvement
-  built — `DepartmentOfCommerce.cs:816-855`).
+  the Economy lens legend captions only two of the three colours. Creating a trading company needs
+  the HQ tech AND the improvement built (`CreateTradingCompanyPreprocessor`,
+  `DepartmentOfCommerce.cs:816-855`).
   **The drawing has no band term**: the lines are computed from `ViewService_ScanViewSwitched`
   when the mode goes ON (`TradeRouteRenderer.cs:184-190` into `:204-300`, which asks nothing about
   zoom, lens or camera), so every lens that draws the map draws the routes.
@@ -593,11 +574,9 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   alpha is not usable here: a label the camera has culled paints none of its circles, so a row read
   off the widget would gain and lose the mark as the camera panned, which is the very
   camera-dependence the in-mode tree is ruled free of.
-- **The System lens paints no owner for the surrounding systems** (the flag 5a raised, measured
-  2026-09-01): at step 11 with the camera on Dusay, all 86 `ScanNodeLabel`s are unpainted — no
-  label, no `StarCircle`, no `OwnerCircleTable` — while the same camera at step 8 paints 6 labels,
-  4 star circles and 2 owner circles; the crop pair shows Dusay's nameplate, dots and ring at the
-  Economy lens and only the centre panel's own gauges at the System lens. The owner grouping the
+- **The System lens paints no owner for the surrounding systems**: at the System lens every
+  `ScanNodeLabel` is unpainted — no label, no `StarCircle`, no `OwnerCircleTable` — while the same
+  camera at a map lens paints them. The owner grouping the
   scan tree keeps at 11–13 is therefore a deliberate deviation for shape continuity, not parity.
 - **The scan system BAND never draws planets**: `StarSystemManagementScanViewWindow` binds only
   while `FocusedStarSystemNode != null` — the planets belong to the management lens one rung in.
@@ -633,9 +612,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **The planet lens draws a THIRD table nothing else mentions.** `PlanetScanViewWindow` has
   `PlanetRemainsItemsTable` under the right-hand column (rect 1050,260,220,480), filled from
   `Planet.Remains` and drawn per item only where `!remains.Definition.VisibleInSystemOverview`
-  (`PlanetRemainsItem.Refresh`) — each a title plus a paragraph. `unlocked` has no remains on any
-  planet of Xiu, so the table is drawn EMPTY there and a stats-only reading of the lens looks
-  complete.
+  (`PlanetRemainsItem.Refresh`) — each a title plus a paragraph. A planet with no remains draws the
+  table EMPTY, so a stats-only reading of the lens looks complete.
 - `ScanViewDiplomacyLabel` draws exactly ONE line: on your own home system `SwapToggle.Enable` is
   false, so the second variant never appears.
 
@@ -659,20 +637,17 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **`RequestStarSystemManagementViewLevel` silently degrades to a galaxy centre.** For a system that
   is blacked out (:1224-1228) or that the player neither owns nor has a traitor in (:1244-1247) it
   calls `RequestGalaxyOverviewViewLevel(component.Position)` instead — no page opens, and the only
-  feedback a mouse user gets is the camera sliding. Measured from `unlocked` on a non-owned system:
-  the reveal capture fires and the mod says "Shown on the map" rather than announcing a page.
+  feedback a mouse user gets is the camera sliding; the mod's reveal capture fires and it says
+  "Shown on the map" rather than announcing a page.
 - **`GalaxyView` has two `SelectGameNode` overloads and they do different things.** The one taking a
   `GameNode` force-zooms (`SelectNode` → `ZoomInOnNode`); the one taking the map's own `GalaxyNode` —
   which is what a real left click reaches, via `GalaxyStarSystemCursorTarget.GalaxyStarSystem` — asks
   the colonized-star-system repository first and branches to
   `RequestGalaxyViewLevelChange(typeof(GalaxyViewLevel_SystemManagement), …)` for a colony of the
-  player's (`GalaxyView.cs:110-166`), force-zooming only for everything else. **Measured on a
-  colonized system, though, that branch does NOT leave the galaxy view**: it lands where
-  `ZoomInOnNode` does — zoom step 13, galaxy page still focused, orbital cards drawn (2026-08-20).
-  **Re-measured 2026-08-29 and it DID leave**: a replayed click on Dusay (home, `[Beginner] test`
-  turn 21) opened the system's own page — "Zoom level 14 of 15", "Dusay, System management", the mod's
-  stack showing `screen.star-system`. So the branch is state-dependent and neither reading is safe to
-  build on; anything that must know asks the level afterwards. The pointer watch is written not to
+  player's (`GalaxyView.cs:110-166`), force-zooming only for everything else. **That branch is
+  state-dependent**: measured twice on a colonised system, it once landed where `ZoomInOnNode` does
+  (deepest camera step, galaxy page still focused, orbital cards drawn) and once opened the system's
+  own page. Neither reading is safe to build on; anything that must know asks the level afterwards. The pointer watch is written not to
   care (`GalaxyPick`): the page going away drops the pick on the pop, and coming back out of the page
   is an arrival that seats the cursor anyway.
   So "what the left click does" is not one answer, and a mod that wants the zoom must call
@@ -697,16 +672,12 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   as that rule already was: a cursor reading the map follows and the landing announces itself, a
   cursor reading anything else is left alone and the map stop's remembered row is re-seated silently,
   and a reveal, a fleet action's seat or a fleet-panel handover all name their own place first and
-  win. Measured 2026-08-29 on `[Beginner] test`: with the cursor on the End Turn button a replayed
-  click on Qarius moved the camera, said nothing and moved no cursor, and the next Ctrl+G landed on
-  Qarius; with the cursor on Dusay's row a replayed `ZoomInOnNode(Qarius)` seated and announced
-  Qarius one frame later. The mod's own movers are all elsewhere by construction
+  win. The mod's own movers are all elsewhere by construction
   (`SnapTo`/`ZoomTo`/`ZoomToStep` drive the LEVEL's `ZoomInOnNode` or the controller; `CenterOn` is
   `CenterOnPoint`; `PanTo`/`OpenSystem` are `GuiManager` calls) — except the zoom ladder's deepest
   step in (`GalaxyViewLevels.EnterSystem`, which takes the click's own path on purpose) and it marks
   itself `GalaxyPick.ByZoomKey`, because a zoom the player made by hand is the one exclusion the count
-  keeps (verified live 2026-08-29: the zoom ladder stepping into Primus left `Moves` at 8, recorded no
-  pick, moved no cursor and said nothing). **The wheel's deepest step is TRACKED — owner ruling
+  keeps. **The wheel's deepest step is TRACKED — owner ruling
   2026-08-29** — and the mod stays in sync with it exactly as with a click: it is the one wheel notch
   that changes WHICH place is shown rather than how close it is, so it belongs with the click and not
   with the hand zoom. The ordinary wheel steps (`StartZooming`) still count nothing.
@@ -718,9 +689,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   the camera over the same place, which is the whole difference. It is the only caller in the game
   (`GalaxyCursor.OnCursorClick` :128) and the mod's own `GalaxyViewLevels.RestoreZoom` helper has no
   callers, so counting it on `HasZoomBeenForced` — the same flag the click tests — counts exactly the
-  right clicks. Measured 2026-08-29 on `[Beginner] test`, which is the evidence for the split: after a
-  click-zoom onto Qarius, `RestoreZoom` put the camera back on PRIMUS (85.0, -1.9 from 64.0, 0.2) with
-  `zoomStep` 12 both before and after — the place changed and the closeness did not. A force made at the closest step restores to where it already is (below), and one of
+  right clicks. A force made at the closest step restores to where it already is (below), and one of
   those is counted too: the cost is a single extra re-frame onto whatever the cursor is reading.
 - **The map's right-click undo of a zoom is per-VISIT.** `GalaxyViewLevel_GalaxyOverview.ZoomInOnNode`
   sets `hasZoomBeenForced` and `RestoreZoom` needs it; leaving the overview level and coming back
@@ -744,19 +713,10 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   `ZoomIn:PageUp`/`ZoomOut:PageDown` defaults, but `KeyboardZoomStepByStep=False` so a TAP moves
   nothing (held ramp, one notch per 0.1 s); the galaxy camera answers by POLLING (its `HandleInput`
   is a stub); the system-management and planet-overview controllers answer `InputAction.ZoomIn/Out`
-  only while `!AgeManager.IsMouseCovered`. (Operational use: the camera recipe in
-  `test-recipes/galaxy-map.md`.)
-- **`FocusedStarSystemNode` is where the camera IS, lagging - never where it was sent.** Measured
-  2026-08-23 on `[Beginner] test`, four states:
-
-  | what was done | `FocusedStarSystemNode` |
-  |---|---|
-  | camera in on Ita at step 12 | `Ita` |
-  | `ZoomToStep(Ita, 9)` (the mod's own Backslash zoom-out), camera still over Ita | `null`, within 3 frames |
-  | the frame `SnapTo(Dusay)` is called (step already 12) | `null` — `Dusay` only on a later frame |
-  | mid-flight of a game-led `RequestGalaxyOverviewViewLevel(Heka)` from Dusay at step 12 | `Dusay` for the whole 5-frame slide, `Heka` only once it settles |
-
-  So it is the orbital view's own "which system am I up over" (the `zoomStep == ZoomStepsCount - 1`
+  only while `!AgeManager.IsMouseCovered`.
+- **`FocusedStarSystemNode` is where the camera IS, lagging - never where it was sent.** A zoom-out
+  by hand nulls it within three frames though the camera has not left the system; a snap leaves it
+  null until a later frame; and mid-flight it still names the system being LEFT. So it is the orbital view's own "which system am I up over" (the `zoomStep == ZoomStepsCount - 1`
   gate above), recomputed from the camera's position a frame or more behind it. **Mod policy
   (2026-08-23): nothing that has to know where the camera is HEADING may gate on it** - a
   follow-the-cursor rule gated on it re-snaps after every zoom-out by hand (the value is null) and
@@ -768,9 +728,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **Selecting a docked fleet frames the FLEET, not its star — close enough to look like nothing
   happened and far enough to take the orbital cards away.** `EndTurnWindow.SelectIdleFleet` (the
   route the mod's own fleet nodes take for a parked fleet) reveals the fleet, and the reveal centres
-  the camera on the fleet's docking slot. Measured 2026-08-26 on a docked fleet at an outpost:
-  the camera moved from the star's own snap target (67.356, -31.546) to (65.613, -29.908) — 2.4
-  units — at the SAME zoom step 12. That is outside `DistanceMinToCatchFocusOnNode`, so
+  the camera on the fleet's docking slot — a couple of units off the star's own snap target, at the
+  same zoom step. That is outside `DistanceMinToCatchFocusOnNode`, so
   `FocusedStarSystemNode` went null, `PlanetLabelsWindow_SystemOrbital` hid, and with the cards went
   every planet row's action child: the row still said "1 curiosity" (the label knows) while the
   curiosity BUTTON had no node at all. The same picture — right zoom step, right neighbourhood, no
@@ -807,15 +766,12 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   two stars nothing is inside `DistanceMinToCatchFocusOnNode`
   (`GalaxyViewCameraController.GetGalaxyEntityToFocus`), the focus goes null, the window hides, and it
   shows again bound to wherever the camera stopped. The mod's landing SNAPS (owner ruling 2026-08-22),
-  so the focus steps system-to-system with no null between and the window is never hidden. Measured
-  2026-08-24 on `[Beginner] test`: walking Up from Dusay's row into expanded Libra's last child, and a
-  type-ahead landing on `Libra I` from inside Dusay, both left `FocusedStarSystemNode = Libra` and the
-  camera at step 12 over Libra while the window still held **Dusay** — so Libra's planets had no
-  orbital cards at all (`CardFor` matches by `Planet` reference and finds none among the other
-  system's) and each world's tooltip fell back to the `PlanetCirleItem` on the star label, which at
-  orbital zoom sits at the top edge of the screen. The ordinary row → row → child walk only looked
-  right because the intervening `PanTo` is a 0.3 s flight that supplies the null frame — a faster walk
-  breaks that one too. **Mod policy (2026-08-24): the page asserts the invariant every frame rather
+  so the focus steps system-to-system with no null between and the window is never hidden. When it
+  does go wrong the arriving system has no orbital cards at all (`CardFor` matches by `Planet`
+  reference and finds none among the other system's) and each world's tooltip falls back to the
+  `PlanetCirleItem` on the star label, which at orbital zoom sits at the top edge of the screen. The
+  ordinary row → row → child walk only looks right because the intervening `PanTo` is a 0.3 s flight
+  that supplies the null frame — a faster walk breaks that one too. **Mod policy (2026-08-24): the page asserts the invariant every frame rather
   than trusting how the crossing was made** — `GalaxyHudScreen.ShowFocusedSystem` hides and shows the
   window (instant, so the cards are up on the same frame) whenever a window the game already has
   SHOWN is bound to something other than the focused system, and remembers the system it rebound for
@@ -837,8 +793,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   have made it ask.** `GalaxyViewLevels.CatchUpLabels()` writes a far sentinel into the private
   `previousCameraPosition` while the window is shown (missing field ⇒ warn once and no-op), poked on
   the twelve frames after a snap and armed from BOTH `FollowPlace` branches — the open-sky PAN has the
-  same bug (a landing on a system's own row at step 9 left the camera centred on Sabel with Sabel's
-  label undrawn while three others were drawn). Three frames from snap to drawn, measured. Nothing is
+  same bug (a landing on a system's own row leaves the camera centred on a system whose label is
+  undrawn while its neighbours' are drawn). Three frames from snap to drawn, measured. Nothing is
   styled by hand: `ShowOrHideIfVisibleByEmpire` calls `Show()` only while the label is
   `Hiding || !Visible`, so the twelve pokes are no-ops by construction.
 - **Two suspects in that chain that are NOT the cause** (probed 2026-08-27, recorded so the next
@@ -860,9 +816,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   recentre's own SmoothDamp reaching its target (:963-978), so neither can hang.
   **The camera stopping is NOT the end of the arrival**: the orbital cards a system grows when the
   camera comes in bind over the frames AFTER the flight, the card's own words first and its row of
-  buttons after that. Measured 2026-08-22 on Osulo I: at the frame the camera stopped the row read
-  "Osulo I, Medium Mediterrane., Colonized, 2 of 8" and 300 ms later
-  "Osulo I, group, Medium Mediterrane., Colonized, collapsed, 2 of 8". **Mod policy**
+  buttons after that — a planet row read at the frame the camera stops is missing its group and its
+  children, and gains both about 300 ms later. **Mod policy**
   (`GalaxyHudScreen.LandingSuspended` + `MapSettleFrames` = 20): a landing waits out the flight and
   twenty frames more — the same wait the fleet-action seat already spends on the same widgets.
 - **`GalaxyViewCameraController.CenterOnPoint(point, damping)` takes a bare point** and SmoothDamps
@@ -874,20 +829,15 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **The galaxy's world axes are a fixed compass: +world X is EAST, +world Z is NORTH, and the camera
   never rotates.** `GalaxyPosition` is the flattened world position — `X = world.x`, `Y = world.z`
   (`GalaxyPosition.cs:38-42`) — so the bearing from one node to another, clockwise from north, is
-  `atan2(Δx, Δz)` on those two fields and nothing else. Measured against the live camera's own
-  `WorldToScreenPoint` at the fixture's home view: from Dusay (screen centre, 640,400 of 1280x800)
-  Primus is bearing 38.3° and lands at screen +451,+492 (up and right), Qarius 347.8° at -130,+519
-  (up), Rigel 253.8° at -737,-184 (left and slightly down).
-  `GalaxyViewCameraController.StartRotating()` is private with zero call sites and the live camera
+  `atan2(Δx, Δz)` on those two fields and nothing else, and it agrees with the live camera's own
+  `WorldToScreenPoint`. `GalaxyViewCameraController.StartRotating()` is private with zero call sites and the live camera
   reads `euler = (59.5, 0, 0)` — pitch only. Nothing spoken about direction has to track a yaw, and
   a screen that did would be handling a case the game cannot produce.
 - **The empire's own origin on that compass is `DepartmentOfTheInterior.HomeSystemNode`**
   (`DepartmentOfTheInterior.cs:655`) — the one place a player already has in their head, which is
   what makes a coordinate pair mean anything. It is a plain settable property with no event, null
   until a home is chosen and replaced wholesale by a new game or a load, so anything caching it
-  re-derives on the player empire changing IDENTITY rather than subscribing. Fixture `[Beginner]
-  test`: Dusay at raw (68.884, -22.450), and the 13 systems the map names span -43..23 east and
-  -42..34 north of it against a whole-galaxy span of -95..92 by -64..66.
+  re-derives on the player empire changing IDENTITY rather than subscribing.
 - **HOME MOVES, so the origin FOLLOWS it and is never latched** (`GalaxyCoordinates.Resolve`, owner
   ruling 2026-08-31). The property has exactly three writers: the colonise-your-home path, the
   Penumbra capital DISPLACEMENT (`DepartmentOfTheInterior.DisplaceSystem:1732`) which re-elects it
@@ -895,11 +845,9 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   (`FactionTraitManualHomeSystem`, `DownloadableContent9.cs:18`) START with it null until they
   manually super-colonise. So the origin is re-asked once a frame the cheap way — a raw reference
   compare against the system it was taken from, the position re-read only when that answer changes,
-  which is the same shape `MapBookmarkStore.Tick` polls the campaign GUID with. **Measured
-  2026-08-31** on the turn-26 fixture by re-pointing `HomeSystemNode`: home at Dusay, origin
-  (68.884, -22.450), Dusay reads "0, 0"; re-pointed to Rigel, origin (53.008, -27.058), Rigel reads
-  "0, 0" and Dusay "16, 5"; nulled, origin (0, 0) and Dusay reads its raw "69, -22"; put back,
-  "0, 0" again. A latched origin would have answered Dusay's numbers throughout.
+  which is the same shape `MapBookmarkStore.Tick` polls the campaign GUID with. Re-pointing
+  `HomeSystemNode` moves every spoken coordinate with it; nulling it falls back to raw galaxy
+  coordinates.
 - **The system-discovery cutscene is a VIEW LEVEL at the same layer as the galaxy** — a fleet
   action that selects an undiscovered system POPS the galaxy page 2-3 frames after the click
   (not a cover). Measured 193-352 frames (~10-18 s at ~20 fps); it hands the camera back at
@@ -916,8 +864,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   notification strip and the top-left banner rows draw NO caption at all — measured on
   `/gui/age?window=GameOverlayWindow`: `ControlBanner` holds only `ScreenTogglesTable`,
   `EmpireBanner` only its three value areas plus `CurrentResearchArea`, and `StrategicsBanner` only
-  `ResourceItemsTable`. So every word naming those panels and rows is necessarily mod-authored (the
-  keys are listed in `interaction.md`), and the one cluster the game DOES caption is the one whose
+  `ResourceItemsTable`. So every word naming those panels and rows is necessarily mod-authored, and
+  the one cluster the game DOES caption is the one whose
   mod word deliberately overrides it — "View Controls" over the drawn "GALAXY VIEW", because the
   view's name says which page the player is on and the screen has already said that on arrival
   (owner ruling 2026-08-19).
@@ -933,7 +881,7 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   somewhere on a map that was already up", and they are silent about the two ways the map is ARRIVED at
   with nobody having asked for a place: a save being loaded (`GalaxyView.ActivateAsync`/
   `ReactivateAsync` :379-392 call the private `ActivateGalaxyViewLevelAsync(DefaultGalaxyViewLevel,
-  false, GetLocalEmpireMainSystemPosition())` — the empire's first colony, Dusay on `[Beginner] test`)
+  false, GetLocalEmpireMainSystemPosition())` — the empire's first colony)
   and coming back out of a sub-view-level. Both, and every level-changing reveal too, funnel through
   `GalaxyViewLevel_GalaxyOverview.ActivateAsync(bool active, params object[] parameters)` (:46-111),
   which is an ITERATOR — a Harmony prefix on it fires synchronously when the enumerator is built, at
@@ -942,16 +890,16 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   already captured, which is what keeps a reveal made from INSIDE a system's page (the one reveal that
   really does re-activate the overview) to its one announced landing.
 - **The activation's ENTITY is not where the camera goes, and the two ways out of a system's page
-  disagree about it** (measured 2026-08-28, `[Beginner] test`). `GetCameraInitialTransformation`
+  disagree about it.** `GetCameraInitialTransformation`
   (:163-188) tests `activationFocusOnLastPosition` FIRST, so with `parameters = [true, entity]` the
   named entity only reaches `SetFocusedGalaxyEntity` and the camera restores
   `cameraTargetInitialPosition` — where the galaxy camera was before the page was opened. The game's own
   Escape out of a system page passes exactly that (`StarSystemScreen.HandleInput` :216-227,
-  `RequestGalaxyViewLevelChange(GalaxyOverview, true, StarSystemNode)`), so paging from Dusay to Heka
-  inside the page and pressing Escape lands the camera back on **Dusay** (68.884, -22.45, step 9) while
-  naming Heka. The mod's own way out — the zoom slider stepping below the page, `GalaxyViewLevels
-  .StepZoom(-1)` → `LeaveLevel` — passes `[false, entity]` instead, and that one really does centre the
-  named system at orbital zoom (**Heka**, 67.356, -31.546, step 12). **Mod policy (2026-08-28): the
+  `RequestGalaxyViewLevelChange(GalaxyOverview, true, StarSystemNode)`), so paging to another system
+  inside the page and pressing Escape lands the camera back where the page was opened from while
+  naming the system paged to. The mod's own way out — the zoom slider stepping below the page,
+  `GalaxyViewLevels.StepZoom(-1)` → `LeaveLevel` — passes `[false, entity]` instead, and that one
+  really does centre the named system at orbital zoom. **Mod policy (2026-08-28): the
   system a tree cursor is put on comes from the CAMERA's own target and never from the activation's
   arguments** (`GalaxyHudScreen.CentredSystem`) — one rule that is right for both exits, for the load,
   and for a camera the game clamped or refused to move.
@@ -967,10 +915,3 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   (`…ColonizedStarSystems[0].Node.GUID`), not the colonized system's, which throws
   `KeyNotFoundException` out of `GalaxyEntityFactory`.
 
-## Planet cards, colonies and outposts
-
-Moved to `planets.md`.
-
-## Influence, colonizability and the scanner's kinds
-
-Moved to `planets.md`.

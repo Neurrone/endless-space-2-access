@@ -6,11 +6,10 @@ Index and charter: `README.md`.
 ## Research and the technology wheel
 
 - **On the technology wheel, `Visible` is a CAMERA answer.** `TechnologyItem2.UpdateVisibility`
-  clears it for anything off screen, so enumerate by `VisibleByDefinition` (107 of 385 in the
-  fixture — of which only about **11** read `Visible` at any one pan position) and move the
-  camera before expecting a tooltip; the drawn LINK arcs are the opposite —
-  `TechnologyScreen.Refresh` sets `Visible` on exactly the arcs that apply to this empire, so that
-  flag IS the game's own link filter (22 of 162 at turn 2).
+  clears it for anything off screen, so enumerate by `VisibleByDefinition` — only a handful read
+  `Visible` at any one pan position — and move the camera before expecting a tooltip; the drawn LINK
+  arcs are the opposite — `TechnologyScreen.Refresh` sets `Visible` on exactly the arcs that apply
+  to this empire, so that flag IS the game's own link filter.
 - **The markers on the wheel's rings are DEEDS, and their state is a colour.**
   `TechnologyStageItem.DeedItem` is drawn only while `guiTechnologyStage.GetDeed(empire)` found a
   started quest (`DeedItem2.Refresh` :131-199 sets `Visible = deed != null`), and it paints itself in
@@ -19,11 +18,9 @@ Index and charter: `README.md`.
   Locked, and `%CategoryDeedTitle` = "Deed". The wrapper the marker built is the private field
   `guiDeed`; its own public predicates (`IsDeedAvailable`, `IsDeedVisible`) are the same tests the
   marker makes. The empire that won a failed deed is found through
-  `IQuestManagementService.GetQuestsByInstanceId`, not on the deed itself. **The turn-2 fixture draws
-  12 of them** (all `InProgress`): measured `GetDeed(Gui.PlayerEmpire) != null` on 12 of 20 bound
-  stages, and Empire Development II's stage is already `Researched`, so that deed is *available* and
-  carries its full `DeedDescription` tooltip — the cheapest cross-check that a deed's state word is
-  right is that the game switches the tooltip's CLASS on the same predicate.
+  `IQuestManagementService.GetQuestsByInstanceId`, not on the deed itself. The cheapest cross-check
+  that a deed's state word is right is that the game switches the tooltip's CLASS on the same
+  predicate.
 - **"Go and look at THIS technology" leaves no state behind.** Every way the game takes the player
   to a dot — Ctrl+click on a hint button (`GuiButtonHint.ActivateHint`, the colonize and buy-out
   buttons), a technology-unlocked notification — calls `TechnologyScreen.FocusTechnology(GuiTechnology2)`
@@ -40,11 +37,11 @@ Index and charter: `README.md`.
   per frame; the game's word for one is `%SuggestedItemTitle` ("Suggested").
   `TechnologyItem2.UpdateSuggestionBottom` belongs to the notification windows'
   `SuggestedTechnologiesPanel` alone — nothing on the wheel calls it.
-- **The research buy-out is a UNITED EMPIRE affinity ability, and this fixture cannot draw it.**
+- **The research buy-out is a UNITED EMPIRE affinity ability.**
   The descriptor is `EmpirePointBuyoutUnlocked`, granted only by `AffinityGameplayTerrans`
   (`Public/Simulation/FactionTraits[Affinity].xml:238`); the TUTORIAL United Empire affinity
-  `AffinityGameplayTerransTutorial` has it commented out (:296), which is why the save the mod is
-  tested on reads `empirePointBuyoutUnlocked=False` and the game itself draws no button. It buys the
+  `AffinityGameplayTerransTutorial` has it commented out (:296), so a tutorial empire reads
+  `empirePointBuyoutUnlocked=False` and the game draws no button. It buys the
   HEAD of the research queue (`EmpireBanner.OnExecuteBuyout` :612-632 over `ResearchQueue.Peek()`),
   pays in Influence (`EmpireEmpirePoint`, cost `GetBuyoutCostWithBonus` :358-399), posts
   `OrderBuyoutTechnology` and is offered by `DepartmentOfTheTreasury.CanBuyoutTechnology` :2272. The
@@ -86,7 +83,7 @@ Index and charter: `README.md`.
 - Research: **the wheel draws NO turn count on any technology.** `TechnologyItem2` declares
   `TurnsGroup`/`TurnsLabel` and `RefreshTurns` fills them from
   `DepartmentOfScience.GetTechnologyRemainingTurn`, but the prefab wires neither — measured null on
-  every one of the 385 items in `unlocked`, drawn and undrawn alike. The only surfaces that ever
+  every item, drawn and undrawn alike. The only surfaces that ever
   show a technology's remaining turns are `ResearchQueueItem` in the research status side panel
   (`TurnsGroup` visible, alpha 1, text `"6[turnColored]"` for the in-progress technology) and
   `EmpireBanner`'s research line (:417). `GetTechnologyRemainingTurn` answers for ANY technology, so
@@ -109,8 +106,8 @@ Index and charter: `README.md`.
   `GuiTechnologyStage.TechnologyUnlocks` is bound into `TechnologyStageItem.TechnologyUnlocksContainer`
   as one `TechnologyUnlock<i>` per unlock, each with the unlocked thing's own class-backed tooltip
   (`EmpireImprovement`, `ShipModule`…), and pointing at one draws the FULL dossier the same way
-  (measured 2026-08-27 on Military II's eight icons: "Basic Pinch Beam" answers Damages / Ranges /
-  `Cost: 39 Industry`, which the stage's own `TechnologyStage` tooltip does not carry). What differs is
+  (a module icon answers Damages / Ranges / Cost, which the stage's own `TechnologyStage` tooltip
+  does not carry). What differs is
   WHEN the strip is drawn: `TechnologyStageItem.Blend` (decompiled :64-71) ties
   `TechnologyUnlocksContainer.Visible` to `StageNameGroup.Visible`, so the container is hidden at every
   wheel zoom but the outermost while each icon child stays `Visible = true`, bound and drawable.
@@ -178,11 +175,10 @@ Index and charter: `README.md`.
   `Queued`, `TechnologyItem2.ComputeTechnologyState` (:535-536) keeps the toggle enabled while a
   technology is in progress, and `ResearchQueueItem.OnActivateCb` (:107-111) dequeues
   unconditionally. There is no cancel-confirmation string for research anywhere in the corpus (only
-  constructions have one). **Measured live 2026-08-22** on `[Beginner] test` at turn 22, one turn
-  into "Survival Suits": both of the mod's routes cancelled it and said so — the queue row
-  (*"Cancelled Survival Suits"*, `ResearchQueue.Length` 1 → 0) and the wheel dot (the same line, then
-  the dot's own state word flipping to "Available"). `TechnologyItem2.Dragging` read false
-  throughout. So the reported "cancel with progress does nothing" does not reproduce; what WAS real
+  constructions have one). Measured live against a technology one turn into its research: both of
+  the mod's routes cancelled it and said so — the queue row and the wheel dot, whose state word
+  flipped back to "Available". So the reported "cancel with progress does nothing" does not
+  reproduce; what WAS real
   is that both routes used to return silently when their own gate failed, which is a different
   defect and is fixed (`ResearchScreen.Dequeue` now says the technology's state instead; the wheel
   dot already answered through its `StateText` refusal part — verified: Enter on a "Not available"

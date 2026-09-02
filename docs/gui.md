@@ -12,40 +12,15 @@ concrete screens are thin subclasses in `decompiled/Assembly-CSharp/`.
 
 ## Core types
 
-### AgeTransform (`Assembly-CSharp-firstpass/AgeTransform.cs`)
+Members and fields are read off `decompiled/`; two measured facts are not.
 
-The AGE equivalent of RectTransform+GameObject. Every widget has one. Useful members:
-
-- `Visible`, `Enable` (bool properties; `Enable` = interactable), `Alpha`, `FadeOnDisable`
-- `AgeTooltip` — the attached tooltip component. **In play mode it returns a field cached in
-  `Awake` (`privateTooltip`), not a live `GetComponent`** (:387-395, :3772) — so a tooltip added to a
-  widget at runtime is invisible to the engine and to every reader until that private field is set
-  by reflection. The same caching applies to `AgeControl` and `AgePrimitive`
-- `GetGlobalPosition()` → screen `Rect`; `Children`, `GetChildren<T>()`
-- `ModifiersRunning` — true while show/hide animations (AgeModifiers) are running
-- Table layout helpers: `ReserveChildren`, `RefreshChildrenArray`, `ArrangeChildren`
-
-### Primitives and controls (firstpass root)
-
-- `AgePrimitiveLabel.Text` — the display string of any label. **This is the property to read.**
-- `AgePrimitiveImage.Image`/`TintColor`
-- `AgeControlButton`, `AgeControlToggle` (`.State`), `AgeControlSlider` (`.CurrentValue`,
-  `.MinValue/.MaxValue/.Increment`), `AgeControlDropList` (`.SelectedItem`, `SetLabels`),
-  `AgeControlTextField` (`.Label`). Controls derive from `AgeControl` which wraps an
-  `AgeTransform`; buttons expose `MouseEnter/MouseLeave/MouseDown` as directly callable methods.
-
-### AgeManager (`Assembly-CSharp-firstpass/AgeManager.cs`, singleton `AgeManager.Instance`)
-
-The mouse/focus authority — no separate event system exists:
-
-- `OverrolledTransform` — the `AgeTransform` currently hovered (public field, settable)
-- `FocusedControl` — keyboard-focused `AgeControl` (text fields; has `.IsKeyExclusive`)
-- `ActiveControl` — control currently pressed/dragged
-- `Cursor` — current cursor position; `MouseCovered` — is the mouse over any UI at all
-
-The game's own `ImageInformationWindow` (`Assembly-CSharp/ImageInformationWindow.cs`) is a debug
-overlay that polls `OverrolledTransform` each frame and reads components under it — a proven
-in-game pattern for cursor-based inspection without any patching.
+- **`AgeTransform.AgeTooltip` returns a field cached in `Awake` (`privateTooltip`), not a live
+  `GetComponent`** (:387-395, :3772) — so a tooltip added to a widget at runtime is invisible to
+  the engine and to every reader until that private field is set by reflection. The same caching
+  applies to `AgeControl` and `AgePrimitive`.
+- The game's own `ImageInformationWindow` (`Assembly-CSharp/ImageInformationWindow.cs`) is a debug
+  overlay that polls `AgeManager.OverrolledTransform` each frame and reads components under it — a
+  proven in-game pattern for cursor-based inspection without any patching.
 
 ## Window lifecycle and readiness
 
@@ -292,8 +267,7 @@ widget, exactly as the game's own mouse flows do.
   the encounter camera's `Minus,KeypadMinus`/`Plus,KeypadPlus` speed keys — so `Ctrl+I` was free.
   Ctrl+H is `DebugSwitchHighDefinition` (:790), live only in an internal build / with
   `EnableModdingTools` (`GuiManager.cs:2130`); Ctrl+E is `DebugSendNewEvent` (:858) and NO handler
-  in the game answers it; Ctrl+N, Ctrl+G, Ctrl+T and Ctrl+Alt+E are bound to nothing at all. (The
-  mod's whole binding table is `docs/interaction.md`.)
+  in the game answers it; Ctrl+N, Ctrl+G, Ctrl+T and Ctrl+Alt+E are bound to nothing at all.
 - **The game's own end-turn key is the keypad Enter** (`InputManager.cs` :215), which the mod
   claims for Activate — so a mod user has no end-turn shortcut unless the mod gives them one
   (Ctrl+Alt+E does, 2026-08-22). Its handler is `EndTurnWindow.HandleInput` :637-654: three gates
@@ -404,8 +378,7 @@ widget, exactly as the game's own mouse flows do.
   on the latter two, which is how both shipped with no way out in their own graph. Both names end in
   the same place — `OnCancelCb` is `HandleInput(InputAction.Exit)` (above), and an `OnCloseCb` hides
   the window — so PRESSING the control is the whole of that window's Escape, confirmation branches
-  included, and is the safe way to replay it (calling `HandleInput` directly wedged the screen stack
-  once: `test-recipes/fixtures.md`, "Resetting game state"). `NarrativeScreen` (the quest journal) is
+  included, and is the safe way to replay it (calling `HandleInput` directly wedged the screen stack once). `NarrativeScreen` (the quest journal) is
   the one surface of the family that draws no dismissal control at all.
 - **`ContextualPromptWindow` has NO keyboard dismissal of its own**: it declares no `HandleInput`, and
   `ScanOverlayWindow` — which is up whenever the prompt is — swallows Exit, so the game's only ways
@@ -864,20 +837,6 @@ the reasoning. What belongs here is what the ENGINE does, which any second mod w
   navigator re-seats onto a tab, and the landing switches the page back (measured 2026-08-24).
 - `GetMethod("OnCancelCb", Instance|NonPublic)` is AMBIGUOUS on `OptionsModalWindow`
   (`GuiModalWindow.OnCancelCb(GameObject)` is the second overload) — pass `Type.EmptyTypes`.
-
-## Worked example: the main menu
-
-- Screen: `Assembly-CSharp/MainMenuScreen.cs` (`MainMenuScreen : GuiWindow, IInputHandler`).
-- Entries defined by data: `MainMenuScreenGuiElement` (`Entry[]`, names like `MainMenuNewGame`).
-- Items: `MainMenuItem` (fields `Button`, `TitleLabel`, `Tooltip`, `SubItemsContainer`) and
-  `MainMenuSubItem` for flyout entries. `Bind` sets `TitleLabel.Text = Gui.GetTitle(entry.Name)`
-  and `Tooltip.Content = Gui.GetDescription(entry.Name)` (both raw `%keys` here).
-- Click dispatch (verified): `MainMenuItem.OnClickCb` →
-  `mainMenuScreen.gameObject.SendMessage("OnClick" + MainMenuEntry.Name, DontRequireReceiver)`.
-- Handlers: one `OnClickMainMenu<Entry>()` method per entry on `MainMenuScreen`
-  (`OnClickMainMenuNewGame`, `...LoadGame`, `...Settings`, `...Exit`, …) — invoke these
-  directly (reflection) for deterministic activation, after checking `screen.IsReady` and the
-  item's `AgeTransform.Enable`.
 
 ## The two menus and their entries (adding one of the mod's own)
 

@@ -123,7 +123,7 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   of the popup prediction, so this family is announced on arrival like any other news that draws no
   window. Without it the prediction would have trusted a per-type setting that reads true by default
   and silenced the family outright — news with no popup and no announcement. Code-traced plus the
-  list-identity measurement; no fixture raises a hacking event, so the family has never been heard.
+  list-identity measurement; the family has never been heard live.
 - **`CollectionChangeAction.Refresh` is two events under one name** — a stackable notification rebound
   to a newer event (:762-772), whose `Add` was already announced, and the `CurrentGuiNotification`
   setter reporting that some popup just went up or down (:41-48). Mod policy: `Refresh` is never
@@ -265,13 +265,11 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   newest-first, through the same `DismissGuiNotification` a single right click uses), Shift =
   `HideAllGuiNotifications()` (only closes the popups that are currently VISIBLE; nothing is
   dismissed). Mod policy: the dismissing branch is a named button of the mod's own
-  (`hud.dismiss-all-notifications` — `docs/test-recipes/notifications.md`, "The two dismiss-all
-  buttons"); the hiding branch is not offered.
+  (`hud.dismiss-all-notifications`); the hiding branch is not offered.
 - **`DismissAllGuiNotifications` does not distinguish the mod's notifications from the game's** —
   `GetPlayerEmpireGuiNotifications()` is one list, and mod notifications live in it
-  (`ModNotifications`), so the game's own close-all empties the Turn log as well as the icon strip.
-  Measured 2026-08-23 with one game notification and one mod notification pending: both stops
-  disappeared on one press. Mod policy (owner ruling 2026-08-24): the mod's "Dismiss all
+  (`ModNotifications`), so the game's own close-all empties the Turn log as well as the icon strip
+  in one press. Mod policy (owner ruling 2026-08-24): the mod's "Dismiss all
   notifications" therefore does NOT make that call — it dismisses the game's own notifications one at
   a time through `DismissGuiNotification`, skipping every notification the mod raised, so each of the
   two dismiss-all buttons empties only its own list.

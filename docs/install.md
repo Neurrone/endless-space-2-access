@@ -10,7 +10,7 @@ REPL, the out-game pages and the lobby, and the chat panels. Index and charter: 
   hardcoded on (`enableOfflineModeWhenSteamClientIsDown = true`): services register with
   `IsSteamRunning == false`, all DLC unowned, language forced to English, Join Game refused
   with `SteamNotRunning`. Launching `EndlessSpace2.exe` with Steam closed reproduces the
-  whole store-less profile — a free test fixture. The mod calls no Steam API anywhere. (The GOG
+  whole store-less profile. The mod calls no Steam API anywhere. (The GOG
   build differs: `architecture.md`.)
 - **DLC ownership has exactly one source**: `DownloadableContent.IsSubscribed` →
   `SteamApps.BIsSubscribedApp` (no subclass overrides it). The 367 `*_DLC*` data files
@@ -67,7 +67,7 @@ REPL, the out-game pages and the lobby, and the chat panels. Index and charter: 
   that domain. Nothing in the mod can guard it — the rule is to never load a save across a
   pending turn.
 - **An order the game only posts from inside its own turn phase wedges the turn machinery for
-  good** when posted from `/eval`: `OrderSpawnPirateLair` (2026-08-24) left the fixture unable to
+  good** when posted from `/eval`: `OrderSpawnPirateLair` left a game unable to
   finish a turn at all, unrecoverable by reload. Grant the order's precondition and let the game
   post it, or spend the turns.
 

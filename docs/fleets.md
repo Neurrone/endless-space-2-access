@@ -58,7 +58,7 @@ and ship transfer. Index and charter: `README.md`.
   `Visible=false, Alpha=0`) and binds its own `DualGarrisonsLabelButtons` to the whole group, whose
   `FriendlyGarrisonsButton.Tooltip` carries the `FleetGroup`/`GuiFleetGroup` dossier for all of them.
   A mod node that looked only at the fleet's own label therefore found no lozenge, declared no tooltip
-  and drew nothing — measured on the beginner fixture, two fleets two turns out from Dusay. The way
+  and drew nothing. The way
   back is the marker's own wrapper: `GuiFleetGroup.Garrisons` is a public list, so the fleet is matched
   by GUID against it. What the marker shows is the GROUP's dossier, which is exactly what the mouse
   gets while the map is drawing them as one thing.
@@ -66,7 +66,7 @@ and ship transfer. Index and charter: `README.md`.
   `GarrisonsLabelButton.ExplorationShipIcon`/`ColonyShipIcon` ("One of these ships is an exploration
   ship." / "… a colony ship.") are icons INSIDE the lozenge with their own `AgeTooltip`s, beside the
   lozenge's own `GuiFleetGroup` dossier (which `FleetLabel.CenterTooltip` is a second carrier of, so
-  the resolver's (class, content, target) dedupe collapses the two). Measured 2026-08-23: the mod's
+  the resolver's (class, content, target) dedupe collapses the two): the mod's
   fleet row carries the `GuiFleetGroup` dossier in full and neither badge sentence.
 - **A fleet's CURRENT LEG is `FleetPosition.Movement.Start`/`.Goal`, and cancelling a move does not
   clear it.** The pair names the two nodes of the lane the fleet is drawn on right now (not its
@@ -78,11 +78,9 @@ and ship transfer. Index and charter: `README.md`.
   start hands out) sets a start and a goal with **no `Link` between them** —
   `Galaxy.GetLink(start, goal)` answers null — so the fleet is in neither `FleetPresence.FleetsAt`
   (it is not docked) nor `FleetsOn` (there is no lane to be on). It IS drawn, so
-  `FleetPresence.Drawing()` (the inspect cursor's and the scanner's source) still has it. Measured
-  on `[Beginner] test`: two of its six fleets (`1st Conquerors Navy`, `1st Vanquishers Navy`) are on
-  legs between Dusay and Heka with no link, and both are AUTOMATED delivery fleets
-  (`Fleet.IsAutomated`, the `AutomatedFleet` tag — measured 2026-08-16), which is why they fly with
-  star lanes ignored. **Mod policy**: the tree hangs such a fleet under its DESTINATION alone, and
+  `FleetPresence.Drawing()` (the inspect cursor's and the scanner's source) still has it. Such legs
+  belong to AUTOMATED delivery fleets (`Fleet.IsAutomated`, the `AutomatedFleet` tag), which is why
+  they fly with star lanes ignored. **Mod policy**: the tree hangs such a fleet under its DESTINATION alone, and
   under no system at all where the destination is unperceived — there it gets a top-level row walked
   into the system list by its own rounded pair (`GalaxyHudScreen.AddAdrift`). The rationale is parity,
   not tidiness: **the map draws where a fleet is GOING and never where it came from.** A selected
@@ -109,11 +107,10 @@ and ship transfer. Index and charter: `README.md`.
   `EnRouteOn` walks `LanesOf`, which drops a lane below the drawn intensity and a wormhole an empire
   cannot see, while `FreeMovingAt` skips any leg its two ends have a `Link` for. So a fleet flying an
   undrawn lane falls between them — deliberately: its road is not on the screen, and the scanner and
-  the inspect cursor still reach it. No fixture has produced one.
-- **`Fleet.IsAutomated` is true for the free-movement fleets in `[Beginner] test`**, so
-  `FleetPresence.Selectable` refuses them and `GalaxyHudScreen.SelectFleet` is a silent
-  no-op on that fixture — any "go to this fleet" relying on selection alone reads as a dead
-  key there. The game's own tooltip says so: feature class
+  the inspect cursor still reach it.
+- **`FleetPresence.Selectable` refuses an AUTOMATED fleet**, so `GalaxyHudScreen.SelectFleet` is a
+  silent no-op on one — any "go to this fleet" relying on selection alone reads as a dead
+  key. The game's own tooltip says so: feature class
   `PanelFeatureGarrisonInfoAutomatedFleet`.
 - **The map shows a fleet's SHIP COUNT only from the Visible tier up.**
   `GarrisonsLabelButton.RefreshShipCount` :203-217 adds a fleet's ships into the lozenge number only
@@ -207,8 +204,8 @@ and ship transfer. Index and charter: `README.md`.
   numbers deliberately diverge from the drawn labels because the drawn labels are wrong about the
   world.
 - **A fleet flies THROUGH systems mid-turn and only ends a turn AT a node when the budget dies
-  exactly there.** Measured: a route to Rigel passes Dusay during turn 3 and ends that turn
-  mid-lane. "Where does each turn end" and "which nodes does the fleet reach" are different
+  exactly there.** A route can pass through a system mid-turn and end that turn mid-lane.
+  "Where does each turn end" and "which nodes does the fleet reach" are different
   questions with different answers.
 - **Neither interception nor route cancellation raises an event, and neither is worded anywhere.**
   `EventFleetGotInterceptedByAnEnemy` is raised only by `GuardEmpireLocalAction` (:605); the common
@@ -271,8 +268,7 @@ and ship transfer. Index and charter: `README.md`.
   "Niris colony sighted at Osulo"). The button is switched on by `UpdateApplyMovementsButton`
   (:1006-1016) on TWO conditions — `CanEndTurn()` **and**
   `DepartmentOfTransportation.GetNumberOfMovableFleets() > 0` — which is the state probe for both
-  "is there anything to apply" and the refusal case (`[Beginner] test` turn 21 has 4 movable fleets,
-  so both halves are exercisable there; applying takes it to 0).
+  "is there anything to apply" and the refusal case (applying takes the movable count to 0).
 - **`EndTurnWindow.SelectIdleFleet` only works for a fleet with a docking slot.** It looks the slot
   up in `IVisibleDockingSlotRepositoryService` to aim the camera (:1387-1409); a fleet under way has
   none, so it falls through to `fleetsScreen.SelectIdleFleet`, which — with the window not shown,
@@ -283,11 +279,10 @@ and ship transfer. Index and charter: `README.md`.
   `IVisibleGalaxyFleetRepositoryService`, `ICursorService.Select(galaxyFleet.CursorTarget)`,
   `ChangeCursor(typeof(GalaxyGarrisonCursor), galaxyFleet)`, then
   `Gui.GuiGameWindowService.RequestGalaxyOverviewViewLevel(fleet)` — in that order, because the
-  panel's own visibility is gated on the cursor. Measured: cursor `GalaxyCursor` →
-  `GalaxyGarrisonCursor`, the panel's stops appear, and the camera focus moves from
-  `[66.741, 0, -21.212]` to the fleet's own `[59.684, 0, -25.12]`. **The last call also CLOSES
-  whatever full screen the player is on** — measured from `unlocked` with `MilitaryScreen` shown:
-  the request alone put the galaxy page back and no window had to be hidden by hand. So a locate is
+  panel's own visibility is gated on the cursor: the cursor goes `GalaxyCursor` →
+  `GalaxyGarrisonCursor`, the panel's stops appear, and the camera focus moves onto the fleet.
+  **The last call also CLOSES whatever full screen the player is on** — the request alone puts the
+  galaxy page back and no window has to be hidden by hand. So a locate is
   a screen change the mod hears as an ordinary re-entry of the galaxy, and the cursor it re-seats on
   arrival is the only thing that tells the player where the game has taken them.
 
@@ -295,15 +290,14 @@ and ship transfer. Index and charter: `README.md`.
   which.** The BERTH is `IVisibleDockingSlotRepositoryService.GetDockingSlotWithFleet(fleet)
   .transform.position` — where the ship model is drawn, beside the star; the STAR is
   `fleet.GalaxyPosition`, and `fleet.Position.GetOrbit()` hands the `StarSystemNode` back directly
-  (measured on `[Midgame] quests fleets`: both fleets at berth `(66.7, 0, -21.2)`, star
-  `(68.884, -22.450)` — 2.6 galaxy units apart). The sites split: `MilitaryScreen.OnLineDoubleClick`
+  (measured a couple of galaxy units apart). The sites split: `MilitaryScreen.OnLineDoubleClick`
   (:511-560) selects the BERTH and then frames the STAR (`RequestGalaxyOverviewViewLevel
   (SelectedFleet)`), `NamedShipInfoPanel` (:184-236) does the same with the garrison's game node, while
   `EndTurnWindow.SelectIdleFleet` (:1387-1409) frames the BERTH and selects it. **Selecting a berth
   moves no camera at all** — measured by suppressing the mod's own landing over the military page's
   second click: the only camera move left was the single damped `CenterOnPoint` on the star.
   So the game itself makes ONE move per site; a second move is the MOD's landing, and the mod
-  reconciles the two points its own way (`docs/test-recipes/fleets.md`, **A docked fleet's landing**).
+  reconciles the two points its own way.
 
 ## The fleet panel, selection and ship transfer
 
@@ -329,7 +323,7 @@ and ship transfer. Index and charter: `README.md`.
   positionally — `Garrisons[0]`, or `[1]` past a Hangar. The actor's spent state is irrelevant
   (control run: cancel with nothing launched swaps identically). This positional default owns
   every "panel opened for the wrong fleet" symptom; Enter on a fleet's own row is correct in
-  every measured state. Known issue + fix options: `docs/fleets.md`.
+  every measured state.
 - **`FleetsScreen.OnBeginHide` removes garrisons with a forward loop and leaves a residue list**
   (measured: `Garrisons=[1296]` still standing after the panel closed).
 - **`DockLabel.OnClick` accumulates duplicate subscribers** — `DockLabelsWindow.OnDockLabelClicked`
@@ -407,104 +401,31 @@ and ship transfer. Index and charter: `README.md`.
   stops away. The mod answers it by catching the release at the pop and seating on the way back
   (`GalaxyHudScreen._releasedAcross`), which is the same landing letting the fleet go gives.
 
+## The targeting-cancel fleet swap
 
-## The targeting-cancel fleet swap — FIXED 2026-08-26
-
-**Status: fixed** (owner ruling 2026-08-26 superseded the 2026-08-20 leave-at-parity
-ruling). Two pieces, both shipped:
-
-- `ES2Access/Screens/ProbeCancelSelection.cs` — a Harmony prefix+postfix pair on
-  `ProbeLaunchingCursor.SwitchToGalaxyCursor`. The prefix catches `ProbeOriginFleet`
-  (selecting the slot swaps the cursor, and the swap's deactivate nulls that property
-  synchronously — measured 2026-08-26: a postfix alone reads null), the postfix re-selects
-  the fleet through `FleetsScreen.SelectIdleFleet`. It repairs the MOUSE's cancel as well
-  as the keyboard's, and because every ending of the mode funnels through that one method
-  it also covers the fleet being teleported (`ProbeLaunchingCursor.cs:194-197`) and the
-  last charge being spent on a successful launch (`:165-174`). It stands down where the
-  game does: no visible docking slot holding the fleet means no panel is coming, and a
-  fleet remembered there would be selected at some later unrelated showing.
-- `GalaxyHudScreen.SeatAfterProbeMode` — the cursor's half. When the mode ends while the
-  cursor stands among the bearings (the nodes that vanish with it), it is seated on the
-  acting fleet's own map row through the same `SeatOnFleet` every fleet-panel handover
-  uses; a cursor on any surviving node is left alone.
-
-Everything below was measured live on 2026-08-20 (fixture `[Midgame] quests fleets`,
-turn 3) and is kept because it is the mechanism, not the symptom.
-
-### Symptom
-
-At a system holding more than one of the player's fleets, cancelling ANY armed
-targeting mode (probe launch measured; the shape is shared) re-opens the fleet panel
-for the **first fleet at the docking slot**, not the fleet that armed the mode. The
-player hears it happen — "Target selection ended", then "Fleet panel open for
-1st Heroes Navy" when Patriots was the actor — so nothing is silent, but it is
-surprising: the player who cancels is almost always still thinking about the fleet
-they were commanding.
-
-### Mechanism (the game's, hop by hop)
+The game's own mechanism behind "the panel reopened for the wrong fleet", hop by hop:
 
 1. Escape → `GuiManager.HandleInput` Exit branch →
-   `((ProbeLaunchingCursor)CurrentCursor).SwitchToGalaxyCursor()`
-   (`GuiManager.cs:2103-2109`). Mouse right-click reaches the SAME method
-   (`ProbeLaunchingCursor.OnCursorClick`, `ProbeLaunchingCursor.cs:129,177-183`) —
-   keyboard and mouse are byte-identical here. The mod leaves this Escape to the game
-   deliberately (`ES2Access/UI/CursorTargeting.cs` `EscapeIsOurs`).
-2. `SwitchToGalaxyCursor` selects the **docking slot**, not the origin fleet:
-   `service2.Select(dockingSlotWithFleet)` (`ProbeLaunchingCursor.cs:55-70`).
-3. Arming had hidden the fleet panel, and `FleetsScreen.OnBeginHide` runs
-   `UnselectAllGarrisons()` (`FleetsScreen.cs:925-943`), so the slot's selection is
-   empty when the cancel re-selects it.
-4. `FleetsScreen.Cursor_SelectionChanged` → `RefreshGarrisonSelection`
-   (`FleetsScreen.cs:1364-1382` → `:1116-1129`): with nothing selected it defaults
-   **positionally** — `Garrisons[0]`, or `Garrisons[1]` if `[0]` is a Hangar. At
-   Dusay the list is `[Hangar 678, Heroes 1296, Patriots 1298]`, so Heroes wins
-   whichever fleet armed the mode.
+   `((ProbeLaunchingCursor)CurrentCursor).SwitchToGalaxyCursor()` (`GuiManager.cs:2103-2109`).
+   Mouse right-click reaches the SAME method (`ProbeLaunchingCursor.cs:129,177-183`) — keyboard and
+   mouse are byte-identical here.
+2. `SwitchToGalaxyCursor` selects the **docking slot**, not the origin fleet
+   (`ProbeLaunchingCursor.cs:55-70`).
+3. Arming had hidden the fleet panel, and `FleetsScreen.OnBeginHide` runs `UnselectAllGarrisons()`
+   (`FleetsScreen.cs:925-943`), so the slot's selection is empty when the cancel re-selects it.
+4. `FleetsScreen.Cursor_SelectionChanged` → `RefreshGarrisonSelection` (`:1364-1382` → `:1116-1129`):
+   with nothing selected it defaults **positionally** — `Garrisons[0]`, or `Garrisons[1]` if `[0]`
+   is a Hangar.
 
-### What it is NOT (measured, do not re-derive)
+The swap has nothing to do with idle-fleet preference (`EndTurnWindow.SelectIdleFleet` takes an
+explicit fleet and contains no preference; `GetNextIdleFleet` is called only by the game's own
+next-idle-fleet button) and nothing to do with the fleet having acted.
 
-- **Not an idle-fleet preference.** `EndTurnWindow.SelectIdleFleet` (what the mod's
-  Enter on a docked fleet calls, `GalaxyHudScreen.cs` `SelectFleet`) takes an explicit
-  fleet and contains no preference at all (`EndTurnWindow.cs:1387-1412`). The actual
-  prefer-idle logic (`GetNextIdleFleet`, `:1373-1385`) is called ONLY by the game's
-  own Next-idle-fleet button.
-- **Not caused by the fleet having acted.** The control run — arm, cancel, nothing
-  launched, full movement — swaps identically. No spent-state flag is involved.
-- **Enter on a fleet's map row is CORRECT in every measured state** (four runs,
-  verified by GUID against the game's selection list). A 2026-08-19 report that Enter
-  "selected the other fleet" was this cancel-swap still standing, read before the
-  Enter was pressed.
-- **The mouse is currently WORSE, not better**: a docked fleet has no `FleetLabel`
-  (zero instantiated — only the shared dock label exists), and `DockLabel.OnClick`
-  accumulates four duplicate `DockLabelsWindow.OnDockLabelClicked` subscribers
-  (game bug, `DockLabelsWindow.cs:103` re-subscribes per pooled `ShowLabel`), so one
-  click advances the garrison cycle four times — a no-op at a two-fleet system. The
-  keyboard's Enter is the only reliable per-fleet selection at a dock.
+`SwitchToGalaxyCursor` exists on `ProbeLaunchingCursor` and on `CoordinationRequestCursor` (an
+unrelated implementation) — there is no shared base method to patch, and no other targeting cursor
+re-selects anything on cancel (`ObliteratorFireCursor` :69-90 and the shared Exit branch
+`GuiManager.cs:2115-2120` just `ChangeCursor(typeof(GalaxyCursor))`), so there is nothing to
+generalize.
 
-### Why the patch is the probe cursor's alone
-
-`SwitchToGalaxyCursor` exists on `ProbeLaunchingCursor` and on `CoordinationRequestCursor`
-(an unrelated implementation) — there is no shared base method to patch, and no other
-targeting cursor re-selects anything on cancel: `ObliteratorFireCursor`'s cancel and
-confirm both just `ChangeCursor(typeof(GalaxyCursor))` (`:69-90`), as does the shared Exit
-branch (`GuiManager.cs:2115-2120`). None of the others reopens the panel, so there is
-nothing to generalize.
-
-### Repro, and what was proven
-
-`[Midgame] quests fleets`: `1st Patriots Navy` (GUID 1298, 2 probes) and
-`1st Heroes Navy` (GUID 1296) both orbit Dusay (node 535). Select Patriots, arm
-Launch Probes, press Escape (or Backslash through the mod) — the panel reopened for
-Heroes. GUID oracle: `FleetsScreen.SelectedGarrisons` (measured live 2026-08-20;
-transcripts not preserved in the repo; that save is now gone —
-`test-recipes/fixtures.md`). The fix WAS watched undoing the swap itself (verified
-2026-08-26, at a two-fleet slot built in-session by splitting a two-ship fleet with the
-panel's own Create): armed for the fleet the positional default would NOT pick, the
-cancel re-selected the actor — `FleetsScreen.SelectedGarrisons` held the actor's GUID,
-and the private `FleetsScreen.garrisonToSelectAtNextShowing` read null straight after the
-game's own slot select and the actor straight after the postfix, in one `/eval`
-statement. With the patch removed (`ProbeCancelSelection.Remove()` from `/eval`) the same
-run reproduced the swap — the positional default's fleet came back — and `Install()`
-restored the fix; real-key Escape passes matched the `/eval` cancels. The cursor half
-held its pair: cancelled from inside the launch group the cursor seated on the actor's
-map row, cancelled from a surviving node it did not move while the selection still
-swapped to the actor.
+The prefix must catch `ProbeOriginFleet` BEFORE the switch: selecting the slot swaps the cursor and
+the swap's deactivate nulls that property synchronously, so a postfix alone reads null.
