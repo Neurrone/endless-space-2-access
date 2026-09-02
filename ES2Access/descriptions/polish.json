@@ -439,12 +439,12 @@
   ],
   "Vaulters_Outro.LostBack": [
     { "at": 8.21, "end": 8.84, "text": "Podziemni patrzą na start statku." },
-    { "at": 11.554, "end": 12.189, "text": "Wszystko zanika w czerni." },
+    { "at": 11.554, "end": 12.189, "text": "Wszystko przechodzi w czerń." },
     { "at": 23.124, "end": 27.882, "text": "W przestrzeni kosmicznej ogromny pierścień unosi się na orbicie nad Aurigą. Zza ciemnego horyzontu planety rozbłyska jaskrawe słońce, rzucając jasne promienie w gwiaździstą pustkę." }
   ],
   "Vaulters_Outro.LostNotBack": [
     { "at": 8.515, "end": 9.36, "text": "Pierścieniowy statek wznosi się." },
-    { "at": 25.679, "end": 27.882, "text": "Wszystko zanika w czerni." }
+    { "at": 25.679, "end": 27.882, "text": "Wszystko przechodzi w czerń." }
   ],
   "Vedt": [
     { "at": 0.5, "end": 3.5, "text": "Na złotej sawannie wysoka, sucha trawa szeleści wokół ciemnych, poszarpanych głazów." },
@@ -456,14 +456,14 @@
     { "at": 27.39, "end": 28.386, "text": "Mężczyzna uderza w stół, rozrzucając świecące żetony." },
     { "at": 40.123, "end": 42.379, "text": "Odrzuca ramiona do tyłu, gdy bucha z niego złota energia, a jego oczy jasno świecą." },
     { "at": 50.473, "end": 51.959, "text": "W pancerzu bojowym przeskakuje przez eksplozję, strzelając z broni." },
-    { "at": 62.326, "end": 66, "text": "Kobieta uśmiecha się drwiąco. Wszystko zanika w czerni." }
+    { "at": 62.326, "end": 66, "text": "Kobieta uśmiecha się drwiąco. Wszystko przechodzi w czerń." }
   ],
   "Venetians_Outro.LostBack": [
     { "at": 0, "end": 2.137, "text": "Blada kobieta w sukni z wysokim kołnierzem siedzi na gładkiej kuli, trzymając świecącą złotą sferę." },
-    { "at": 21.114, "end": 28, "text": "Świecąca złota siatka pod nią ciągnie się bez końca w przestrzeń. Za nią wiruje ogromna gwiaździsta mgławica w intensywnej zieleni. Z siatki wznoszą się ku kosmosowi strzeliste smugi światła, przytłaczając ją na tle nieskończonego bezmiaru. Wszystko zanika w czerni." }
+    { "at": 21.114, "end": 28, "text": "Świecąca złota siatka pod nią ciągnie się bez końca w przestrzeń. Za nią wiruje ogromna gwiaździsta mgławica w intensywnej zieleni. Z siatki wznoszą się ku kosmosowi strzeliste smugi światła, przytłaczając ją na tle nieskończonego bezmiaru. Wszystko przechodzi w czerń." }
   ],
   "Venetians_Outro.LostNotBack": [
     { "at": 0, "end": 2.318, "text": "Blada kobieta w sukni z wysokim kołnierzem siedzi na gładkiej kuli, trzymając świecącą złotą sferę." },
-    { "at": 21.114, "end": 28, "text": "Świecąca złota siatka pod nią ciągnie się bez końca w przestrzeń. Za nią wiruje ogromna gwiaździsta mgławica w intensywnej zieleni. Z siatki wznoszą się ku kosmosowi strzeliste smugi światła, przytłaczając ją na tle nieskończonego bezmiaru. Wszystko zanika w czerni." }
+    { "at": 21.114, "end": 28, "text": "Świecąca złota siatka pod nią ciągnie się bez końca w przestrzeń. Za nią wiruje ogromna gwiaździsta mgławica w intensywnej zieleni. Z siatki wznoszą się ku kosmosowi strzeliste smugi światła, przytłaczając ją na tle nieskończonego bezmiaru. Wszystko przechodzi w czerń." }
   ]
 }
