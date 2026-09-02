@@ -24,8 +24,9 @@ ES2Access/Screens/ElectionScreen.cs | 1 | ? AgeWidgets.TooltipTitle(tooltip) ?? 
 ES2Access/Screens/EmpireScreen.cs | 1 | string described = CardActions.FirstLine(slot.FIDSIGroupTooltip);
 
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> lines = AgeWidgets.TooltipLines(card.OutpostTooltip);
-ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> sentence = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
+
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
 
 ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | return string.IsNullOrEmpty(named) ? CardActions.FirstLine(tip) : named;
 ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tip) : title;

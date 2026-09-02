@@ -136,7 +136,6 @@ ES2Access/Screens/Galaxy/FleetRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransfo
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | if (child == null || !AgeWidgets.Visible(child))
 ES2Access/Screens/Galaxy/OpenSpaceRows.cs | 1 | return AgeWidgets.Visible(background) ? AgeText.Label(label) : null;
 
-ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | && AgeWidgets.Painted(label.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | && AgeWidgets.Visible(card.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | && AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
 ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | IList<AgeTransform> items = AgeWidgets.Painted(group) ? group.Children : null;
@@ -188,16 +187,19 @@ ES2Access/Screens/Galaxy/ScanRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransfor
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return item != null && item.IsBound && AgeWidgets.Painted(widget) ? widget : null;
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return rating == null || !AgeWidgets.Painted(rating.AgeTransform)
 
-ES2Access/Screens/Galaxy/SystemRows.cs | 1 | bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
-ES2Access/Screens/Galaxy/SystemRows.cs | 1 | if (!AgeWidgets.Painted(item))
-ES2Access/Screens/Galaxy/SystemRows.cs | 1 | if (!AgeWidgets.Visible(table))
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | && AgeWidgets.Painted(label.AgeTransform)
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | bool drawing = label != null && AgeWidgets.Painted(label.AgeTransform);
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | if (!AgeWidgets.Painted(item))
+ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | if (!AgeWidgets.Visible(table))
+
 ES2Access/Screens/Galaxy/SystemRows.cs | 1 | if (button == null || !AgeWidgets.Visible(button))
 
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (AgeWidgets.Painted(items[i]))
+ES2Access/Screens/GalaxyHudScreen.Seats.cs | 1 | if (AgeWidgets.Painted(items[i]))
+ES2Access/Screens/GalaxyHudScreen.Seats.cs | 1 | if (items[i] != null && AgeWidgets.Visible(items[i]))
+ES2Access/Screens/GalaxyHudScreen.Seats.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+
 ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (AgeWidgets.Visible(children[i]))
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (items[i] != null && AgeWidgets.Visible(items[i]))
 ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (label != null && AgeWidgets.Visible(label.AgeTransform))
-ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
 ES2Access/Screens/GalaxyHudScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
 ES2Access/Screens/GameMenuScreen.cs | 1 | && item.AgeTransform.Visible
