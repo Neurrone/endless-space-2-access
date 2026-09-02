@@ -14,8 +14,10 @@ ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | string hinted = CardActio
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | ? CardActions.FirstLine(card.Tooltip ?? AgeWidgets.Raw(card.AgeTransform))
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | Add(lines, CardActions.FirstLine(AgeWidgets.Raw(rows[i])));
 
-ES2Access/Screens/EconomyScreen.cs | 2 | : CardActions.FirstLine(tooltip);
-ES2Access/Screens/EconomyScreen.cs | 1 | AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip);
+ES2Access/Screens/EconomyScreen.Marketplace.cs | 1 | : CardActions.FirstLine(tooltip);
+
+ES2Access/Screens/EconomyScreen.Trade.cs | 1 | : CardActions.FirstLine(tooltip);
+ES2Access/Screens/EconomyScreen.Trade.cs | 1 | AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip);
 
 ES2Access/Screens/ElectionScreen.cs | 1 | ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
 
@@ -64,14 +66,16 @@ ES2Access/Screens/ResearchScreen.cs | 1 | : AgeText.Clean(marker.Tooltip.Content
 
 ES2Access/Screens/SettingRows.cs | 1 | return string.IsNullOrEmpty(text) ? CardActions.FirstLine(tooltip) : text;
 
-ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
-ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));
-ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostBottomCaption)));
-ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostOwnerLabel)));
-ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
-ES2Access/Screens/SystemManagementScreen.cs | 1 | CardActions.FirstLine(kind)
-ES2Access/Screens/SystemManagementScreen.cs | 2 | GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
-ES2Access/Screens/SystemManagementScreen.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
+ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
+ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));
+ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostBottomCaption)));
+ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostOwnerLabel)));
+ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
+
+ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | CardActions.FirstLine(kind)
+ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 2 | GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
+
+ES2Access/Screens/SystemManagementScreen.Spaceport.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/Screens/SystemPoliticsScreen.cs | 1 | Func<IList<string>> words = AgeWidgets.TooltipLines(TableSheet.TooltipOf(cell));
 
