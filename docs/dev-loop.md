@@ -186,9 +186,13 @@ screenshot into context. Invoke via the PowerShell tool or
 `-Rect` array argument, and the Bash tool's quoting breaks it too.
 **On a pooled table the crop is the oracle, not the dump.** A retired row parked at alpha 0 draws
 no text, so `/gui/age` prunes it and the dump agrees with whatever the mod declared — parity that
-is really a blind spot. For a node the mod DECLARED, `DevProbe.Ghosts()` names it off the declared
-side and no crop is needed; for anything else, print `Alpha` beside `Visible` in an `/eval` walk and
-check it against a `crop-shot.ps1` of the same rect.
+is really a blind spot. `DevProbe.Ghosts()` names one the mod DECLARED; for anything else, print
+`Alpha` beside `Visible` in an `/eval` walk and check it against a `crop-shot.ps1` of the same rect.
+A ghost FIX is then proved from both sides without touching game state: set the retired child's
+`Alpha` to 1, dump (the real row must declare and announce), set it back to 0 and diff against the
+post-fix dump. Where no "before" dump exists, one `/eval` comparing the OLD reader with the NEW one
+per widget over the whole window, printing the divergence count, is a regression check that needed
+no baseline.
 
 **An un-watched announcement part is still ASKED every frame** (`watch: false` means "not
 compared") — an expensive part needs an input-keyed memo, and only a call counter read across

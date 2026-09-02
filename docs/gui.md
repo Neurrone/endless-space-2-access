@@ -484,6 +484,15 @@ widget, exactly as the game's own mouse flows do.
   `Visible && (StrictVisibility || Alpha > 0)` instead — so it is a free oracle only for a table
   whose `StrictVisibility` is off, and on a strict one it counts faded rows the game is not drawing. The same alpha-0 retirement shows up outside tables too:
   `GuiEffectMapper.UnloadEffects` retires effect lines that way.
+- **Alpha is also a STATE-FACE selector, and that face is not a ghost.** An `AgeControlToggle`
+  prefab may carry two caption children — `Off` and `On` — with exactly one lit by the toggle's
+  `State` and the other parked at alpha 0 (measured 2026-09-02: five faced toggles in one scene,
+  all `State == false`, `On` faded in all five, none both-lit; `DecolonizeToggle` reads
+  `Off = "Decolonize"` lit over `On = "Decolonization in 1 Turn"` faded). An alpha-blind text
+  scrape glues both captions and looks exactly like a pooled ghost; a painted read answers the
+  face the player sees. Toggle nodes should not scrape at all — the caption belongs to the label
+  the mod chooses and the state to `AgeControlToggle.State`, which is how `CardActions.AddToggle`
+  already reads it.
 - **A POOL PARKS WITHOUT UNBINDING: a stale binding is not membership.** `ReserveChildren` only ever
   GROWS a pool (firstpass/AgeTransform.cs:2319-2329), and `RefreshChildrenIList` (:2404-2414) sets
   every child past the list's end to `Alpha = 0` WITHOUT calling the refresh delegate on it — and

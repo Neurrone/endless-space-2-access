@@ -42,6 +42,9 @@ namespace ES2Access.Core.UI
     /// <see cref="InfluenceCover.Whole"/>); contesters are the empires whose circles reach into it
     /// without holding any sampled point of it. Both are sorted by empire index, so the same overlap
     /// reads the same way twice running and two readings of the same place compare equal.
+    ///
+    /// A contest is a fact about GROUND SOMEBODY HOLDS, so a reading where nobody holds any of the
+    /// cell is not one, and a reader of it says so with <see cref="EdgeWhereNobodyHolds"/>.
     /// </summary>
     public sealed class InfluenceReading : IEquatable<InfluenceReading>
     {
@@ -60,8 +63,36 @@ namespace ES2Access.Core.UI
         public int[] Empires { get; private set; }
 
         /// <summary>The empires reaching into the cell without holding any of it, ascending by index.
-        /// </summary>
+        /// A CONTEST here always has ground under it - somebody holds the cell and somebody else is
+        /// reaching into it. Where nobody holds any of it the reachers are not contesting anything,
+        /// and <see cref="EdgeWhereNobodyHolds"/> is how a reader says that.</summary>
         public int[] Contesters { get; private set; }
+
+        /// <summary>
+        /// The same reading, told to somebody STANDING IN THE CELL: where nobody holds any sampled
+        /// point of it but somebody's circle still reaches in, those empires are its edge-owners
+        /// rather than its contesters, because from inside the cell the only thing there is to
+        /// perceive is being on the rim of their influence - there is no held ground for anyone to
+        /// contest. A rim thinner than the sample spacing is exactly this case: every point query
+        /// answers nobody and the circle is still overhead.
+        ///
+        /// Unchanged wherever somebody DOES hold part of the cell, and unchanged where nobody is
+        /// reaching at all.
+        ///
+        /// This is the CURSOR's reading, not the map's. A sweep that names ground CHANGING HANDS
+        /// (<c>InfluenceGround</c>) must keep reading the raw classification: an empire merely
+        /// grazing a tile nobody holds has taken nothing, and promoting it to an owner there would
+        /// report a conquest that never happened.
+        /// </summary>
+        public InfluenceReading EdgeWhereNobodyHolds()
+        {
+            if (Empires.Length > 0 || Contesters.Length == 0)
+            {
+                return this;
+            }
+
+            return new InfluenceReading(InfluenceCover.Edge, Contesters, null);
+        }
 
         /// <summary>Nothing to say: nobody holds any of it and nobody is reaching for it.</summary>
         public bool Silent

@@ -111,6 +111,14 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   what it DRAWS instead. Titles are exempt: every measured popup formats its title properly, and the
   one unfilled title seen (`"Research Complete: {0}"`, mid-browse) was a stale frame, which is why
   the change watcher waits for `IsReady`.
+- **The tech popup's "next research" label sits at its prefab placeholder whenever the queue is
+  empty — inside a group the game never shows in that state.** `NextTitle` (under
+  `NextTechnologyTitle`) holds the skeleton's "Technology Name" at alpha 0 while
+  `NextTechnologyGroup` is `Visible = false`; `TechnologyUnlockedNotificationWindow.Refresh`
+  (:133-136) rebinds the text via `RefreshTechnologyImageAndTitle` (:182) BEFORE it makes the
+  group visible, so no state exists where the placeholder is inside a visible group (measured
+  2026-09-02, unshown window, empty research queue). A reader gated on the group's visibility —
+  `EmpireDossier.Read`'s `child.Visible` descent, `DrawnRows`' painted test — never meets it.
 - **Four notification windows wire the shared description to a label they left OUT of their
   layout, and two of those still carry the skeleton's key on it.** Measured over every
   `NotificationWindow` instance in the scene (`Resources.FindObjectsOfTypeAll`): 65 of 69 hold

@@ -283,6 +283,11 @@ namespace ES2Access.UI
         /// Whether the cell may be read AT ALL is the caller's: the mode asks its own fog first, and a
         /// cell nobody has explored is told nothing about (<see cref="Screens.GalaxyInspect"/>).
         ///
+        /// The classification is then told to somebody STANDING in the cell
+        /// (<see cref="InfluenceReading.EdgeWhereNobodyHolds"/>): a rim thinner than the sample spacing
+        /// leaves every point query answering nobody while the circle is still overhead, and there is
+        /// no held ground there for anyone to contest - the cursor is simply on the edge of it.
+        ///
         /// Cost: nothing at all where no circle reaches the cell, which is most of the map - the grid is
         /// only asked for once something is there to classify. Measured over 86 nodes: 0.01 ms for
         /// empty space, 1.18 ms inside a bubble (1 by 1) and 1.37 ms (11 by 11). Only ever on a
@@ -389,7 +394,7 @@ namespace ES2Access.UI
                         InfluenceCell.SamplesPerSide
                     ),
                     anyReaches
-                );
+                ).EdgeWhereNobodyHolds();
                 return new CellInfluence(
                     reading,
                     Behind(reading.Empires, known),
@@ -469,7 +474,9 @@ namespace ES2Access.UI
         }
 
         /// <summary>The cell's own influence sentence - "in", "on the edge of", and who. Nothing at all
-        /// where nobody holds any of it: the contested line below is then the whole answer.</summary>
+        /// where nobody holds any of it, which for a cursor reading is empty sky: a reach into ground
+        /// nobody holds has already become an EDGE by the time this is asked
+        /// (<see cref="InfluenceReading.EdgeWhereNobodyHolds"/>).</summary>
         public static string Whose(CellInfluence cell)
         {
             if (cell == null || cell.Owners.Count == 0)
@@ -482,7 +489,9 @@ namespace ES2Access.UI
 
         /// <summary>Who is reaching into the cell without holding any of it - the same sentence a
         /// system's own contested line is said in, because it is the same fact about a different
-        /// shape.</summary>
+        /// shape. It always rides on top of an owner: a contest is a fact about ground somebody holds,
+        /// so a cell nobody holds names its reachers as edge-owners instead
+        /// (<see cref="InfluenceReading.EdgeWhereNobodyHolds"/>) and this answers nothing.</summary>
         public static string ContestedIn(CellInfluence cell)
         {
             return cell == null ? null : Contesters(new List<Empire>(cell.Contesters));
