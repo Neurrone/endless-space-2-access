@@ -65,6 +65,18 @@ namespace ES2Access.Screens
         /// never where the row sits.</summary>
         private readonly List<StarSystemNode> _colonies = new List<StarSystemNode>();
 
+        /// <summary>The same three memberships as a SET each, filled beside the lists and never read
+        /// for order. Every one of them is asked "is this star in you" inside a loop over the whole
+        /// galaxy - twice while the lists are being built, once per place while the tree is, once per
+        /// system while the type-ahead index is - and a list answers that by walking itself, so the
+        /// build was quadratic in the number of stars on the map. The LISTS stay because reading order
+        /// is what they are for; only the membership question moved.</summary>
+        private readonly HashSet<StarSystemNode> _namedSet = new HashSet<StarSystemNode>();
+
+        private readonly HashSet<StarSystemNode> _locatedSet = new HashSet<StarSystemNode>();
+
+        private readonly HashSet<StarSystemNode> _colonySet = new HashSet<StarSystemNode>();
+
         /// <summary>The fleets crossing open space towards somewhere the map has not named - the ones
         /// with no system to hang under (<see cref="AddAdrift"/>).</summary>
         private readonly List<Fleet> _adrift = new List<Fleet>();
@@ -431,6 +443,9 @@ namespace ES2Access.Screens
                 _systems.Clear();
                 _located.Clear();
                 _colonies.Clear();
+                _namedSet.Clear();
+                _locatedSet.Clear();
+                _colonySet.Clear();
                 DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
                 if (interior != null)
                 {
@@ -438,17 +453,18 @@ namespace ES2Access.Screens
                     {
                         // An empire can hold more than one thing in the same system - a colony and a
                         // ghost of it - and the system is still one place on the map.
-                        if (colony.Node != null && !_colonies.Contains(colony.Node))
+                        if (colony.Node != null && _colonySet.Add(colony.Node))
                         {
                             _colonies.Add(colony.Node);
                             _systems.Add(colony.Node);
+                            _namedSet.Add(colony.Node);
                         }
                     }
                 }
 
                 foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
                 {
-                    if (_colonies.Contains(node))
+                    if (_colonySet.Contains(node))
                     {
                         continue;
                     }
@@ -456,11 +472,13 @@ namespace ES2Access.Screens
                     if (Perceived(node, empire))
                     {
                         _systems.Add(node);
+                        _namedSet.Add(node);
                     }
                     else if (MapVisibility.Located(node, empire))
                     {
                         // The map is drawing a star here and naming nothing (<see cref="AddLocated"/>).
                         _located.Add(node);
+                        _locatedSet.Add(node);
                     }
                 }
 
@@ -833,47 +851,24 @@ namespace ES2Access.Screens
                 );
         }
 
-        private static readonly StarSystemLabel[] NoLabels = new StarSystemLabel[0];
-
-        /// <summary>Every label the map is currently drawing for a system - never cached ACROSS frames,
+        /// <summary>Every label the map is currently drawing for a system - never held ACROSS frames,
         /// because the window grows this list as the player explores more of the galaxy and a cache
         /// keyed on nothing that changes would go stale exactly when a newly-discovered system needed
-        /// its tooltip.
-        ///
-        /// Held for the length of ONE frame, though: the walk is a component search over every label in
-        /// the galaxy and it now has several callers in a frame - the build, the focused row's aim, the
-        /// focused dossier's name - which the map would otherwise pay for one at a time. Keyed on the
-        /// frame number rather than invalidated by anything, so nothing has to remember to clear it.
-        /// </summary>
+        /// its tooltip. Held for the length of ONE frame, because the walk has several callers in a
+        /// frame - the build, the focused row's aim, the focused dossier's name.</summary>
+        private static readonly LabelSweep<StarSystemLabel> SystemLozenges =
+            new LabelSweep<StarSystemLabel>("galaxy", SystemLabelsWindow);
+
         private static StarSystemLabel[] SystemLabels()
         {
-            try
-            {
-                int frame = UnityEngine.Time.frameCount;
-                if (_labelsFrame == frame && _labels != null)
-                {
-                    return _labels;
-                }
-
-                StarSystemLabelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<StarSystemLabelsWindow>(false)
-                    : null;
-                _labels =
-                    window == null
-                        ? NoLabels
-                        : window.GetComponentsInChildren<StarSystemLabel>(true);
-                _labelsFrame = frame;
-                return _labels;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: finding the system labels threw: " + e);
-                return NoLabels;
-            }
+            return SystemLozenges.Labels();
         }
 
-        private static StarSystemLabel[] _labels;
-
-        private static int _labelsFrame = -1;
+        private static Component SystemLabelsWindow()
+        {
+            return Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<StarSystemLabelsWindow>(false)
+                : null;
+        }
     }
 }

@@ -27,6 +27,13 @@ namespace ES2Access.UI
     /// </summary>
     public static class PopulationMoves
     {
+        /// <summary>The planet cards the star system page is drawing, swept once per frame: whether
+        /// there is anywhere to put a unit down is asked by every ring on the page, and each ring asks
+        /// it while the same frame is being built. The window POOLS its cards, so the sweep is kept for
+        /// the frame and no longer.</summary>
+        private static readonly FrameSweep<PlanetLabel_SystemManagement> Cards =
+            new FrameSweep<PlanetLabel_SystemManagement>("population moves");
+
         /// <summary>What the carried thing IS, so a population unit cannot be dropped into a fleet and
         /// a ship cannot be dropped onto a planet. Shared by every screen that draws a ring.</summary>
         public const string Kind = "population";
@@ -88,8 +95,7 @@ namespace ES2Access.UI
                 return false;
             }
 
-            PlanetLabel_SystemManagement[] cards =
-                labels.GetComponentsInChildren<PlanetLabel_SystemManagement>(true);
+            PlanetLabel_SystemManagement[] cards = Cards.Under(labels);
             for (int i = 0; i < cards.Length; i++)
             {
                 PlanetLabel_SystemManagement card = cards[i];

@@ -331,28 +331,22 @@ namespace ES2Access.Screens
                 );
         }
 
-        private static readonly ConstellationLabel[] NoConstellationLabels =
-            new ConstellationLabel[0];
+        /// <summary>Every constellation label the window is holding, swept once per FRAME and never
+        /// held longer: the window instantiates one per constellation as the game meets them, so a
+        /// cache that outlived the frame would go stale on the constellation just discovered.</summary>
+        private static readonly LabelSweep<ConstellationLabel> ConstellationLozenges =
+            new LabelSweep<ConstellationLabel>("galaxy", ConstellationLabelsWindowOf);
 
-        /// <summary>Every constellation label the window is holding, fetched fresh for the same reason
-        /// the system labels are: the window instantiates one per constellation as the game meets
-        /// them.</summary>
         private static ConstellationLabel[] ConstellationLabels()
         {
-            try
-            {
-                ConstellationLabelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<ConstellationLabelsWindow>(false)
-                    : null;
-                return window == null
-                    ? NoConstellationLabels
-                    : window.GetComponentsInChildren<ConstellationLabel>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: finding the constellation labels threw: " + e);
-                return NoConstellationLabels;
-            }
+            return ConstellationLozenges.Labels();
+        }
+
+        private static Component ConstellationLabelsWindowOf()
+        {
+            return Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<ConstellationLabelsWindow>(false)
+                : null;
         }
     }
 }

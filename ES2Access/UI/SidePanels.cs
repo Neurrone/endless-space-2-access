@@ -36,6 +36,17 @@ namespace ES2Access.UI
     /// </summary>
     public static class SidePanels
     {
+        /// <summary>The window's panels, swept once per frame: the star system page asks for the list
+        /// three times in one build - its "is this page still mine", the shared reading and its own -
+        /// and every other page that has a left column asks once.</summary>
+        private static readonly FrameSweep<SidePanel> Panels =
+            new FrameSweep<SidePanel>("side panels");
+
+        /// <summary>A panel's own pictures, swept once per panel per frame: the pages that fall back
+        /// to the corner icon's sentence for a panel's name ask for it twice in a build.</summary>
+        private static readonly FrameSweep<AgePrimitiveImage> Icons =
+            new FrameSweep<AgePrimitiveImage>("side panels");
+
         /// <summary>A screen's answer for a widget the tree's shape cannot name. Add whatever cells the
         /// widget stands for and return true to stop the walk descending into it; false is the ordinary
         /// walk.</summary>
@@ -76,7 +87,7 @@ namespace ES2Access.UI
                     return;
                 }
 
-                SidePanel[] panels = window.GetComponentsInChildren<SidePanel>(true);
+                SidePanel[] panels = Panels.Under(window);
                 for (int i = 0; i < panels.Length; i++)
                 {
                     // Which panels the page reads, in drawn order - a collection made before anything
@@ -153,7 +164,7 @@ namespace ES2Access.UI
         {
             try
             {
-                AgePrimitiveImage[] images = panel.GetComponentsInChildren<AgePrimitiveImage>(true);
+                AgePrimitiveImage[] images = Icons.Under(panel);
                 for (int i = 0; i < images.Length; i++)
                 {
                     AgeTooltip tooltip = AgeWidgets.Raw(images[i].AgeTransform);

@@ -46,6 +46,16 @@ namespace ES2Access.UI
     /// </summary>
     public static class HeroCards
     {
+        /// <summary>A card's mastery lines and the panel's own labels, swept once per container per
+        /// frame: the card's reading and the card's tooltip both ask for the same two walks in the same
+        /// frame. Cards are POOLED and rebound to another hero, so the sweep does not outlive the
+        /// frame.</summary>
+        private static readonly FrameSweep<HeroMasteryLine> MasteryLines =
+            new FrameSweep<HeroMasteryLine>("hero cards");
+
+        private static readonly FrameSweep<AgePrimitiveLabel> PanelLabels =
+            new FrameSweep<AgePrimitiveLabel>("hero cards");
+
         /// <summary>The game's own word for a figure the card draws as an icon and a number. See the
         /// class remarks for where each one comes from.</summary>
         private const string SenatorTitle = "%HeroCardPoliticalLeaderTitle";
@@ -356,7 +366,7 @@ namespace ES2Access.UI
             }
 
             Add(lines, null, Heading(panel, container));
-            HeroMasteryLine[] found = container.GetComponentsInChildren<HeroMasteryLine>(true);
+            HeroMasteryLine[] found = MasteryLines.Under(container);
             for (int i = 0; i < found.Length; i++)
             {
                 HeroMasteryLine line = found[i];
@@ -381,7 +391,7 @@ namespace ES2Access.UI
         /// it does not have or a prefab name it could be renamed under.</summary>
         private static string Heading(HeroMasteryPanel panel, AgeTransform container)
         {
-            AgePrimitiveLabel[] found = panel.GetComponentsInChildren<AgePrimitiveLabel>(true);
+            AgePrimitiveLabel[] found = PanelLabels.Under(panel);
             for (int i = 0; i < found.Length; i++)
             {
                 AgeTransform at = found[i] == null ? null : found[i].AgeTransform;

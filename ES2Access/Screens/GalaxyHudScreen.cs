@@ -3262,7 +3262,7 @@ namespace ES2Access.Screens
         /// (<see cref="Perceived"/>).</summary>
         private ControlId SystemId(StarSystemNode node)
         {
-            return node != null && _systems.Contains(node)
+            return node != null && _namedSet.Contains(node)
                 ? ControlId.Structural(SystemKey(node))
                 : null;
         }
@@ -3846,8 +3846,9 @@ namespace ES2Access.Screens
             ControlId system = ControlId.For(node, systemKey);
             ControlId group = GroupId(node);
             Index(FleetPresence.FleetsAt(node), system, group, systemKey, sites, declared);
-            List<EnRoute> flying = EnRouteOn(node, empire, LanesOf(node, empire));
-            List<Fleet> crossing = FreeMovingAt(node);
+            Nearby near = MovingNear(node, empire);
+            List<EnRoute> flying = near.Flying;
+            List<Fleet> crossing = near.Crossing;
             List<Fleet> nearby = new List<Fleet>(flying.Count + crossing.Count);
             for (int i = 0; i < flying.Count; i++)
             {

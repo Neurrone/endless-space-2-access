@@ -41,6 +41,11 @@ namespace ES2Access.UI
     /// </summary>
     public static class ShipRows
     {
+        /// <summary>The ship tiles a garrison table is drawing, swept once per table per frame: the
+        /// build walks them and the toolbar's selection phrase walks them again for the same frame's
+        /// readout. Never longer than the frame - the table pools its tiles.</summary>
+        private static readonly FrameSweep<ShipItem> Tiles = new FrameSweep<ShipItem>("ships");
+
         /// <summary>What a carried ship is, for the controls that will take one - see
         /// <see cref="CarryItem.Kind"/>.</summary>
         public const string ShipKind = "ship";
@@ -101,7 +106,7 @@ namespace ES2Access.UI
                 return;
             }
 
-            ShipItem[] ships = table.GetComponentsInChildren<ShipItem>(true);
+            ShipItem[] ships = Tiles.Under(table);
             for (int i = 0; i < ships.Length; i++)
             {
                 Ship(cells, ships[i], panel, keyPrefix, carryable);
@@ -264,7 +269,7 @@ namespace ES2Access.UI
                 }
 
                 List<global::Ship> selected = panel.GetSelectedShips(true);
-                ShipItem[] items = table.GetComponentsInChildren<ShipItem>(true);
+                ShipItem[] items = Tiles.Under(table);
                 for (int i = 0; i < items.Length; i++)
                 {
                     ShipItem item = items[i];

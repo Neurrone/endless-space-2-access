@@ -63,6 +63,18 @@ namespace ES2Access.Screens
     /// </summary>
     public sealed class EconomyScreen : Screen
     {
+        /// <summary>The buy table's line components, swept once per frame. Both questions the price
+        /// graph asks - which widget this resource's row is drawn as, and which of the panel's curves
+        /// is that row's - walk the same table for the same row on the frame the focused row changes,
+        /// and the walk is the expensive half of each. The MATCHING stays per call, because the reveal
+        /// between them scrolls the table and the game rebinds which resource each line is showing:
+        /// the components are the same either side of that, and what they are bound to is not.
+        ///
+        /// Switched-off lines are left out, which is the question the two callers were already asking:
+        /// the panel builds its curve series from the lines the table is currently showing.</summary>
+        private static readonly FrameSweep<GuiTableLineBuyable> BuyLines =
+            new FrameSweep<GuiTableLineBuyable>("economy", false);
+
         private static readonly object TabsStop = "economy:tabs";
         private static readonly object CompaniesStop = "economy:trade-companies";
         private static readonly object LuxuriesStop = "economy:luxuries";
@@ -1993,7 +2005,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                GuiTableLineBuyable[] found = table.GetComponentsInChildren<GuiTableLineBuyable>();
+                GuiTableLineBuyable[] found = BuyLines.Under(table);
                 for (int i = 0; i < found.Length; i++)
                 {
                     GuiBuyable buyable =
@@ -2077,7 +2089,7 @@ namespace ES2Access.Screens
                 return -1;
             }
 
-            GuiTableLineBuyable[] found = table.GetComponentsInChildren<GuiTableLineBuyable>();
+            GuiTableLineBuyable[] found = BuyLines.Under(table);
             int index = 0;
             for (int i = 0; i < found.Length; i++)
             {

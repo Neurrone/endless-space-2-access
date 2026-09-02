@@ -29,13 +29,13 @@ namespace ES2Access.Screens
             StarSystemLabel[] labels
         )
         {
-            if (_located.Contains(node))
+            if (_locatedSet.Contains(node))
             {
                 AddLocated(builder, node, empire);
                 return;
             }
 
-            AddSystem(builder, node, empire, _colonies.Contains(node), labels);
+            AddSystem(builder, node, empire, _colonySet.Contains(node), labels);
         }
 
         /// <summary>
@@ -749,7 +749,11 @@ namespace ES2Access.Screens
             StarSystemLabel label
         )
         {
-            List<Lane> lanes = LanesOf(node, empire);
+            // The lanes out of here and what is moving on and around them, worked out once for the
+            // whole branch (<see cref="Nearby"/>) - the same answer the system's own row counts and
+            // the type-ahead index offers.
+            Nearby near = MovingNear(node, empire);
+            List<Lane> lanes = near.Lanes;
             // Collected ONCE for the whole branch, in the order the label draws them, and read four
             // times: each region takes the entries stamped with its own name and keys them by their
             // place in this one list, so sorting them into regions moves no node's key.
@@ -836,8 +840,8 @@ namespace ES2Access.Screens
                     try
                     {
                         AddFleets(builder, key, FleetPresence.FleetsAt(node));
-                        AddEnRoute(builder, key, EnRouteOn(node, empire, lanes));
-                        AddFreeMoving(builder, key, node, FreeMovingAt(node));
+                        AddEnRoute(builder, key, near.Flying);
+                        AddFreeMoving(builder, key, node, near.Crossing);
                         if (_showsDetail)
                         {
                             AddHangars(builder, key, node);

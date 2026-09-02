@@ -116,6 +116,15 @@ namespace ES2Access.Screens
         /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
         private const int MaxAncestors = 64;
 
+        /// <summary>The two component walks a build makes over the popup, each made once per root per
+        /// frame. Popups are POOLED and rebound to the next notification, so neither is kept beyond the
+        /// frame.</summary>
+        private static readonly FrameSweep<AgeControlScrollView> ScrollViews =
+            new FrameSweep<AgeControlScrollView>("notification");
+
+        private static readonly FrameSweep<AgeControl> WindowControls =
+            new FrameSweep<AgeControl>("notification");
+
         /// <summary>How deep inside one cell of a drawn table to look for what it is showing. Three,
         /// measured against the construction report: a cell is a group holding a picture and a label,
         /// and the deepest word in one is two levels down.</summary>
@@ -1673,7 +1682,7 @@ namespace ES2Access.Screens
                     }
                 }
 
-                foreach (AgeControlScrollView view in root.GetComponentsInChildren<AgeControlScrollView>(true))
+                foreach (AgeControlScrollView view in ScrollViews.Under(root))
                 {
                     AgeTransform widget = view == null ? null : view.AgeTransform;
                     if (
@@ -2540,7 +2549,55 @@ namespace ES2Access.Screens
         /// still says all of it - the game holds the whole string whatever it shows - and it is still
         /// the label's own line; only where it is measured changes.
         /// </summary>
+        /// <summary>
+        /// Everything the popup has drawn under <paramref name="widget"/>, appended to
+        /// <paramref name="lines"/>.
+        ///
+        /// One build asks this of the popup's ROOT three times - the sheet reader looking for a table,
+        /// the reader of what is drawn outside that table, and the reader of the rows a popup with no
+        /// table has - and the answer cannot differ between them: the walk reads the widget tree and
+        /// changes nothing in it. So the root walk is made once a frame and the askers are handed a
+        /// copy (<see cref="Line"/> is a value, so a copy is a copy and nobody can disturb anybody
+        /// else's list).
+        ///
+        /// Held for the frame and no longer, and re-walked the moment the root changes: a popup that
+        /// has been rebound to the next notification has drawn different words under the same root.
+        /// </summary>
         private static void Read(
+            AgeTransform widget,
+            List<Line> lines,
+            AgeTooltip inherited,
+            int depth
+        )
+        {
+            if (inherited != null || depth != 0)
+            {
+                Walk(widget, lines, inherited, depth);
+                return;
+            }
+
+            int frame = UnityEngine.Time.frameCount;
+            if (_drawnFrame != frame || !ReferenceEquals(_drawnRoot, widget))
+            {
+                Drawn.Clear();
+                Walk(widget, Drawn, null, 0);
+                _drawnFrame = frame;
+                _drawnRoot = widget;
+            }
+
+            for (int i = 0; i < Drawn.Count; i++)
+            {
+                lines.Add(Drawn[i]);
+            }
+        }
+
+        private static readonly List<Line> Drawn = new List<Line>();
+
+        private static int _drawnFrame = -1;
+
+        private static AgeTransform _drawnRoot;
+
+        private static void Walk(
             AgeTransform widget,
             List<Line> lines,
             AgeTooltip inherited,
@@ -3184,7 +3241,7 @@ namespace ES2Access.Screens
             List<AgeControl> extras = new List<AgeControl>();
             AgeControl[] declared = Declared(window);
             AgeTransform root = Root(window);
-            foreach (AgeControl control in window.gameObject.GetComponentsInChildren<AgeControl>(true))
+            foreach (AgeControl control in WindowControls.Under(window))
             {
                 AgeControlButton button = control as AgeControlButton;
                 AgeControlToggle toggle = control as AgeControlToggle;

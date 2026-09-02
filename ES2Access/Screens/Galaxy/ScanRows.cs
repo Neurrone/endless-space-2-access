@@ -6,6 +6,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -814,42 +815,23 @@ namespace ES2Access.Screens
                 return null;
             }
         }
-
-        private static readonly ScanNodeLabel[] NoScanLabels = new ScanNodeLabel[0];
-
         /// <summary>Every label the lens is drawing over the map, held for the length of ONE frame for
         /// the same reason the ordinary system labels are: the window pools them and the walk is a
         /// component search, with several callers in a frame.</summary>
+        private static readonly LabelSweep<ScanNodeLabel> LensLabels =
+            new LabelSweep<ScanNodeLabel>("scan", ScanLabelsWindow);
+
         private static ScanNodeLabel[] ScanLabels()
         {
-            try
-            {
-                int frame = UnityEngine.Time.frameCount;
-                if (_scanLabelsFrame == frame && _scanLabels != null)
-                {
-                    return _scanLabels;
-                }
-
-                ScanNodeLabelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<ScanNodeLabelsWindow>(false)
-                    : null;
-                _scanLabels =
-                    window == null
-                        ? NoScanLabels
-                        : window.GetComponentsInChildren<ScanNodeLabel>(true);
-                _scanLabelsFrame = frame;
-                return _scanLabels;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("scan: finding the lens labels threw: " + e);
-                return NoScanLabels;
-            }
+            return LensLabels.Labels();
         }
 
-        private static ScanNodeLabel[] _scanLabels;
-
-        private static int _scanLabelsFrame = -1;
+        private static Component ScanLabelsWindow()
+        {
+            return Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<ScanNodeLabelsWindow>(false)
+                : null;
+        }
 
         /// <summary>The lens's own label for a star, matched by the node it was bound to - and only
         /// while the camera has it in frame, because the window culls its labels by camera position

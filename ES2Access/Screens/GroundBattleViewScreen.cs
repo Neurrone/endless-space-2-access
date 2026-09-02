@@ -52,6 +52,12 @@ namespace ES2Access.Screens
         private readonly BurstWatch _enemyTroops = new BurstWatch(BurstSeconds);
         private readonly List<Cell> _cells = new List<Cell>();
 
+        /// <summary>What has already been read off each side's card - see <see cref="Card"/>. Dropped
+        /// by <see cref="Rearm"/> along with everything else this screen remembers.</summary>
+        private readonly Card _yourCard = new Card();
+
+        private readonly Card _enemyCard = new Card();
+
         /// <summary>Which battle is being watched, so the same one replayed is news again.</summary>
         private GroundBattleViewer _run;
 
@@ -145,7 +151,82 @@ namespace ES2Access.Screens
             _round.Forget();
             _yourTroops.Reset();
             _enemyTroops.Reset();
+            _yourCard.Forget();
+            _enemyCard.Forget();
             _baselined = false;
+        }
+
+        /// <summary>
+        /// What has already been read off one side's card, for the length of ONE run.
+        ///
+        /// Two things, and both are about a narration that runs at frame rate: the cells the card draws
+        /// are made when the battle binds and stand for the whole run, so the component walk is made
+        /// once and revalidated by the cells still being alive rather than repeated every frame; and a
+        /// unit whose loss has already been announced never has its id composed again. The old reading
+        /// built a key string for every unit ALREADY DEAD, on every frame of the animation, for a
+        /// <see cref="BurstWatch.Note"/> that would drop it - so the longer the battle went on the more
+        /// string the mod made per frame, at exactly the moment the player is listening hardest.
+        ///
+        /// Held for the run and dropped by <see cref="Rearm"/>, which is what a fresh battle - or the
+        /// same one watched again - is. Nothing here is a watermark: what has been SAID is the
+        /// <see cref="BurstWatch"/>'s own memory, and this only saves asking it.
+        /// </summary>
+        private sealed class Card
+        {
+            private static readonly TroopCell[] None = new TroopCell[0];
+
+            private AgeTransform _from;
+
+            private TroopCell[] _cells;
+
+            private readonly Dictionary<TroopCell, int> _floor = new Dictionary<TroopCell, int>();
+
+            public void Forget()
+            {
+                _from = null;
+                _cells = null;
+                _floor.Clear();
+            }
+
+            public TroopCell[] Cells(AgeTransform table)
+            {
+                if (ReferenceEquals(_from, table) && _cells != null && Alive(_cells))
+                {
+                    return _cells;
+                }
+
+                _from = table;
+                _cells = table == null ? None : table.GetComponentsInChildren<TroopCell>(true);
+                return _cells;
+            }
+
+            /// <summary>The lowest unit number of this cell that has already been reported - the
+            /// caller reports the ones between the count still standing and this, and nothing above
+            /// it. A cell not seen yet in this run answers its full complement, so the first read
+            /// covers everything already dead exactly as it always did.</summary>
+            public int Floor(TroopCell cell, int max)
+            {
+                int floor;
+                return _floor.TryGetValue(cell, out floor) ? floor : max;
+            }
+
+            public void Reported(TroopCell cell, int alive)
+            {
+                _floor[cell] = alive;
+            }
+
+            private static bool Alive(TroopCell[] cells)
+            {
+                for (int i = 0; i < cells.Length; i++)
+                {
+                    if (cells[i] == null)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         private void Narrate()
@@ -303,8 +384,8 @@ namespace ES2Access.Screens
 
             bool baseline = !_baselined;
             _baselined = true;
-            Count(window.LeftCard, viewer, _yourTroops, baseline);
-            Count(window.RightCard, viewer, _enemyTroops, baseline);
+            Count(window.LeftCard, viewer, _yourTroops, _yourCard, baseline);
+            Count(window.RightCard, viewer, _enemyTroops, _enemyCard, baseline);
 
             float now = Time.realtimeSinceStartup;
             Voice.Say(
@@ -329,6 +410,7 @@ namespace ES2Access.Screens
             GroundBattleViewerCard card,
             GroundBattleViewer viewer,
             BurstWatch watch,
+            Card seen,
             bool baseline
         )
         {
@@ -341,7 +423,7 @@ namespace ES2Access.Screens
             try
             {
                 float now = Time.realtimeSinceStartup;
-                TroopCell[] cells = table.GetComponentsInChildren<TroopCell>(true);
+                TroopCell[] cells = seen.Cells(table);
                 for (int i = 0; i < cells.Length; i++)
                 {
                     TroopCell cell = cells[i];
@@ -355,11 +437,23 @@ namespace ES2Access.Screens
                         ? GroundBattleOpponent.Attacker
                         : GroundBattleOpponent.Defender;
                     int alive = viewer.GetAliveReportUnitCount(side, troop.TroopType);
+
+                    // Down to the count still standing from where this cell was last reported, not
+                    // from its full complement: the units above that were announced when they died,
+                    // and composing their ids again every frame is the string the watch throws away.
+                    int floor = seen.Floor(cell, cell.MaxTroopCount);
+                    if (alive >= floor)
+                    {
+                        continue;
+                    }
+
                     string name = AgeText.Clean(troop.Title);
-                    for (int unit = alive + 1; unit <= cell.MaxTroopCount; unit++)
+                    for (int unit = alive + 1; unit <= floor; unit++)
                     {
                         watch.Note(side + "/" + troop.TroopType + "/" + unit, name, now);
                     }
+
+                    seen.Reported(cell, alive);
                 }
 
                 if (baseline)

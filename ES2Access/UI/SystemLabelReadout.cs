@@ -36,6 +36,12 @@ namespace ES2Access.UI
     /// </summary>
     public static class SystemLabelReadout
     {
+        /// <summary>The buttons a drawn group wires, swept once per group per frame. A system label is
+        /// POOLED - the map rebinds it to whichever star it is drawing - so the sweep is kept for the
+        /// frame and no longer.</summary>
+        private static readonly FrameSweep<AgeControlButton> GroupButtons =
+            new FrameSweep<AgeControlButton>("galaxy");
+
         /// <summary>
         /// Which of a system row's named regions a picture on this label belongs in.
         ///
@@ -328,9 +334,8 @@ namespace ES2Access.UI
         {
             try
             {
-                AgeControlButton[] buttons =
-                    group == null ? null : group.GetComponentsInChildren<AgeControlButton>(true);
-                for (int i = 0; buttons != null && i < buttons.Length; i++)
+                AgeControlButton[] buttons = GroupButtons.Under(group);
+                for (int i = 0; i < buttons.Length; i++)
                 {
                     if (!string.IsNullOrEmpty(buttons[i].OnActivateMethod))
                     {

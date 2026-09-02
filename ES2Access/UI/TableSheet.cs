@@ -235,6 +235,29 @@ namespace ES2Access.UI
         private readonly List<GuiTableHeader> _headers = new List<GuiTableHeader>();
         private readonly List<AgeTransform> _cells = new List<AgeTransform>();
 
+        /// <summary>
+        /// Per-BUILD memos, both cleared at the top of <see cref="Rows"/> and keyed on the cell widget:
+        /// the screen's own reading of a cell (<see cref="ReadValue"/>) and the tooltip subtree hanging
+        /// inside it (<see cref="Inside"/>). Every surface a cell has asks for both - the value part,
+        /// the buffer head, the cell's facts, the whole row's facts - and each asked again from scratch,
+        /// so a wide table paid for the same hook call and the same subtree walk several times over
+        /// while the answer could not have changed.
+        ///
+        /// One build is the memo's whole life BECAUSE a table pools its lines: a cell widget outlives
+        /// the row bound to it, so anything keyed on the widget across builds would answer for the row
+        /// that has gone. Clearing at the top of the build is what makes the widget a safe key.
+        ///
+        /// They are read after the build too - a value part and a buffer head resolve when the
+        /// announcer asks, which is later in the same frame - and that is the point: the memo makes
+        /// everything one node says about a cell agree, at the freshness of the tree the node came
+        /// from, which is the freshness the node already had.
+        /// </summary>
+        private readonly Dictionary<AgeTransform, KeyValuePair<GuiTableHeader, string>> _supplied =
+            new Dictionary<AgeTransform, KeyValuePair<GuiTableHeader, string>>();
+
+        private readonly Dictionary<AgeTransform, List<AgeTooltip>> _hovers =
+            new Dictionary<AgeTransform, List<AgeTooltip>>();
+
         /// <param name="keyPrefix">Prefixes every id this sheet declares; one per table per screen.
         /// </param>
         /// <param name="rowRef">See <see cref="RowObject"/>. Required, because a table with index keys
@@ -485,6 +508,8 @@ namespace ES2Access.UI
             // elsewhere, or not at all, would otherwise get a table whose columns are nameless, and the
             // only symptom would be silent edges.
             Read(table);
+            _supplied.Clear();
+            _hovers.Clear();
             List<GuiTableLine> lines = Lines(table);
             GraphSheet sheet = new GraphSheet(builder, _key);
             sheet.Region(title, Columns(lines));
@@ -1073,23 +1098,48 @@ namespace ES2Access.UI
         /// its buffer line and the row's summary cannot disagree.</summary>
         private string Value(GuiTableHeader header, AgeTransform cell)
         {
-            if (ReadValue != null)
+            return Own(header, cell) ?? DrawnText(cell);
+        }
+
+        /// <summary>The screen's own reading of this cell (<see cref="ReadValue"/>), or null where it
+        /// has none - asked ONCE per cell per build and remembered in <see cref="_supplied"/>, because
+        /// the same answer decides whether the cell's tooltip is a second thing to read
+        /// (<see cref="Supplied"/>) and what the cell, its buffer head and the row's facts all say.
+        /// The heading joins the entry so a cell re-read under a different column recomputes rather
+        /// than answering for the old one.</summary>
+        private string Own(GuiTableHeader header, AgeTransform cell)
+        {
+            if (ReadValue == null)
             {
-                try
-                {
-                    string said = ReadValue(header, cell);
-                    if (said != null)
-                    {
-                        return said;
-                    }
-                }
-                catch (Exception e)
-                {
-                    Log.Warn("table: reading a column's own value threw: " + e);
-                }
+                return null;
             }
 
-            return DrawnText(cell);
+            KeyValuePair<GuiTableHeader, string> memo;
+            if (
+                cell != null
+                && _supplied.TryGetValue(cell, out memo)
+                && ReferenceEquals(memo.Key, header)
+            )
+            {
+                return memo.Value;
+            }
+
+            string said = null;
+            try
+            {
+                said = ReadValue(header, cell);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("table: reading a column's own value threw: " + e);
+            }
+
+            if (cell != null)
+            {
+                _supplied[cell] = new KeyValuePair<GuiTableHeader, string>(header, said);
+            }
+
+            return said;
         }
 
         private string Text(GuiTableHeader header, AgeTransform cell)
@@ -1101,19 +1151,7 @@ namespace ES2Access.UI
         /// not a second thing to read.</summary>
         private bool Supplied(GuiTableHeader header, AgeTransform cell)
         {
-            if (ReadValue == null)
-            {
-                return false;
-            }
-
-            try
-            {
-                return ReadValue(header, cell) != null;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return Own(header, cell) != null;
         }
 
         /// <summary>Everything the player can see in a cell, or null when it is showing nothing: its
@@ -1302,8 +1340,7 @@ namespace ES2Access.UI
         /// </summary>
         private List<AgeTooltip> Inside(AgeTransform cell, AgeTooltip own)
         {
-            List<AgeTooltip> found = new List<AgeTooltip>();
-            AgeWidgets.EffectiveTooltips(cell, found, TooltipReach.Descendants, MaxCellDepth);
+            List<AgeTooltip> found = Hovers(cell);
             List<AgeTooltip> kept = null;
             for (int i = 0; i < found.Count; i++)
             {
@@ -1324,6 +1361,28 @@ namespace ES2Access.UI
             }
 
             return kept;
+        }
+
+        /// <summary>Every hover surface hanging inside a cell, subtree walked ONCE per cell per build
+        /// (<see cref="_hovers"/>). The walk is the expensive half of <see cref="Inside"/> and its
+        /// answer does not depend on which tooltip the caller is excluding, so the filtering stays per
+        /// call and only the walk is remembered.</summary>
+        private List<AgeTooltip> Hovers(AgeTransform cell)
+        {
+            List<AgeTooltip> found;
+            if (cell != null && _hovers.TryGetValue(cell, out found))
+            {
+                return found;
+            }
+
+            found = new List<AgeTooltip>();
+            AgeWidgets.EffectiveTooltips(cell, found, TooltipReach.Descendants, MaxCellDepth);
+            if (cell != null)
+            {
+                _hovers[cell] = found;
+            }
+
+            return found;
         }
 
         // ---- reading the table ----

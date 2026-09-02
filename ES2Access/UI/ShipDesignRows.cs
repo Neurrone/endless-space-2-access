@@ -74,6 +74,19 @@ namespace ES2Access.UI
     /// </summary>
     public static class ShipDesignRows
     {
+        /// <summary>The three editor tables, each swept once per table per frame. All three are POOLED
+        /// - the module list refills as the player filters it, the category strip is rebuilt per hull
+        /// and the slot container per design - so the sweep is kept for the frame and no longer.
+        /// </summary>
+        private static readonly FrameSweep<ShipDesignModuleItem> Modules =
+            new FrameSweep<ShipDesignModuleItem>("ship design");
+
+        private static readonly FrameSweep<AgeControlToggle> Categories =
+            new FrameSweep<AgeControlToggle>("ship design");
+
+        private static readonly FrameSweep<ShipDesignEditionSlotItem> Slots =
+            new FrameSweep<ShipDesignEditionSlotItem>("ship design");
+
         /// <summary>
         /// A design's whole name, for the overview box the Military screen and a hero's ship page both
         /// draw it in.
@@ -686,10 +699,7 @@ namespace ES2Access.UI
                 {
                     cells.Clear();
                     AgeTransform table = panel.ModulesTable;
-                    ShipDesignModuleItem[] items =
-                        table == null
-                            ? new ShipDesignModuleItem[0]
-                            : table.GetComponentsInChildren<ShipDesignModuleItem>(true);
+                    ShipDesignModuleItem[] items = Modules.Under(table);
                     for (int i = 0; i < items.Length; i++)
                     {
                         AddModule(cells, panel, items[i], prefix, i);
@@ -729,7 +739,7 @@ namespace ES2Access.UI
                 return;
             }
 
-            AgeControlToggle[] toggles = table.GetComponentsInChildren<AgeControlToggle>(true);
+            AgeControlToggle[] toggles = Categories.Under(table);
             for (int i = 0; i < toggles.Length; i++)
             {
                 AgeControlToggle toggle = toggles[i];
@@ -1370,8 +1380,7 @@ namespace ES2Access.UI
                 }
 
                 cells.Clear();
-                ShipDesignEditionSlotItem[] slots =
-                    container.GetComponentsInChildren<ShipDesignEditionSlotItem>(true);
+                ShipDesignEditionSlotItem[] slots = Slots.Under(container);
                 for (int i = 0; i < slots.Length; i++)
                 {
                     AddSlot(cells, panel, slots[i], prefix, i);

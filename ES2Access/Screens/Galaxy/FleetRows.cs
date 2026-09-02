@@ -770,12 +770,96 @@ namespace ES2Access.Screens
         /// them would stop matching the children the player walks. Nothing at all where there are none -
         /// a system with nothing moving near it says nothing about it, exactly as one with nothing
         /// parked says nothing.</summary>
+        /// <summary>
+        /// What is moving near one system: the lanes the map draws out of it, the fleets flying those
+        /// lanes TOWARDS it, and the fleets crossing open space to it.
+        ///
+        /// Worked out ONCE per system per frame. The same three lists are wanted from three places in
+        /// one frame - the system's branch builds its lane rows and its two moving-fleet groups out of
+        /// them, the system's own row says how many fleets are under way nearby, and the type-ahead
+        /// index offers each of those fleets as a search result - and all three have to AGREE, because
+        /// a count that named fleets the branch will not hold is a count the player cannot walk. One
+        /// answer is what makes them agree by construction, rather than three walks of the same lists
+        /// that were only ever equal by inspection.
+        ///
+        /// Held for the frame and no longer: a fleet arrives, a lane opens, and the branch has to say
+        /// so on the frame it happens.
+        /// </summary>
+        private sealed class Nearby
+        {
+            private readonly StarSystemNode _node;
+
+            private readonly Empire _empire;
+
+            private List<Lane> _lanes;
+
+            private List<EnRoute> _flying;
+
+            private List<Fleet> _crossing;
+
+            public Nearby(StarSystemNode node, Empire empire)
+            {
+                _node = node;
+                _empire = empire;
+            }
+
+            // Each worked out on the first ask and not before: the far bands draw the lane network and
+            // no fleets at all, and a system there must not pay for the two fleet questions nothing on
+            // it is going to say.
+            public List<Lane> Lanes
+            {
+                get { return _lanes ?? (_lanes = LanesOf(_node, _empire)); }
+            }
+
+            public List<EnRoute> Flying
+            {
+                get { return _flying ?? (_flying = EnRouteOn(_node, _empire, Lanes)); }
+            }
+
+            public List<Fleet> Crossing
+            {
+                get { return _crossing ?? (_crossing = FreeMovingAt(_node)); }
+            }
+        }
+
+        private static Nearby MovingNear(StarSystemNode node, Empire empire)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_nearbyFrame != frame || !ReferenceEquals(_nearbyEmpire, empire))
+            {
+                NearbySystems.Clear();
+                _nearbyFrame = frame;
+                _nearbyEmpire = empire;
+            }
+
+            Nearby found;
+            if (node != null && NearbySystems.TryGetValue(node, out found))
+            {
+                return found;
+            }
+
+            found = new Nearby(node, empire);
+            if (node != null)
+            {
+                NearbySystems[node] = found;
+            }
+
+            return found;
+        }
+
+        private static readonly Dictionary<StarSystemNode, Nearby> NearbySystems =
+            new Dictionary<StarSystemNode, Nearby>();
+
+        private static int _nearbyFrame = -1;
+
+        private static Empire _nearbyEmpire;
+
         private static string UnderWayNearby(StarSystemNode node, Empire empire)
         {
             try
             {
-                int count =
-                    EnRouteOn(node, empire, LanesOf(node, empire)).Count + FreeMovingAt(node).Count;
+                Nearby near = MovingNear(node, empire);
+                int count = near.Flying.Count + near.Crossing.Count;
                 return count == 0
                     ? null
                     : ModStrings.Plural(
@@ -1089,44 +1173,38 @@ namespace ES2Access.Screens
             return null;
         }
 
-        private static readonly DockLabel[] NoDockLabels = new DockLabel[0];
+        /// <summary>The lozenges the map draws fleets and docks with, each swept once per FRAME rather
+        /// than once per system: the build asks both of them again for every system on the map - what
+        /// is parked here, what is passing through, what is coming in - and on a big galaxy that was
+        /// two component searches over every label in the game per star.</summary>
+        private static readonly LabelSweep<DockLabel> Docks =
+            new LabelSweep<DockLabel>("galaxy", DockLabelsWindow);
 
-        private static readonly FleetLabel[] NoFleetLabels = new FleetLabel[0];
+        private static readonly LabelSweep<FleetLabel> Fleets =
+            new LabelSweep<FleetLabel>("galaxy", FleetLabelsWindow);
 
         private static DockLabel[] DockLabels()
         {
-            try
-            {
-                DockLabelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<DockLabelsWindow>(false)
-                    : null;
-                return window == null
-                    ? NoDockLabels
-                    : window.GetComponentsInChildren<DockLabel>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: finding the dock labels threw: " + e);
-                return NoDockLabels;
-            }
+            return Docks.Labels();
+        }
+
+        private static Component DockLabelsWindow()
+        {
+            return Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<DockLabelsWindow>(false)
+                : null;
         }
 
         private static FleetLabel[] FleetLabels()
         {
-            try
-            {
-                FleetLabelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<FleetLabelsWindow>(false)
-                    : null;
-                return window == null
-                    ? NoFleetLabels
-                    : window.GetComponentsInChildren<FleetLabel>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: finding the fleet labels threw: " + e);
-                return NoFleetLabels;
-            }
+            return Fleets.Labels();
+        }
+
+        private static Component FleetLabelsWindow()
+        {
+            return Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<FleetLabelsWindow>(false)
+                : null;
         }
 
         /// <summary>
@@ -1221,25 +1299,21 @@ namespace ES2Access.Screens
                 return false;
             }
         }
-
-        private static readonly HangarLabel[] NoHangarLabels = new HangarLabel[0];
+        /// <summary>The lozenges the map draws hangars with, swept once per FRAME for the same reason
+        /// the dock and fleet lozenges are: the build asks for them per system.</summary>
+        private static readonly LabelSweep<HangarLabel> Hangars =
+            new LabelSweep<HangarLabel>("galaxy", HangarLabelsWindow);
 
         private static HangarLabel[] HangarLabels()
         {
-            try
-            {
-                HangarLabelsWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<HangarLabelsWindow>(false)
-                    : null;
-                return window == null
-                    ? NoHangarLabels
-                    : window.GetComponentsInChildren<HangarLabel>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: finding the hangar labels threw: " + e);
-                return NoHangarLabels;
-            }
+            return Hangars.Labels();
+        }
+
+        private static Component HangarLabelsWindow()
+        {
+            return Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<HangarLabelsWindow>(false)
+                : null;
         }
 
         /// <summary>The lozenge the map is drawing this hangar with - the same choice

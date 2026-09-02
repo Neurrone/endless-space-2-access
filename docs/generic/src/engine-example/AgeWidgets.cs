@@ -1238,6 +1238,59 @@ namespace ES2Access.UI
                 return null;
             }
 
+            // Asked from eighty-odd places, all of them on a build path that runs every frame, and each
+            // ask is a breadth-then-depth walk of a subtree. Held for ONE frame, keyed on exactly what
+            // the question was: the widget tree does not move between two asks in the same frame, and
+            // it does move between frames - a prefab whose title band the game has just switched on has
+            // to be found on the frame it appears. Only the OUTERMOST ask is remembered; the recursion
+            // goes through Find, so the memo holds one entry per question rather than one per widget
+            // the walk stepped over.
+            int frame = Time.frameCount;
+            if (_namedFrame != frame)
+            {
+                Named.Clear();
+                _namedFrame = frame;
+            }
+
+            NameKey key = new NameKey(widget, name, depth);
+            AgeTransform found;
+            if (Named.TryGetValue(key, out found))
+            {
+                return found;
+            }
+
+            found = Find(widget, name, depth);
+            Named[key] = found;
+
+            // A name is the LAST resort - these widgets are found by the name their prefab gave them
+            // precisely because the window binds nothing to ask for them by - so a name that resolves
+            // to nothing is how a renamed prefab takes a heading away with no other symptom. Said once
+            // per name per load, because the ask is per frame and a warning per frame is a cost of its
+            // own (docs/generic/performance.md, "Stagger and cap everything unbounded"). It is not
+            // always a defect: a panel that genuinely draws no such band answers nothing too, which is
+            // why it is a warning and not an error.
+            if (found == null && !Unnamed.ContainsKey(name))
+            {
+                Unnamed[name] = true;
+                Log.Warn(
+                    "widgets: nothing named \""
+                        + name
+                        + "\" is drawn within "
+                        + depth
+                        + " levels of where it was looked for - a renamed prefab reads as nothing"
+                );
+            }
+
+            return found;
+        }
+
+        private static AgeTransform Find(AgeTransform widget, string name, int depth)
+        {
+            if (widget == null || depth < 0)
+            {
+                return null;
+            }
+
             try
             {
                 IList<AgeTransform> children = widget.Children;
@@ -1252,7 +1305,7 @@ namespace ES2Access.UI
 
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
-                    AgeTransform found = ChildNamed(children[i], name, depth - 1);
+                    AgeTransform found = Find(children[i], name, depth - 1);
                     if (found != null)
                     {
                         return found;
@@ -1263,6 +1316,50 @@ namespace ES2Access.UI
 
             return null;
         }
+
+        /// <summary>What was asked for: the widget the walk started from, the prefab name, and how far
+        /// down. Hand-written equality because the default one for a struct compares by reflection,
+        /// which on a per-frame path costs more than the walk it is saving.</summary>
+        private struct NameKey : IEquatable<NameKey>
+        {
+            private readonly AgeTransform _root;
+
+            private readonly string _name;
+
+            private readonly int _depth;
+
+            public NameKey(AgeTransform root, string name, int depth)
+            {
+                _root = root;
+                _name = name;
+                _depth = depth;
+            }
+
+            public bool Equals(NameKey other)
+            {
+                return ReferenceEquals(_root, other._root)
+                    && _depth == other._depth
+                    && _name == other._name;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is NameKey && Equals((NameKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = _root == null ? 0 : _root.GetHashCode();
+                return (hash * 31 + (_name == null ? 0 : _name.GetHashCode())) * 31 + _depth;
+            }
+        }
+
+        private static readonly Dictionary<NameKey, AgeTransform> Named =
+            new Dictionary<NameKey, AgeTransform>();
+
+        private static int _namedFrame = -1;
+
+        private static readonly Dictionary<string, bool> Unnamed = new Dictionary<string, bool>();
 
         /// <summary>
         /// The control a click on this widget would ALSO reach - the nearest control above it in the

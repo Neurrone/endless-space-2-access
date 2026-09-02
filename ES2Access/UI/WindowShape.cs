@@ -27,6 +27,12 @@ namespace ES2Access.UI
     /// </summary>
     public static class WindowShape
     {
+        /// <summary>Every control a window is drawing, swept once per window per frame. Held for the
+        /// frame and no longer: a window with a pooled table under it gains and loses controls between
+        /// frames, and the shared reading has to see the ones that are there now.</summary>
+        private static readonly FrameSweep<AgeControl> Choosable =
+            new FrameSweep<AgeControl>("window shape");
+
         /// <summary>How far down from the window root to look for a heading. The prefabs put it in a
         /// title group a level or two under the main container.</summary>
         private const int TitleDepth = 4;
@@ -150,10 +156,10 @@ namespace ES2Access.UI
                     return;
                 }
 
-                foreach (
-                    AgeControl control in window.gameObject.GetComponentsInChildren<AgeControl>(true)
-                )
+                AgeControl[] controls = Choosable.Under(window);
+                for (int i = 0; i < controls.Length; i++)
                 {
+                    AgeControl control = controls[i];
                     if (!Excluded(control, except))
                     {
                         Add(cells, control, prefix);

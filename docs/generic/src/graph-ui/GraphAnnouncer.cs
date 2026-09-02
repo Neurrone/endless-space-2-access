@@ -140,6 +140,10 @@ namespace ES2Access.Core.UI.Graph
             PositionText = null;
             ExpandedStateText = null;
             Carry = null;
+            _memoNode = null;
+            _memoParts = null;
+            _memoFilter = null;
+            _memoCarry = null;
         }
 
         /// <summary>The live drag (<see cref="CarryState"/>) - the same object the carry keys act on, so
@@ -183,9 +187,21 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public static List<NodeAnnouncement> EffectiveAnnouncements(GraphNode node)
         {
+            // Computed once per node per render and shared by every caller - the focus readout, the
+            // review buffer and the live watch all ask for it on the same node in the same frame. A
+            // GraphNode instance is allocated fresh by every GraphBuilder.Build, so the node REFERENCE
+            // is the (node id, render) key: a memo cannot outlive the render that made the node, and
+            // no render counter has to be threaded through Core to say so. The two injection points
+            // that change what the list CONTAINS join the key, because a host (or a test) can swap
+            // either between calls with no rebuild in between. Callers read the list, never mutate it.
+            if (ReferenceEquals(node, _memoNode)
+                && ReferenceEquals(PartFilter, _memoFilter)
+                && ReferenceEquals(Carry, _memoCarry))
+                return _memoParts;
+
             List<NodeAnnouncement> result = new List<NodeAnnouncement>();
             NodeVtable vt = node != null ? node.Vtable : null;
-            if (vt == null) return result;
+            if (vt == null) return Memoize(node, result);
             ControlType type = vt.ControlType;
 
             IList<NodeAnnouncement> common = type != null && type.Common != null ? type.Common() : null;
@@ -223,24 +239,51 @@ namespace ES2Access.Core.UI.Graph
 
             if (type != null && type.Order != null && type.Order.Length > 0 && result.Count > 1)
             {
-                // Stable: composite key = (kind's order index, declaration index) — List.Sort alone is
-                // unstable and would scramble same-bucket (kindless) parts.
-                List<KeyValuePair<long, NodeAnnouncement>> keyed =
-                    new List<KeyValuePair<long, NodeAnnouncement>>(result.Count);
-                for (int i = 0; i < result.Count; i++)
-                    keyed.Add(new KeyValuePair<long, NodeAnnouncement>(
-                        (long)OrderIndex(type.Order, result[i].Kind) << 32 | (uint)i, result[i]));
-                keyed.Sort((x, y) => x.Key.CompareTo(y.Key));
-                result.Clear();
-                foreach (KeyValuePair<long, NodeAnnouncement> kv in keyed) result.Add(kv.Value);
+                // Insertion sort on the kind's order index, in place. Stable by construction - an
+                // equal key never moves past its predecessor - so same-bucket (kindless) parts keep
+                // declaration order, which List.Sort would scramble. The composite (order, index) key
+                // list and its comparison delegate that used to buy that stability were two
+                // allocations on a path every focused node walks.
+                for (int i = 1; i < result.Count; i++)
+                {
+                    NodeAnnouncement moving = result[i];
+                    int key = OrderIndex(type.Order, moving.Kind);
+                    int j = i - 1;
+                    while (j >= 0 && OrderIndex(type.Order, result[j].Kind) > key)
+                    {
+                        result[j + 1] = result[j];
+                        j--;
+                    }
+
+                    result[j + 1] = moving;
+                }
             }
 
             if (PartFilter != null)
             {
-                ControlType filterType = type;
-                result.RemoveAll(a => !PartFilter(filterType, a));
+                // Compacted in place rather than RemoveAll: the predicate would capture the control
+                // type and allocate a closure per node per frame.
+                int kept = 0;
+                for (int i = 0; i < result.Count; i++)
+                    if (PartFilter(type, result[i])) result[kept++] = result[i];
+                if (kept < result.Count) result.RemoveRange(kept, result.Count - kept);
             }
-            return result;
+
+            return Memoize(node, result);
+        }
+
+        private static GraphNode _memoNode;
+        private static List<NodeAnnouncement> _memoParts;
+        private static Func<ControlType, NodeAnnouncement, bool> _memoFilter;
+        private static CarryState _memoCarry;
+
+        private static List<NodeAnnouncement> Memoize(GraphNode node, List<NodeAnnouncement> parts)
+        {
+            _memoNode = node;
+            _memoParts = parts;
+            _memoFilter = PartFilter;
+            _memoCarry = Carry;
+            return parts;
         }
 
         private static bool HasKind(IList<NodeAnnouncement> anns, string kind)

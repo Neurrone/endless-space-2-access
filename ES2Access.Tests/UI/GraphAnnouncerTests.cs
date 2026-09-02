@@ -358,5 +358,42 @@ namespace ES2Access.Tests.UI
             GraphRender r = Contextual();
             Assert.Equal("Settings / list / Item A", GraphAnnouncer.ComposeFull(Node(r, "a")));
         }
+
+        // ---- the effective-parts memo ----
+
+        [Fact]
+        public void TheEffectivePartsAreComputedOncePerNodePerRender()
+        {
+            GraphRender r = Contextual();
+            GraphNode node = Node(r, "a");
+            Assert.Same(
+                GraphAnnouncer.EffectiveAnnouncements(node),
+                GraphAnnouncer.EffectiveAnnouncements(node));
+        }
+
+        [Fact]
+        public void ANewRenderRecomputesTheEffectiveParts()
+        {
+            List<NodeAnnouncement> first = GraphAnnouncer.EffectiveAnnouncements(Node(Contextual(), "a"));
+            List<NodeAnnouncement> second = GraphAnnouncer.EffectiveAnnouncements(Node(Contextual(), "a"));
+            Assert.NotSame(first, second);
+        }
+
+        [Fact]
+        public void InstallingAPartFilterReFiltersTheSameNode()
+        {
+            ControlType button = Type("button", "button");
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("a"), new NodeVtable
+            {
+                ControlType = button,
+                Announcements = new[] { Part("Colonize", AnnouncementKinds.Label) },
+            }));
+            GraphNode node = Node(b.Build(), "a");
+
+            Assert.Equal("Colonize, button", GraphAnnouncer.LeafText(node));
+            GraphAnnouncer.PartFilter = (type, part) => part.Kind != AnnouncementKinds.Role;
+            Assert.Equal("Colonize", GraphAnnouncer.LeafText(node));
+        }
     }
 }

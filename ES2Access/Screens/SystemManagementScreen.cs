@@ -344,6 +344,21 @@ namespace ES2Access.Screens
 
         private readonly List<SidePanel> _arrivingPanels = new List<SidePanel>();
 
+        /// <summary>What <see cref="Whole"/> answered this frame, and the two lists it filled to answer
+        /// it. On the arrival frame the question is asked TWICE - once by <see cref="IsActive"/> and
+        /// once by <see cref="Build"/> - and the two askers pass different scratch lists, so without
+        /// this the page walked every planet card and every left-edge panel, sorted both by where they
+        /// are drawn, and did it all again a moment later for an answer that could not have changed.
+        /// Nothing it reads is anything the mod moves between the two calls.</summary>
+        private int _wholeFrame = -1;
+
+        private bool _wholeAnswer;
+
+        private readonly List<PlanetLabel_SystemManagement> _wholeCards =
+            new List<PlanetLabel_SystemManagement>();
+
+        private readonly List<SidePanel> _wholePanels = new List<SidePanel>();
+
         /// <summary>
         /// THE PAGE AS THE PLAYER CAN USE IT: the planet cards drawn AND the left edge's panels drawn.
         /// One question, asked by the arrival latch (<see cref="IsActive"/>) and again by every
@@ -370,6 +385,34 @@ namespace ES2Access.Screens
         /// active in a state the build would refuse to declare.
         /// </summary>
         private bool Whole(List<PlanetLabel_SystemManagement> cards, List<SidePanel> panels)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_wholeFrame == frame)
+            {
+                Copy(_wholeCards, cards);
+                Copy(_wholePanels, panels);
+                return _wholeAnswer;
+            }
+
+            _wholeAnswer = Drawing(cards, panels);
+            _wholeFrame = frame;
+            Copy(cards, _wholeCards);
+            Copy(panels, _wholePanels);
+            return _wholeAnswer;
+        }
+
+        private static void Copy<T>(List<T> from, List<T> into)
+        {
+            into.Clear();
+            for (int i = 0; i < from.Count; i++)
+            {
+                into.Add(from[i]);
+            }
+        }
+
+        /// <summary>The reading <see cref="Whole"/> holds for the frame. See its remarks for the
+        /// question, and this method's own for the four things that have to be true.</summary>
+        private bool Drawing(List<PlanetLabel_SystemManagement> cards, List<SidePanel> panels)
         {
             Labels(cards);
             if (cards.Count == 0)

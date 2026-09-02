@@ -6,6 +6,7 @@ using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -670,42 +671,24 @@ namespace ES2Access.Screens
 
             return false;
         }
-
-        private static readonly ScanViewDiplomacyLabel[] NoDiplomacyLabels =
-            new ScanViewDiplomacyLabel[0];
-
-        private static ScanViewDiplomacyLabel[] _diplomacyLabels;
-
-        private static int _diplomacyLabelsFrame = -1;
-
         /// <summary>Every label the diplomacy lens is holding, for the length of one frame - the same
-        /// pooling reason the other two label walks are cached for: the window instantiates one per
-        /// game node and several callers want the list in a frame.</summary>
+        /// pooling reason the other two label walks are held for: the window instantiates one per game
+        /// node and several callers want the list in a frame. A window that exists and is NOT SHOWN is
+        /// no labels at all: its labels are still bound to whatever it last drew.</summary>
+        private static readonly LabelSweep<ScanViewDiplomacyLabel> DiplomacyLenses =
+            new LabelSweep<ScanViewDiplomacyLabel>("scan", DiplomacyLabelsWindow);
+
         private static IList<ScanViewDiplomacyLabel> DiplomacyLabels()
         {
-            try
-            {
-                int frame = UnityEngine.Time.frameCount;
-                if (_diplomacyLabelsFrame == frame && _diplomacyLabels != null)
-                {
-                    return _diplomacyLabels;
-                }
+            return DiplomacyLenses.Labels();
+        }
 
-                DiplomacyScanViewWindow window = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<DiplomacyScanViewWindow>(false)
-                    : null;
-                _diplomacyLabels =
-                    window == null || !window.Shown
-                        ? NoDiplomacyLabels
-                        : window.GetComponentsInChildren<ScanViewDiplomacyLabel>(true);
-                _diplomacyLabelsFrame = frame;
-                return _diplomacyLabels;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("scan: finding the diplomacy labels threw: " + e);
-                return NoDiplomacyLabels;
-            }
+        private static Component DiplomacyLabelsWindow()
+        {
+            DiplomacyScanViewWindow window = Gui.GuiServiceAvailable
+                ? Gui.GuiService.GetWindow<DiplomacyScanViewWindow>(false)
+                : null;
+            return window == null || !window.Shown ? null : window;
         }
     }
 }

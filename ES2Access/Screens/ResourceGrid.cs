@@ -174,9 +174,35 @@ namespace ES2Access.Screens
                     lines = Math.Max(lines, _lines[i] + 1);
                 }
 
+                // The drawn cells laid out into the lattice ONCE, so the emit below indexes a place
+                // rather than searching for it. Both questions - is this line drawn at all, and what
+                // is in this place - used to walk every cell the game drew, for every place in a grid
+                // that is lines by columns: the luxuries grid alone paid that several hundred times a
+                // frame for a table whose whole content is one pass.
+                NodeVtable[] lattice = new NodeVtable[lines * width];
+                bool[] drawn = new bool[lines];
+                for (int i = 0; i < _cells.Count; i++)
+                {
+                    int at = _lines[i];
+                    if (at < 0 || at >= lines)
+                    {
+                        continue;
+                    }
+
+                    // A line the game faded whole - the beginner save's third row of luxuries - is not
+                    // a row of eight empties, it is not a row. One cell drawn anywhere on it is what
+                    // makes it one, whatever column that cell is in.
+                    drawn[at] = true;
+                    int side = _columns[i];
+                    if (side >= 0 && side < width)
+                    {
+                        lattice[(at * width) + side] = _cells[i];
+                    }
+                }
+
                 for (int line = 0; line < lines; line++)
                 {
-                    if (!Drawn(line))
+                    if (!drawn[line])
                     {
                         continue;
                     }
@@ -185,7 +211,7 @@ namespace ES2Access.Screens
                     _row.Clear();
                     for (int column = 0; column < width; column++)
                     {
-                        NodeVtable cell = CellAt(line, column) ?? EmptyCell();
+                        NodeVtable cell = lattice[(line * width) + column] ?? EmptyCell();
                         if (column == 0)
                         {
                             primary = cell;
@@ -308,36 +334,6 @@ namespace ES2Access.Screens
             return column >= 0 && column < _tips.Count ? _tips[column] : null;
         }
 
-        /// <summary>Whether the eye sees this line of the lattice at all. A line the game faded whole -
-        /// the beginner save's third row of luxuries - is not a row of eight empties, it is not a row.
-        /// </summary>
-        private bool Drawn(int line)
-        {
-            for (int i = 0; i < _lines.Count; i++)
-            {
-                if (_lines[i] == line)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>The cell the game drew at one place in the lattice, or null where it faded it out.
-        /// </summary>
-        private NodeVtable CellAt(int line, int column)
-        {
-            for (int i = 0; i < _lines.Count; i++)
-            {
-                if (_lines[i] == line && _columns[i] == column)
-                {
-                    return _cells[i];
-                }
-            }
-
-            return null;
-        }
 
         /// <summary>A place in the lattice the game is drawing nothing in, in the words every empty
         /// cell in this mod uses. Which family the hole is in is said by the column it was crossed into

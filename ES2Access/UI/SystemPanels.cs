@@ -38,6 +38,18 @@ namespace ES2Access.UI
         private static readonly List<Cell> Bar = new List<Cell>();
         private static readonly List<Cell> Grid = new List<Cell>();
 
+        /// <summary>The three panel tables this page walks, each swept once per table per frame. All
+        /// three are POOLED - the filter strip, the constructible grid and the queue all add and retire
+        /// widgets as the player builds - so the sweep is kept for the frame and no longer.</summary>
+        private static readonly FrameSweep<ConstructibleFilter> Filters =
+            new FrameSweep<ConstructibleFilter>("system panels");
+
+        private static readonly FrameSweep<StarSystemConstructibleItem> ConstructibleTiles =
+            new FrameSweep<StarSystemConstructibleItem>("system panels");
+
+        private static readonly FrameSweep<ConstructionLine> QueueLines =
+            new FrameSweep<ConstructionLine>("system panels");
+
         /// <summary>Empty the scratch - mod teardown. Whatever the last build left in them is a
         /// list of widgets belonging to a page nobody can reach any more.</summary>
         public static void Forget()
@@ -84,7 +96,7 @@ namespace ES2Access.UI
                 // Flow control: the filter strip below is walked toggle by toggle.
                 if (filters != null && AgeWidgets.Visible(filters))
                 {
-                    ConstructibleFilter[] all = filters.GetComponentsInChildren<ConstructibleFilter>(true);
+                    ConstructibleFilter[] all = Filters.Under(filters);
                     for (int i = 0; i < all.Length; i++)
                     {
                         AddFilter(Bar, all[i], keyPrefix);
@@ -95,8 +107,7 @@ namespace ES2Access.UI
                 AgeTransform table = panel.ConstructibleTable;
                 if (table != null)
                 {
-                    StarSystemConstructibleItem[] items =
-                        table.GetComponentsInChildren<StarSystemConstructibleItem>(true);
+                    StarSystemConstructibleItem[] items = ConstructibleTiles.Under(table);
                     for (int i = 0; i < items.Length; i++)
                     {
                         AddConstructible(Grid, items[i], panel, keyPrefix);
@@ -502,7 +513,7 @@ namespace ES2Access.UI
                     return;
                 }
 
-                ConstructionLine[] lines = table.GetComponentsInChildren<ConstructionLine>(true);
+                ConstructionLine[] lines = QueueLines.Under(table);
                 int drawn = 0;
                 for (int i = 0; i < lines.Length; i++)
                 {

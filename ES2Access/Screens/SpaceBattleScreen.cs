@@ -116,6 +116,12 @@ namespace ES2Access.Screens
         private readonly StepWatch _phase = new StepWatch();
         private readonly BurstWatch _yourShips = new BurstWatch(BurstSeconds);
         private readonly BurstWatch _enemyShips = new BurstWatch(BurstSeconds);
+
+        /// <summary>What has already been read off each side's state panel - see <see cref="Roster"/>.
+        /// Dropped by <see cref="Rearm"/> along with everything else this screen remembers.</summary>
+        private readonly Roster _yourRoster = new Roster();
+
+        private readonly Roster _enemyRoster = new Roster();
         private readonly BurstWatch _yourFlotillas = new BurstWatch(BurstSeconds);
         private readonly BurstWatch _enemyFlotillas = new BurstWatch(BurstSeconds);
         private readonly FireWatch _fire = new FireWatch(VolleySeconds);
@@ -262,6 +268,8 @@ namespace ES2Access.Screens
             _phase.Forget();
             _yourShips.Reset();
             _enemyShips.Reset();
+            _yourRoster.Forget();
+            _enemyRoster.Forget();
             _yourFlotillas.Reset();
             _enemyFlotillas.Reset();
             _fire.Reset();
@@ -527,8 +535,8 @@ namespace ES2Access.Screens
         {
             if (window != null)
             {
-                Lost(window.BattleStateGroupPanelLeft, _yourShips, now);
-                Lost(window.BattleStateGroupPanelRight, _enemyShips, now);
+                Lost(window.BattleStateGroupPanelLeft, _yourShips, _yourRoster, now);
+                Lost(window.BattleStateGroupPanelRight, _enemyShips, _enemyRoster, now);
             }
 
             Voice.Say(
@@ -549,7 +557,12 @@ namespace ES2Access.Screens
             );
         }
 
-        private static void Lost(BattleStateGroupPanel panel, BurstWatch watch, float now)
+        private static void Lost(
+            BattleStateGroupPanel panel,
+            BurstWatch watch,
+            Roster seen,
+            float now
+        )
         {
             AgeTransform root = panel == null ? null : panel.AgeTransform;
             if (root == null)
@@ -559,11 +572,18 @@ namespace ES2Access.Screens
 
             try
             {
-                BattleStateShipItem[] items = root.GetComponentsInChildren<BattleStateShipItem>(true);
+                BattleStateShipItem[] items = seen.Items(root);
                 for (int i = 0; i < items.Length; i++)
                 {
                     GuiBattleShip ship = items[i] == null ? null : items[i].GuiBattleShip;
-                    if (ship == null || !(ship.IsDestroyed || ship.HasKamikazed))
+                    if (
+                        ship == null
+                        || !(ship.IsDestroyed || ship.HasKamikazed)
+                        // Already turned into words once. Composing its id again is a fresh GUID
+                        // string every frame of the animation for a Note that drops it, and the pile
+                        // of them grows with every ship that goes.
+                        || !seen.News(ship)
+                    )
                     {
                         continue;
                     }
@@ -578,6 +598,74 @@ namespace ES2Access.Screens
             catch (Exception e)
             {
                 Log.Warn("battle: reading the ships that have gone threw: " + e);
+            }
+        }
+
+        /// <summary>
+        /// What has already been read off one side's battle-state panel, for the length of ONE run.
+        ///
+        /// Two things, and both are about a narration that runs at frame rate: the ship items the
+        /// panel is built from are made when the battle binds and stand for the whole run, so the
+        /// component walk is made once and revalidated by the items still being alive rather than
+        /// repeated every frame; and a ship whose loss has already been announced is remembered by its
+        /// own wrapper, so its GUID is turned into a string once and not once per frame thereafter.
+        ///
+        /// Held for the run and dropped by <see cref="Rearm"/>, which is what a fresh battle - or the
+        /// same one watched again - is. Nothing here is a watermark: what has been SAID is the
+        /// <see cref="BurstWatch"/>'s own memory, and this only saves asking it.
+        /// </summary>
+        private sealed class Roster
+        {
+            private AgeTransform _from;
+
+            private BattleStateShipItem[] _items;
+
+            private readonly Dictionary<GuiBattleShip, bool> _told =
+                new Dictionary<GuiBattleShip, bool>();
+
+            public void Forget()
+            {
+                _from = null;
+                _items = null;
+                _told.Clear();
+            }
+
+            public BattleStateShipItem[] Items(AgeTransform root)
+            {
+                if (ReferenceEquals(_from, root) && _items != null && Alive(_items))
+                {
+                    return _items;
+                }
+
+                _from = root;
+                _items = root.GetComponentsInChildren<BattleStateShipItem>(true);
+                return _items;
+            }
+
+            /// <summary>Whether this ship's loss still has to be composed - true once, and false on
+            /// every frame after it.</summary>
+            public bool News(GuiBattleShip ship)
+            {
+                if (_told.ContainsKey(ship))
+                {
+                    return false;
+                }
+
+                _told[ship] = true;
+                return true;
+            }
+
+            private static bool Alive(BattleStateShipItem[] items)
+            {
+                for (int i = 0; i < items.Length; i++)
+                {
+                    if (items[i] == null)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
         }
 

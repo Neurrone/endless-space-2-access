@@ -74,11 +74,40 @@ namespace ES2Access.UI.ModOptions
 
             try
             {
+                // The rows take their registry entries with them. Three of the four registries are
+                // keyed on the row's OptionItem and the fourth on the Option that item carries, and
+                // none of them was emptied by anything but mod teardown - so every open of the
+                // settings window left the last open's rows in all four and they grew for the life of
+                // the session, holding destroyed widgets and dead delegates the whole time.
+                Drop(panel);
                 panel.OptionsTable.DestroyAllChildren();
             }
             catch (Exception e)
             {
                 Log.Warn("mod options: emptying a panel threw: " + e);
+            }
+        }
+
+        /// <summary>Forget every row this panel is holding - called with the rows still there, because
+        /// the registries are keyed on the widgets and the widgets are about to go.</summary>
+        private static void Drop(OptionsTabPanel panel)
+        {
+            OptionItem[] rows = panel.OptionsTable.GetComponentsInChildren<OptionItem>(true);
+            for (int i = 0; i < rows.Length; i++)
+            {
+                OptionItem row = rows[i];
+                if (row == null)
+                {
+                    continue;
+                }
+
+                Actions.Remove(row);
+                Captions.Remove(row);
+                Groups.Remove(row);
+                if (row.Option != null)
+                {
+                    Ours.Remove(row.Option);
+                }
             }
         }
 
@@ -613,7 +642,10 @@ namespace ES2Access.UI.ModOptions
         private static readonly Dictionary<OptionItem, ModGroupRow> Groups =
             new Dictionary<OptionItem, ModGroupRow>();
 
-        private static readonly List<Option> Ours = new List<Option>();
+        /// <summary>Every option the mod minted, as a SET: the patch on the broken text-field
+        /// commit asks whether an option is one of ours on every focus loss, which a list answered by
+        /// walking itself.</summary>
+        private static readonly HashSet<Option> Ours = new HashSet<Option>();
     }
 
     /// <summary>
