@@ -291,13 +291,13 @@ namespace ES2Access.UI
 
                 if (text[i] == '#')
                 {
-                    int close = text.IndexOf('#', i + 1);
-                    if (close < 0)
+                    int past = PastMarkup(text, i);
+                    if (past < 0)
                     {
                         return text;
                     }
 
-                    i = close + 1;
+                    i = past;
                     continue;
                 }
 
@@ -608,11 +608,11 @@ namespace ES2Access.UI
                 char c = text[i];
                 if (c == '#')
                 {
-                    int close = text.IndexOf('#', i + 1);
-                    if (close >= 0)
+                    int past = PastMarkup(text, i);
+                    if (past >= 0)
                     {
                         Flush(words, word);
-                        i = close + 1;
+                        i = past;
                         continue;
                     }
                 }
@@ -700,6 +700,10 @@ namespace ES2Access.UI
         // and the word it belongs to and is stripped later, so the character that will actually end
         // up adjacent is the one on the far side of any run of #...# pairs. "\0" when nothing but
         // markup remains - IsLetterOrDigit says no, so no space is added.
+        //
+        // The only one of the four markup skips that runs BACKWARDS, over what has been written so
+        // far rather than over the source string, which is why it does not go through
+        // <see cref="PastMarkup"/>; the rule it applies is that method's.
         private static char EffectiveBefore(StringBuilder result)
         {
             int i = result.Length - 1;
@@ -731,16 +735,34 @@ namespace ES2Access.UI
             int i = index;
             while (i < text.Length && text[i] == '#')
             {
-                int close = text.IndexOf('#', i + 1);
-                if (close < 0)
+                int past = PastMarkup(text, i);
+                if (past < 0)
                 {
                     break;
                 }
 
-                i = close + 1;
+                i = past;
             }
 
             return i < text.Length ? text[i] : '\0';
+        }
+
+        /// <summary>
+        /// The index just past the colour-markup run that starts at <paramref name="index"/>
+        /// ("#E6C361#", "#REVERT#"), or -1 where the run is never closed and the '#' is therefore a
+        /// character of the text.
+        ///
+        /// One place, because four readers of the same markup answered it for themselves and each
+        /// would have had to be corrected on its own. The close is the next '#' at ANY distance, which
+        /// is deliberately NOT the engine's own rule - it strips exactly an eight-character run
+        /// (<c>AgeUtils.cs:311-319</c>) - and the difference is left standing here rather than settled
+        /// in passing: it decides what a stray '#' in a game string does to the words after it, and
+        /// that is a measurement, not a refactor.
+        /// </summary>
+        private static int PastMarkup(string text, int index)
+        {
+            int close = text.IndexOf('#', index + 1);
+            return close < 0 ? -1 : close + 1;
         }
 
         /// <summary>

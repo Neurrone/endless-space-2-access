@@ -389,7 +389,7 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                if (ReferenceEquals(except[i], widget) || IsUnder(widget, except[i]))
+                if (AgeWidgets.Under(widget, except[i]))
                 {
                     return true;
                 }
@@ -397,27 +397,6 @@ namespace ES2Access.UI
 
             return false;
         }
-
-        private static bool IsUnder(AgeTransform widget, AgeTransform ancestor)
-        {
-            int depth = 0;
-            for (
-                AgeTransform at = widget == null ? null : widget.Parent;
-                at != null && depth++ < MaxAncestors;
-                at = at.Parent
-            )
-            {
-                if (ReferenceEquals(at, ancestor))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>How far up a parent chain to look before deciding it is not a chain.</summary>
-        private const int MaxAncestors = 32;
 
         private static void Add(List<Cell> cells, AgeControl control, string prefix)
         {

@@ -60,8 +60,6 @@ ES2Access/Screens/OptionsScreen.cs | 1 | IList<string> lines = AgeText.Lines(Age
 
 ES2Access/Screens/PlanetConstructiblesScreen.cs | 1 | Func<IList<string>> drawn = GraphNodes.TooltipDetails(tooltip);
 
-ES2Access/Screens/PlanetOverviewScreen.cs | 1 | && (!string.IsNullOrEmpty(tooltip.Class) || !string.IsNullOrEmpty(tooltip.Content))
-
 ES2Access/Screens/QuestJournalScreen.cs | 1 | () => AgeText.Tooltip(tooltip),
 
 ES2Access/Screens/RecipeCreationScreen.cs | 1 | () => named ? AgeWidgets.TooltipTitle(tooltip) : CardActions.FirstLine(tooltip),
@@ -70,15 +68,13 @@ ES2Access/Screens/ResearchScreen.cs | 1 | : AgeText.Clean(marker.Tooltip.Content
 
 ES2Access/Screens/SettingRows.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
 
-ES2Access/Screens/SystemManagementScreen.cs | 1 | () => FirstLine(kind) ?? AgeText.Label(it.NextPopulationLabel)
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostBottomCaption)));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostOwnerLabel)));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
-ES2Access/Screens/SystemManagementScreen.cs | 2 | GraphNodes.LabelPart(() => FirstLine(tooltip)),
-ES2Access/Screens/SystemManagementScreen.cs | 1 | private static string FirstLine(AgeTooltip tooltip)
-ES2Access/Screens/SystemManagementScreen.cs | 1 | return CardActions.FirstLine(tooltip);
+ES2Access/Screens/SystemManagementScreen.cs | 1 | CardActions.FirstLine(kind)
+ES2Access/Screens/SystemManagementScreen.cs | 2 | GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
 ES2Access/Screens/SystemManagementScreen.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/Screens/SystemPoliticsScreen.cs | 1 | Func<IList<string>> words = AgeWidgets.TooltipLines(TableSheet.TooltipOf(cell));
@@ -100,7 +96,7 @@ ES2Access/UI/HeroCards.cs | 1 | Func<IList<string>> read = AgeWidgets.TooltipLin
 ES2Access/UI/PoliticsExperience.cs | 1 | string note = AgeText.Tooltip(Note(feature));
 
 ES2Access/UI/ShipDesignRows.cs | 1 | () => named ? name : CardActions.FirstLine(tip),
-ES2Access/UI/ShipDesignRows.cs | 1 | return CardActions.FirstLine(tooltip);
+ES2Access/UI/ShipDesignRows.cs | 1 | return title ?? CardActions.FirstLine(tooltip);
 
 ES2Access/UI/SidePanels.cs | 1 | string described = CardActions.FirstLine(HeaderTooltip(panel));
 ES2Access/UI/SidePanels.cs | 1 | || !string.IsNullOrEmpty(CardActions.FirstLine(tooltip));

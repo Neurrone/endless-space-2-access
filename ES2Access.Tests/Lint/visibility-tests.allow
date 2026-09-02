@@ -108,7 +108,6 @@ ES2Access/Screens/EmpireScreen.cs | 1 | if (button == null || !AgeWidgets.Visibl
 ES2Access/Screens/EmpireScreen.cs | 1 | if (cards != null && AgeWidgets.Visible(cards.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (child == null || !child.Visible)
 ES2Access/Screens/EmpireScreen.cs | 1 | if (constructibles != null && AgeWidgets.Visible(constructibles.AgeTransform))
-ES2Access/Screens/EmpireScreen.cs | 1 | if (enumerator == null || !AgeWidgets.Visible(enumerator.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (hangar != null && AgeWidgets.Visible(hangar.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (queue != null && AgeWidgets.Visible(queue.AgeTransform))
 ES2Access/Screens/EmpireScreen.cs | 1 | if (table == null || !AgeWidgets.Visible(panel.AgeTransform))
@@ -255,28 +254,26 @@ ES2Access/Screens/GroundBattleViewScreen.cs | 1 | if (widget == null || !AgeWidg
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | return AgeWidgets.Visible(widget) ? AgeText.Label(label) : null;
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | return group != null && AgeWidgets.Visible(group);
 
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | && AgeWidgets.Painted(dot)
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | && AgeWidgets.Visible(child)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (!Painted(box))
-ES2Access/Screens/HeroInspectionScreen.cs | 2 | if (!Painted(row))
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (Painted(lines[i]))
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (!AgeWidgets.Painted(box))
+ES2Access/Screens/HeroInspectionScreen.cs | 2 | if (!AgeWidgets.Painted(row))
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (AgeWidgets.Painted(lines[i]))
 ES2Access/Screens/HeroInspectionScreen.cs | 2 | if (box == null || !AgeWidgets.Visible(box.AgeTransform))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(card.AgeTransform))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (child == null || !AgeWidgets.Visible(child))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (item != null && item.HeroSkillDefinition != null && Painted(dot))
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (item == null || !Painted(widget))
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (item == null || !AgeWidgets.Painted(widget))
 ES2Access/Screens/HeroInspectionScreen.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (tree.SkillTreeDefinition == null || !AgeWidgets.Visible(icon))
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | return AgeWidgets.Painted(widget);
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | return widget != null && AgeWidgets.Visible(widget) ? widget : null;
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Painted(relic.AgeTransform)
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Painted(skill.AgeTransform)
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Painted(slot.AgeTransform)
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Painted(stage.AgeTransform)
+ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Painted(tree.AgeTransform)
 ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Visible(story)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !AgeWidgets.Visible(widget)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !Painted(relic.AgeTransform)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !Painted(skill.AgeTransform)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !Painted(slot.AgeTransform)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !Painted(stage.AgeTransform)
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | || !Painted(tree.AgeTransform)
 
 ES2Access/Screens/ImprovementsModalScreen.cs | 1 | if (tile != null && AgeWidgets.Visible(tile) && Item(tile) != null)
 
@@ -429,7 +426,6 @@ ES2Access/Screens/ResourceGrid.cs | 1 | bool band = children != null && AgeWidge
 
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | !AgeWidgets.Visible(window.AgeTransform)
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | if (!AgeWidgets.Visible(panel.SelectedResourceGroup))
-ES2Access/Screens/ResourcesExportModScreen.cs | 1 | if (AgeWidgets.Painted(rows[i]))
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | if (AgeWidgets.Visible(window.LoadingGroup))
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | if (button == null || container == null || !AgeWidgets.Visible(button))
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel.SelectedResourceGroup))
@@ -515,8 +511,8 @@ ES2Access/Screens/TutorialSelectionScreen.cs | 1 | if (!widget.Visible)
 
 ES2Access/Screens/VictoryAchievedScreen.cs | 1 | if (!AgeWidgets.Visible(window.WinnerListGroup) || list == null)
 
-ES2Access/UI/BalanceGauges.cs | 1 | if (left != null && left.Visible)
-ES2Access/UI/BalanceGauges.cs | 1 | if (right != null && right.Visible)
+ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(left))
+ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(right))
 
 ES2Access/UI/BattleRosters.cs | 1 | ?? (AgeWidgets.Visible(commandPoints) ? AgeWidgets.Raw(commandPoints) : null);
 ES2Access/UI/BattleRosters.cs | 1 | if (AgeWidgets.Visible(invisibility))
@@ -538,10 +534,7 @@ ES2Access/UI/DiplomacyActions.cs | 1 | return item != null && AgeWidgets.Visible
 
 ES2Access/UI/DiscoveryCards.cs | 1 | if (items[i] != null && AgeWidgets.Visible(items[i]))
 
-ES2Access/UI/DrawnTooltip.cs | 1 | if (table == null || !table.Visible)
-
 ES2Access/UI/EmpireDossier.cs | 1 | && AgeWidgets.Visible(panel.AgeTransform);
-ES2Access/UI/EmpireDossier.cs | 1 | if (child != null && child.Visible)
 
 ES2Access/UI/HeroCards.cs | 1 | if (card == null || !card.HasTooltips || !AgeWidgets.Visible(card.AgeTransform))
 ES2Access/UI/HeroCards.cs | 1 | return widget != null && AgeWidgets.Visible(widget);

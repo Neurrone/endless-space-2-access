@@ -829,7 +829,7 @@ namespace ES2Access.Screens
             Func<string> name = null
         )
         {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
+            AgeTransform widget = AgeWidgets.Transform(label);
             if (widget == null)
             {
                 return;

@@ -308,7 +308,7 @@ namespace ES2Access.UI
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
             Func<bool> enabled = () => AgeWidgets.Operable(AgeWidgets.Transform(it));
             NodeVtable vtable = GraphNodes.Button(
-                () => AgeText.Clean(titleKey),
+                () => AgeText.Title(titleKey),
                 () => AgeWidgets.Press(it),
                 enabled,
                 tooltip

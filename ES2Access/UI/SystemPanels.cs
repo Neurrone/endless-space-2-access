@@ -253,7 +253,7 @@ namespace ES2Access.UI
         {
             try
             {
-                return AgeText.Clean(Gui.Localize(item.GuiConstructible.Title));
+                return AgeText.Title(item.GuiConstructible.Title);
             }
             catch (Exception)
             {
@@ -652,7 +652,7 @@ namespace ES2Access.UI
                         () =>
                             ModStrings.Format(
                                 ModStrings.SystemBuyOut,
-                                AgeText.Clean(Gui.GetLocalizedTitle("Empire" + it.Resource))
+                                AgeText.Title(Gui.GetLocalizedTitle("Empire" + it.Resource))
                             ),
                         value: () => Buyouts.Cost(it)
                     );

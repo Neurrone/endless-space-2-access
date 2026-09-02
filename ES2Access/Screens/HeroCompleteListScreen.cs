@@ -59,7 +59,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                string title = Title(Window());
+                string title = WindowShape.Title(Window());
                 return string.IsNullOrEmpty(title)
                     ? ModStrings.Get(ModStrings.ScreenHeroCompleteList)
                     : title;
@@ -104,7 +104,7 @@ namespace ES2Access.Screens
             builder.BeginStop(LinesStop);
             AddTitle(builder, window);
             _table.Headers(builder, table);
-            _table.Rows(builder, table, Title(window));
+            _table.Rows(builder, table, WindowShape.Title(window));
 
             _cells.Clear();
             Cells.AddControl(
@@ -186,24 +186,6 @@ namespace ES2Access.Screens
         }
 
         // ---- reading the window ----
-
-        /// <summary>The heading the window writes across its top ("Active Heroes in the galaxy"), found
-        /// where it is drawn: the class exposes its table and nothing else.</summary>
-        private static string Title(HeroCompleteListModalWindow window)
-        {
-            try
-            {
-                return window == null
-                    ? null
-                    : AgeWidgets.TextOf(
-                        AgeWidgets.ChildNamed(window.AgeTransform, "TitleGroup", 3)
-                    );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
 
         /// <summary>The hero a row stands for. The wrapper the table binds is rebuilt on every refresh
         /// (<c>Refresh</c> :66-77), so it is the hero underneath it that identifies the row.</summary>

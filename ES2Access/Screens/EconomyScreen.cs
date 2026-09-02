@@ -445,7 +445,7 @@ namespace ES2Access.Screens
             Band(_bands, GroupOf(panel.LuxuriesPanel));
             Band(_bands, panel.StrategicsGroup);
             Band(_bands, GroupOf(panel.RecipesPanel));
-            _bands.Sort(InReadingOrder);
+            _bands.Sort(AgeLayout.TopThenLeft);
 
             for (int i = 0; i < _bands.Count; i++)
             {
@@ -656,8 +656,7 @@ namespace ES2Access.Screens
 
                 Amplitude.Unity.Gui.ExtendedGuiElement element =
                     Gui.GetExtendedGuiElement(resource.TargetEffect);
-                string title = element == null ? null : AgeText.Clean(Gui.Localize(element.Title));
-                return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+                return element == null ? null : AgeText.Title(element.Title);
             }
             catch (Exception)
             {
@@ -718,8 +717,8 @@ namespace ES2Access.Screens
             MessageBuilder names = new MessageBuilder();
             for (int i = 0; i < keys.Length; i++)
             {
-                string name = AgeText.Clean(Gui.Localize(keys[i]));
-                if (string.IsNullOrEmpty(name) || name[0] == '%')
+                string name = AgeText.Title(keys[i]);
+                if (name == null)
                 {
                     return null;
                 }
@@ -794,7 +793,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => label),
-                    GraphNodes.ValuePart(() => StockAndNet(it.StockLabel, it.NetLabel)),
+                    GraphNodes.ValuePart(() => StockAndNet(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
@@ -803,19 +802,23 @@ namespace ES2Access.Screens
         }
 
 
-        /// <summary>A stock and what the next turn does to it, as the game drew the two numbers - the
-        /// same phrasing the empire banner reads its own stocks with, so the second figure is heard as a
-        /// rate rather than as a second holding.</summary>
-        private static string StockAndNet(AgePrimitiveLabel stock, AgePrimitiveLabel net)
+        /// <summary>A stock and what the next turn does to it, in the empire banner's own phrase and off
+        /// the same cached figures it reads (<see cref="GlobalHud.StockAndNet"/>), so the second number
+        /// is heard as a rate rather than as a second holding. A cell whose prefab draws no per-turn
+        /// label at all has no rate to say, and the holding reads alone.</summary>
+        private static string StockAndNet(ResourceItem item)
         {
-            string held = AgeText.Label(stock);
-            string rate = AgeText.Label(net);
-            if (string.IsNullOrEmpty(rate))
+            GuiLocatedResource resource = item == null ? null : item.GuiLocatedResource;
+            if (resource == null)
             {
-                return held;
+                return null;
             }
 
-            return ModStrings.Format(ModStrings.GalaxyStockAndNet, held, rate);
+            float stock = resource.GetStockValueFromCache();
+            int decimals = stock < 10f ? 1 : 0;
+            return item.NetLabel == null
+                ? GlobalHud.Amount(stock, false, decimals)
+                : GlobalHud.StockAndNet(stock, resource.GetNetValueFromCache(), decimals);
         }
 
         /// <summary>
@@ -2587,13 +2590,11 @@ namespace ES2Access.Screens
             return heading == null ? null : AgeWidgets.TextOf(heading);
         }
 
-        /// <summary>Close the box's name off again, so the next box is not declared inside it.</summary>
+        /// <summary>Close the box's name off again, so the next box is not declared inside it - the
+        /// shared pop-if-pushed (<see cref="Captions.Pop"/>).</summary>
         private static void Unname(GraphBuilder builder, bool named)
         {
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
         }
 
         /// <summary>What a marketplace panel is called: the heading it draws if it draws one, else a word
@@ -2688,19 +2689,8 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly Comparison<AgeTransform> InReadingOrder = (left, right) =>
-        {
-            UnityEngine.Rect a = left.GetGlobalPosition();
-            UnityEngine.Rect b = right.GetGlobalPosition();
-            int rows = a.y.CompareTo(b.y);
-            return rows != 0 ? rows : a.x.CompareTo(b.x);
-        };
-
         private static readonly Comparison<GuiPanel> PanelsInReadingOrder = (left, right) =>
-            InReadingOrder(left.AgeTransform, right.AgeTransform);
-
-
-        private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
+            AgeLayout.TopThenLeft(left.AgeTransform, right.AgeTransform);
 
         // ---- reading the window ----
 

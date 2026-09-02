@@ -384,9 +384,9 @@ namespace ES2Access.Screens
                 switch (window.CurrentHubMode)
                 {
                     case HeroInspectionModalWindow.HeroHubMode.SkillTree:
-                        return Drawn(Widget(window.SkillTreeEditionPanel.TitleLabel));
+                        return Drawn(AgeWidgets.Transform(window.SkillTreeEditionPanel.TitleLabel));
                     case HeroInspectionModalWindow.HeroHubMode.ShipDesign:
-                        return Drawn(Widget(window.ShipDesignPanelTitle));
+                        return Drawn(AgeWidgets.Transform(window.ShipDesignPanelTitle));
                     default:
                         return AgeWidgets.ChildNamed(
                             window.OverviewPanel.AgeTransform,
@@ -517,7 +517,7 @@ namespace ES2Access.Screens
                     if (
                         slot == null
                         || slot.GuiSlot == null
-                        || !Painted(slot.AgeTransform)
+                        || !AgeWidgets.Painted(slot.AgeTransform)
                     )
                     {
                         continue;
@@ -666,7 +666,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < trees.Length; i++)
                 {
                     HeroSkillTreeItem tree = trees[i];
-                    AgeTransform icon = tree == null ? null : Widget(tree.IconImage);
+                    AgeTransform icon = tree == null ? null : AgeWidgets.Transform(tree.IconImage);
                     if (tree.SkillTreeDefinition == null || !AgeWidgets.Visible(icon))
                     {
                         continue;
@@ -753,7 +753,11 @@ namespace ES2Access.Screens
                         // to "has the hero unlocked this skill", and the count of them is what
                         // decides whether the branch above is a group at all. The gate can only
                         // ever withhold a node it is handed, so it cannot answer either question.
-                        if (item != null && item.HeroSkillDefinition != null && Painted(dot))
+                        if (
+                            item != null
+                            && item.HeroSkillDefinition != null
+                            && AgeWidgets.Painted(dot)
+                        )
                         {
                             dots.Add(dot);
                         }
@@ -902,7 +906,7 @@ namespace ES2Access.Screens
         private void BuildStory(GraphBuilder builder, HeroOverviewPanel panel)
         {
             HeroDetailedCard card = panel.HeroInspectionCard;
-            AgeTransform story = card == null ? null : Widget(card.DescriptionLabel);
+            AgeTransform story = card == null ? null : AgeWidgets.Transform(card.DescriptionLabel);
             if (
                 story == null
                 || !AgeWidgets.Visible(story)
@@ -987,18 +991,22 @@ namespace ES2Access.Screens
         {
             PanelFeatureEffectsSetsItem item =
                 widget == null ? null : widget.GetComponent<PanelFeatureEffectsSetsItem>();
-            if (item == null || !Painted(widget))
+            if (item == null || !AgeWidgets.Painted(widget))
             {
                 return;
             }
 
-            Cells.AddReadout(_cells, Widget(item.TitleLabel), Keys + "tree/effect/" + index);
+            Cells.AddReadout(
+                _cells,
+                AgeWidgets.Transform(item.TitleLabel),
+                Keys + "tree/effect/" + index
+            );
             AgeTransform table =
                 item.EffectMapper == null ? null : item.EffectMapper.EffectLinesTable;
             IList<AgeTransform> lines = table == null ? null : table.Children;
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
-                if (Painted(lines[i]))
+                if (AgeWidgets.Painted(lines[i]))
                 {
                     Cells.AddReadout(
                         _cells,
@@ -1055,7 +1063,7 @@ namespace ES2Access.Screens
                     if (
                         tree == null
                         || tree.SkillTreeDefinition == null
-                        || !Painted(tree.AgeTransform)
+                        || !AgeWidgets.Painted(tree.AgeTransform)
                     )
                     {
                         continue;
@@ -1091,7 +1099,7 @@ namespace ES2Access.Screens
             int index
         )
         {
-            AgeTransform icon = Widget(tree.IconImage);
+            AgeTransform icon = AgeWidgets.Transform(tree.IconImage);
             AgeTooltip tooltip = AgeWidgets.Raw(icon);
             string name = TreeName(tree);
             NodeVtable vtable = GraphNodes.Group(() => name, null, tooltip);
@@ -1145,7 +1153,7 @@ namespace ES2Access.Screens
                 if (
                     stage == null
                     || stage.SkillTreeStage == null
-                    || !Painted(stage.AgeTransform)
+                    || !AgeWidgets.Painted(stage.AgeTransform)
                 )
                 {
                     continue;
@@ -1241,7 +1249,7 @@ namespace ES2Access.Screens
                 if (
                     skill == null
                     || skill.HeroSkillDefinition == null
-                    || !Painted(skill.AgeTransform)
+                    || !AgeWidgets.Painted(skill.AgeTransform)
                 )
                 {
                     continue;
@@ -1459,7 +1467,7 @@ namespace ES2Access.Screens
                 for (int i = 0; i < boxes.Count; i++)
                 {
                     AgeTransform box = boxes[i];
-                    if (!Painted(box))
+                    if (!AgeWidgets.Painted(box))
                     {
                         continue;
                     }
@@ -1472,12 +1480,12 @@ namespace ES2Access.Screens
                     // A region per box, keyed and unlabelled: the box already draws its own heading as
                     // the first row of the region, so a label of the mod's would say it twice.
                     _cells.Clear();
-                    if (Holds(box, panel.TreeCompletionLinesTable))
+                    if (AgeWidgets.Under(panel.TreeCompletionLinesTable, box))
                     {
                         builder.SetRegion(Keys + "tree-stats/completion");
                         AddBox(box, panel.TreeCompletionLinesTable, "tree/completion");
                     }
-                    else if (Holds(box, panel.StartingSkillItemsTable))
+                    else if (AgeWidgets.Under(panel.StartingSkillItemsTable, box))
                     {
                         builder.SetRegion(Keys + "tree-stats/starting");
                         AddNamedBox(
@@ -1489,7 +1497,7 @@ namespace ES2Access.Screens
                     }
                     else if (
                         panel.HeroMasteryPanel != null
-                        && Holds(box, panel.HeroMasteryPanel.MasteryLinesContainer)
+                        && AgeWidgets.Under(panel.HeroMasteryPanel.MasteryLinesContainer, box)
                     )
                     {
                         builder.SetRegion(Keys + "tree-stats/mastery");
@@ -1500,7 +1508,7 @@ namespace ES2Access.Screens
                             Named
                         );
                     }
-                    else if (Holds(box, panel.RelicSkillItemsTable))
+                    else if (AgeWidgets.Under(panel.RelicSkillItemsTable, box))
                     {
                         builder.SetRegion(Keys + "tree-stats/relics");
                         AddRelics(box, panel);
@@ -1566,7 +1574,7 @@ namespace ES2Access.Screens
             for (int i = 0; rows != null && i < rows.Count; i++)
             {
                 AgeTransform row = rows[i];
-                if (!Painted(row))
+                if (!AgeWidgets.Painted(row))
                 {
                     continue;
                 }
@@ -1637,8 +1645,7 @@ namespace ES2Access.Screens
         /// titled by. Silence rather than the key, which is never worth saying out loud.</summary>
         private static string MasteryName(Amplitude.StaticString mastery)
         {
-            string title = AgeText.Clean(Gui.Localize("%" + mastery + "Title"));
-            return string.IsNullOrEmpty(title) || title[0] == '%' ? null : title;
+            return AgeText.Title("%" + mastery + "Title");
         }
 
         /// <summary>
@@ -1669,7 +1676,7 @@ namespace ES2Access.Screens
                 if (
                     relic == null
                     || relic.HeroSkillDefinition == null
-                    || !Painted(relic.AgeTransform)
+                    || !AgeWidgets.Painted(relic.AgeTransform)
                 )
                 {
                     continue;
@@ -1814,38 +1821,11 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddPencil(AgeTransform box, string handler, string key)
         {
-            try
-            {
-                AgeControlButton[] found = box.GetComponentsInChildren<AgeControlButton>(true);
-                AgeControlButton pencil = null;
-                float smallest = float.MaxValue;
-                for (int i = 0; i < found.Length; i++)
-                {
-                    AgeControlButton button = found[i];
-                    AgeTransform widget = AgeWidgets.Transform(button);
-                    if (
-                        button == null
-                        || button.OnActivateMethod != handler
-                        || !AgeWidgets.Visible(widget)
-                    )
-                    {
-                        continue;
-                    }
-
-                    float area = widget.Width * widget.Height;
-                    if (area < smallest)
-                    {
-                        smallest = area;
-                        pencil = button;
-                    }
-                }
-
-                Cells.AddControl(_cells, AgeWidgets.Transform(pencil), Keys + key);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("hero inspection: looking for the '" + handler + "' button threw: " + e);
-            }
+            Cells.AddControl(
+                _cells,
+                AgeWidgets.Transform(AgeWidgets.WiredTo(box, handler)),
+                Keys + key
+            );
         }
 
         private void AddControl(AgeTransform widget, string key)
@@ -1857,7 +1837,7 @@ namespace ES2Access.Screens
         /// explains itself with, which these rows hang on a child rather than on the row.</summary>
         private void AddRow(AgeTransform row, string key)
         {
-            if (!Painted(row))
+            if (!AgeWidgets.Painted(row))
             {
                 return;
             }
@@ -1923,7 +1903,7 @@ namespace ES2Access.Screens
             Func<string> name = null
         )
         {
-            AgeTransform widget = Widget(label);
+            AgeTransform widget = AgeWidgets.Transform(label);
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -2022,7 +2002,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                AgeTransform label = Widget(panel.AssignmentLabel);
+                AgeTransform label = AgeWidgets.Transform(panel.AssignmentLabel);
                 AgeTransform line = label == null ? null : label.Parent;
                 return line == null ? null : line.Parent;
             }
@@ -2062,27 +2042,10 @@ namespace ES2Access.Screens
             AgePrimitiveLabel[] legends = panel.StageLevelLabels;
             for (int i = 0; legends != null && i < legends.Length; i++)
             {
-                if (Holds(box, Widget(legends[i])))
+                if (AgeWidgets.Under(AgeWidgets.Transform(legends[i]), box))
                 {
                     return true;
                 }
-            }
-
-            return false;
-        }
-
-        /// <summary>Whether a box of a column is the one holding a table.</summary>
-        private static bool Holds(AgeTransform box, AgeTransform table)
-        {
-            AgeTransform at = table;
-            for (int i = 0; at != null && i < 6; i++)
-            {
-                if (ReferenceEquals(at, box))
-                {
-                    return true;
-                }
-
-                at = at.Parent;
             }
 
             return false;
@@ -2110,45 +2073,12 @@ namespace ES2Access.Screens
                 : window.CurrentHubMode;
         }
 
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveImage image)
-        {
-            try
-            {
-                return image == null ? null : image.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
 
         private static AgeTransform Drawn(AgeTransform widget)
         {
             return widget != null && AgeWidgets.Visible(widget) ? widget : null;
         }
 
-        /// <summary>Whether a row of a pooled table is really on the screen - every table on this window
-        /// is built with <c>ReserveChildren</c>, and a row the game has stopped using is left in the pool
-        /// FADED rather than hidden (measured: after a Reset the bonuses box kept a whole extra effect
-        /// block and two extra lines, all invisible on screen and all reading <c>Visible</c>). The test
-        /// itself is <see cref="AgeWidgets.Painted"/>, shared with every other pooled table in the
-        /// mod.</summary>
-        private static bool Painted(AgeTransform widget)
-        {
-            return AgeWidgets.Painted(widget);
-        }
 
         private static HeroInspectionModalWindow Window()
         {

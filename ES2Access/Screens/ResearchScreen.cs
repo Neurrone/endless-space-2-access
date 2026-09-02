@@ -272,7 +272,7 @@ namespace ES2Access.Screens
             );
             AddDrawnLine(builder, panel.ScienceSurplusGroup, "research:science-surplus", null);
 
-            AgeTransform empty = Widget(panel.EmptyResearchQueueLabel);
+            AgeTransform empty = AgeWidgets.Transform(panel.EmptyResearchQueueLabel);
             AddDrawnLine(builder, QueueTitle(Group(panel.EmptyResearchQueueLabel), empty), "research:queue-title", null);
 
             // The empty-queue label is a wired prefab field, so it exists whether or not the game
@@ -783,8 +783,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                string text = AgeText.Clean(Gui.Localize(SuggestedTitleKey));
-                return string.IsNullOrEmpty(text) || text[0] == '%' ? null : text;
+                return AgeText.Title(SuggestedTitleKey);
             }
             catch (Exception)
             {
@@ -1093,7 +1092,7 @@ namespace ES2Access.Screens
         )
         {
             TechnologyQuadrantItem it = quadrant;
-            AgeTransform title = Widget(quadrant.QuadrantTitle);
+            AgeTransform title = AgeWidgets.Transform(quadrant.QuadrantTitle);
             AgeTooltip tooltip = AgeWidgets.Raw(title);
             NodeVtable vtable = GraphNodes.Group(() => QuadrantTitle(it), null, tooltip);
             Hover(vtable, title, tooltip);
@@ -1481,8 +1480,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string word = AgeText.Clean(Gui.Localize("%" + category + "Title"));
-                return string.IsNullOrEmpty(word) || word[0] == '%' ? null : word;
+                return AgeText.Title("%" + category + "Title");
             }
             catch (Exception)
             {
@@ -1603,23 +1601,10 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly FieldInfo TrackedDeed = Tracked(typeof(DeedItem2), "guiDeed");
-
-        private static FieldInfo Tracked(Type type, string name)
-        {
-            try
-            {
-                return type.GetField(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("research: looking up " + type.Name + "." + name + " threw: " + e);
-                return null;
-            }
-        }
+        private static readonly FieldInfo TrackedDeed = GameHandlers.Field(
+            typeof(DeedItem2),
+            "guiDeed"
+        );
 
         /// <summary>What a technology says about the ones it is joined to, in one part of its readout.
         /// Worked out when the dot is read rather than watched: the wheel's arcs only change when a
@@ -1979,7 +1964,7 @@ namespace ES2Access.Screens
         /// <summary>The screen's own "bring this technology into view", which zooms in from the
         /// overview and pans when it is already zoomed in. Private to the game, like the queue
         /// panel's cancel handler on the star system page.</summary>
-        private static readonly MethodInfo ForceZoomIn = Handler(
+        private static readonly MethodInfo ForceZoomIn = GameHandlers.Method(
             typeof(TechnologyScreen),
             "ForceZoomIn"
         );
@@ -1987,28 +1972,15 @@ namespace ES2Access.Screens
         /// <summary>The two halves of the screen's own "look here": zoom in on a point from the
         /// overview, slide across to it when the view is already close. Private to the game, and the
         /// only way to aim at anything the game does not itself let the player click on.</summary>
-        private static readonly MethodInfo ZoomIn = Handler(typeof(TechnologyScreen), "DoZoomIn");
+        private static readonly MethodInfo ZoomIn = GameHandlers.Method(
+            typeof(TechnologyScreen),
+            "DoZoomIn"
+        );
 
-        private static readonly MethodInfo SlideTo = Handler(
+        private static readonly MethodInfo SlideTo = GameHandlers.Method(
             typeof(TechnologyScreen),
             "DoTranslate"
         );
-
-        private static MethodInfo Handler(Type type, string name)
-        {
-            try
-            {
-                return type.GetMethod(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("research: looking up " + type.Name + "." + name + " threw: " + e);
-                return null;
-            }
-        }
 
         // ---- searching the whole wheel ----
 
@@ -2224,7 +2196,7 @@ namespace ES2Access.Screens
 
         private static void AddTerm(List<string> terms, string word)
         {
-            if (string.IsNullOrEmpty(word) || word[0] == '%' || terms.Contains(word))
+            if (string.IsNullOrEmpty(word) || Gui.IsLocalizationKey(word) || terms.Contains(word))
             {
                 return;
             }
@@ -2486,20 +2458,8 @@ namespace ES2Access.Screens
         /// tooltip that go with it.</summary>
         private static AgeTransform Group(AgePrimitiveLabel label)
         {
-            AgeTransform widget = Widget(label);
+            AgeTransform widget = AgeWidgets.Transform(label);
             return widget == null ? null : widget.Parent;
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static string ScreenTitle()

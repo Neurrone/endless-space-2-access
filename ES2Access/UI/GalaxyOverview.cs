@@ -80,8 +80,7 @@ namespace ES2Access.UI
                 return null;
             }
 
-            string localized = AgeText.Clean(Gui.Localize(string.Format(titleFormat, value)));
-            return string.IsNullOrEmpty(localized) || localized[0] == '%' ? value : localized;
+            return AgeText.Title(string.Format(titleFormat, value)) ?? value;
         }
 
         private static StarSystemNode HomeSystemNode()

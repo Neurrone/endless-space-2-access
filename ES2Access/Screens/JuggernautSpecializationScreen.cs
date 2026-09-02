@@ -277,8 +277,16 @@ namespace ES2Access.Screens
 
             builder.BeginStop(ResourcesStop);
             _cells.Clear();
-            Cells.AddReadout(_cells, Widget(window.EmpireMoneyLabel), "juggernaut:money");
-            Cells.AddReadout(_cells, Widget(window.EmpireManpowerLabel), "juggernaut:manpower");
+            Cells.AddReadout(
+                _cells,
+                AgeWidgets.Transform(window.EmpireMoneyLabel),
+                "juggernaut:money"
+            );
+            Cells.AddReadout(
+                _cells,
+                AgeWidgets.Transform(window.EmpireManpowerLabel),
+                "juggernaut:manpower"
+            );
             IList<AgeTransform> items = Children(ResourcesTable(window));
             for (int i = 0; items != null && i < items.Count; i++)
             {
@@ -322,7 +330,7 @@ namespace ES2Access.Screens
             GuiLocatedResource located = resource;
             NodeVtable vtable = GraphNodes.Readout(
                 () => AgeText.Clean(located.Title),
-                () => StockAndNet(it.StockLabel, it.NetLabel),
+                () => StockAndNet(it, located),
                 null,
                 item.Tooltip
             );
@@ -335,21 +343,18 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>A holding and what the next turn does to it, as the game drew the two numbers - or
-        /// just the holding, which is all this strip draws. The item keeps a per-turn label with a real
-        /// figure in it ("+0") and leaves it HIDDEN here (measured), so the figure has to be gated on
-        /// the label being drawn and not on it being non-empty, or the reading invents a rate that is
-        /// nowhere on screen.</summary>
-        private static string StockAndNet(AgePrimitiveLabel stock, AgePrimitiveLabel net)
+        /// <summary>A holding and what the next turn does to it, in the empire banner's own phrase and
+        /// off the same cached figures it reads (<see cref="GlobalHud.StockAndNet"/>) - or just the
+        /// holding, which is all this strip draws. The item keeps a per-turn label with a real figure in
+        /// it ("+0") and leaves it HIDDEN here (measured), so the rate is gated on the label being
+        /// DRAWN, or the reading invents a rate that is nowhere on screen.</summary>
+        private static string StockAndNet(ResourceItem item, GuiLocatedResource resource)
         {
-            string held = AgeText.Label(stock);
-            string rate = AgeWidgets.DrawnLabel(net);
-            if (string.IsNullOrEmpty(rate))
-            {
-                return held;
-            }
-
-            return ModStrings.Format(ModStrings.GalaxyStockAndNet, held, rate);
+            float stock = resource.GetStockValueFromCache();
+            int decimals = stock < 10f ? 1 : 0;
+            return AgeWidgets.DrawnLabel(item.NetLabel) != null
+                ? GlobalHud.StockAndNet(stock, resource.GetNetValueFromCache(), decimals)
+                : GlobalHud.Amount(stock, false, decimals);
         }
 
         /// <summary>The strip of strategic resources, off the panel the window binds rather than by
@@ -410,18 +415,6 @@ namespace ES2Access.Screens
             try
             {
                 return widget == null ? null : widget.Children;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
             }
             catch (Exception)
             {

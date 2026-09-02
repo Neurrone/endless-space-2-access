@@ -141,7 +141,7 @@ namespace ES2Access.Screens
         private void BuildList(GraphBuilder builder, PopulationModalWindow window)
         {
             builder.BeginStop(ListStop);
-            bool named = Caption(
+            bool named = Captions.Push(
                 builder,
                 AgeWidgets.ChildNamed(window.AgeTransform, "EmpirePopulationTitle", 3),
                 "population:list-title"
@@ -156,25 +156,6 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
-        }
-
-        /// <summary>The caption the window draws over a band, as the band's own name - and as a row of
-        /// its own only where the game hung a sentence on it, which is the shared rule
-        /// (<see cref="Captions"/>). A caption the game left empty pushes nothing, so nothing is
-        /// announced under a blank level.</summary>
-        private static bool Caption(
-            GraphBuilder builder,
-            AgeTransform widget,
-            object key = null,
-            AgeTransform group = null
-        )
-        {
-            return Captions.Push(builder, widget, key, null, group);
-        }
-
-        private static void Unname(GraphBuilder builder, bool named)
-        {
             Captions.Pop(builder, named);
         }
 
@@ -311,26 +292,42 @@ namespace ES2Access.Screens
 
             // The people's own name is the caption over everything the window then writes about them,
             // so it names the region rather than standing in it as a row that says one word.
-            bool people = Caption(builder, Widget(window.AffinityTitle), "population:affinity");
+            bool people = Captions.Push(
+                builder,
+                AgeWidgets.Drawn(window.AffinityTitle),
+                "population:affinity"
+            );
             _cells.Clear();
             AddParagraph(_cells, window.AffinityDescription, "population:affinity-description");
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, people);
+            Captions.Pop(builder, people);
 
             AddThresholds(builder, window);
 
             // One emission per captioned block. The window draws two of them SIDE BY SIDE, so laying
             // the lot out by where they are drawn read across both at once and put each caption three
             // lines away from what it captioned.
-            Block(builder, Widget(window.EffectsOnPlanet), "population:planet-effects");
+            Block(
+                builder,
+                AgeWidgets.Transform(window.EffectsOnPlanet),
+                "population:planet-effects"
+            );
             Block(
                 builder,
                 AgeWidgets.ChildNamed(window.AgeTransform, "CollectionEffects", 5),
                 "population:collection-effects",
                 true
             );
-            Block(builder, Widget(window.PoliticalOpinion), "population:political-output");
-            Block(builder, Widget(window.AssimilationEffects), "population:assimilation");
+            Block(
+                builder,
+                AgeWidgets.Transform(window.PoliticalOpinion),
+                "population:political-output"
+            );
+            Block(
+                builder,
+                AgeWidgets.Transform(window.AssimilationEffects),
+                "population:assimilation"
+            );
 
             builder.SetRegion(AssimilateRegion);
             _cells.Clear();
@@ -371,10 +368,11 @@ namespace ES2Access.Screens
             // The word is on the Title label and the sentence explaining the block is on the block
             // itself, so the caption is read off both: asking the label alone left every one of
             // these panels' explanations with no surface at all.
-            bool named = Caption(
+            bool named = Captions.Push(
                 builder,
                 AgeWidgets.ChildNamed(group, "Title", 1),
                 keyPrefix + "/title",
+                null,
                 group
             );
             _cells.Clear();
@@ -395,8 +393,8 @@ namespace ES2Access.Screens
 
             if (_cells.Count == 0 && sayEmpty)
             {
-                string nothing = AgeText.Clean(Gui.Localize("%PanelFeatureNoEffectsTitle"));
-                if (!string.IsNullOrEmpty(nothing) && nothing[0] != '%')
+                string nothing = AgeText.Title("%PanelFeatureNoEffectsTitle");
+                if (nothing != null)
                 {
                     // Synthetic: mod-authored - the game's own "no effects" wording, put where the panel
                     // drew nothing at all.
@@ -414,7 +412,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         /// <summary>
@@ -443,7 +441,7 @@ namespace ES2Access.Screens
 
             builder.SetRegion("population:thresholds");
             AgeTransform caption = AgeWidgets.ChildNamed(group, "Title", 1);
-            bool named = Caption(builder, caption);
+            bool named = Captions.Push(builder, caption);
             AddStatus(builder, caption, group, window);
 
             _cells.Clear();
@@ -456,7 +454,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         /// <summary>
@@ -594,7 +592,7 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(PoliticsStop);
-            bool titled = Caption(
+            bool titled = Captions.Push(
                 builder,
                 AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2),
                 "population:politics-title"
@@ -610,7 +608,7 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
 
             builder.SetRegion(TraitsRegion);
-            bool named = Caption(
+            bool named = Captions.Push(
                 builder,
                 AgeWidgets.ChildNamed(group, "PsychoTraitsTitle", 3),
                 "population:traits-title"
@@ -628,14 +626,14 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
 
             // The ring is what the panel's own caption is about, so the region carries that caption
             // too: jumping into it from the traits says what has been arrived at. The announcer drops
             // the level above it, which says the same words (GraphAnnouncer.DuplicatesNext), so
             // arriving at the stop still hears the phrase once.
             builder.SetRegion(ReactionsRegion);
-            bool ring = Caption(
+            bool ring = Captions.Push(
                 builder,
                 AgeWidgets.ChildNamed(group, "PoliticalAffinityTitle", 2)
             );
@@ -646,11 +644,11 @@ namespace ES2Access.Screens
                 AddReaction(builder, wheel[i], i);
             }
 
-            Unname(builder, ring);
+            Captions.Pop(builder, ring);
             AddLegend(builder, window);
 
             builder.SetRegion(null);
-            Unname(builder, titled);
+            Captions.Pop(builder, titled);
         }
 
         /// <summary>
@@ -739,7 +737,7 @@ namespace ES2Access.Screens
         /// and walkable line by line in the review buffer.</summary>
         private static void AddParagraph(List<Cell> cells, AgePrimitiveLabel label, string key)
         {
-            AgeTransform widget = Widget(label);
+            AgeTransform widget = AgeWidgets.Drawn(label);
             if (widget == null)
             {
                 return;
@@ -758,30 +756,6 @@ namespace ES2Access.Screens
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return AgeWidgets.Drawn(label);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(GuiPanelFeature feature)
-        {
-            try
-            {
-                return feature == null ? null : feature.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
         }
 
         private static PopulationModalWindow Window()

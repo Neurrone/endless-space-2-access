@@ -65,7 +65,7 @@ namespace ES2Access.Screens
         /// expose the label, so it is found where it is drawn.</summary>
         public override string ScreenName
         {
-            get { return Title(Window()); }
+            get { return WindowShape.Title(Window()); }
         }
 
         /// <summary>The table, because it is drawn first and Tab does not wrap - its headings are the
@@ -105,7 +105,7 @@ namespace ES2Access.Screens
 
             builder.BeginStop(LinesStop);
             _table.Headers(builder, table);
-            _table.Rows(builder, table, Title(window));
+            _table.Rows(builder, table, WindowShape.Title(window));
 
             builder.BeginStop(ActionsStop);
             BuildActions(builder, window);
@@ -202,32 +202,6 @@ namespace ES2Access.Screens
         }
 
         // ---- reading the window ----
-
-        /// <summary>The window's own title, found where it is drawn: the class exposes its table and
-        /// its Confirm button and nothing else.</summary>
-        private static string Title(SystemSelectionModalWindow window)
-        {
-            try
-            {
-                if (window == null)
-                {
-                    return null;
-                }
-
-                AgePrimitiveLabel[] labels =
-                    window.GetComponentsInChildren<AgePrimitiveLabel>(true);
-                for (int i = 0; i < labels.Length; i++)
-                {
-                    if (labels[i] != null && labels[i].name == "WindowTitle")
-                    {
-                        return AgeText.Label(labels[i]);
-                    }
-                }
-            }
-            catch (Exception) { }
-
-            return null;
-        }
 
         private static AgeControlDropList DropList(AgeTransform cell)
         {

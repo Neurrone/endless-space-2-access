@@ -173,12 +173,14 @@ namespace ES2Access.UI
             return lines;
         }
 
-        /// <summary>The game's own words for a property or a band, never a phrase of this mod's.</summary>
+        /// <summary>The game's own words for a property or a band, never a phrase of this mod's - and
+        /// nothing at all where the corpus has no such string, which is <see cref="AgeText.Title"/>'s
+        /// guard.</summary>
         private static string Localized(string key, bool asTitle)
         {
             try
             {
-                return AgeText.Clean(asTitle ? Gui.GetLocalizedTitle(key) : Gui.Localize(key));
+                return AgeText.Title(asTitle ? Gui.GetLocalizedTitle(key) : key);
             }
             catch (Exception)
             {

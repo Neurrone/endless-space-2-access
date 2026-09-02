@@ -558,7 +558,7 @@ namespace ES2Access.Screens
         /// drawn in.</summary>
         private static void Line(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
-            AgeTransform widget = label == null ? null : label.AgeTransform;
+            AgeTransform widget = AgeWidgets.Transform(label);
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -587,18 +587,7 @@ namespace ES2Access.Screens
         /// spoken before anything had a chance to drop it.</summary>
         private static int Listed(GameResourcesExportScreen window)
         {
-            AgeTransform table = window.ResourcesTable;
-            IList<AgeTransform> rows = table == null ? null : table.Children;
-            int count = 0;
-            for (int i = 0; rows != null && i < rows.Count; i++)
-            {
-                if (AgeWidgets.Painted(rows[i]))
-                {
-                    count++;
-                }
-            }
-
-            return count;
+            return AgeWidgets.DrawnCount(window.ResourcesTable);
         }
 
         private static bool Ticked(AgeControlToggle toggle)

@@ -193,7 +193,7 @@ namespace ES2Access.Screens
         /// the design's name.</summary>
         private static AgeTransform Heading(ShipDesignModalWindow window)
         {
-            return AgeWidgets.ChildNamed(window.AgeTransform, "WindowTitle", 3);
+            return WindowShape.TitleWidget(window);
         }
 
         /// <summary>
