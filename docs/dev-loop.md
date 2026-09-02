@@ -1,8 +1,7 @@
 # ES2 dev loop — build, reload, verify
 
-Fixtures and what each save shows: `docs/test-recipes/fixtures.md` (`DevProbe.Saves()` reports
-titles). Screen-by-screen status: `docs/roadmap.md`; working a specific screen and its fixture
-limits: `docs/test-recipes/README.md`. This file is
+Which saves exist on this machine: `DevProbe.Saves()` (never written down). Screen-by-screen
+status: `docs/roadmap.md`. Regression proof: `walks/`. This file is
 ONLY the loop: the dev server, the REPL, and the screen-agnostic verification patterns.
 
 | Task | Read first |
@@ -13,7 +12,7 @@ ONLY the loop: the dev server, the REPL, and the screen-agnostic verification pa
 | Anything keys: bindings, repeat, stand-down, game collisions | `docs/generic/input.md`, then `docs/interaction.md` |
 | ES2 layers, key map, claim rules (building a screen) | `docs/interaction.md` |
 | Which helper already exists for X | grep `ES2Access/` — a helper's contract is its own doc comment; the dev/verification ones are in §1 below |
-| Working a specific screen against the live game | `docs/test-recipes/README.md` (grep the screen) |
+| Working a specific screen against the live game | the family script in `walks/` that reaches it (its route is the recipe) |
 | Widget kinds, roles, announcements, gesture parity and activation idioms, popups, the confirmation dialog | `docs/generic/widgets.md` |
 | Game-mechanism findings | the topic file that fits (`docs/README.md` indexes them) |
 | Any other generic concern (speech, buffers, tooltips, icons, localization, hot reload, performance, dev server, decompiled research, bootstrap) | `docs/generic/README.md` indexes the chapters |
@@ -159,11 +158,11 @@ before interpreting live results. Repeated-node `ControlId` keys: index-in-paren
 widget names. Interim narration one line — findings go in the final report; never re-Read
 an image.
 
-**Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "[Beginner] test"` —
+**Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "<a save DevProbe.Saves() lists>"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
 on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked PowerShell hits
-execution policy). First act in-game: minimize the tutorial popup (recipe in
-`test-recipes/fixtures.md`) — expanded, it eats every injection as `unconsumed`.
+execution policy). First act in-game: minimize the tutorial popup (`walks/cs/tut.cs` does it
+from `/eval`) — expanded, it eats every injection as `unconsumed`.
 A `launcher-x64` orphaned into the *Services* session (session 0) never exits and cannot be killed;
 the launch guard skips other sessions, but if a launch still fails,
 `tasklist /FI "PID eq <pid>"` tells you which session you are fighting.
@@ -229,8 +228,7 @@ pointer), and one without the other reviews perfectly and never draws — contra
 
 **A card's tooltip is rarely on the card.** Aim at `tooltip.AgeTransform`, never at the row that
 contains it, and READ the component's own Tooltip field, never `widget.AgeTooltip` — both fail
-silently, and `DevProbe.Tooltip()` is the only probe that catches either (worked example:
-`test-recipes/systems-and-planets.md`).
+silently, and `DevProbe.Tooltip()` is the only probe that catches either.
 
 **A tooltip family's evidence pair.** Focus the control, `DevProbe.Tooltip()` for the typed
 reading, then `Gui.GuiService.GetWindow<GuiTooltipWindow>(false).AgeTransform.GetGlobalPosition()`
@@ -327,8 +325,27 @@ ADDITIVE announcement change, null the injected dependency that produces the new
 withheld, leaving the shared HUD stops — or, for a window the game is not drawing at all,
 `declared no controls`, which `ungated=1` does NOT lift (measured on `screen.main-menu`). Open it first.
 
-**Sighting a surface the fixture never draws** — the tiered forced-show ladder — is
-`docs/test-recipes/fixtures.md`.
+**Sighting a surface the save never draws**, cheapest first: read the prefab's fields off the
+UNSHOWN window (`GetWindow<T>(false)`, nothing to restore; beware `%key` content the game
+rewrites at bind); `Show()` the game's pooled widget, read, `Hide()`; set the game's own
+`Visible` flags or private fields from `/eval`, dump, restore, re-diff against the untouched
+dump; `Bind` + `Show` a window with data, read, `Unbind` + hide (proves STRUCTURE, never
+content; restore monotonic setters through their backing field; `POST /loadsave` if it
+wedges; never force-show a DLC modal without its data); where a widget is generic over an
+INTERFACE, lend it another implementor's data (`Bind(otherOwner, client)` + `RefreshNow()`) —
+only lent data proves content, and never commit an action while a binding is lent.
+
+**Which expansions this session can reach is probed, never written down** (owner ruling
+2026-08-29): enumerate `IDownloadableContentService` through the NON-generic `IEnumerable`
+(a `foreach` over the generic one poisons the REPL) and test `Accessibility == Available`;
+availability is necessary, not sufficient (a Sanctuary also needs an Umbral Choir save).
+
+**Making a save show more without changing it**: `player.VisionSharingBits |= other.Bits` then
+`IVisibilityService.ForceRefresh(-1L, true)` (sharing propagates only on a layer change);
+`IEndTurnService.TryToEndTurn()` answers false the first time (validators speak) — call it
+twice; after `POST /loadsave` re-run the REPL setup (a `var` bank keeps the dead game's
+objects); a save round trip is `IGameSerializationService.SaveGame(...)` to a scratch title,
+reload, delete the file.
 
 **Proving a watcher stays silent** is a long poll on the watched flag, not a scan of `/speech`:
 `POST /wait` on the game's own condition, then read `/speech?since=N` for the window that
@@ -340,8 +357,12 @@ buffer FOCUSED (the repeat is invisible in the unfocused dump).
 
 **Opening a game modal from `/eval`**: set what its opener sets, then show it; close it with
 `Gui.GuiService.HideWindow(w)` or the mod's own keys — NEVER `w.HandleInput(InputAction.Exit)`, which
-wedged the screen stack (`test-recipes/fixtures.md`, "Resetting game state"). Worked routes
-per window are in `docs/test-recipes/modals-and-outgame.md` ("Opening game modals from /eval").
+wedged the screen stack. `walks/cs/drain.cs` is the drain that works (`ModalOnTop` can name a
+window whose `Shown` is false: re-`Show` it, then `Exit`, up to six passes), and `walks/lib.sh`'s
+`openwin`/`hidewin` are the per-window routes. `HideWindow` does NOT close `StarSystemScreen`;
+leave it with `RequestGalaxyOverviewViewLevel(pos)`. Reaching a mod internal from `/eval` needs
+the loaded-from-bytes assembly: scan `AppDomain.CurrentDomain.GetAssemblies()` for the
+`modAssemblyName` that `/status` reports, then `GetType` off it.
 
 **State restoration etiquette.** Leave the fixture as found: tutorial popup MINIMIZED, no
 notifications pending, camera at home (`DevProbe.Camera()` before and after), no text field

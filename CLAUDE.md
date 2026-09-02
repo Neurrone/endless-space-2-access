@@ -41,10 +41,10 @@ While the game runs (dev server enabled), `http://127.0.0.1:8771` serves routes 
 speech, GUI inspection, a C# REPL, input injection, hot reload, and loading saves. **Read
 `docs/dev-loop.md` before testing** — the loop itself: route reference, REPL gotchas, and
 the screen-agnostic verification patterns. Its index points at the per-need files: the
-ES2 interaction language — layers, keys, claims — (`docs/interaction.md`), the per-screen
-test recipes (`docs/test-recipes/`), and the game-facts topic files indexed by
-`docs/README.md`. Helper contracts live in their source doc comments; the dev/verification
-helpers are tabled in `docs/dev-loop.md` §1.
+ES2 interaction language — layers, keys, claims — (`docs/interaction.md`) and the
+game-facts topic files indexed by `docs/README.md`. Helper contracts live in their source
+doc comments; the dev/verification helpers are tabled in `docs/dev-loop.md` §1. The
+regression harness is `walks/` (fixture-agnostic by runtime discovery; `walks/README.md`).
 
 Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads — it owns the dev server, `/eval` (vendored `mcs.dll`, a net35 Mono.CSharp), and the mod lifecycle. `ES2Access.dll` is loaded from bytes (never file-locked, so `dotnet build` works while the game runs) and must tear down fully in `ModEntry.Stop` — every feature must be reload-safe. Only `ES2Access.dll` hot-reloads; changes to the loader require a game restart. Harmony instances are created with a unique-per-load id (fixed ids let a stale `UnpatchSelf` strip a newer load's patches).
 
@@ -54,7 +54,7 @@ Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads 
 - Avoid redundant null checks and comments that do not add information.
 - Prefer deterministic game actions over simulated input where the game exposes a reliable API.
 - Name behavior after what the player can do or perceive, not after incidental implementation details.
-- All speech goes through the `PrismSpeech` instance's `Speak(MessageBuilder, interrupt)` from the per-frame pump in `Plugin.Update`. Harmony hooks and watchers only set state or enqueue — they never speak.
+- All speech goes through the `PrismSpeech` instance's `Speak(MessageBuilder, interrupt)` from the per-frame pump in `ModEntry.Update`. Harmony hooks and watchers only set state or enqueue — they never speak.
 - `ES2Access/Core/` compiles against the BCL only (no Unity, BepInEx, or Harmony) so it stays unit-testable off-engine; `ES2Access.Tests` build-enforces this by compiling `Core/` sources directly.
 - Mod-authored spoken phrases come from `ModStrings` keys (translations in `ES2Access/locale/<language>.json`, named after the game's own language names; `english.json` is the template). Never inline English literals in speech, and keep each translatable template a complete phrase — don't glue fragments that grammar would need to inflect. Game-authored text arrives already localized via `Gui.Localize`. `MessageBuilder` pulls its separators and fraction/quantity templates from `ModStrings`.
 
@@ -70,14 +70,21 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
 - A stage is not done until each of its outputs has landed in the file whose charter fits
   it: a new helper's contract in its own doc comment (dev/verification helpers also get a
   one-line row in `docs/dev-loop.md` §1); a new layer number or key binding in
-  `docs/interaction.md`; a per-screen recipe or fixture note in the matching
-  `docs/test-recipes/<family>.md` (`docs/test-recipes/README.md` is the index); a new
-  route, REPL gotcha, or screen-agnostic verification pattern in `docs/dev-loop.md` (ONLY
-  the loop lives there, and it stays under ~350 lines); a game-mechanism finding or the
-  mod-policy decision it forces in the docs topic file that fits (`docs/README.md` is the
-  index); a screen-status change or future-feature prep
-  in `docs/roadmap.md`. When in doubt, a pointer line may
-  sit in the convenient file — the content goes where its charter says.
+  `docs/interaction.md`; a new route, REPL gotcha, or screen-agnostic verification
+  pattern in `docs/dev-loop.md` (ONLY the loop lives there, and it stays under ~350
+  lines); a game-mechanism finding or the mod-policy decision it forces in the docs topic
+  file that fits (`docs/README.md` is the index); a screen-status change or
+  future-feature prep in `docs/roadmap.md`. When in doubt, a pointer line may sit in the
+  convenient file — the content goes where its charter says.
+- There are no per-screen test recipes and no fixture docs, and none may be created: a
+  fact measured against a particular save (its name, turn, systems, fleets, heroes,
+  counts, crop rectangles) belongs to nobody's machine but the owner's and is never
+  written down. Regression proof is the fixture-agnostic walk in `walks/`; a screen the
+  walk cannot reach gets a route added to `walks/`, not a recipe.
+- Docs never restate what is derivable from source: no key maps, layer tables,
+  screen-to-file tables, helper lists or route lists. A doc line earns its place only by
+  recording a measured game mechanism or an owner ruling that the code does not itself
+  state.
 - Quit the game (`POST /quit`, poll the process) once live testing is done — it is
   CPU-taxing; leave it running only while the next stage or my own manual testing still
   needs it.
