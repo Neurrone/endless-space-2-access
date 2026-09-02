@@ -186,7 +186,7 @@ belong in the files above.
 - Ground-battle REPORT follow-ups (2026-08-25 stage shipped: balance, outcome description,
   strategy dossiers, damage totals + per-source rows, drawn "Remaining" caption): unsighted
   variants — defender-side `ConscriptedPopulationGroup` (mod declares nothing for it today),
-  the decisive-outcome Dismiss button (chrome declares it, `NotificationScreen.cs:2995`,
+  the decisive-outcome Dismiss button (chrome declares it,
   outside the `own` gate — needs one live confirmation), `DefenderSurrendered` (mod speaks
   real final manpowers where the gauge draws symbolic 1/0), third-party spectator
   (`BattleSubTitle` + the outcome's third-party branch). Owner rulings 2026-08-25: the outcome
