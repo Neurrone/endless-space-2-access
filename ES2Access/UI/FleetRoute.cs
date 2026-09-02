@@ -280,14 +280,14 @@ namespace ES2Access.UI
                         ModStrings.FleetRouteUnexploredTurns,
                         route.ArrivesIn
                     )
-                    : (
-                        route.ArrivesIn == 1
-                            ? ModStrings.Format(ModStrings.FleetRouteToThisTurn, name)
-                            : ModStrings.Format(
-                                ModStrings.FleetRouteToTurns,
-                                name,
-                                route.ArrivesIn
-                            )
+                    : ModStrings.Format(
+                        ModStrings.PluralKey(
+                            ModStrings.FleetRouteToThisTurn,
+                            ModStrings.FleetRouteToTurns,
+                            route.ArrivesIn
+                        ),
+                        name,
+                        route.ArrivesIn
                     )
             );
             AddShortcuts(message, route);
@@ -662,13 +662,17 @@ namespace ES2Access.UI
         private static string Cost(Route route)
         {
             string movement = Amount(route.Path.PathCost);
-            return route.ArrivesIn == 1
-                ? ModStrings.Format(ModStrings.FleetRoutePreviewThisTurn, movement)
-                : ModStrings.Format(
-                    ModStrings.FleetRoutePreviewTurns,
-                    route.ArrivesIn,
-                    movement
-                );
+
+            // The two forms number their slots differently - the arriving one has no turn count in
+            // it at all - so the count picks the key and the key picks the arguments.
+            string key = ModStrings.PluralKey(
+                ModStrings.FleetRoutePreviewThisTurn,
+                ModStrings.FleetRoutePreviewTurns,
+                route.ArrivesIn
+            );
+            return key == ModStrings.FleetRoutePreviewThisTurn
+                ? ModStrings.Format(key, movement)
+                : ModStrings.Format(key, route.ArrivesIn, movement);
         }
 
         private static void AddShortcuts(MessageBuilder message, Route route)

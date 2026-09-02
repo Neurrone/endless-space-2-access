@@ -19,8 +19,16 @@ $script:GameLanguages = @(
 # The languages with a third, paucal form, which is the only reason a ".few" key exists.
 $script:ThreeFormLanguages = @('polish', 'russian')
 
-# The suffix a paucal form hangs off its pair's MANY key (PluralRules.FewSuffix).
+# The languages whose SINGULAR form covers counts other than one - Russian's 21, 31 and every
+# other n1 - and which therefore owe a ".one" key wherever the pair's singular sentence has no
+# number in it. Polish's singular covers 1 alone, so it never needs one. Mirrors
+# TranslationFiles.SingularCoversLargerNumbers, which asks PluralRules directly.
+$script:LargerSingularLanguages = @('russian')
+
+# The suffixes the extra counted forms hang off their pair's MANY key (PluralRules.FewSuffix,
+# PluralRules.OneSuffix).
 $script:FewSuffix = '.few'
+$script:OneSuffix = '.one'
 
 function Test-GameLanguage([string]$language) {
     return $script:GameLanguages -contains $language
@@ -28,6 +36,10 @@ function Test-GameLanguage([string]$language) {
 
 function Test-ThreeForm([string]$language) {
     return $script:ThreeFormLanguages -contains $language
+}
+
+function Test-LargerSingular([string]$language) {
+    return $script:LargerSingularLanguages -contains $language
 }
 
 function Get-GameLanguages {
@@ -244,54 +256,81 @@ function Get-ModStringsEntries([string]$root, $englishKeys) {
 
 # --- Which strings are counted ----------------------------------------------------------------
 
-# SystemLabelReadout.AddShipCount takes its pair as parameters, so no scan can see it; its only
-# caller passes these two constants. Mirrors ES2Access.Tests\Speech\PluralPairs.cs, which is
-# what fails the build if a THIRD indirect call site ever appears.
-$script:TracedPluralFields = @('GalaxySystemFriendlyShips', 'GalaxySystemHostileShips')
-$script:TracedPluralSite = 'ES2Access/UI/SystemLabelReadout.cs'
+# SystemLabelReadout.AddShipCount and BattleText.Counted take their pair as parameters, so no
+# scan can see them; their callers pass these constants. Mirrors
+# ES2Access.Tests\Speech\PluralPairs.cs, which is what fails the build if a FURTHER indirect call
+# site ever appears.
+$script:TracedPluralPairs = @(
+    @{ Site = 'ES2Access/UI/SystemLabelReadout.cs'; One = 'GalaxySystemFriendlyShip'; Many = 'GalaxySystemFriendlyShips' },
+    @{ Site = 'ES2Access/UI/SystemLabelReadout.cs'; One = 'GalaxySystemHostileShip'; Many = 'GalaxySystemHostileShips' },
+    @{ Site = 'ES2Access/Core/Speech/BattleText.cs'; One = 'BattleFireMissedClause'; Many = 'BattleFireMissedClauseMany' }
+)
 
 <#
 .SYNOPSIS
-The MANY key of every counted pair the mod speaks - the keys a three-form language owes a
-paucal form. Read off the ModStrings.Plural call sites, because the pairs are named every way
-English suggests and no naming convention can find them.
+Every counted pair the mod speaks, as an ordered MANY-key-to-ONE-key table: the MANY key is what
+a three-form language owes a paucal form, and the ONE key is what says whether the pair also owes
+a singular sentence for a larger number. Read off the ModStrings.Plural and ModStrings.PluralKey
+call sites, because the pairs are named every way English suggests and no naming convention can
+find them.
 #>
-function Get-PluralManyKeys([string]$root, $fieldToKey) {
-    $keys = New-Object 'System.Collections.Generic.SortedSet[string]'
-    $call = [regex]'ModStrings\.Plural\(\s*([A-Za-z_][\w.]*)\s*,\s*([A-Za-z_][\w.]*)\s*,'
+function Get-PluralPairs([string]$root, $fieldToKey) {
+    $pairs = New-Object 'System.Collections.Generic.SortedDictionary[string,string]'
+    $call = [regex]'ModStrings\.Plural(?:Key)?\(\s*([A-Za-z_][\w.]*)\s*,\s*([A-Za-z_][\w.]*)\s*,'
     $qualifier = 'ModStrings.'
+    $tracedSites = @($script:TracedPluralPairs | ForEach-Object { $_.Site } | Sort-Object -Unique)
     $strays = New-Object 'System.Collections.Generic.SortedSet[string]'
     foreach ($file in (Get-ChildItem -LiteralPath (Join-Path $root 'ES2Access') -Recurse -Filter '*.cs')) {
         $relative = $file.FullName.Substring($root.Length).TrimStart('\').Replace('\', '/')
         foreach ($match in $call.Matches([System.IO.File]::ReadAllText($file.FullName))) {
-            $argument = $match.Groups[2].Value
-            if (-not $argument.StartsWith($qualifier)) {
-                if ($relative -ne $script:TracedPluralSite) { [void]$strays.Add($relative) }
+            $one = $match.Groups[1].Value
+            $many = $match.Groups[2].Value
+            if (-not $one.StartsWith($qualifier) -or -not $many.StartsWith($qualifier)) {
+                if ($tracedSites -notcontains $relative) { [void]$strays.Add($relative) }
                 continue
             }
 
-            $field = $argument.Substring($qualifier.Length)
-            if (-not $fieldToKey.ContainsKey($field)) {
-                throw "$relative : ModStrings.$field is not a string constant this scan can see."
+            $oneField = $one.Substring($qualifier.Length)
+            $manyField = $many.Substring($qualifier.Length)
+            foreach ($field in @($oneField, $manyField)) {
+                if (-not $fieldToKey.ContainsKey($field)) {
+                    throw "$relative : ModStrings.$field is not a string constant this scan can see."
+                }
             }
 
-            [void]$keys.Add($fieldToKey[$field])
+            $pairs[$fieldToKey[$manyField]] = $fieldToKey[$oneField]
         }
     }
 
-    foreach ($field in $script:TracedPluralFields) {
-        if (-not $fieldToKey.ContainsKey($field)) {
-            throw "$($script:TracedPluralSite) : ModStrings.$field is gone; retrace the pair."
+    foreach ($traced in $script:TracedPluralPairs) {
+        foreach ($field in @($traced.One, $traced.Many)) {
+            if (-not $fieldToKey.ContainsKey($field)) {
+                throw "$($traced.Site) : ModStrings.$field is gone; retrace the pair."
+            }
         }
 
-        [void]$keys.Add($fieldToKey[$field])
+        $pairs[$fieldToKey[$traced.Many]] = $fieldToKey[$traced.One]
     }
 
     foreach ($stray in $strays) {
-        Write-Warning "$stray calls Plural with something this scan cannot resolve; its pair may be missing a paucal form."
+        Write-Warning "$stray calls Plural with something this scan cannot resolve; its pair may be missing a counted form."
     }
 
-    return $keys
+    return $pairs
+}
+
+<#
+.SYNOPSIS
+Whether a pair's singular sentence cannot stand in for a larger number: the counted sentence has
+a placeholder the singular one has nowhere to put. Mirrors LocaleLint.IsSemanticPair.
+#>
+function Test-SemanticPair([string]$oneText, [string]$manyText) {
+    $singular = @(([regex]'\{\d+\}').Matches($oneText) | ForEach-Object { $_.Value })
+    foreach ($match in ([regex]'\{\d+\}').Matches($manyText)) {
+        if ($singular -notcontains $match.Value) { return $true }
+    }
+
+    return $false
 }
 
 # --- The glossary ----------------------------------------------------------------------------
@@ -360,8 +399,10 @@ function Get-Placeholders([string]$text) {
 }
 
 function Get-BaseKey([string]$key) {
-    if ($key.EndsWith($script:FewSuffix)) {
-        return $key.Substring(0, $key.Length - $script:FewSuffix.Length)
+    foreach ($suffix in @($script:FewSuffix, $script:OneSuffix)) {
+        if ($key.Length -gt $suffix.Length -and $key.EndsWith($suffix)) {
+            return $key.Substring(0, $key.Length - $suffix.Length)
+        }
     }
 
     return $key
@@ -371,4 +412,10 @@ function Test-Paucal([string]$key) {
     return $key.Length -gt $script:FewSuffix.Length -and $key.EndsWith($script:FewSuffix)
 }
 
+function Test-LargerSingularKey([string]$key) {
+    return $key.Length -gt $script:OneSuffix.Length -and $key.EndsWith($script:OneSuffix)
+}
+
 function Get-FewSuffix { return $script:FewSuffix }
+
+function Get-OneSuffix { return $script:OneSuffix }

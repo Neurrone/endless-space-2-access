@@ -6,12 +6,12 @@ anything until they answer for every key the mod speaks.
 .DESCRIPTION
 The parts come back one batch at a time, from different sittings and possibly different
 translators, so the failures worth catching are the ones no single batch can see: a key nobody
-took, a key taken twice with two different answers, a paucal form never written, a "{0}" that
+took, a key taken twice with two different answers, a counted form never written, a "{0}" that
 fell out of a sentence, a movie that came back with a cue too few. All of those are checked
 across the whole set BEFORE anything is written, and the report names each one, so a run either
 writes complete files or writes nothing.
 
-The shipped files are written in english.json's own order - a paucal form directly after the
+The shipped files are written in english.json's own order - a counted form directly after the
 pair it belongs to - as UTF-8 without a byte order mark, two-space indented, with the
 language's own letters written as themselves. Then mark-translated.ps1 records the English each
 string was made from, which is what tells a later run of the tests that a phrase was rewritten
@@ -60,9 +60,22 @@ $fieldToKey = @{}
 foreach ($entry in $entries) {
     if (-not $entry.IsPrefix -and $entry.Field -ne '') { $fieldToKey[$entry.Field] = $entry.Key }
 }
-$manyKeys = Get-PluralManyKeys $root $fieldToKey
+$pairs = Get-PluralPairs $root $fieldToKey
 $paucal = Test-ThreeForm $Language
+$largerSingular = Test-LargerSingular $Language
 $few = Get-FewSuffix
+$oneForm = Get-OneSuffix
+
+# Which MANY keys owe a singular sentence for a larger number: only where the pair's own
+# singular has no number in it, which is the case a language like Russian cannot say otherwise.
+$semantic = New-Object 'System.Collections.Generic.SortedSet[string]'
+if ($largerSingular) {
+    foreach ($manyKey in $pairs.Keys) {
+        if (Test-SemanticPair ([string]$english.($pairs[$manyKey])) ([string]$english.$manyKey)) {
+            [void]$semantic.Add($manyKey)
+        }
+    }
+}
 
 $problems = New-Object System.Collections.ArrayList
 function Add-Problem([string]$text) { [void]$problems.Add($text) }
@@ -114,33 +127,43 @@ foreach ($key in (Get-Names $english)) {
     }
 
     if ([string]$translated[$key] -eq '') { Add-Problem "'$key' is empty" }
-    if ($paucal -and $manyKeys.Contains($key) -and -not $translated.Contains($key + $few)) {
+    if ($paucal -and $pairs.ContainsKey($key) -and -not $translated.Contains($key + $few)) {
         Add-Problem "missing paucal form '$key$few'"
+    }
+
+    if ($semantic.Contains($key) -and -not $translated.Contains($key + $oneForm)) {
+        Add-Problem "missing singular form '$key$oneForm'"
     }
 }
 
 foreach ($key in @($translated.Keys)) {
     $base = Get-BaseKey $key
     $isPaucal = Test-Paucal $key
+    $isSingular = Test-LargerSingularKey $key
     if (-not (Test-HasName $english $base)) {
         Add-Problem "unknown key '$key'"
         continue
     }
 
-    if ($isPaucal) {
-        if (-not $paucal) {
+    if ($isPaucal -or $isSingular) {
+        if ($isPaucal -and -not $paucal) {
             Add-Problem "unknown key '$key': $Language has no paucal form"
             continue
         }
 
-        if (-not $manyKeys.Contains($base)) {
+        if ($isSingular -and -not $largerSingular) {
+            Add-Problem "unknown key '$key': $Language puts only one in the singular"
+            continue
+        }
+
+        if (-not $pairs.ContainsKey($base)) {
             Add-Problem "unknown key '$key': '$base' is not the MANY key of a counted phrase"
             continue
         }
     }
 
     if ([string]$translated[$key] -eq '') {
-        if ($isPaucal) { Add-Problem "'$key' is empty" }
+        if ($isPaucal -or $isSingular) { Add-Problem "'$key' is empty" }
         continue
     }
 
@@ -228,9 +251,11 @@ $localePath = Join-Path $root "ES2Access\locale\$Language.json"
 $lines = @()
 foreach ($key in (Get-Names $english)) {
     $lines += '  ' + (Format-JsonString $key) + ': ' + (Format-JsonString ([string]$translated[$key]))
-    $paucalKey = $key + $few
-    if ($translated.Contains($paucalKey)) {
-        $lines += '  ' + (Format-JsonString $paucalKey) + ': ' + (Format-JsonString ([string]$translated[$paucalKey]))
+    foreach ($suffix in @($few, $oneForm)) {
+        $formKey = $key + $suffix
+        if ($translated.Contains($formKey)) {
+            $lines += '  ' + (Format-JsonString $formKey) + ': ' + (Format-JsonString ([string]$translated[$formKey]))
+        }
     }
 }
 

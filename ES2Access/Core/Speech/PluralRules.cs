@@ -42,6 +42,28 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public const string FewSuffix = ".few";
 
+        /// <summary>
+        /// What a locale file appends to a plural pair's MANY key to carry the sentence a SINGULAR
+        /// count other than one calls for ("fleet.route-arrives-turns" ->
+        /// "fleet.route-arrives-turns.one").
+        ///
+        /// It exists because <see cref="PluralForm.One"/> is not "the number one" in every language.
+        /// Russian puts 21, 31 and every other n1 in the singular, and a pair whose ONE key is a
+        /// sentence with no number in it at all - "Arrives this turn" against "Arrives in {0} turns"
+        /// - would then tell a Russian player that a twenty-one turn journey ends this turn. The
+        /// paucal has no such problem, because no language's paucal covers one.
+        ///
+        /// So where the file carries this key, <see cref="ModStrings.PluralKey"/> uses it for exactly
+        /// that case: the singular form with a count that is not one. A count of one always takes the
+        /// pair's own ONE key, in every language, and a language whose singular covers only one -
+        /// Polish, English - never reaches this key at all.
+        ///
+        /// It hangs off the MANY key for the same reason <see cref="FewSuffix"/> does: the MANY
+        /// sentence is the one with the number in it, so it is the sentence this form is written
+        /// from.
+        /// </summary>
+        public const string OneSuffix = ".one";
+
         public static PluralForm For(string language, int count)
         {
             int n = count == int.MinValue ? int.MaxValue : Math.Abs(count);

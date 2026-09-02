@@ -56,6 +56,10 @@ namespace ES2Access.Tests.Speech
         /// <summary>The suffix that makes a locale key the paucal form of the key before it.</summary>
         public const string FewSuffix = PluralRules.FewSuffix;
 
+        /// <summary>The suffix that makes a locale key the singular-with-a-larger-number form of the
+        /// key before it (<see cref="PluralRules.OneSuffix"/>).</summary>
+        public const string OneSuffix = PluralRules.OneSuffix;
+
         /// <summary>
         /// What is wrong with the file's BYTES, before anything parses them.
         ///
@@ -132,14 +136,15 @@ namespace ES2Access.Tests.Speech
         }
 
         /// <summary>
-        /// Keys the mod does not speak. A paucal key is legitimate only where the language has a
-        /// paucal form at all, so a stray <c>.few</c> in a French file is reported rather than
-        /// quietly ignored - it is a phrase a translator wrote that will never be heard.
+        /// Keys the mod does not speak. The extra counted forms - <c>.few</c> and <c>.one</c> - are
+        /// legitimate only where the language has a third number form at all, so a stray one in a
+        /// French file is reported rather than quietly ignored: it is a phrase a translator wrote
+        /// that will never be heard.
         /// </summary>
         public static IList<string> UnknownKeys(
             IEnumerable<string> keys,
             ICollection<string> defaultKeys,
-            bool allowsPaucal
+            bool allowsExtraForms
         )
         {
             List<string> problems = new List<string>();
@@ -152,10 +157,25 @@ namespace ES2Access.Tests.Speech
 
                 if (IsPaucal(key) && defaultKeys.Contains(BaseKey(key)))
                 {
-                    if (!allowsPaucal)
+                    if (!allowsExtraForms)
                     {
                         problems.Add(
                             "'" + key + "': a paucal form, which this language has no rule for"
+                        );
+                    }
+
+                    continue;
+                }
+
+                if (IsSingular(key) && defaultKeys.Contains(BaseKey(key)))
+                {
+                    if (!allowsExtraForms)
+                    {
+                        problems.Add(
+                            "'"
+                                + key
+                                + "': a singular form for a larger number, which this language has"
+                                + " no rule for"
                         );
                     }
 
@@ -210,8 +230,69 @@ namespace ES2Access.Tests.Speech
         }
 
         /// <summary>
-        /// Entries whose <c>{n}</c> placeholders differ from the English template's. A paucal form
-        /// is compared against its pair's English sentence, which is what it was written from.
+        /// Plural pairs whose singular-for-a-larger-number form is absent, in a language that needs
+        /// one.
+        ///
+        /// Only the pairs that ACTUALLY break: where the English singular carries a placeholder the
+        /// English many has, nothing is lost by using it for 21, because the number still reaches
+        /// the sentence. Where it does not - "Arrives this turn" against "Arrives in {0} turns" -
+        /// the singular is a different statement, and Russian's 21 would hear the wrong one. The
+        /// pairs are given MANY key to ONE key, which is the direction the key hangs.
+        /// </summary>
+        public static IList<string> MissingSemanticSingulars(
+            IDictionary<string, string> pairs,
+            IDictionary<string, string> english,
+            ICollection<string> present
+        )
+        {
+            List<string> problems = new List<string>();
+            foreach (KeyValuePair<string, string> pair in pairs)
+            {
+                string many;
+                string one;
+                if (
+                    !english.TryGetValue(pair.Key, out many)
+                    || !english.TryGetValue(pair.Value, out one)
+                    || !IsSemanticPair(one, many)
+                    || present.Contains(pair.Key + OneSuffix)
+                )
+                {
+                    continue;
+                }
+
+                problems.Add(
+                    "missing singular form '"
+                        + pair.Key
+                        + OneSuffix
+                        + "' for the pair whose singular is \""
+                        + one
+                        + "\""
+                );
+            }
+
+            return problems;
+        }
+
+        /// <summary>Whether a pair's singular sentence cannot stand in for a larger number: the
+        /// counted sentence has a slot the singular one has nowhere to put.</summary>
+        public static bool IsSemanticPair(string oneTemplate, string manyTemplate)
+        {
+            SortedSet<string> singular = Placeholders(oneTemplate);
+            foreach (string index in Placeholders(manyTemplate))
+            {
+                if (!singular.Contains(index))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Entries whose <c>{n}</c> placeholders differ from the English template's. A paucal or
+        /// singular form is compared against its pair's English MANY sentence, which is what it was
+        /// written from.
         /// </summary>
         public static IList<string> PlaceholderMismatches(
             IDictionary<string, string> table,
@@ -547,17 +628,32 @@ namespace ES2Access.Tests.Speech
             return flat;
         }
 
-        /// <summary>The key a paucal form belongs to, or the key itself.</summary>
+        /// <summary>The key an extra counted form belongs to, or the key itself.</summary>
         public static string BaseKey(string key)
         {
-            return IsPaucal(key) ? key.Substring(0, key.Length - FewSuffix.Length) : key;
+            if (IsPaucal(key))
+            {
+                return key.Substring(0, key.Length - FewSuffix.Length);
+            }
+
+            return IsSingular(key) ? key.Substring(0, key.Length - OneSuffix.Length) : key;
         }
 
         public static bool IsPaucal(string key)
         {
+            return HasForm(key, FewSuffix);
+        }
+
+        public static bool IsSingular(string key)
+        {
+            return HasForm(key, OneSuffix);
+        }
+
+        private static bool HasForm(string key, string suffix)
+        {
             return key != null
-                && key.Length > FewSuffix.Length
-                && key.EndsWith(FewSuffix, StringComparison.Ordinal);
+                && key.Length > suffix.Length
+                && key.EndsWith(suffix, StringComparison.Ordinal);
         }
 
         /// <summary>Whether <paramref name="text"/> contains a letter of <paramref name="script"/>.</summary>

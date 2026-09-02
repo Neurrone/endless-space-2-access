@@ -25,10 +25,10 @@ English moved while nobody was looking.
     # the cutscene audio descriptions instead of the string table
     .\tools\locale\mark-translated.ps1 -Language polish -Descriptions
 
-The snapshot is keyed exactly like the translation it sits beside, paucal (.few) keys
-included; a paucal form records the English of the pair's MANY sentence, which is what it was
-written from. Output is UTF-8 without a byte order mark, two-space indented, in english.json's
-own key order, which is what the encoding lint expects.
+The snapshot is keyed exactly like the translation it sits beside, the extra counted forms
+(.few, .one) included; each of those records the English of the pair's MANY sentence, which is
+what it was written from. Output is UTF-8 without a byte order mark, two-space indented, in
+english.json's own key order, which is what the encoding lint expects.
 
 sources\ is a subfolder because both the build's copy step and build_release.ps1 take
 locale\*.json without recursing: the snapshots never reach a player's install.
@@ -146,8 +146,8 @@ if ($Descriptions) {
     }
 } else {
     foreach ($key in Names $englishTable) {
-        # The paucal forms sit beside their pair, and record the same English sentence.
-        foreach ($name in @($key, "$key.few")) {
+        # The extra counted forms sit beside their pair, and record the same English sentence.
+        foreach ($name in @($key, "$key.few", "$key.one")) {
             if (-not (Has $translationTable $name)) { continue }
             if ($wanted -and -not $wanted.Contains($name) -and -not $wanted.Contains($key)) {
                 if ($snapshot -and (Has $snapshot $name)) {

@@ -128,6 +128,65 @@ namespace ES2Access.Tests.Speech
         }
 
         [Fact]
+        public void ASingularFormKeyIsAcceptedOnlyWhereTheLanguageHasOne()
+        {
+            Assert.Empty(LocaleLint.UnknownKeys(new[] { "a.many.one" }, Keys("a.many"), true));
+            Assert.Contains(
+                "a singular form for a larger number",
+                Only(LocaleLint.UnknownKeys(new[] { "a.many.one" }, Keys("a.many"), false))
+            );
+        }
+
+        [Fact]
+        public void ASingularFormOfAKeyTheModDoesNotSpeakIsStillUnknown()
+        {
+            Assert.Contains(
+                "unknown key 'b.many.one'",
+                Only(LocaleLint.UnknownKeys(new[] { "b.many.one" }, Keys("a.many"), true))
+            );
+        }
+
+        /// <summary>
+        /// The singular form is owed only where the pair's singular sentence has nowhere to put the
+        /// number: "Arrives this turn" cannot stand in for twenty-one turns, while "{0} outpost"
+        /// can.
+        /// </summary>
+        [Fact]
+        public void AMissingSingularFormIsReportedOnlyForAPairThatNeedsOne()
+        {
+            Dictionary<string, string> english = new Dictionary<string, string>
+            {
+                { "a.turns", "Arrives in {0} turns" },
+                { "a.this-turn", "Arrives this turn" },
+                { "b.many", "{0} outposts" },
+                { "b.one", "{0} outpost" },
+            };
+            Dictionary<string, string> pairs = new Dictionary<string, string>
+            {
+                { "a.turns", "a.this-turn" },
+                { "b.many", "b.one" },
+            };
+
+            Assert.Contains(
+                "missing singular form 'a.turns.one'",
+                Only(LocaleLint.MissingSemanticSingulars(pairs, english, Keys("b.many")))
+            );
+            Assert.Empty(
+                LocaleLint.MissingSemanticSingulars(pairs, english, Keys("a.turns.one"))
+            );
+        }
+
+        [Fact]
+        public void APairWhoseSingularCarriesTheNumberIsNotSemantic()
+        {
+            Assert.True(LocaleLint.IsSemanticPair("Arrives this turn", "Arrives in {0} turns"));
+            Assert.False(LocaleLint.IsSemanticPair("{0} outpost", "{0} outposts"));
+            Assert.True(
+                LocaleLint.IsSemanticPair("En route to {0} this turn", "En route to {0} in {1} turns")
+            );
+        }
+
+        [Fact]
         public void APlaceholderTheTranslationDroppedOrInventedIsReported()
         {
             Dictionary<string, string> english = Table("a.key", "{0} of {1}");
@@ -362,8 +421,10 @@ namespace ES2Access.Tests.Speech
         public void APaucalKeysBaseIsThePairItBelongsTo()
         {
             Assert.Equal("a.many", LocaleLint.BaseKey("a.many.few"));
+            Assert.Equal("a.many", LocaleLint.BaseKey("a.many.one"));
             Assert.Equal("a.many", LocaleLint.BaseKey("a.many"));
             Assert.False(LocaleLint.IsPaucal(".few"));
+            Assert.False(LocaleLint.IsSingular(".one"));
         }
 
         [Fact]

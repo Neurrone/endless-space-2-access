@@ -215,6 +215,89 @@ namespace ES2Access.Tests.Speech
             Assert.Empty(_warnings);
         }
 
+        /// <summary>
+        /// Russian's singular covers 21, 31 and every other n1, so a pair whose singular sentence
+        /// has no number in it needs a fourth sentence for that case, and the locale file carries it
+        /// under "&lt;manyKey&gt;.one". A count of ONE still takes the pair's own singular.
+        /// </summary>
+        [Fact]
+        public void ASingularCountLargerThanOneTakesTheSentenceWrittenForIt()
+        {
+            InstallRussian(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                    { ModStrings.SystemSupplyingOutposts + PluralRules.OneSuffix, "single {0}" },
+                }
+            );
+
+            Assert.Equal("one", Supplying(1));
+            Assert.Equal("single 21", Supplying(21));
+            Assert.Equal("single 101", Supplying(101));
+            Assert.Equal("many 5", Supplying(5));
+            Assert.Empty(_warnings);
+        }
+
+        /// <summary>Without that sentence nothing changes: the pair's own singular answers, which is
+        /// what every build did before the form existed.</summary>
+        [Fact]
+        public void AMissingSingularFormFallsBackToThePairsOwnSingular()
+        {
+            InstallRussian(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one {0}" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                }
+            );
+
+            Assert.Equal("one 21", Supplying(21));
+        }
+
+        /// <summary>Polish's singular covers one alone, so it never reaches the key however the file
+        /// is written.</summary>
+        [Fact]
+        public void ALanguageWhoseSingularIsOnlyOneNeverReachesThatSentence()
+        {
+            ModStrings.Install(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one {0}" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                    { ModStrings.SystemSupplyingOutposts + PluralRules.OneSuffix, "single {0}" },
+                },
+                "polish"
+            );
+
+            Assert.Equal("one 1", Supplying(1));
+            Assert.Equal("many 21", Supplying(21));
+        }
+
+        /// <summary>The key itself is what a caller gets whose phrase has more slots than the count,
+        /// and it is chosen by the same rules.</summary>
+        [Fact]
+        public void ThePluralKeyIsTheOneTheSameRulesWouldHaveFormatted()
+        {
+            InstallRussian(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.SystemSupplyingOutpost, "one" },
+                    { ModStrings.SystemSupplyingOutposts, "many {0}" },
+                    { ModStrings.SystemSupplyingOutposts + PluralRules.OneSuffix, "single {0}" },
+                    { ModStrings.SystemSupplyingOutposts + PluralRules.FewSuffix, "few {0}" },
+                }
+            );
+
+            Assert.Equal(ModStrings.SystemSupplyingOutpost, SupplyingKey(1));
+            Assert.Equal(
+                ModStrings.SystemSupplyingOutposts + PluralRules.OneSuffix,
+                SupplyingKey(21)
+            );
+            Assert.Equal(ModStrings.SystemSupplyingOutposts + PluralRules.FewSuffix, SupplyingKey(3));
+            Assert.Equal(ModStrings.SystemSupplyingOutposts, SupplyingKey(7));
+        }
+
         /// <summary>A two-form language never asks for the paucal, so a ".few" key sitting in its
         /// file changes nothing.</summary>
         [Fact]
@@ -253,6 +336,15 @@ namespace ES2Access.Tests.Speech
         private static string Supplying(int count)
         {
             return ModStrings.Plural(
+                ModStrings.SystemSupplyingOutpost,
+                ModStrings.SystemSupplyingOutposts,
+                count
+            );
+        }
+
+        private static string SupplyingKey(int count)
+        {
+            return ModStrings.PluralKey(
                 ModStrings.SystemSupplyingOutpost,
                 ModStrings.SystemSupplyingOutposts,
                 count

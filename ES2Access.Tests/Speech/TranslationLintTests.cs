@@ -49,19 +49,21 @@ namespace ES2Access.Tests.Speech
             Assert.True(problems.Count == 0, TranslationFiles.Report(fileName, problems));
         }
 
-        /// <summary>The paucal keys a three-form language adds are keys too, and this is the check
-        /// that knows which files may carry them.</summary>
+        /// <summary>The extra counted keys a language with more than two number forms adds are keys
+        /// too, and this is the check that knows which files may carry them.</summary>
         [Theory]
         [MemberData(nameof(LocaleFiles))]
         public void EveryKeyIsOneTheModSpeaksInThisLanguage(string fileName)
         {
+            string language = TranslationFiles.LanguageOf(fileName);
             Dictionary<string, string> table = Table(fileName);
             List<string> problems = new List<string>();
             problems.AddRange(
                 LocaleLint.UnknownKeys(
                     table.Keys,
                     DefaultKeys(),
-                    TranslationFiles.HasPaucal(TranslationFiles.LanguageOf(fileName))
+                    TranslationFiles.HasPaucal(language)
+                        || TranslationFiles.SingularCoversLargerNumbers(language)
                 )
             );
             problems.AddRange(LocaleLint.PlaceholderMismatches(table, English()));
@@ -95,6 +97,30 @@ namespace ES2Access.Tests.Speech
 
             IList<string> problems = LocaleLint.MissingPaucals(
                 PluralPairs.Scan().ManyKeys,
+                Table(fileName).Keys
+            );
+
+            Assert.True(problems.Count == 0, TranslationFiles.Report(fileName, problems));
+        }
+
+        /// <summary>
+        /// A language whose singular covers 21 as well as 1 needs a sentence for that case wherever
+        /// the pair's singular has no number in it - Russian, of the languages the game ships.
+        /// Without it the mod tells a Russian player that a twenty-one turn journey arrives this
+        /// turn, which is not a grammar slip but a false statement.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(LocaleFiles))]
+        public void ALanguageWhoseSingularTakesLargerNumbersCarriesTheirSentences(string fileName)
+        {
+            if (!TranslationFiles.SingularCoversLargerNumbers(TranslationFiles.LanguageOf(fileName)))
+            {
+                return;
+            }
+
+            IList<string> problems = LocaleLint.MissingSemanticSingulars(
+                PluralPairs.Scan().Pairs,
+                English(),
                 Table(fileName).Keys
             );
 
@@ -203,12 +229,16 @@ namespace ES2Access.Tests.Speech
                 "only " + scan.ManyKeys.Count + " plural pairs found; the scan has stopped working"
             );
 
-            foreach (string key in scan.ManyKeys)
+            foreach (KeyValuePair<string, string> pair in scan.Pairs)
             {
-                Assert.True(ModStrings.Has(key), "no such plural key: " + key);
+                Assert.True(ModStrings.Has(pair.Key), "no such plural key: " + pair.Key);
+                Assert.True(ModStrings.Has(pair.Value), "no such plural key: " + pair.Value);
             }
 
-            Assert.Equal(new[] { PluralPairs.TracedSite }, scan.IndirectSites);
+            Assert.Equal(
+                new SortedSet<string>(PluralPairs.TracedSites),
+                new SortedSet<string>(scan.IndirectSites)
+            );
         }
 
         private static Dictionary<string, string> Table(string fileName)

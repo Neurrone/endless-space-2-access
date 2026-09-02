@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using ES2Access.Core.Speech;
 
 namespace ES2Access.Tests.Speech
 {
@@ -118,6 +119,28 @@ namespace ES2Access.Tests.Speech
         public static bool HasPaucal(string language)
         {
             return PluralFormsOf(language) == 3;
+        }
+
+        /// <summary>
+        /// Whether the language's SINGULAR form covers counts other than one, and so owes the locale
+        /// file a <c>.one</c> key for every pair whose singular sentence has no number in it.
+        ///
+        /// Asked of <see cref="PluralRules"/> rather than listed here, because that is the file that
+        /// decides it: Russian's singular takes 21, 31 and every other n1, Polish's takes 1 alone,
+        /// and a language added to the rules answers this on its own. A hundred counts is well past
+        /// every cycle the CLDR rules for these languages turn on.
+        /// </summary>
+        public static bool SingularCoversLargerNumbers(string language)
+        {
+            for (int count = 2; count <= 200; count++)
+            {
+                if (PluralRules.For(language, count) == PluralForm.One)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int PluralFormsOf(string language)

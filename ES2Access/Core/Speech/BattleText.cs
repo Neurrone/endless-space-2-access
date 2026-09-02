@@ -29,7 +29,7 @@ namespace ES2Access.Core.Speech
         /// <see cref="ModStrings.Plural"/>), or null where the build has no such phrase.</summary>
         public static string Counted(string oneKey, string manyKey, int count)
         {
-            return Optional(count == 1 ? oneKey : manyKey, count);
+            return Optional(ModStrings.PluralKey(oneKey, manyKey, count), count);
         }
 
         /// <summary>
@@ -107,23 +107,37 @@ namespace ES2Access.Core.Speech
             return said.Build();
         }
 
+        // Every head is a counted pair whose two forms take DIFFERENT arguments - the counted one
+        // has the tally in it and the single one has no slot for it - so the count picks the KEY
+        // (ModStrings.PluralKey, which knows that Russian's singular covers 21 as well as 1) and the
+        // key picked then says which arguments go with it.
         private static string Head(FireWatch.Volley volley)
         {
             string attacker = volley.Attacker;
             string target = volley.Target;
             if (volley.Hits <= 0)
             {
-                return volley.Misses == 1
-                    ? Optional(ModStrings.BattleFireMissed, attacker, target)
-                    : Optional(ModStrings.BattleFireMissedMany, attacker, target, volley.Misses);
+                string missed = ModStrings.PluralKey(
+                    ModStrings.BattleFireMissed,
+                    ModStrings.BattleFireMissedMany,
+                    volley.Misses
+                );
+                return missed == ModStrings.BattleFireMissed
+                    ? Optional(missed, attacker, target)
+                    : Optional(missed, attacker, target, volley.Misses);
             }
 
             int damage = Whole(volley.Damage);
             if (damage <= 0 && Whole(volley.Absorbed) > 0)
             {
-                return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireAbsorbed, attacker, target)
-                    : Optional(ModStrings.BattleFireAbsorbedMany, attacker, target, volley.Hits);
+                string absorbedKey = ModStrings.PluralKey(
+                    ModStrings.BattleFireAbsorbed,
+                    ModStrings.BattleFireAbsorbedMany,
+                    volley.Hits
+                );
+                return absorbedKey == ModStrings.BattleFireAbsorbed
+                    ? Optional(absorbedKey, attacker, target)
+                    : Optional(absorbedKey, attacker, target, volley.Hits);
             }
 
             int energy = Whole(volley.Energy);
@@ -131,41 +145,48 @@ namespace ES2Access.Core.Speech
             bool typed = Whole(volley.Untyped) <= 0;
             if (typed && energy > 0 && projectile > 0)
             {
-                return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireMixed, attacker, target, energy, projectile)
-                    : Optional(
-                        ModStrings.BattleFireMixedMany,
-                        attacker,
-                        target,
-                        volley.Hits,
-                        energy,
-                        projectile
-                    );
+                string mixed = ModStrings.PluralKey(
+                    ModStrings.BattleFireMixed,
+                    ModStrings.BattleFireMixedMany,
+                    volley.Hits
+                );
+                return mixed == ModStrings.BattleFireMixed
+                    ? Optional(mixed, attacker, target, energy, projectile)
+                    : Optional(mixed, attacker, target, volley.Hits, energy, projectile);
             }
 
             if (typed && energy > 0)
             {
-                return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireEnergy, attacker, target, energy)
-                    : Optional(ModStrings.BattleFireEnergyMany, attacker, target, volley.Hits, energy);
+                string energyKey = ModStrings.PluralKey(
+                    ModStrings.BattleFireEnergy,
+                    ModStrings.BattleFireEnergyMany,
+                    volley.Hits
+                );
+                return energyKey == ModStrings.BattleFireEnergy
+                    ? Optional(energyKey, attacker, target, energy)
+                    : Optional(energyKey, attacker, target, volley.Hits, energy);
             }
 
             if (typed && projectile > 0)
             {
-                return volley.Hits == 1
-                    ? Optional(ModStrings.BattleFireProjectile, attacker, target, projectile)
-                    : Optional(
-                        ModStrings.BattleFireProjectileMany,
-                        attacker,
-                        target,
-                        volley.Hits,
-                        projectile
-                    );
+                string projectileKey = ModStrings.PluralKey(
+                    ModStrings.BattleFireProjectile,
+                    ModStrings.BattleFireProjectileMany,
+                    volley.Hits
+                );
+                return projectileKey == ModStrings.BattleFireProjectile
+                    ? Optional(projectileKey, attacker, target, projectile)
+                    : Optional(projectileKey, attacker, target, volley.Hits, projectile);
             }
 
-            return volley.Hits == 1
-                ? Optional(ModStrings.BattleFirePlain, attacker, target, damage)
-                : Optional(ModStrings.BattleFirePlainMany, attacker, target, volley.Hits, damage);
+            string plain = ModStrings.PluralKey(
+                ModStrings.BattleFirePlain,
+                ModStrings.BattleFirePlainMany,
+                volley.Hits
+            );
+            return plain == ModStrings.BattleFirePlain
+                ? Optional(plain, attacker, target, damage)
+                : Optional(plain, attacker, target, volley.Hits, damage);
         }
 
         /// <summary>A damage figure as a listener wants it: whole points, never a decimal tail. The

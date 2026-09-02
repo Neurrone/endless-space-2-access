@@ -3161,26 +3161,54 @@ namespace ES2Access.Core.Speech
         /// to it. Two forms is what English needs and what a translator can always fill in - a language
         /// with a single form writes the same sentence twice.
         ///
-        /// The THIRD form is real, and it lives in the locale file rather than in a call site: where
-        /// <see cref="PluralRules"/> says the installed language wants the Slavic paucal (Polish and
-        /// Russian, of the languages the game ships), the template is looked up under
-        /// <c>&lt;manyKey&gt;.few</c> and falls back to <paramref name="manyKey"/> when the file does
-        /// not carry one. English needs no such key and ships none, so no caller passes a third key
-        /// and adding a language costs no code.
+        /// The forms BEYOND those two are real, and they live in the locale file rather than in a
+        /// call site - English needs none of them and ships none, so no caller passes a third key
+        /// and adding a language costs no code. <see cref="PluralKey"/> is where they are chosen,
+        /// and is also what a caller uses whose count is not the phrase's only slot.
         /// </summary>
         public static string Plural(string oneKey, string manyKey, int count)
+        {
+            return Format(PluralKey(oneKey, manyKey, count), count);
+        }
+
+        /// <summary>
+        /// Which of a counted pair's KEYS a number calls for, by the same rules as
+        /// <see cref="Plural"/>, for the callers that cannot let it do the formatting: a phrase
+        /// whose count is not its only slot ("Probe launched towards {0}, {1} probes remaining"),
+        /// and one whose two forms take different arguments altogether ("Arrives this turn, {0}
+        /// movement" against "{0} turns, {1} movement"). Such a caller compares the answer against
+        /// the ONE key to know which argument list goes with it.
+        ///
+        /// Three forms, two of which live in the locale file rather than at the call site. The
+        /// paucal is <c>&lt;manyKey&gt;.few</c> (<see cref="PluralRules.FewSuffix"/>). The other is
+        /// <c>&lt;manyKey&gt;.one</c> (<see cref="PluralRules.OneSuffix"/>), for the singular with a
+        /// count that is not one - Russian's 21, 31 and so on, where a pair whose ONE sentence has
+        /// no number in it would otherwise say something untrue. A count of one always takes
+        /// <paramref name="oneKey"/>, and a missing form falls back to the key it hangs off, so a
+        /// language that carries neither is spoken exactly as it was before either existed.
+        /// </summary>
+        public static string PluralKey(string oneKey, string manyKey, int count)
         {
             switch (PluralRules.For(_language, count))
             {
                 case PluralForm.One:
-                    return Format(oneKey, count);
+                    if (count != 1)
+                    {
+                        string singularKey = manyKey + PluralRules.OneSuffix;
+                        if (Has(singularKey))
+                        {
+                            return singularKey;
+                        }
+                    }
+
+                    return oneKey;
 
                 case PluralForm.Few:
                     string fewKey = manyKey + PluralRules.FewSuffix;
-                    return Format(Has(fewKey) ? fewKey : manyKey, count);
+                    return Has(fewKey) ? fewKey : manyKey;
 
                 default:
-                    return Format(manyKey, count);
+                    return manyKey;
             }
         }
 

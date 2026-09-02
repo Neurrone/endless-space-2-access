@@ -13,8 +13,10 @@ out of context is a coin toss. So each batch entry carries three things beside t
   terms    how the GAME itself already translates the proper nouns the string names, from the
            glossary built out of the shipped language files - a translation that renames
            Dust or the Academy reads as a different game
-  few      present only on the MANY key of a counted pair, and only for a three-form
-           language, where the translator owes a paucal form as well
+  forms    present only on the MANY key of a counted pair, naming the extra number forms this
+           language owes on top of the key itself: "few" for the Slavic paucal, and "one"
+           where the language's singular also covers 21, 31 ... and the pair's singular
+           sentence has no number in it to say so with
 
 Batches are input only: they are never edited in place. A translator writes NEW files - see
 the README.txt written beside them - and merge-parts.ps1 turns those into the shipped files.
@@ -75,9 +77,22 @@ foreach ($entry in $entries) {
 # Longest stem first, so "galaxy.system." wins over "galaxy." where both exist.
 $prefixes = @($prefixes | Sort-Object -Property @{ Expression = { $_.Key.Length }; Descending = $true })
 
-$manyKeys = Get-PluralManyKeys $root $fieldToKey
+$pairs = Get-PluralPairs $root $fieldToKey
 $paucal = Test-ThreeForm $Language
+$largerSingular = Test-LargerSingular $Language
 $terms = Get-TermIndex $root $Language
+
+# What each MANY key owes this language beyond its own sentence, worked out once.
+$formsOf = @{}
+foreach ($manyKey in $pairs.Keys) {
+    $forms = New-Object System.Collections.ArrayList
+    if ($paucal) { [void]$forms.Add('few') }
+    if ($largerSingular -and (Test-SemanticPair ([string]$english.($pairs[$manyKey])) ([string]$english.$manyKey))) {
+        [void]$forms.Add('one')
+    }
+
+    if ($forms.Count -gt 0) { $formsOf[$manyKey] = @($forms) }
+}
 
 $target = Join-Path $OutDir $Language
 if (Test-Path -LiteralPath $target) {
@@ -113,7 +128,7 @@ foreach ($key in (Get-Names $english)) {
 
     if ($context -eq '') { $noContext++ }
     $item['context'] = $context
-    if ($paucal -and $manyKeys.Contains($key)) { $item['few'] = $true }
+    if ($formsOf.ContainsKey($key)) { $item['forms'] = $formsOf[$key] }
     $item['terms'] = Get-TermsFor $terms "locale:$key"
     $batch[$key] = $item
 
@@ -156,6 +171,35 @@ if ($batch.Count -gt 0) { $written += Save-Batch $batch 'descriptions' $number }
 
 # --- what a translator has to send back ----------------------------------------------------------
 
+# What "forms" can name, one paragraph per form, so the README explains only the forms this
+# language actually owes.
+$formNotes = @()
+if ($paucal) {
+    $formNotes += '      "few"  the paucal, for 2-4, 22-24, ...'
+}
+
+if ($largerSingular) {
+    $formNotes += @"
+      "one"  the SINGULAR, for 21, 31, 101 ... - $Language puts those in the singular, and
+             this pair's own singular sentence has no number in it, so it cannot say them.
+             Write the number in: this form takes the MANY sentence's placeholders.
+"@
+}
+
+$countedForms = if ($formNotes.Count -eq 0) {
+    @"
+  - $Language has two number forms, so there are no ".few" or ".one" keys: every key in your
+    output is a key of the input.
+"@
+} else {
+    @"
+  - An entry carrying "forms" is the MANY sentence of a counted phrase, and $Language needs
+    more number forms than the pair itself has. Write the many key AND the same key plus a
+    dot and each named form. Those are the only keys in your output that are not in the input.
+$($formNotes -join "`n")
+"@
+}
+
 $readme = @"
 Translating Endless Space 2 Access into $Language
 =================================================
@@ -178,14 +222,7 @@ strings-<n>.json  ->  a flat key-to-translation object
   - "context" says what the string is for and is NOT translated.
   - "terms" is how the game's own $Language files already translate the proper nouns this
     string names. Use those words unless the sentence makes them impossible.
-$(if ($paucal) { @"
-  - An entry marked "few": true is the MANY sentence of a counted phrase, and $Language has a
-    third form for 2-4, 22-24, ... Write BOTH: the many key, and the same key plus ".few".
-    They are the only keys in your output that are not in the input.
-"@ } else { @"
-  - $Language has two number forms, so there are no ".few" keys: every key in your output is
-    a key of the input.
-"@ })
+$countedForms
 
 descriptions-<n>.json  ->  a movie-to-array-of-strings object
 
@@ -217,7 +254,12 @@ Write-Host "README.txt"
 Write-Host ""
 Write-Host "$((Get-Names $english).Count) strings, $((Get-Names $descriptions).Count) movies into $($written.Count) part(s) under $target."
 if ($paucal) {
-    Write-Host "$($manyKeys.Count) counted phrases also need a '.few' form."
+    Write-Host "$($pairs.Count) counted phrases also need a '.few' form."
+}
+
+if ($largerSingular) {
+    $owed = @($formsOf.Keys | Where-Object { $formsOf[$_] -contains 'one' })
+    Write-Host "$($owed.Count) of them also need a '.one' form."
 }
 
 if ($noContext -gt 0) {
