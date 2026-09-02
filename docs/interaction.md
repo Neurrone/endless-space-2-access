@@ -17,11 +17,6 @@ own exclusive modal stack voids any layer constraint against its stack-mates.
 
 ## Gestures
 
-**Enter is click parity everywhere**, the destructive clicks included, and there are no
-mod-invented action menus: a control's extra buttons are child nodes. The two things that displace
-a node's click are a live drag landing on a control that takes the cargo and a targeting cursor the
-game has armed.
-
 **Each of the mod's chords means the game's own gesture and nothing else** — the right click, the
 Alt-click, the Ctrl-click, the second click. The Alt-click is the one chord whose keys are not its
 gesture's (Alt+Enter is Unity's own fullscreen toggle, below every managed layer), and the cost of
