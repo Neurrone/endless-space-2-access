@@ -46,6 +46,27 @@ namespace ES2Access.Tests.Speech
         }
 
         [Fact]
+        public void ScaleAmplifiesAndClipsAtFullScale()
+        {
+            float[] samples = { 0.5f, -0.5f, 0.9f, -0.9f, 0f };
+            SpeechAudio.Scale(samples, 1.5f);
+            Assert.Equal(0.75f, samples[0]);
+            Assert.Equal(-0.75f, samples[1]);
+            Assert.Equal(1f, samples[2]);
+            Assert.Equal(-1f, samples[3]);
+            Assert.Equal(0f, samples[4]);
+        }
+
+        [Fact]
+        public void ScaleBelowOneAttenuates()
+        {
+            float[] samples = { 0.5f, -1f };
+            SpeechAudio.Scale(samples, 0.5f);
+            Assert.Equal(0.25f, samples[0]);
+            Assert.Equal(-0.5f, samples[1]);
+        }
+
+        [Fact]
         public void QuietInteriorIsKept()
         {
             float[] samples = new float[300];

@@ -21,7 +21,8 @@ Windows build changes.
   menu and the pause menu) has a macOS-only Speech tab: the backend (System voice, or VoiceOver
   through Prism if you prefer VoiceOver's own speech and can live without the queue), the
   voice — the list offers the voices for the game's language, with your Spoken Content voice
-  as the default first entry — and the speaking rate and speech volume. Changes take effect as
+  as the default first entry — and the speaking rate and speech volume (70 is the voice's own
+  loudness; the slider goes louder than that, at the cost of some clipping). Changes take effect as
   you make them; Apply keeps them, Cancel puts everything back, and "Reset voice and rate to
   Spoken Content" returns to following the OS setting.
 - **The chord modifiers are Option and Command.** Every key the manual writes as `Ctrl+X` is

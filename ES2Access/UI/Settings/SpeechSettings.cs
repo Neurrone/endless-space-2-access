@@ -13,7 +13,9 @@ namespace ES2Access.UI.Settings
     /// An absent voice or rate key means FOLLOW SPOKEN CONTENT - the OS settings stay the mod's
     /// defaults, and a player who never opens the Speech tab keeps them, changes included. A
     /// stored value wins until the tab's reset button removes it. Volume is the mod's own
-    /// (Spoken Content has no per-app volume) and defaults to full.
+    /// (Spoken Content has no per-app volume): <see cref="VoiceLoudnessPercent"/> on the slider
+    /// is the voice's own loudness, the rest of the slider amplifies it, and the default sits a
+    /// little above the voice's own.
     ///
     /// <see cref="Configure"/> runs before <c>PrismSpeech.Initialize</c> (the backend choice
     /// decides what Initialize stands up) and <see cref="Apply"/> after it (the levers only exist
@@ -26,7 +28,11 @@ namespace ES2Access.UI.Settings
         public const string RateKey = "speech.rate"; // 0-100, AVSpeech's [0,1] scale times 100
         public const string VolumeKey = "speech.volume"; // 0-100
 
-        public const int VolumeDefault = 100;
+        /// <summary>The slider position at which the voice plays at its own loudness; above it
+        /// the samples are amplified, so the slider can go louder than the voice renders.</summary>
+        public const int VoiceLoudnessPercent = 70;
+
+        public const int VolumeDefault = 80;
 
         /// <summary>The stored backend: <see cref="PrismSpeech.MacBackendPrism"/> when the file
         /// says so, else the system voice.</summary>
@@ -50,7 +56,7 @@ namespace ES2Access.UI.Settings
             return Percent(RateKey, -1);
         }
 
-        /// <summary>The stored volume percent; full volume until set.</summary>
+        /// <summary>The stored volume percent; <see cref="VolumeDefault"/> until set.</summary>
         public static int VolumePercent()
         {
             return Percent(VolumeKey, VolumeDefault);
@@ -104,7 +110,7 @@ namespace ES2Access.UI.Settings
             MacSystemVoice mac = speech == null ? null : speech.Mac;
             if (mac != null)
             {
-                mac.SetVolume01(VolumePercent() / 100f);
+                mac.SetVolume(VolumePercent() / (float)VoiceLoudnessPercent);
             }
         }
 
