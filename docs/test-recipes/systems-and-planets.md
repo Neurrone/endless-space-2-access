@@ -502,6 +502,20 @@ page without writing the ladder into its cursor memory. After the clamp at 15,
 `ES2Access.UI.ZoomLadder.Crossing()` answers false — a refused step arms no seat (it is a latch: ask
 it only where the answer is expected to be false).
 
+**"The step answered true and the level did not change" is a stalled game transition, not the
+ladder** (measured 2026-09-02, chasing a report of `ui.left` at 15 doing nothing on an earlier
+build). `GalaxyView.RequestGalaxyViewLevelChange` only ENQUEUES: it answers true the moment the
+requested level accepts the parameters, and the queue is drained by
+`UpdatePendingGalaxyViewLevelRequestsAsync` ONLY while `CanChangeGalaxyView`
+(`GalaxyViewLevelTransitionCurrent == null`). A transition the game never ends therefore holds every
+later request while `GalaxyViewLevels.StepZoom` goes on answering `ok=True changesPage=True`, and it
+is the same stall that makes `PlanetOverviewScreen.FinishArriving` log "the card never drew itself"
+- that card is waiting on a camera that never settles. The probe that tells the two apart, by
+reflection off the live `GalaxyView`: `pendingGalaxyViewLevelRequests.Count` beside
+`CanChangeGalaxyView` and `GalaxyViewLevelCurrent`; a healthy page answers `pending=0 canChange=True`.
+Re-measured on the owner's save at `c8ff1cf`: twenty consecutive 13-14-15 crossings, each seating
+`hud:view-title/zoom` with one rung line, plus the Enter-on-a-planet-card route out.
+
 In SCAN mode the pair is `scan:zoom` on both screens and the same contract holds, with one residual
 on the way OUT (14 → 13, galaxy): if the galaxy page's remembered cursor is already `scan:zoom`, its
 own live value speaks the settled rung ("13 of 15") before the landing reads the whole line. That is
