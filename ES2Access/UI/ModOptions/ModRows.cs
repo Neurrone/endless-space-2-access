@@ -338,6 +338,7 @@ namespace ES2Access.UI.ModOptions
                 item.Toggle.AgeTransform.Visible = false;
             }
 
+            Fit(item);
             Captions[item] = title;
             return option;
         }
@@ -356,7 +357,70 @@ namespace ES2Access.UI.ModOptions
             {
                 item.TitleLabel.Text = title;
             }
+
+            Fit(item as OptionCheckboxItem);
         }
+
+        /// <summary>
+        /// LET A CAPTION TAKE THE WHOLE ROW, AND AS MANY LINES AS ITS WORDS NEED.
+        ///
+        /// The checkbox prefab gives its title the left half of the row and the tick the right half,
+        /// which is the shape a setting wants and not the shape a heading does: a caption has no tick,
+        /// and one carrying a file path wrapped to four lines inside a one-line row, its first line
+        /// under the tab bar and its file name cut mid-word (owner-reported 2026-09-02). So the tick's
+        /// half is hidden, the title's half is stretched across the row, the label is let grow to its
+        /// text, and the row is made as tall as the label came out - with the widths written up front,
+        /// because the layout pass that would otherwise widen them runs a frame later and the height
+        /// has to be known now, while the table is being arranged.
+        /// </summary>
+        private static void Fit(OptionCheckboxItem item)
+        {
+            if (item == null || item.TitleLabel == null)
+            {
+                return;
+            }
+
+            try
+            {
+                AgeTransform row = item.AgeTransform;
+                AgeTransform label = item.TitleLabel.AgeTransform;
+                AgeTransform titles = label.Parent;
+                AgeTransform ticks =
+                    item.Toggle == null || item.Toggle.AgeTransform == null
+                        ? null
+                        : item.Toggle.AgeTransform.Parent;
+                if (row == null || titles == null)
+                {
+                    return;
+                }
+
+                if (ticks != null && ticks != titles)
+                {
+                    ticks.Visible = false;
+                }
+
+                titles.PercentRight = 100f;
+                titles.PixelMarginRight = CaptionMargin;
+                titles.Width = row.Width - CaptionMargin;
+                label.Width = titles.Width - label.PixelMarginLeft - label.PixelMarginRight;
+                label.AttachBottom = false;
+                item.TitleLabel.AdjustHeightToContent = true;
+                // Set again so the label measures itself against the width it now has.
+                item.TitleLabel.Text = item.TitleLabel.Text;
+                float needed = label.Height + 2f * label.Y;
+                if (needed > row.Height)
+                {
+                    row.Height = needed;
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("mod options: fitting a caption to its words threw: " + e);
+            }
+        }
+
+        /// <summary>The prefab's own inset between a title and the row's edge.</summary>
+        private const float CaptionMargin = 4f;
 
         /// <summary>
         /// WHAT A DRAWN ROW DOES - the one act behind both ways of asking for it.

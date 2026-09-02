@@ -267,6 +267,9 @@ namespace ES2Access.Core.Speech
         /// <summary>What the mod says after the copy. A clipboard changes nothing the player can
         /// see or hear, so the press has to say it landed.</summary>
         public const string ModSettingsBookmarksCopied = "mod-settings.bookmarks.copied";
+        /// <summary>The copy could not read the file - gone or unreadable since the page was built.
+        /// </summary>
+        public const string ModSettingsBookmarksCopyFailed = "mod-settings.bookmarks.copy-failed";
 
         public const string ScreenLoading = "screen.loading";
         public const string ScreenNotification = "screen.notification";
@@ -2267,6 +2270,7 @@ namespace ES2Access.Core.Speech
                 "Save this text as {0} in the mod's bookmarks folder"
             },
             { ModSettingsBookmarksCopied, "Bookmarks copied to the clipboard" },
+            { ModSettingsBookmarksCopyFailed, "The bookmarks file could not be read" },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },
             { ScreenTutorial, "Tutorial" },

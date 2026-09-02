@@ -93,6 +93,7 @@
   "mod-settings.bookmarks.open-folder": "Open bookmarks folder",
   "mod-settings.bookmarks.copy-header": "Save this text as {0} in the mod's bookmarks folder",
   "mod-settings.bookmarks.copied": "Bookmarks copied to the clipboard",
+  "mod-settings.bookmarks.copy-failed": "The bookmarks file could not be read",
   "screen.loading": "Loading",
   "screen.notification": "Notification",
   "screen.tutorial": "Tutorial",

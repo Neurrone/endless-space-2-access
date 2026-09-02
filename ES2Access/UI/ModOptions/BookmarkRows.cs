@@ -205,6 +205,7 @@ namespace ES2Access.UI.ModOptions
             {
                 if (path == null || !File.Exists(path))
                 {
+                    _say = ModStrings.Get(ModStrings.ModSettingsBookmarksCopyFailed);
                     return;
                 }
 
@@ -219,6 +220,7 @@ namespace ES2Access.UI.ModOptions
             catch (Exception e)
             {
                 Log.Warn("bookmarks: copying " + path + " to the clipboard threw: " + e);
+                _say = ModStrings.Get(ModStrings.ModSettingsBookmarksCopyFailed);
             }
         }
 

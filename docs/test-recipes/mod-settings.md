@@ -453,14 +453,12 @@ Explorer window on the tester's own desktop. Press it ONCE and confirm from
 screenshot; the window it opened is left for whoever is at the machine to close. Windows only:
 what the call does on Mac or Linux is unverified.
 
-**The caption's drawn half is truncated on state 4** and its spoken half is not. The row is the
-checkbox prefab's 28 px row with a 292 px title label; a full Windows path measures 1074 px, so it
-wraps to four lines the row has no height for, and the drawn text stops mid-word
-(`…\bookmarks\FactionTer`) while the announcement carries the whole path. Growing the row
-(`label.Height`, `TitleGroup.Height`, `row.Height`, then `ArrangeChildren()` and
-`label.ComputeText()`) stops it overlapping the tab bar but does NOT restore the missing text: the
-file name is one unbreakable token wider than the label, and the renderer cuts rather than breaks
-inside it.
+**A caption takes the whole row and as many lines as it needs** (`ModRows.Fit`, 2026-09-02): the
+checkbox prefab gives its title only the left half of a 28 px row, which cut state 4's path
+mid-word at `…ookmarksactionter`; a caption now hides the tick's half, stretches the title across
+the row, lets the label grow to its text and makes the row that tall (measured: the path draws in
+full over two lines in a 38 px row; one-line captions on the scanner tab stay 28 px). widths are
+written up front because the layout pass that would set them runs a frame after the table arranges.
 
 ## The physical key paths, and what Escape means where
 
