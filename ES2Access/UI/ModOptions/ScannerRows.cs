@@ -4,6 +4,7 @@ using Amplitude.Unity.Options;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.Util;
+using ES2Access.UI.Settings;
 
 namespace ES2Access.UI.ModOptions
 {
@@ -33,6 +34,11 @@ namespace ES2Access.UI.ModOptions
     /// AN EMPTY SLOT HOLDS ONLY ITS NAME BOX. A category is a name plus what it asks for, and there is
     /// nothing to tick columns onto until the slot holds one; typing a name is what fills it, and the
     /// page is built again with everything else on it.
+    ///
+    /// THE FIRST DRAWN ROW IS NOT ABOUT A CATEGORY. "Shortened directions" is a setting about how
+    /// every scanner result is READ OUT rather than about which results there are, so it sits above
+    /// the three slots and belongs to none of them
+    /// (<see cref="ES2Access.UI.Settings.ScannerDirectionSettings"/>).
     ///
     /// The INVISIBLE ROW at the top is the panel's one declared option (<see cref="IModScannerService"/>)
     /// and is not a setting: its value answers "does what the player has edited differ from what is
@@ -78,6 +84,18 @@ namespace ES2Access.UI.ModOptions
                 }
 
                 ModRows.Begin(panel);
+                // Before the slots, because it is about every result the scanner reads out and they
+                // are about which results there are. It belongs to no slot, so nothing hides it.
+                Add(
+                    options,
+                    ModRows.Toggle(
+                        panel,
+                        "shortDirections",
+                        ModStrings.Get(ModStrings.ModSettingsScannerShortDirections),
+                        ShortDirections,
+                        SetShortDirections
+                    )
+                );
                 for (int slot = 0; slot < ScannerCustomSlots.Count; slot++)
                 {
                     int at = slot;
@@ -427,6 +445,20 @@ namespace ES2Access.UI.ModOptions
         private static string Nothing()
         {
             return string.Empty;
+        }
+
+        /// <summary>The tab's one setting that is not about a custom category: whether the scanner
+        /// says how far away a result is in short form. Non-latent like every other mod row - the
+        /// value moves as the box is ticked, Cancel puts the backup back through the same setter,
+        /// and the window's hide is what writes the settings file.</summary>
+        private static bool ShortDirections()
+        {
+            return ScannerDirectionSettings.Shortened;
+        }
+
+        private static void SetShortDirections(bool wanted)
+        {
+            ScannerDirectionSettings.Shortened = wanted;
         }
 
         private static OptionItem Row(OptionsTabPanel panel, string name)

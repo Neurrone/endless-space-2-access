@@ -59,15 +59,33 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public static string Offsets(int east, int north)
         {
+            return Offsets(east, north, false);
+        }
+
+        /// <summary>
+        /// The same offset, said SHORT where the player has asked for it - "23s", "1w, 23s".
+        ///
+        /// The same four components, the same comma between them and the same zero left out; only
+        /// the per-axis template changes, so a language decides for itself how short its own answer
+        /// is and where the abbreviation goes. Asked for by a player stepping through scanner
+        /// results, who hears this on every one of them.
+        /// </summary>
+        public static string Offsets(int east, int north, bool shortened)
+        {
             MessageBuilder message = new MessageBuilder();
-            Component(message, east, true);
-            Component(message, north, false);
+            Component(message, east, true, shortened);
+            Component(message, north, false, shortened);
             return message.Build();
         }
 
         /// <summary>One component, left out entirely when it is zero - "0 east" is a word about
         /// nothing - and joined to whatever is already there with the list's own comma.</summary>
-        private static void Component(MessageBuilder message, int units, bool sideways)
+        private static void Component(
+            MessageBuilder message,
+            int units,
+            bool sideways,
+            bool shortened
+        )
         {
             if (units == 0)
             {
@@ -76,8 +94,16 @@ namespace ES2Access.Core.Speech
 
             string text = ModStrings.Format(
                 sideways
-                    ? (units > 0 ? ModStrings.OffsetEast : ModStrings.OffsetWest)
-                    : (units > 0 ? ModStrings.OffsetNorth : ModStrings.OffsetSouth),
+                    ? (
+                        units > 0
+                            ? (shortened ? ModStrings.OffsetEastShort : ModStrings.OffsetEast)
+                            : (shortened ? ModStrings.OffsetWestShort : ModStrings.OffsetWest)
+                    )
+                    : (
+                        units > 0
+                            ? (shortened ? ModStrings.OffsetNorthShort : ModStrings.OffsetNorth)
+                            : (shortened ? ModStrings.OffsetSouthShort : ModStrings.OffsetSouth)
+                    ),
                 System.Math.Abs(units)
             );
             if (message.IsEmpty)

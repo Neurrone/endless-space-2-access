@@ -1200,6 +1200,7 @@ namespace ES2Access
             Step("scanner categories", ScannerCustomSettings.Reset);
             // Every bookmark a saved campaign has is already on disk (the set wrote it), so this only
             // lets go of the game the store was watching.
+            Step("scanner directions", ScannerDirectionSettings.Reset);
             Step("bookmarks", MapBookmarkStore.Reset);
             Step("settings", ModSettings.Reset);
 

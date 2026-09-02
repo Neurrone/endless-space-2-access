@@ -162,5 +162,36 @@ namespace ES2Access.Tests.Speech
             // a pair of zeroes.
             Assert.Null(CompassDirections.Offsets(0, 0));
         }
+
+        // The SHORT form, which a player sweeping a long scanner list can ask for. Same components,
+        // same order, same comma, same zero left out - only the per-axis template is shorter.
+
+        [Fact]
+        public void TheShortFormGluesTheNumberToOneLetter()
+        {
+            Assert.Equal("23s", CompassDirections.Offsets(0, -23, true));
+            Assert.Equal("9n", CompassDirections.Offsets(0, 9, true));
+            Assert.Equal("4e", CompassDirections.Offsets(4, 0, true));
+            Assert.Equal("17w", CompassDirections.Offsets(-17, 0, true));
+        }
+
+        [Fact]
+        public void TheShortFormKeepsTheOrderAndTheComma()
+        {
+            Assert.Equal("1w, 23s", CompassDirections.Offsets(-1, -23, true));
+            Assert.Equal("5e, 16n", CompassDirections.Offsets(5, 16, true));
+        }
+
+        [Fact]
+        public void TheShortFormStillHasNothingToSayAboutTheSamePair()
+        {
+            Assert.Null(CompassDirections.Offsets(0, 0, true));
+        }
+
+        [Fact]
+        public void AskedForTheLongFormTheThreeArgumentCallIsTheTwoArgumentOne()
+        {
+            Assert.Equal(CompassDirections.Offsets(-1, -23), CompassDirections.Offsets(-1, -23, false));
+        }
     }
 }

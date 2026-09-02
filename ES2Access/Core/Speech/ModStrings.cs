@@ -158,8 +158,6 @@ namespace ES2Access.Core.Speech
         /// it; nothing is drawn for it, so these are the only words it has.</summary>
         public const string ModSettingsEntry = "mod-settings.entry";
 
-        /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
-        /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
         /// <summary>What the General tab - the window's first - says about itself. It is where a
         /// setting that belongs to no other tab lives.</summary>
         public const string ModSettingsGeneral = "mod-settings.general";
@@ -173,10 +171,17 @@ namespace ES2Access.Core.Speech
 
         /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
         /// language (<see cref="ES2Access.UI.ModOptions.ModOptions.Categories"/>).</summary>
+        /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
+        /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
         public const string ModSettingsScanner = "mod-settings.scanner";
         public const string ModSettingsScannerDescription = "mod-settings.scanner-description";
 
         // --- the editor for the player's own three scanner categories (2026-08-23) ---
+
+        /// <summary>The Scanner tab's first row: whether the scanner says how far away a result is
+        /// in short form - "23s" rather than "23 south".</summary>
+        public const string ModSettingsScannerShortDirections =
+            "mod-settings.scanner.short-directions";
 
         /// <summary>The Scanner tab's button for one slot: which slot it is, and what is in it - the
         /// player's own name, or the word for a slot nobody has filled.</summary>
@@ -589,6 +594,15 @@ namespace ES2Access.Core.Speech
 
         /// <summary>Where a place on the map is, as a pair of whole numbers measured from the empire's
         /// home system (<see cref="MapCoordinates"/>). The game draws the galaxy and writes no
+        /// <summary>The same four components said SHORT - "23s", "1w, 23s" - for a player who is
+        /// stepping through scanner results and hears the pair on every one of them. A whole
+        /// template per axis again, so a language whose abbreviation goes in front of the number, or
+        /// wants a space, can say so.</summary>
+        public const string OffsetNorthShort = "offset.north-short";
+        public const string OffsetSouthShort = "offset.south-short";
+        public const string OffsetEastShort = "offset.east-short";
+        public const string OffsetWestShort = "offset.west-short";
+
         /// coordinate anywhere, so the pair is the mod's - and it is ONE template rather than a number
         /// said twice, because which axis comes first, and what separates them, is a language's
         /// business.</summary>
@@ -2171,10 +2185,11 @@ namespace ES2Access.Core.Speech
             { ModSettingsScanner, "Scanner" },
             {
                 ModSettingsScannerDescription,
-                "The three scanner categories you write for yourself."
+                "Configure custom scanner categories and shortened directions"
             },
             { ScannerEditSlotButton, "Custom category {0}: {1}" },
             { ScannerEditEmpty, "empty" },
+            { ModSettingsScannerShortDirections, "Shortened directions" },
             { ScannerEditName, "Name" },
             { ScannerEditKeyword, "Keyword {0}" },
             { ScannerEditSelected, "{0}, {1} selected" },
@@ -2365,6 +2380,10 @@ namespace ES2Access.Core.Speech
             { OffsetWest, "{0} west" },
             { GalaxyCoordinatePair, "{0}, {1}" },
             {
+            { OffsetNorthShort, "{0}n" },
+            { OffsetSouthShort, "{0}s" },
+            { OffsetEastShort, "{0}e" },
+            { OffsetWestShort, "{0}w" },
                 GalaxyMapSummary,
                 "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}."
             },

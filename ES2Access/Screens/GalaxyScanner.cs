@@ -991,6 +991,11 @@ namespace ES2Access.Screens
         ///
         /// A thing standing on the pair the player is reading from has no direction to give, and says
         /// so instead of saying nothing.
+        ///
+        /// SHORT FORM is the one thing the player can change about it
+        /// (<see cref="ScannerDirectionSettings"/>): "1w, 23s" for a player sweeping a long list, the
+        /// whole words otherwise. It is this sentence and nothing else - "here" keeps its word, and
+        /// the compass WORD an unexplored lane is given is a different sentence.
         /// </summary>
         private static string Away(Found found, double east, double north)
         {
@@ -998,7 +1003,11 @@ namespace ES2Access.Screens
             int up = MapCoordinates.Round(found.North) - MapCoordinates.Round(north);
             return sideways == 0 && up == 0
                 ? ModStrings.Get(ModStrings.GalaxyScannerHere)
-                : CompassDirections.Offsets(sideways, up);
+                : CompassDirections.Offsets(
+                    sideways,
+                    up,
+                    ScannerDirectionSettings.Shortened
+                );
         }
 
         /// <summary>The scope the cursor is in, both halves: which category, then which of its
