@@ -93,21 +93,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && window.PirateEmpire != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(GuiModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -220,7 +206,7 @@ namespace ES2Access.Screens
                     );
                 }
 
-                Cells.AddReadout(_cells, Of(window.StandingLabel), Keys + "standing");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.StandingLabel), Keys + "standing");
             }
             catch (Exception e)
             {
@@ -249,7 +235,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             try
             {
-                Cells.AddReadout(_cells, Of(window.NextFleetCooldownLabel), Keys + "cooldown");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.NextFleetCooldownLabel), Keys + "cooldown");
                 Line(window.NextFleetHealthLabel, "%ShipStatHealthTitle", "health");
                 Line(
                     window.NextFleetOffenseLabel,
@@ -536,36 +522,20 @@ namespace ES2Access.Screens
             builder.PopContext();
         }
 
+        /// <summary>What a control is called: the words it draws, else the title the game gave its
+        /// tooltip, else that tooltip.s own first line (<see cref="CardActions.FirstLine"/>, which is
+        /// where the words-are-really-on-the-widget test lives).</summary>
         private static string Named(AgeTransform widget, AgeTooltip tooltip)
         {
             string drawn = AgeWidgets.TextOf(widget);
-            return string.IsNullOrEmpty(drawn) ? AgeWidgets.TooltipTitle(tooltip) : drawn;
-        }
-
-        private static AgeTransform Of(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return string.IsNullOrEmpty(drawn)
+                ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
+                : drawn;
         }
 
         private static PirateDiplomacyModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<PirateDiplomacyModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<PirateDiplomacyModalWindow>();
         }
     }
 }

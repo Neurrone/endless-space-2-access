@@ -78,17 +78,10 @@ namespace ES2Access.Screens
                 string drawn = title == null
                     ? null
                     : AgeText.Label(title.GetComponent<AgePrimitiveLabel>());
-                MessageBuilder message = new MessageBuilder();
-                foreach (string line in AgeText.Lines(drawn))
-                {
-                    message.Fragment(line);
-                }
-
-                string words = message.IsEmpty ? null : message.Build();
 
                 // A key the localizer handed back unchanged is text the game has not written: parked,
-                // not shown, and never spoken.
-                return string.IsNullOrEmpty(words) || words[0] == '%' ? null : words;
+                // not shown, and never spoken (<see cref="AgeText.Title"/>).
+                return AgeText.Title(SettingRows.OneLine(drawn));
             }
             catch (Exception)
             {
@@ -156,7 +149,7 @@ namespace ES2Access.Screens
                 AgeTooltip tooltip = Tooltip(entry);
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(Caption(entry)),
-                    () => Press(Button(entry)),
+                    () => AgeWidgets.Press(Button(entry)),
                     () => Enabled(entry),
                     tooltip
                 );
@@ -197,7 +190,10 @@ namespace ES2Access.Screens
             string key
         )
         {
-            if (!Visible(toggle))
+            // The menu hides whole containers to swap between its in-game and main-menu skins, so a
+            // toggle of the skin that is not in use reports itself visible while nothing of it is
+            // drawn: the ancestry is what answers.
+            if (!AgeWidgets.Visible(AgeWidgets.Transform(toggle)))
             {
                 return;
             }
@@ -210,8 +206,8 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Checkbox(
                 caption,
                 () => State(control),
-                () => Flip(control),
-                () => Enabled(control),
+                () => AgeWidgets.Toggle(control),
+                () => AgeWidgets.Operable(AgeWidgets.Transform(control)),
                 tooltip
             );
             builder.AddItem(Nodes.Drawn(ControlId.For(control, key), vtable, control));
@@ -249,7 +245,7 @@ namespace ES2Access.Screens
                     List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
                     NodeVtable vtable = SettingVtable(panel, row, dossiers);
                     AgeTransform anchor = TitleTransform(row);
-                    AgeTooltip tooltip = TooltipOf(anchor);
+                    AgeTooltip tooltip = AgeWidgets.Raw(anchor);
                     vtable.OnFocusVisual = () => PointerFocus.MoveTo(anchor, tooltip, anchor);
                     vtable.OnBlurVisual = ReleasePointer;
                     string rowKey = key + SettingName(row);
@@ -300,7 +296,7 @@ namespace ES2Access.Screens
         {
             Func<string> label = () => AgeText.Label(item.SettingTitle);
             Func<bool> editable = () => CanModify(item);
-            AgeTooltip tooltip = TooltipOf(TitleTransform(item));
+            AgeTooltip tooltip = AgeWidgets.Raw(TitleTransform(item));
 
             SettingCheckBoxItem checkbox = item as SettingCheckBoxItem;
             if (checkbox != null && checkbox.Toggle != null)
@@ -314,7 +310,7 @@ namespace ES2Access.Screens
                     GraphNodes.Checkbox(
                         label,
                         () => State(checkbox.Toggle),
-                        () => FlipSetting(checkbox),
+                        () => AgeWidgets.Toggle(checkbox.Toggle),
                         editable,
                         tooltip
                     ),
@@ -412,22 +408,6 @@ namespace ES2Access.Screens
             return ModStrings.Get(
                 State(item.Toggle) ? ModStrings.NavChecked : ModStrings.NavUnchecked
             );
-        }
-
-        /// <summary>Tick or untick a setting exactly as a click does: the toggle's own state first -
-        /// it is what the item reads back - then the item's click handler, which asks the game whether
-        /// anything else constrains the value and hands the answer to the panel.</summary>
-        private static void FlipSetting(SettingCheckBoxItem item)
-        {
-            try
-            {
-                item.Toggle.State = !item.Toggle.State;
-                OptionsScreen.Call(SettingToggled, item, OptionsScreen.NoSender);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("game menu: toggling a setting threw: " + e);
-            }
         }
 
         /// <summary>
@@ -554,7 +534,7 @@ namespace ES2Access.Screens
             {
                 return item.ReadOnlyModifier != null
                     ? !item.ReadOnlyModifier.ReadOnly
-                    : Enabled(item.AgeTransform);
+                    : AgeWidgets.Operable(item.AgeTransform);
             }
             catch (Exception)
             {
@@ -682,38 +662,8 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTooltip TooltipOf(AgeTransform transform)
-        {
-            try
-            {
-                return transform == null ? null : transform.AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static bool Enabled(AgeTransform transform)
-        {
-            try
-            {
-                return transform != null && transform.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        // The item handlers the game runs when a setting is changed with the mouse, and the value a
-        // slider keeps to itself. Resolved once: a panel of a dozen rows is rebuilt on every
-        // navigation operation.
-        private static readonly MethodInfo SettingToggled = OptionsScreen.Handler(
-            typeof(SettingCheckBoxItem),
-            "OnToggleSettingCb"
-        );
-
+        // The value a slider keeps to itself. Resolved once: a panel of a dozen rows is rebuilt on
+        // every navigation operation.
         private static readonly PropertyInfo SliderCurrentValue = Property(
             typeof(SettingSliderItem),
             "CurrentValue"
@@ -873,53 +823,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Press an entry the way the engine presses it: replay the object and method its
-        /// own mouse handler sends to.</summary>
-        private static void Press(AgeControlButton button)
-        {
-            try
-            {
-                if (
-                    button != null
-                    && button.OnActivateObject != null
-                    && !string.IsNullOrEmpty(button.OnActivateMethod)
-                )
-                {
-                    button.OnActivateObject.SendMessage(
-                        button.OnActivateMethod,
-                        button.gameObject,
-                        SendMessageOptions.DontRequireReceiver
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("game menu: pressing an entry threw: " + e);
-            }
-        }
-
-        /// <summary>Flip a toggle the way clicking it does: the state first, then the handler the
-        /// game wired, which reads the state it now finds.</summary>
-        private static void Flip(AgeControlToggle toggle)
-        {
-            try
-            {
-                toggle.State = !toggle.State;
-                if (toggle.OnSwitchObject != null && !string.IsNullOrEmpty(toggle.OnSwitchMethod))
-                {
-                    toggle.OnSwitchObject.SendMessage(
-                        toggle.OnSwitchMethod,
-                        toggle.gameObject,
-                        SendMessageOptions.DontRequireReceiver
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("game menu: flipping a toggle threw: " + e);
-            }
-        }
-
         private static bool State(AgeControlToggle toggle)
         {
             try
@@ -932,32 +835,15 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Whether a control is really on screen: its own visibility and every ancestor's -
-        /// the menu hides whole containers to swap between its in-game and main-menu skins.</summary>
-        private static bool Visible(AgeControlToggle toggle)
-        {
-            return AgeWidgets.Visible(AgeWidgets.Transform(toggle));
-        }
-
+        /// <summary>Whether the ring is offering this entry: its button's own switch and every
+        /// container's above it (<see cref="AgeWidgets.Operable"/>). The item is asked for the
+        /// transform behind its own guard - an entry the window has destroyed still has a node
+        /// reading it for the frame before the rebuild.</summary>
         private static bool Enabled(GameMenuItem item)
         {
             try
             {
-                return item.ButtonAgeTransform != null && item.ButtonAgeTransform.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Enabled(AgeControlToggle toggle)
-        {
-            try
-            {
-                return toggle != null
-                    && toggle.AgeTransform != null
-                    && toggle.AgeTransform.Enable;
+                return AgeWidgets.Operable(item.ButtonAgeTransform);
             }
             catch (Exception)
             {
@@ -969,16 +855,7 @@ namespace ES2Access.Screens
 
         private static GameMenuModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GameMenuModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GameMenuModalWindow>();
         }
 
         /// <summary>Where this screen is drawn, for the tooltip audit (see

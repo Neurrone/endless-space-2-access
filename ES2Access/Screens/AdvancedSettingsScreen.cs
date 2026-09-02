@@ -136,7 +136,7 @@ namespace ES2Access.Screens
         /// stale.</summary>
         private static AgeTransform ShownTable(AdvancedSettingsModalWindow window)
         {
-            IList<AgeTransform> children = Children(window.TablesContainer);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(window.TablesContainer);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (SettingRows.Drawn(children[i]))
@@ -153,7 +153,7 @@ namespace ES2Access.Screens
         private void BuildColumns(GraphBuilder builder, AgeTransform table)
         {
             _columns.Clear();
-            IList<AgeTransform> children = Children(table);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(table);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (SettingRows.Drawn(children[i]))
@@ -193,7 +193,7 @@ namespace ES2Access.Screens
             try
             {
                 _rows.Clear();
-                IList<AgeTransform> children = Children(group.SettingsTable);
+                IList<AgeTransform> children = AgeWidgets.DrawnChildren(group.SettingsTable);
                 for (int i = 0; children != null && i < children.Count; i++)
                 {
                     if (SettingRows.Drawn(children[i]))
@@ -244,8 +244,9 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, AdvancedSettingsModalWindow window)
         {
             _buttons.Clear();
-            AgeTransform container = Parent(window.TablesContainer);
-            IList<AgeTransform> children = Children(container);
+            AgeTransform tables = window.TablesContainer;
+            AgeTransform container = tables == null ? null : tables.Parent;
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(container);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (!ReferenceEquals(children[i], window.TablesContainer))
@@ -280,7 +281,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            IList<AgeTransform> children = Children(widget);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(widget);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 Collect(children[i], into, depth - 1);
@@ -291,16 +292,7 @@ namespace ES2Access.Screens
 
         private static AdvancedSettingsModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<AdvancedSettingsModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<AdvancedSettingsModalWindow>();
         }
 
         private static string Name(AgeTransform widget)
@@ -328,28 +320,5 @@ namespace ES2Access.Screens
             }
         }
 
-        private static IList<AgeTransform> Children(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Children;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
     }
 }

@@ -153,7 +153,7 @@ namespace ES2Access.Screens
         private void BuildWords(GraphBuilder builder, ContextualPromptWindow window)
         {
             _cells.Clear();
-            Cells.AddReadout(_cells, Widget(window.DescriptionLabel), "prompt:description");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(window.DescriptionLabel), "prompt:description");
             WindowShape.Readouts(_cells, window.ComponentsTable, "prompt:component");
             if (_cells.Count > 0)
             {
@@ -220,30 +220,9 @@ namespace ES2Access.Screens
             return label != null && AgeWidgets.Visible(label.AgeTransform) ? label : null;
         }
 
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static ContextualPromptWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<ContextualPromptWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<ContextualPromptWindow>();
         }
     }
 }

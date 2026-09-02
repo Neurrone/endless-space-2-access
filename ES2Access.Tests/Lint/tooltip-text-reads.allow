@@ -19,7 +19,7 @@ ES2Access/Screens/BattleTacticsScreen.cs | 1 | Add(lines, CardActions.FirstLine(
 ES2Access/Screens/EconomyScreen.cs | 2 | : CardActions.FirstLine(tooltip);
 ES2Access/Screens/EconomyScreen.cs | 1 | AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip);
 
-ES2Access/Screens/ElectionScreen.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+ES2Access/Screens/ElectionScreen.cs | 1 | ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
 
 ES2Access/Screens/EmpireScreen.cs | 1 | string described = CardActions.FirstLine(slot.FIDSIGroupTooltip);
 
@@ -39,7 +39,7 @@ ES2Access/Screens/GroundBattleViewScreen.cs | 1 | () => named ?? CardActions.Fir
 
 ES2Access/Screens/JournalScreen.cs | 1 | string described = CardActions.FirstLine(tooltip);
 
-ES2Access/Screens/LoadSaveScreen.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(TooltipOf(button)));
+ES2Access/Screens/LoadSaveScreen.cs | 1 | ? CardActions.FirstLine(AgeWidgets.Raw(AgeWidgets.Transform(button)))
 
 ES2Access/Screens/MenuDestinationScreens.cs | 1 | string.IsNullOrEmpty(name) ? AgeText.Clean(drawn.Tooltip.Content) : name
 
@@ -47,12 +47,14 @@ ES2Access/Screens/MilitaryScreen.cs | 1 | return string.IsNullOrEmpty(title) ? C
 
 ES2Access/Screens/MinorFactionDiplomacyScreen.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
-ES2Access/Screens/NegotiationScreen.cs | 1 | return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
+ES2Access/Screens/NegotiationScreen.cs | 1 | ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
 
 ES2Access/Screens/NotificationScreen.cs | 1 | string hinted = CardActions.FirstLine(AgeWidgets.Raw(widget));
 ES2Access/Screens/NotificationScreen.cs | 1 | string written = AgeText.Tooltip(tooltip);
 
-ES2Access/Screens/OptionsScreen.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+ES2Access/Screens/OptionsScreen.cs | 1 | return string.IsNullOrEmpty(text) ? CardActions.FirstLine(tooltip) : text;
+
+ES2Access/Screens/PirateDiplomacyScreen.cs | 1 | ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
 
 ES2Access/Screens/PlanetConstructiblesScreen.cs | 1 | Func<IList<string>> drawn = GraphNodes.TooltipDetails(tooltip);
 
@@ -62,7 +64,7 @@ ES2Access/Screens/RecipeCreationScreen.cs | 1 | () => named ? AgeWidgets.Tooltip
 
 ES2Access/Screens/ResearchScreen.cs | 1 | : AgeText.Clean(marker.Tooltip.Content);
 
-ES2Access/Screens/SettingRows.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+ES2Access/Screens/SettingRows.cs | 1 | return string.IsNullOrEmpty(text) ? CardActions.FirstLine(tooltip) : text;
 
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
 ES2Access/Screens/SystemManagementScreen.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));

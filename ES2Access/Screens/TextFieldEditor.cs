@@ -160,16 +160,8 @@ namespace ES2Access.Screens
         /// </summary>
         private static ControlId CurrentRow()
         {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return node == null ? null : node.Id;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator == null ? null : navigator.FocusedKey;
         }
 
         /// <summary>Whether an editor has been asked for and the keyboard has not changed hands yet.
@@ -305,16 +297,8 @@ namespace ES2Access.Screens
 
         private static bool OnRow(ControlId id)
         {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return id != null && node != null && id.Equals(node.Id);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator != null && navigator.CursorIsOn(id);
         }
 
         // ---- the live edit ----
@@ -675,9 +659,9 @@ namespace ES2Access.Screens
             {
                 if (_caret == null)
                 {
-                    _caret = typeof(AgeControlTextArea).GetField(
-                        "cursorPositionInText",
-                        BindingFlags.Instance | BindingFlags.NonPublic
+                    _caret = GameHandlers.Field(
+                        typeof(AgeControlTextArea),
+                        "cursorPositionInText"
                     );
                 }
 

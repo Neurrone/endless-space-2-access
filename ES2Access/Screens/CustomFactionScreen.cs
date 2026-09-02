@@ -106,7 +106,7 @@ namespace ES2Access.Screens
         {
             get
             {
-                AgePrimitiveLabel title = OptionsScreen.LabelIn(Transform(Panel()));
+                AgePrimitiveLabel title = OptionsScreen.LabelIn(AgeWidgets.Transform(Panel()));
                 string heading = AgeText.Label(title);
                 return string.IsNullOrEmpty(heading) ? null : heading;
             }
@@ -197,10 +197,14 @@ namespace ES2Access.Screens
             // It stays a row: it is the window's title, which every modal declares as a node.
             if (first)
             {
-                AddHeading(builder, OptionsScreen.LabelIn(Transform(Panel())), "custom-faction:title");
+                AddHeading(builder, OptionsScreen.LabelIn(AgeWidgets.Transform(Panel())), "custom-faction:title");
             }
 
-            bool named = PushHeading(builder, HeadingOf(band));
+            bool named = PushHeading(
+                builder,
+                HeadingOf(band),
+                "custom-faction:" + key + "/title"
+            );
             try
             {
                 _start = null;
@@ -214,7 +218,7 @@ namespace ES2Access.Screens
             }
             finally
             {
-                Pop(builder, named);
+                Captions.Pop(builder, named);
             }
         }
 
@@ -238,7 +242,7 @@ namespace ES2Access.Screens
         )
         {
             _cells.Clear();
-            IList<AgeTransform> children = Children(container);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(container);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (SettingRows.Drawn(children[i]))
@@ -307,14 +311,14 @@ namespace ES2Access.Screens
                     // word glued to the front of each of them: "Politics" is drawn once above three
                     // lists, and it is spoken once, on the way in.
                     AgePrimitiveLabel shared = CaptionIn(child);
-                    bool named = PushHeading(builder, shared);
+                    bool named = PushHeading(builder, shared, childKey + "/title");
                     try
                     {
                         Walk(builder, child, childKey + "/", depth - 1, null, shared);
                     }
                     finally
                     {
-                        Pop(builder, named);
+                        Captions.Pop(builder, named);
                     }
 
                     pending = null;
@@ -338,7 +342,7 @@ namespace ES2Access.Screens
             // one rather than disappearing with the control it turned out not to have.
             if (pending != null)
             {
-                SettingRows.AddReadout(builder, Transform(pending), key + "caption");
+                SettingRows.AddReadout(builder, AgeWidgets.Transform(pending), key + "caption");
             }
         }
 
@@ -365,7 +369,7 @@ namespace ES2Access.Screens
 
             AgePrimitiveLabel named = caption;
             Func<string> label = named == null ? null : (Func<string>)(() => AgeText.Label(named));
-            AgeTooltip tooltip = AgeWidgets.Raw(Transform(caption));
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(caption));
 
             AgeControlDropList list = widget.GetComponent<AgeControlDropList>();
             if (list != null)
@@ -487,14 +491,18 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(AvailableStop);
-            bool named = PushHeading(builder, HeadingOf(band));
+            bool named = PushHeading(
+                builder,
+                HeadingOf(band),
+                "custom-faction:available/title"
+            );
             try
             {
                 BuildAvailableContent(builder, panel, table);
             }
             finally
             {
-                Pop(builder, named);
+                Captions.Pop(builder, named);
             }
         }
 
@@ -507,7 +515,7 @@ namespace ES2Access.Screens
             builder.SetRegion(FiltersRegion);
             AgeTransform filters =
                 panel.FiltersRadioGroup == null ? null : panel.FiltersRadioGroup.TogglesTable;
-            IList<AgeTransform> children = Children(filters);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(filters);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeControlToggle filter = children[i].GetComponent<AgeControlToggle>();
@@ -535,14 +543,18 @@ namespace ES2Access.Screens
             }
 
             builder.BeginStop(SelectedStop);
-            bool named = PushHeading(builder, HeadingOf(band));
+            bool named = PushHeading(
+                builder,
+                HeadingOf(band),
+                "custom-faction:selected/title"
+            );
             try
             {
                 BuildSelectedContent(builder, panel, table);
             }
             finally
             {
-                Pop(builder, named);
+                Captions.Pop(builder, named);
             }
         }
 
@@ -561,17 +573,17 @@ namespace ES2Access.Screens
             builder.SetRegion(BudgetRegion);
             SettingRows.AddReadout(
                 builder,
-                Transform(panel.PopulationCostLabel),
+                AgeWidgets.Transform(panel.PopulationCostLabel),
                 "custom-faction:budget/population"
             );
             SettingRows.AddReadout(
                 builder,
-                Transform(panel.FactionCostLabel),
+                AgeWidgets.Transform(panel.FactionCostLabel),
                 "custom-faction:budget/traits"
             );
             SettingRows.AddReadout(
                 builder,
-                Transform(panel.TraitCountLabel),
+                AgeWidgets.Transform(panel.TraitCountLabel),
                 "custom-faction:budget/count"
             );
             builder.SetRegion(null);
@@ -583,7 +595,7 @@ namespace ES2Access.Screens
         /// prerequisites rather than this screen guessing at them.</summary>
         private void AddLines(GraphBuilder builder, GuiTable table, string key)
         {
-            IList<AgeTransform> lines = Children(table == null ? null : table.LinesTable);
+            IList<AgeTransform> lines = AgeWidgets.DrawnChildren(table == null ? null : table.LinesTable);
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
                 AgeControlToggle toggle = lines[i].GetComponent<AgeControlToggle>();
@@ -670,7 +682,7 @@ namespace ES2Access.Screens
         private void BuildActions(GraphBuilder builder, CustomFactionPanel panel)
         {
             _cells.Clear();
-            IList<AgeTransform> children = Children(
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(
                 Parent(AgeWidgets.Transform(panel.ValidateButton))
             );
             for (int i = 0; children != null && i < children.Count; i++)
@@ -695,7 +707,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void AddHeading(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
-            AgeTransform widget = Transform(label);
+            AgeTransform widget = AgeWidgets.Transform(label);
             if (label == null || !SettingRows.Drawn(widget))
             {
                 return;
@@ -705,35 +717,14 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The caption over a band, as the level its rows sit in: announced on the way in and
-        /// never walked past. A caption the game drew nothing under would be a level with nothing in
-        /// it, so an empty one is not pushed at all.</summary>
-        private static bool PushHeading(GraphBuilder builder, AgePrimitiveLabel label)
+        /// never walked past, with a row of its own only where the game hung an explanation on it
+        /// (<see cref="Captions"/>). The ALPHA gate is this panel.s own: its tables retire a row by
+        /// fading it, and a faded caption is a level with nothing in it.</summary>
+        private static bool PushHeading(GraphBuilder builder, AgePrimitiveLabel label, string key)
         {
-            AgeTransform widget = Transform(label);
-            if (label == null || !SettingRows.Drawn(widget))
-            {
-                return false;
-            }
-
-            string title = AgeText.Label(label);
-            if (string.IsNullOrEmpty(title))
-            {
-                return false;
-            }
-
-            builder.PushContext(title);
-            return true;
+            AgeTransform widget = AgeWidgets.Transform(label);
+            return SettingRows.Drawn(widget) && Captions.Push(builder, widget, key);
         }
-
-        private static void Pop(GraphBuilder builder, bool named)
-        {
-            if (named)
-            {
-                builder.PopContext();
-            }
-        }
-
-        private static readonly Func<string> Nothing = () => null;
 
         private static AgePrimitiveLabel HeadingOf(AgeTransform band)
         {
@@ -744,7 +735,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static AgePrimitiveLabel CaptionIn(AgeTransform group)
         {
-            IList<AgeTransform> children = Children(group);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(group);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (ControlOn(children[i]) != null)
@@ -791,7 +782,7 @@ namespace ES2Access.Screens
         /// <summary>The band's contents - everything under its title.</summary>
         private static AgeTransform Content(AgeTransform band)
         {
-            IList<AgeTransform> children = Children(band);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(band);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 if (Name(children[i]) == "Content")
@@ -860,7 +851,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            IList<AgeTransform> children = Children(widget);
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(widget);
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 Collect(children[i], into, depth - 1);
@@ -882,33 +873,7 @@ namespace ES2Access.Screens
 
         private static FactionChoiceModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<FactionChoiceModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(CustomFactionPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(AgePrimitiveLabel label)
-        {
-            return SettingRows.TransformOf(label);
+            return GameWindows.Of<FactionChoiceModalWindow>();
         }
 
         private static string Name(AgeTransform widget)
@@ -920,18 +885,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return "?";
-            }
-        }
-
-        private static IList<AgeTransform> Children(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Children;
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

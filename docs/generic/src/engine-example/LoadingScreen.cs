@@ -106,7 +106,7 @@ namespace ES2Access.Screens
                 AddPlayers(window);
                 AddStatusLines(window);
                 AddProgress(window);
-                Cells.AddReadout(_cells, Widget(window.TipLabel), "loading:tip");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.TipLabel), "loading:tip");
                 if (_cells.Count == 0)
                 {
                     return;
@@ -188,18 +188,6 @@ namespace ES2Access.Screens
                     ModStrings.LoadingProgress,
                     Mathf.Clamp((int)(Amplitude.Diagnostics.Progress.Current * 100f), 0, 100)
                 );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
             }
             catch (Exception)
             {
@@ -326,16 +314,7 @@ namespace ES2Access.Screens
 
         private static LoadingWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<LoadingWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<LoadingWindow>();
         }
     }
 }

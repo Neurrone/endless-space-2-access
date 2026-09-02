@@ -233,16 +233,7 @@ namespace ES2Access.Screens
 
         private static GameVictoryScreen Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<GameVictoryScreen>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<GameVictoryScreen>();
         }
     }
 }

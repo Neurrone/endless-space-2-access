@@ -79,7 +79,7 @@ namespace ES2Access.Screens
             SettingItem it = item;
             Func<string> label = () => AgeText.Label(it.SettingTitle);
             Func<bool> enabled = () => AgeWidgets.Operable(it.AgeTransform);
-            AgeTooltip caption = AgeWidgets.Raw(TransformOf(item.SettingTitle));
+            AgeTooltip caption = AgeWidgets.Raw(AgeWidgets.Transform(item.SettingTitle));
             ControlId id = ControlId.For(item, key);
             // The entries the sink hands back for whichever branch below builds this row: a setting has
             // two hover targets and the row points at one of them.
@@ -318,35 +318,17 @@ namespace ES2Access.Screens
             {
                 for (int i = 0; i < row.Count; i++)
                 {
-                    AddButton(builder, AgeWidgets.Button(row[i]), keyPrefix + Name(row[i]));
+                    AddButton(builder, AgeWidgets.Button(row[i]), keyPrefix + row[i].name);
                 }
             }
         }
 
         private static readonly Func<AgeTransform, AgeTransform> Itself = widget => widget;
 
-        private static string Name(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? "?" : widget.name;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
         private static string ButtonText(AgeControlButton button, AgeTooltip tooltip)
         {
             string text = AgeWidgets.TextOf(AgeWidgets.Transform(button));
-            if (!string.IsNullOrEmpty(text))
-            {
-                return text;
-            }
-
-            IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
-            return lines.Count > 0 ? lines[0] : null;
+            return string.IsNullOrEmpty(text) ? CardActions.FirstLine(tooltip) : text;
         }
 
         /// <summary>A text box with no caption of its own - the chat box, an empire's name.</summary>
@@ -495,7 +477,7 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Readout(() => null, () => AgeWidgets.TextOf(it), null, null);
             List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(2);
             vtable.Sections = RowSections(it, tooltip, dossiers);
-            AgeWidgets.PointAt(vtable, tooltip != null ? TransformOf(tooltip) : it);
+            AgeWidgets.PointAt(vtable, tooltip != null ? AgeWidgets.TooltipOwner(tooltip) : it);
             TooltipChildren.Declare(
                 builder,
                 Nodes.Drawn(ControlId.For(widget, key), vtable, widget),
@@ -513,18 +495,15 @@ namespace ES2Access.Screens
             return Scratch.Count == 0 ? null : Scratch[Scratch.Count - 1];
         }
 
-        /// <summary>Every tooltip in a row as declared sections, in the order the row was built. A row
-        /// can carry more than one - the icon's explanation of what the line is and the value's
-        /// description of what it says - and the projection decides which of them speaks; all of them
-        /// are reviewable. Collected at declare time because a section's MODE is structural, and the
-        /// row is declared afresh every frame anyway.</summary>
         /// <summary>
         /// Every tooltip drawn anywhere in a row, where exactly ONE of them is the one worth hearing
         /// and the rest are what the buffer keeps: a faction card's refusal reason beside the
         /// difficulty rating printed on it, a readout's value beside the icon that captions it.
+        /// Collected at declare time because a section's MODE is structural, and the row is declared
+        /// afresh every frame anyway.
         ///
         /// The row says WHICH, because only the row knows; how loudly that one reads is still the
-        /// tooltip.s own kind to answer. The door.s "the last one is the node.s own" rule is right for a
+        /// tooltip's own kind to answer. The door's "the last one is the node's own" rule is right for a
         /// caption-then-value PAIR, where the value is the last thing drawn; it is wrong for a card,
         /// where what comes after the important tooltip is a badge.
         /// <paramref name="said"/> null - a row whose own widget carries no tooltip - means none of
@@ -622,7 +601,7 @@ namespace ES2Access.Screens
             // game's own behaviour is not "fixed" here: nothing writes that tooltip, so nothing is
             // invented for it.
             AgeTooltip value =
-                AgeWidgets.Raw(TransformOf(OptionsScreen.LabelIn(widget))) ?? AgeWidgets.Raw(widget);
+                AgeWidgets.Raw(AgeWidgets.Transform(OptionsScreen.LabelIn(widget))) ?? AgeWidgets.Raw(widget);
             AgeTooltip said = value ?? caption;
             NodeVtable vtable = GraphNodes.ComboBox(
                 label ?? Nothing,
@@ -635,7 +614,7 @@ namespace ES2Access.Screens
             vtable.StateText = null;
             List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
             vtable.Sections = RowSections(caption, value, null, dossiers);
-            AgeWidgets.PointAt(vtable, said != null ? TransformOf(said) : widget);
+            AgeWidgets.PointAt(vtable, said != null ? AgeWidgets.TooltipOwner(said) : widget);
             TooltipChildren.Declare(
                 builder,
                 Nodes.Drawn(ControlId.For(list, key), vtable, list),
@@ -800,40 +779,181 @@ namespace ES2Access.Screens
         {
             AgeTooltip it = tooltip;
             vtable.OnFocusVisual = () =>
-                PointerFocus.MoveTo(TransformOf(it), it, TransformOf(it));
+                PointerFocus.MoveTo(AgeWidgets.TooltipOwner(it), it, AgeWidgets.TooltipOwner(it));
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
         }
 
-        public static AgeTransform TransformOf(AgeTooltip tooltip)
+        /// <summary>
+        /// A wrapped label as the one sentence it is.
+        ///
+        /// The game wraps a long message over as many lines as the panel is wide, so its line breaks
+        /// are where the words ran out and not punctuation. They are joined with a space, which is the
+        /// sentence the game wrote; a comma between them would put a pause in the middle of one and
+        /// read a full stop as "lost., Continue".
+        /// </summary>
+        internal static string OneLine(string text)
         {
-            try
+            MessageBuilder message = new MessageBuilder();
+            foreach (string line in AgeText.Lines(text))
             {
-                return tooltip == null ? null : tooltip.AgeTransform;
+                message.Fragment(line);
             }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
 
-        public static AgeTransform TransformOf(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return message.Build();
         }
 
         // The handler a click on a setting's text field reaches when it takes the keyboard: it is what
         // clears the placeholder. Resolved once - a lookup per row per navigation operation would be
         // paid for nothing.
-        private static readonly MethodInfo SettingFieldGainFocus = OptionsScreen.Handler(
+        private static readonly MethodInfo SettingFieldGainFocus = GameHandlers.Method(
             typeof(SettingTextFieldItem),
             "OnTextFieldGainFocusCb"
         );
+
+        /// <summary>
+        /// A modal window's own command bar: the wired buttons the prefab hung under it, as the ones
+        /// the game is DRAWING, left to right.
+        ///
+        /// Both windows that have one carry the bar TWICE - once for the main menu, once for a game in
+        /// progress - and the buttons they name in their own fields are the in-game set whichever skin
+        /// is worn, so neither bar can be read from those fields. What is read instead is whichever
+        /// wired buttons are drawn: the window's backdrops are buttons too (they are there to swallow
+        /// clicks that miss) and they are wired to nothing, which is exactly what tells them apart from
+        /// the bar. That is one mechanism for both skins, it is how the duplicate "Reset to Defaults"
+        /// stopped being possible, and it needs no list of which buttons a window is expected to have.
+        ///
+        /// The wired set is remembered per window, because a window builds its bar once when it loads
+        /// and never rebuilds it, so walking the whole thing on every navigation operation would be
+        /// paid for an answer that cannot have changed. Which of them are DRAWN, where, and whether
+        /// they are available is read live every time. Held per instance, so a hot reload starts with
+        /// nothing remembered.
+        /// </summary>
+        internal sealed class ButtonBar
+        {
+            private readonly string _subject;
+            private Component _from;
+            private List<AgeControlButton> _wired;
+
+            internal ButtonBar(string subject)
+            {
+                _subject = subject;
+            }
+
+            /// <summary>The bar as it is drawn: the wired buttons <paramref name="keep"/> accepts, in
+            /// the order they sit in. Banding input, not existence - the list is counted aloud, and a
+            /// button of the skin that is not in use keeps its old rectangle, so a gate that dropped
+            /// its node afterwards would still have let it reorder and miscount the buttons the player
+            /// does hear.</summary>
+            internal List<AgeControlButton> Drawn(
+                Component window,
+                Predicate<AgeControlButton> keep
+            )
+            {
+                List<AgeControlButton> bar = new List<AgeControlButton>();
+                List<AgeControlButton> wired = Wired(window);
+                for (int i = 0; i < wired.Count; i++)
+                {
+                    AgeControlButton button = wired[i];
+                    AgeTransform transform = AgeWidgets.Transform(button);
+                    if (
+                        transform == null
+                        || !AgeWidgets.Visible(transform)
+                        || (keep != null && !keep(button))
+                    )
+                    {
+                        continue;
+                    }
+
+                    // Placed by where it is drawn rather than sorted afterwards, so two buttons in the
+                    // same place keep the order they were found in.
+                    float x = LeftEdge(transform);
+                    int at = bar.Count;
+                    while (at > 0 && LeftEdge(AgeWidgets.Transform(bar[at - 1])) > x)
+                    {
+                        at--;
+                    }
+
+                    bar.Insert(at, button);
+                }
+
+                return bar;
+            }
+
+            /// <summary>A button's key: what the window called it and what it is wired to, which is
+            /// what tells the two skins' copies of one command apart.</summary>
+            internal static string KeyOf(AgeControlButton button)
+            {
+                try
+                {
+                    return button.name + "/" + button.OnActivateMethod;
+                }
+                catch (Exception)
+                {
+                    return "?";
+                }
+            }
+
+            private List<AgeControlButton> Wired(Component window)
+            {
+                if (ReferenceEquals(_from, window) && _wired != null && AllAlive(_wired))
+                {
+                    return _wired;
+                }
+
+                _from = window;
+                _wired = Collect(window);
+                return _wired;
+            }
+
+            private List<AgeControlButton> Collect(Component window)
+            {
+                List<AgeControlButton> buttons = new List<AgeControlButton>();
+                try
+                {
+                    foreach (
+                        AgeControlButton button in window.GetComponentsInChildren<AgeControlButton>(
+                            true
+                        )
+                    )
+                    {
+                        if (button != null && !string.IsNullOrEmpty(button.OnActivateMethod))
+                        {
+                            buttons.Add(button);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Warn(_subject + ": finding the window's buttons threw: " + e);
+                }
+
+                return buttons;
+            }
+
+            private static bool AllAlive(List<AgeControlButton> buttons)
+            {
+                for (int i = 0; i < buttons.Count; i++)
+                {
+                    if (buttons[i] == null)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            private static float LeftEdge(AgeTransform transform)
+            {
+                try
+                {
+                    return transform.GetGlobalPosition().x;
+                }
+                catch (Exception)
+                {
+                    return 0f;
+                }
+            }
+        }
     }
 }

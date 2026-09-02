@@ -426,7 +426,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             Cells.AddReadout(_cells, TotalGroup(panel), "senate:assembly/total");
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         /// <summary>One party's seats. The row draws the party's name and its number of representatives
@@ -506,7 +506,7 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         private static void AddSenatorCard(List<Cell> cells, AgeTransform widget, int index)
@@ -628,10 +628,8 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string caption = AgeText.Clean(Gui.Localize(HeroLevelKey));
-                return string.IsNullOrEmpty(caption) || caption[0] == '%'
-                    ? level
-                    : caption + " " + level;
+                string caption = AgeText.Title(HeroLevelKey);
+                return caption == null ? level : caption + " " + level;
             }
             catch (Exception)
             {
@@ -667,7 +665,7 @@ namespace ES2Access.Screens
                 "senate:laws/upkeep"
             );
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         /// <summary>
@@ -714,7 +712,7 @@ namespace ES2Access.Screens
                 "senate:census/genes"
             );
             Cells.EmitLinear(builder, _cells);
-            Unname(builder, named);
+            Captions.Pop(builder, named);
         }
 
         /// <summary>How many people there are in the empire, taken as the caption the panel writes over
@@ -745,7 +743,7 @@ namespace ES2Access.Screens
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, TooltipOwner(tooltip) ?? count);
+            AgeWidgets.PointAt(vtable, AgeWidgets.TooltipOwner(tooltip) ?? count);
             Cells.Add(cells, count, ControlId.For(count, "senate:census/total"), vtable);
         }
 
@@ -783,7 +781,7 @@ namespace ES2Access.Screens
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            AgeWidgets.PointAt(vtable, TooltipOwner(tooltip) ?? labels);
+            AgeWidgets.PointAt(vtable, AgeWidgets.TooltipOwner(tooltip) ?? labels);
             // Keyed on the LABELS rather than on the arc: the container is what is laid out down the
             // side of the ring, and the rows are worked out from where things are drawn.
             Cells.Add(
@@ -845,27 +843,6 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>Close the box's name off again, so the next box is not declared inside it.</summary>
-        private static void Unname(GraphBuilder builder, bool named)
-        {
-            if (named)
-            {
-                builder.PopContext();
-            }
-        }
-
-        private static AgeTransform TooltipOwner(AgeTooltip tooltip)
-        {
-            try
-            {
-                return tooltip == null ? null : tooltip.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static string ScreenTitle()
         {
             try
@@ -882,9 +859,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::SenateScreen>(false)
-                    : null;
+                return GameWindows.Of<global::SenateScreen>();
             }
             catch (Exception)
             {

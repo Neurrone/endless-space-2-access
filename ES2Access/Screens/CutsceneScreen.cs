@@ -217,27 +217,9 @@ namespace ES2Access.Screens
         /// a bare video.</summary>
         private static CutsceneModalWindow Showing()
         {
-            CutsceneModalWindow colonization = Window<ColonizationCutsceneModalWindow>();
-            if (colonization != null && colonization.Shown)
-            {
-                return colonization;
-            }
-
-            CutsceneModalWindow cutscene = Window<CutsceneModalWindow>();
-            return cutscene != null && cutscene.Shown ? cutscene : null;
-        }
-
-        private static T Window<T>()
-            where T : GuiWindow
-        {
-            try
-            {
-                return Gui.GuiServiceAvailable ? Gui.GuiService.GetWindow<T>(false) : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            CutsceneModalWindow colonization =
+                GameWindows.Shown<ColonizationCutsceneModalWindow>();
+            return colonization ?? GameWindows.Shown<CutsceneModalWindow>();
         }
     }
 }
