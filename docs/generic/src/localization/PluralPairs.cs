@@ -90,7 +90,7 @@ namespace ES2Access.Tests.Speech
             },
             new TracedPair
             {
-                Site = "ES2Access/Core/Speech/BattleText.cs",
+                Site = "ES2Access/ES2/Speech/BattleText.cs",
                 OneField = "BattleFireMissedClause",
                 ManyField = "BattleFireMissedClauseMany",
             },
