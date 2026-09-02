@@ -227,6 +227,20 @@ namespace ES2Access.Core.Speech
 
         public const string ScreenLoading = "screen.loading";
         public const string ScreenNotification = "screen.notification";
+        // --- the Controls tab's six tables (owner ruling 2026-09-02) ---
+
+        /// <summary>What each block of key-binding rows is called. The Controls tab is not one
+        /// table of eighty-one rows but six, each under its own heading, so "3 of 23" counts the
+        /// table the player is standing in and the section jump walks the page by its six names.
+        /// The layout itself - which action is in which table, and in what order - is
+        /// <see cref="ES2Access.UI.Input.KeybindLayout"/>.</summary>
+        public const string ModSettingsKeysCursor = "mod-settings.keys.cursor";
+        public const string ModSettingsKeysBuffers = "mod-settings.keys.buffers";
+        public const string ModSettingsKeysHotkeys = "mod-settings.keys.hotkeys";
+        public const string ModSettingsKeysInspect = "mod-settings.keys.inspect";
+        public const string ModSettingsKeysScanner = "mod-settings.keys.scanner";
+        public const string ModSettingsKeysBookmarks = "mod-settings.keys.bookmarks";
+
         public const string ScreenTutorial = "screen.tutorial";
         public const string ScreenGalaxy = "screen.galaxy";
         public const string ScreenGameMenu = "screen.game-menu";
@@ -2205,6 +2219,12 @@ namespace ES2Access.Core.Speech
                 ScannerEditKeywordTaken,
                 "That keyword is already in this custom category"
             },
+            { ModSettingsKeysCursor, "Cursor and navigation" },
+            { ModSettingsKeysBuffers, "Buffers" },
+            { ModSettingsKeysHotkeys, "UI hotkeys" },
+            { ModSettingsKeysInspect, "Inspect mode" },
+            { ModSettingsKeysScanner, "Scanner" },
+            { ModSettingsKeysBookmarks, "Bookmarks" },
             { ScannerEditClear, "Clear this custom category" },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },

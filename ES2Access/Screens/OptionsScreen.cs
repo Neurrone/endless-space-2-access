@@ -340,6 +340,10 @@ namespace ES2Access.Screens
 
             string key = PanelKey(panel);
             GraphSheet sheet = null;
+            // A heading met while a sheet is open: the block under it is the sheet's next region, and
+            // the region is opened by the row that starts it rather than by the heading, because a
+            // region with nothing in it is not a place Alt+arrow can go.
+            bool blockPending = false;
             bool sectioned = false;
             bool grouped = false;
             // A page WITH captions gets a region for the rows above the first one, so the block the
@@ -361,8 +365,46 @@ namespace ES2Access.Screens
                         sheet = new GraphSheet(builder, "options:" + key + "/keys/");
                         sheet.Region(null, BindingColumns());
                     }
+                    else if (blockPending)
+                    {
+                        // A new REGION of the SAME sheet, never a sheet of its own: the sheet numbers
+                        // its own regions, so a second sheet would name the region the first already
+                        // named and Alt+arrow would read the whole page as one block; and the sheet
+                        // chains its rows across a region boundary, so Down still walks the page from
+                        // its first row to its last. Both measured 2026-09-02 on the Controls tab.
+                        sheet.Region(null, BindingColumns());
+                    }
 
+                    blockPending = false;
                     BuildBindingRow(sheet, binding);
+                    continue;
+                }
+
+                // A CAPTION the mod drew over the rows under it is the name of a SECTION, not a
+                // control: it is what the block is called, so it names the region the block is in
+                // and is never a stop of its own. That is what makes Ctrl+arrow walk a page of a
+                // hundred checkboxes by the thirteen headings it is written under. Asked before the
+                // sheet is finished, because a heading BETWEEN two blocks of key bindings divides one
+                // sheet rather than ending it.
+                string caption = ModRows.CaptionOf(rows[i]);
+                if (caption != null)
+                {
+                    if (sectioned)
+                    {
+                        builder.PopContext();
+                    }
+
+                    builder.PushContext(caption);
+                    if (sheet != null)
+                    {
+                        blockPending = true;
+                    }
+                    else
+                    {
+                        builder.SetRegion("options:" + key + "/" + OptionKey(rows[i]));
+                    }
+
+                    sectioned = true;
                     continue;
                 }
 
@@ -370,6 +412,7 @@ namespace ES2Access.Screens
                 {
                     sheet.Finish();
                     sheet = null;
+                    blockPending = false;
                 }
 
                 // A HEADER the mod drew over a whole block is an expandable GROUP: the rows under it
@@ -397,24 +440,6 @@ namespace ES2Access.Screens
                         group.Expanded
                     );
                     grouped = true;
-                    continue;
-                }
-
-                // A CAPTION the mod drew over the rows under it is the name of a SECTION, not a
-                // control: it is what the block is called, so it names the region the block is in
-                // and is never a stop of its own. That is what makes Ctrl+arrow walk a page of a
-                // hundred checkboxes by the thirteen headings it is written under.
-                string caption = ModRows.CaptionOf(rows[i]);
-                if (caption != null)
-                {
-                    if (sectioned)
-                    {
-                        builder.PopContext();
-                    }
-
-                    builder.PushContext(caption);
-                    builder.SetRegion("options:" + key + "/" + OptionKey(rows[i]));
-                    sectioned = true;
                     continue;
                 }
 

@@ -23,5 +23,16 @@
 
   <ItemGroup>
     <Compile Include="..\ES2Access\Core\**\*.cs" LinkBase="Core" />
+    <!--
+      The mod's ACTION NAMES and the Controls tab's LAYOUT over them. They live under UI\ because
+      that is who registers and draws them, but the four files are plain string tables with no
+      engine in them, so they are linked here too: "every key the mod has is on the settings page
+      exactly once" is a question that can be answered with no game running, and it is a question
+      whose wrong answer is a binding the player cannot see.
+    -->
+    <Compile Include="..\ES2Access\UI\Input\UiActions.cs" LinkBase="Input" />
+    <Compile Include="..\ES2Access\UI\Input\MapActions.cs" LinkBase="Input" />
+    <Compile Include="..\ES2Access\UI\Input\BufferActions.cs" LinkBase="Input" />
+    <Compile Include="..\ES2Access\UI\Input\KeybindLayout.cs" LinkBase="Input" />
   </ItemGroup>
 </Project>

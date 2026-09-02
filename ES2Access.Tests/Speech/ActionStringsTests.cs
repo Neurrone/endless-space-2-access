@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using ES2Access.Core.Speech;
+using ES2Access.UI.Input;
 using Xunit;
 
 namespace ES2Access.Tests.Speech
@@ -33,17 +34,44 @@ namespace ES2Access.Tests.Speech
             }
         }
 
+        /// <summary>
+        /// A description is optional and a title is not (owner ruling 2026-09-02): most rows say
+        /// everything they have in their name, and a tooltip repeating the name would be read twice
+        /// on every row. So the check runs one way - a sentence with nothing to explain is a key
+        /// nothing can reach.
+        /// </summary>
         [Fact]
-        public void EveryActionHasBothATitleAndADescription()
+        public void EveryDescriptionExplainsAnActionThatHasATitle()
         {
             SortedSet<string> keys = new SortedSet<string>(ModStrings.ActionStringKeys());
             Assert.NotEmpty(keys);
             foreach (string key in keys)
             {
-                string other = key.EndsWith(".title")
-                    ? key.Substring(0, key.Length - ".title".Length) + ".description"
-                    : key.Substring(0, key.Length - ".description".Length) + ".title";
-                Assert.True(keys.Contains(other), "no partner for '" + key + "'");
+                if (!key.EndsWith(".description"))
+                {
+                    continue;
+                }
+
+                string title = key.Substring(0, key.Length - ".description".Length) + ".title";
+                Assert.True(keys.Contains(title), "no title for '" + key + "'");
+            }
+        }
+
+        /// <summary>Every row of the Controls tab is named. A binding whose title key is missing
+        /// draws and speaks its raw action name.</summary>
+        [Fact]
+        public void EveryActionOnTheControlsTabHasATitle()
+        {
+            SortedSet<string> keys = new SortedSet<string>(ModStrings.ActionStringKeys());
+            foreach (KeybindLayout.Block block in KeybindLayout.Blocks)
+            {
+                foreach (string action in block.Actions)
+                {
+                    Assert.True(
+                        keys.Contains(ModStrings.ActionTitleKey(action)),
+                        "no title for '" + action + "'"
+                    );
+                }
             }
         }
 

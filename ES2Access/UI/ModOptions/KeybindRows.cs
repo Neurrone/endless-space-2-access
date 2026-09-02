@@ -1,27 +1,31 @@
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Amplitude.Unity.Options;
+using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
 using ES2Access.UI.Input;
 
 namespace ES2Access.UI.ModOptions
 {
     /// <summary>
-    /// The Keybinds category's rows - one key-mapping row per action the mod registers, built out of
-    /// the game's own prefab and read by the mod's options screen with nothing written for it.
+    /// The Keybinds category's rows - SIX TABLES, each under a heading of its own, built out of the
+    /// game's own prefab and read by the mod's options screen with nothing written for it.
     ///
     /// The game builds a panel's rows by reflecting over ONE provider's properties, which cannot
     /// express a list that grows. So the panel is loaded empty and filled here instead, through the
     /// two public doors the game leaves open: the panel's own <c>OptionKeyMappingPrefab</c>, and
     /// <c>OptionItem.Load(option, window, panel)</c>. The only closed door is the panel's
     /// <c>Options</c> array, whose setter is private - and that array is what the game's own scans
-    /// read, so it is written by reflection at the end.
+    /// read, so it is written by reflection at the end (<c>ModRows.Publish</c>).
     ///
-    /// Row order is the order the mod REGISTERS its actions in, which already groups them by family
-    /// (the cursor's keys, then the map's, then the review buffer's). The table's priority
-    /// comparer is dropped afterwards, so nothing can re-sort rows that all carry the same priority
-    /// into an order nobody chose.
+    /// Row order is <see cref="KeybindLayout"/>'s, not the order the mod registers its actions in:
+    /// which key exists is the input layer's business and where its row is drawn is the page's, and
+    /// they are kept apart so that moving a row cannot move a binding. Each heading is a
+    /// <c>ModRows.Caption</c>, which the options screen turns into the name of a REGION - so
+    /// "3 of 22" counts the table the player is in and Alt+arrow walks the page by its six names.
+    ///
+    /// The table's priority comparer is dropped before the first row goes in, so nothing can
+    /// re-sort rows that all carry the same priority into an order nobody chose.
     /// </summary>
     public static class KeybindRows
     {
@@ -33,24 +37,38 @@ namespace ES2Access.UI.ModOptions
                 return;
             }
 
+            // Before anything is added, not after: the comparer runs from AgeTransform.Init inside
+            // InstantiateChild, so a row it cannot sort throws on the way in.
+            ModRows.Begin(panel);
             List<Option> options = new List<Option>();
-            IList<string> actionKeys = ModBindings.ActionKeys;
-            for (int i = 0; i < actionKeys.Count; i++)
+            int index = 0;
+            KeybindLayout.Block[] blocks = KeybindLayout.Blocks;
+            for (int b = 0; b < blocks.Length; b++)
             {
-                Option option = Add(panel, i, actionKeys[i]);
-                if (option != null)
+                KeybindLayout.Block block = blocks[b];
+                Option heading = ModRows.Caption(
+                    panel,
+                    index + "keysCaption",
+                    ModStrings.Get(block.TitleKey)
+                );
+                index++;
+                if (heading != null)
                 {
-                    options.Add(option);
+                    options.Add(heading);
+                }
+
+                for (int i = 0; i < block.Actions.Length; i++)
+                {
+                    Option option = Add(panel, index, block.Actions[i]);
+                    index++;
+                    if (option != null)
+                    {
+                        options.Add(option);
+                    }
                 }
             }
 
-            SetOptions(panel, options.ToArray());
-            // The panel's own comparer sorts by option priority, and every row here has the same
-            // one - so with it in place the table lands in whatever order the instantiation left,
-            // which measured as the REVERSE of the order the rows went in. Cleared, the table's
-            // fallback comparer is sibling index, and sorting by that is the order they were added.
-            panel.OptionsTable.ChildrenComparer = null;
-            panel.OptionsTable.Sort();
+            ModRows.Publish(panel, options);
         }
 
         private static Option Add(OptionsTabPanel panel, int index, string actionKey)
@@ -104,29 +122,6 @@ namespace ES2Access.UI.ModOptions
             {
                 Log.Warn("mod options: building the row for " + actionKey + " threw: " + e);
                 return null;
-            }
-        }
-
-        private static void SetOptions(OptionsTabPanel panel, Option[] options)
-        {
-            try
-            {
-                PropertyInfo property = typeof(OptionsTabPanel).GetProperty(
-                    "Options",
-                    BindingFlags.Instance | BindingFlags.Public
-                );
-                MethodInfo setter = property == null ? null : property.GetSetMethod(true);
-                if (setter == null)
-                {
-                    Log.Warn("mod options: OptionsTabPanel.Options has no setter");
-                    return;
-                }
-
-                setter.Invoke(panel, new object[] { options });
-            }
-            catch (Exception e)
-            {
-                Log.Warn("mod options: setting the panel's options threw: " + e);
             }
         }
     }
