@@ -14,10 +14,17 @@ namespace ES2Access.Screens
     /// game, load from the main menu; the main menu even keeps a second instance of it), made
     /// navigable once for all of them.
     ///
-    /// Two places to be, and Tab moves between them: the window's contents - the cloud toggle drawn
-    /// above the table, the table of saves, and the name field the save skin adds below it - and the
-    /// row of commands along the bottom. Which side of the table a control sits on is measured rather
-    /// than declared, so either skin reads in the order it is drawn.
+    /// Three places to be in the save skin and two in the load skin, and Tab moves between them: the
+    /// window's contents - the cloud toggle drawn above the table and the table of saves itself - then
+    /// the save-name field, which only the save skin draws, and then the row of commands along the
+    /// bottom. Which side of the table a control sits on is measured rather than declared, so either
+    /// skin reads in the order it is drawn: the cloud toggle bands above the table and the field below
+    /// it (measured 2026-09-02: cloud band -1, field band 1), which is what puts the field's stop
+    /// between the table's and the commands'.
+    ///
+    /// The field is a stop of its own because it is a different KIND of thing from the saves it sits
+    /// under - a place to type rather than a place to choose - and a player tabbing past the table
+    /// should not have to walk through it to reach Save (owner ruling 2026-09-02).
     ///
     /// The table is the game's own <c>GuiTable</c> and is read by the shared <see cref="TableSheet"/>,
     /// which is what gives it the sort headers as a row above the saves, "3 of 12" as the player moves
@@ -42,6 +49,8 @@ namespace ES2Access.Screens
     public sealed class LoadSaveScreen : Screen
     {
         private static readonly object ContentStop = "loadsave:content";
+        private static readonly object FieldStop = "loadsave:name-field";
+        private const string TitleKey = "loadsave:title";
         private static readonly object CommandStop = "loadsave:commands";
 
         /// <summary>The saves, read as the game's table. Held across builds like every other table's.
@@ -137,11 +146,36 @@ namespace ES2Access.Screens
             // that the gesture loads would be wrong.
             _table.DoubleClickHint = Saving(window) ? null : ModStrings.HintLoad;
 
+            AgeTransform table = TableTransform(window);
+            // Where the field's own stop goes is the same question the cloud toggle answers - which
+            // side of the table the window drew it on - so the two are asked the same way and neither
+            // is listed. In the save skin the field is below, which is what makes it the middle stop.
+            bool fieldAbove = Above(FieldTransform(window.SaveNameTextField), table);
+
+            if (fieldAbove)
+            {
+                AddNameField(builder, window);
+            }
+
             builder.BeginStop(ContentStop);
-            BuildContents(builder, window);
+            ControlId start = BuildContents(builder, window, table);
+
+            if (!fieldAbove)
+            {
+                AddNameField(builder, window);
+            }
 
             builder.BeginStop(CommandStop);
             BuildCommands(builder, window);
+
+            // The saves are what the player came for in BOTH skins - a save is written over the row
+            // that is chosen, and a name is typed only after that (owner ruling 2026-09-02). Where the
+            // table has no rows to land on, the start is whatever the table's own stop drew first and
+            // never the field, which is a stop away.
+            if (start != null)
+            {
+                builder.SetStart(start);
+            }
         }
 
         // ---- the window's contents ----
@@ -150,66 +184,48 @@ namespace ES2Access.Screens
         /// The table, with whatever the window draws above and below it in its place.
         ///
         /// Which is measured, not listed: the cloud toggle sits in the top right corner above the
-        /// headers and the name field below the last row, and both belong where a sighted player finds
-        /// them. Asking the layout means the same code puts a control the window gains tomorrow in the
-        /// right place too.
+        /// headers, and it belongs where a sighted player finds it. Asking the layout means the same
+        /// code puts a control the window gains tomorrow in the right place too.
+        ///
+        /// Answers where the page opens: the first save, or - for a table the game filled with nothing
+        /// - the first thing this stop drew, so an empty list is a page the player still arrives on
+        /// and hears rather than a page with no cursor at all.
         /// </summary>
-        private void BuildContents(GraphBuilder builder, LoadSaveModalWindow window)
+        private ControlId BuildContents(
+            GraphBuilder builder,
+            LoadSaveModalWindow window,
+            AgeTransform table
+        )
         {
             // The title across the top carries the sentence saying what the window is for, and the
             // game writes a different one in each mode (<c>LoadSaveModalWindow</c> :150-159) - so it
             // is read off the widget and never branched on here. The title is already the screen's
             // name and the table's; the row is for the sentence, which a name cannot carry
             // (<see cref="Captions"/>).
-            Captions.Row(
-                builder,
-                window.WindowTitle == null ? null : window.WindowTitle.AgeTransform,
-                "loadsave:title"
-            );
+            AgeTransform heading =
+                window.WindowTitle == null ? null : window.WindowTitle.AgeTransform;
+            // The caption row's own id, named by the same key it was declared under - a graph node is
+            // found by its structural key, so this is the row itself and not a copy of it.
+            ControlId title = Captions.Row(builder, heading, TitleKey)
+                ? ControlId.For(heading, TitleKey)
+                : null;
 
-            AgeTransform table = TableTransform(window);
             bool cloudAbove = Above(window.CloudToggleGroup, table);
-            bool fieldAbove = Above(FieldTransform(window.SaveNameTextField), table);
-            ControlId field = null;
+            ControlId cloud = null;
 
             if (cloudAbove)
             {
-                AddCloudToggle(builder, window);
-            }
-
-            if (fieldAbove)
-            {
-                field = AddNameField(builder, window);
+                cloud = AddCloudToggle(builder, window);
             }
 
             ControlId firstRow = AddSaves(builder, window);
 
-            if (!fieldAbove)
-            {
-                field = AddNameField(builder, window);
-            }
-
             if (!cloudAbove)
             {
-                AddCloudToggle(builder, window);
+                cloud = AddCloudToggle(builder, window);
             }
 
-            ControlId start = field;
-
-            // The save skin opens on the field the player came to type in; the load skin opens on the
-            // saves. Either way it is the first Tab stop, so Tab never has to wrap to reach the rest.
-            if (Saving(window) && start != null)
-            {
-                builder.SetStart(start);
-            }
-            else if (firstRow != null)
-            {
-                builder.SetStart(firstRow);
-            }
-            else if (start != null)
-            {
-                builder.SetStart(start);
-            }
+            return firstRow ?? title ?? cloud;
         }
 
         /// <summary>The saves, as the shared table reading: the sort headers as a row above them, then
@@ -234,11 +250,18 @@ namespace ES2Access.Screens
         /// (<see cref="TextFieldEditor"/>).</summary>
         private readonly TextFieldEditor _editor = new TextFieldEditor();
 
-        /// <summary>The save-name field, declared while the save skin shows it. Its value is whatever
-        /// the field holds - the game's "enter a name here" prompt included, because that prompt is
-        /// what a sighted player is looking at - and nothing at all while the player is typing into
-        /// it: the editor is reading the keys out one at a time, and re-reading the whole field after
-        /// every letter would bury them.</summary>
+        /// <summary>
+        /// The save-name field, declared while the save skin shows it - and in a Tab stop of its own,
+        /// which is what makes it three stops in the save skin and two in the load skin.
+        ///
+        /// The stop is opened only once the node is really there, so a skin that draws no field leaves
+        /// no empty place for Tab to stop at.
+        ///
+        /// Its value is whatever the field holds - the game's "enter a name here" prompt included,
+        /// because that prompt is what a sighted player is looking at - and nothing at all while the
+        /// player is typing into it: the editor is reading the keys out one at a time, and re-reading
+        /// the whole field after every letter would bury them.
+        /// </summary>
         private ControlId AddNameField(GraphBuilder builder, LoadSaveModalWindow window)
         {
             AgeControlTextField field = window.SaveNameTextField;
@@ -262,9 +285,9 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            // The other single-item row at this level: paired with the cloud toggle it would count as
-            // "2 of 2" of nothing either control is a member of.
+            // Alone in its stop, so there is no list for it to be a member of.
             cell.Vtable.SpeaksOwnPosition = true;
+            builder.BeginStop(FieldStop);
             builder.AddItem(Nodes.Drawn(id, cell.Vtable, field));
             return id;
         }
@@ -456,7 +479,9 @@ namespace ES2Access.Screens
 
         // ---- the cloud toggle ----
 
-        private static void AddCloudToggle(GraphBuilder builder, LoadSaveModalWindow window)
+        /// <summary>Answers the node it declared, which is one of the places the page can open on when
+        /// the game gave the table nothing to show.</summary>
+        private static ControlId AddCloudToggle(GraphBuilder builder, LoadSaveModalWindow window)
         {
             AgeControlToggle toggle = window.CloudToggle;
             try
@@ -467,12 +492,12 @@ namespace ES2Access.Screens
                     || !window.CloudToggleGroup.Visible
                 )
                 {
-                    return;
+                    return null;
                 }
             }
             catch (Exception)
             {
-                return;
+                return null;
             }
 
             AgeControlToggle control = toggle;
@@ -491,11 +516,12 @@ namespace ES2Access.Screens
             // is no longer reachable from any factory. What is kept here is what the door cannot say:
             // the TICK is a toggle, and only this call makes it look hovered.
             AgeWidgets.Point(vtable, control, window.CloudToggleTooltip, group);
-            // The only checkbox at this level of the window: "1 of 2" with the name field below it
-            // would be counting two unrelated controls that happen to share a Tab stop, not members
-            // of a list either belongs to.
+            // The only checkbox in the window's contents: a position here would be counting unrelated
+            // controls that happen to share a Tab stop, not members of a list it belongs to.
             vtable.SpeaksOwnPosition = true;
-            builder.AddItem(Nodes.Drawn(ControlId.For(control, "loadsave:cloud"), vtable, control));
+            ControlId id = ControlId.For(control, "loadsave:cloud");
+            builder.AddItem(Nodes.Drawn(id, vtable, control));
+            return id;
         }
 
         /// <summary>The words next to the cloud tick, which the game writes beside it rather than on

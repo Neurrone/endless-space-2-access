@@ -25,3 +25,14 @@ how to reach one save file by name. (Chartered 2026-08-31; grew out of the bookm
   save) and the display names `Title`/`LocalizedTitle`/`TitleWithTurn`
   (`GameSaveDescriptor.cs:43-78`) — the titles are what the save list and `DevProbe.Saves()` show,
   and they are NOT identity: autosaves reuse them freely.
+- **A save written from a BEGINNER-tutorial game is renamed by the game before it is written.**
+  `LoadSaveModalWindow.OnSaveCb` :436-450 prepends `%TutorialBeginnerSaveFormat` ("[Beginner] ")
+  to whatever the player typed, unless the typed name already contains it — so the title in the
+  save list is never exactly what was asked for in such a game, and a test that writes a save by
+  a chosen name must read the title back (`DevProbe.Saves()`) rather than assume it. Measured
+  2026-09-02: "ES2Access stage snapshot 2026-09-02" landed as
+  "[Beginner] ES2Access stage snapshot 2026-09-02".
+- **The Save button is enabled by the NAME, not by the selection**
+  (`LoadSaveModalWindow.CheckButtons`): a non-blank name that is not the placeholder is the whole
+  of it, and the game only asks about an existing file when `SaveGame` runs — an overwrite raises
+  the game's own confirmation box, a new name writes straight away and hides the window.

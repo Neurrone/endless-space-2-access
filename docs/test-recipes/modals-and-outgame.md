@@ -337,9 +337,13 @@ the DLC strip) have no fixture at all, and renaming the player needs Steam. Adva
 column overflows at 1280×800, so scroll-into-view is inherited but unexercised. Custom faction
 editor: nothing was ever persisted — SAVING a faction (`OnValidateCb` :686-700) and editing or
 deleting an existing one are code-verified only. Load/save: the window declares no content unless
-the dialog is up (`/gui/graph?screen=screen.load-save` answers "not active" from a running game),
-so the whole family — including the type-ahead that searches SAVES rather than cells — is live-checked
-only from the manual script. It CAN be raised in-game from `/eval` the way the pause menu does
+the dialog is up (`/gui/graph?screen=screen.load-save` answers "not active" from a running game).
+The PLAYER's own route reaches it from a running game and is the one to use — physical `POST /key
+Escape` raises the pause menu (`/input ui.back` is a mod action and never gets there), then
+`ui.activate` on "Save Game" (1 of 9) or `ui.down` once and activate for "Load Game" (2 of 9);
+Cancel in the modal's command stop closes it and puts the pause menu back. Only the type-ahead
+that searches SAVES rather than cells is still live-checked from the manual script. The window CAN
+also be raised in-game from `/eval` the way the pause menu does
 (`var w = Gui.GuiService.GetWindow("LoadSaveModalWindow") as LoadSaveModalWindow; w.LoadSaveMode =
 LoadSaveModalWindow.LoadSaveType.Save;` — or `LoadFromGame` — `Gui.GuiService.ShowWindow(w);`), and it
 closes with `Gui.GuiService.HideWindow(w)` or with `w.HandleInput(InputAction.Exit)` (which DOES
@@ -365,6 +369,24 @@ dossier is read from the buffer rather than announced. Measured on the Autosave 
 predates the "has tooltip" removal): `loadsave:…c7` says *"Valid"*, buffer *"Mods, Valid" / "The
 mod configuration of this game is valid and the same as yours." / "Configuration:" / "- Endless
 Space 2"*.
+
+**The window's stops (2026-09-02): three in the save skin, two in the load skin.**
+`loadsave:content` (the title caption row, the cloud toggle, the sort band and the saves),
+`loadsave:name-field` (the save-name box alone — only the save skin draws it), `loadsave:commands`.
+Tab cycles content → field → commands → content and Shift+Tab back; the commands walk with
+Up/Down, not Left/Right. **Arrival lands on the FIRST SAVE in both skins**, never on the field:
+save mode says *"Save Game" / "Save Game, table, [Beginner] access test, not selected, 1 of 11"*,
+load mode *"Load Game" / "Load Game, table, …, 1 of 16"*. Which side of the table the cloud toggle
+and the field sit on is measured, not listed (cloud band −1, field band 1 at 1280×800), so the
+field's stop is declared after the table because that is where it is drawn.
+
+**An empty saves table** happens for a fresh profile (no saves at all) on the main menu's Load Game
+and on the in-game Save window. Prove it without touching a save file: set every child of
+`w.GuiTable.LinesTable` to `Visible = false` from `/eval`, dump, then set them back. The content
+stop then holds the title row, the cloud toggle and the sort band and nothing else, and the start
+node is the title row — the player hears *"Save Game" / "Save Game, Save the current game, 1 of 2"*
+and reaches the headings with Down. (The dump's traversal begins at the render's start node, which
+is what makes the first line printed the proof.)
 
 ## The out-game family
 
