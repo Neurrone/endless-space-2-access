@@ -63,6 +63,26 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The game's own word for a key it keeps in its corpus - a column heading, a card's caption,
+        /// the name of a fact it drew only as a picture - or null where the corpus has no such string.
+        ///
+        /// The null is the whole point, and is why this is one place rather than twenty-five. The
+        /// localizer hands an unknown key straight BACK, so a caller that speaks the answer unguarded
+        /// reads "%HeroCardLevelTitle" aloud; eight sites did. A key the game never finished writing is
+        /// silence: the caller's own fallback - a different key, a drawn label, nothing at all - is a
+        /// better line than the key.
+        ///
+        /// Empty is the same answer as unresolved, for the same reason. The localize step is
+        /// <see cref="Clean"/>'s own, which is also what strips the colour markup and names the inline
+        /// icons, so a title reads exactly as any other AGE string does.
+        /// </summary>
+        public static string Title(string key)
+        {
+            string title = Clean(key);
+            return string.IsNullOrEmpty(title) || Gui.IsLocalizationKey(title) ? null : title;
+        }
+
+        /// <summary>
         /// A label's spoken text. <c>TranslatedText</c> is the post-localization, post-markup string
         /// the label actually renders; <c>Text</c> is what was assigned, which for a data-driven
         /// caption is still a <c>%key</c>.

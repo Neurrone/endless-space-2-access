@@ -233,22 +233,42 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The button under a window that the prefab wired to <paramref name="method"/>.
+        /// <summary>
+        /// Whether the game has put another modal on top of this one - which for a modal is not being
+        /// COVERED but being HIDDEN: the stack is exclusive, so opening the window a modal's own button
+        /// opens takes that modal off the screen entirely (measured on the hero selection window:
+        /// <c>heroSel.Shown=False, AgeTransform.Visible=False</c> while the inspection window is up).
+        /// Keeping the keyboard there would leave the player pressing Enter on a Confirm they cannot
+        /// see, which is why every one of the six screens that copied this test used it as an
+        /// <c>IsActive</c> gate.
+        ///
+        /// Asked of the game's own record of which modal is on top (<c>GuiManager.ModalOnTop</c>,
+        /// written by <c>ModalWindow_VisibilityChanged</c> :1750-1765) rather than of the window's own
+        /// visibility, because the two answers differ on the frame that matters: while the window is
+        /// CLOSING, visibility is already false and there is no modal on top at all - and leaving THEN
+        /// is the departure that must wait for the unbind, or the page underneath reads every control
+        /// unavailable (the <c>ImprovementsModalScreen</c> measurement).
         /// </summary>
+        public static bool Buried(GuiModalWindow window)
+        {
+            try
+            {
+                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
+                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
+                return top != null && !ReferenceEquals(top, window);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The button under a window that the prefab wired to <paramref name="method"/>,
+        /// preferring the drawn one - the tie-break and the reason for it are
+        /// <see cref="AgeWidgets.WiredTo"/>'s.</summary>
         private static AgeControlButton Wired(GuiWindow window, string method)
         {
-            AgeTransform root = window == null ? null : window.AgeTransform;
-            AgeControlButton[] buttons =
-                root == null ? null : root.GetComponentsInChildren<AgeControlButton>(true);
-            for (int i = 0; buttons != null && i < buttons.Length; i++)
-            {
-                if (buttons[i] != null && buttons[i].OnActivateMethod == method)
-                {
-                    return buttons[i];
-                }
-            }
-
-            return null;
+            return AgeWidgets.WiredTo(window == null ? null : window.AgeTransform, method);
         }
 
         /// <summary>
