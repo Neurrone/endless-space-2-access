@@ -609,9 +609,11 @@ to the ⟨direction⟩ by star lane", which way still being the compass word tha
 says for the same line, so an unnamed origin is never two incoming lanes said identically (owner
 ruling 2026-09-02); a fleet crossing open space reads "arriving from the west", the eight-word bearing
 from that system out to where the fleet is standing. The clockwise-from-north ordinal survives only
-as the internal ordering (`LanesOf`). Same rule on the scanner's Unexplored rows ("Star lane, Dusay
-north to an unexplored system") and in the inspect cell ("Star lane, ⟨west⟩ ⟨direction⟩ to ⟨east⟩"),
-so one lane is heard with one compass word from every surface.
+as the internal ordering (`LanesOf`). The scanner's Unexplored rows keep their own sentence, "Star
+lane from Dusay heading north", and so does the INSPECT CELL, "Star lane from ⟨west⟩ to ⟨east⟩" —
+westmost end first and no compass word at all (owner ruling 2026-09-02, reverting a day-old change):
+a cell reads the lanes crossing it, and westmost-first is what makes one lane crossing two
+neighbouring cells heard as one lane.
 
 **THE TREE IS BAND-FILTERED, AND SO IS THE SCANNER** (owner ruling 2026-09-01; the table is
 `Core/UI/Bands.cs`, read through `UI/ZoomBands.cs`). The rows the map stop offers are the KINDS the

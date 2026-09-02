@@ -152,14 +152,14 @@ Per category, what to check:
 
 - **Unexplored** (2 presses). "all"-only, and its things are EDGES rather than places: every drawn
   lane or wormhole whose far end the player has not perceived, named from the end they CAN see.
-  `Unexplored: all, Star lane, ⟨system⟩ ⟨direction⟩ to an unexplored system,
+  `Unexplored: all, Star lane from ⟨system⟩ heading ⟨direction⟩,
   ⟨the system's pair⟩, ⟨offset⟩, 1 of ⟨m⟩` (wording ruling 2026-09-02; no lane number is spoken any
   more, here or anywhere). Check the DIRECTION against the tree: focus the same system, walk its
   lane rows, and the compass word on the matching row must be the same one (both come from
   `LanesOf` and the same eight-word set).
   Oracle for the count: for every perceived node, its drawn links whose far end is not perceived,
   summed. **Each lane must appear once** — a duplicate would mean both ends were perceived, which
-  contradicts the gate. A wormhole reads "Wormhole, ⟨system⟩ ⟨direction⟩ to …"; fixture-blocked
+  contradicts the gate. A wormhole reads "Wormhole from ⟨system⟩ heading ⟨direction⟩"; fixture-blocked
   unless the empire has wormhole technology.
 
 - **Anomalies / Curiosities / Luxury Resources / Strategic Resources** (3-6 presses). In `all` the

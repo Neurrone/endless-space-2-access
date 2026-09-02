@@ -2543,11 +2543,7 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>One lane as the sentence the cell says it in: the kind of line, then its westmost
-        /// end, then the way it runs from that end, then the other end. Westmost first so one lane
-        /// crossing two neighbouring cells is heard as one lane, and the direction off the same
-        /// eight-word compass the lane's own row under a system uses, so a lane heard here and heard
-        /// there is heard with the same word.</summary>
+        /// <summary>One lane as the sentence the cell says it in.</summary>
         private static string LaneText(Link link, Empire empire, bool wormhole)
         {
             GameNode one = link.ExtremityNode1;
@@ -2567,10 +2563,6 @@ namespace ES2Access.Screens
                 return ModStrings.Format(
                     wormhole ? ModStrings.GalaxyInspectWormhole : ModStrings.GalaxyInspectStarlane,
                     west.LocalizedName,
-                    CompassDirections.Direction(
-                        east.GalaxyPosition.X - west.GalaxyPosition.X,
-                        east.GalaxyPosition.Y - west.GalaxyPosition.Y
-                    ),
                     east.LocalizedName
                 );
             }
