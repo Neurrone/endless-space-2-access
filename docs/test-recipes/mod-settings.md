@@ -383,6 +383,71 @@ regression test for the clone's modal registration (ES2 facts).
 **Leave the fixture with all three slots cleared** (the Clear button then Apply, or
 `ScannerCustomSettings.Clear(0..2)`) - `settings.cfg` goes back to 0 bytes.
 
+## The Speech tab (macOS only)
+
+Third tab, registered only when `Platform.IsMacOS` (`ModOptions.Categories`); Windows shows two
+tabs and none of this. Rows (`SpeechRows.Fill`): a backend combo (System voice /
+VoiceOver-through-Prism), then a "System voice settings" caption over a Voice combo, Speaking
+rate and Speech volume sliders (0-100 step 5), and a "Reset voice and rate to Spoken Content"
+button. Every row edits `settings.cfg`'s `speech.*` keys (`SpeechSettings`) AND the live
+backend in the same write, so Cancel reverts both through the game's own RestoreSettings and
+Apply-then-hide persists (verified 2026-08-31). With Prism as the live backend the captioned
+rows keep reading and writing the STORED settings but move no live lever (`Speech.Mac` is
+null); the rate row then shows the OS Spoken Content rate, not a placeholder.
+
+- **Voice combo contents**: the Spoken Content voice first ("Spoken Content voice: ⟨name,
+  lang⟩", the default, absent key), then only the installed voices whose primary language
+  subtag matches the game's language (`VoiceSelection.ForLanguage`; measured: 181 installed,
+  42 rows in English), then a stored out-of-language voice so the selection is always offered.
+  Every voice when the game's language matches none - the picker must never be empty.
+- **Live-apply probes**: `ES2Access.ModEntry.Speech.Mac.Rate01`, the private
+  `_voiceIdentifier` by reflection, and `ModSettings.File.Get("speech.rate"|"speech.voice"|
+  "speech.volume"|"speech.backend")`. A backend flip is `Speech.BackendName` changing
+  ("System Voice" ↔ what Prism's create_best answered, "VoiceOver (macOS)" here) with
+  `Speech.Mac` non-null only on the system voice; flipping back re-applies the stored voice
+  and rate to the fresh instance.
+- **Reset button**: removes the voice and rate keys, `Reinitialize`s (which re-reads the OS's
+  Spoken Content values - a change made there mid-game included), and redraws the two rows.
+  Cancel undoes it like any other change: the window's restore writes the opening values back
+  through the rows' own writers, keys and live voice included.
+- **A rate that follows Spoken Content stays following**: with no `speech.rate` key, the
+  window's restore/commit passes write the DISPLAYED value back through `WriteRate`, whose
+  guard compares against `ReadRate()` - open the tab, Cancel, and `speech.rate` must still be
+  absent from `settings.cfg`.
+- **The Prism flip is validated as it applies**: pick "VoiceOver, through Prism" with
+  `libprism.dylib` missing (rename it next to the .app) - the stored `speech.backend` must
+  read `system` afterwards, the row snap back, a message box say "VoiceOver through Prism
+  could not be started; the system voice stays.", and speech stay alive. The same guard runs
+  at launch: a hand-edited `speech.backend = prism` with no dylib boots the system voice
+  (`PrismSpeech.Initialize`'s fallback), not silence.
+- **A backend flip can stall the main thread**: in the 2026-08-31 live pass the game's main
+  thread froze for ~40 s right after Prism's VoiceOver backend registered (VoiceOver running,
+  game frontmost), then recovered on its own with every queued dev-server request landing
+  correctly. Once observed, cause unproven - VoiceOver's accessibility inspection of the game
+  window is the suspect - so budget a minute of dead `/eval` time when driving flips over the
+  wire, and poll rather than conclude a hang.
+- **Injection limit**: `ui.back` cannot raise the exit-without-applying box (that Escape is
+  the game's own dispatch); drive the Cancel BUTTON instead - it raises the same confirmation
+  and the same restore. What only ears can prove: the audio actually changing voice, rate and
+  volume, and VoiceOver announcing when the Prism backend is chosen.
+- **Owner's pass, 2026-08-31**: every by-ear and physical item above confirmed - the audio
+  changing voice, rate and volume; VoiceOver announcing on the Prism backend; the Prism
+  refusal heard with the dylib missing; the live capture spoken as Option/Cmd; the
+  Option/Command chords under live keys; and chat opening on Option+Tab.
+
+## The key rows on a Mac: spoken as Option and Cmd
+
+On macOS the MOD window's key cells are respoken through the mod's own chord names
+(`OptionsScreen.KeyText`: `KeyChords.FromCombination` then `ChordNames.Of`, gated on
+`ModOptions.IsOurs`): a row stored as the game's `Alt+Shift+Return` reads "Option+Shift+Enter",
+`LeftCommand` reads "Cmd" (verified 2026-08-31 against the live dump - no "Alt"/"LeftCommand"
+in any spoken row). The game's OWN Controls tab keeps the game's spelling ("Ctrl + Tab",
+"Ctrl + F5" - real Control keys, verified same session). The DRAWN cell text is the game's on
+both windows, by design. Mid-capture the same translation runs off the widget's live
+`KeyCombination` (it updates as each key goes down), with two consequences only physical keys
+can show: the building chord speaks as Option/Cmd, and a held REAL Control is absent from the
+spoken form exactly as it will be from the committed binding.
+
 ## Reset to Defaults on the Controls tab
 
 Only the mod's window has it, and only while the Controls tab is showing: the game's own

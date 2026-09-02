@@ -1,4 +1,6 @@
 using System;
+using ES2Access.Core.Native;
+using ES2Access.Core.Speech.Mac;
 using ES2Access.Core.Util;
 
 namespace ES2Access.Core.Speech
@@ -11,6 +13,12 @@ namespace ES2Access.Core.Speech
     /// prism.dll must already be loaded into the process before <see cref="Initialize"/> runs
     /// (the plugin preloads it by full path via NativeLoader), otherwise the first P/Invoke
     /// throws DllNotFoundException.
+    ///
+    /// On macOS the mod speaks the system voice itself (<see cref="MacSystemVoice"/>), because
+    /// VoiceOver's announcement API cannot queue and AVSpeech's own queue leaves a gap between
+    /// every line; Prism is the fallback there, taken only when the system voice cannot be
+    /// stood up at all. The chokepoint and its callers do not change; only what is behind
+    /// <see cref="Initialize"/> does.
     /// </summary>
     public sealed class PrismSpeech
     {
@@ -25,6 +33,7 @@ namespace ES2Access.Core.Speech
         private IntPtr _ctx;
         private IntPtr _backend;
         private bool _useOutput;
+        private MacSystemVoice _mac;
 
         /// <summary>True once a backend was created and initialized successfully.</summary>
         public bool Available { get; private set; }
@@ -34,6 +43,34 @@ namespace ES2Access.Core.Speech
 
         /// <summary>Name of the chosen backend (e.g. "NVDA", "SAPI"), once available.</summary>
         public string BackendName { get; private set; }
+
+        /// <summary>The macOS backend setting's two values: the streamed system voice, and Prism
+        /// (which is VoiceOver when it is running).</summary>
+        public const string MacBackendSystemVoice = "system";
+        public const string MacBackendPrism = "prism";
+
+        /// <summary>Which backend <see cref="Initialize"/> stands up on macOS. Anything but
+        /// <see cref="MacBackendPrism"/> means the system voice, with Prism kept as the
+        /// cannot-start fallback; <see cref="MacBackendPrism"/> means Prism, with the system
+        /// voice as ITS cannot-start fallback, because the preference persists across launches
+        /// and must never persist silence. Set before Initialize; meaningless off the Mac.</summary>
+        public string MacBackendPreference = MacBackendSystemVoice;
+
+        /// <summary>The macOS system voice while it is the live backend (its voices and the
+        /// voice, rate and volume levers), null anywhere else - Windows, Prism chosen, or
+        /// speech unavailable.</summary>
+        public MacSystemVoice Mac
+        {
+            get { return _mac; }
+        }
+
+        /// <summary>Tear the live backend down and stand up whatever the current preference
+        /// names - how a backend change applies without a restart. Anything queued is lost.</summary>
+        public void Reinitialize()
+        {
+            Shutdown();
+            Initialize();
+        }
 
         /// <summary>
         /// Stand up the Prism context and acquire the best available backend. On any failure it
@@ -47,6 +84,65 @@ namespace ES2Access.Core.Speech
                 return;
             }
 
+            if (Platform.IsMacOS)
+            {
+                bool preferPrism = MacBackendPreference == MacBackendPrism;
+                if (!preferPrism)
+                {
+                    if (TryStartSystemVoice())
+                    {
+                        return;
+                    }
+
+                    Log.Info("speech: system voice unavailable; falling back to Prism");
+                }
+
+                if (TryStartPrism())
+                {
+                    return;
+                }
+
+                if (preferPrism)
+                {
+                    // The mirror of the fallback above. The preference PERSISTS in the settings
+                    // file, so a Prism that cannot start must never mean silence on every launch
+                    // from here on - the player could not hear the row to switch back.
+                    Log.Info("speech: Prism unavailable; falling back to the system voice");
+                    TryStartSystemVoice();
+                }
+
+                return;
+            }
+
+            TryStartPrism();
+        }
+
+        private bool TryStartSystemVoice()
+        {
+            MacSystemVoice mac = new MacSystemVoice();
+            if (!mac.Start())
+            {
+                return false;
+            }
+
+            _mac = mac;
+            BackendName = "System Voice";
+            Available = true;
+            Log.Info("macOS system voice ready: " + mac.Description);
+            return true;
+        }
+
+        private bool TryStartPrism()
+        {
+            if (Platform.IsMacOS && !NativeLoader.PrismLoaded)
+            {
+                // Reached with Prism chosen, or as the system voice's fallback. Prism's macOS
+                // backends cannot queue the way the stream does (VoiceOver's announcement API
+                // replaces pending speech), but a cut-off queue beats silence.
+                Log.Error("speech: the Prism library is not loaded; speech is unavailable");
+                return false;
+            }
+
             PrismNative.PrismConfig cfg = new PrismNative.PrismConfig
             {
                 Version = PrismNative.ConfigVersion,
@@ -55,7 +151,7 @@ namespace ES2Access.Core.Speech
             if (_ctx == IntPtr.Zero)
             {
                 Log.Error("Prism: prism_init returned null context");
-                return;
+                return false;
             }
 
             // create_best hands back an OWNED backend (freed in Shutdown, unlike the
@@ -69,7 +165,7 @@ namespace ES2Access.Core.Speech
                 );
                 PrismNative.prism_shutdown(_ctx);
                 _ctx = IntPtr.Zero;
-                return;
+                return false;
             }
 
             PrismNative.PrismError err = PrismNative.prism_backend_initialize(_backend);
@@ -83,7 +179,7 @@ namespace ES2Access.Core.Speech
                 PrismNative.prism_shutdown(_ctx);
                 _backend = IntPtr.Zero;
                 _ctx = IntPtr.Zero;
-                return;
+                return false;
             }
 
             ulong features = PrismNative.prism_backend_get_features(_backend);
@@ -96,6 +192,7 @@ namespace ES2Access.Core.Speech
                     + BackendName
                     + (_useOutput ? " (output)" : " (speak)")
             );
+            return true;
         }
 
         /// <summary>
@@ -142,6 +239,12 @@ namespace ES2Access.Core.Speech
                 return;
             }
 
+            if (_mac != null)
+            {
+                _mac.Speak(text, interrupt);
+                return;
+            }
+
             byte[] utf8 = PrismNative.ToUtf8(text);
             PrismNative.PrismError err = _useOutput
                 ? PrismNative.prism_backend_output(_backend, utf8, interrupt)
@@ -160,7 +263,23 @@ namespace ES2Access.Core.Speech
                 return;
             }
 
+            if (_mac != null)
+            {
+                _mac.Silence();
+                return;
+            }
+
             PrismNative.prism_backend_stop(_backend);
+        }
+
+        /// <summary>Once per frame, from the pump: a backend that paces speech itself (the macOS
+        /// system voice) does its work here. Nothing to do for Prism.</summary>
+        public void Update()
+        {
+            if (_mac != null)
+            {
+                _mac.Update();
+            }
         }
 
         /// <summary>
@@ -169,6 +288,12 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public void Shutdown()
         {
+            if (_mac != null)
+            {
+                _mac.Stop();
+                _mac = null;
+            }
+
             if (_backend != IntPtr.Zero)
             {
                 // Stop before free: freeing alone does not guarantee in-flight speech halts.
@@ -184,6 +309,9 @@ namespace ES2Access.Core.Speech
             }
 
             Available = false;
+            // A dead instance must not keep the last backend's name: Reinitialize reports
+            // whatever the NEXT Initialize stands up, and /status reads this between the two.
+            BackendName = null;
         }
     }
 }

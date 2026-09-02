@@ -21,6 +21,23 @@ namespace ES2Access.UI.ModOptions
         bool Ticked { get; set; }
     }
 
+    /// <summary>One row's value, seen as one choice out of a drawn list. The attribute names no
+    /// items: each row's are written onto its own minted option's attribute instance before the
+    /// row loads (<see cref="ModRows.Choice"/>).</summary>
+    public interface IModChoiceRow
+    {
+        [OptionTypeDropList("ModChoice")]
+        string Choice { get; set; }
+    }
+
+    /// <summary>One row's value, seen as a position on a slider. The range is written onto each
+    /// minted option's attribute instance before the row loads (<see cref="ModRows.Slider"/>).</summary>
+    public interface IModSliderRow
+    {
+        [OptionTypeSlider("ModSlider")]
+        float Level { get; set; }
+    }
+
     /// <summary>
     /// THE MOD'S OWN ROWS, built out of the game's own option prefabs.
     ///
@@ -167,6 +184,114 @@ namespace ES2Access.UI.ModOptions
             }
 
             item.Refresh();
+            return option;
+        }
+
+        /// <summary>
+        /// A DROP LIST: the row's title, and one choice out of <paramref name="values"/>, drawn
+        /// and spoken as the matching <paramref name="labels"/> entry.
+        ///
+        /// The game's droplist row reads its items off the option's attribute - both the value it
+        /// stores on a selection and the label it draws, which it derives as a localization key of
+        /// the game's own naming scheme. Attribute instances are minted fresh per option, so each
+        /// row's VALUES are written onto its own instance, and the LABELS are re-set raw after the
+        /// row has loaded, the same way the game's Resolution row shows plain text.
+        /// </summary>
+        public static Option Choice(
+            OptionsTabPanel panel,
+            string name,
+            string title,
+            IList<string> values,
+            IList<string> labels,
+            Func<string> read,
+            Action<string> write,
+            out OptionDropListItem made
+        )
+        {
+            made = null;
+            ModChoiceRow provider = new ModChoiceRow(read, write);
+            Option option = Mint(provider, typeof(IModChoiceRow));
+            OptionTypeDropListAttribute attribute =
+                option == null ? null : option.OptionTypeAttribute as OptionTypeDropListAttribute;
+            if (attribute == null)
+            {
+                Log.Warn("mod options: the choice row " + name + " minted no droplist attribute");
+                return null;
+            }
+
+            string[] items = new string[values.Count];
+            values.CopyTo(items, 0);
+            attribute.Items = items;
+            OptionDropListItem item = Add<OptionDropListItem>(
+                panel,
+                panel.OptionDropListPrefab,
+                name,
+                option,
+                title
+            );
+            if (item == null || item.DropList == null)
+            {
+                return null;
+            }
+
+            List<string> drawn = new List<string>(labels);
+            List<string> tooltips = new List<string>();
+            for (int i = 0; i < drawn.Count; i++)
+            {
+                tooltips.Add(string.Empty);
+            }
+
+            item.DropList.SetLabels(drawn);
+            item.DropList.SetTooltips(tooltips);
+            item.Refresh();
+            made = item;
+            return option;
+        }
+
+        /// <summary>A SLIDER from <paramref name="min"/> to <paramref name="max"/> in steps of
+        /// <paramref name="step"/>, whole numbers only. Writes ride every drag step, so the write
+        /// must be cheap and idempotent.</summary>
+        public static Option Slider(
+            OptionsTabPanel panel,
+            string name,
+            string title,
+            float min,
+            float max,
+            float step,
+            Func<float> read,
+            Action<float> write,
+            out OptionSliderItem made
+        )
+        {
+            made = null;
+            ModSliderRow provider = new ModSliderRow(read, write);
+            Option option = Mint(provider, typeof(IModSliderRow));
+            OptionTypeSliderAttribute attribute =
+                option == null ? null : option.OptionTypeAttribute as OptionTypeSliderAttribute;
+            if (attribute == null)
+            {
+                Log.Warn("mod options: the slider row " + name + " minted no slider attribute");
+                return null;
+            }
+
+            attribute.MinValue = min;
+            attribute.MaxValue = max;
+            attribute.Increment = step;
+            attribute.HideDecimals = true;
+            OptionSliderItem item = Add<OptionSliderItem>(
+                panel,
+                panel.OptionSliderPrefab,
+                name,
+                option,
+                title
+            );
+            if (item == null)
+            {
+                return null;
+            }
+
+            item.Refresh();
+            made = item;
             return option;
         }
 
@@ -714,6 +839,61 @@ namespace ES2Access.UI.ModOptions
 
         private readonly Func<bool> _expanded;
         private readonly Action<bool> _expand;
+    }
+
+    /// <summary>One row's choice, the same way round. The getter never answers null, for the
+    /// reason on <see cref="ModTextRow"/>.</summary>
+    public sealed class ModChoiceRow : IModChoiceRow
+    {
+        public ModChoiceRow(Func<string> read, Action<string> write)
+        {
+            _read = read;
+            _write = write;
+        }
+
+        public string Choice
+        {
+            get
+            {
+                string choice = _read == null ? null : _read();
+                return choice ?? string.Empty;
+            }
+            set
+            {
+                if (_write != null)
+                {
+                    _write(value ?? string.Empty);
+                }
+            }
+        }
+
+        private readonly Func<string> _read;
+        private readonly Action<string> _write;
+    }
+
+    /// <summary>One row's slider position, the same way round.</summary>
+    public sealed class ModSliderRow : IModSliderRow
+    {
+        public ModSliderRow(Func<float> read, Action<float> write)
+        {
+            _read = read;
+            _write = write;
+        }
+
+        public float Level
+        {
+            get { return _read == null ? 0f : _read(); }
+            set
+            {
+                if (_write != null)
+                {
+                    _write(value);
+                }
+            }
+        }
+
+        private readonly Func<float> _read;
+        private readonly Action<float> _write;
     }
 
     /// <summary>One row's tick, the same way round.</summary>

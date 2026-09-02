@@ -184,6 +184,26 @@ namespace ES2Access.Core.Speech
         /// in short form - "23s" rather than "23 south".</summary>
         public const string ModSettingsScannerShortDirections =
             "mod-settings.scanner.short-directions";
+        // --- the Speech tab, macOS only (2026-08-31) ---
+
+        /// <summary>The Speech tab and its rows: the backend the mod speaks through, the voice
+        /// (default: follow the OS Spoken Content voice, named in the label when known), the
+        /// speaking rate and volume, and the button that hands voice and rate back to Spoken
+        /// Content. The voice-label template is name then language ("Daniel, en-GB").</summary>
+        public const string ModSettingsSpeech = "mod-settings.speech";
+        public const string ModSettingsSpeechDescription = "mod-settings.speech-description";
+        public const string SpeechBackend = "mod-settings.speech.backend";
+        public const string SpeechBackendSystemVoice = "mod-settings.speech.backend-system-voice";
+        public const string SpeechBackendPrism = "mod-settings.speech.backend-prism";
+        public const string SpeechVoice = "mod-settings.speech.voice";
+        public const string SpeechVoiceDefault = "mod-settings.speech.voice-default";
+        public const string SpeechVoiceDefaultUnknown = "mod-settings.speech.voice-default-unknown";
+        public const string SpeechVoiceLabel = "mod-settings.speech.voice-label";
+        public const string SpeechRate = "mod-settings.speech.rate";
+        public const string SpeechVolume = "mod-settings.speech.volume";
+        public const string SpeechFollowSpokenContent = "mod-settings.speech.follow-spoken-content";
+        public const string SpeechSystemVoiceSection = "mod-settings.speech.system-voice-section";
+        public const string SpeechBackendPrismFailed = "mod-settings.speech.backend-prism-failed";
 
         // --- the editor for the player's own three scanner categories (2026-08-23) ---
 
@@ -2233,6 +2253,26 @@ namespace ES2Access.Core.Speech
                 "Configure custom scanner categories and shortened directions"
             },
             { ModSettingsScannerShortDirections, "Shortened directions" },
+            { ModSettingsSpeech, "Speech" },
+            {
+                ModSettingsSpeechDescription,
+                "How the mod speaks: the backend, the voice, the rate and the volume."
+            },
+            { SpeechBackend, "Speech backend" },
+            { SpeechBackendSystemVoice, "System voice" },
+            { SpeechBackendPrism, "VoiceOver, through Prism" },
+            { SpeechVoice, "Voice" },
+            { SpeechVoiceDefault, "Spoken Content voice: {0}" },
+            { SpeechVoiceDefaultUnknown, "Spoken Content voice" },
+            { SpeechVoiceLabel, "{0}, {1}" },
+            { SpeechRate, "Speaking rate" },
+            { SpeechVolume, "Speech volume" },
+            { SpeechFollowSpokenContent, "Reset voice and rate to Spoken Content" },
+            { SpeechSystemVoiceSection, "System voice settings" },
+            {
+                SpeechBackendPrismFailed,
+                "VoiceOver through Prism could not be started; the system voice stays."
+            },
             { ScannerEditSlotButton, "Custom category {0}: {1}" },
             { ScannerEditEmpty, "empty" },
             { ScannerEditName, "Name" },

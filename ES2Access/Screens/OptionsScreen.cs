@@ -925,7 +925,7 @@ namespace ES2Access.Screens
                 AgeControlKeyBindingField listening = CapturingField(item);
                 if (listening != null)
                 {
-                    return AgeText.Label(listening.Label);
+                    return KeyText(listening);
                 }
 
                 string secondary = KeyText(item.SecondaryKeyBindingField);
@@ -946,9 +946,35 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The keys one field holds, as spoken. Normally the field's own drawn label - but on a
+        /// Mac a MOD row's combination is respoken through the mod's own chord names, because the
+        /// game's spelling names keys the mod's chords do not mean there: its "Alt" is the mod's
+        /// first modifier (Option) and its "LeftCommand" the second (Cmd) - <see cref="KeyChords"/>.
+        /// The same translation runs mid-capture (the widget updates <c>KeyCombination</c> as each
+        /// key goes down), so the combination building under the player's fingers is already
+        /// spoken as what it will mean - a held real Control, which no mod chord can keep, is
+        /// silently absent from the spoken form exactly as it will be from the binding. Only the
+        /// mod's window: the game's own Controls tab speaks the game's spelling of the game's own
+        /// physical keys. The drawn text is the game's either way.
+        /// </summary>
         private static string KeyText(AgeControlKeyBindingField field)
         {
-            return field == null ? null : AgeText.Label(field.Label);
+            string drawn = field == null ? null : AgeText.Label(field.Label);
+            if (
+                KeyboardBinding.Mac
+                && !string.IsNullOrEmpty(drawn)
+                && ModOptions.IsOurs(Window())
+            )
+            {
+                string chord = ChordNames.Of(KeyChords.FromCombination(field.KeyCombination));
+                if (!string.IsNullOrEmpty(chord))
+                {
+                    return chord;
+                }
+            }
+
+            return drawn;
         }
 
         /// <summary>

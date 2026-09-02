@@ -32,3 +32,9 @@ release-template/BepInEx/plugins/
 release-template/prism.dll
 release-template/prism-NOTICE.txt
 release-template/prism-LICENSE-MPL-2.0.txt
+
+# Prism fallback binary fetched at build on macOS (ES2Access.csproj FetchPrism)
+prism-build/
+
+# BepInEx macOS runtime fetched by build_release.sh
+bepinex-build/

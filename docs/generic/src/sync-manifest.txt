@@ -70,4 +70,11 @@ docs/generic/src/engine-example/ModLocale.cs | ES2Access/Localization/ModLocale.
 docs/generic/src/speech/NativeLoader.cs | ES2Access/Core/Native/NativeLoader.cs
 docs/generic/src/speech/PrismNative.cs | ES2Access/Core/Speech/PrismNative.cs
 docs/generic/src/speech/PrismSpeech.cs | ES2Access/Core/Speech/PrismSpeech.cs
+docs/generic/src/speech/Platform.cs | ES2Access/Core/Util/Platform.cs
+docs/generic/src/speech/ObjC.cs | ES2Access/Core/Speech/Mac/ObjC.cs
+docs/generic/src/speech/SpeechAudio.cs | ES2Access/Core/Speech/Mac/SpeechAudio.cs
+docs/generic/src/speech/MacSpeechStream.cs | ES2Access/Core/Speech/Mac/MacSpeechStream.cs
+docs/generic/src/speech/MacSpokenContent.cs | ES2Access/Core/Speech/Mac/MacSpokenContent.cs
+docs/generic/src/speech/MacSystemVoice.cs | ES2Access/Core/Speech/Mac/MacSystemVoice.cs
+docs/generic/src/speech/VoiceSelection.cs | ES2Access/Core/Speech/Mac/VoiceSelection.cs
 docs/generic/src/engine-example/AgeWidgets.cs | ES2Access/UI/AgeWidgets.cs

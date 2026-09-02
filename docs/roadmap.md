@@ -537,6 +537,10 @@ belong in the files above.
   draws it), and the `WreckedMothership` / `WreckedMothershipVampirilis` classes. All three go
   through the same helper, so what is unsighted is the PREFAB question: whether those prefabs
   draw a caption beside each bar, which would make the added one a double-name.
+- **macOS: the DRAWN key-cell text keeps the game's spelling** ("Alt", "LeftCommand") where
+  the spoken rows say Option and Cmd (`ES2Access/Screens/OptionsScreen.cs`) — cosmetic,
+  sighted onlookers only. Everything else the port left open closed 2026-08-31, the owner's
+  hands and the dev server together; the record is `test-recipes/mod-settings.md`.
 
 ## To decide (owner)
 
@@ -598,6 +602,7 @@ belong in the files above.
 | Out-game pages: disclaimer / credits / DLC browser / mod manager / join game / asset exporter | DisclaimerScreen, CreditsScreen, DLCScreen, ModdingConfigScreen, MenuDestinationScreens, ResourcesExportModScreen |
 | Go to location: one galaxy landing, quest markers as nodes, Ctrl+L | GalaxyHudScreen.GoTo, MapLandings, NotificationScreen |
 | Galaxy content from data: deposit/star/planet dossiers at every zoom, the mod's own tooltip carrier | GalaxyHudScreen, ScratchTooltips |
+| macOS port: streamed system voice, Option/Cmd chords, launcher, Speech tab, release zip | `ES2Access/Core/Speech/Mac/` + `macos/` + `UI/ModOptions/SpeechRows` (guide: `macos/README.md`) |
 | One camera rule for the galaxy map (cursor-led, no flight; a move by anybody else voids its record — 2026-08-26) | GalaxyHudScreen.OnFocusVisual, Screen.OnFocusVisual, GalaxyViewLevels.Moves |
 | Type-ahead over collapsed branches, trail-free | GraphBuilder.ExpandAll, SearchScope.Extend |
 | The star-system page turn: one announcement, cursor in the new system | SystemManagementScreen |
