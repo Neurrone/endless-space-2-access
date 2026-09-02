@@ -3,14 +3,21 @@ using System.Collections.Generic;
 namespace ES2Access.Core.Speech
 {
     /// <summary>
-    /// What each of the mod's own keyboard actions is CALLED, and what it does - the two lines a
-    /// rebinding row shows: the action's name, and the sentence its tooltip explains it with.
+    /// What each of the mod's own keyboard actions is CALLED, and - where there is more to say than
+    /// the name already says - what it does: the row's name, and the sentence its tooltip explains
+    /// it with.
     ///
     /// The keys are composed from the action's own name (<c>ui.down</c> becomes
     /// <c>action.ui.down.title</c>), not declared one constant at a time, because the action names
     /// are the input layer's and this table only has to answer for them. An action nobody has
     /// written words for reads out as its own name rather than as silence, which is a defect a
     /// player can report rather than one nobody can hear.
+    ///
+    /// A TITLE IS COMPULSORY AND A DESCRIPTION IS NOT (owner ruling 2026-09-02). Most rows say
+    /// everything they have to say in their name, and a tooltip that only repeats the name is a
+    /// second reading of the same words on every row the player steps onto. So an action with no
+    /// <c>.description</c> row here has no tooltip at all: <c>ModBindings.Description</c> answers
+    /// empty, the row's <c>AgeTooltip</c> is left empty, and the options screen declares none.
     ///
     /// They live apart from the rest of <see cref="ModStrings"/> for the reason the icon names do:
     /// one family, read together, easier to translate as a block.
@@ -24,7 +31,8 @@ namespace ES2Access.Core.Speech
             return "action." + actionKey + ".title";
         }
 
-        /// <summary>The sentence a rebinding row explains that action with.</summary>
+        /// <summary>The sentence a rebinding row explains that action with - which most actions do
+        /// not have.</summary>
         public static string ActionDescriptionKey(string actionKey)
         {
             return "action." + actionKey + ".description";
@@ -51,12 +59,12 @@ namespace ES2Access.Core.Speech
             { "action.ui.left.title", "Move left" },
             {
                 "action.ui.left.description",
-                "Move the cursor left, close the group it is in, or turn a value down."
+                "Move the cursor left, move to enclosing group, or decrement a slider"
             },
             { "action.ui.right.title", "Move right" },
             {
                 "action.ui.right.description",
-                "Move the cursor right, open the group it is on, or turn a value up."
+                "Move the cursor right, expand and move to the first child of the group, or increment a slider"
             },
             { "action.ui.next.title", "Move to next panel" },
             { "action.ui.next.description", "Move to the next panel of this screen." },
@@ -71,194 +79,103 @@ namespace ES2Access.Core.Speech
             { "action.ui.regionNext.title", "Move to next section" },
             { "action.ui.regionNext.description", "Move to the next section of this panel." },
 
-            // Working a control.
+            // Working a control. Each of the four modified clicks is NAMED for the gesture it
+            // performs, so the row says which mouse gesture the player is giving the game and the
+            // sentence beside it says nothing else.
             { "action.ui.activate.title", "Activate" },
             {
                 "action.ui.activate.description",
-                "Do what a click does here, and put down whatever is being dragged."
-            },
-            { "action.ui.secondary.title", "Go back to the previous system" },
-            {
-                "action.ui.secondary.description",
-                "On the galaxy map, go back to the system you travelled here from."
+                "Do what a left click does here, or complete a drag and drop."
             },
             { "action.ui.back.title", "Back" },
             {
                 "action.ui.back.description",
-                "Close what is open, clear a search, or put down what is being dragged."
+                "Exits the current context such as an active drag, inspect mode or the current screen"
             },
-            { "action.ui.alternate.title", "Activate with modifier" },
-            {
-                "action.ui.alternate.description",
-                "Do the game's modified click here, such as queueing at the head of a queue."
-            },
+            { "action.ui.alternate.title", "Alt left click" },
+            { "action.ui.alternate.description", "Performs an Alt left-click" },
             { "action.ui.contextual.title", "Right click" },
             {
                 "action.ui.contextual.description",
-                "Do the game's right click here. Control and backslash does the same with Control held, which the game reads itself."
+                "Perform the game's right click here. With Control held, the game reads the Control itself."
             },
             { "action.ui.doubleClick.title", "Double click" },
-            { "action.ui.doubleClick.description", "Do the game's double click here." },
-            { "action.ui.coarseDecrease.title", "Turn down by a lot" },
+            { "action.ui.doubleClick.description", "Perform the game's double click here." },
+            { "action.ui.coarseDecrease.title", "Step down" },
             {
                 "action.ui.coarseDecrease.description",
-                "Move a value down by about a tenth of its range."
+                "Moves a slider down by a tenth of its range, steps the zoom control down one level, or, while inspecting the map, moves to the next interesting tile west"
             },
-            { "action.ui.coarseIncrease.title", "Turn up by a lot" },
+            { "action.ui.coarseIncrease.title", "Step up" },
             {
                 "action.ui.coarseIncrease.description",
-                "Move a value up by about a tenth of its range."
+                "Moves a slider up by a tenth of its range, steps the zoom control up one level, or, while inspecting the map, moves to the next interesting tile east"
             },
-            { "action.ui.carry.title", "Drag or swap" },
-            {
-                "action.ui.carry.description",
-                "Start dragging what the cursor is on, or swap it for another. The back key cancels the drag."
-            },
-            { "action.ui.selectToggle.title", "Add to or remove from selection" },
-            {
-                "action.ui.selectToggle.description",
-                "Take this one in or out of the selection, leaving the rest alone."
-            },
-            { "action.ui.selectRange.title", "Select up to here" },
-            {
-                "action.ui.selectRange.description",
-                "Take everything from the last one selected to this one."
-            },
+            { "action.ui.carry.title", "Start drag" },
+            { "action.ui.carry.description", "Start dragging" },
+            { "action.ui.selectToggle.title", "Control left click" },
+            { "action.ui.selectToggle.description", "Performs a Control left-click" },
+            { "action.ui.selectRange.title", "Shift left click" },
+            { "action.ui.selectRange.description", "Performs a Shift left-click" },
 
             // Turning the page, and going straight somewhere.
             { "action.ui.pagePrev.title", "Move to previous page" },
             {
                 "action.ui.pagePrev.description",
-                "Turn the whole screen back to the previous system, planet, notification or hero."
+                "Activates the previous page control on screens that have one"
             },
             { "action.ui.pageNext.title", "Move to next page" },
             {
                 "action.ui.pageNext.description",
-                "Turn the whole screen on to the next system, planet, notification or hero."
+                "Activates the next page control on screens that have one"
             },
-            { "action.ui.focusEmpire.title", "Go to the empire banners" },
-            {
-                "action.ui.focusEmpire.description",
-                "Go straight to the empire's resource banners, on the screens that draw them."
-            },
-            { "action.ui.focusNotifications.title", "Go to the notifications" },
-            {
-                "action.ui.focusNotifications.description",
-                "Go straight to the notification strip, on the screens that draw it."
-            },
-            { "action.ui.focusTurn.title", "Go to the turn controls" },
-            {
-                "action.ui.focusTurn.description",
-                "Go straight to the turn controls, on the screens that draw them."
-            },
-            { "action.ui.focusTurnLog.title", "Go to the turn log" },
-            {
-                "action.ui.focusTurnLog.description",
-                "Go straight to the log of what has happened this turn."
-            },
-            { "action.ui.focusMap.title", "Go to the map" },
-            { "action.ui.focusMap.description", "Go straight to the galaxy map." },
-            { "action.ui.summarizeMap.title", "Summarize the map" },
+            { "action.ui.focusEmpire.title", "Focus HUD" },
+            { "action.ui.focusNotifications.title", "Focus notifications" },
+            { "action.ui.focusTurn.title", "Focus turn controls" },
+            { "action.ui.focusTurnLog.title", "Focus turn log" },
+            { "action.ui.focusMap.title", "Focus map" },
+            { "action.ui.summarizeMap.title", "Summarize galactic map" },
             {
                 "action.ui.summarizeMap.description",
-                "Say what the galaxy is: its shape and size, how far across it is, and where its middle lies from home."
+                "Read galaxy shape and size and distance from galactic centre"
             },
-            { "action.ui.endTurn.title", "End the turn" },
-            {
-                "action.ui.endTurn.description",
-                "End the turn from anywhere the turn controls are drawn."
-            },
-            { "action.ui.nextIdleFleet.title", "Go to the next idle fleet" },
-            {
-                "action.ui.nextIdleFleet.description",
-                "Go to the next fleet with nothing to do, from anywhere the turn controls are drawn."
-            },
-            { "action.ui.applyMovements.title", "Apply movements" },
+            { "action.ui.endTurn.title", "Activate end turn button" },
+            { "action.ui.nextIdleFleet.title", "Next idle fleet" },
+            { "action.ui.applyMovements.title", "Apply fleet movements" },
             {
                 "action.ui.applyMovements.description",
-                "Order every fleet that was told to move to make its move, from anywhere the turn controls are drawn."
+                "Activates apply fleet movements button"
             },
-            { "action.ui.goToLocation.title", "Show on the map" },
+            { "action.ui.goToLocation.title", "Move to location" },
             {
                 "action.ui.goToLocation.description",
-                "Go to where the thing under the cursor happened."
+                "Jump to location associated with the focused item such as a notification"
             },
-            { "action.ui.clear.title", "Clear" },
-            {
-                "action.ui.clear.description",
-                "Empty the control under the cursor, such as one key of a key binding."
-            },
+            { "action.ui.clear.title", "Clear key binding" },
+            { "action.ui.clear.description", "Clears a key bind" },
 
-            // The map's inspect cursor.
-            { "action.galaxy.inspect.title", "Inspect the map" },
+            // The map's inspect cursor - and the way back from a leap, which is the map's own
+            // (owner ruling 2026-09-02) and so is read here rather than beside the cursor keys.
+            { "action.ui.secondary.title", "Return to previous position" },
+            { "action.galaxy.inspect.title", "Inspect mode" },
+            { "action.galaxy.inspectGrow.title", "Expand cursor" },
+            { "action.galaxy.inspectShrink.title", "Shrink cursor" },
+            { "action.galaxy.inspectSkipNorth.title", "Move to next interesting tile north" },
+            { "action.galaxy.inspectSkipSouth.title", "Move to next interesting tile south" },
+            { "action.galaxy.inspectFollowWest.title", "Follow star lane to source" },
             {
-                "action.galaxy.inspect.description",
-                "Turn on the square of galaxy the arrows sweep, and turn it off again."
-            },
-            { "action.galaxy.inspectGrow.title", "Inspect a bigger square" },
-            {
-                "action.galaxy.inspectGrow.description",
-                "Make the inspected square of galaxy one step larger."
-            },
-            { "action.galaxy.inspectShrink.title", "Inspect a smaller square" },
-            {
-                "action.galaxy.inspectShrink.description",
-                "Make the inspected square of galaxy one step smaller."
-            },
-            { "action.galaxy.inspectSkipNorth.title", "Skip north" },
-            {
-                "action.galaxy.inspectSkipNorth.description",
-                "Move the inspected square north until what it holds changes."
-            },
-            { "action.galaxy.inspectSkipSouth.title", "Skip south" },
-            {
-                "action.galaxy.inspectSkipSouth.description",
-                "Move the inspected square south until what it holds changes."
-            },
-            { "action.galaxy.inspectFollowWest.title", "Follow the star lane west" },
-            {
-                "action.galaxy.inspectFollowWest.description",
-                "Travel to the western end of the star lane in the inspected square."
-            },
-            { "action.galaxy.inspectFollowEast.title", "Follow the fleets east" },
-            {
-                "action.galaxy.inspectFollowEast.description",
-                "Travel to where the fleets in the inspected square are going."
+                "action.galaxy.inspectFollowEast.title",
+                "Follow fleet or star lane to destination"
             },
 
             // The map's scanner.
             { "action.galaxy.scanCategoryNext.title", "Move to next category" },
-            {
-                "action.galaxy.scanCategoryNext.description",
-                "Move the scanner to the next category of thing."
-            },
             { "action.galaxy.scanCategoryPrev.title", "Move to previous category" },
-            {
-                "action.galaxy.scanCategoryPrev.description",
-                "Move the scanner to the previous category of thing."
-            },
             { "action.galaxy.scanSubcategoryNext.title", "Move to next subcategory" },
-            {
-                "action.galaxy.scanSubcategoryNext.description",
-                "Move the scanner to the next subcategory of this category."
-            },
             { "action.galaxy.scanSubcategoryPrev.title", "Move to previous subcategory" },
-            {
-                "action.galaxy.scanSubcategoryPrev.description",
-                "Move the scanner to the previous subcategory of this category."
-            },
             { "action.galaxy.scanNext.title", "Move to next scanner result" },
-            {
-                "action.galaxy.scanNext.description",
-                "Read the next thing the scanner found, nearest first."
-            },
             { "action.galaxy.scanPrev.title", "Move to previous scanner result" },
-            {
-                "action.galaxy.scanPrev.description",
-                "Read the previous thing the scanner found, nearest first."
-            },
             { "action.galaxy.scanGoTo.title", "Go to the scanner result" },
-            { "action.galaxy.scanGoTo.description", "Go to whatever the scanner is pointing at." },
 
             // The three categories the player makes for themselves, each on one key and its shifted
             // self. The titles are numbered rather than named, because the row has to say which key
@@ -266,180 +183,51 @@ namespace ES2Access.Core.Speech
             // has no name at all.
             { "action.galaxy.scanCustom1Next.title", "Move to next result in custom category 1" },
             {
-                "action.galaxy.scanCustom1Next.description",
-                "Go to the next thing custom category 1 found, nearest first."
-            },
-            {
                 "action.galaxy.scanCustom1Prev.title",
                 "Move to previous result in custom category 1"
             },
-            {
-                "action.galaxy.scanCustom1Prev.description",
-                "Go to the previous thing custom category 1 found."
-            },
             { "action.galaxy.scanCustom2Next.title", "Move to next result in custom category 2" },
-            {
-                "action.galaxy.scanCustom2Next.description",
-                "Go to the next thing custom category 2 found, nearest first."
-            },
             {
                 "action.galaxy.scanCustom2Prev.title",
                 "Move to previous result in custom category 2"
             },
-            {
-                "action.galaxy.scanCustom2Prev.description",
-                "Go to the previous thing custom category 2 found."
-            },
             { "action.galaxy.scanCustom3Next.title", "Move to next result in custom category 3" },
-            {
-                "action.galaxy.scanCustom3Next.description",
-                "Go to the next thing custom category 3 found, nearest first."
-            },
             {
                 "action.galaxy.scanCustom3Prev.title",
                 "Move to previous result in custom category 3"
             },
-            {
-                "action.galaxy.scanCustom3Prev.description",
-                "Go to the previous thing custom category 3 found."
-            },
-
 
             // MAP BOOKMARKS: ten places the player names by a digit - a key to make each one
             // and a key to go back to it - and the home system on a key of its own.
             { "action.galaxy.bookmarkSet1.title", "Set bookmark 1" },
-            {
-                "action.galaxy.bookmarkSet1.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 1."
-            },
             { "action.galaxy.bookmarkSet2.title", "Set bookmark 2" },
-            {
-                "action.galaxy.bookmarkSet2.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 2."
-            },
             { "action.galaxy.bookmarkSet3.title", "Set bookmark 3" },
-            {
-                "action.galaxy.bookmarkSet3.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 3."
-            },
             { "action.galaxy.bookmarkSet4.title", "Set bookmark 4" },
-            {
-                "action.galaxy.bookmarkSet4.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 4."
-            },
             { "action.galaxy.bookmarkSet5.title", "Set bookmark 5" },
-            {
-                "action.galaxy.bookmarkSet5.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 5."
-            },
             { "action.galaxy.bookmarkSet6.title", "Set bookmark 6" },
-            {
-                "action.galaxy.bookmarkSet6.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 6."
-            },
             { "action.galaxy.bookmarkSet7.title", "Set bookmark 7" },
-            {
-                "action.galaxy.bookmarkSet7.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 7."
-            },
             { "action.galaxy.bookmarkSet8.title", "Set bookmark 8" },
-            {
-                "action.galaxy.bookmarkSet8.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 8."
-            },
             { "action.galaxy.bookmarkSet9.title", "Set bookmark 9" },
-            {
-                "action.galaxy.bookmarkSet9.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 9."
-            },
             { "action.galaxy.bookmarkSet0.title", "Set bookmark 0" },
-            {
-                "action.galaxy.bookmarkSet0.description",
-                "Remember the place on the galaxy map the cursor is standing on as bookmark 0."
-            },
             { "action.galaxy.bookmarkGoTo1.title", "Jump to bookmark 1" },
-            {
-                "action.galaxy.bookmarkGoTo1.description",
-                "Go to the place remembered as bookmark 1."
-            },
             { "action.galaxy.bookmarkGoTo2.title", "Jump to bookmark 2" },
-            {
-                "action.galaxy.bookmarkGoTo2.description",
-                "Go to the place remembered as bookmark 2."
-            },
             { "action.galaxy.bookmarkGoTo3.title", "Jump to bookmark 3" },
-            {
-                "action.galaxy.bookmarkGoTo3.description",
-                "Go to the place remembered as bookmark 3."
-            },
             { "action.galaxy.bookmarkGoTo4.title", "Jump to bookmark 4" },
-            {
-                "action.galaxy.bookmarkGoTo4.description",
-                "Go to the place remembered as bookmark 4."
-            },
             { "action.galaxy.bookmarkGoTo5.title", "Jump to bookmark 5" },
-            {
-                "action.galaxy.bookmarkGoTo5.description",
-                "Go to the place remembered as bookmark 5."
-            },
             { "action.galaxy.bookmarkGoTo6.title", "Jump to bookmark 6" },
-            {
-                "action.galaxy.bookmarkGoTo6.description",
-                "Go to the place remembered as bookmark 6."
-            },
             { "action.galaxy.bookmarkGoTo7.title", "Jump to bookmark 7" },
-            {
-                "action.galaxy.bookmarkGoTo7.description",
-                "Go to the place remembered as bookmark 7."
-            },
             { "action.galaxy.bookmarkGoTo8.title", "Jump to bookmark 8" },
-            {
-                "action.galaxy.bookmarkGoTo8.description",
-                "Go to the place remembered as bookmark 8."
-            },
             { "action.galaxy.bookmarkGoTo9.title", "Jump to bookmark 9" },
-            {
-                "action.galaxy.bookmarkGoTo9.description",
-                "Go to the place remembered as bookmark 9."
-            },
             { "action.galaxy.bookmarkGoTo0.title", "Jump to bookmark 0" },
-            {
-                "action.galaxy.bookmarkGoTo0.description",
-                "Go to the place remembered as bookmark 0."
-            },
             { "action.galaxy.bookmarkHome.title", "Jump to home system" },
-            {
-                "action.galaxy.bookmarkHome.description",
-                "Go to the system your empire began in."
-            },
+
             // Reading the description of what the cursor is on.
-            { "action.buffer.lineUp.title", "Move to previous description line" },
-            {
-                "action.buffer.lineUp.description",
-                "Read the line above in the description of what the cursor is on."
-            },
-            { "action.buffer.lineDown.title", "Move to next description line" },
-            {
-                "action.buffer.lineDown.description",
-                "Read the line below in the description of what the cursor is on."
-            },
-            { "action.buffer.prev.title", "Move to previous description" },
-            {
-                "action.buffer.prev.description",
-                "Switch to the previous body of text, the screen's own or the chat log."
-            },
-            { "action.buffer.next.title", "Move to next description" },
-            {
-                "action.buffer.next.description",
-                "Switch to the next body of text, the screen's own or the chat log."
-            },
-            { "action.buffer.first.title", "Move to first description line" },
-            {
-                "action.buffer.first.description",
-                "Go to the first line of the description."
-            },
-            { "action.buffer.last.title", "Move to last description line" },
-            { "action.buffer.last.description", "Go to the last line of the description." },
+            { "action.buffer.lineUp.title", "Read previous buffer line" },
+            { "action.buffer.lineDown.title", "Read next buffer line" },
+            { "action.buffer.prev.title", "Switch to previous buffer" },
+            { "action.buffer.next.title", "Switch to next buffer" },
+            { "action.buffer.first.title", "Read first line in buffer" },
+            { "action.buffer.last.title", "Read last line in buffer" },
         };
     }
 }
