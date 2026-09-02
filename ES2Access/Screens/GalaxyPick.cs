@@ -1,6 +1,5 @@
 using System;
-using System.Reflection;
-using ES2Access.Core.Util;
+using ES2Access.UI;
 using HarmonyLib;
 
 namespace ES2Access.Screens
@@ -71,66 +70,36 @@ namespace ES2Access.Screens
         /// zoom key is the one camera move the doctrine deliberately leaves uncounted.</summary>
         public static bool ByZoomKey;
 
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "galaxypick",
+            "the map's own zoom-in calls"
+        );
+
         private static GameNode _picked;
-        private static bool _reportedFailure;
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, for the reason GameKeyStandDown documents: a fixed id lets the
-            // unpatch of the assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.galaxypick." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch =>
+                {
+                    Hook(patch, "SelectGameNode");
+                    Hook(patch, "ZoomInOnNode");
+                    HookRestore(patch);
+                }
             );
-
-            try
-            {
-                Hook(harmony, "SelectGameNode");
-                Hook(harmony, "ZoomInOnNode");
-                HookRestore(harmony);
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, a click still zooms; what is lost is the page noticing that it did.
-                Log.Error("the map's own zoom-in calls could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         /// <summary>One of the two, patched - or logged and skipped, so a signature this game's build
         /// does not have costs the other one nothing. The <c>GalaxyNode</c> overload of each is the one
         /// wanted: it is where both of the <c>GameNode</c> ones end up.</summary>
-        private static void Hook(Harmony harmony, string name)
+        private static void Hook(ModPatch patch, string name)
         {
-            MethodInfo method = AccessTools.Method(
-                typeof(GalaxyView),
+            patch.Hook(
+                AccessTools.Method(typeof(GalaxyView), name, new[] { typeof(GalaxyNode) }),
                 name,
-                new[] { typeof(GalaxyNode) }
-            );
-            if (method == null)
-            {
-                Log.Warn("galaxy pick: the game has no " + name + " taking a drawn node");
-                return;
-            }
-
-            harmony.Patch(
-                method,
-                postfix: new HarmonyMethod(
-                    typeof(GalaxyPick).GetMethod(
-                        "Picked",
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                )
+                typeof(GalaxyPick),
+                null,
+                "Picked"
             );
         }
 
@@ -140,50 +109,26 @@ namespace ES2Access.Screens
         /// game's method answers nothing and does nothing at all unless a zoom was forced - the same
         /// flag the click itself tests - and that flag is readable only before the restore runs.
         /// </summary>
-        private static void HookRestore(Harmony harmony)
+        private static void HookRestore(ModPatch patch)
         {
-            MethodInfo method = AccessTools.Method(
-                typeof(GalaxyViewLevel_GalaxyOverview),
+            patch.Hook(
+                AccessTools.Method(
+                    typeof(GalaxyViewLevel_GalaxyOverview),
+                    "RestoreZoom",
+                    new Type[0]
+                ),
                 "RestoreZoom",
-                new Type[0]
-            );
-            if (method == null)
-            {
-                Log.Warn("galaxy pick: the game has no RestoreZoom on the overview level");
-                return;
-            }
-
-            harmony.Patch(
-                method,
-                prefix: new HarmonyMethod(
-                    typeof(GalaxyPick).GetMethod(
-                        "Restoring",
-                        BindingFlags.Static | BindingFlags.NonPublic
-                    )
-                )
+                typeof(GalaxyPick),
+                "Restoring",
+                null
             );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             _picked = null;
-            _reportedFailure = false;
             ByZoomKey = false;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the map's own zoom-in calls could not be unpatched: " + e);
-            }
         }
 
         /// <summary>The node the map was last taken in on, left where it is - for a page that may need
@@ -265,11 +210,7 @@ namespace ES2Access.Screens
 
         private static void Report(Exception e)
         {
-            if (!_reportedFailure)
-            {
-                _reportedFailure = true;
-                Log.Warn("noticing the map being taken in on a node threw: " + e);
-            }
+            Patches.Report("noticing the map being taken in on a node threw", e);
         }
     }
 }

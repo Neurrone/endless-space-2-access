@@ -105,6 +105,14 @@ namespace ES2Access.UI
             Apply(target, hooks, null, method);
         }
 
+        /// <summary>Both fixes on one required target, in the single <c>Patch</c> call the
+        /// hand-written pairs made - a prefix that catches what the method is about to forget and a
+        /// postfix that reads it back only makes sense as one hook.</summary>
+        internal void Around(MethodBase target, Type hooks, string prefix, string postfix)
+        {
+            Apply(target, hooks, prefix, postfix);
+        }
+
         /// <summary>
         /// One of several targets, patched where the game has it and logged-and-skipped where it does
         /// not, so a signature this build lacks costs the feature that hook and not the others. False

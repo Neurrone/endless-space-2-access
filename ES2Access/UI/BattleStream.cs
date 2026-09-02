@@ -112,7 +112,11 @@ namespace ES2Access.UI
         private static readonly StaticString WeaponTypeEnergy = "WeaponTypeEnergy";
         private static readonly StaticString WeaponTypePhysical = "WeaponTypePhysical";
 
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "battlestream",
+            "the battle replay stream"
+        );
+
         private static readonly List<Shot> _shots = new List<Shot>(16);
         private static readonly List<Arrival> _arrivals = new List<Arrival>(2);
         private static readonly List<Mend> _mends = new List<Mend>(2);
@@ -128,7 +132,7 @@ namespace ES2Access.UI
         /// <summary>Whether the patch is in place - what the teardown check reads.</summary>
         public static bool Installed
         {
-            get { return _harmony != null; }
+            get { return Patches.Installed; }
         }
 
         /// <summary>Who is patching the replay's instruction pump right now (see
@@ -149,72 +153,15 @@ namespace ES2Access.UI
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, per repo convention: a fixed one lets the UnpatchSelf of the
-            // assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.battlestream." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch => patch.Postfix(Playing(), typeof(BattleStream), "Played")
             );
-
-            try
-            {
-                MethodInfo playing = Playing();
-                if (playing == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(GalaxyEncounter).FullName,
-                        "ParseReportInstruction"
-                    );
-                }
-
-                harmony.Patch(
-                    playing,
-                    null,
-                    new HarmonyMethod(
-                        typeof(BattleStream).GetMethod(
-                            "Played",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
-                    )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, the fight is narrated exactly as far as the model reaches - the acts,
-                // the phases, the losses - and the exchange of fire is silent. Worth saying loudly,
-                // not worth refusing to start over.
-                Log.Error("the battle replay stream could not be watched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             Forget();
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the battle replay stream could not be unpatched: " + e);
-            }
         }
 
         /// <summary>Everything queued and everything remembered about the battle it came from. Called

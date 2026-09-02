@@ -46,12 +46,15 @@ namespace ES2Access.Screens
     /// </summary>
     internal static class ProbeCancelSelection
     {
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch(
+            "probecancel",
+            "the probe cancel's selection"
+        );
 
         /// <summary>Whether the patch is in place - what the teardown check reads.</summary>
         public static bool Installed
         {
-            get { return _harmony != null; }
+            get { return Patches.Installed; }
         }
 
         /// <summary>Who is patching the probe cursor's cancel right now (see <see cref="ModPatches"/>).
@@ -72,75 +75,20 @@ namespace ES2Access.Screens
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, per repo convention: a fixed one lets the UnpatchSelf of the
-            // assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.probecancel." + Guid.NewGuid().ToString("N")
-            );
-
-            try
-            {
-                MethodInfo cancel = Cancel();
-                if (cancel == null)
-                {
-                    throw new MissingMethodException(
-                        typeof(ProbeLaunchingCursor).FullName,
-                        "SwitchToGalaxyCursor"
-                    );
-                }
-
-                harmony.Patch(
-                    cancel,
-                    new HarmonyMethod(
-                        typeof(ProbeCancelSelection).GetMethod(
-                            "RememberTheActingFleet",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
-                    ),
-                    new HarmonyMethod(
-                        typeof(ProbeCancelSelection).GetMethod(
-                            "KeepTheActingFleet",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
+            Patches.Install(
+                patch =>
+                    patch.Around(
+                        Cancel(),
+                        typeof(ProbeCancelSelection),
+                        "RememberTheActingFleet",
+                        "KeepTheActingFleet"
                     )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, a cancel at a multi-fleet system hands the panel to the slot's first
-                // fleet - which is what the game has always done, and which the panel announces.
-                Log.Error("the probe cancel's selection could not be patched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
+            );
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("the probe cancel's selection could not be unpatched: " + e);
-            }
+            Patches.Remove();
         }
 
         /// <summary>Who armed the mode, caught before the method's own work can forget it.</summary>

@@ -40,13 +40,13 @@ namespace ES2Access.UI
             public GameNode At;
         }
 
-        private static Harmony _harmony;
+        private static readonly ModPatch Patches = new ModPatch("fleetarrivals", "fleet arrivals");
         private static readonly List<Arrival> _arrived = new List<Arrival>(2);
 
         /// <summary>Whether the patch is in place - what the teardown check reads.</summary>
         public static bool Installed
         {
-            get { return _harmony != null; }
+            get { return Patches.Installed; }
         }
 
         /// <summary>Who is patching the journey's end right now (see <see cref="ModPatches"/>).
@@ -63,67 +63,15 @@ namespace ES2Access.UI
 
         public static void Install()
         {
-            Remove();
-
-            // A unique id per load, per repo convention: a fixed one lets the UnpatchSelf of the
-            // assembly a reload replaced strip this load's patches.
-            Harmony harmony = new Harmony(
-                "endless.space2.access.fleetarrivals." + Guid.NewGuid().ToString("N")
+            Patches.Install(
+                patch => patch.Prefix(Ending(), typeof(FleetArrivals), "JourneyEnding")
             );
-
-            try
-            {
-                MethodInfo ending = Ending();
-                if (ending == null)
-                {
-                    throw new MissingMethodException(typeof(Fleet).FullName, "OnGoToEnd");
-                }
-
-                harmony.Patch(
-                    ending,
-                    new HarmonyMethod(
-                        typeof(FleetArrivals).GetMethod(
-                            "JourneyEnding",
-                            BindingFlags.Static | BindingFlags.NonPublic
-                        )
-                    )
-                );
-                _harmony = harmony;
-            }
-            catch (Exception e)
-            {
-                // Unpatched, arrivals are simply not announced - the same silence the game has
-                // always had. Worth saying loudly, not worth refusing to start over.
-                Log.Error("fleet arrivals could not be watched: " + e);
-                try
-                {
-                    harmony.UnpatchSelf();
-                }
-                catch (Exception undo)
-                {
-                    Log.Warn("and the partial patch could not be undone: " + undo.Message);
-                }
-            }
         }
 
         public static void Remove()
         {
-            Harmony harmony = _harmony;
-            _harmony = null;
+            Patches.Remove();
             _arrived.Clear();
-            if (harmony == null)
-            {
-                return;
-            }
-
-            try
-            {
-                harmony.UnpatchSelf();
-            }
-            catch (Exception e)
-            {
-                Log.Error("fleet arrivals could not be unpatched: " + e);
-            }
         }
 
         /// <summary>Put whatever arrived since the last frame on the game's bus. From the pump, so
