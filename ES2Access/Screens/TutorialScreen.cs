@@ -324,7 +324,7 @@ namespace ES2Access.Screens
         private void BuildPages(GraphBuilder builder, TutorialPopupPanel panel)
         {
             AgePrimitiveLabel label = panel.DescriptionLabel;
-            if (label == null || !Visible(label.AgeTransform))
+            if (label == null || !AgeWidgets.Visible(label.AgeTransform))
             {
                 return;
             }
@@ -504,7 +504,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                Pick(dot);
+                AgeWidgets.Select(dot);
                 Remember();
             }
             catch (Exception e)
@@ -516,15 +516,8 @@ namespace ES2Access.Screens
         /// <summary>Which page's row the cursor is on, or -1 for anywhere else.</summary>
         private static int FocusedPage()
         {
-            ControlId key = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
-            string structural = key == null ? null : key.StructuralKey as string;
-            if (structural == null || !structural.StartsWith(PageKey, StringComparison.Ordinal))
-            {
-                return -1;
-            }
-
-            int page;
-            return int.TryParse(structural.Substring(PageKey.Length), out page) ? page : -1;
+            GraphNavigator navigator = ModEntry.Navigator;
+            return navigator == null ? -1 : navigator.FocusedIndex(PageKey);
         }
 
         private const string PageKey = "tutorial:page/";
@@ -553,13 +546,13 @@ namespace ES2Access.Screens
             Action activate
         )
         {
-            if (!Visible(button))
+            if (!AgeWidgets.Visible(AgeWidgets.Transform(button)))
             {
                 return;
             }
 
             AgeControlButton it = button;
-            Action press = activate ?? (() => Press(it));
+            Action press = activate ?? (() => AgeWidgets.Press(it));
             controls.Add(
                 new Control
                 {
@@ -569,7 +562,7 @@ namespace ES2Access.Screens
                     Vtable = GraphNodes.Button(
                         () => ModStrings.Get(nameKey),
                         press,
-                        () => Enabled(it.AgeTransform),
+                        () => AgeWidgets.Operable(it.AgeTransform),
                         it.AgeTransform.AgeTooltip
                     ),
                 }
@@ -583,7 +576,7 @@ namespace ES2Access.Screens
             string nameKey
         )
         {
-            if (!Visible(toggle))
+            if (!AgeWidgets.Visible(AgeWidgets.Transform(toggle)))
             {
                 return;
             }
@@ -597,8 +590,8 @@ namespace ES2Access.Screens
                     Vtable = GraphNodes.Checkbox(
                         () => ModStrings.Get(nameKey),
                         () => it.State,
-                        () => Flip(it),
-                        () => Enabled(it.AgeTransform),
+                        () => AgeWidgets.Toggle(it),
+                        () => AgeWidgets.Operable(it.AgeTransform),
                         it.AgeTransform.AgeTooltip
                     ),
                 }
@@ -610,7 +603,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void Collect(List<Control> controls, AgePrimitiveLabel label)
         {
-            if (label == null || !Visible(label.AgeTransform))
+            if (label == null || !AgeWidgets.Visible(label.AgeTransform))
             {
                 return;
             }
@@ -630,60 +623,6 @@ namespace ES2Access.Screens
                     },
                 }
             );
-        }
-
-        /// <summary>Press a control the way the engine presses it: every AGE button carries the
-        /// object and the method name its own mouse handler sends to, so replaying that pair runs the
-        /// popup's own handler with no click that could land on whatever the mouse is over.</summary>
-        private static void Press(AgeControlButton button)
-        {
-            try
-            {
-                Send(button.OnActivateObject, button.OnActivateMethod, button.gameObject);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tutorial: pressing a control threw: " + e);
-            }
-        }
-
-        /// <summary>Collapse or expand the popup exactly as a click does: the toggle's own state
-        /// first, then the handler it is wired to.</summary>
-        private static void Flip(AgeControlToggle toggle)
-        {
-            try
-            {
-                toggle.State = !toggle.State;
-                Send(toggle.OnSwitchObject, toggle.OnSwitchMethod, toggle.gameObject);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tutorial: collapsing the popup threw: " + e);
-            }
-        }
-
-        /// <summary>Jump to the page a dot stands for exactly as clicking that dot does: the dot's own
-        /// state first, then the handler the group of dots is wired to, which is what settles which
-        /// dot is filled in and tells the popup which page to draw.</summary>
-        private static void Pick(AgeControlToggle mark)
-        {
-            try
-            {
-                mark.State = true;
-                Send(mark.OnSwitchObject, mark.OnSwitchMethod, mark.gameObject);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tutorial: jumping to a page threw: " + e);
-            }
-        }
-
-        private static void Send(GameObject target, string method, GameObject sender)
-        {
-            if (target != null && !string.IsNullOrEmpty(method))
-            {
-                target.SendMessage(method, sender, SendMessageOptions.DontRequireReceiver);
-            }
         }
 
         private void Remember()
@@ -711,13 +650,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static string Words(TutorialPopupPanel panel)
         {
-            MessageBuilder message = new MessageBuilder();
-            foreach (string line in AgeText.Lines(Description(panel)))
-            {
-                message.Fragment(line);
-            }
-
-            return message.Build();
+            return SettingRows.OneLine(Description(panel));
         }
 
         /// <summary>
@@ -760,30 +693,6 @@ namespace ES2Access.Screens
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
 
-        private static bool Visible(AgeControl control)
-        {
-            return Visible(AgeWidgets.Transform(control));
-        }
-
-        /// <summary>Whether a widget is really on screen: its own visibility and every ancestor's -
-        /// the popup hides whole containers as it minimizes and expands.</summary>
-        private static bool Visible(AgeTransform widget)
-        {
-            return AgeWidgets.Visible(widget);
-        }
-
-        private static bool Enabled(AgeTransform widget)
-        {
-            try
-            {
-                return widget != null && widget.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
         private static TutorialPopupPanel Panel()
         {
             TutorialWindow window = Window();
@@ -792,16 +701,7 @@ namespace ES2Access.Screens
 
         private static TutorialWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<TutorialWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<TutorialWindow>();
         }
     }
 }

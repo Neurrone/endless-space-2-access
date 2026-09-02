@@ -130,21 +130,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && window.CurrentContract != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(NegotiationModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -202,7 +188,7 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildTitle(GraphBuilder builder, NegotiationModalWindow window)
         {
-            AgeTransform title = Of(window.WindowTitle);
+            AgeTransform title = AgeWidgets.Transform(window.WindowTitle);
             if (title == null)
             {
                 return;
@@ -220,7 +206,7 @@ namespace ES2Access.Screens
         private static AgeTooltip Explanation(AgeTransform title)
         {
             AgeTooltip own = AgeWidgets.Raw(title);
-            return own ?? AgeWidgets.Raw(Parent(title));
+            return own ?? AgeWidgets.Raw(title == null ? null : title.Parent);
         }
 
         /// <summary>
@@ -238,7 +224,7 @@ namespace ES2Access.Screens
         private void BuildMyEmpire(GraphBuilder builder, NegotiationModalWindow window)
         {
             NegotiationEmpireBannerPanel panel = window.MyEmpireBanner;
-            AgeTransform name = Of(panel == null ? null : panel.EmpireTitleLabel);
+            AgeTransform name = AgeWidgets.Transform(panel == null ? null : panel.EmpireTitleLabel);
             builder.BeginStop(MyEmpireStop);
             bool named = Captions.Push(builder, name);
             _cells.Clear();
@@ -290,7 +276,7 @@ namespace ES2Access.Screens
         private void BuildTheirEmpire(GraphBuilder builder, NegotiationModalWindow window)
         {
             NegotiationEmpireBannerPanel panel = window.HisEmpireBanner;
-            AgeTransform name = Of(panel == null ? null : panel.EmpireTitleLabel);
+            AgeTransform name = AgeWidgets.Transform(panel == null ? null : panel.EmpireTitleLabel);
             builder.BeginStop(TheirEmpireStop);
             bool named = Captions.Push(builder, name);
             _cells.Clear();
@@ -324,13 +310,13 @@ namespace ES2Access.Screens
         /// side do.</summary>
         private void AddStatus(NegotiationModalWindow window)
         {
-            AgeTransform label = Of(window.DiplomaticStatusLabel);
+            AgeTransform label = AgeWidgets.Transform(window.DiplomaticStatusLabel);
             if (label == null)
             {
                 return;
             }
 
-            AgeTransform icon = Of(window.DiplomaticStatusIcon);
+            AgeTransform icon = AgeWidgets.Transform(window.DiplomaticStatusIcon);
             AgeTooltip tooltip = AgeWidgets.Raw(icon);
             NegotiationModalWindow it = window;
             NodeVtable vtable = new NodeVtable
@@ -391,14 +377,14 @@ namespace ES2Access.Screens
                 return;
             }
 
-            Cells.AddReadout(_cells, Of(panel.EmpireTitleLabel), Keys + key + "-name");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(panel.EmpireTitleLabel), Keys + key + "-name");
             AddAlliance(panel, key);
             AddStock(panel, key);
         }
 
         private void AddAlliance(NegotiationEmpireBannerPanel panel, string key)
         {
-            AgeTransform at = Of(panel == null ? null : panel.AllianceNameLabel);
+            AgeTransform at = AgeWidgets.Transform(panel == null ? null : panel.AllianceNameLabel);
             if (at != null)
             {
                 Cells.AddReadout(_cells, at, Keys + key + "-alliance");
@@ -407,7 +393,7 @@ namespace ES2Access.Screens
 
         private void AddStock(NegotiationEmpireBannerPanel panel, string key)
         {
-            AgeTransform at = Of(panel == null ? null : panel.InfluenceStockLabel);
+            AgeTransform at = AgeWidgets.Transform(panel == null ? null : panel.InfluenceStockLabel);
             if (at != null)
             {
                 Cells.AddReadout(_cells, at, Keys + key + "-influence");
@@ -418,7 +404,7 @@ namespace ES2Access.Screens
         /// the label as the reason - the one place it says WHY.</summary>
         private void AddAttitude(NegotiationEmpireBannerPanel panel)
         {
-            AgeTransform at = Of(panel == null ? null : panel.AttitudeLabel);
+            AgeTransform at = AgeWidgets.Transform(panel == null ? null : panel.AttitudeLabel);
             if (at != null)
             {
                 _cells.Add(Cells.Readout(at, AgeWidgets.Raw(at), Keys + "attitude"));
@@ -539,7 +525,7 @@ namespace ES2Access.Screens
             // there is a war on - so the band is named by whichever the game drew and the mod's word is
             // only the fallback. The title stands in the band as a row only if it explains itself
             // (Captions), which is the shared rule for every caption over a block.
-            AgeTransform title = Of(window.PressureGroupTitle);
+            AgeTransform title = AgeWidgets.Transform(window.PressureGroupTitle);
             bool named = Captions.Push(
                 builder,
                 title,
@@ -770,7 +756,7 @@ namespace ES2Access.Screens
             );
             try
             {
-                AgeTransform blank = Of(empty);
+                AgeTransform blank = AgeWidgets.Transform(empty);
                 // Flow control: which branch is built - the empty-state label is a wired prefab
                 // field, always non-null; its VISIBILITY is what says the empty state is the drawn
                 // one. Without this the at-war sentence stood in for a shelf the game was drawing
@@ -1005,7 +991,6 @@ namespace ES2Access.Screens
             }
         }
 
-
         // ---- the buttons ----
 
         /// <summary>Reset the deal, ask the computer to fill it in, or make the offer. All three are the
@@ -1132,10 +1117,15 @@ namespace ES2Access.Screens
 
         /// <summary>A control the game draws as a bare icon: what its own tooltip calls it, else what it
         /// draws.</summary>
+        /// <summary>What a control is called: the words it draws, else the title the game gave its
+        /// tooltip, else that tooltip.s own first line (<see cref="CardActions.FirstLine"/>, which is
+        /// where the words-are-really-on-the-widget test lives).</summary>
         private static string Named(AgeTransform widget, AgeTooltip tooltip)
         {
             string drawn = AgeWidgets.TextOf(widget);
-            return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
+            return string.IsNullOrEmpty(drawn)
+                ? AgeWidgets.TooltipTitle(tooltip) ?? CardActions.FirstLine(tooltip)
+                : drawn;
         }
 
         private static string Words(AgePrimitiveLabel label)
@@ -1143,30 +1133,6 @@ namespace ES2Access.Screens
             try
             {
                 return AgeWidgets.DrawnLabel(label);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Of(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Of(AgePrimitiveImage image)
-        {
-            try
-            {
-                return image == null ? null : image.AgeTransform;
             }
             catch (Exception)
             {
@@ -1186,22 +1152,10 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                string drawn = AgeWidgets.TextOf(Of(window.WindowTitle));
+                string drawn = AgeWidgets.TextOf(AgeWidgets.Transform(window.WindowTitle));
                 return string.IsNullOrEmpty(drawn) || drawn.StartsWith("%")
-                    ? AgeText.Clean(Gui.Localize("%NegotiationModalWindowTitle"))
+                    ? AgeText.Title("%NegotiationModalWindowTitle")
                     : drawn;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
             }
             catch (Exception)
             {
@@ -1211,16 +1165,7 @@ namespace ES2Access.Screens
 
         private static NegotiationModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<NegotiationModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<NegotiationModalWindow>();
         }
     }
 }

@@ -171,7 +171,7 @@ namespace ES2Access.Screens
                 Title(window),
                 "laws:title"
             );
-            Cells.AddReadout(_cells, Widget(window.VotedLawSlotsLabel), "laws:slots-left");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(window.VotedLawSlotsLabel), "laws:slots-left");
             AddInfluence(_cells, window);
             Cells.EmitLinear(builder, _cells);
         }
@@ -182,7 +182,7 @@ namespace ES2Access.Screens
         /// every page names it with.</summary>
         private static void AddInfluence(List<Cell> cells, LawsManagementModalWindow window)
         {
-            AgeTransform widget = Widget(window.CurrentPrestigeLabel);
+            AgeTransform widget = AgeWidgets.Transform(window.CurrentPrestigeLabel);
             if (widget == null || !AgeWidgets.Visible(widget))
             {
                 return;
@@ -274,8 +274,8 @@ namespace ES2Access.Screens
             builder.BeginStop(DetailStop);
             builder.SetRegion(LawRegion);
             _cells.Clear();
-            Cells.AddReadout(_cells, Widget(window.LawTitle), "laws:law-title");
-            Cells.AddReadout(_cells, Widget(window.LawShortTitle), "laws:law-short-title");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(window.LawTitle), "laws:law-title");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(window.LawShortTitle), "laws:law-short-title");
             AddDescription(_cells, window);
             Cells.EmitLinear(builder, _cells);
 
@@ -289,7 +289,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             AddExperience(_cells, window.PanelFeatureExperience);
             AddCurrentExperience(_cells, window.PanelFeatureExperience);
-            Cells.AddReadout(_cells, Widget(window.PanelFeatureLawUpkeep), "laws:upkeep");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(window.PanelFeatureLawUpkeep), "laws:upkeep");
             AddAction(_cells, window.VoteButton, "laws:vote");
             AddAction(_cells, window.AbrogateButton, "laws:abolish");
             Cells.EmitLinear(builder, _cells);
@@ -349,7 +349,7 @@ namespace ES2Access.Screens
             PanelFeaturePoliticsExperiencePrerequisite feature
         )
         {
-            AgeTransform widget = Widget(feature);
+            AgeTransform widget = AgeWidgets.Transform(feature);
             if (
                 widget == null
                 || !AgeWidgets.Visible(widget)
@@ -413,7 +413,7 @@ namespace ES2Access.Screens
         private static void AddDescription(List<Cell> cells, LawsManagementModalWindow window)
         {
             AgePrimitiveLabel label = window.LawDescription;
-            AgeTransform widget = Widget(label);
+            AgeTransform widget = AgeWidgets.Transform(label);
             if (widget == null)
             {
                 return;
@@ -453,14 +453,8 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeTransform caption =
-                effects.TitleLabel == null ? null : effects.TitleLabel.AgeTransform;
-            string name = caption == null ? null : AgeWidgets.TextOf(caption);
-            bool named = !string.IsNullOrEmpty(name);
-            if (named)
-            {
-                builder.PushContext(name);
-            }
+            AgeTransform caption = AgeWidgets.Transform(effects.TitleLabel);
+            bool named = Captions.Push(builder, caption, "laws:effects/title");
 
             _cells.Clear();
             IList<AgeTransform> bands = group.Children;
@@ -482,13 +476,10 @@ namespace ES2Access.Screens
             }
 
             Cells.EmitLinear(builder, _cells);
-            if (named)
-            {
-                builder.PopContext();
-            }
+            Captions.Pop(builder, named);
         }
 
-        /// <summary>The window's own exit, which the game draws in the corner well away from
+        /// <summary>The window.s own exit, which the game draws in the corner well away from
         /// everything else.</summary>
         private void BuildActions(GraphBuilder builder, LawsManagementModalWindow window)
         {
@@ -501,47 +492,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Widget(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(GuiPanelFeature feature)
-        {
-            try
-            {
-                return feature == null ? null : feature.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Widget(AgeControlButton button)
-        {
-            return AgeWidgets.Transform(button);
-        }
-
         private static LawsManagementModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<LawsManagementModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<LawsManagementModalWindow>();
         }
     }
 }

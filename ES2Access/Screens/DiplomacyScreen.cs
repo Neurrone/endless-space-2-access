@@ -832,9 +832,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<global::DiplomacyScreen>(false)
-                    : null;
+                return GameWindows.Of<global::DiplomacyScreen>();
             }
             catch (Exception)
             {

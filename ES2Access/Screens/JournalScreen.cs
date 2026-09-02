@@ -121,7 +121,7 @@ namespace ES2Access.Screens
             {
                 // Nothing has been finished yet, or the list is still loading: the game's own line saying
                 // so, where the table would have been.
-                Cells.AddReadout(_cells, Transform(window.NoDataAvailableLabel), "journal:empty");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.NoDataAvailableLabel), "journal:empty");
                 Cells.AddReadout(_cells, window.LoadingFeedback, "journal:loading");
             }
 
@@ -159,19 +159,7 @@ namespace ES2Access.Screens
         private static void AddTitle(GraphBuilder builder, JournalModalWindow window)
         {
             AgeTransform title = WindowShape.TitleWidget(window);
-            Captions.Row(builder, title, "journal:title", Parent(title));
-        }
-
-        private static AgeTransform Parent(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.Parent;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            Captions.Row(builder, title, "journal:title", title == null ? null : title.Parent);
         }
 
         // ---- the Details column ----
@@ -376,30 +364,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Transform(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static JournalModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<JournalModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<JournalModalWindow>();
         }
     }
 }

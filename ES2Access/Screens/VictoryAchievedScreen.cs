@@ -95,7 +95,7 @@ namespace ES2Access.Screens
             {
                 Cells.AddReadout(
                     _cells,
-                    Transform(window.DescriptionLabel),
+                    AgeWidgets.Transform(window.DescriptionLabel),
                     "victory-achieved:description"
                 );
                 Winners(window);
@@ -136,30 +136,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Transform(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static VictoryAchievedModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<VictoryAchievedModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<VictoryAchievedModalWindow>();
         }
     }
 }

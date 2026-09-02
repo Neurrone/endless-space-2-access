@@ -156,16 +156,7 @@ namespace ES2Access.Screens
 
         private static ErrorModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<ErrorModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<ErrorModalWindow>();
         }
     }
 }

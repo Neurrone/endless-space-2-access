@@ -182,11 +182,11 @@ namespace ES2Access.Screens
             foreach (OptionsTabToggle tab in tabs)
             {
                 OptionsTabToggle entry = tab;
-                AgeTooltip tooltip = TooltipOf(entry.Toggle.AgeTransform);
+                AgeTooltip tooltip = AgeWidgets.Raw(entry.Toggle.AgeTransform);
                 NodeVtable vtable = GraphNodes.Tab(
                     () => AgeText.Label(entry.TitleLabel),
                     () => Selected(entry),
-                    () => Enabled(entry.Toggle.AgeTransform),
+                    () => AgeWidgets.Operable(entry.Toggle.AgeTransform),
                     tooltip
                 );
                 // Focusing the tab IS switching to it. The hook runs once per focus change, after the
@@ -195,7 +195,7 @@ namespace ES2Access.Screens
                 vtable.OnFocusVisual = () =>
                 {
                     Switch(entry);
-                    PointerFocus.MoveTo(null, tooltip, AnchorOf(entry.TitleLabel));
+                    PointerFocus.MoveTo(null, tooltip, AgeWidgets.Transform(entry.TitleLabel));
                 };
                 vtable.OnBlurVisual = ReleasePointer;
                 vtable.OnActivate = () => Switch(entry);
@@ -263,7 +263,7 @@ namespace ES2Access.Screens
                 {
                     // Flow control: the kept tabs are what the screen walks, and the page under the
                     // ticked one is read from this list rather than from the table.
-                    if (tab != null && tab.Toggle != null && Visible(tab.Toggle.AgeTransform))
+                    if (tab != null && tab.Toggle != null && AgeWidgets.Visible(tab.Toggle.AgeTransform))
                     {
                         tabs.Add(tab);
                     }
@@ -492,7 +492,7 @@ namespace ES2Access.Screens
             AgeTooltip tooltip = row.Tooltip;
             NodeVtable vtable = GraphNodes.Group(
                 () => AgeText.Label(row.TitleLabel),
-                () => Enabled(AgeTransformOf(row)),
+                () => AgeWidgets.Operable(AgeWidgets.Transform(row)),
                 tooltip
             );
             vtable.OnExpand = () => group.Expand(true);
@@ -503,7 +503,7 @@ namespace ES2Access.Screens
                     ? null
                     : GraphAnnouncer.ExpandedStateText(group.Expanded);
             vtable.OnFocusVisual = () =>
-                PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
+                PointerFocus.MoveTo(null, tooltip, AgeWidgets.Transform(row.TitleLabel));
             vtable.OnBlurVisual = ReleasePointer;
             return vtable;
         }
@@ -551,7 +551,7 @@ namespace ES2Access.Screens
 
             AgeTooltip tooltip = row.Tooltip;
             vtable.OnFocusVisual = () =>
-                PointerFocus.MoveTo(null, tooltip, AnchorOf(row.TitleLabel));
+                PointerFocus.MoveTo(null, tooltip, AgeWidgets.Transform(row.TitleLabel));
             vtable.OnBlurVisual = ReleasePointer;
 
             builder.AddItem(Nodes.Drawn(id, vtable, row));
@@ -583,7 +583,7 @@ namespace ES2Access.Screens
         private static void BuildBindingRow(GraphSheet sheet, OptionKeyMappingItem row)
         {
             OptionKeyMappingItem item = row;
-            Func<bool> enabled = () => Enabled(AgeTransformOf(item));
+            Func<bool> enabled = () => AgeWidgets.Operable(AgeWidgets.Transform(item));
             AgeTooltip tooltip = item.Tooltip;
             NodeVtable name = new NodeVtable
             {
@@ -597,7 +597,7 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(null, tooltip),
             };
             name.OnFocusVisual = () =>
-                PointerFocus.MoveTo(null, tooltip, AnchorOf(item.TitleLabel));
+                PointerFocus.MoveTo(null, tooltip, AgeWidgets.Transform(item.TitleLabel));
             name.OnBlurVisual = ReleasePointer;
 
             sheet.RowAt(
@@ -611,7 +611,7 @@ namespace ES2Access.Screens
                 // The row the game drew: what the whole row is scrolled to, and what its three cells
                 // exist by - the list is long and filtered, and a row the tab switched off is one the
                 // sheet would otherwise go on offering.
-                AgeTransformOf(item)
+                AgeWidgets.Transform(item)
             );
         }
 
@@ -669,7 +669,7 @@ namespace ES2Access.Screens
                 PointerFocus.MoveTo(
                     field == null ? null : field.AgeTransform,
                     null,
-                    field == null ? null : AnchorOf(field.Label)
+                    field == null ? null : AgeWidgets.Transform(field.Label)
                 );
             cell.OnBlurVisual = ReleasePointer;
             return cell;
@@ -681,7 +681,7 @@ namespace ES2Access.Screens
         private NodeVtable RowVtable(OptionItem item, ControlId id)
         {
             Func<string> label = () => AgeText.Label(item.TitleLabel);
-            Func<bool> enabled = () => Enabled(AgeTransformOf(item));
+            Func<bool> enabled = () => AgeWidgets.Operable(AgeWidgets.Transform(item));
             AgeTooltip tooltip = item.Tooltip;
 
             // A row the MOD drew and wired: the game has no button row, so one of its own buttons is
@@ -698,7 +698,7 @@ namespace ES2Access.Screens
                 return GraphNodes.Checkbox(
                     label,
                     () => Checked(checkbox),
-                    () => Flip(checkbox),
+                    () => AgeWidgets.Toggle(checkbox.Toggle),
                     enabled,
                     tooltip
                 );
@@ -801,22 +801,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return false;
-            }
-        }
-
-        /// <summary>Tick or untick the box exactly as a click does: the toggle's own state first - it
-        /// is what the game reads back - then the item's click handler, which stores the value and
-        /// tells the window a setting changed.</summary>
-        private static void Flip(OptionCheckboxItem item)
-        {
-            try
-            {
-                item.Toggle.State = !item.Toggle.State;
-                Call(CheckboxSwitched, item, NoSender);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("options: toggling a setting threw: " + e);
             }
         }
 
@@ -990,7 +974,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                if (!Enabled(AgeTransformOf(item)) || _pending != null || _capturing != null)
+                if (!AgeWidgets.Operable(AgeWidgets.Transform(item)) || _pending != null || _capturing != null)
                 {
                     return;
                 }
@@ -1099,7 +1083,7 @@ namespace ES2Access.Screens
             {
                 // One at a time. A second Enter while the first is still waiting to be handed over is
                 // the same request again, and re-arming it would only re-say the prompt.
-                if (_pending != null || !Enabled(AgeTransformOf(item)))
+                if (_pending != null || !AgeWidgets.Operable(AgeWidgets.Transform(item)))
                 {
                     return;
                 }
@@ -1114,7 +1098,7 @@ namespace ES2Access.Screens
 
                 _pending = item;
                 _pendingSecondary = secondary;
-                _pendingCell = FocusedId();
+                _pendingCell = ModEntry.Navigator == null ? null : ModEntry.Navigator.FocusedKey;
                 _pendingClearFrames = 0;
 
                 // Said at once, and interrupting: the row has just been read and what matters now is
@@ -1155,7 +1139,12 @@ namespace ES2Access.Screens
                 return;
             }
 
-            if (!OnCell(_pendingCell))
+            // Whether the cursor is still on the very CELL that asked to capture. Moving off it is
+            // the player changing their mind, and the request has to go with them or the next thing
+            // they press would be bound to a key they have left - the cell next door included, since
+            // the two keys of one row are two different bindings.
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || !navigator.CursorIsOn(_pendingCell))
             {
                 CancelPending();
                 return;
@@ -1193,39 +1182,6 @@ namespace ES2Access.Screens
             {
                 _pending = null;
                 Log.Warn("options: handing the keyboard to a binding field threw: " + e);
-            }
-        }
-
-        /// <summary>Whether the cursor is still on the very CELL that asked to capture. Moving off it
-        /// is the player changing their mind, and the request has to go with them or the next thing
-        /// they press would be bound to a key they have left - the cell next door included, since the
-        /// two keys of one row are two different bindings.</summary>
-        /// <summary>The node the cursor is on right now, or null.</summary>
-        private static ControlId FocusedId()
-        {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return node == null ? null : node.Id;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static bool OnCell(ControlId asked)
-        {
-            try
-            {
-                GraphNavigator navigator = ModEntry.Navigator;
-                GraphNode node = navigator == null ? null : navigator.CurrentNode;
-                return node != null && asked != null && asked.Equals(node.Id);
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
 
@@ -1302,9 +1258,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                MessageBoxWindow box = Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<MessageBoxWindow>(false)
-                    : null;
+                MessageBoxWindow box = GameWindows.Of<MessageBoxWindow>();
                 return box != null && box.Shown;
             }
             catch (Exception)
@@ -1400,164 +1354,52 @@ namespace ES2Access.Screens
 
         // ---- the buttons along the bottom ----
 
-        /// <summary>One of the window's bottom buttons: the button itself and where along the bar it
-        /// is drawn.</summary>
-        private struct Command
-        {
-            public AgeControlButton Button;
-            public float X;
-        }
-
         /// <summary>
-        /// The bar along the bottom.
-        ///
-        /// The window carries the bar TWICE - once for the main menu, once for a game in progress -
-        /// and the buttons it names in its own fields are the in-game set, whichever skin is being
-        /// worn. So the bar is not read from those fields at all: it is whichever wired buttons are
-        /// actually drawn, in the order they are drawn. That is one mechanism for both skins, it is
-        /// how the duplicate "Reset to Defaults" stopped being possible, and it needs no list of
-        /// which buttons the window is expected to have.
+        /// The bar along the bottom - <see cref="SettingRows.ButtonBar"/>'s reading of it, with the
+        /// one thing that is this window's own: a button the MOD put in a rows table is a ROW, not
+        /// part of the bar, and is read where it is drawn among the settings it belongs to.
         /// </summary>
         private void BuildButtons(GraphBuilder builder, OptionsModalWindow window)
         {
-            List<Command> commands = Commands(window);
+            List<AgeControlButton> commands = _bar.Drawn(window, NotARow);
             if (commands.Count == 0)
             {
                 return;
             }
 
             HashSet<string> taken = new HashSet<string>();
-            foreach (Command entry in commands)
+            foreach (AgeControlButton entry in commands)
             {
-                Command command = entry;
-                AgePrimitiveLabel caption = LabelIn(command.Button.AgeTransform);
-                AgeTooltip tooltip = TooltipOf(command.Button.AgeTransform);
-                AgeTransform available = EnableFlagOf(window, command.Button);
+                AgeControlButton command = entry;
+                AgePrimitiveLabel caption = LabelIn(command.AgeTransform);
+                AgeTooltip tooltip = AgeWidgets.Raw(command.AgeTransform);
+                AgeTransform available = EnableFlagOf(window, command);
                 NodeVtable vtable = GraphNodes.Button(
                     () => ButtonText(caption, tooltip),
-                    () => Press(command),
-                    () => Enabled(available),
+                    () => AgeWidgets.Press(command),
+                    () => AgeWidgets.Operable(available),
                     tooltip
                 );
                 vtable.OnFocusVisual = () =>
-                    PointerFocus.MoveTo(command.Button, tooltip, AnchorOf(caption));
+                    PointerFocus.MoveTo(command, tooltip, AgeWidgets.Transform(caption));
                 vtable.OnBlurVisual = ReleasePointer;
 
                 builder.AddItem(Nodes.Drawn(
                     ControlId.For(
-                        command.Button,
-                        "options:button/" + Distinct(taken, KeyOf(command.Button))
+                        command,
+                        "options:button/"
+                            + Distinct(taken, SettingRows.ButtonBar.KeyOf(command))
                     ),
                     vtable,
-                    command.Button
+                    command
                 ));
             }
         }
 
-        /// <summary>The buttons the bar is currently showing, left to right as they are drawn - the
-        /// order the fields are declared in is not the order they sit in.</summary>
-        private List<Command> Commands(OptionsModalWindow window)
-        {
-            List<Command> commands = new List<Command>();
-            List<AgeControlButton> buttons = Buttons(window);
-            for (int i = 0; i < buttons.Count; i++)
-            {
-                AgeControlButton button = buttons[i];
-                // Banding input, not existence: the list below is SORTED by left edge and counted
-                // aloud, and a button of the skin that is not in use keeps its old rectangle - so a
-                // gate that dropped its node afterwards would still have let it reorder and miscount
-                // the buttons the player does hear.
-                if (button == null || !Visible(button.AgeTransform))
-                {
-                    continue;
-                }
+        private readonly SettingRows.ButtonBar _bar = new SettingRows.ButtonBar("options");
 
-                Command command = new Command
-                {
-                    Button = button,
-                    X = LeftEdge(button.AgeTransform),
-                };
-
-                // Placed by where it is drawn, so the bar reads the way it looks. Inserted rather
-                // than sorted afterwards: two buttons at the same place keep the order they were
-                // found in, which List.Sort would not promise.
-                int at = commands.Count;
-                while (at > 0 && commands[at - 1].X > command.X)
-                {
-                    at--;
-                }
-
-                commands.Insert(at, command);
-            }
-
-            return commands;
-        }
-
-        // The window's wired buttons, and which window they were found on. Held per screen instance
-        // rather than statically, so a hot reload starts with nothing remembered; the window builds
-        // its bar once when it loads and never rebuilds it, so finding them again on every navigation
-        // operation would be a walk of the whole window for an answer that cannot have changed. What
-        // DOES change - which of them are drawn, where, and whether they are available - is read live
-        // every time.
-        private OptionsModalWindow _buttonsFrom;
-        private List<AgeControlButton> _buttons;
-
-        private List<AgeControlButton> Buttons(OptionsModalWindow window)
-        {
-            if (ReferenceEquals(_buttonsFrom, window) && _buttons != null && AllAlive(_buttons))
-            {
-                return _buttons;
-            }
-
-            _buttonsFrom = window;
-            _buttons = Collect(window);
-            return _buttons;
-        }
-
-        /// <summary>Every button on the window that is wired to something. The window's backdrops are
-        /// buttons too - they are there to swallow clicks that miss - and they are told to call
-        /// nothing, which is exactly what tells them apart from the bar.</summary>
-        private static List<AgeControlButton> Collect(OptionsModalWindow window)
-        {
-            List<AgeControlButton> buttons = new List<AgeControlButton>();
-            try
-            {
-                foreach (
-                    AgeControlButton button in window.GetComponentsInChildren<AgeControlButton>(true)
-                )
-                {
-                    // A button the MOD put in a rows table is a ROW, not part of the button bar: it
-                    // is read where it is drawn, among the settings it belongs to.
-                    if (
-                        button != null
-                        && !string.IsNullOrEmpty(button.OnActivateMethod)
-                        && button.GetComponentInParent<OptionsTabPanel>() == null
-                    )
-                    {
-                        buttons.Add(button);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("options: finding the window's buttons threw: " + e);
-            }
-
-            return buttons;
-        }
-
-        private static bool AllAlive(List<AgeControlButton> buttons)
-        {
-            for (int i = 0; i < buttons.Count; i++)
-            {
-                if (buttons[i] == null)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
+        private static readonly Predicate<AgeControlButton> NotARow =
+            button => button.GetComponentInParent<OptionsTabPanel>() == null;
 
         /// <summary>
         /// The transform whose Enable flag says whether this button is available.
@@ -1589,18 +1431,6 @@ namespace ES2Access.Screens
         /// is Apply; pressing it still goes through the button's own wiring.</summary>
         private const string ApplyMethod = "OnApplyCb";
 
-        private static string KeyOf(AgeControlButton button)
-        {
-            try
-            {
-                return button.name + "/" + button.OnActivateMethod;
-            }
-            catch (Exception)
-            {
-                return "?";
-            }
-        }
-
         // Both skins name their buttons the same, so should two of them ever be drawn at once the
         // second gets a suffix rather than colliding and taking the whole screen down.
         private static string Distinct(HashSet<string> taken, string key)
@@ -1620,36 +1450,7 @@ namespace ES2Access.Screens
         private static string ButtonText(AgePrimitiveLabel caption, AgeTooltip tooltip)
         {
             string text = AgeText.Label(caption);
-            if (!string.IsNullOrEmpty(text))
-            {
-                return text;
-            }
-
-            IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
-            return lines.Count > 0 ? lines[0] : null;
-        }
-
-        /// <summary>Press a button the way the engine presses it: every AGE button carries the object
-        /// and method its own mouse handler sends to, so replaying that pair runs the window's own
-        /// handler - the same one for either skin's copy of the button.</summary>
-        private static void Press(Command command)
-        {
-            AgeControlButton button = command.Button;
-            try
-            {
-                if (button.OnActivateObject != null)
-                {
-                    button.OnActivateObject.SendMessage(
-                        button.OnActivateMethod,
-                        button.gameObject,
-                        SendMessageOptions.DontRequireReceiver
-                    );
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("options: pressing " + KeyOf(button) + " threw: " + e);
-            }
+            return string.IsNullOrEmpty(text) ? CardActions.FirstLine(tooltip) : text;
         }
 
         // ---- reading the window ----
@@ -1697,7 +1498,7 @@ namespace ES2Access.Screens
                 {
                     // Flow control: every row kept here is read control by control below, and the count
                     // is what tells the page whether it has anything in it at all.
-                    if (item != null && Visible(AgeTransformOf(item)))
+                    if (item != null && AgeWidgets.Visible(AgeWidgets.Transform(item)))
                     {
                         rows.Add(item);
                     }
@@ -1766,9 +1567,7 @@ namespace ES2Access.Screens
                     return mods;
                 }
 
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<OptionsModalWindow>(false)
-                    : null;
+                return GameWindows.Of<OptionsModalWindow>();
             }
             catch (Exception)
             {
@@ -1779,21 +1578,16 @@ namespace ES2Access.Screens
         // ---- shared plumbing ----
 
         // The click handlers the game runs when a setting is changed with the mouse. Resolved once:
-        // a category of 140 checkboxes is rebuilt on every navigation operation, and a reflection
-        // lookup per row per operation would be paid for nothing.
-        private static readonly MethodInfo CheckboxSwitched = Handler(
-            typeof(OptionCheckboxItem),
-            "OnSwitchCb"
-        );
-
-        private static readonly MethodInfo SliderReleased = Handler(
+        // a category of 140 rows is rebuilt on every navigation operation, and a reflection lookup per
+        // row per operation would be paid for nothing.
+        private static readonly MethodInfo SliderReleased = GameHandlers.Method(
             typeof(OptionSliderItem),
             "OnSliderReleasedCb"
         );
 
         // The handler a click on one of the setting's list entries reaches: it stores the value and
         // tells the window a setting changed.
-        private static readonly MethodInfo EntrySelected = Handler(
+        private static readonly MethodInfo EntrySelected = GameHandlers.Method(
             typeof(OptionDropListItem),
             "OnEntrySelectedCb"
         );
@@ -1806,22 +1600,18 @@ namespace ES2Access.Screens
         /// as "no arguments at all" and the handlers take one.</summary>
         internal static readonly object[] NoSender = { null };
 
+        /// <summary>The game's own method by name - <see cref="GameHandlers.Method(Type, string)"/>,
+        /// which is where the lookup and its one failure policy live. Kept as a forwarder for the one
+        /// caller outside this batch of screens.</summary>
         internal static MethodInfo Handler(Type type, string name)
         {
-            try
-            {
-                return type.GetMethod(
-                    name,
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("options: looking up " + type.Name + "." + name + " threw: " + e);
-                return null;
-            }
+            return GameHandlers.Method(type, name);
         }
 
+        /// <summary>Run one of those handlers on the object the game would have run it on. Here rather
+        /// than beside the lookup because what a null means is the caller's: a handler this build does
+        /// not have is a control the mod cannot work, and every caller answers that by doing
+        /// nothing.</summary>
         internal static void Call(MethodInfo method, object target, params object[] arguments)
         {
             if (method == null || target == null)
@@ -1834,18 +1624,6 @@ namespace ES2Access.Screens
 
         /// <summary>Where a focused control's tooltip is drawn from: the transform hugging the visible
         /// text, never the hit area, which the layout stretches well past the words.</summary>
-        private static AgeTransform AnchorOf(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         /// <summary>The label showing a widget's text: the widget itself when it is one, else the
         /// first one under it.</summary>
         internal static AgePrimitiveLabel LabelIn(AgeTransform transform)
@@ -1876,67 +1654,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        private static AgeTooltip TooltipOf(AgeTransform transform)
-        {
-            try
-            {
-                return transform == null ? null : transform.AgeTooltip;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform AgeTransformOf(OptionItem item)
-        {
-            try
-            {
-                return item == null ? null : item.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Whether a widget is really on screen: its own visibility and every ancestor's.
-        ///
-        /// The window carries two skins - one for the main menu, one for a game in progress - and
-        /// switches between them by hiding whole CONTAINERS. A button in the skin that is not in use
-        /// therefore reports itself perfectly visible while nothing of it is drawn, which is how the
-        /// Controls page came to offer "Reset to Defaults" twice.
-        /// </summary>
-        private static bool Visible(AgeTransform transform)
-        {
-            return AgeWidgets.Visible(transform);
-        }
-
-        private static float LeftEdge(AgeTransform transform)
-        {
-            try
-            {
-                return transform.GetGlobalPosition().x;
-            }
-            catch (Exception)
-            {
-                return 0f;
-            }
-        }
-
-        private static bool Enabled(AgeTransform transform)
-        {
-            try
-            {
-                return transform != null && transform.Enable;
-            }
-            catch (Exception)
-            {
-                return false;
             }
         }
     }

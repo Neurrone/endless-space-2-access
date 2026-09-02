@@ -81,11 +81,9 @@ namespace ES2Access.Screens
             get
             {
                 MinorFactionDiplomacyModalWindow window = Window();
-                string title = AgeText.Clean(Gui.Localize(WindowTitleKey));
-                if (string.IsNullOrEmpty(title) || title[0] == '%')
-                {
-                    title = ModStrings.Get(ModStrings.ScreenMinorDiplomacy);
-                }
+                string title =
+                    AgeText.Title(WindowTitleKey)
+                    ?? ModStrings.Get(ModStrings.ScreenMinorDiplomacy);
 
                 string drawn = window == null ? null : Words(window.EmpireNameLabel);
                 return string.IsNullOrEmpty(drawn)
@@ -130,21 +128,7 @@ namespace ES2Access.Screens
                     && window.Shown
                     && window.IsReady
                     && window.MinorEmpire != null
-                    && !Buried(window);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static bool Buried(GuiModalWindow window)
-        {
-            try
-            {
-                GuiManager manager = Gui.GuiGameWindowService as GuiManager;
-                GuiModalWindow top = manager == null ? null : manager.ModalOnTop;
-                return top != null && !ReferenceEquals(top, window);
+                    && !WindowShape.Buried(window);
             }
             catch (Exception)
             {
@@ -197,11 +181,11 @@ namespace ES2Access.Screens
                 Cells.AddReadout(_cells, Named(window, "Title", 3), Keys + "window-title");
                 Cells.EmitLinear(builder, _cells);
 
-                named = Captions.Push(builder, Of(window.EmpireNameLabel));
+                named = Captions.Push(builder, AgeWidgets.Transform(window.EmpireNameLabel));
 
                 builder.SetRegion(Keys + "identity/about");
                 _cells.Clear();
-                Cells.AddReadout(_cells, Of(window.EmpireDescription), Keys + "description");
+                Cells.AddReadout(_cells, AgeWidgets.Transform(window.EmpireDescription), Keys + "description");
                 Cells.EmitLinear(builder, _cells);
 
                 Traits(builder, window);
@@ -224,7 +208,7 @@ namespace ES2Access.Screens
         private void Traits(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.SetRegion(Keys + "identity/traits");
-            bool named = Captions.Push(builder, null, null, Localized(TraitsTitleKey));
+            bool named = Captions.Push(builder, null, null, AgeText.Title(TraitsTitleKey));
             _cells.Clear();
             Cells.AddStat(
                 _cells,
@@ -350,7 +334,7 @@ namespace ES2Access.Screens
                 builder,
                 title,
                 Keys + "relation-title",
-                Captions.Text(title) ?? Localized(RelationTitleKey)
+                Captions.Text(title) ?? AgeText.Title(RelationTitleKey)
             );
             try
             {
@@ -415,7 +399,7 @@ namespace ES2Access.Screens
         /// 0/66/133/200 across a 266-wide gauge, and 33 points reading CORDIAL).
         ///
         /// The sentence itself reads by its own kind, like every other tooltip: it was the name until
-        /// the states arrived, and the readout.s own dedupe is what keeps the band from being said
+        /// the states arrived, and the readout's own dedupe is what keeps the band from being said
         /// twice where the name still comes off the sentence.
         /// </summary>
         private void Bands(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
@@ -492,10 +476,9 @@ namespace ES2Access.Screens
                 return null;
             }
 
-            string title =
-                content.Substring(0, content.Length - BandKeySuffix.Length) + "Title";
-            string named = AgeText.Clean(Gui.Localize(title));
-            return string.IsNullOrEmpty(named) || named[0] == '%' ? null : named;
+            return AgeText.Title(
+                content.Substring(0, content.Length - BandKeySuffix.Length) + "Title"
+            );
         }
 
         private const string BandKeyPrefix = "%DiplomaticRelationState";
@@ -506,9 +489,9 @@ namespace ES2Access.Screens
         private void Rewards(GraphBuilder builder, MinorFactionDiplomacyModalWindow window)
         {
             builder.SetRegion(Keys + "relation/rewards");
-            bool named = Captions.Push(builder, null, null, Localized(RewardsTitleKey));
+            bool named = Captions.Push(builder, null, null, AgeText.Title(RewardsTitleKey));
             AgePrimitiveLabel label = window.GainedResourcesLabel;
-            AgeTransform at = Of(label);
+            AgeTransform at = AgeWidgets.Transform(label);
             if (at != null && AgeWidgets.Visible(at))
             {
                 AgePrimitiveLabel it = label;
@@ -536,7 +519,7 @@ namespace ES2Access.Screens
             }
 
             _cells.Clear();
-            Cells.AddReadout(_cells, Of(window.RelationEffectNoneLabel), Keys + "no-gains");
+            Cells.AddReadout(_cells, AgeWidgets.Transform(window.RelationEffectNoneLabel), Keys + "no-gains");
             Cells.EmitLinear(builder, _cells);
             Captions.Pop(builder, named);
         }
@@ -605,7 +588,7 @@ namespace ES2Access.Screens
                 builder,
                 title,
                 Keys + "actions-title",
-                Captions.Text(title) ?? Localized(ActionsTitleKey)
+                Captions.Text(title) ?? AgeText.Title(ActionsTitleKey)
             );
             _actions.Clear();
             try
@@ -689,22 +672,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>A game caption by key, for a block whose caption widget the window does not expose
-        /// and which carries nothing on hover - where the words are the whole of what the widget would
-        /// have given.</summary>
-        private static string Localized(string key)
-        {
-            try
-            {
-                string text = AgeText.Clean(Gui.Localize(key));
-                return string.IsNullOrEmpty(text) || text[0] == '%' ? null : text;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static string Words(AgePrimitiveLabel label)
         {
             try
@@ -719,30 +686,9 @@ namespace ES2Access.Screens
             }
         }
 
-        private static AgeTransform Of(AgePrimitiveLabel label)
-        {
-            try
-            {
-                return label == null ? null : label.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
         private static MinorFactionDiplomacyModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<MinorFactionDiplomacyModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<MinorFactionDiplomacyModalWindow>();
         }
 
         /// <summary>Where this screen is drawn, for the tooltip audit (see

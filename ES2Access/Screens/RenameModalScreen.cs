@@ -197,7 +197,7 @@ namespace ES2Access.Screens
             {
                 SettingRows.AddReadout(
                     builder,
-                    SettingRows.TransformOf(window.Title),
+                    AgeWidgets.Transform(window.Title),
                     "rename:heading"
                 );
             }
@@ -280,16 +280,7 @@ namespace ES2Access.Screens
 
         private static RenameModalWindow Window()
         {
-            try
-            {
-                return Gui.GuiServiceAvailable
-                    ? Gui.GuiService.GetWindow<RenameModalWindow>(false)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return GameWindows.Of<RenameModalWindow>();
         }
     }
 }
