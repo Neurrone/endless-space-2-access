@@ -166,10 +166,10 @@ action is missing from it or drawn twice. The six, measured 2026-09-02:
 |---|---|---|
 | Cursor and navigation | 22 | Move up |
 | Buffers | 6 | Read previous buffer line |
-| UI hotkeys | 11 | Focus HUD |
-| Inspect mode | 8 | Return to previous position |
+| UI hotkeys | 12 | Focus HUD |
+| Inspect mode | 7 | Inspect mode |
 | Scanner | 13 | Move to next category |
-| Bookmarks | 21 | Set bookmark 1 |
+| Bookmarks | 21 | Jump to home system |
 
 81 rows in all — one per `action.*.title` key in the locale; re-check with
 `grep -c '"action\..*\.title"' ES2Access/locale/english.json` whenever an action is added. (It read
@@ -190,9 +190,9 @@ in ("Cancel, empty, button, 2 of ⟨n⟩"). Cell ids are `options:⟨panel⟩/ke
 which is what lets Down chain across a boundary while Alt+arrow still jumps (six SHEETS would name
 one region six times — measured 2026-09-02, and the whole page then read as a single block no jump
 could walk). `/input ui.regionNext` five times walks "Buffers, Read previous buffer line, Ctrl + Up
-Arrow, 1 of 6" → "UI hotkeys, Focus HUD, Ctrl + H, 1 of 11" → "Inspect mode, Return to previous
-position, Backspace, 1 of 8" → "Scanner, Move to next category, Ctrl + Page Down, 1 of 13" →
-"Bookmarks, Set bookmark 1, Shift + 1, 1 of 21", and `ui.regionPrev` walks back. `ui.up` from a
+Arrow, 1 of 6" → "UI hotkeys, Focus HUD, Ctrl + H, 1 of 12" → "Inspect mode, Ctrl + I, 1 of 7" (the row is
+also called Inspect mode, and the readout says the repeated word once) → "Scanner, Move to next category, Ctrl + Page Down, 1 of 13" →
+"Bookmarks, Jump to home system, Ctrl + C, 1 of 21", and `ui.regionPrev` walks back. `ui.up` from a
 block's first row announces the block above ("Scanner, Move to previous result in custom category 3,
 Shift + /, 13 of 13"). The heading rows declare no node of their own: `DevProbe.Ghosts()` reads
 `synthetic: 0` and 249 located nodes — 81 rows × 3 cells, 3 tabs, 3 buttons, no heading among them.
@@ -201,7 +201,7 @@ Shift + /, 13 of 13"). The heading rows declare no node of their own: `DevProbe.
 sentence repeating it would be read on every step; nine rows keep a description
 (`ES2Access/Core/Speech/ModStrings.Actions.cs` — an action with no `.description` entry gets an EMPTY
 `AgeTooltip.Content`, which `AgeWidgets.Draws` answers false for, so nothing draws and the options
-screen declares nothing). Evidence: "UI hotkeys, Focus HUD, Ctrl + H, 1 of 11" with two buffer lines
+screen declares nothing). Evidence: "UI hotkeys, Focus HUD, Ctrl + H, 1 of 12" with two buffer lines
 and no third, "Move up" still carrying "Move the cursor to the control above.", and
 `DevProbe.TooltipParity()` clean with every bucket empty.
 

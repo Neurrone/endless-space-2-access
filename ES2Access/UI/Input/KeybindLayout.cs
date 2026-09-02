@@ -95,16 +95,14 @@ namespace ES2Access.UI.Input
                     UiActions.NextIdleFleet,
                     UiActions.ApplyMovements,
                     UiActions.GoToLocation,
+                    UiActions.Secondary,
                     UiActions.Clear,
                 }
             ),
-            // The way back from a leap is the MAP's, not the cursor's (owner ruling 2026-09-02), so
-            // it heads the inspect table rather than sitting among the cursor keys.
             new Block(
                 ModStrings.ModSettingsKeysInspect,
                 new[]
                 {
-                    UiActions.Secondary,
                     MapActions.Inspect,
                     MapActions.InspectGrow,
                     MapActions.InspectShrink,
@@ -137,6 +135,7 @@ namespace ES2Access.UI.Input
                 ModStrings.ModSettingsKeysBookmarks,
                 new[]
                 {
+                    MapActions.BookmarkHome,
                     MapActions.BookmarkSet1,
                     MapActions.BookmarkSet2,
                     MapActions.BookmarkSet3,
@@ -157,7 +156,6 @@ namespace ES2Access.UI.Input
                     MapActions.BookmarkGoTo8,
                     MapActions.BookmarkGoTo9,
                     MapActions.BookmarkGoTo0,
-                    MapActions.BookmarkHome,
                 }
             ),
         };

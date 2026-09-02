@@ -133,7 +133,7 @@ namespace ES2Access.Core.Speech
             { "action.ui.focusNotifications.title", "Focus notifications" },
             { "action.ui.focusTurn.title", "Focus turn controls" },
             { "action.ui.focusTurnLog.title", "Focus turn log" },
-            { "action.ui.focusMap.title", "Focus map" },
+            { "action.ui.focusMap.title", "Focus galactic map" },
             { "action.ui.summarizeMap.title", "Summarize galactic map" },
             {
                 "action.ui.summarizeMap.description",
@@ -151,12 +151,15 @@ namespace ES2Access.Core.Speech
                 "action.ui.goToLocation.description",
                 "Jump to location associated with the focused item such as a notification"
             },
+            { "action.ui.secondary.title", "Return to previous position" },
+            {
+                "action.ui.secondary.description",
+                "Return to previous position after following a star lane, scanner or bookmark jump. Also works in inspect mode"
+            },
             { "action.ui.clear.title", "Clear key binding" },
             { "action.ui.clear.description", "Clears a key bind" },
 
-            // The map's inspect cursor - and the way back from a leap, which is the map's own
-            // (owner ruling 2026-09-02) and so is read here rather than beside the cursor keys.
-            { "action.ui.secondary.title", "Return to previous position" },
+            // The map's inspect cursor.
             { "action.galaxy.inspect.title", "Inspect mode" },
             { "action.galaxy.inspectGrow.title", "Expand cursor" },
             { "action.galaxy.inspectShrink.title", "Shrink cursor" },
