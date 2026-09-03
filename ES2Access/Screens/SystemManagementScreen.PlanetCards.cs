@@ -102,6 +102,7 @@ namespace ES2Access.Screens
                     NodeSection.Buffer(() => PlanetDetails(it))
                 ),
                 OnActivate = () => GalaxyViewLevels.OpenPlanet(it.Planet),
+                ControlType = ControlTypes.Button,
             };
 
             // THE CARD ITSELF TAKES NO DROP (owner ruling 2026-08-29). The game's mouse accepts one
@@ -142,7 +143,6 @@ namespace ES2Access.Screens
                 return;
             }
 
-            vtable.ControlType = ControlTypes.Group;
             // Synthetic for the same reason as the leaf above.
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))

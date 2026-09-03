@@ -602,10 +602,6 @@ namespace ES2Access.Screens
         /// beside it: they are buttons and so live one step in with the rest, but a player walking the
         /// map would have to open every planet to find out that any exist at all. The count is what a
         /// sighted player takes off the card at a glance, so the card's own line carries it.
-        ///
-        /// Enter is the card's own click: the planet's page. It is the only thing the card itself does
-        /// - except while the game has the map waiting for a target, where the left click means
-        /// "confirm here" wherever it lands and the card is no exception (<see cref="PlanetClick"/>).
         /// </summary>
         private static NodeVtable OrbitalReadout(
             PlanetLabel_SystemOrbital card,
@@ -631,7 +627,6 @@ namespace ES2Access.Screens
                     // staking a world in your own system is heard while walking past it.
                     GraphNodes.ValuePart(() => MiningProbes.Line(it.Planet), false),
                 },
-                OnActivate = () => PlanetClick(it.Planet, system),
             };
             // What the card DRAWS first, then its dossier - the paragraph the game writes about a
             // world of this kind, its size, its type. The dossier is the long panel behind the card,
@@ -646,30 +641,6 @@ namespace ES2Access.Screens
             );
             AgeWidgets.PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
             return vtable;
-        }
-
-        /// <summary>
-        /// The card's own left click: the planet's page - unless the game has the map waiting for a
-        /// target, in which case the click is the order's confirm and nothing else, here as on every
-        /// other thing the map draws (<see cref="ZoomIn"/>, <see cref="LaneClick"/>).
-        ///
-        /// Confirmed at the SYSTEM the card is in orbit around, because a system is what the map
-        /// builds a cursor target for - a planet is drawn inside one and has none of its own - and
-        /// the mouse aiming at a card at this zoom is aiming inside that system.
-        ///
-        /// Asked first, and the answer is yes whenever any mode is armed
-        /// (<see cref="CursorTargeting.ConfirmAt(GameNode)"/>), refusals included: without that the
-        /// card's Enter opened the planet's page and threw the armed mode away with it, which is a
-        /// thing no click of the mouse's can do.
-        /// </summary>
-        private static void PlanetClick(Planet planet, GameNode system)
-        {
-            if (CursorTargeting.ConfirmAt(system))
-            {
-                return;
-            }
-
-            GalaxyViewLevels.OpenPlanet(planet);
         }
 
         /// <summary>How long an outpost of ours has left before it becomes a colony - drawn on the card
