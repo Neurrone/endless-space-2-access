@@ -69,8 +69,9 @@ namespace ES2Access.Core.UI.Graph
     }
 
     /// <summary>
-    /// The hint surface: how a declared <see cref="NodeHint"/> becomes the last lines of a control's
-    /// review buffer.
+    /// The hint surface: how a declared <see cref="NodeHint"/> becomes the last thing said about a
+    /// control - the last lines of its review buffer, and the last part of its focus readout
+    /// (<c>GraphAnnouncer.EffectiveAnnouncements</c>, which composes the same lines into one part).
     ///
     /// <see cref="Chord"/> is the seam. <c>Core</c> is BCL-only and cannot see the input manager, so
     /// the host injects the renderer once - the <see cref="GraphAnnouncer"/> precedent, and static

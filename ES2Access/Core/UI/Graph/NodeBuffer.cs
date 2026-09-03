@@ -57,6 +57,9 @@ namespace ES2Access.Core.UI.Graph
                     || part.Kind == AnnouncementKinds.Label
                     || part.Kind == AnnouncementKinds.Role
                     || part.Kind == AnnouncementKinds.Tooltip
+                    // The usage hints are a readout part too now, but the buffer's copy of them is
+                    // written below, after the sections - where they have always been.
+                    || part.Kind == AnnouncementKinds.Hint
                 )
                 {
                     continue;

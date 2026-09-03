@@ -11,7 +11,10 @@ namespace ES2Access.UI
     ///
     /// One order serves every type here - label, then role, then value, selection and enabled state,
     /// then what the tooltip has to say, and the list position last - because that is the order a
-    /// screen reader user expects to hear a control in, whatever the control is.
+    /// screen reader user expects to hear a control in, whatever the control is. What a control says
+    /// about the KEYBOARD rather than about itself is after even that, and is not in the order at all:
+    /// the drag words and the usage hints (<see cref="AnnouncementKinds.Hint"/>) are kinds no type
+    /// orders, which is what keeps them in the trailing bucket behind the position.
     /// </summary>
     public static class ControlTypes
     {

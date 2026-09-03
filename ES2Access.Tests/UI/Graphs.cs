@@ -96,6 +96,15 @@ namespace ES2Access.Tests.UI
             return NodeSection.Derived(() => list, mode, null, null, () => cost);
         }
 
+        /// <summary>An INDICATED tooltip this player has asked to hear: its own words are the lines,
+        /// and <paramref name="late"/> is the reader that answers nothing until the game has drawn
+        /// them - the shape <c>LongTooltips.Announced</c> hands the door.</summary>
+        public static NodeSection LateSection(Func<IList<string>> late, params string[] lines)
+        {
+            List<string> list = new List<string>(lines);
+            return NodeSection.Derived(() => list, TooltipMode.Indicate, null, null, null, late);
+        }
+
         public static IList<NodeSection> Sections(params NodeSection[] sections)
         {
             return new List<NodeSection>(sections);

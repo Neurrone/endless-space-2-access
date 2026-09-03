@@ -116,14 +116,7 @@ namespace ES2Access.Core.UI.Graph
             // was declared - so which sections speak is settled here, once, rather than per readout.
             // Two passes, because "the last tooltip is the one this control points at" can only be
             // answered after every section has been seen.
-            int pointedAt = -1;
-            for (int i = 0; i < sections.Count; i++)
-            {
-                if (Speaks(sections[i]) && sections[i].FromTooltip)
-                {
-                    pointedAt = i;
-                }
-            }
+            int pointedAt = PointedAt(sections);
 
             List<Func<IList<string>>> spoken = null;
             bool late = false;
@@ -194,6 +187,58 @@ namespace ES2Access.Core.UI.Graph
             return cost == null
                 ? null
                 : new NodeAnnouncement(cost, kind: AnnouncementKinds.Label);
+        }
+
+        /// <summary>
+        /// The LATE reader the announced part is waiting on, or null when nothing this control speaks
+        /// is late - which is every control whose tooltip the game already wrote, and every one whose
+        /// class-backed tooltip this player has not asked to hear (the section then says nothing to
+        /// the readout at all).
+        ///
+        /// It exists so that what a control says AFTER its tooltip can wait for the same words: the
+        /// usage hints are said last, and last on a control whose tooltip only appears frames later
+        /// means after those frames, not before them (<c>GraphAnnouncer.EffectiveAnnouncements</c>).
+        /// The reader is the section's own, so asking it twice in a frame is what it was built for -
+        /// it answers from a held reading, not a second walk of the drawn window.
+        /// </summary>
+        public static Func<IList<string>> LateReader(IList<NodeSection> sections)
+        {
+            if (sections == null)
+            {
+                return null;
+            }
+
+            int pointedAt = PointedAt(sections);
+            Func<IList<string>> late = null;
+            for (int i = 0; i < sections.Count; i++)
+            {
+                if (!Speaks(sections[i]) || (sections[i].FromTooltip && i != pointedAt))
+                {
+                    continue;
+                }
+
+                if (sections[i].Late != null)
+                {
+                    late = sections[i].Late;
+                }
+            }
+
+            return late;
+        }
+
+        // Which section's tooltip a hover would raise: the LAST speaking one that came off a tooltip.
+        private static int PointedAt(IList<NodeSection> sections)
+        {
+            int pointedAt = -1;
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                if (Speaks(sections[i]) && sections[i].FromTooltip)
+                {
+                    pointedAt = i;
+                }
+            }
+
+            return pointedAt;
         }
 
         private static bool Speaks(NodeSection section)

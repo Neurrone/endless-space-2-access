@@ -21,11 +21,13 @@ namespace ES2Access.Tests.UI
         {
             ModStrings.Reset();
             GraphAnnouncer.Reset();
+            NodeHints.Reset();
         }
 
         public void Dispose()
         {
             GraphAnnouncer.Reset();
+            NodeHints.Reset();
         }
 
         // A context "Settings, list" wrapping two controls.
@@ -474,6 +476,178 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Colonize, button", GraphAnnouncer.LeafText(node));
             GraphAnnouncer.PartFilter = (type, part) => part.Kind != AnnouncementKinds.Role;
             Assert.Equal("Colonize", GraphAnnouncer.LeafText(node));
+        }
+
+        // ---- the usage hints, spoken (owner ruling 2026-09-03) ----
+
+        private static void Chords()
+        {
+            NodeHints.Chord = (action, index) =>
+                action == "ui.alternate" && index == 0
+                    ? "Ctrl+Shift+Enter"
+                    : action == "ui.contextual" && index == 0
+                        ? "Backslash"
+                        : null;
+        }
+
+        // A hinted button carrying the given sections.
+        private static NodeVtable Hinted(params NodeSection[] sections)
+        {
+            NodeVtable vt = new NodeVtable
+            {
+                ControlType = Type("button", "button"),
+                Announcements = new List<NodeAnnouncement>
+                {
+                    Part("The Analytical Engine", AnnouncementKinds.Label),
+                },
+                Sections = sections,
+            };
+            NodeHints.Add(vt, ModStrings.HintQueueFirst, "ui.alternate");
+            return vt;
+        }
+
+        // The same control second of three, so its readout also carries a position.
+        private static string HintedReadout(NodeVtable vt)
+        {
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Before")));
+            b.AddItem(new SyntheticNode(Id("t"), vt));
+            b.AddItem(new SyntheticNode(Id("c"), Vt("After")));
+            return GraphAnnouncer.LeafText(Node(b.Build(), "t"));
+        }
+
+        [Fact]
+        public void AHintIsSaidAfterEverythingIncludingThePosition()
+        {
+            Chords();
+            Assert.Equal(
+                "The Analytical Engine, button, 2 of 3, Ctrl+Shift+Enter to queue it first",
+                HintedReadout(Hinted())
+            );
+        }
+
+        [Fact]
+        public void AHintFollowsTheTooltipTheControlAnnounces()
+        {
+            Chords();
+            Assert.Equal(
+                "The Analytical Engine, button, Queues the improvement, 2 of 3, "
+                    + "Ctrl+Shift+Enter to queue it first",
+                HintedReadout(Hinted(Section(TooltipMode.Announce, "Queues the improvement")))
+            );
+        }
+
+        [Fact]
+        public void SeveralHintsAreOnePartInDeclaredOrder()
+        {
+            Chords();
+            NodeVtable vt = Hinted();
+            NodeHints.Add(vt, ModStrings.HintMoveFleetHere, "ui.contextual");
+            Assert.Equal(
+                "The Analytical Engine, button, 2 of 3, Ctrl+Shift+Enter to queue it first, "
+                    + "Backslash to move the fleet here",
+                HintedReadout(vt)
+            );
+        }
+
+        [Fact]
+        public void AHintWhoseGateSaysNoIsNotInTheReadout()
+        {
+            Chords();
+            NodeVtable vt = new NodeVtable
+            {
+                ControlType = Type("button", "button"),
+                Announcements = new List<NodeAnnouncement>
+                {
+                    Part("The Analytical Engine", AnnouncementKinds.Label),
+                },
+            };
+            NodeHints.Add(vt, ModStrings.HintQueueFirst, "ui.alternate", 0, () => false);
+            Assert.Equal("The Analytical Engine, button, 2 of 3", HintedReadout(vt));
+        }
+
+        /// <summary>The expanded/collapsed word is about the control, so it stays ahead of the
+        /// keyboard sentence even where there is no tooltip to anchor it.</summary>
+        [Fact]
+        public void TheExpandedWordStaysAheadOfTheHint()
+        {
+            Chords();
+            GraphAnnouncer.ExpandedStateText = expanded => expanded ? "expanded" : "collapsed";
+            GraphBuilder b = new GraphBuilder();
+            b.BeginGroup(new SyntheticNode(Id("g"), Hinted()));
+            b.EndGroup();
+            Assert.Equal(
+                "The Analytical Engine, button, collapsed, Ctrl+Shift+Enter to queue it first",
+                GraphAnnouncer.LeafText(Node(b.Build(), "g"))
+            );
+        }
+
+        /// <summary>A table row's position is composed by the announcer rather than by the node, and
+        /// it too comes before the hint.</summary>
+        [Fact]
+        public void ATableRowsPositionStaysAheadOfTheHint()
+        {
+            Chords();
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            NodeVtable vt = Hinted();
+            vt.Row = new TableRow { Key = "r2", Index = 2, Count = 5 };
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("t"), vt));
+            Assert.Equal(
+                "The Analytical Engine, button, 2 of 5, Ctrl+Shift+Enter to queue it first",
+                GraphAnnouncer.ComposeFull(Node(b.Build(), "t"))
+            );
+        }
+
+        /// <summary>On a tooltip the game only assembles on hover, and that this player asked to hear,
+        /// the hint waits for the tooltip's own words: it is the last thing said about the control, and
+        /// on such a control the tooltip is heard frames after the readout.</summary>
+        [Fact]
+        public void AHintOnALateTooltipWaitsForTheWordsAndIsNotSaidTwice()
+        {
+            Chords();
+            List<string> drawn = new List<string>();
+            NodeVtable vt = Hinted(
+                LateSection(() => drawn, "Emperor's Will +78 Influence")
+            );
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("a"), Vt("Before")));
+            b.AddItem(new SyntheticNode(Id("t"), vt));
+            b.AddItem(new SyntheticNode(Id("c"), Vt("After")));
+            GraphNode node = Node(b.Build(), "t");
+
+            Assert.Equal("The Analytical Engine, button, 2 of 3", GraphAnnouncer.LeafText(node));
+
+            drawn.Add("Emperor's Will +78 Influence");
+            Assert.Equal(
+                "The Analytical Engine, button, Emperor's Will +78 Influence, 2 of 3, "
+                    + "Ctrl+Shift+Enter to queue it first",
+                GraphAnnouncer.LeafText(node)
+            );
+        }
+
+        /// <summary>Which is why that hint is WATCHED and an ordinary one is not: the watch is what
+        /// speaks it when the words arrive.</summary>
+        [Fact]
+        public void OnlyAWaitingHintIsLive()
+        {
+            Chords();
+            Assert.False(HintPartOf(Hinted()).Live);
+            Assert.True(HintPartOf(Hinted(LateSection(() => new List<string>(), "Late"))).Live);
+        }
+
+        private static NodeAnnouncement HintPartOf(NodeVtable vt)
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(Id("t"), vt));
+            foreach (NodeAnnouncement part in GraphAnnouncer.EffectiveAnnouncements(Node(b.Build(), "t")))
+            {
+                if (part.Kind == AnnouncementKinds.Hint) return part;
+            }
+
+            return null;
         }
     }
 }

@@ -26,6 +26,13 @@ namespace ES2Access.Core.UI.Graph
         public const string Enabled = "enabled";
         public const string Tooltip = "tooltip";
         public const string Position = "position";
+
+        /// <summary>The control's USAGE HINTS (<see cref="NodeHint"/>). Deliberately absent from every
+        /// control type's kind order, which is what puts it in the trailing bucket: a hint is the last
+        /// thing said about a control, after the position and after the words a control adds about
+        /// itself with no kind at all ("draggable"), because it is about the keyboard rather than about
+        /// the thing.</summary>
+        public const string Hint = "hint";
     }
 
     /// <summary>
@@ -415,8 +422,8 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public Func<string> BufferHead;
 
-        /// <summary>Optional. The USAGE HINTS this control ends its review buffer with - what the
-        /// mod's gesture chords do here, one sentence per hint, in declared order
+        /// <summary>Optional. The USAGE HINTS this control ends its readout and its review buffer with
+        /// - what the mod's gesture chords do here, one sentence per hint, in declared order
         /// (<see cref="NodeHint"/>). Declared where the screen wires the gesture, so the two cannot
         /// drift apart; null - the ordinary case - is a control whose gestures are the uniform ones
         /// every control has, or whose own game tooltip already states them.</summary>

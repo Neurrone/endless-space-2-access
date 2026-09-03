@@ -52,11 +52,16 @@ namespace ES2Access.Core.UI.Graph
             // own name) are outside it and read first.
             string column = string.IsNullOrEmpty(transitionLabel) ? ColumnEntered(from, to) : null;
 
+            // The row's position, worked out here because it is the one part that depends on where
+            // focus came FROM - and handed to the landing's own composition rather than appended after
+            // it, because the usage hints come last and a position said after them would not be.
+            string row = RowPosition(from, to);
+
             if (i >= toPath.Count)
             {
                 // Ascended (or same node): announce just the now-innermost focus.
                 if (!string.IsNullOrEmpty(column)) parts.Add(column);
-                string text = LeafText(to);
+                string text = LeafText(to, row);
                 if (!string.IsNullOrEmpty(text)) parts.Add(text);
             }
             else
@@ -64,7 +69,7 @@ namespace ES2Access.Core.UI.Graph
                 for (int j = i; j < toPath.Count; j++)
                 {
                     if (j == toPath.Count - 1 && !string.IsNullOrEmpty(column)) parts.Add(column);
-                    string text = LeafText(toPath[j]);
+                    string text = LeafText(toPath[j], j == toPath.Count - 1 ? row : null);
                     if (string.IsNullOrEmpty(text)) continue;
                     // Dedupe: a level whose label just duplicates the next level down (or the control
                     // itself — "a 'Game difficulty' section wrapping the 'Game difficulty' control").
@@ -78,9 +83,6 @@ namespace ES2Access.Core.UI.Graph
                     parts.Add(text);
                 }
             }
-
-            string row = RowPosition(from, to);
-            if (!string.IsNullOrEmpty(row)) parts.Add(row);
 
             return Join(parts);
         }
@@ -245,6 +247,15 @@ namespace ES2Access.Core.UI.Graph
                 if (target != null) result.Add(target);
             }
 
+            // The USAGE HINTS, derived from the same declaration the review buffer reads them off
+            // (<see cref="NodeHints"/>) and spoken LAST - after the position, after everything the
+            // control has to say about itself, because they are about the keyboard rather than about
+            // the thing (owner ruling 2026-09-03). Added after the drag words and kinded with a kind
+            // no control type orders, which is what keeps them at the tail whatever else a node
+            // declares.
+            NodeAnnouncement hints = HintPart(vt);
+            if (hints != null) result.Add(hints);
+
             if (type != null && type.Order != null && type.Order.Length > 0 && result.Count > 1)
             {
                 // Insertion sort on the kind's order index, in place. Stable by construction - an
@@ -278,6 +289,41 @@ namespace ES2Access.Core.UI.Graph
             }
 
             return Memoize(node, result);
+        }
+
+        /// <summary>
+        /// The control's usage hints as one announcement part, or null where it declared none.
+        ///
+        /// On a control whose tooltip the game assembles on hover AND that this player has asked to
+        /// hear (<see cref="TooltipParts.LateReader"/>), the part waits for the same words the tooltip
+        /// part waits for and says nothing until they arrive: the hint is the last thing heard about
+        /// the control, and on those controls the tooltip is heard frames after the readout. It is
+        /// live for exactly that reason, and the wait is the whole of it - a tooltip that never draws
+        /// before the player walks away takes the hint with it, the same way it takes its own words.
+        /// </summary>
+        private static NodeAnnouncement HintPart(NodeVtable vt)
+        {
+            if (vt.Hints == null || vt.Hints.Count == 0) return null;
+            NodeVtable it = vt;
+            Func<IList<string>> late = TooltipParts.LateReader(vt.Sections);
+            return new NodeAnnouncement(
+                () => HintText(it, late),
+                live: late != null,
+                kind: AnnouncementKinds.Hint
+            );
+        }
+
+        private static string HintText(NodeVtable vt, Func<IList<string>> late)
+        {
+            if (late != null)
+            {
+                IList<string> words = late();
+                if (words == null || words.Count == 0) return null;
+            }
+
+            List<string> lines = new List<string>(2);
+            NodeHints.Lines(lines, vt);
+            return lines.Count == 0 ? null : Join(lines);
         }
 
         private static GraphNode _memoNode;
@@ -317,18 +363,31 @@ namespace ES2Access.Core.UI.Graph
         /// the control's label, so path dedupe's prefix check applies.</summary>
         public static string LeafText(GraphNode node)
         {
+            return LeafText(node, null);
+        }
+
+        /// <summary>The same, with the table position the CALLER worked out ("3 of 12") folded in rather
+        /// than said after it. The two cannot be separated any more: the usage hints are the last thing
+        /// said about a control and a position comes before them, so the only place that can put one in
+        /// front of them is the composition holding both.</summary>
+        private static string LeafText(GraphNode node, string tablePosition)
+        {
             List<NodeAnnouncement> anns = EffectiveAnnouncements(node);
             List<string> parts = new List<string>(anns.Count + 2);
             // Where the tooltip starts, if the node speaks one: everything a control has to SAY comes
             // after everything it IS, so the expanded/collapsed word goes in ahead of it rather than
             // at the end ("New Game, button, collapsed, Start a new game...").
             int tooltipAt = -1;
+            // And where the usage hints start, if it speaks any: they are the tail of the readout, so
+            // every position goes in ahead of them rather than after them.
+            int hintAt = -1;
             for (int i = 0; i < anns.Count; i++)
             {
                 string t = null;
                 if (anns[i] != null && anns[i].Text != null) t = anns[i].Text();
                 if (string.IsNullOrEmpty(t)) continue;
                 if (tooltipAt < 0 && anns[i].Kind == AnnouncementKinds.Tooltip) tooltipAt = parts.Count;
+                if (hintAt < 0 && anns[i].Kind == AnnouncementKinds.Hint) hintAt = parts.Count;
                 parts.Add(t);
             }
 
@@ -337,8 +396,12 @@ namespace ES2Access.Core.UI.Graph
                 string state = ExpandedStateText(node.Expanded);
                 if (!string.IsNullOrEmpty(state))
                 {
-                    if (tooltipAt >= 0) parts.Insert(tooltipAt, state);
-                    else parts.Add(state);
+                    if (tooltipAt >= 0)
+                    {
+                        parts.Insert(tooltipAt, state);
+                        if (hintAt >= tooltipAt) hintAt++;
+                    }
+                    else Place(parts, ref hintAt, state);
                 }
             }
 
@@ -349,11 +412,26 @@ namespace ES2Access.Core.UI.Graph
                 && !node.Vtable.SpeaksOwnPosition && !HasKind(node.Vtable.Announcements, AnnouncementKinds.Position)
                 && (PartFilter == null || PartFilter(node.Vtable.ControlType, AutoPositionProbe)))
             {
-                string pos = PositionText(node.PositionIndex, node.PositionCount);
-                if (!string.IsNullOrEmpty(pos)) parts.Add(pos);
+                Place(parts, ref hintAt, PositionText(node.PositionIndex, node.PositionCount));
             }
 
+            Place(parts, ref hintAt, tablePosition);
             return Join(parts);
+        }
+
+        // A part that belongs before the usage hints: inserted where they start, or appended where the
+        // node speaks none.
+        private static void Place(List<string> parts, ref int hintAt, string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            if (hintAt < 0)
+            {
+                parts.Add(text);
+                return;
+            }
+
+            parts.Insert(hintAt, text);
+            hintAt++;
         }
 
         /// <summary>Pluggable "n of m" wording (localized by the host); null = no auto positions.</summary>

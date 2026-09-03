@@ -27,8 +27,10 @@ must be WIRED, never left to the plain-click fall-back.
 
 **Usage hints are hand-picked, not a policy.** There is no runtime dedup, so each new hint is an
 owner decision about that one context, and a context whose own game tooltip already states its
-gesture stays silent. Hints are buffer-only; the few control NAMES that carry a chord are read on
-every landing, which is the cost the owner accepted for them.
+gesture stays silent. Every hint that survives that choice is SPOKEN on every landing, and it is
+the LAST thing said about the control — after the position, and on a control whose long tooltip
+this player asked to hear, after that tooltip's own words (owner ruling 2026-09-03). Hints keep
+their place at the end of the review buffer as well.
 
 ## Authoring cautions
 

@@ -112,6 +112,22 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>The readout says the hints too now (owner ruling 2026-09-03), and the buffer still
+        /// ends with them ONCE: the part the readout composes is not also written into the buffer as a
+        /// part, or every hinted control would review its gestures twice.</summary>
+        [Fact]
+        public void TheBufferEndsWithEachHintExactlyOnce()
+        {
+            InstallFakeFormatter();
+            NodeVtable vtable = Control();
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+
+            Assert.Equal(
+                new[] { "Dusay", "Two planets", "Ctrl+Shift+Enter to queue it first" },
+                Buffer(vtable)
+            );
+        }
+
         /// <summary>The chord is not in the sentence: re-rendering the SAME declaration through a
         /// different formatter re-words the hint. This is the whole point of naming an action.</summary>
         [Fact]
