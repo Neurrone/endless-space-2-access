@@ -400,8 +400,9 @@ namespace ES2Access.Screens
                 // after the tactic's name - "Team Spirit, Aggressive, Flotilla 1: Short Range, ..."
                 // - the words the full card's badges carry on the tactics window
                 // (<see cref="BattlePlans.Markings"/>; owner ruling 2026-09-03). One part per
-                // marking, each in the name's own kind so it sorts beside the name, and each its
-                // own buffer line. An empty or locked slot draws none and says none.
+                // marking, each in the name's own kind so it sorts beside the name - AND the same lines
+                // as the row's own buffer content, one per line, because a spoken part past the first
+                // label is not a buffer line. An empty or locked slot draws none and says none.
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => DeckSlotName(it, tooltip)),
@@ -410,7 +411,7 @@ namespace ES2Access.Screens
                     Marking(it, 2),
                     Marking(it, 3),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
+                Sections = GraphNodes.Sections(() => BattlePlans.Markings(it), tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(
