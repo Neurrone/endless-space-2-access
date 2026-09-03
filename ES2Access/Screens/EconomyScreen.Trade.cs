@@ -464,7 +464,6 @@ namespace ES2Access.Screens
                     }
                 },
             };
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.For(widget, "economy:recipe/" + index), vtable);

@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Configurações do mod de acessibilidade do Endless Space 2",
   "mod-settings.general": "Geral",
   "mod-settings.general.cutscene-descriptions": "Descrições das cenas de vídeo",
+  "mod-settings.general.announce-long-tooltips": "Anunciar dicas longas",
+  "mod-settings.general.announce-long-tooltips-description": "Se dicas mais longas, como as de aprimoramentos, heróis, tecnologias e designs de nave, são lidas automaticamente",
   "mod-settings.scanner": "Scanner",
   "mod-settings.scanner-description": "Configure categorias personalizadas do scanner e direções abreviadas",
   "mod-settings.scanner.short-directions": "Direções abreviadas",

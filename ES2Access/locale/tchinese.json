@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Endless Space 2 無障礙模組設定",
   "mod-settings.general": "一般",
   "mod-settings.general.cutscene-descriptions": "過場動畫的影片描述",
+  "mod-settings.general.announce-long-tooltips": "朗讀長工具提示",
+  "mod-settings.general.announce-long-tooltips-description": "是否自動朗讀改良設施、英雄、技術與船艦設計等較長的工具提示",
   "mod-settings.scanner": "掃描器",
   "mod-settings.scanner-description": "設定自訂掃描器類別與簡短方向",
   "mod-settings.scanner.short-directions": "簡短方向",

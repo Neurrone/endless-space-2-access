@@ -35,6 +35,11 @@ namespace ES2Access.Core.UI.Graph
         /// Its text reaches the player through the review buffer alone: the readout says nothing
         /// about it, not even that it is there.
         ///
+        /// A player can ask for these to be read after the readout all the same (the mod's
+        /// "announce long tooltips" setting, <see cref="NodeSection.Late"/>); the mode does not
+        /// move, because what the tooltip IS has not changed - only how much of it this player wants
+        /// to hear without asking.
+        ///
         /// Still a mode of its own rather than <see cref="None"/>, which it now matches in the
         /// readout. <see cref="None"/> is content the control DRAWS - already on the screen. This is
         /// a tooltip the GAME would draw on hover, so it is the thing the pointer is aimed at when
@@ -63,7 +68,10 @@ namespace ES2Access.Core.UI.Graph
     /// - <see cref="TooltipMode.Indicate"/> and <see cref="TooltipMode.None"/> sections say nothing
     ///   here at all. Both are reviewable and neither is announced: reading them on every pass is what
     ///   buffers exist to avoid, and announcing that they EXIST was a claim the player heard on most
-    ///   controls of most screens, which is the same as hearing it on none.
+    ///   controls of most screens, which is the same as hearing it on none. The one exception is a
+    ///   player who has ASKED for the long ones (the mod's "announce long tooltips" setting): the
+    ///   door then gives the indicated section a late reader, and it speaks through the same
+    ///   pointed-at rule as any other - see <see cref="NodeSection.Late"/>.
     /// - a line the READOUT ALREADY SPEAKS is dropped from it. Half this game's icons are named by the
     ///   first line of their own tooltip, and a control whose label was read off the tooltip used to
     ///   have to choose between saying that line twice ("Empire Summary, button, Empire Summary Click
@@ -76,8 +84,9 @@ namespace ES2Access.Core.UI.Graph
     public static class TooltipParts
     {
         /// <summary>The tooltip part <paramref name="sections"/> project to, resolved at speak time - a
-        /// control that is refusing appends its reason to its own tooltip, and the reason it gives has
-        /// to be the one it would give now. Null when nothing in the list wants to be heard.</summary>
+        /// control that is refusing appends its reason to its own tooltip, and that tooltip is the ONLY
+        /// place the reason is said (owner ruling 2026-09-03), so the words have to be the ones it
+        /// would give now. Null when nothing in the list wants to be heard.</summary>
         public static NodeAnnouncement Part(IList<NodeSection> sections)
         {
             return Part(sections, null);
@@ -117,6 +126,7 @@ namespace ES2Access.Core.UI.Graph
             }
 
             List<Func<IList<string>>> spoken = null;
+            bool late = false;
             for (int i = 0; i < sections.Count; i++)
             {
                 if (!Speaks(sections[i]) || (sections[i].FromTooltip && i != pointedAt))
@@ -129,7 +139,8 @@ namespace ES2Access.Core.UI.Graph
                     spoken = new List<Func<IList<string>>>(2);
                 }
 
-                spoken.Add(sections[i].Lines);
+                spoken.Add(SaidBy(sections[i]));
+                late = late || sections[i].Late != null;
             }
 
             if (spoken == null)
@@ -139,7 +150,15 @@ namespace ES2Access.Core.UI.Graph
 
             List<Func<IList<string>>> lines = spoken;
             NodeAnnouncement[] said = Snapshot(alreadySpoken);
-            return new NodeAnnouncement(() => Compose(lines, said), kind: AnnouncementKinds.Tooltip);
+            // A part whose words the game has not written yet is WATCHED: it says nothing in the
+            // readout that composes it, and the navigator's live watch speaks it the moment the
+            // tooltip window draws. Nothing else here is live - a tooltip whose words the game
+            // already wrote is complete when focus arrives.
+            return new NodeAnnouncement(
+                () => Compose(lines, said),
+                live: late,
+                kind: AnnouncementKinds.Tooltip
+            );
         }
 
         /// <summary>
@@ -179,9 +198,28 @@ namespace ES2Access.Core.UI.Graph
 
         private static bool Speaks(NodeSection section)
         {
-            return section != null
-                && section.Lines != null
-                && section.Mode == TooltipMode.Announce;
+            return SaidBy(section) != null;
+        }
+
+        /// <summary>WHICH READER a section speaks from: its own lines when the game has already
+        /// written them, and its late reader when it has not - a tooltip the game assembles on hover
+        /// has no words until it draws, so a section that speaks one speaks a reader that answers
+        /// only from then on (<see cref="NodeSection.Late"/>). Null = the section says nothing to the
+        /// readout, which is every buffer-only section and every indicated one the player has not
+        /// asked to hear.</summary>
+        private static Func<IList<string>> SaidBy(NodeSection section)
+        {
+            if (section == null)
+            {
+                return null;
+            }
+
+            if (section.Late != null)
+            {
+                return section.Late;
+            }
+
+            return section.Mode == TooltipMode.Announce ? section.Lines : null;
         }
 
         // The parts as they stood when the node was composed. A copy, because the caller goes on

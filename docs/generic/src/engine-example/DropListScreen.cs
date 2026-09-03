@@ -363,18 +363,10 @@ namespace ES2Access.Screens
                     : GraphNodes.Sections(
                         NodeSection.Composed(() => AgeText.Lines(EntryDetail(list, index)))
                     );
-                // An entry the game is refusing says WHY, which the entry's own tooltip carries after
-                // the description (Gui.FormatFailureInfo appends it): "unavailable" alone leaves the
-                // player guessing at a content pack they may not have. Only the refusal is spoken -
-                // the description ahead of it is the entry's own name again, and it stays in the
-                // review buffer with the rest.
-                vtable.Announcements.Add(
-                    new NodeAnnouncement(
-                        () => Refusal(list, index),
-                        live: true,
-                        kind: AnnouncementKinds.Tooltip
-                    )
-                );
+                // An entry the game is refusing says WHY without a part of its own: the reason is in
+                // the entry's own tooltip, after the description (Gui.FormatFailureInfo appends it),
+                // and that whole tooltip is what the section above speaks (owner ruling 2026-09-03 -
+                // the tooltip carries a blocked control's reason, and nothing is trimmed out of it).
 
                 // The game's own highlight follows the cursor, so someone watching sees the entry
                 // being considered; what the setting is actually on does not move until Enter. The
@@ -505,19 +497,6 @@ namespace ES2Access.Screens
             {
                 return null;
             }
-        }
-
-        /// <summary>The reason an entry is not on offer, or null while it is. The tooltip is the
-        /// entry's description with the failure joined onto it, so the refusal is what is left once
-        /// the description is dropped.</summary>
-        private static string Refusal(AgeControlDropList list, int index)
-        {
-            if (EntryEnabled(list, index))
-            {
-                return null;
-            }
-
-            return RefusalText.Compose(AgeText.Lines(EntryDetail(list, index)), null);
         }
 
         private static bool Chosen(AgeControlDropList list, int index)

@@ -710,15 +710,6 @@ namespace ES2Access.Screens
                         null,
                         tooltip
                     );
-                    NodeAnnouncement refusal = GraphNodes.RefusalPart(
-                        tooltip,
-                        () => AgeWidgets.Operable(widget)
-                    );
-                    if (refusal != null)
-                    {
-                        vtable.Announcements.Add(refusal);
-                    }
-
                     AgeWidgets.Point(vtable, it.Toggle, tooltip, widget);
                     builder.AddItem(Nodes.Drawn(
                         ControlId.For(card, prefix + "/" + i),

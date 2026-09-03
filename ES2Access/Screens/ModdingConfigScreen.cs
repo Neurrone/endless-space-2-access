@@ -214,7 +214,6 @@ namespace ES2Access.Screens
                 tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => Details(it)));
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.Point(vtable, selection, tooltip, at);
             Cells.Add(_cells, at, ControlId.Structural(key), vtable);
 
@@ -428,7 +427,6 @@ namespace ES2Access.Screens
                 offered,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.Point(vtable, box, tooltip, at);
             Cells.Add(cells, widget, ControlId.Structural(key), vtable);
         }

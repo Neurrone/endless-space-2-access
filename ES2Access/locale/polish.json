@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Ustawienia moda dostępności do Endless Space 2",
   "mod-settings.general": "Ogólne",
   "mod-settings.general.cutscene-descriptions": "Audiodeskrypcja w przerywnikach filmowych",
+  "mod-settings.general.announce-long-tooltips": "Odczytuj długie podpowiedzi",
+  "mod-settings.general.announce-long-tooltips-description": "Czy dłuższe podpowiedzi, takie jak udoskonalenia, bohaterowie, technologie i projekty statków, są odczytywane automatycznie",
   "mod-settings.scanner": "Skaner",
   "mod-settings.scanner-description": "Skonfiguruj własne kategorie skanera i skrócone kierunki",
   "mod-settings.scanner.short-directions": "Skrócone kierunki",

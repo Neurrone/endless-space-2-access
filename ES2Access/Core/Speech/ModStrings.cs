@@ -181,6 +181,15 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsCutsceneDescriptions =
             "mod-settings.general.cutscene-descriptions";
 
+        /// <summary>The General tab's other row: whether the tooltips the game assembles on hover -
+        /// the long ones - are read out once they have drawn, or left to the review buffer. On by
+        /// default; the description names the kinds of thing it is about, because "long" is not
+        /// something a player can see from the setting.</summary>
+        public const string ModSettingsAnnounceLongTooltips =
+            "mod-settings.general.announce-long-tooltips";
+        public const string ModSettingsAnnounceLongTooltipsDescription =
+            "mod-settings.general.announce-long-tooltips-description";
+
         /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
         /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
         /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
@@ -393,6 +402,12 @@ namespace ES2Access.Core.Speech
             { ModSettingsEntryDescription, "Endless Space 2 accessibility mod settings" },
             { ModSettingsGeneral, "General" },
             { ModSettingsCutsceneDescriptions, "Video descriptions in cut scenes" },
+            { ModSettingsAnnounceLongTooltips, "Announce long tooltips" },
+            {
+                ModSettingsAnnounceLongTooltipsDescription,
+                "Whether longer tooltips like improvements, heroes, technologies and ship designs "
+                    + "are automatically read"
+            },
             { ModSettingsScanner, "Scanner" },
             {
                 ModSettingsScannerDescription,

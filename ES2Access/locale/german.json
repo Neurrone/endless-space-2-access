@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Einstellungen des Barrierefreiheits-Mods für Endless Space 2",
   "mod-settings.general": "Allgemein",
   "mod-settings.general.cutscene-descriptions": "Videobeschreibungen in Zwischensequenzen",
+  "mod-settings.general.announce-long-tooltips": "Lange Tooltips ansagen",
+  "mod-settings.general.announce-long-tooltips-description": "Ob längere Tooltips wie die von Verbesserungen, Helden, Technologien und Schiffsdesigns automatisch vorgelesen werden",
   "mod-settings.scanner": "Scanner",
   "mod-settings.scanner-description": "Eigene Scanner-Kategorien und gekürzte Richtungsangaben einstellen",
   "mod-settings.scanner.short-directions": "Gekürzte Richtungsangaben",

@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Настройки мода доступности для Endless Space 2",
   "mod-settings.general": "Общее",
   "mod-settings.general.cutscene-descriptions": "Описание видео в заставках",
+  "mod-settings.general.announce-long-tooltips": "Озвучивать длинные подсказки",
+  "mod-settings.general.announce-long-tooltips-description": "Озвучивать ли автоматически длинные подсказки улучшений, героев, технологий и проектов кораблей",
   "mod-settings.scanner": "Сканер",
   "mod-settings.scanner-description": "Настройка пользовательских категорий сканера и сокращённых направлений",
   "mod-settings.scanner.short-directions": "Сокращённые направления",

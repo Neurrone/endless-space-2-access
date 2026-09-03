@@ -346,7 +346,6 @@ namespace ES2Access.Screens
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
-            GraphNodes.AddRefusal(vtable, tooltip, unlocked);
             if (hint != null)
             {
                 // The row's own Ctrl+click, named here rather than left to the shared wiring in

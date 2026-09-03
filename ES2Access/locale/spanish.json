@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Ajustes del mod de accesibilidad de Endless Space 2",
   "mod-settings.general": "General",
   "mod-settings.general.cutscene-descriptions": "Descripciones de vídeo en las cinemáticas",
+  "mod-settings.general.announce-long-tooltips": "Anunciar descripciones largas",
+  "mod-settings.general.announce-long-tooltips-description": "Si las descripciones más largas, como las de mejoras, héroes, tecnologías y diseños aeronavales, se leen automáticamente",
   "mod-settings.scanner": "Escáner",
   "mod-settings.scanner-description": "Configura categorías personalizadas del escáner y direcciones abreviadas",
   "mod-settings.scanner.short-directions": "Direcciones abreviadas",

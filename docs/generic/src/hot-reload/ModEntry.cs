@@ -1223,6 +1223,8 @@ namespace ES2Access
             // And one localized word the map's probe rows cached for the life of the assembly.
             Step("probe name", GalaxyHudScreen.ForgetProbeName);
             Step("scanner directions", ScannerDirectionSettings.Reset);
+            Step("long tooltip words", LongTooltips.Forget);
+            Step("long tooltip setting", LongTooltipSettings.Reset);
             // Every bookmark a saved campaign has is already on disk (the set wrote it), so this only
             // lets go of the game the store was watching.
             Step("bookmarks", MapBookmarkStore.Reset);

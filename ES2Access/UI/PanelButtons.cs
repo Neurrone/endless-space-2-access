@@ -21,8 +21,9 @@ namespace ES2Access.UI
         /// One wired button as a row, or nothing where the prefab draws none.
         ///
         /// A button the game has DISABLED is still declared: it is drawn, so the player meets it where
-        /// a sighted player does, and what it answers is "unavailable" plus the game's own sentence for
-        /// why (<see cref="GraphNodes.AddRefusal"/>). Existence belongs to the node gate, which already
+        /// a sighted player does, and what it answers is "unavailable" - the game's own sentence for
+        /// why is in the button's tooltip, which is where every reason reaches the player (owner
+        /// ruling 2026-09-03). Existence belongs to the node gate, which already
         /// asks whether the game is drawing the button; nothing here asks it again (owner ruling,
         /// replacing an operable gate that dropped a refused row and its reason with it).
         ///
@@ -57,7 +58,6 @@ namespace ES2Access.UI
                 enabled,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AgeWidgets.Point(vtable, it);
             return Cells.Add(cells, widget, ControlId.For(button, keyPrefix + "/" + key), vtable);
         }

@@ -214,7 +214,6 @@ namespace ES2Access.UI
                 AgeWidgets.PointAt(vtable, widget);
             }
 
-            GraphNodes.AddRefusal(vtable, line.Tooltip, enabled);
             ShowOnMap(row, vtable);
 
             // The USAGE HINT for that second click - on the ROW and not on every cell of it, though

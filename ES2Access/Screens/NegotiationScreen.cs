@@ -715,7 +715,6 @@ namespace ES2Access.Screens
                 offered,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, at);
             Cells.Add(_cells, at, ControlId.For(at, Keys + "truce"), vtable);
         }
@@ -1041,7 +1040,6 @@ namespace ES2Access.Screens
                 offered,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, at);
             Cells.Add(_cells, at, ControlId.For(at, Keys + key), vtable);
         }

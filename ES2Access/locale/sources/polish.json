@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Endless Space 2 accessibility mod settings",
   "mod-settings.general": "General",
   "mod-settings.general.cutscene-descriptions": "Video descriptions in cut scenes",
+  "mod-settings.general.announce-long-tooltips": "Announce long tooltips",
+  "mod-settings.general.announce-long-tooltips-description": "Whether longer tooltips like improvements, heroes, technologies and ship designs are automatically read",
   "mod-settings.scanner": "Scanner",
   "mod-settings.scanner-description": "Configure custom scanner categories and shortened directions",
   "mod-settings.scanner.short-directions": "Shortened directions",

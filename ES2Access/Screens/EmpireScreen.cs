@@ -382,7 +382,6 @@ namespace ES2Access.Screens
             vtable.Sections = GraphNodes.SectionsFor(vtable, carried.Own);
             vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicSlotAction(it)));
             vtable.Announcements.Add(GraphNodes.ValuePart(() => RelicsAssigned(it)));
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             // Kept over the door's aim, which it re-states with the slot's BUTTON added so the slot
             // lights up under the cursor.
             AgeWidgets.Point(vtable, slot.button, tooltip, button);

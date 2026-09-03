@@ -518,7 +518,6 @@ namespace ES2Access.UI
                     }
                 },
             };
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.PointAt(vtable, it.AgeTransform);
             return vtable;
         }

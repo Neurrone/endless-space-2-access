@@ -27,7 +27,10 @@ namespace ES2Access.UI.ModOptions
     /// <summary>
     /// THE GENERAL TAB - the window's first, where a setting that belongs to no other tab lives.
     ///
-    /// One row today: whether the game's cut scenes are described. The setting itself is a BepInEx
+    /// Two rows: whether the game's cut scenes are described, and whether the tooltips the game
+    /// assembles on hover are read out once they have drawn
+    /// (<see cref="ES2Access.UI.Settings.LongTooltipSettings"/>, which is the mod's own settings
+    /// file like every other mod setting). The cut-scene setting is the odd one out: it is a BepInEx
     /// config entry the LOADER owns (<c>[Speech] cutsceneDescriptions</c>), and that file stays the
     /// one store - this row is the player's way into it rather than a second copy of it. So the row
     /// writes both halves at once: the live flag the cutscene watcher reads
@@ -69,12 +72,35 @@ namespace ES2Access.UI.ModOptions
                     options.Add(cutscenes);
                 }
 
+                Option longTooltips = ModRows.Toggle(
+                    panel,
+                    "announceLongTooltips",
+                    ModStrings.Get(ModStrings.ModSettingsAnnounceLongTooltips),
+                    ReadAnnounceLongTooltips,
+                    WriteAnnounceLongTooltips,
+                    ModStrings.Get(ModStrings.ModSettingsAnnounceLongTooltipsDescription)
+                );
+                if (longTooltips != null)
+                {
+                    options.Add(longTooltips);
+                }
+
                 ModRows.Publish(panel, options);
             }
             catch (Exception e)
             {
                 Log.Warn("mod options: building the General tab threw: " + e);
             }
+        }
+
+        private static bool ReadAnnounceLongTooltips()
+        {
+            return ES2Access.UI.Settings.LongTooltipSettings.Announced;
+        }
+
+        private static void WriteAnnounceLongTooltips(bool wanted)
+        {
+            ES2Access.UI.Settings.LongTooltipSettings.Announced = wanted;
         }
 
         private static bool ReadCutsceneDescriptions()

@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "无尽太空 2 无障碍模组设置",
   "mod-settings.general": "通用",
   "mod-settings.general.cutscene-descriptions": "过场动画的视频描述",
+  "mod-settings.general.announce-long-tooltips": "朗读长工具提示",
+  "mod-settings.general.announce-long-tooltips-description": "是否自动朗读改良设施、英雄、技术和船舰设计等较长的工具提示",
   "mod-settings.scanner": "扫描器",
   "mod-settings.scanner-description": "配置自定义扫描器种类和简短方位",
   "mod-settings.scanner.short-directions": "简短方位",

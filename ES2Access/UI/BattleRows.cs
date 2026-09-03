@@ -272,9 +272,9 @@ namespace ES2Access.UI
         }
 
         /// <summary>A button a battle surface drew as an icon, under whatever name the screen derived
-        /// for it. Its availability is the game's own test rather than the enable flag, and a refusal
-        /// reads with the game's own reason - without repeating the button's name back, which
-        /// <see cref="GraphNodes.AddRefusal"/> is what guards.</summary>
+        /// for it. Its availability is the game's own test rather than the enable flag, and a refused
+        /// button reads "unavailable"; the game's reason for refusing is in the button's own tooltip,
+        /// which is where every reason now reaches the player.</summary>
         public static void Command(
             List<Cell> cells,
             AgeTransform widget,
@@ -296,7 +296,6 @@ namespace ES2Access.UI
                 enabled,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
         }

@@ -8,6 +8,7 @@ using ES2Access.Loader.Dev;
 using ES2Access.Screens;
 using Screen = ES2Access.Screens.Screen;
 using ES2Access.UI;
+using ES2Access.UI.Settings;
 using Newtonsoft.Json;
 using UnityEngine;
 using Breach = ES2Access.Dev.AuditModel.Breach;
@@ -561,6 +562,15 @@ namespace ES2Access.Dev
             string readout
         )
         {
+            // Not while the player has asked for the long ones out loud: the readout saying a
+            // class-backed tooltip's words is then the setting working, not a screen having named
+            // the wrong kind. The audit is a check on what the MOD declared, and that declaration
+            // (the section's Mode) has not moved - only what this player wants said off it.
+            if (LongTooltipSettings.Announced)
+            {
+                return null;
+            }
+
             List<string> otherwise = Otherwise(node.Node);
             if (written == null && AgeWidgets.Draws(aim))
             {

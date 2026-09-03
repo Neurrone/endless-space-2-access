@@ -73,6 +73,21 @@ namespace ES2Access.UI
         private static AgeTooltip _drawn;
         private static float _drawnHeight;
 
+        /// <summary>WHAT THE TOOLTIP WINDOW IS DRAWING, as of the top of this frame - the identity
+        /// <see cref="WatchDrawn"/> compares, lent to anything else that would otherwise have to ask
+        /// the window itself every frame. Null when the window is drawing nothing.</summary>
+        public static AgeTooltip Drawn
+        {
+            get { return _drawn; }
+        }
+
+        /// <summary>The other half of that identity: how tall the drawn tooltip is, which is what
+        /// says the window REBUILT the same tooltip rather than moved to another.</summary>
+        public static float DrawnHeight
+        {
+            get { return _drawnHeight; }
+        }
+
         /// <summary>How long past the game's own hover delay a tooltip is given to appear before the
         /// mod asks for it again. Long enough that a tooltip the game is simply slow to bind is never
         /// interrupted.</summary>

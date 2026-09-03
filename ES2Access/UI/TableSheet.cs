@@ -609,7 +609,6 @@ namespace ES2Access.UI
                     }
                 },
             };
-            GraphNodes.AddRefusal(vtable, reason, operable);
             return SaysRowRefusal(vtable);
         }
 

@@ -203,7 +203,6 @@ namespace ES2Access.Screens
             // The line's tooltip is the renderer-assembled kind, so it is only indicated - and a line
             // the game is refusing would then say "unavailable" and nothing else. The reason is read
             // off the wrapper the tooltip carries, as its failure panel does.
-            GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Operable(it.AgeTransform));
             AgeWidgets.PointAt(vtable, item.AgeTransform);
             Cells.Add(
                 cells,

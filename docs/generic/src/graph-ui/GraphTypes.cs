@@ -148,14 +148,36 @@ namespace ES2Access.Core.UI.Graph
         /// <see cref="FromTooltip"/> answers "did a tooltip write this", which is what the readout
         /// needs; this answers "which one", which is what a node's ONE-tooltip rule needs
         /// (<see cref="OneTooltipRule"/>). The two are different questions because one tooltip can
-        /// legitimately produce SEVERAL sections - a hint-blocked button's description speaks while the
-        /// mouse instruction it ends in is buffer-only - and counting sections would refuse that split
-        /// while letting two genuinely different hover surfaces through.
+        /// legitimately produce SEVERAL sections, and counting sections would refuse that while
+        /// letting two genuinely different hover surfaces through.
         ///
         /// Null for a section the mod composed, and for a caller that read a tooltip's words without
         /// naming the tooltip; an unnamed source is never counted, so the rule can only ever
         /// under-report.</summary>
         internal readonly object Source;
+
+        /// <summary>
+        /// THE WORDS THIS SECTION SPEAKS WHEN ITS OWN ARE NOT WRITTEN YET, and null - the ordinary
+        /// case - when what it speaks is settled by <see cref="Mode"/> alone.
+        ///
+        /// A tooltip the game ASSEMBLES on hover has no words until the tooltip window draws it,
+        /// several frames after the readout that would have said them. So a player who has asked for
+        /// those tooltips to be read (the mod's own "announce long tooltips" setting) cannot be
+        /// served by the readout at all: the door hands the section a reader that answers nothing
+        /// until the game has drawn, and the FIRST drawn words from then on
+        /// (<c>ES2Access.UI.LongTooltips</c>). The part carrying it is therefore LIVE - the
+        /// navigator's live watch is what notices the words arriving and says them, after the
+        /// readout, once.
+        ///
+        /// A second reader rather than a swap of <see cref="Lines"/>, because the two surfaces want
+        /// different answers: the review buffer wants what the window is drawing NOW, every later
+        /// detail included, while the readout wants what was there when it first drew - the window
+        /// re-assembles itself a few seconds in, and hearing the whole block again is not what
+        /// anybody asked for.
+        ///
+        /// Not a loudness a screen can name, for the same reason <see cref="Mode"/> is not: it is
+        /// set at the one door, off the tooltip's own kind and the player's setting.</summary>
+        internal readonly Func<IList<string>> Late;
 
         /// <summary>WHAT THIS CONTROL COSTS, in the words the tooltip's own cost panel would draw,
         /// resolved live - a price moves with every bonus the empire picks up, and a turn count with
@@ -178,7 +200,8 @@ namespace ES2Access.Core.UI.Graph
             Func<bool> indicates,
             bool fromTooltip,
             object source,
-            Func<string> cost
+            Func<string> cost,
+            Func<IList<string>> late
         )
         {
             Lines = lines;
@@ -187,6 +210,7 @@ namespace ES2Access.Core.UI.Graph
             FromTooltip = fromTooltip;
             Source = source;
             Cost = cost;
+            Late = late;
         }
 
         /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>
@@ -194,7 +218,7 @@ namespace ES2Access.Core.UI.Graph
         {
             return lines == null
                 ? null
-                : new NodeSection(lines, TooltipMode.None, null, false, null, null);
+                : new NodeSection(lines, TooltipMode.None, null, false, null, null, null);
         }
 
         /// <summary>
@@ -210,7 +234,7 @@ namespace ES2Access.Core.UI.Graph
         {
             return lines == null
                 ? null
-                : new NodeSection(lines, TooltipMode.Announce, null, false, null, null);
+                : new NodeSection(lines, TooltipMode.Announce, null, false, null, null, null);
         }
 
         /// <summary>
@@ -229,15 +253,18 @@ namespace ES2Access.Core.UI.Graph
         /// <paramref name="cost"/> is what this tooltip's own cost panel would draw
         /// (<see cref="Cost"/>), which is the door's answer too - a cost line is a fact about the
         /// tooltip class, and a screen naming one for itself is a screen that can name the wrong one.
+        /// <paramref name="late"/> is what it speaks while its own words are not written yet
+        /// (<see cref="Late"/>).
         internal static NodeSection Derived(
             Func<IList<string>> lines,
             TooltipMode mode,
             Func<bool> indicates,
             object source = null,
-            Func<string> cost = null
+            Func<string> cost = null,
+            Func<IList<string>> late = null
         )
         {
-            return new NodeSection(lines, mode, indicates, true, source, cost);
+            return new NodeSection(lines, mode, indicates, true, source, cost, late);
         }
     }
 

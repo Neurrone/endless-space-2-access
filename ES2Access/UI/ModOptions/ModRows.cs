@@ -172,13 +172,15 @@ namespace ES2Access.UI.ModOptions
             return option;
         }
 
-        /// <summary>A tick.</summary>
+        /// <summary>A tick, with the sentence the row says about itself when there is one to say -
+        /// see <paramref name="description"/> on <see cref="Add"/>.</summary>
         public static Option Toggle(
             OptionsTabPanel panel,
             string name,
             string title,
             Func<bool> read,
-            Action<bool> write
+            Action<bool> write,
+            string description = null
         )
         {
             ModToggleRow provider = new ModToggleRow(read, write);
@@ -188,7 +190,8 @@ namespace ES2Access.UI.ModOptions
                 panel.OptionCheckboxPrefab,
                 name,
                 option,
-                title
+                title,
+                description
             );
             if (item == null)
             {
@@ -520,12 +523,17 @@ namespace ES2Access.UI.ModOptions
 
         // ---- the machinery ----
 
+        /// <paramref name="description"/> is what the row's own tooltip says - the mod's words, in
+        /// the tooltip the game hangs on every options row. Absent, the tooltip is emptied instead:
+        /// what Load left in it is the game's own %Option&lt;Name&gt;Description key, which no row of
+        /// ours has, so it would be drawn and spoken raw.
         private static T Add<T>(
             OptionsTabPanel panel,
             Transform prefab,
             string name,
             Option option,
-            string title
+            string title,
+            string description = null
         )
             where T : OptionItem
         {
@@ -557,7 +565,7 @@ namespace ES2Access.UI.ModOptions
 
                 if (item.Tooltip != null)
                 {
-                    item.Tooltip.Content = string.Empty;
+                    item.Tooltip.Content = description == null ? string.Empty : description;
                 }
 
                 return item;

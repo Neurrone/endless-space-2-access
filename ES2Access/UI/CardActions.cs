@@ -280,7 +280,6 @@ namespace ES2Access.UI
 
                 // The refusal in the game's own words, for a button whose tooltip is the assembled kind
                 // and so is only indicated. A button whose tooltip is plain text already says it.
-                GraphNodes.AddRefusal(vtable, tooltip, offered);
 
                 if (toggle != null)
                 {

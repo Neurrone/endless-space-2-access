@@ -63,6 +63,8 @@
   "mod-settings.entry-description": "Endless Space 2 접근성 모드 설정",
   "mod-settings.general": "일반",
   "mod-settings.general.cutscene-descriptions": "컷신 화면 해설",
+  "mod-settings.general.announce-long-tooltips": "긴 툴팁 읽어주기",
+  "mod-settings.general.announce-long-tooltips-description": "보조시설, 영웅, 기술, 함선 설계처럼 긴 툴팁을 자동으로 읽어줄지 여부",
   "mod-settings.scanner": "스캐너",
   "mod-settings.scanner-description": "사용자 정의 스캐너 유형과 방향 축약 설정",
   "mod-settings.scanner.short-directions": "방향 축약",

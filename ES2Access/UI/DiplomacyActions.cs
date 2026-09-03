@@ -142,7 +142,6 @@ namespace ES2Access.UI
                     tooltip,
                     () => Details(lines)
                 );
-                GraphNodes.AddRefusal(vtable, tooltip, offered);
                 AgeWidgets.Point(vtable, button, tooltip, at);
                 builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "/action/" + i), vtable, at));
 

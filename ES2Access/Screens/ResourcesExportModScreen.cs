@@ -394,7 +394,6 @@ namespace ES2Access.Screens
                 offered,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, offered);
             AgeWidgets.Point(vtable, box, tooltip, at);
             Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
         }

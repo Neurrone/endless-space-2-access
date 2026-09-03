@@ -368,7 +368,6 @@ namespace ES2Access.Screens
                 Sections = GraphNodes.Sections(() => Wordless(it), tooltip),
                 OnPickUp = () => Pick(it),
             };
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.PointAt(vtable, widget);
             // Keyed STRUCTURALLY, unlike the slots below, because the two halves of this window show the
@@ -420,7 +419,6 @@ namespace ES2Access.Screens
                 // something the screen will not do.
                 DropAccepts = held => enabled(),
             };
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(_cells, widget, Id(card, key), vtable);

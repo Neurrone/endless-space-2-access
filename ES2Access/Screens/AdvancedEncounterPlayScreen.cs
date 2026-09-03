@@ -388,7 +388,6 @@ namespace ES2Access.Screens
                 vtable.Announcements.Add(
                     GraphNodes.ValuePart(() => BattlePlans.PlanEffects(it), false)
                 );
-                GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Operable(at));
                 AgeWidgets.Point(vtable, it.Toggle, tooltip, at);
                 string key = prefix + "/" + i;
                 Cell cell = Cells.Add(_cells, widget, ControlId.Structural(key), vtable);

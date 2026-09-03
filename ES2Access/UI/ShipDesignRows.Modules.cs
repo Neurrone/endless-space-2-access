@@ -237,7 +237,6 @@ namespace ES2Access.UI
                 OnDoubleClick = () => AutoEquip(it, enabled),
                 OnPickUp = () => PickModule(it),
             };
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
 
             AgeWidgets.PointAt(vtable, item.AgeTransform);
             Cells.Add(

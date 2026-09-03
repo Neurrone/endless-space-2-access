@@ -204,7 +204,6 @@ namespace ES2Access.Screens
                     () => CardLines(it),
                     tooltip
                 );
-                GraphNodes.AddRefusal(vtable, tooltip, offered);
                 AgeWidgets.Point(vtable, it.SelectionToggle, tooltip, at);
                 Cells.Add(
                     _cells,

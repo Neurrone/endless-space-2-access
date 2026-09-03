@@ -273,7 +273,6 @@ namespace ES2Access.Screens
                 // Said as the row is read rather than left to the buffer: the description is one short
                 // paragraph and it is the whole of what the player is deciding on.
                 tick.Sections = GraphNodes.SpokenSections(details, tooltip);
-                GraphNodes.AddRefusal(tick, tooltip, () => AgeWidgets.Offered(at));
                 AgeWidgets.Point(tick, box, tooltip, at);
                 Cells.Add(_cells, widget, ControlId.Structural(key), tick);
             }

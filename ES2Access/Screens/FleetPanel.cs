@@ -402,7 +402,6 @@ namespace ES2Access.Screens
                 AgeWidgets.Point(vtable, item.Button, tooltip, item.AgeTransform);
             }
 
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AddSeatPhrase(vtable, seat);
             Cell cell = Cells.Add(
                 cells,
@@ -663,7 +662,6 @@ namespace ES2Access.Screens
                 enabled,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AgeWidgets.Point(vtable, it);
             Cells.Add(cells, widget, ControlId.For(button, "fleets:mgmt/" + key), vtable);
         }
@@ -1098,7 +1096,6 @@ namespace ES2Access.Screens
                 enabled,
                 tooltip
             );
-            GraphNodes.AddRefusal(vtable, tooltip, enabled);
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(cells, widget, ControlId.Structural("fleets:hero/assign"), vtable);
         }

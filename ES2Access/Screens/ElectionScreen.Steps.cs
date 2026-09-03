@@ -174,7 +174,6 @@ namespace ES2Access.Screens
                     null,
                     tooltip
                 );
-                GraphNodes.AddRefusal(vtable, tooltip, offered);
 
                 AgeWidgets.Point(vtable, toggle, tooltip, Anchor(tooltip, widget));
                 Cells.Add(cells, widget, ControlId.Structural("election:action/" + i), vtable);

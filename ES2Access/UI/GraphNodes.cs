@@ -40,96 +40,19 @@ namespace ES2Access.UI
         }
 
         /// <summary>
-        /// The sentence the game gives for refusing, as an extra spoken part on a blocked control.
+        /// THE ONE PLACE A REFUSAL IS STILL A PART OF ITS OWN: a control the game refuses without
+        /// writing the reason ANYWHERE on it.
         ///
-        /// A game writes the reason into the same tooltip as the description, so a control whose
-        /// tooltip is ANNOUNCED already says it and repeating it here would say it twice. It is the
-        /// control whose tooltip is only INDICATED - the renderer-assembled kind - that would
-        /// otherwise announce "unavailable" and leave the player to open the review buffer to find
-        /// out why. So this part speaks only in that case, and only while the control is refusing.
-        ///
-        /// Additive, never a suppressor: the mode-derived part still contributes, and the section it
-        /// comes from still fills the buffer.
-        /// </summary>
-        public static NodeAnnouncement RefusalPart(
-            AgeTooltip tooltip,
-            Func<bool> enabled,
-            Func<string> name = null
-        )
-        {
-            if (tooltip == null)
-            {
-                return null;
-            }
-
-            AgeTooltip it = tooltip;
-            Func<string> label = name;
-            return new NodeAnnouncement(
-                () =>
-                {
-                    try
-                    {
-                        if (enabled != null && enabled())
-                        {
-                            return null;
-                        }
-
-                        if (ModeFor(it) == TooltipMode.Announce)
-                        {
-                            return null;
-                        }
-
-                        string refusal = Refusal(it);
-                        return Repeats(refusal, label) ? null : refusal;
-                    }
-                    catch (Exception)
-                    {
-                        return null;
-                    }
-                },
-                live: true,
-                kind: AnnouncementKinds.Tooltip
-            );
-        }
-
-        /// <summary>
-        /// Append the game's own refusal sentence to a control, where there is one to say.
-        ///
-        /// The node's own name is read back out of the parts already declared rather than passed in, so
-        /// that no screen can forget it - and it is needed, because a "reason" that only repeats the
-        /// control's name is not a reason. That happens whenever the game's tooltip for a disabled
-        /// control is a bare DESCRIPTION on one line: <see cref="RefusalText.Compose"/> reads a lone
-        /// line as the whole of what the game said (it has nothing to trim a description away from), and
-        /// a read-only ship-design module - whose tooltip content is just the module's name - then reads
-        /// "⟨name⟩, unavailable, ⟨name⟩".
-        ///
-        /// Call this instead of adding <see cref="RefusalPart"/> by hand.
-        /// </summary>
-        public static void AddRefusal(NodeVtable vtable, AgeTooltip tooltip, Func<bool> enabled)
-        {
-            if (vtable == null || vtable.Announcements == null)
-            {
-                return;
-            }
-
-            NodeAnnouncement refusal = RefusalPart(tooltip, enabled, NamePart(vtable));
-            if (refusal != null)
-            {
-                vtable.Announcements.Add(refusal);
-            }
-        }
-
-        /// <summary>
-        /// The same, for a control the game refuses WITHOUT writing the reason anywhere on it.
-        ///
-        /// A game usually explains a blocked control on the control's own tooltip, and
-        /// <see cref="AddRefusal(NodeVtable, AgeTooltip, Func{bool})"/> reads it from there. Some do not:
-        /// the diplomacy ring's empire sectors carry no tooltip at all (measured - zero
-        /// <c>AgeTooltip</c> components on the sector), and the sentence the game would say lives only in
-        /// its own localization file. So the caller supplies the sentence - the GAME's own string, resolved
-        /// through <c>Gui.Localize</c>, never a phrase this mod invented for it - and it is spoken under
-        /// exactly the same conditions: only while the control is refusing, and never when it only repeats
-        /// the control's name.
+        /// A blocked control's reason belongs to its tooltip, and the tooltip is what says it - whole,
+        /// nothing trimmed, spoken outright when the game wrote the words and late when the game
+        /// assembles them and the player asked to hear those (owner ruling 2026-09-03). Every part
+        /// that used to re-say a tooltip's reason is gone with that ruling. This one is not a
+        /// tooltip's words: the diplomacy ring's empire sectors carry no tooltip at all (measured -
+        /// zero <c>AgeTooltip</c> components on the sector), so there is nothing for a tooltip to
+        /// carry and the sentence the game would say lives only in its own localization file. The
+        /// caller supplies it - the GAME's own string through <c>Gui.Localize</c>, never a phrase this
+        /// mod invented - and it is spoken only while the control is refusing, and never when it only
+        /// repeats the control's name.
         /// </summary>
         public static void AddRefusal(
             NodeVtable vtable,
@@ -195,113 +118,23 @@ namespace ES2Access.UI
                 && string.Equals(label.Trim(), refusal.Trim(), StringComparison.Ordinal);
         }
 
-        /// <summary>The refusal alone, out of the three parts the game assembles a blocked control's
-        /// tooltip from: its own description, the failure, and - only ever for a missing technology -
-        /// the sentence telling a mouse where to click.</summary>
-        private static string Refusal(AgeTooltip tooltip)
-        {
-            string written = RefusalText.Compose(
-                AgeText.ContentLines(tooltip),
-                MouseInstruction()
-            );
-            return written ?? TargetRefusal(tooltip);
-        }
-
         /// <summary>
-        /// The refusal of a control whose tooltip the RENDERER assembles: there are no words in
-        /// <c>Content</c> to trim, and the sentence only exists once the tooltip window has drawn its
-        /// failure panel - which is a hover delay away, and gone the moment the pointer leaves.
+        /// A control's tooltip as the sections it reads, for the callers that reach for a tooltip's
+        /// whole reading by name.
         ///
-        /// The panel reads it off the wrapper the game hangs on the tooltip
-        /// (<c>PanelFeatureFailureInfos.Bind</c> is exactly this expression), and that wrapper is
-        /// filled in at bind time, so asking it gives the same sentence the player would see, at once
-        /// and without the tooltip being drawn at all.
-        /// </summary>
-        private static string TargetRefusal(AgeTooltip tooltip)
-        {
-            try
-            {
-                IFailureInfosProvider failures =
-                    tooltip == null ? null : tooltip.Target as IFailureInfosProvider;
-                return failures == null
-                    ? null
-                    : AgeText.Clean(Gui.FormatFailureInfos(failures.FailureInfos));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// The sections for a control whose tooltip the game may have appended a MOUSE INSTRUCTION to -
-        /// "hold Control and click to find the technology you are missing", which is the third part of
-        /// a blocked button's hint and the one part a keyboard player can do nothing with.
-        ///
-        /// It stays in the review buffer, because it is on the screen and someone may want it; it is
-        /// kept out of what is SPOKEN, because a refusal that ends in an instruction to click is a
-        /// refusal the player has to listen past every time they pass the control. Which is the same
-        /// split the announced and reviewed halves always have here - one declaration, two surfaces -
-        /// so the instruction is simply declared as its own reviewed-only section, after the words that
-        /// speak.
-        ///
-        /// A tooltip the renderer assembles has no such part and is left alone: it is only indicated,
-        /// and <see cref="RefusalPart"/> is what carries its refusal into speech.
-        ///
-        /// Every control in the mod gets this, because <see cref="Sections"/> is what calls it: a screen
-        /// that builds its own vtable rather than going through the shared cell helpers used to keep the
-        /// instruction in its spoken refusal, and the Academy's blocked Sell button is how that was found.
+        /// It used to do more: the game ends a blocked control's hint with a MOUSE INSTRUCTION -
+        /// "hold Control and click to find the technology you are missing" - and this door cut that
+        /// sentence out of what was SPOKEN and left it in the review buffer as a section of its own.
+        /// The ruling that asked for the cut is reversed (owner, 2026-09-03): an announced tooltip,
+        /// short or long, says ALL of its lines, and the sentence reaches the buffer the way every
+        /// other line of that tooltip does - as part of the whole, not as a section beside it. Which
+        /// leaves one section, which is what <see cref="TooltipSection"/> already answers; the door
+        /// keeps its name because screens call it by that name.
         /// </summary>
         public static IList<NodeSection> HintSections(AgeTooltip tooltip)
         {
             NodeSection whole = TooltipSection(tooltip);
-            if (whole == null || whole.Mode != TooltipMode.Announce)
-            {
-                return whole == null ? null : new List<NodeSection> { whole };
-            }
-
-            Func<IList<string>> full = TooltipDetails(tooltip);
-            if (full == null)
-            {
-                return new List<NodeSection> { whole };
-            }
-
-            // Both halves name the SAME tooltip: this is one hover surface split by loudness, and the
-            // builder's one-tooltip rule counts surfaces so that the split stays legal.
-            AgeTooltip it = tooltip;
-            return new List<NodeSection>
-            {
-                NodeSection.Derived(
-                    () => Lines(full(), false),
-                    TooltipMode.Announce,
-                    null,
-                    it,
-                    TooltipCosts.Of(tooltip)
-                ),
-                NodeSection.Buffer(() => Lines(full(), true)),
-            };
-        }
-
-        /// <summary>The tooltip's lines split at the mouse instruction: everything else, or the
-        /// instruction on its own.</summary>
-        private static IList<string> Lines(IList<string> lines, bool instructionOnly)
-        {
-            string instruction = MouseInstruction();
-            List<string> kept = new List<string>(lines == null ? 0 : lines.Count);
-            for (int i = 0; lines != null && i < lines.Count; i++)
-            {
-                if (string.Equals(lines[i], instruction) == instructionOnly)
-                {
-                    kept.Add(lines[i]);
-                }
-            }
-
-            return kept;
-        }
-
-        private static string MouseInstruction()
-        {
-            return AgeText.Clean(Gui.Localize("%MissingTechnologyClickDescription"));
+            return whole == null ? null : new List<NodeSection> { whole };
         }
 
         /// <summary>
@@ -379,13 +212,21 @@ namespace ES2Access.UI
             // pointing at such a class says what it will take without a screen having gone and got
             // the number - and the ones that hand-built one before this existed had each got a
             // different subset of what the panel draws.
+            // And, for the player who asked to hear the long ones, the reader that answers with
+            // them once the game has drawn them (LongTooltips): a tooltip the renderer assembles has
+            // no words at the moment focus lands, so wanting it announced is wanting it announced
+            // LATE. The mode is untouched either way - the tooltip is the same kind of thing
+            // whether or not this player wants it read, which is what keeps the parity audit and the
+            // review buffer reading it as what it is.
             AgeTooltip it = tooltip;
+            TooltipMode mode = ModeFor(tooltip);
             return NodeSection.Derived(
                 lines,
-                ModeFor(tooltip),
+                mode,
                 () => AgeWidgets.Draws(it),
                 it,
-                TooltipCosts.Of(tooltip)
+                TooltipCosts.Of(tooltip),
+                mode == TooltipMode.Indicate ? LongTooltips.Announced(it, lines) : null
             );
         }
 

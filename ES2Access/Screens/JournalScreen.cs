@@ -254,7 +254,6 @@ namespace ES2Access.Screens
                 },
             };
 
-            GraphNodes.AddRefusal(vtable, tooltip, operable);
             AgeWidgets.Point(vtable, press);
             controls.Add(vtable);
         }

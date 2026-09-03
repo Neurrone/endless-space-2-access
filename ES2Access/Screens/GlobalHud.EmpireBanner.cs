@@ -593,7 +593,6 @@ namespace ES2Access.Screens
                 tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => Buyouts.Cost(it)));
-            GraphNodes.AddRefusal(vtable, tooltip, () => AgeWidgets.Offered(at));
             AgeWidgets.PointAt(vtable, at);
             cells.Add(
                 new Cell
