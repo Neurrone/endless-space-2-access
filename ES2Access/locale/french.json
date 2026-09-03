@@ -1087,6 +1087,8 @@
   "icon.transmigration-beacon": "Balise de transmigration",
   "icon.transvine": "Transliane",
   "icon.turn": "Tour",
+  "icon.turn-count": "{0} tour",
+  "icon.turns-count": "{0} tours",
   "icon.umbral-choir": "Chœur ombral",
   "icon.unfallen": "Persistants",
   "icon.unlimited": "Illimité",

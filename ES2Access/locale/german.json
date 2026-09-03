@@ -1087,6 +1087,8 @@
   "icon.transmigration-beacon": "Migrationssender",
   "icon.transvine": "Transrebe",
   "icon.turn": "Zug",
+  "icon.turn-count": "{0} Zug",
+  "icon.turns-count": "{0} Züge",
   "icon.umbral-choir": "Schemenchor",
   "icon.unfallen": "Ungefallene",
   "icon.unlimited": "Unbegrenzt",

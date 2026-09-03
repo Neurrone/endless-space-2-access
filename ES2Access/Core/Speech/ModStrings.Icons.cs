@@ -270,6 +270,20 @@ namespace ES2Access.Core.Speech
         public const string IconTransmigrationBeacon = "icon.transmigration-beacon";
         public const string IconTransvine = "icon.transvine";
         public const string IconTurn = "icon.turn";
+
+        /// <summary>
+        /// The counted pair the turn icon takes when the game draws a number hard against it -
+        /// "(8[turnColored])" - instead of standing on its own. The rest of this file names a
+        /// picture; these two say a number and its noun together, because "8 Turn" is not a phrase
+        /// in any language. <see cref="ES2Access.ES2.Speech.IconCounts"/> is where the rule lives,
+        /// and the turn icon is the only one that has one.
+        /// </summary>
+        public const string IconTurnCount = "icon.turn-count";
+
+        /// <summary>The counted turn phrase for every number the singular does not claim; see
+        /// <see cref="IconTurnCount"/>.</summary>
+        public const string IconTurnsCount = "icon.turns-count";
+
         public const string IconUmbralChoir = "icon.umbral-choir";
         public const string IconUnfallen = "icon.unfallen";
         public const string IconUnlimited = "icon.unlimited";
@@ -551,6 +565,8 @@ namespace ES2Access.Core.Speech
             { IconTransmigrationBeacon, "Transmigration Beacon" },
             { IconTransvine, "Transvine" },
             { IconTurn, "Turn" },
+            { IconTurnCount, "{0} turn" },
+            { IconTurnsCount, "{0} turns" },
             { IconUmbralChoir, "Umbral Choir" },
             { IconUnfallen, "Unfallen" },
             { IconUnlimited, "Unlimited" },
