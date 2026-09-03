@@ -450,7 +450,7 @@
   "key.backslash": "Antislash",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0} pour déplacer la flotte ici",
-  "hint.free-movement": "{0} pour le déplacement libre hors voie stellaire",
+  "hint.free-movement": "{0} pour forcer le déplacement libre",
   "hint.deselect-fleet": "{0} pour désélectionner la flotte",
   "hint.dismiss": "{0} pour ignorer",
   "hint.queue-first": "{0} pour le mettre en tête de file",

@@ -450,7 +450,7 @@
   "key.backslash": "反斜線",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0} 將艦隊移動至此",
-  "hint.free-movement": "{0} 使用脫離星軌的自由移動",
+  "hint.free-movement": "{0} 強制自由行進",
   "hint.deselect-fleet": "{0} 取消選取艦隊",
   "hint.dismiss": "{0} 清除",
   "hint.queue-first": "{0} 將其排入佇列第一位",

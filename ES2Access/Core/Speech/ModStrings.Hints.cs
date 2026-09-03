@@ -114,7 +114,7 @@ namespace ES2Access.Core.Speech
             { KeyBackslash, "Backslash" },
             { KeyChordJoiner, "+" },
             { HintMoveFleetHere, "{0} to move the fleet here" },
-            { HintFreeMovement, "{0} to use off-lane free movement" },
+            { HintFreeMovement, "{0} to force free movement" },
             { HintDeselectFleet, "{0} to deselect the fleet" },
             { HintDismiss, "{0} to dismiss" },
             { HintQueueFirst, "{0} to queue it first" },

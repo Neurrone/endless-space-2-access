@@ -472,7 +472,7 @@
   "key.backslash": "Backslash",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0}, aby przenieść tu flotę",
-  "hint.free-movement": "{0}, aby użyć swobodnego ruchu poza pasmami",
+  "hint.free-movement": "{0}, aby wymusić ruch swobodny",
   "hint.deselect-fleet": "{0}, aby odznaczyć flotę",
   "hint.dismiss": "{0}, aby odrzucić",
   "hint.queue-first": "{0}, aby dodać na początek kolejki",

@@ -450,7 +450,7 @@
   "key.backslash": "Barra invertida",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0} para mover aquí la flota",
-  "hint.free-movement": "{0} para usar el movimiento libre fuera de las rutas",
+  "hint.free-movement": "{0} para forzar el movimiento libre",
   "hint.deselect-fleet": "{0} para deseleccionar la flota",
   "hint.dismiss": "{0} para descartar",
   "hint.queue-first": "{0} para ponerlo primero en la cola",

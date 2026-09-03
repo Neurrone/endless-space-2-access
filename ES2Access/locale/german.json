@@ -450,7 +450,7 @@
   "key.backslash": "Backslash",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0}, um die Flotte hierher zu bewegen",
-  "hint.free-movement": "{0} für freie Bewegung abseits der Sternenrouten",
+  "hint.free-movement": "{0}, um freie Bewegung zu erzwingen",
   "hint.deselect-fleet": "{0}, um die Flotte abzuwählen",
   "hint.dismiss": "{0} zum Verwerfen",
   "hint.queue-first": "{0}, um es an den Anfang der Bauliste zu setzen",

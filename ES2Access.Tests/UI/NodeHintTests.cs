@@ -86,7 +86,7 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Two planets", lines[lines.Count - 3]);
             Assert.Equal("Backslash to move the fleet here", lines[lines.Count - 2]);
             Assert.Equal(
-                "Ctrl+Backslash to use off-lane free movement",
+                "Ctrl+Backslash to force free movement",
                 lines[lines.Count - 1]
             );
         }
@@ -160,11 +160,11 @@ namespace ES2Access.Tests.UI
                 () => possible
             );
 
-            Assert.DoesNotContain("Ctrl+Backslash to use off-lane free movement", Buffer(vtable));
+            Assert.DoesNotContain("Ctrl+Backslash to force free movement", Buffer(vtable));
             Assert.Contains("Backslash to move the fleet here", Buffer(vtable));
 
             possible = true;
-            Assert.Contains("Ctrl+Backslash to use off-lane free movement", Buffer(vtable));
+            Assert.Contains("Ctrl+Backslash to force free movement", Buffer(vtable));
         }
 
         /// <summary>A chord the renderer cannot produce - an action with no such binding - says

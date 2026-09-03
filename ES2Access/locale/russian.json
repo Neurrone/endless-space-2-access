@@ -485,7 +485,7 @@
   "key.backslash": "Обратная косая черта",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0} — переместить флот сюда",
-  "hint.free-movement": "{0} — свободное движение вне звездных путей",
+  "hint.free-movement": "{0} — принудительно использовать свободное передвижение",
   "hint.deselect-fleet": "{0} — снять выбор с флота",
   "hint.dismiss": "{0} — скрыть",
   "hint.queue-first": "{0} — поставить первым в очередь",

@@ -450,7 +450,7 @@
   "key.backslash": "백슬래시",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0} 키로 함대를 여기로 이동",
-  "hint.free-movement": "{0} 키로 항로 밖 자유 이동 사용",
+  "hint.free-movement": "{0} 키로 자유 이동 강제",
   "hint.deselect-fleet": "{0} 키로 함대 선택 해제",
   "hint.dismiss": "{0} 키로 지우기",
   "hint.queue-first": "{0} 키로 대기열 맨 앞에 추가",

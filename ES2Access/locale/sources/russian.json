@@ -484,7 +484,7 @@
   "key.backslash": "Backslash",
   "key.chord-joiner": "+",
   "hint.move-fleet-here": "{0} to move the fleet here",
-  "hint.free-movement": "{0} to use off-lane free movement",
+  "hint.free-movement": "{0} to force free movement",
   "hint.deselect-fleet": "{0} to deselect the fleet",
   "hint.dismiss": "{0} to dismiss",
   "hint.queue-first": "{0} to queue it first",
