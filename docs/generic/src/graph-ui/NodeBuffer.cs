@@ -51,10 +51,14 @@ namespace ES2Access.Core.UI.Graph
             for (int i = 0; i < parts.Count; i++)
             {
                 NodeAnnouncement part = parts[i];
+                // Only the HEAD part is left out for being the name - not every part of the label's
+                // kind. A control that wants something said right after its name gives that part
+                // the label's kind (the cost, a card's markings), and skipping the whole kind here
+                // was how such words were spoken and yet nowhere to be reviewed (owner ruling
+                // 2026-09-03: what is spoken beside the name is a buffer line by construction).
                 if (
                     part == null
                     || ReferenceEquals(part, head)
-                    || part.Kind == AnnouncementKinds.Label
                     || part.Kind == AnnouncementKinds.Role
                     || part.Kind == AnnouncementKinds.Tooltip
                     // The usage hints are a readout part too now, but the buffer's copy of them is

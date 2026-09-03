@@ -71,6 +71,29 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>A part given the label's kind so it speaks beside the name - a cost, a card's
+        /// markings - is a buffer line too, one per part: only the head itself is left out for being
+        /// the name (owner ruling 2026-09-03).</summary>
+        [Fact]
+        public void APartSpokenBesideTheNameIsABufferLine()
+        {
+            Assert.Equal(
+                new[] { "Team Spirit", "Aggressive", "Flotilla 1: Short Range", "unavailable" },
+                BufferAmongNeighbours(
+                    new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            Part("Team Spirit", AnnouncementKinds.Label),
+                            Part("Aggressive", AnnouncementKinds.Label),
+                            Part("Flotilla 1: Short Range", AnnouncementKinds.Label),
+                            Part("unavailable", AnnouncementKinds.Enabled),
+                        },
+                    }
+                )
+            );
+        }
+
         /// <summary>A control whose first part is not a label - a table cell, which leads with its
         /// value because the column's caption is the edge the player crossed to reach it - opens its
         /// buffer with that value ONCE.</summary>
