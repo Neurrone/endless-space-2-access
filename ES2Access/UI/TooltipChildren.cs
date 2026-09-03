@@ -715,6 +715,14 @@ namespace ES2Access.UI
             return ladders;
         }
 
+        /// <summary>An entry's own ladder climbed on its own - no sibling set consulted - for the
+        /// fallback behind a caller's name (<see cref="Preferred"/>).</summary>
+        private static Func<string> Own(Func<int, string> ladder)
+        {
+            Func<int, string> mine = ladder;
+            return () => SiblingNameRule.First(mine, NameRungs);
+        }
+
         /// <summary>A name with no ladder behind it, as a one-rung ladder.</summary>
         private static Func<int, string> Sole(Func<string> name)
         {
@@ -932,10 +940,16 @@ namespace ES2Access.UI
             AgeTooltip tip = tooltip;
             Func<int, string> ladder = Ladder(null, tip, anchor);
             Func<string> climbed = Named(into, into.Count, ladder);
+            // A NAMED entry that declines to answer falls back to its OWN ladder, never to the
+            // sibling-aware one: the sibling rule reads every entry's Name, this entry's included,
+            // and a Name that fell back into the sibling rule asked itself again without end
+            // (measured 2026-09-03: a family badge whose title key the game does not ship overflowed
+            // the stack and took the game down).
+            Func<string> own = Own(ladder);
             into.Add(
                 new Dossier
                 {
-                    Name = name == null ? climbed : Preferred(name, climbed),
+                    Name = name == null ? climbed : Preferred(name, own),
                     Rungs = name == null ? ladder : null,
                     Tooltip = tip,
                     Anchor = anchor,

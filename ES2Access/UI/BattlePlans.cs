@@ -398,7 +398,12 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                return AgeText.Clean(Gui.GetLocalizedTitle("Play" + definition.FamilyName));
+                // The game never draws a family's title - the badge is a picture - and it ships no
+                // title for every family it ships a description for (measured 2026-09-03:
+                // "%PlayFamilyPostBalancedTitle" comes back as the key). An unresolved key is not
+                // a name; null lets the naming ladder answer with the badge's own sentence.
+                string title = AgeText.Clean(Gui.GetLocalizedTitle("Play" + definition.FamilyName));
+                return string.IsNullOrEmpty(title) || Gui.IsLocalizationKey(title) ? null : title;
             }
             catch (Exception)
             {

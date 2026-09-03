@@ -393,22 +393,24 @@ namespace ES2Access.Screens
             // A slot with no tactic in it has no name of its own anywhere, so the sentence the game
             // explains it with becomes its name - and the readout then drops that line from the tooltip
             // it announces, which is what every bare-icon control in the mod does.
-            bool named = !string.IsNullOrEmpty(Title(card));
             NodeVtable vtable = new NodeVtable
             {
+                // The tiny card draws the family badge and the three range rows and hangs a tooltip
+                // on none of them, so what they say is read off the plan model and SPOKEN right
+                // after the tactic's name - "Team Spirit, Aggressive, Flotilla 1: Short Range, ..."
+                // - the words the full card's badges carry on the tactics window
+                // (<see cref="BattlePlans.Markings"/>; owner ruling 2026-09-03). One part per
+                // marking, each in the name's own kind so it sorts beside the name, and each its
+                // own buffer line. An empty or locked slot draws none and says none.
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => DeckSlotName(it, tooltip)),
+                    Marking(it, 0),
+                    Marking(it, 1),
+                    Marking(it, 2),
+                    Marking(it, 3),
                 },
-                // The tiny card draws the family badge and the three range rows and hangs a tooltip
-                // on none of them, so what they say is read off the plan model into the row's
-                // buffer - "Aggressive", "Flotilla 1: Short Range" - the words the full card's
-                // badges carry on the tactics window (<see cref="BattlePlans.Markings"/>; owner
-                // ruling 2026-09-03). An empty or locked slot draws none and reads none.
-                Sections = GraphNodes.Sections(
-                    named ? () => BattlePlans.Markings(it) : (Func<IList<string>>)null,
-                    tooltip
-                ),
+                Sections = GraphNodes.Sections(null, tooltip),
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(
@@ -427,6 +429,22 @@ namespace ES2Access.Screens
         {
             string title = Title(card);
             return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tooltip) : title;
+        }
+
+        /// <summary>The <paramref name="index"/>th thing the tiny card's pictures say
+        /// (<see cref="BattlePlans.Markings"/>), as a part in the name's own kind; null past the
+        /// end, which the readout skips.</summary>
+        private static NodeAnnouncement Marking(BattlePlayCard card, int index)
+        {
+            return new NodeAnnouncement(
+                () =>
+                {
+                    IList<string> lines = BattlePlans.Markings(card);
+                    return index < lines.Count ? lines[index] : null;
+                },
+                false,
+                AnnouncementKinds.Label
+            );
         }
 
         /// <summary>The tactic a slot is holding, in the game's own words - the same title the drawn
