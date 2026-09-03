@@ -90,7 +90,10 @@ namespace ES2Access.UI
                     piece.Widgets.Add(widget);
                 }
 
-                if (pieces == null || pieces.Count < 2)
+                // One surface is the cell's own explanation, not a column of its own - unless it is a
+                // BUTTON the game wired, which is a control and has to be its own node to be pressed:
+                // the marketplace's Inspect button beside a ship's or hero's name.
+                if (pieces == null || (pieces.Count < 2 && !IsButton(pieces[0])))
                 {
                     return null;
                 }
@@ -163,6 +166,33 @@ namespace ES2Access.UI
             {
                 Claim(children[i], pieces, depth + 1);
             }
+        }
+
+        /// <summary>The button a piece IS, where the game drew and wired one on the surface's own
+        /// widget - a control the player presses, not a figure they read.</summary>
+        private static AgeControlButton ButtonOf(Piece piece)
+        {
+            try
+            {
+                for (int i = 0; i < piece.Widgets.Count; i++)
+                {
+                    AgeControlButton button = piece.Widgets[i].GetComponent<AgeControlButton>();
+                    if (button != null && !string.IsNullOrEmpty(button.OnActivateMethod))
+                    {
+                        return button;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+
+            return null;
+        }
+
+        private static bool IsButton(Piece piece)
+        {
+            return ButtonOf(piece) != null;
         }
 
         private static Piece Sharing(List<Piece> pieces, AgeTooltip tooltip)
@@ -324,6 +354,27 @@ namespace ES2Access.UI
                 };
                 vtable.StateText = () =>
                     Selected(owner, row) ? ModStrings.Get(ModStrings.NavSelected) : null;
+            }
+
+            // A piece the game drew as a BUTTON is pressed by Enter, whatever the cell around it does:
+            // the marketplace's Inspect button opens the item's own panel.
+            AgeControlButton press = ButtonOf(piece);
+            if (press != null)
+            {
+                AgeControlButton button = press;
+                Func<bool> operable = () => enabled() && AgeWidgets.Operable(button.AgeTransform);
+                vtable.ControlType = ControlTypes.Button;
+                vtable.OnActivate = () =>
+                {
+                    if (operable())
+                    {
+                        AgeWidgets.Press(button);
+                    }
+                };
+                if (answer == null)
+                {
+                    vtable.Announcements.Add(GraphNodes.DisabledPart(operable));
+                }
             }
 
             Adorn(table, line, vtable, answer == null || !saysRefusal);

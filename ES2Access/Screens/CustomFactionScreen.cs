@@ -66,12 +66,11 @@ namespace ES2Access.Screens
         /// <summary>The deferred keyboard hand-over for this page's text boxes.</summary>
         private readonly TextFieldEditor _editor = new TextFieldEditor();
 
-        /// <summary>The two traits tables, for their sort bands only: the rows are read as the whole
-        /// line the game drew (<see cref="AddLines"/>) rather than cell by cell, because picking a trait
-        /// is one click on the line and the three cells are what that line SAYS. The headings are a
-        /// different thing - three buttons that re-sort a hundred and thirty traits by name, by level or
-        /// by cost, each with the game's own sentence on it - and they are declared the way every other
-        /// table on this game declares them.</summary>
+        /// <summary>The two traits tables, read through the shared sheet like every other table: a row
+        /// per trait, its name, level and cost as cells, Enter on any of them the line's own click -
+        /// which is what lets the game enforce levels and prerequisites rather than this screen
+        /// guessing at them (owner ruling 2026-09-03). The headings are the three sort buttons the
+        /// game draws over each table, each with its own sentence.</summary>
         private readonly TableSheet _available = new TableSheet(
             "custom-faction:available/",
             TraitOf
@@ -527,7 +526,7 @@ namespace ES2Access.Screens
 
             builder.SetRegion(TraitsRegion);
             _available.Headers(builder, table);
-            AddLines(builder, table, "custom-faction:available/");
+            _available.Rows(builder, table, null);
             builder.SetRegion(null);
         }
 
@@ -566,7 +565,7 @@ namespace ES2Access.Screens
         {
             builder.SetRegion(LinesRegion);
             _selected.Headers(builder, table);
-            AddLines(builder, table, "custom-faction:selected/");
+            _selected.Rows(builder, table, null);
 
             // The budget, in the game's own words and the game's own arithmetic: three lines it keeps
             // current, each with its own explanation on it.
@@ -589,53 +588,6 @@ namespace ES2Access.Screens
             builder.SetRegion(null);
         }
 
-        /// <summary>Every line of a traits table, in the order the table has sorted them. A line reads
-        /// as the cells the game drew across it - the trait's name, its level and what it costs - and
-        /// activating it replays its own click, which is what lets the game enforce levels and
-        /// prerequisites rather than this screen guessing at them.</summary>
-        private void AddLines(GraphBuilder builder, GuiTable table, string key)
-        {
-            IList<AgeTransform> lines = AgeWidgets.DrawnChildren(table == null ? null : table.LinesTable);
-            for (int i = 0; lines != null && i < lines.Count; i++)
-            {
-                AgeControlToggle toggle = lines[i].GetComponent<AgeControlToggle>();
-                if (toggle == null || !SettingRows.Drawn(lines[i]))
-                {
-                    continue;
-                }
-
-                AgeControlToggle it = toggle;
-                AgeTransform line = lines[i];
-                NodeVtable vtable = GraphNodes.Button(
-                    () => AgeWidgets.TextOf(line),
-                    () => AgeWidgets.Toggle(it),
-                    () => AgeWidgets.Operable(line)
-                );
-                List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
-                vtable.Sections = SettingRows.RowSections(line, AgeWidgets.Raw(line), dossiers);
-                AgeWidgets.Point(vtable, it);
-                // The trait keys the line but has no rectangle, so the slot it is currently drawn in is
-                // what the viewport has to be scrolled to - a hundred and thirty traits through an
-                // eighty-pixel window otherwise leave the cursor far below anything on screen.
-                ScrollIntoView.Anchor(vtable, line);
-
-                // Keyed by the TRAIT, never by the line. The table pools its lines and re-sorts them
-                // on every change, so "Line082" is a slot, not a thing: after picking a trait the
-                // cursor sat on the same slot, which by then held a different trait, and the next
-                // Enter picked whatever had moved under it. The trait is what the player was on.
-                object trait = DataOf(line);
-                ControlId id = ControlId.For(trait ?? (object)toggle, key + TraitKey(trait, line));
-                // A slot the game keys by the TRAIT in it has no widget in its identity, and the
-                // trait is a model: what draws the row is the toggle, and only where the slot is
-                // empty is that also what the row is about. Identity and evidence are two questions,
-                // though, and the row has an answer to both: the trait says WHICH row this is across a
-                // re-sort, and the line the table drew it in says whether it is on the screen at all -
-                // a pooled slot scrolled out of the eighty-pixel window has that line to be asked
-                // about, and the trait has nothing.
-                TooltipChildren.Declare(builder, Nodes.Drawn(id, vtable, line), key + TraitKey(trait, line), dossiers);
-            }
-        }
-
         /// <summary>The same question the sort band's sheet asks of a line.</summary>
         private static object TraitOf(GuiTableLine line)
         {
@@ -646,34 +598,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        /// <summary>What a table line is currently showing, which is what the line IS to the player.
-        /// </summary>
-        private static object DataOf(AgeTransform line)
-        {
-            try
-            {
-                GuiTableLine component = line == null ? null : line.GetComponent<GuiTableLine>();
-                return component == null ? null : component.Data;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static string TraitKey(object trait, AgeTransform line)
-        {
-            try
-            {
-                GuiFactionTrait guiTrait = trait as GuiFactionTrait;
-                return guiTrait != null ? guiTrait.Name.ToString() : AgeWidgets.NameOf(line);
-            }
-            catch (Exception)
-            {
-                return AgeWidgets.NameOf(line);
             }
         }
 

@@ -377,7 +377,8 @@ namespace ES2Access.ES2.Speech
             "STRATEGIC05LARGE=icon.orichalcix STRATEGIC05SMALL=icon.orichalcix STRATEGIC06=icon.quadrinix\n" +
             "STRATEGIC06LARGE=icon.quadrinix STRATEGIC06SMALL=icon.quadrinix\n" +
             "SYSTEMDEFENSE=icon.system-garrison TANK=icon.armor TANKICONMEDIUM=icon.armor\n" +
-            "TRACINGSPEEDLARGE=icon.hacking-speed TURNSYMBOL=icon.turn UPKEEP=icon.upkeep";
+            "TRACINGSPEEDLARGE=icon.hacking-speed TURNSYMBOL=icon.turn UPKEEP=icon.upkeep\n" +
+            "SORTASCENDING=icon.price-rising SORTDESCENDING=icon.price-falling";
 
         private static Dictionary<string, string> _tokens;
         private static Dictionary<string, string> _pictures;

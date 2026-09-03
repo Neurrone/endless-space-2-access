@@ -288,6 +288,13 @@ namespace ES2Access.Core.Speech
         public const string IconUnfallen = "icon.unfallen";
         public const string IconUnlimited = "icon.unlimited";
         public const string IconUpkeep = "icon.upkeep";
+
+        // The up and down arrows the marketplace draws beside a price whose tendency is rising or
+        // falling (GuiTableCellBuyablePrice.Refresh). The same two textures are the systems table's
+        // population growth arrows, where "rising" and "falling" hold just as well (owner ruling
+        // 2026-09-03).
+        public const string IconPriceRising = "icon.price-rising";
+        public const string IconPriceFalling = "icon.price-falling";
         public const string IconVaulters = "icon.vaulters";
         public const string IconVictory = "icon.victory";
         public const string IconVirtualArtifacts = "icon.virtual-artifacts";
@@ -571,6 +578,8 @@ namespace ES2Access.Core.Speech
             { IconUnfallen, "Unfallen" },
             { IconUnlimited, "Unlimited" },
             { IconUpkeep, "Upkeep" },
+            { IconPriceRising, "rising" },
+            { IconPriceFalling, "falling" },
             { IconVaulters, "Vaulters" },
             { IconVictory, "Victory" },
             { IconVirtualArtifacts, "Virtual Artifacts" },

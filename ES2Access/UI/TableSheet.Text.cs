@@ -221,11 +221,30 @@ namespace ES2Access.UI
             MessageBuilder said = new MessageBuilder();
             for (int i = 0; i < _drawn.Count; i++)
             {
-                said.ListItem(_drawn[i].Text);
+                // The same word once: a name cell draws its resource as a portrait, a small icon and
+                // the name, and all three say "Titanium" - one word for one thing, as a reader's eye
+                // takes it.
+                if (!Repeats(_drawn, i))
+                {
+                    said.ListItem(_drawn[i].Text);
+                }
             }
 
             _drawn.Clear();
             return said.Build();
+        }
+
+        private static bool Repeats(List<DrawnPart> parts, int index)
+        {
+            for (int i = 0; i < index; i++)
+            {
+                if (SpokenText.SameLine(parts[i].Text, parts[index].Text))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void CollectDrawn(
