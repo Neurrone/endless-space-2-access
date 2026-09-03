@@ -1000,6 +1000,22 @@ namespace ES2Access.Screens
         /// </summary>
         private static void MoveHints(NodeVtable vtable)
         {
+            MoveHints(vtable, FleetOrders.AnySelectedCanFreeMove);
+        }
+
+        /// <summary>The same two lines on a LANE row, where Control only forces the approach to the
+        /// lane's near end and never the lane step itself - so the second line is said only while a
+        /// selected fleet stands somewhere Control would make a difference
+        /// (<see cref="ES2Access.UI.FleetOrders.AnySelectedCanFreeMoveTo"/>, owner ruling
+        /// 2026-09-03).</summary>
+        private static void MoveHints(NodeVtable vtable, Link lane)
+        {
+            Link it = lane;
+            MoveHints(vtable, () => FleetOrders.AnySelectedCanFreeMoveTo(it));
+        }
+
+        private static void MoveHints(NodeVtable vtable, Func<bool> canFreeMove)
+        {
             NodeHints.Add(
                 vtable,
                 ModStrings.HintMoveFleetHere,
@@ -1012,7 +1028,7 @@ namespace ES2Access.Screens
                 ModStrings.HintFreeMovement,
                 UiActions.Contextual,
                 1,
-                FleetOrders.AnySelectedCanFreeMove
+                canFreeMove
             );
         }
 

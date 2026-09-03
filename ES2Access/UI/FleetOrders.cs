@@ -227,6 +227,62 @@ namespace ES2Access.UI
             return false;
         }
 
+        /// <summary>
+        /// Whether holding Control would change anything about sending the selection down
+        /// <paramref name="lane"/>.
+        ///
+        /// A lane as a destination is the route to its NEAR end plus one step out onto the lane
+        /// (<see cref="PathToLink"/>, the port of <c>GalaxyGarrisonCursor.GetGalaxyPathToLink</c>),
+        /// and the free-movement-only flag Control asks for is applied to the route alone - the lane
+        /// step is always costed as a lane. So a fleet already standing at either end of the lane, or
+        /// flying that very lane, sends the same order with or without Control, and a hint naming the
+        /// chord there names a difference that does not exist (owner ruling 2026-09-03). The chord
+        /// matters only for a fleet that can free-move and is elsewhere, whose approach to the lane
+        /// Control forces off the lanes.
+        /// </summary>
+        public static bool AnySelectedCanFreeMoveTo(Link lane)
+        {
+            try
+            {
+                if (lane == null)
+                {
+                    return false;
+                }
+
+                NodePosition end1 = lane.ExtremityNode1.NodePosition;
+                NodePosition end2 = lane.ExtremityNode2.NodePosition;
+                List<Fleet> selected = Selected();
+                for (int i = 0; i < selected.Count; i++)
+                {
+                    Fleet fleet = selected[i];
+                    if (
+                        fleet.GetPropertyValue(SimulationProperties.Fleet.FreeMovementSpeed)
+                        <= float.Epsilon
+                    )
+                    {
+                        continue;
+                    }
+
+                    // The same "is it at this lane" test the game's own lane path makes: in orbit at an
+                    // end, or under way with an end as its next node (which a fleet flying this lane
+                    // always has).
+                    NodePosition at = fleet.Position.IsInOrbit
+                        ? fleet.NodePosition
+                        : fleet.Position.NextValidNodePosition;
+                    if (at != end1 && at != end2)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("fleets: asking whether the selection can free-move to a lane threw: " + e);
+            }
+
+            return false;
+        }
+
         /// <summary>The route this fleet would fly to a place on the map, or null where there is none.
         /// Asking is a pathfinding search, so it belongs to the moment a menu is opened and never to a
         /// frame. Hand it a list and the reasons a missing route is missing are written into it.

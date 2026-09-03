@@ -222,7 +222,7 @@ namespace ES2Access.Screens
                     Link target = link;
                     GameNode aim = destination;
                     vtable.OnContextual = () => LaneCommand(target);
-                    MoveHints(vtable);
+                    MoveHints(vtable, target);
                     // ...and the one thing the map's LEFT click on a line does with a selection up:
                     // let go of it. Only here and on empty space - Enter on a system zooms instead.
                     NodeHints.Add(
