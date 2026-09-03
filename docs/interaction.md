@@ -30,7 +30,10 @@ owner decision about that one context, and a context whose own game tooltip alre
 gesture stays silent. Every hint that survives that choice is SPOKEN on every landing, and it is
 the LAST thing said about the control — after the position, and on a control whose long tooltip
 this player asked to hear, after that tooltip's own words (owner ruling 2026-09-03). Hints keep
-their place at the end of the review buffer as well.
+their place at the end of the review buffer as well. The two automatic drag sentences (what a
+control would pick up, where a held thing may drop) stay buffer-only: the readout already says
+"draggable" / "drop target", and a sentence on every fleet row, queue line and slot would be
+spam (owner ruling 2026-09-03).
 
 ## Authoring cautions
 
