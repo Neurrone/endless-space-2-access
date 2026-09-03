@@ -640,9 +640,8 @@ ES2Access/UI/SystemPanels.cs | 3 | if (panel == null || !AgeWidgets.Visible(pane
 
 ES2Access/UI/TableSheet.Header.cs | 1 | if (header != null && AgeWidgets.Visible(child))
 
-ES2Access/UI/TableSheet.Text.cs | 1 | if (paintedOnly && widget.Alpha <= 0f)
 ES2Access/UI/TableSheet.Text.cs | 1 | if (widget == null || depth > MaxCellDepth || !widget.Visible)
-ES2Access/UI/TableSheet.Text.cs | 1 | if (widget == null || depth > limit || !widget.Visible)
+ES2Access/UI/TableSheet.Text.cs | 1 | if (widget == null || depth > limit || !widget.Visible || widget.Alpha <= 0f)
 
 ES2Access/UI/TableSheet.cs | 1 | && button.AgeTransform.Visible
 ES2Access/UI/TableSheet.cs | 1 | && child.Alpha > 0f

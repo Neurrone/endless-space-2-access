@@ -3,11 +3,17 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.Util;
+using UnityEngine;
 
 namespace ES2Access.UI
 {
     public sealed partial class TableSheet
     {
+        /// <summary>The things one widget is showing, while they are being put in drawing order - the
+        /// sheet's own scratch, because this runs for every cell of every row of every build and the
+        /// reading is finished before the next one starts.</summary>
+        private readonly List<DrawnPart> _drawn = new List<DrawnPart>(4);
+
         // ---- reading a cell ----
 
         /// <summary>What a cell is showing, with the word for showing nothing - the systems table's
@@ -79,22 +85,22 @@ namespace ES2Access.UI
         }
 
         /// <summary>Everything the player can see in a cell, or null when it is showing nothing: its
-        /// words, and - for a column drawn as a picture, like the automation icon - the first thing its
-        /// pictures say for themselves.</summary>
+        /// words and its named pictures, in the order they are drawn
+        /// (<see cref="Ordered"/>), and - for a column that draws nothing else - the first thing its
+        /// tooltips say for themselves.</summary>
         public string DrawnText(AgeTransform cell)
         {
-            MessageBuilder labels = new MessageBuilder();
             List<string> tooltips = new List<string>();
+            string drawn = null;
             try
             {
-                CollectDrawn(cell, labels, tooltips, 0, MaxCellDepth, false);
+                drawn = Drawn(cell, tooltips, MaxCellDepth);
             }
             catch (Exception e)
             {
                 Log.Warn("table: reading a column threw: " + e);
             }
 
-            string drawn = labels.Build();
             if (!string.IsNullOrEmpty(drawn))
             {
                 return drawn;
@@ -120,24 +126,21 @@ namespace ES2Access.UI
         ///
         /// The shallow cap cannot simply be raised: the third level of the automation column is that
         /// drop list's CLOSED popup, whose entries would then be read as though the cell were showing
-        /// all of them at once. The popup is parked at ALPHA ZERO with <c>Visible</c> still true, so
-        /// this pass is painted-only, which leaves it out however deep it looks - and leaves out a
-        /// pooled item the panel retired the same way.
+        /// all of them at once. What keeps it out however deep this looks is that a reading stops at
+        /// anything the renderer is not painting (<see cref="CollectDrawn"/>): the popup is parked at
+        /// ALPHA ZERO with <c>Visible</c> still true, and so is a pooled item the panel retired.
         /// </summary>
         private string DeepText(AgeTransform cell)
         {
-            MessageBuilder labels = new MessageBuilder();
             try
             {
-                CollectDrawn(cell, labels, null, 0, DeepCellDepth, true);
+                return Drawn(cell, null, DeepCellDepth);
             }
             catch (Exception e)
             {
                 Log.Warn("table: reading a column deeper threw: " + e);
+                return null;
             }
-
-            string drawn = labels.Build();
-            return string.IsNullOrEmpty(drawn) ? null : drawn;
         }
 
         /// <summary>
@@ -171,23 +174,41 @@ namespace ES2Access.UI
             }
         }
 
-        private void CollectDrawn(
-            AgeTransform widget,
-            MessageBuilder labels,
-            List<string> tooltips,
-            int depth,
-            int limit,
-            bool paintedOnly
-        )
+        /// <summary>
+        /// What a widget is showing, as one sentence: everything drawn inside it that says a word,
+        /// read in the order it is drawn.
+        ///
+        /// The scratch list is the sheet's own and reused - this runs for every cell of every row of
+        /// every build - so the pieces are turned into the sentence before anything else is asked.
+        /// </summary>
+        private string Drawn(AgeTransform widget, List<string> tooltips, int limit)
         {
-            // Flow control: the walk stops where the renderer stops, so an undrawn branch contributes none of its words.
-            if (widget == null || depth > limit || !widget.Visible)
+            _drawn.Clear();
+            CollectDrawn(widget, tooltips, 0, limit);
+            Ordered(_drawn);
+            MessageBuilder said = new MessageBuilder();
+            for (int i = 0; i < _drawn.Count; i++)
             {
-                return;
+                said.ListItem(_drawn[i].Text);
             }
 
-            // And the caller's own stricter question: a faded branch is read on one page and not on another.
-            if (paintedOnly && widget.Alpha <= 0f)
+            _drawn.Clear();
+            return said.Build();
+        }
+
+        private void CollectDrawn(
+            AgeTransform widget,
+            List<string> tooltips,
+            int depth,
+            int limit
+        )
+        {
+            // Flow control: the walk stops where the renderer stops, so an undrawn branch contributes
+            // none of its words - and a FADED one is undrawn. A pooled strip inside a cell retires its
+            // surplus items by fading them while leaving them visible, still holding the last binding's
+            // picture: the load/save window's content column holds four expansion badges that way, and
+            // reading them named four expansions a save does not use.
+            if (widget == null || depth > limit || !widget.Visible || widget.Alpha <= 0f)
             {
                 return;
             }
@@ -195,8 +216,14 @@ namespace ES2Access.UI
             AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
             if (label != null)
             {
-                labels.ListItem(AgeText.Label(label));
+                Says(widget, AgeText.Label(label));
             }
+
+            // A picture the icon table has a word for is one of the cell's words: the resources column
+            // draws its resource as an icon and the amount as a number beside it, and the number alone
+            // is what the column used to say. Everything the table does not name is decoration and
+            // answers null, which is what keeps backgrounds and rules out of the reading.
+            Says(widget, PictureName(widget));
 
             if (depth > 0 && tooltips != null)
             {
@@ -206,7 +233,103 @@ namespace ES2Access.UI
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                CollectDrawn(children[i], labels, tooltips, depth + 1, limit, paintedOnly);
+                CollectDrawn(children[i], tooltips, depth + 1, limit);
+            }
+        }
+
+        /// <summary>One thing the player can see, remembered with where it is drawn. The rectangle is
+        /// asked only of a widget that actually says something, so a cell full of art costs nothing.
+        /// </summary>
+        private void Says(AgeTransform widget, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            Rect at = widget.GetGlobalPosition();
+            _drawn.Add(new DrawnPart(text, at.x, at.y, at.y + at.height));
+        }
+
+        /// <summary>What a widget drawing no words is called, where it is drawing something that
+        /// stands for a word at all - the icon table is the test (<see cref="IconNames.NameForAsset"/>),
+        /// and it names only the pictures that carry meaning.</summary>
+        private static string PictureName(AgeTransform widget)
+        {
+            AgePrimitiveImage image = widget.GetComponent<AgePrimitiveImage>();
+            Texture texture = image == null ? null : image.Texture;
+            return texture == null ? null : IconNames.NameForAsset(texture.name);
+        }
+
+        /// <summary>
+        /// The order the player sees: down the lines, and left to right along each of them.
+        ///
+        /// Tree order is not drawing order - the resources column lays its icon out to the LEFT of the
+        /// number and its prefab lists the number first, so the cell said "2 Transvine" for something
+        /// drawn as "Transvine 2". Two widgets are on the same line when they overlap vertically, which
+        /// is the question a reader's eye asks; a tall icon beside a short number is one line, and a
+        /// stacked list is one line each. Both passes are stable, so anything drawn at the same place -
+        /// a label and the picture behind it - keeps the order it was collected in.
+        /// </summary>
+        private static void Ordered(List<DrawnPart> parts)
+        {
+            SortBy(parts, 0, parts.Count, true);
+            int from = 0;
+            while (from < parts.Count)
+            {
+                float bottom = parts[from].Bottom;
+                int to = from + 1;
+                while (to < parts.Count && parts[to].Middle < bottom)
+                {
+                    bottom = Math.Min(bottom, parts[to].Bottom);
+                    to++;
+                }
+
+                SortBy(parts, from, to, false);
+                from = to;
+            }
+        }
+
+        /// <summary>A stable insertion sort over one stretch of the list, by top edge or by left edge.
+        /// Insertion because these are handfuls - a cell holds two or three drawn things - and because
+        /// the order of two things drawn at the same place has to be the order they were found in.
+        /// </summary>
+        private static void SortBy(List<DrawnPart> parts, int from, int to, bool vertical)
+        {
+            for (int i = from + 1; i < to; i++)
+            {
+                DrawnPart part = parts[i];
+                float key = vertical ? part.Top : part.Left;
+                int j = i - 1;
+                while (j >= from && (vertical ? parts[j].Top : parts[j].Left) > key)
+                {
+                    parts[j + 1] = parts[j];
+                    j--;
+                }
+
+                parts[j + 1] = part;
+            }
+        }
+
+        /// <summary>One word a cell is showing and the rectangle it is drawn in.</summary>
+        private struct DrawnPart
+        {
+            public readonly string Text;
+            public readonly float Left;
+            public readonly float Top;
+            public readonly float Bottom;
+
+            public DrawnPart(string text, float left, float top, float bottom)
+            {
+                Text = text;
+                Left = left;
+                Top = top;
+                Bottom = bottom;
+            }
+
+            public float Middle
+            {
+                get { return (Top + Bottom) * 0.5f; }
             }
         }
 
@@ -292,7 +415,19 @@ namespace ES2Access.UI
         /// <summary>Every hover surface hanging inside a cell, subtree walked ONCE per cell per build
         /// (<see cref="_hovers"/>). The walk is the expensive half of <see cref="Inside"/> and its
         /// answer does not depend on which tooltip the caller is excluding, so the filtering stays per
-        /// call and only the walk is remembered.</summary>
+        /// call and only the walk is remembered.
+        ///
+        /// PAINTED, because these answers are the cell's columns and the surface its pointer goes to:
+        /// a cell that holds a pooled list of its own - the resources column's item table - retires a
+        /// surplus item by fading it to nothing while leaving it visible, still carrying the dossier of
+        /// the resource it last held, so a walk by visibility alone gives a one-resource system a
+        /// second column about a resource it does not have.
+        ///
+        /// DEEP, for the same reason <see cref="DeepText"/> is: a cell holding a whole panel of its own
+        /// keeps the thing the player points at several levels down - the resources column's dossiers
+        /// sit three levels under the cell, and the shallow cap that keeps a closed drop list's entries
+        /// out of the cell's WORDS was leaving every one of them unreachable. The cap is not what keeps
+        /// that popup out here; being unpainted is.</summary>
         private List<AgeTooltip> Hovers(AgeTransform cell)
         {
             List<AgeTooltip> found;
@@ -302,7 +437,12 @@ namespace ES2Access.UI
             }
 
             found = new List<AgeTooltip>();
-            AgeWidgets.EffectiveTooltips(cell, found, TooltipReach.Descendants, MaxCellDepth);
+            AgeWidgets.EffectiveTooltips(
+                cell,
+                found,
+                TooltipReach.Descendants | TooltipReach.Painted,
+                DeepCellDepth
+            );
             if (cell != null)
             {
                 _hovers[cell] = found;

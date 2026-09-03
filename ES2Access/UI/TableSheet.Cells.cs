@@ -322,6 +322,30 @@ namespace ES2Access.UI
             };
         }
 
+        /// <summary>
+        /// The tooltip the CELL itself explains its value with, or null where it has none.
+        ///
+        /// A prefab may hang an EMPTY tooltip on the cell - no class, no words and nothing to assemble
+        /// words from (<see cref="AgeWidgets.NeverDraws"/>), which is decoration the game will never
+        /// draw. Taken at its word it beat the real dossiers drawn inside the cell: the cell declared a
+        /// surface with nothing in it and the pointer was sent nowhere, so the systems table's resources
+        /// column offered a bare number and no explanation of it. A tooltip the game could never draw is
+        /// no tooltip at all.
+        ///
+        /// Where the screen supplies the cell's value (<see cref="ReadValue"/>) the cell's own tooltip is
+        /// already the value and is not a second thing to read.
+        /// </summary>
+        private AgeTooltip CellTooltip(GuiTableHeader header, AgeTransform cell)
+        {
+            if (Supplied(header, cell))
+            {
+                return null;
+            }
+
+            AgeTooltip own = TooltipOf(cell);
+            return AgeWidgets.NeverDraws(own) ? null : own;
+        }
+
         /// <summary>One column of a row: what it is showing, with the game's own tooltip for the column
         /// behind it. It does NOT say its heading - the sheet says that as the edge the player crossed
         /// to get here, so a cell reached sideways is named once and a cell reached from the row above is
@@ -349,7 +373,7 @@ namespace ES2Access.UI
             AgeTooltip aim = null;
             if (vtable == null)
             {
-                AgeTooltip cellTip = Supplied(heading, it) ? null : TooltipOf(it);
+                AgeTooltip cellTip = CellTooltip(heading, it);
                 List<AgeTooltip> inner = Inside(it, cellTip);
                 // A cell declares a tooltip only where the game gave that COLUMN something of its
                 // own. Some tables hang one hover surface across the whole row - the marketplace's
