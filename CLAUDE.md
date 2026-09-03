@@ -79,7 +79,10 @@ with the tools in `docs/dev-loop.md`. Repo-specific enforcement on top of that p
   fact measured against a particular save (its name, turn, systems, fleets, heroes,
   counts, crop rectangles) belongs to nobody's machine but the owner's and is never
   written down. Regression proof is the fixture-agnostic walk in `walks/`; a screen the
-  walk cannot reach gets a route added to `walks/`, not a recipe.
+  walk cannot reach gets a route added to `walks/`, not a recipe. The proof is sized to
+  the blast radius: the full walk is for a change that alters readouts across screens (a
+  Core projection, a refactor claiming "no spoken line changed"); an option that defaults
+  off, or an addition to one screen, is proven by a before/after dump of that screen alone.
 - Docs never restate what is derivable from source: no key maps, layer tables,
   screen-to-file tables, helper lists or route lists. A doc line earns its place only by
   recording a measured game mechanism or an owner ruling that the code does not itself

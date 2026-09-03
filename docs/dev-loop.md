@@ -282,7 +282,10 @@ never by absence of speech. Checkbox/slider/combo refusals are provable by silen
 end — the cursor swapped back, the banner gone — not the order's effect, and pair it with the same
 key on the same node with no mode up, which must still do the node's own thing.
 
-**Proving a refactor changed no spoken or buffer line.** The scripted walk lives in `walks/`
+**Proving a refactor changed no spoken or buffer line.** Size the proof to the blast radius
+first: the full walk (~30 min of the live game) is for a change that alters readouts across
+screens; an option that defaults off, or an addition to one screen, is one `/gui/graph`
+dump of that screen before and after, diffed. The scripted walk lives in `walks/`
 (`walk-all.sh <dir>` twice — before and after — then `diffwalks.sh`; `walks/README.md` is the
 manual, fixture-agnostic by runtime discovery). Unfocused Class-backed tooltips read EMPTY on
 both sides, so they cancel and are UNPROVEN by the diff: a change touching them needs the
