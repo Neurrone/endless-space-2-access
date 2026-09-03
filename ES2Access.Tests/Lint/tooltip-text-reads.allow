@@ -127,6 +127,8 @@ ES2Access/UI/SystemLabelReadout.cs | 1 | string says = CardActions.FirstLine(Age
 ES2Access/UI/SystemPanels.cs | 1 | () => CardActions.FirstLine(tooltip),
 ES2Access/UI/SystemPanels.cs | 1 | Func<IList<string>> drawn = GraphNodes.TooltipDetails(tooltip);
 
+ES2Access/UI/TableSheet.Pieces.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+
 ES2Access/UI/TableSheet.Text.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
 
 ES2Access/UI/WindowShape.cs | 1 | if (string.IsNullOrEmpty(caption) && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))

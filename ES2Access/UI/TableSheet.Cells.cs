@@ -27,6 +27,8 @@ namespace ES2Access.UI
             Read(table);
             _supplied.Clear();
             _hovers.Clear();
+            _answers.Clear();
+            _answeredRefusal = null;
             List<GuiTableLine> lines = Lines(table);
             GraphSheet sheet = new GraphSheet(builder, _key);
             sheet.Region(title, Columns(lines));
@@ -39,35 +41,51 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                List<KeyValuePair<int, NodeVtable>> cells =
-                    new List<KeyValuePair<int, NodeVtable>>();
-                int column = 0;
+                List<GraphSheet.SheetCell> cells = new List<GraphSheet.SheetCell>();
                 // What the ROW is explained by, asked once and handed to every cell of it: a cell
                 // whose own tooltip is that same surface has nothing of its own to say.
                 AgeTooltip rowTip = Explains(line, _cells[0]);
+                // Every cell keeps its LOGICAL column - the game's - whatever it is read as: a cell
+                // read as several controls or several pieces puts them all under that one column, so
+                // the caption is the column's for each of them and a row that draws more pieces than
+                // its neighbour is still the same columns to Up and Down (GraphSheet.SheetCell).
                 for (int i = 1; i < _cells.Count; i++)
                 {
                     AgeTransform cell = _cells[i];
                     GuiTableHeader header = HeaderFor(cell, i);
                     IList<NodeVtable> parts = Split(line, cell, header, Operable(table, line));
-                    if (parts == null)
+                    if (parts != null)
+                    {
+                        for (int p = 0; p < parts.Count; p++)
+                        {
+                            // The part aimed the pointer at the control it declared, so the cell-wide
+                            // aim is not applied over the top of it, and it answered for that control's
+                            // own availability, so the row's is not said as well.
+                            Adorn(table, line, parts[p], false);
+                            cells.Add(new GraphSheet.SheetCell(i, p, parts[p]));
+                        }
+
+                        continue;
+                    }
+
+                    List<Piece> pieces = Pieces(cell, header, rowTip);
+                    if (pieces == null)
                     {
                         cells.Add(
-                            new KeyValuePair<int, NodeVtable>(
-                                ++column,
-                                CellVtable(table, line, cell, header, rowTip)
-                            )
+                            new GraphSheet.SheetCell(i, 0, CellVtable(table, line, cell, header, rowTip))
                         );
                         continue;
                     }
 
-                    for (int p = 0; p < parts.Count; p++)
+                    for (int p = 0; p < pieces.Count; p++)
                     {
-                        // The part aimed the pointer at the control it declared, so the cell-wide aim is
-                        // not applied over the top of it, and it answered for that control's own
-                        // availability, so the row's is not said as well.
-                        Adorn(table, line, parts[p], false);
-                        cells.Add(new KeyValuePair<int, NodeVtable>(++column, parts[p]));
+                        cells.Add(
+                            new GraphSheet.SheetCell(
+                                i,
+                                p,
+                                PieceVtable(table, line, cell, header, pieces[p])
+                            )
+                        );
                     }
                 }
 
@@ -93,9 +111,9 @@ namespace ES2Access.UI
         /// <summary>The captions the sheet speaks when the player crosses into a column, read off a
         /// real row: which heading is over which column is the pairing <see cref="HeaderFor"/> makes,
         /// and it survives a re-sort. Every row of one table has the same columns, so the first one
-        /// that has any answers for all of them. A cell read as several columns
-        /// (<see cref="SplitCell"/>) gives each of them the heading it came out of - they ARE that one
-        /// column of the game's table, and there is no other caption for them to have.
+        /// that has any answers for all of them. One caption per LOGICAL column: a cell read as several
+        /// controls or pieces keeps them all under the caption of the column it came out of - they ARE
+        /// that one column of the game's table, and there is no other caption for them to have.
         ///
         /// The NAME column leads the list, because the sheet labels the crossing back onto a row's name
         /// with it exactly as it labels every other crossing; it is never split, being the cell the row
@@ -111,16 +129,9 @@ namespace ES2Access.UI
                 }
 
                 List<string> columns = new List<string>(cells.Count);
-                columns.Add(Caption(HeaderFor(cells[0], 0)));
-                for (int i = 1; i < cells.Count; i++)
+                for (int i = 0; i < cells.Count; i++)
                 {
-                    GuiTableHeader header = HeaderFor(cells[i], i);
-                    string caption = Caption(header);
-                    IList<NodeVtable> parts = Split(lines[l], cells[i], header, AlwaysOn);
-                    for (int p = 0; p < (parts == null ? 1 : parts.Count); p++)
-                    {
-                        columns.Add(caption);
-                    }
+                    columns.Add(Caption(HeaderFor(cells[i], i)));
                 }
 
                 return columns.ToArray();
@@ -370,7 +381,10 @@ namespace ES2Access.UI
             NodeVtable vtable = ReadCell == null ? null : ReadCell(row, it, heading, enabled);
             bool saysRefusal = vtable != null && ReferenceEquals(vtable, _saysRowRefusal);
             _saysRowRefusal = null;
-            AgeTooltip aim = null;
+            // A cell the screen answered for is still pointed where its explanation is: a button
+            // cell hanging an empty placeholder on itself and its dossier on the picture inside would
+            // otherwise aim the pointer at the placeholder and draw nothing.
+            AgeTooltip aim = vtable == null || CellTooltip(heading, it) != null ? null : LastInside(it);
             if (vtable == null)
             {
                 AgeTooltip cellTip = CellTooltip(heading, it);

@@ -14,6 +14,12 @@ namespace ES2Access.UI
         /// reading is finished before the next one starts.</summary>
         private readonly List<DrawnPart> _drawn = new List<DrawnPart>(4);
 
+        /// <summary>The caption of the column whose cell is being read, while it is: a picture whose
+        /// word IS that caption - the population column's population icon - says nothing, because
+        /// the heading crossing already said it (owner ruling 2026-09-03). Null outside a captioned
+        /// read.</summary>
+        private string _echo;
+
         // ---- reading a cell ----
 
         /// <summary>What a cell is showing, with the word for showing nothing - the systems table's
@@ -28,7 +34,21 @@ namespace ES2Access.UI
         /// its buffer line and the row's summary cannot disagree.</summary>
         private string Value(GuiTableHeader header, AgeTransform cell)
         {
-            return Own(header, cell) ?? DrawnText(cell);
+            string own = Own(header, cell);
+            if (own != null)
+            {
+                return own;
+            }
+
+            _echo = Caption(header);
+            try
+            {
+                return DrawnText(cell);
+            }
+            finally
+            {
+                _echo = null;
+            }
         }
 
         /// <summary>The screen's own reading of this cell (<see cref="ReadValue"/>), or null where it
@@ -183,8 +203,20 @@ namespace ES2Access.UI
         /// </summary>
         private string Drawn(AgeTransform widget, List<string> tooltips, int limit)
         {
+            return Drawn(widget, tooltips, limit, null);
+        }
+
+        /// <summary>The same, leaving out the subtrees rooted at <paramref name="skip"/> - the widgets
+        /// a cell's other pieces are read from (<see cref="Piece"/>).</summary>
+        private string Drawn(
+            AgeTransform widget,
+            List<string> tooltips,
+            int limit,
+            HashSet<AgeTransform> skip
+        )
+        {
             _drawn.Clear();
-            CollectDrawn(widget, tooltips, 0, limit);
+            CollectDrawn(widget, tooltips, 0, limit, skip);
             Ordered(_drawn);
             MessageBuilder said = new MessageBuilder();
             for (int i = 0; i < _drawn.Count; i++)
@@ -200,7 +232,8 @@ namespace ES2Access.UI
             AgeTransform widget,
             List<string> tooltips,
             int depth,
-            int limit
+            int limit,
+            HashSet<AgeTransform> skip = null
         )
         {
             // Flow control: the walk stops where the renderer stops, so an undrawn branch contributes
@@ -208,7 +241,13 @@ namespace ES2Access.UI
             // surplus items by fading them while leaving them visible, still holding the last binding's
             // picture: the load/save window's content column holds four expansion badges that way, and
             // reading them named four expansions a save does not use.
-            if (widget == null || depth > limit || !widget.Visible || widget.Alpha <= 0f)
+            if (
+                widget == null
+                || depth > limit
+                || !widget.Visible
+                || widget.Alpha <= 0f
+                || (skip != null && depth > 0 && skip.Contains(widget))
+            )
             {
                 return;
             }
@@ -223,7 +262,7 @@ namespace ES2Access.UI
             // draws its resource as an icon and the amount as a number beside it, and the number alone
             // is what the column used to say. Everything the table does not name is decoration and
             // answers null, which is what keeps backgrounds and rules out of the reading.
-            Says(widget, PictureName(widget));
+            Says(widget, Unechoed(PictureName(widget)));
 
             if (depth > 0 && tooltips != null)
             {
@@ -233,7 +272,7 @@ namespace ES2Access.UI
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                CollectDrawn(children[i], tooltips, depth + 1, limit);
+                CollectDrawn(children[i], tooltips, depth + 1, limit, skip);
             }
         }
 
@@ -254,6 +293,18 @@ namespace ES2Access.UI
         /// <summary>What a widget drawing no words is called, where it is drawing something that
         /// stands for a word at all - the icon table is the test (<see cref="IconNames.NameForAsset"/>),
         /// and it names only the pictures that carry meaning.</summary>
+        /// <summary>A picture's word, unless it is the caption of the column being read
+        /// (<see cref="_echo"/>) - the column's own icon repeated in every cell, which the crossing
+        /// into the column already said.</summary>
+        private string Unechoed(string picture)
+        {
+            return picture != null
+                && _echo != null
+                && string.Equals(picture.Trim(), _echo.Trim(), StringComparison.OrdinalIgnoreCase)
+                ? null
+                : picture;
+        }
+
         private static string PictureName(AgeTransform widget)
         {
             AgePrimitiveImage image = widget.GetComponent<AgePrimitiveImage>();
@@ -387,6 +438,14 @@ namespace ES2Access.UI
         /// a table that names its tooltip through <c>GuiTableCell.Tooltip</c> may be naming one that
         /// hangs on a piece INSIDE the cell.
         /// </summary>
+        /// <summary>The last renderer-assembled dossier drawn inside a cell, or null - the one the
+        /// pointer goes to where the cell has no tooltip of its own.</summary>
+        private AgeTooltip LastInside(AgeTransform cell)
+        {
+            List<AgeTooltip> inner = Inside(cell, null);
+            return inner == null ? null : inner[inner.Count - 1];
+        }
+
         private List<AgeTooltip> Inside(AgeTransform cell, AgeTooltip own)
         {
             List<AgeTooltip> found = Hovers(cell);

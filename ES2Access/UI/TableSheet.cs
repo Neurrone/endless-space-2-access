@@ -587,8 +587,12 @@ namespace ES2Access.UI
             Func<bool> rowEnabled = enabled;
             Func<bool> operable = () =>
                 rowEnabled() && AgeWidgets.Operable(press.AgeTransform) && AgeWidgets.Enabled(it);
-            AgeTooltip tooltip = TooltipOf(cell);
-            AgeTooltip reason = RefusalTooltip(cell) ?? tooltip;
+            // What explains the cell, in the order the game writes it: the refusal on the label drawn
+            // INSTEAD of the figure, else the cell's own tooltip where it could draw anything, else the
+            // last dossier hung on a piece inside it - the construction column keeps its constructible's
+            // dossier on the picture and hangs an empty placeholder on the cell.
+            AgeTooltip tooltip =
+                RefusalTooltip(cell) ?? CellTooltip(header, cell) ?? LastInside(cell);
             NodeVtable vtable = new NodeVtable
             {
                 // Named as the button it is, unlike the figures beside it: the game draws a click

@@ -74,12 +74,40 @@ namespace ES2Access.Core.UI
         private int _regionIndex = -1;
         private bool _contextOpen;
 
-        // Current region state. Row cells carry their LOGICAL column (sparse rows skip empty cells --
-        // they aren't landable -- but vertical navigation still matches columns by logical number).
+        // Current region state. Row cells carry their COLUMN IDENTITY - the logical column plus the
+        // piece within it (sparse rows skip empty cells -- they aren't landable -- and a cell read as
+        // several pieces puts them all under one logical column; vertical navigation matches by
+        // identity, never by position along the row).
         private struct CellRef
         {
             public int Col;
+            public int Piece;
             public ControlId Id;
+        }
+
+        /// <summary>
+        /// One cell of a row at an explicit COLUMN IDENTITY: the logical column (1-based; 0 is the
+        /// primary) and, for a cell the caller reads as several pieces, which piece this is
+        /// (0-based, in drawn order).
+        ///
+        /// Identity rather than position is what lets rows be RAGGED without lying: a cell drawn as
+        /// three badges on one row and none on the next puts three pieces under one column, so the
+        /// caption is the column's whatever the piece, the next column's caption follows it, and
+        /// Up/Down from a piece land on the same column of the neighbouring row - the same piece where
+        /// it has one, the nearest where it has fewer, and the row's name where it has none.
+        /// </summary>
+        public struct SheetCell
+        {
+            public int Col;
+            public int Piece;
+            public NodeVtable Vtable;
+
+            public SheetCell(int col, int piece, NodeVtable vtable)
+            {
+                Col = col;
+                Piece = piece;
+                Vtable = vtable;
+            }
         }
 
         private string[] _columns; // headers for cells 0..N, primary first (null = a plain list region)
@@ -218,7 +246,7 @@ namespace ES2Access.Core.UI
                         // Type-ahead matches the row's name from any cell - unless the row has no name,
                         // where the cell's own words are the only thing there is to type at.
                         SearchText = NamedRows ? _rowName : null,
-                    }, i + 1);
+                    }, i + 1, 0);
                 }
             WireVertical();
             return this;
@@ -232,7 +260,21 @@ namespace ES2Access.Core.UI
             BeginRow(primary, rowRef, rowWidget);
             if (cells != null)
                 foreach (KeyValuePair<int, NodeVtable> kv in cells)
-                    if (kv.Value != null) EmitCell(kv.Value, kv.Key);
+                    if (kv.Value != null) EmitCell(kv.Value, kv.Key, 0);
+            WireVertical();
+            return this;
+        }
+
+        /// <summary>The same for cells at explicit COLUMN IDENTITIES (<see cref="SheetCell"/>): a cell
+        /// the caller reads as several pieces emits them all under its one logical column, in the order
+        /// given, which is the order they are walked. Emit a row's cells in drawn order.</summary>
+        public GraphSheet RowAt(NodeVtable primary, object rowRef,
+            IEnumerable<SheetCell> cells, object rowWidget = null)
+        {
+            BeginRow(primary, rowRef, rowWidget);
+            if (cells != null)
+                foreach (SheetCell cell in cells)
+                    if (cell.Vtable != null) EmitCell(cell.Vtable, cell.Col, cell.Piece);
             WireVertical();
             return this;
         }
@@ -252,7 +294,7 @@ namespace ES2Access.Core.UI
             _rowName = primary.Announcements != null && primary.Announcements.Count > 0
                 ? primary.Announcements[0].Text : null;
 
-            EmitCell(primary, 0);
+            EmitCell(primary, 0, 0);
         }
 
         /// <summary>A single full-width line (a lead row like "Your dust", a section note).</summary>
@@ -286,7 +328,7 @@ namespace ES2Access.Core.UI
             _rowPos = null;
         }
 
-        private void EmitCell(NodeVtable vt, int col)
+        private void EmitCell(NodeVtable vt, int col, int piece)
         {
             // Which column a cell is in is the sheet's own knowledge, and type-ahead needs it: a row
             // whose every cell searches as the row's name must offer the player one result, not one
@@ -319,7 +361,9 @@ namespace ES2Access.Core.UI
 
             // Identity keys when the row has a domain object: stable across reorders/removals (the
             // primary also carries the reference for tier-1 follow); positional only for static lines.
-            string skey = RowKey() + "c" + col;
+            // A piece past the first carries its index in the key; the first keeps the key a
+            // one-piece cell always had, so nothing that names a cell by it changes.
+            string skey = RowKey() + "c" + col + (piece > 0 ? "p" + piece : string.Empty);
             ControlId id = _rowRef != null && col == 0
                 ? ControlId.For(_rowRef, skey)
                 : ControlId.Structural(skey);
@@ -350,10 +394,14 @@ namespace ES2Access.Core.UI
             if (_rowIds.Count > 0)
             {
                 CellRef left = _rowIds[_rowIds.Count - 1];
-                _b.Connect(id, GraphDir.Left, left.Id, Header(left.Col));
-                _b.Connect(left.Id, GraphDir.Right, id, Header(col));
+                // A step between two pieces of ONE column crosses no column, so it carries no
+                // caption: the caption was said on the way into the column and is said again on
+                // the way out of it.
+                bool crossing = left.Col != col;
+                _b.Connect(id, GraphDir.Left, left.Id, crossing ? Header(left.Col) : null);
+                _b.Connect(left.Id, GraphDir.Right, id, crossing ? Header(col) : null);
             }
-            _rowIds.Add(new CellRef { Col = col, Id = id });
+            _rowIds.Add(new CellRef { Col = col, Piece = piece, Id = id });
         }
 
         // Vertical edges between the completed row and the previous one: the same LOGICAL column where
@@ -367,22 +415,36 @@ namespace ES2Access.Core.UI
             foreach (CellRef cell in _rowIds)
             {
                 bool matched = HasCol(_prevRowIds, cell.Col);
-                _b.Connect(cell.Id, GraphDir.Up, FindAt(_prevRowIds, cell.Col),
+                _b.Connect(cell.Id, GraphDir.Up, FindAt(_prevRowIds, cell.Col, cell.Piece),
                     matched && cell.Col > 0 && NamedRows ? Text(_prevRowName) : null);
             }
             foreach (CellRef cell in _prevRowIds)
             {
                 bool matched = HasCol(_rowIds, cell.Col);
-                _b.Connect(cell.Id, GraphDir.Down, FindAt(_rowIds, cell.Col),
+                _b.Connect(cell.Id, GraphDir.Down, FindAt(_rowIds, cell.Col, cell.Piece),
                     matched && cell.Col > 0 && NamedRows ? Text(_rowName) : null);
             }
         }
 
-        private static ControlId FindAt(List<CellRef> row, int col)
+        // The cell of <paramref name="row"/> at a column identity: the same piece of the same column
+        // where the row has it, else the NEAREST piece of that column (a row drawing fewer pieces
+        // lands on its last one, never on a neighbouring column), else the row's primary.
+        private static ControlId FindAt(List<CellRef> row, int col, int piece)
         {
+            ControlId nearest = null;
+            int distance = int.MaxValue;
             foreach (CellRef c in row)
-                if (c.Col == col) return c.Id;
-            return row[0].Id; // fall to the row's primary
+            {
+                if (c.Col != col) continue;
+                if (c.Piece == piece) return c.Id;
+                int apart = Math.Abs(c.Piece - piece);
+                if (apart < distance)
+                {
+                    distance = apart;
+                    nearest = c.Id;
+                }
+            }
+            return nearest ?? row[0].Id; // fall to the row's primary
         }
 
         private static bool HasCol(List<CellRef> row, int col)

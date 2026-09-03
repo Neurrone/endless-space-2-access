@@ -298,6 +298,78 @@ namespace ES2Access.Tests.UI
             Assert.Equal("Beta", GraphAnnouncer.LeafText(down.To));
         }
 
+        /// <summary>A table whose second column is read as PIECES on one row and as one cell on the
+        /// next - a save with two expansion badges above a base-game save.</summary>
+        private KeyGraph Pieced(GraphState state)
+        {
+            return new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.Region("Saves", new[] { "Name", "Content", "Status" });
+                s.RowAt(Vt("Alpha"), _rowA, new[]
+                {
+                    new GraphSheet.SheetCell(1, 0, Vt("Vaulters")),
+                    new GraphSheet.SheetCell(1, 1, Vt("Hissho")),
+                    new GraphSheet.SheetCell(2, 0, Vt("Valid")),
+                });
+                s.RowAt(Vt("Beta"), _rowB, new[]
+                {
+                    new GraphSheet.SheetCell(1, 0, Vt("blank")),
+                    new GraphSheet.SheetCell(2, 0, Vt("Corrupt")),
+                });
+                s.Finish();
+                return b.Build();
+            }, state);
+        }
+
+        /// <summary>The pieces of one cell are entered under that cell's caption, said once - a step from
+        /// piece to piece crosses no column - and the next column's caption follows them, never one
+        /// borrowed from a row with fewer pieces.</summary>
+        [Fact]
+        public void ThePiecesOfACellShareItsCaptionAndTheNextColumnFollowsThem()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Pieced(state);
+            g.Rerender();
+            MoveResult first = g.Move(GraphDir.Right);
+            Assert.Equal("Content", first.TransitionLabel);
+            Assert.Equal("Vaulters", GraphAnnouncer.LeafText(first.To));
+            MoveResult second = g.Move(GraphDir.Right);
+            Assert.Null(second.TransitionLabel); // still Content: no column was crossed
+            Assert.Equal("Hissho", GraphAnnouncer.LeafText(second.To));
+            MoveResult third = g.Move(GraphDir.Right);
+            Assert.Equal("Status", third.TransitionLabel);
+            Assert.Equal("Valid", GraphAnnouncer.LeafText(third.To));
+        }
+
+        /// <summary>Up and Down move by column IDENTITY: from a cell's second piece the row below,
+        /// which has one, lands on its nearest piece of the same column, and the row's other columns
+        /// stay themselves whatever position the pieces pushed them to.</summary>
+        [Fact]
+        public void VerticalMovesLandOnTheSameColumnWhateverThePieceCount()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Pieced(state);
+            g.Rerender();
+            g.Move(GraphDir.Right);
+            g.Move(GraphDir.Right); // Alpha / Content, piece 2
+            MoveResult down = g.Move(GraphDir.Down);
+            Assert.True(down.Moved);
+            Assert.Equal("Beta", down.TransitionLabel);
+            Assert.Equal("blank", GraphAnnouncer.LeafText(down.To));
+            MoveResult up = g.Move(GraphDir.Up);
+            Assert.Equal("Alpha", up.TransitionLabel);
+            Assert.Equal("Vaulters", GraphAnnouncer.LeafText(up.To));
+            g.Move(GraphDir.Down);
+            MoveResult status = g.Move(GraphDir.Right); // Beta / Status
+            Assert.Equal("Status", status.TransitionLabel);
+            Assert.Equal("Corrupt", GraphAnnouncer.LeafText(status.To));
+            MoveResult back = g.Move(GraphDir.Up);
+            Assert.Equal("Alpha", back.TransitionLabel);
+            Assert.Equal("Valid", GraphAnnouncer.LeafText(back.To));
+        }
+
         [Fact]
         public void AnEmptyCellReadsBlank()
         {
