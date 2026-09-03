@@ -224,7 +224,18 @@ namespace ES2Access.UI
                 // The same word once: a name cell draws its resource as a portrait, a small icon and
                 // the name, and all three say "Titanium" - one word for one thing, as a reader's eye
                 // takes it.
-                if (!Repeats(_drawn, i))
+                if (!Repeats(_drawn, i) && !Trailing(_drawn[i].Text))
+                {
+                    said.ListItem(_drawn[i].Text);
+                }
+            }
+
+            // A trend arrow is a remark about the figure it sits beside - "rising" is about the 55
+            // Dust, not a thing of its own - so it is said after the figure whichever side of it the
+            // game draws the arrow on (owner ruling 2026-09-03: "55, Dust, rising").
+            for (int i = 0; i < _drawn.Count; i++)
+            {
+                if (Trailing(_drawn[i].Text) && !Repeats(_drawn, i))
                 {
                     said.ListItem(_drawn[i].Text);
                 }
@@ -232,6 +243,12 @@ namespace ES2Access.UI
 
             _drawn.Clear();
             return said.Build();
+        }
+
+        private static bool Trailing(string text)
+        {
+            return SpokenText.SameLine(text, ModStrings.Get(ModStrings.IconPriceRising))
+                || SpokenText.SameLine(text, ModStrings.Get(ModStrings.IconPriceFalling));
         }
 
         private static bool Repeats(List<DrawnPart> parts, int index)
