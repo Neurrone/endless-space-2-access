@@ -315,6 +315,11 @@ namespace ES2Access.Screens
         /// star really is at that star, and keeps the system-ancestor resolution and its zoom in on
         /// the berth.
         ///
+        /// The rows UNDER such a thing - a fleet's tooltip children, its ships - stand where it stands:
+        /// the point is looked for on the node and then on every ancestor before the system walk, or
+        /// expanding a fleet in mid-lane to read its tooltip slid the camera onto the star its row is
+        /// filed under (measured 2026-09-03: focus left the fleet's position for the system's).
+        ///
         /// Otherwise the system ANCESTOR wins over anything nearer: the star's own dossier cards and a
         /// lane leaving it are things the map draws AT that system, and the place the player is reading
         /// is the system.
@@ -323,21 +328,26 @@ namespace ES2Access.Screens
         {
             place = null;
             inside = false;
-            IGameEntityWithGalaxyPosition drawn = OpenSpaceThing(node == null ? null : node.Id);
-            if (drawn != null)
+            for (GraphNode walk = node; walk != null; walk = walk.Parent)
             {
-                place = drawn;
-                return true;
-            }
+                ControlId id = walk.Id;
+                IGameEntityWithGalaxyPosition drawn = OpenSpaceThing(id);
+                if (drawn != null)
+                {
+                    place = drawn;
+                    return true;
+                }
 
-            // A place the PLAYER put out on the map, which the map draws nothing at. It is a point
-            // like the four above and belongs with them, ahead of the ancestor walk: its row hangs in
-            // a constellation for reading order and it is not a thing that constellation contains.
-            BookmarkPoint bookmark = BookmarkAt(node == null ? null : node.Id);
-            if (bookmark != null)
-            {
-                place = bookmark;
-                return true;
+                // A place the PLAYER put out on the map, which the map draws nothing at. It is a
+                // point like the four above and belongs with them, ahead of the system walk: its row
+                // hangs in a constellation for reading order and it is not a thing that constellation
+                // contains.
+                BookmarkPoint bookmark = BookmarkAt(id);
+                if (bookmark != null)
+                {
+                    place = bookmark;
+                    return true;
+                }
             }
 
             for (GraphNode walk = node; walk != null; walk = walk.Parent)
