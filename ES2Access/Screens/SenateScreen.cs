@@ -751,9 +751,9 @@ namespace ES2Access.Screens
             Cells.Add(cells, count, ControlId.For(count, "senate:census/total"), vtable);
         }
 
-        /// <summary>One slice of the ring: who they are, how many of them there are, and - where the
-        /// game is offering one - what boosting them would cost or how long the boost it is already
-        /// running has left.</summary>
+        /// <summary>One slice of the ring: who they are and how many of them there are. What the
+        /// slice's badges say - the collection tiers, and the boost with whether it can be paid for -
+        /// is on the badge nodes under it (<see cref="AddBadges"/>).</summary>
         private static void AddCensusArc(List<Cell> cells, AgeTransform widget, int index)
         {
             PopulationCensusArc arc =
@@ -781,7 +781,6 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(it.AffinityLabel)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.CountLabel)),
-                    GraphNodes.ValuePart(() => BoostText(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };
@@ -854,6 +853,16 @@ namespace ES2Access.Screens
                 AgeTransform widget = tooltip == null ? null : tooltip.AgeTransform;
                 if (widget == null)
                 {
+                    continue;
+                }
+
+                // The boost badge is named by what it SAYS - the luxury and whether the empire can
+                // pay, or a running boost's turns - so the sentence is heard on the node whose
+                // tooltip explains it, not on the slice's row (owner ruling 2026-09-03).
+                if (ReferenceEquals(widget, AgeWidgets.Transform(arc.PopulationBoostLabel)))
+                {
+                    PopulationCensusArc owner = arc;
+                    TooltipChildren.AddPlain(into, tooltip, widget, () => BoostText(owner));
                     continue;
                 }
 
