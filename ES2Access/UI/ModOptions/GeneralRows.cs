@@ -27,10 +27,10 @@ namespace ES2Access.UI.ModOptions
     /// <summary>
     /// THE GENERAL TAB - the window's first, where a setting that belongs to no other tab lives.
     ///
-    /// Two rows: whether the game's cut scenes are described, and whether the tooltips the game
-    /// assembles on hover are read out once they have drawn
-    /// (<see cref="ES2Access.UI.Settings.LongTooltipSettings"/>, which is the mod's own settings
-    /// file like every other mod setting). The cut-scene setting is the odd one out: it is a BepInEx
+    /// Two rows, in this order: whether the tooltips the game assembles on hover are read out
+    /// once they have drawn (<see cref="ES2Access.UI.Settings.LongTooltipSettings"/>, which is
+    /// the mod's own settings file like every other mod setting), then whether the game's cut
+    /// scenes are described. The cut-scene setting is the odd one out: it is a BepInEx
     /// config entry the LOADER owns (<c>[Speech] cutsceneDescriptions</c>), and that file stays the
     /// one store - this row is the player's way into it rather than a second copy of it. So the row
     /// writes both halves at once: the live flag the cutscene watcher reads
@@ -60,18 +60,6 @@ namespace ES2Access.UI.ModOptions
             {
                 List<Option> options = new List<Option>();
                 ModRows.Begin(panel);
-                Option cutscenes = ModRows.Toggle(
-                    panel,
-                    "cutsceneDescriptions",
-                    ModStrings.Get(ModStrings.ModSettingsCutsceneDescriptions),
-                    ReadCutsceneDescriptions,
-                    WriteCutsceneDescriptions
-                );
-                if (cutscenes != null)
-                {
-                    options.Add(cutscenes);
-                }
-
                 Option longTooltips = ModRows.Toggle(
                     panel,
                     "announceLongTooltips",
@@ -83,6 +71,18 @@ namespace ES2Access.UI.ModOptions
                 if (longTooltips != null)
                 {
                     options.Add(longTooltips);
+                }
+
+                Option cutscenes = ModRows.Toggle(
+                    panel,
+                    "cutsceneDescriptions",
+                    ModStrings.Get(ModStrings.ModSettingsCutsceneDescriptions),
+                    ReadCutsceneDescriptions,
+                    WriteCutsceneDescriptions
+                );
+                if (cutscenes != null)
+                {
+                    options.Add(cutscenes);
                 }
 
                 ModRows.Publish(panel, options);
