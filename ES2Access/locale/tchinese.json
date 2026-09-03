@@ -608,6 +608,8 @@
   "senate.locked-law-slot": "鎖定的法條欄位",
   "senate.empty-senator-slot": "空白國會代表欄位",
   "senate.locked-senator-slot": "鎖定的國會代表欄位",
+  "senate.census-boost-sufficient": "{0}充足，可為此種族人口加速成長",
+  "senate.census-boost-insufficient": "{0}不足，無法為此種族人口加速成長",
   "politics.current-experience": "目前政治經驗值：{0}（{1}）",
   "election.representatives-counted": "已計票 {0} 位，共 {1} 位代表",
   "screen.economy": "經濟",

@@ -632,6 +632,8 @@
   "senate.locked-law-slot": "Zablokowane miejsce na prawo",
   "senate.empty-senator-slot": "Puste miejsce na senatora",
   "senate.locked-senator-slot": "Zablokowane miejsce na senatora",
+  "senate.census-boost-sufficient": "wystarczająco {0} na wzmocnienie tej populacji",
+  "senate.census-boost-insufficient": "za mało {0} na wzmocnienie tej populacji",
   "politics.current-experience": "Bieżące doświadczenie polityczne: {0} ({1})",
   "election.representatives-counted": "Policzono {0} z {1} reprezentantów",
   "screen.economy": "Ekonomia",

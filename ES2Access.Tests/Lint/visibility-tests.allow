@@ -467,6 +467,8 @@ ES2Access/Screens/SenateScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(
 ES2Access/Screens/SenateScreen.cs | 1 | if (count == null || !AgeWidgets.Visible(count))
 ES2Access/Screens/SenateScreen.cs | 1 | if (labels == null || !AgeWidgets.Visible(labels))
 ES2Access/Screens/SenateScreen.cs | 1 | if (panel != null && AgeWidgets.Visible(panel.AgeTransform))
+ES2Access/Screens/SenateScreen.cs | 1 | if (strip == null || !AgeWidgets.Painted(strip))
+ES2Access/Screens/SenateScreen.cs | 1 | it.Disk != null && it.Disk.Visible
 ES2Access/Screens/SenateScreen.cs | 1 | || !AgeWidgets.Paints(widget)
 ES2Access/Screens/SenateScreen.cs | 1 | || !AgeWidgets.Visible(card.HeroExperienceGroup)
 

@@ -631,6 +631,8 @@
   "senate.locked-law-slot": "Locked law slot",
   "senate.empty-senator-slot": "Empty senator slot",
   "senate.locked-senator-slot": "Locked senator slot",
+  "senate.census-boost-sufficient": "sufficient {0} to boost this population",
+  "senate.census-boost-insufficient": "insufficient {0} to boost this population",
   "politics.current-experience": "Current Political experience: {0} ({1})",
   "election.representatives-counted": "{0} of {1} representatives counted",
   "screen.economy": "Economy",

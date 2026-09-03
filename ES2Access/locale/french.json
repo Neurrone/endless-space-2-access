@@ -608,6 +608,8 @@
   "senate.locked-law-slot": "Emplacement de loi verrouillé",
   "senate.empty-senator-slot": "Emplacement de sénateur vide",
   "senate.locked-senator-slot": "Emplacement de sénateur verrouillé",
+  "senate.census-boost-sufficient": "{0} suffisant pour le Bonus de population de cette population",
+  "senate.census-boost-insufficient": "{0} insuffisant pour le Bonus de population de cette population",
   "politics.current-experience": "Expérience politique actuelle : {0} ({1})",
   "election.representatives-counted": "{0} représentants comptés sur {1}",
   "screen.economy": "Économie",

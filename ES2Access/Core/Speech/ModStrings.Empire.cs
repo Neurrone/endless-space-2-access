@@ -51,6 +51,13 @@ namespace ES2Access.Core.Speech
         public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";
         public const string SenateLockedSenatorSlot = "senate.locked-senator-slot";
 
+        // The census ring's boost icon: the luxury that would boost a people, drawn full when the
+        // empire can pay and dimmed when it cannot (PopulationCensusArc.RefreshBoostSpecifics). A
+        // running boost draws its turn count instead and needs no words of the mod's (owner
+        // ruling 2026-09-03).
+        public const string SenateCensusBoostSufficient = "senate.census-boost-sufficient";
+        public const string SenateCensusBoostInsufficient = "senate.census-boost-insufficient";
+
         // A law out of the backing party's reach draws where that party stands as a notch on a bar
         // with no numbers on it, under the game's own caption for what the law REQUIRES ("Required
         // Political experience:"). The caption for the drawn notch is the mod's, phrased on that one;

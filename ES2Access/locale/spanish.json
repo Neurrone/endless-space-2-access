@@ -608,6 +608,8 @@
   "senate.locked-law-slot": "Espacio de ley bloqueado",
   "senate.empty-senator-slot": "Espacio de senador vacío",
   "senate.locked-senator-slot": "Espacio de senador bloqueado",
+  "senate.census-boost-sufficient": "{0} suficiente para el potenciador poblacional de esta población",
+  "senate.census-boost-insufficient": "{0} insuficiente para el potenciador poblacional de esta población",
   "politics.current-experience": "Experiencia política actual: {0} ({1})",
   "election.representatives-counted": "{0} de {1} representantes contados",
   "screen.economy": "Economía",

@@ -608,6 +608,8 @@
   "senate.locked-law-slot": "잠긴 법 슬롯",
   "senate.empty-senator-slot": "빈 의원 슬롯",
   "senate.locked-senator-slot": "잠긴 의원 슬롯",
+  "senate.census-boost-sufficient": "이 인구의 성장 지원에 {0} 충분",
+  "senate.census-boost-insufficient": "이 인구의 성장 지원에 {0} 부족",
   "politics.current-experience": "현재 정치 경험치: {0} ({1})",
   "election.representatives-counted": "대표자 {1}명 중 {0}명 집계됨",
   "screen.economy": "경제",

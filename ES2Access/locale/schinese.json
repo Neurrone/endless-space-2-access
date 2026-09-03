@@ -608,6 +608,8 @@
   "senate.locked-law-slot": "已锁定法律栏位",
   "senate.empty-senator-slot": "空白参议员栏位",
   "senate.locked-senator-slot": "已锁定参议员栏位",
+  "senate.census-boost-sufficient": "{0}充足，可为此族群人口加速",
+  "senate.census-boost-insufficient": "{0}不足，无法为此族群人口加速",
   "politics.current-experience": "当前政治经验值：{0}（{1}）",
   "election.representatives-counted": "已统计{1}名代表中的{0}名",
   "screen.economy": "经济",

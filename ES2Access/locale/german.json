@@ -608,6 +608,8 @@
   "senate.locked-law-slot": "Gesperrter Gesetzesplatz",
   "senate.empty-senator-slot": "Leerer Senatorenplatz",
   "senate.locked-senator-slot": "Gesperrter Senatorenplatz",
+  "senate.census-boost-sufficient": "genug {0} für den Bevölkerungsbonus dieser Bevölkerung",
+  "senate.census-boost-insufficient": "nicht genug {0} für den Bevölkerungsbonus dieser Bevölkerung",
   "politics.current-experience": "Aktuelle politische Erfahrung: {0} ({1})",
   "election.representatives-counted": "{0} von {1} Vertretern ausgezählt",
   "screen.economy": "Wirtschaft",

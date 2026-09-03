@@ -982,6 +982,8 @@ namespace ES2Access.Core.Speech
             { SenateLockedLawSlot, "Locked law slot" },
             { SenateEmptySenatorSlot, "Empty senator slot" },
             { SenateLockedSenatorSlot, "Locked senator slot" },
+            { SenateCensusBoostSufficient, "sufficient {0} to boost this population" },
+            { SenateCensusBoostInsufficient, "insufficient {0} to boost this population" },
             { PoliticsCurrentExperience, "Current Political experience: {0} ({1})" },
             { ElectionRepresentativesCounted, "{0} of {1} representatives counted" },
             { ScreenEconomy, "Economy" },

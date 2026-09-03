@@ -645,6 +645,8 @@
   "senate.locked-law-slot": "Закрытая ячейка закона",
   "senate.empty-senator-slot": "Пустая ячейка сенатора",
   "senate.locked-senator-slot": "Закрытая ячейка сенатора",
+  "senate.census-boost-sufficient": "достаточно {0} для увеличения прироста этого населения",
+  "senate.census-boost-insufficient": "недостаточно {0} для увеличения прироста этого населения",
   "politics.current-experience": "Текущий политический опыт: {0} ({1})",
   "election.representatives-counted": "подсчитано представителей: {0} из {1}",
   "screen.economy": "Экономика",

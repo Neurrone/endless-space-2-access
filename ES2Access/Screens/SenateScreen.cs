@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -804,10 +805,7 @@ namespace ES2Access.Screens
             // The badge strip only, never the container: the slice's OWN tooltip hangs on
             // LabelsContainer and is already this node's section, and reading down from there would
             // declare it a second time as a child of itself.
-            TooltipChildren.AddPlainInside(
-                badges,
-                AgeWidgets.ChildNamed(labels, "SubInfosTable", 2)
-            );
+            AddBadges(badges, arc, AgeWidgets.ChildNamed(labels, "SubInfosTable", 2));
             if (badges.Count > 0 && cells.Count > 0)
             {
                 Cell owner = cells[cells.Count - 1];
@@ -816,11 +814,135 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// The slice's badges as nodes, in the order the strip lays them out
+        /// (<see cref="TooltipChildren.AddPlainInside"/>'s walk), with the collection markers named
+        /// the way the population details page names its threshold rows.
+        ///
+        /// A marker is a filled disk once the empire holds that many of these people and an empty
+        /// ring until then (<c>PopulationCollectionMarker.Refresh</c>: <c>Disk.Visible</c> is
+        /// count >= threshold), and its tooltip is the bonus's effect alone - so a node that only
+        /// said the effect lost the one fact the picture exists to show. The threshold count is in
+        /// the species' own collection-bonus data, index-aligned with the markers, and the details
+        /// page already prints it beside each tier, so naming the tier by it says nothing the player
+        /// cannot read elsewhere: "10 population, not reached, +15% Influence…" on both pages
+        /// (owner ruling 2026-09-03). The party icon and the boost badge keep their own names.
+        /// </summary>
+        private static void AddBadges(
+            List<TooltipChildren.Dossier> into,
+            PopulationCensusArc arc,
+            AgeTransform strip
+        )
+        {
+            // Flow control: the paint test on the CONTAINER prunes the whole strip before its tooltips
+            // are resolved - AddPlainInside's own rule, kept here because the walk is its own.
+            if (strip == null || !AgeWidgets.Painted(strip))
+            {
+                return;
+            }
+
+            List<AgeTooltip> found = new List<AgeTooltip>();
+            AgeWidgets.EffectiveTooltips(
+                strip,
+                found,
+                TooltipReach.Own | TooltipReach.Descendants,
+                4
+            );
+            for (int i = 0; i < found.Count; i++)
+            {
+                AgeTooltip tooltip = found[i];
+                AgeTransform widget = tooltip == null ? null : tooltip.AgeTransform;
+                if (widget == null)
+                {
+                    continue;
+                }
+
+                PopulationCollectionMarker marker = widget.GetComponent<PopulationCollectionMarker>();
+                int threshold = marker == null ? -1 : ThresholdOf(arc, widget);
+                if (threshold < 0)
+                {
+                    TooltipChildren.AddPlain(into, tooltip, widget);
+                    continue;
+                }
+
+                PopulationCollectionMarker it = marker;
+                int count = threshold;
+                TooltipChildren.AddPlain(
+                    into,
+                    tooltip,
+                    widget,
+                    () =>
+                        ModStrings.Format(
+                            // Content read: which of the two shapes the game is drawing IS the tier's reached state.
+                            it.Disk != null && it.Disk.Visible
+                                ? ModStrings.PopulationThresholdReached
+                                : ModStrings.PopulationThresholdNotReached,
+                            count
+                        )
+                );
+            }
+        }
+
+        /// <summary>The threshold the marker at <paramref name="widget"/> stands for, or -1 where
+        /// the species' data has no tier at that position.</summary>
+        private static int ThresholdOf(PopulationCensusArc arc, AgeTransform widget)
+        {
+            try
+            {
+                IGuiPopulation population = arc.GuiPopulation as IGuiPopulation;
+                PopulationCollectionBonusTrait.Item[] bonuses =
+                    population == null ? null : population.CollectionBonuses;
+                IList<AgeTransform> markers =
+                    arc.CollectionTable == null ? null : arc.CollectionTable.Children;
+                if (bonuses == null || markers == null)
+                {
+                    return -1;
+                }
+
+                int slot = markers.IndexOf(widget);
+                return slot >= 0 && slot < bonuses.Length ? bonuses[slot].Threshold : -1;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
+        }
+
+        /// <summary>
+        /// What the slice's boost badge says: the luxury that would boost these people, framed by
+        /// whether the empire can pay for it - the picture dims the icon to half brightness when it
+        /// cannot (<c>PopulationCensusArc.RefreshBoostSpecifics</c>) - or, while a boost is running,
+        /// the turn count the game draws in the icon's place, which needs no framing. Nothing where
+        /// the game draws nothing: a people that cannot be boosted, none of them, or a luxury the
+        /// empire has not found.
+        /// </summary>
         private static string BoostText(PopulationCensusArc arc)
         {
             try
             {
-                return AgeWidgets.DrawnLabel(arc.PopulationBoostLabel);
+                AgePrimitiveLabel label = arc.PopulationBoostLabel;
+                string drawn = AgeWidgets.DrawnLabel(label);
+                if (string.IsNullOrEmpty(drawn))
+                {
+                    return null;
+                }
+
+                // The raw string on purpose: the drawn text has already turned the [turn] token into a
+                // word, and the TOKEN is what says this is a running boost's turn count rather than a
+                // luxury's name.
+                string raw = label.Text ?? string.Empty;
+                if (raw.IndexOf("[turn", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return drawn;
+                }
+
+                bool affordable = label.AgeTransform.Alpha >= 1f;
+                return ModStrings.Format(
+                    affordable
+                        ? ModStrings.SenateCensusBoostSufficient
+                        : ModStrings.SenateCensusBoostInsufficient,
+                    drawn
+                );
             }
             catch (Exception)
             {
