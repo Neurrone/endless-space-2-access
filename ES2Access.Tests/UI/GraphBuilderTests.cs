@@ -296,7 +296,7 @@ namespace ES2Access.Tests.UI
             Assert.Equal("ok", DestKey(Node(r, "c2"), GraphDir.Down));
 
             // Back into the block lands on the run's FIRST node - a table row's primary cell, which
-            // reads the whole row - not on whichever column happened to be declared last.
+            // reads the row's name - not on whichever column happened to be declared last.
             Assert.Equal("c0", DestKey(Node(r, "ok"), GraphDir.Up));
             Assert.Equal("c0", DestKey(Node(r, "no"), GraphDir.Up));
         }

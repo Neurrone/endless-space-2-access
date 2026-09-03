@@ -34,9 +34,9 @@ namespace ES2Access.UI
     ///   left and right walk one row's figures, and a column's own caption is the spoken edge the player
     ///   crosses to reach it rather than a word every cell repeats - the NAME column's caption included,
     ///   so the step back onto the row's name names that column too. The name cell says the name, whether
-    ///   the row is the one selected, and carries the whole row in its review buffer - a row of thirteen
-    ///   figures in front of "not selected" is thirteen figures the player sits through to hear the one
-    ///   word they are stepping the list for.
+    ///   the row is the one selected, and reviews like any other column - its own caption, value and
+    ///   inner words, never the other columns. A row of thirteen figures is read column by column,
+    ///   not from its name.
     /// - <b>Selecting</b> is the game's own select-then-act and is copied rather than shortened: Enter on
     ///   a row is the row's own click, which selects it and enables whatever the screen's Confirm is.
     ///   The game also commits on a DOUBLE click and that gesture is deliberately not wired here - a
@@ -238,7 +238,7 @@ namespace ES2Access.UI
         /// Per-BUILD memos, both cleared at the top of <see cref="Rows"/> and keyed on the cell widget:
         /// the screen's own reading of a cell (<see cref="ReadValue"/>) and the tooltip subtree hanging
         /// inside it (<see cref="Inside"/>). Every surface a cell has asks for both - the value part,
-        /// the buffer head, the cell's facts, the whole row's facts - and each asked again from scratch,
+        /// the buffer head, the cell's facts - and each asked again from scratch,
         /// so a wide table paid for the same hook call and the same subtree walk several times over
         /// while the answer could not have changed.
         ///
@@ -377,8 +377,8 @@ namespace ES2Access.UI
             Collect(line, _cells);
         }
 
-        /// <summary>A row's columns as their own list, for the two readouts that walk the whole row at
-        /// READ time - the summary a player hears and the lines they can review. The build's own copy is
+        /// <summary>A row's columns as their own list, for the readers that walk a row's cells at READ
+        /// time - the column captions and the heading band. The build's own copy is
         /// reused across builds and would be a different row's by then.</summary>
         private static List<AgeTransform> CellsOf(GuiTableLine line)
         {

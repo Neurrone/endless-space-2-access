@@ -167,9 +167,9 @@ namespace ES2Access.UI
         ///
         /// Both membership words are spoken, not just "selected": this is a list the player is choosing
         /// from, and a row that says nothing when it is out of the selection leaves them counting
-        /// silences. The whole row is still one keypress away in the review buffer, where it is read at
-        /// read time rather than watched: working it out means walking every cell and nothing about them
-        /// changes under a standing cursor.
+        /// silences. Its review buffer is the name cell's own, like every other column's: the
+        /// column's caption and value, the words drawn inside the cell, and any lines the screen adds
+        /// for the row - never the other columns.
         /// </summary>
         private NodeVtable PrimaryVtable(GuiTable table, GuiTableLine line, AgeTransform cell)
         {
@@ -189,7 +189,7 @@ namespace ES2Access.UI
                     () => AgeWidgets.Toggle(row.SelectionToggle),
                     enabled,
                     explains,
-                    () => RowFacts(row)
+                    () => NameFacts(row, name)
                 );
                 // A table row is not read as a radio button, though its selection IS one: the row's
                 // name and its spoken "selected"/"not selected" carry the whole affordance, and a role
@@ -209,7 +209,7 @@ namespace ES2Access.UI
                         GraphNodes.LabelPart(() => RowText(row, name)),
                         GraphNodes.DisabledPart(enabled),
                     },
-                    Sections = GraphNodes.Sections(() => RowFacts(row), explains),
+                    Sections = GraphNodes.Sections(() => NameFacts(row, name), explains),
                 };
                 AgeWidgets.PointAt(vtable, widget);
             }
@@ -493,25 +493,17 @@ namespace ES2Access.UI
             vtable.SearchText = () => RowText(row, null);
         }
 
-        /// <summary>The row for the review buffer: one line per column, empties included - a buffer is
-        /// walked column by column and a missing line is a column the player would count wrong.
-        /// </summary>
-        private IList<string> RowFacts(GuiTableLine line)
+        /// <summary>The name cell for the review buffer: the lines the screen adds for the row
+        /// (<see cref="RowDetails"/>), then the cell's own facts exactly as every other column's
+        /// (<see cref="CellFacts"/>).</summary>
+        private IList<string> NameFacts(GuiTableLine line, AgeTransform cell)
         {
-            List<AgeTransform> cells = CellsOf(line);
             List<string> lines = new List<string>();
             Extras(line, lines);
-            for (int i = 1; i < cells.Count; i++)
+            IList<string> own = CellFacts(HeaderFor(cell, 0), cell);
+            for (int i = 0; i < own.Count; i++)
             {
-                GuiTableHeader header = HeaderFor(cells[i], i);
-                string fact = new MessageBuilder()
-                    .ListItem(Caption(header))
-                    .ListItem(Text(header, cells[i]))
-                    .Build();
-                if (!string.IsNullOrEmpty(fact))
-                {
-                    lines.Add(fact);
-                }
+                lines.Add(own[i]);
             }
 
             return lines;
