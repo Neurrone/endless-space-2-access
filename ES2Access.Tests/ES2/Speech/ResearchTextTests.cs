@@ -111,21 +111,19 @@ namespace ES2Access.Tests.ES2.Speech
             );
         }
 
-        /// <summary>The same two facts wherever a technology is read - on its dot, and in the list
-        /// of the ones the game is recommending. A turn count is not one of them: the wheel draws
-        /// none anywhere, so one computed for an unqueued technology would be the mod's own
-        /// invention.</summary>
+        /// <summary>The same fact wherever a technology is read - on its dot, and in the list of the
+        /// ones the game is recommending. The PRICE is no longer one of them: it is drawn by the dot's
+        /// own tooltip and spoken off it by the rule every price goes through. Nor is a turn count:
+        /// the wheel draws none anywhere, so one computed for an unqueued technology would be the
+        /// mod's own invention.</summary>
         [Fact]
         public void WhatATechnologyWillTakeSaysOnlyWhatThereIsToSay()
         {
-            Assert.Equal("112 Science, position 2", ResearchText.Progress("112 Science", 1));
+            Assert.Equal("position 2", ResearchText.Progress(1));
+            Assert.Equal("position 1", ResearchText.Progress(0));
 
-            // Nothing queued: just the price.
-            Assert.Equal("112 Science", ResearchText.Progress("112 Science", -1));
-
-            // Already researched - the game shows no cost for it, so neither do we.
-            Assert.Equal("position 1", ResearchText.Progress(null, 0));
-            Assert.Null(ResearchText.Progress(null, -1));
+            // Nothing queued: the dot has nothing of its own to say.
+            Assert.Null(ResearchText.Progress(-1));
         }
 
         /// <summary>

@@ -142,6 +142,41 @@ namespace ES2Access.Core.UI.Graph
             return new NodeAnnouncement(() => Compose(lines, said), kind: AnnouncementKinds.Tooltip);
         }
 
+        /// <summary>
+        /// WHAT IT COSTS, as the part spoken right after the control's name.
+        ///
+        /// The same POINTED-AT rule the tooltip part uses, asked of a different property: a control
+        /// shows one tooltip, so it has one price, and it is the price of the tooltip a hover would
+        /// raise. The rule differs in one way only - it counts every section a tooltip wrote, not
+        /// just the ones that speak - because the tooltips that carry a cost panel are exactly the
+        /// renderer-assembled kind, which are never announced. Looking only among the announcing
+        /// sections would find the price on none of them.
+        ///
+        /// Kinded as a second <see cref="AnnouncementKinds.Label"/> so it lands beside the name
+        /// rather than after the role word: "The Analytical Engine, 780 Industry (8 turns), button"
+        /// is the order in which a player decides whether to keep listening.
+        ///
+        /// Not live-watched. A price does move, but only when the empire's turn does, and a part
+        /// re-resolved every frame under the cursor would run the game's own remaining-turns
+        /// computation at frame rate for a number nobody is waiting on.
+        /// </summary>
+        public static NodeAnnouncement CostPart(IList<NodeSection> sections)
+        {
+            int pointedAt = -1;
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                if (sections[i] != null && sections[i].FromTooltip)
+                {
+                    pointedAt = i;
+                }
+            }
+
+            Func<string> cost = pointedAt < 0 ? null : sections[pointedAt].Cost;
+            return cost == null
+                ? null
+                : new NodeAnnouncement(cost, kind: AnnouncementKinds.Label);
+        }
+
         private static bool Speaks(NodeSection section)
         {
             return section != null

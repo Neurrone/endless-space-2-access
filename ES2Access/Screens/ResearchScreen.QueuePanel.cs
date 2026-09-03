@@ -155,6 +155,9 @@ namespace ES2Access.Screens
                 vtable.OnPickUp = () => Pick(technology);
             }
 
+            // The row's own state says how many turns the technology has left, so its tooltip's cost
+            // panel would say that again.
+            GraphNodes.TurnsDrawnOnTheRow(vtable);
             AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
             // Synthetic: the row stands for the queued TECHNOLOGY, and Queued() above - which asks the
             // pooled item whether it is drawn - is the honesty about whether it is still queued.

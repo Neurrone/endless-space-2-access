@@ -88,6 +88,14 @@ namespace ES2Access.Tests.UI
             return NodeSection.Derived(() => list, mode, null);
         }
 
+        /// <summary>The same, for a tooltip whose class draws a cost panel: the price the panel would
+        /// show rides on the section, exactly as the door puts it there.</summary>
+        public static NodeSection Priced(TooltipMode mode, string cost, params string[] lines)
+        {
+            List<string> list = new List<string>(lines);
+            return NodeSection.Derived(() => list, mode, null, null, () => cost);
+        }
+
         public static IList<NodeSection> Sections(params NodeSection[] sections)
         {
             return new List<NodeSection>(sections);

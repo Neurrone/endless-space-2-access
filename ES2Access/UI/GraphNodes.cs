@@ -271,7 +271,13 @@ namespace ES2Access.UI
             AgeTooltip it = tooltip;
             return new List<NodeSection>
             {
-                NodeSection.Derived(() => Lines(full(), false), TooltipMode.Announce, null, it),
+                NodeSection.Derived(
+                    () => Lines(full(), false),
+                    TooltipMode.Announce,
+                    null,
+                    it,
+                    TooltipCosts.Of(tooltip)
+                ),
                 NodeSection.Buffer(() => Lines(full(), true)),
             };
         }
@@ -368,8 +374,43 @@ namespace ES2Access.UI
             // game would draw nothing for - and both start counting it the frame the game fills one
             // in. Declared here, once, because this is the single door every screen's tooltips come
             // through.
+            // And its PRICE, from the same one door and for the same reason: which tooltip classes
+            // draw a cost line is the game's own table (<see cref="TooltipCosts"/>), so every control
+            // pointing at such a class says what it will take without a screen having gone and got
+            // the number - and the ones that hand-built one before this existed had each got a
+            // different subset of what the panel draws.
             AgeTooltip it = tooltip;
-            return NodeSection.Derived(lines, ModeFor(tooltip), () => AgeWidgets.Draws(it), it);
+            return NodeSection.Derived(
+                lines,
+                ModeFor(tooltip),
+                () => AgeWidgets.Draws(it),
+                it,
+                TooltipCosts.Of(tooltip)
+            );
+        }
+
+        /// <summary>
+        /// LEAVE THE PRICE TO THE ROW, for the few controls that draw their own turn count.
+        ///
+        /// The construction queue's lines, the research queue's rows and the empire banner's research
+        /// line each already say how long the thing they are about has left, in words the game itself
+        /// puts on the row - and each also points at a tooltip whose cost panel says the same thing
+        /// again. Hearing it twice on the one row is worse than hearing it once anywhere.
+        ///
+        /// The opt-out is here rather than at the three call sites so that it is one named decision
+        /// with one reason, and so that a fourth row claiming it has to say the reason out loud.
+        /// Everything else with a cost panel speaks.
+        /// </summary>
+        public static void TurnsDrawnOnTheRow(NodeVtable vtable)
+        {
+            IList<NodeSection> sections = vtable == null ? null : vtable.Sections;
+            for (int i = 0; sections != null && i < sections.Count; i++)
+            {
+                if (sections[i] != null)
+                {
+                    sections[i].Cost = null;
+                }
+            }
         }
 
         /// <summary>

@@ -340,6 +340,16 @@ outside the door files are lint-gated, and `TooltipParity`'s `misclassed` bucket
 violation. A nested entry is named by its hover target's drawn words (a bare figure is not a name),
 falling back to the tooltip's title, then its first line.
 
+**Which tooltips carry a PRICE is data, not a class hierarchy** (measured 2026-09-03): every cost
+line the game draws comes from a panel feature named in the tooltip's own
+`GuiTooltipDescription`, and **36 of the 151 classes** name one, of five kinds —
+`PanelFeatureCosts` (32 classes, the resource cost plus the treasury's remaining turns),
+`PanelFeatureShipCosts` (adds the design's manpower), `PanelFeatureHackingProgramCosts` (a
+program's own provider, plus the game's word for an alteration), `PanelFeatureRemainingTurnsCostProvider`
+(a recipe's turn count alone) and `PanelFeatureMovementPointCost` (drawn *in addition* to a
+resource cost, on the probe-based fleet actions). So "does this control have a price" is answered by
+reading the description database rather than by knowing which screens have prices.
+
 **Positioning**: most tooltips are `AgeTooltipAnchorMode.FREE`, drawn at `AgeManager.Cursor` with
 the anchor rect never consulted, so under *keyboard* focus a tooltip renders wherever the idle mouse
 is parked unless it is re-anchored — set `AnchorMode` **and set `Anchor` explicitly**, since a null

@@ -157,12 +157,28 @@ namespace ES2Access.Core.UI.Graph
         /// under-report.</summary>
         internal readonly object Source;
 
+        /// <summary>WHAT THIS CONTROL COSTS, in the words the tooltip's own cost panel would draw,
+        /// resolved live - a price moves with every bonus the empire picks up, and a turn count with
+        /// every point of industry the system gains.
+        ///
+        /// Held on the section rather than on the node because the answer is the TOOLTIP'S: the game
+        /// draws its cost line for a tooltip CLASS, off the target and context that tooltip carries,
+        /// so the control that has a price to say is exactly the control pointing at such a tooltip,
+        /// and the price is the one a hover would show. The readout takes it from the section the
+        /// node points at (<see cref="TooltipParts.CostPart"/>) and speaks it right after the name.
+        ///
+        /// Null - the ordinary case - is a tooltip whose class draws no cost panel, and every section
+        /// the mod composed itself. Cleared by the door for the few rows that DRAW their own turn
+        /// count, where saying it again is saying it twice.</summary>
+        internal Func<string> Cost;
+
         private NodeSection(
             Func<IList<string>> lines,
             TooltipMode mode,
             Func<bool> indicates,
             bool fromTooltip,
-            object source
+            object source,
+            Func<string> cost
         )
         {
             Lines = lines;
@@ -170,12 +186,15 @@ namespace ES2Access.Core.UI.Graph
             Indicates = indicates;
             FromTooltip = fromTooltip;
             Source = source;
+            Cost = cost;
         }
 
         /// <summary>Content the control draws: reviewable, never spoken on focus.</summary>
         public static NodeSection Buffer(Func<IList<string>> lines)
         {
-            return lines == null ? null : new NodeSection(lines, TooltipMode.None, null, false, null);
+            return lines == null
+                ? null
+                : new NodeSection(lines, TooltipMode.None, null, false, null, null);
         }
 
         /// <summary>
@@ -189,7 +208,9 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public static NodeSection Composed(Func<IList<string>> lines)
         {
-            return lines == null ? null : new NodeSection(lines, TooltipMode.Announce, null, false, null);
+            return lines == null
+                ? null
+                : new NodeSection(lines, TooltipMode.Announce, null, false, null, null);
         }
 
         /// <summary>
@@ -205,14 +226,18 @@ namespace ES2Access.Core.UI.Graph
         /// <paramref name="source"/> is the tooltip itself (<see cref="Source"/>), so a node can be
         /// asked how many DIFFERENT hover surfaces it declared rather than how many sections it has.
         /// </summary>
+        /// <paramref name="cost"/> is what this tooltip's own cost panel would draw
+        /// (<see cref="Cost"/>), which is the door's answer too - a cost line is a fact about the
+        /// tooltip class, and a screen naming one for itself is a screen that can name the wrong one.
         internal static NodeSection Derived(
             Func<IList<string>> lines,
             TooltipMode mode,
             Func<bool> indicates,
-            object source = null
+            object source = null,
+            Func<string> cost = null
         )
         {
-            return new NodeSection(lines, mode, indicates, true, source);
+            return new NodeSection(lines, mode, indicates, true, source, cost);
         }
     }
 

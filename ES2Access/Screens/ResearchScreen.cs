@@ -889,20 +889,19 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>What it would cost and where it is in the queue - the two things the wheel puts
-        /// on a dot. The cost is drawn in the dot's own tooltip ("Cost: 131 Science") and the queue
-        /// position on the dot itself (<c>TechnologyItem2.PositionInQueueGroup</c>, shown only while
-        /// the technology is queued or in progress, which is the same condition as
-        /// <see cref="QueuePosition"/> answering). No turn count: nothing on this page draws one
-        /// (<see cref="ResearchText.Progress"/>).</summary>
+        /// <summary>Where the dot is in the queue (<c>TechnologyItem2.PositionInQueueGroup</c>, shown
+        /// only while the technology is queued or in progress, which is the same condition as
+        /// <see cref="QueuePosition"/> answering).
+        ///
+        /// What it would COST is drawn in the dot's own tooltip ("Cost: 131 Science") and is spoken
+        /// off that tooltip by the rule every price in the game goes through
+        /// (<c>TooltipCosts</c>), so it is not composed here. No turn count either: nothing on this
+        /// page draws one (<see cref="ResearchText.Progress"/>).</summary>
         private static string TechnologyState(GuiTechnology2 technology)
         {
             try
             {
-                string costs = State(technology) == ScienceConstructibleElement.State.Researched
-                    ? null
-                    : AgeText.Clean(technology.GetFinalCostsString(Gui.PlayerEmpire));
-                return ResearchText.Progress(costs, QueuePosition(technology));
+                return ResearchText.Progress(QueuePosition(technology));
             }
             catch (Exception)
             {

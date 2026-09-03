@@ -221,6 +221,14 @@ namespace ES2Access.Core.UI.Graph
             // off that tooltip's first line, and the one place both the label and the tooltip exist
             // together is this list. Passing them over is what lets EVERY such control announce its
             // whole tooltip without any of them saying its first line twice.
+            // WHAT IT COSTS, derived for the same reason and from the same declaration: the game
+            // draws a cost line for a tooltip CLASS, so which controls have a price to say is already
+            // written down in the sections and no screen composes one. Before the tooltip part so
+            // that a price is never taken for one of the tooltip's own lines by the dedupe, and
+            // kinded as a second Label so it speaks beside the name (TooltipParts.CostPart).
+            NodeAnnouncement cost = TooltipParts.CostPart(vt.Sections);
+            if (cost != null) result.Add(cost);
+
             NodeAnnouncement tooltip = TooltipParts.Part(vt.Sections, result);
             if (tooltip != null) result.Add(tooltip);
 

@@ -579,6 +579,9 @@ namespace ES2Access.UI
                 vtable.OnPickUp = () => Pick(it);
             }
 
+            // The line's own state already says how many turns are left on it, so its tooltip's cost
+            // panel would say that again.
+            GraphNodes.TurnsDrawnOnTheRow(vtable);
             AgeWidgets.PointAt(vtable, line.AgeTransform);
             string key = keyPrefix + "queue/" + line.Construction.GUID;
             ControlId id = ControlId.For(line.Construction, key);

@@ -545,6 +545,9 @@ namespace ES2Access.Screens
                 tooltip
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => ResearchText(owner)));
+            // The banner's own research line carries the turns left, so the technology tooltip's cost
+            // panel would say that again.
+            GraphNodes.TurnsDrawnOnTheRow(vtable);
             AgeWidgets.Point(vtable, it, tooltip, line);
             cells.Add(
                 new Cell

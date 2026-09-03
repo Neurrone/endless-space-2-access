@@ -168,6 +168,86 @@ namespace ES2Access.Tests.UI
                 GraphAnnouncer.LeafText(Node(b.Build(), "a")));
         }
 
+        // ---- what it costs ----
+        //
+        // No screen composes these words either: the game draws every price from the tooltip a control
+        // points at, so the price rides on that section and the announcer says it wherever there is
+        // one.
+
+        private static string Priced(params NodeSection[] sections)
+        {
+            GraphAnnouncer.PositionText = (i, n) => i + " of " + n;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(
+                Id("a"),
+                new NodeVtable
+                {
+                    ControlType = Type("button", "button"),
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        Part("The Analytical Engine", AnnouncementKinds.Label),
+                    },
+                    Sections = sections,
+                }
+            ));
+            return GraphAnnouncer.LeafText(Node(b.Build(), "a"));
+        }
+
+        /// <summary>Right after the name and before the role word - which is where the player decides
+        /// whether to go on listening, and is a matter of the part's KIND rather than of where it was
+        /// added.</summary>
+        [Fact]
+        public void APricedControlSaysItsPriceStraightAfterItsName()
+        {
+            Assert.Equal(
+                "The Analytical Engine, 780 Industry (8 turns), button",
+                Priced(Graphs.Priced(TooltipMode.Indicate, "780 Industry (8 turns)", "A stat block"))
+            );
+        }
+
+        /// <summary>The price is the POINTED-AT tooltip's, the same rule the spoken tooltip follows:
+        /// a row carrying a heading's explanation as well as its value's says the value's price.
+        /// </summary>
+        [Fact]
+        public void ThePriceComesOffTheTooltipTheControlPointsAt()
+        {
+            Assert.Equal(
+                "The Analytical Engine, 218 Science, button",
+                Priced(
+                    Graphs.Priced(TooltipMode.Indicate, "780 Industry", "What this measures"),
+                    Graphs.Priced(TooltipMode.Indicate, "218 Science", "A stat block")
+                )
+            );
+        }
+
+        /// <summary>A tooltip the readout says nothing about still yields its price: the classes that
+        /// draw a cost panel are exactly the renderer-assembled kind, so a rule that only looked among
+        /// the announcing sections would find a price on none of them.</summary>
+        [Fact]
+        public void AnIndicatedTooltipsPriceSpeaksEvenThoughItsWordsDoNot()
+        {
+            Assert.DoesNotContain(
+                "A stat block",
+                Priced(Graphs.Priced(TooltipMode.Indicate, "780 Industry", "A stat block"))
+            );
+        }
+
+        /// <summary>Nothing extra where there is no price - a tooltip whose class draws no cost panel,
+        /// and a row that draws its own turn count and had the price taken off it at the door.
+        /// </summary>
+        [Fact]
+        public void AControlWithNoPriceSaysNothingAboutOne()
+        {
+            Assert.Equal(
+                "The Analytical Engine, button",
+                Priced(Section(TooltipMode.Indicate, "A stat block"))
+            );
+
+            NodeSection priced = Graphs.Priced(TooltipMode.Indicate, "780 Industry", "A stat block");
+            priced.Cost = null;
+            Assert.Equal("The Analytical Engine, button", Priced(priced));
+        }
+
         // ---- the drag ----
         //
         // No screen composes these words: the announcer derives them from the control's own pick-up and
