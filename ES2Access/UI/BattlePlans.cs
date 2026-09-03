@@ -406,6 +406,67 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// What a card's pictures say, read off the plan MODEL rather than off hover tooltips - for
+        /// the military screen's tiny deck cards, which draw the family badge and the three range
+        /// rows exactly as the full card does but hang no tooltip on any of them (measured
+        /// 2026-09-03: every indicator's and the badge's <c>AgeTooltip</c> is null), so
+        /// <see cref="PlanDossiers"/> finds nothing to make a node of.
+        ///
+        /// The family's title first, then one line per flotilla in the words the full card's own
+        /// range tooltip uses (<c>BattlePlayCardRangeIndicator.Refresh</c> :75 -
+        /// <c>%AdvancedPlayFlotillaOptimalRangeTitle</c> over the range's localized title), joined to
+        /// the flotilla the same way the tactics deck and the setup card join it. Reviewable content:
+        /// it is all on the screen, in pictures.
+        /// </summary>
+        internal static IList<string> Markings(BattlePlayCard card)
+        {
+            List<string> lines = new List<string>();
+            try
+            {
+                string family = FamilyName(card);
+                if (!string.IsNullOrEmpty(family))
+                {
+                    lines.Add(family);
+                }
+
+                GuiBattlePlaySlot slot = card.GuiBattlePlaySlot;
+                AgeTransform ranges = card.FlotillaRangeIndicators;
+                List<AgeTransform> indicators = ranges == null ? null : ranges.Children;
+                for (int i = 0; slot != null && indicators != null && i < indicators.Count; i++)
+                {
+                    // Content: a range row the card is not drawing says nothing.
+                    if (!AgeWidgets.Visible(indicators[i]))
+                    {
+                        continue;
+                    }
+
+                    int index = slot.GetFlotillaOptimalRangeIndex(i);
+                    if (index < 0 || index >= (int)GuiShip.ShipEfficiencyRange.Max)
+                    {
+                        continue;
+                    }
+
+                    string range = AgeText.Clean(
+                        Gui.Localize(
+                            "%AdvancedPlayFlotillaOptimalRangeTitle",
+                            Gui.GetLocalizedTitle(((GuiShip.ShipEfficiencyRange)index).ToString())
+                        )
+                    );
+                    if (!string.IsNullOrEmpty(range))
+                    {
+                        lines.Add(TooltipFeatures.FlotillaRange(i, range));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle: reading a plan card's markings off its model threw: " + e);
+            }
+
+            return lines;
+        }
+
         private static BattlePlayCard Card(AgeTransform container)
         {
             try

@@ -365,7 +365,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Effects(it), false),
                     GraphNodes.DisabledPart(enabled),
                 },
-                Sections = GraphNodes.Sections(() => Wordless(it), tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
                 OnPickUp = () => Pick(it),
             };
 
@@ -377,6 +377,30 @@ namespace ES2Access.Screens
             // a filled slot landed on the list instead). The list's own order is the game's and does not
             // move, so it has nothing to ride along with anyway.
             Cells.Add(_cells, widget, ControlId.Structural(key), vtable);
+            Markings(card, key);
+        }
+
+        /// <summary>
+        /// The card's pictures as nodes under it: the family badge and one range diagram per
+        /// flotilla, named the way the battle-setup card names them - "Flotilla 1: Short Range" -
+        /// because the three diagrams say the same words and are told apart by position alone
+        /// (<see cref="BattlePlans.PlanDossiers"/>; owner ruling 2026-09-03, replacing the bare
+        /// "Short Range" lines the card's buffer used to carry).
+        /// </summary>
+        private void Markings(BattlePlayCard card, string key)
+        {
+            if (_cells.Count == 0)
+            {
+                return;
+            }
+
+            List<TooltipChildren.Dossier> badges = BattlePlans.PlanDossiers(card, null);
+            if (badges.Count > 0)
+            {
+                Cell owner = _cells[_cells.Count - 1];
+                owner.Dossiers = badges;
+                owner.Key = key;
+            }
         }
 
         /// <summary>
@@ -410,7 +434,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => Effects(it), false),
                     GraphNodes.DisabledPart(enabled),
                 },
-                Sections = GraphNodes.Sections(() => Wordless(it), tooltip),
+                Sections = GraphNodes.Sections(null, tooltip),
                 DropKind = TacticKind,
                 OnDrop = held => Drop(it, held),
                 OnPickUp = () => Pick(it),
@@ -422,6 +446,7 @@ namespace ES2Access.Screens
 
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(_cells, widget, Id(card, key), vtable);
+            Markings(card, key);
         }
 
         /// <summary>Keyed on the tactic the slot is showing where there is one, so the cursor rides along
@@ -498,55 +523,6 @@ namespace ES2Access.Screens
             catch (Exception)
             {
                 return null;
-            }
-        }
-
-        /// <summary>
-        /// The two things on a card that are drawn as pictures and named nowhere in words: the range each
-        /// of the ship's three flotillas fights this tactic best at - three stacked rows of bars, in
-        /// flotilla order, each with its range on its own tooltip - and the family badge, whose tooltip is
-        /// the paragraph about what this kind of tactic is for.
-        ///
-        /// Everything else on the card is already spoken: its title, and the effects paragraph it draws in
-        /// full.
-        /// </summary>
-        private static IList<string> Wordless(BattlePlayCard card)
-        {
-            List<string> lines = new List<string>();
-            try
-            {
-                AgeTransform ranges = card.FlotillaRangeIndicators;
-                IList<AgeTransform> rows = ranges == null ? null : ranges.Children;
-                for (int i = 0; rows != null && i < rows.Count; i++)
-                {
-                    // Content: which range rows contribute a line to the card's reading.
-                    if (AgeWidgets.Visible(rows[i]))
-                    {
-                        Add(lines, CardActions.FirstLine(AgeWidgets.Raw(rows[i])));
-                    }
-                }
-
-                AgeTransform family =
-                    card.FamilyIcon == null ? null : card.FamilyIcon.AgeTransform;
-                IList<string> words = AgeWidgets.DrawnTooltipLines(family);
-                for (int i = 0; i < words.Count; i++)
-                {
-                    Add(lines, words[i]);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("tactics: reading a card's markings threw: " + e);
-            }
-
-            return lines;
-        }
-
-        private static void Add(List<string> lines, string line)
-        {
-            if (!string.IsNullOrEmpty(line))
-            {
-                lines.Add(line);
             }
         }
 

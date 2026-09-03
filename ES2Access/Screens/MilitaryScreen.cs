@@ -400,7 +400,15 @@ namespace ES2Access.Screens
                 {
                     GraphNodes.LabelPart(() => DeckSlotName(it, tooltip)),
                 },
-                Sections = GraphNodes.Sections(null, tooltip),
+                // The tiny card draws the family badge and the three range rows and hangs a tooltip
+                // on none of them, so what they say is read off the plan model into the row's
+                // buffer - "Aggressive", "Flotilla 1: Short Range" - the words the full card's
+                // badges carry on the tactics window (<see cref="BattlePlans.Markings"/>; owner
+                // ruling 2026-09-03). An empty or locked slot draws none and reads none.
+                Sections = GraphNodes.Sections(
+                    named ? () => BattlePlans.Markings(it) : (Func<IList<string>>)null,
+                    tooltip
+                ),
             };
             AgeWidgets.PointAt(vtable, widget);
             Cells.Add(

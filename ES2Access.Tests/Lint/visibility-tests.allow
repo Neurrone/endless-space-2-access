@@ -43,7 +43,6 @@ ES2Access/Screens/BattleNotifications.cs | 2 | if (table == null || !AgeWidgets.
 ES2Access/Screens/BattlePlanScreen.cs | 1 | && AgeWidgets.Visible(_window.PlayGroup)
 
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | && AgeWidgets.Visible(widget)
-ES2Access/Screens/BattleTacticsScreen.cs | 1 | if (AgeWidgets.Visible(rows[i]))
 ES2Access/Screens/BattleTacticsScreen.cs | 2 | if (table == null || !AgeWidgets.Visible(table))
 
 ES2Access/Screens/ChatScreen.cs | 1 | return tab.NotificationImage != null && tab.NotificationImage.Visible
@@ -539,6 +538,7 @@ ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(right))
 
 ES2Access/UI/BattleBalance.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
 
+ES2Access/UI/BattlePlans.cs | 1 | if (!AgeWidgets.Visible(indicators[i]))
 ES2Access/UI/BattlePlans.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
 
 ES2Access/UI/BattleRosters.cs | 1 | ?? (AgeWidgets.Visible(commandPoints) ? AgeWidgets.Raw(commandPoints) : null);

@@ -14,7 +14,6 @@ ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | .ListItem(AgeText.Tooltip(
 ES2Access/Screens/AdvancedEncounterPlayScreen.cs | 1 | string hinted = CardActions.FirstLine(tip);
 
 ES2Access/Screens/BattleTacticsScreen.cs | 1 | ? CardActions.FirstLine(card.Tooltip ?? AgeWidgets.Raw(card.AgeTransform))
-ES2Access/Screens/BattleTacticsScreen.cs | 1 | Add(lines, CardActions.FirstLine(AgeWidgets.Raw(rows[i])));
 
 ES2Access/Screens/EconomyScreen.Marketplace.cs | 1 | : CardActions.FirstLine(tooltip);
 
