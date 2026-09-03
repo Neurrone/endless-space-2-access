@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ES2Access.ES2.Speech;
 
 namespace ES2Access.UI
 {
@@ -468,6 +469,12 @@ namespace ES2Access.UI
         /// entry that is a colour directive rather than a picture) or, once per load and with a
         /// warning, because the table has never heard of it - and dropped again when the name would
         /// only repeat the words already beside it (<see cref="Duplicates"/>).
+        ///
+        /// One icon is a COUNT rather than a name. Where the game writes a number hard against the
+        /// turn icon, the number and the icon are one counted phrase and are replaced together, so
+        /// that the sentence inflects and its words fall in the order the language wants;
+        /// <see cref="IconCounts"/> decides whether that applies and says what the phrase is, and
+        /// the only thing done here is to take back the digits it consumed.
         /// </summary>
         private static string SubstituteIcons(string text)
         {
@@ -495,6 +502,16 @@ namespace ES2Access.UI
                         }
 
                         int next = end + 1;
+                        int counted;
+                        string phrase = IconCounts.Phrase(result, token, out counted);
+                        if (phrase != null)
+                        {
+                            result.Length -= counted;
+                            Splice(result, phrase, text, next);
+                            i = next;
+                            continue;
+                        }
+
                         string name = IconNames.NameFor(token);
                         if (name == null || Duplicates(name, result, text, next))
                         {
@@ -502,18 +519,7 @@ namespace ES2Access.UI
                             continue;
                         }
 
-                        if (NeedsSpace(EffectiveBefore(result), name[0]))
-                        {
-                            result.Append(' ');
-                        }
-
-                        result.Append(name);
-
-                        if (NeedsSpace(name[name.Length - 1], EffectiveAfter(text, next)))
-                        {
-                            result.Append(' ');
-                        }
-
+                        Splice(result, name, text, next);
                         i = next;
                         continue;
                     }
@@ -524,6 +530,23 @@ namespace ES2Access.UI
             }
 
             return result.ToString();
+        }
+
+        /// <summary>Write what an icon contributes into the reading, with a space on whichever side
+        /// of the seam would otherwise run it together with a word.</summary>
+        private static void Splice(StringBuilder result, string words, string text, int next)
+        {
+            if (NeedsSpace(EffectiveBefore(result), words[0]))
+            {
+                result.Append(' ');
+            }
+
+            result.Append(words);
+
+            if (NeedsSpace(words[words.Length - 1], EffectiveAfter(text, next)))
+            {
+                result.Append(' ');
+            }
         }
 
         /// <summary>

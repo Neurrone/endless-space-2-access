@@ -1087,6 +1087,8 @@
   "icon.transmigration-beacon": "Transmigration Beacon",
   "icon.transvine": "Transvine",
   "icon.turn": "Turn",
+  "icon.turn-count": "{0} turn",
+  "icon.turns-count": "{0} turns",
   "icon.umbral-choir": "Umbral Choir",
   "icon.unfallen": "Unfallen",
   "icon.unlimited": "Unlimited",
