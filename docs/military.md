@@ -119,6 +119,12 @@ Index and charter: `README.md`.
   `DamageReceivedAbsorbedByShield` deltas, written once per accounting level and therefore read as a
   maximum; and `PhaseReports` can skip a phase index outright (measured 0, 1, 2, 4), so the game's own
   phase numbering has gaps in it.
+- **A reinforcement fleet's report panel owns whether its ships are showing.**
+  `ReinforcementGarrisonReportPanel` draws an `ExpandToggle` of its own (no other fleet panel has
+  one): its switch handler hides or shows the panel's ship table, re-arranges the panels around it,
+  and remembers the answer per fleet GUID on the battle notification
+  (`NotificationBattleReport.ExpandToggleStatesByReinforcements`), so it survives leaving and
+  re-opening the report. A fleet with no remembered answer binds OPEN.
 - **The advanced report's morale badge is a GROUP fact drawn once per phase.**
   `AdvancedReportPhaseItem.Refresh` (:39-62) asks
   `EncounterGroup.GetPropertyValue(SimulationProperties.EncounterGroup.MoraleBonus)` of each side and

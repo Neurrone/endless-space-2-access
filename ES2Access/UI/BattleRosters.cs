@@ -17,7 +17,11 @@ namespace ES2Access.UI
     ///
     /// A fleet is a GROUP holding its ships: the row says what the fleet is, how many command points it
     /// is worth and whether it is running cloaked, and the ships are child nodes under it - unless it
-    /// has none, in which case it is a plain row saying so (<see cref="Fleet"/>). Ships are
+    /// has none, in which case it is a plain row saying so (<see cref="Fleet"/>). Opening and shutting
+    /// a fleet is the mod's own, with one exception: a fleet that joined the battle as a REINFORCEMENT
+    /// is drawn by a panel carrying the game's own expand switch, and that panel's group is opened and
+    /// shut through the switch (<see cref="GameOwnedExpansion"/>) so the mod and the picture never
+    /// disagree about whether those ships are showing. Ships are
     /// read-only - there is nothing to do to a ship in a battle report, and the setup popup offers no
     /// per-ship choice either - so each is a line rather than a control.
     ///
@@ -407,7 +411,8 @@ namespace ES2Access.UI
                                 it,
                                 () => FleetName(it),
                                 it.BattleShipItemsTable,
-                                key
+                                key,
+                                expand: ReinforcementExpand(it)
                             ),
                     }
                 );
@@ -525,7 +530,8 @@ namespace ES2Access.UI
             string prefix,
             Action<FlotillaLine, NodeVtable> host = null,
             FlotillaLine line = null,
-            Action<FlotillaLine, BattleShipItem, NodeVtable> hostShip = null
+            Action<FlotillaLine, BattleShipItem, NodeVtable> hostShip = null,
+            AgeControlToggle expand = null
         )
         {
             BattleShipItem[] items = ships == null
@@ -538,6 +544,11 @@ namespace ES2Access.UI
                     ? Explained(Line(name), tooltip)
                     : GraphNodes.Group(name, null, tooltip);
             Host(host, line, vtable);
+            if (expand != null && items.Length != 0)
+            {
+                GameOwnedExpansion(vtable, expand);
+            }
+
             NodeDeclaration row = Nodes.Drawn(id, vtable, drawnBy);
             if (items.Length == 0)
             {
@@ -546,7 +557,7 @@ namespace ES2Access.UI
             }
 
             Action<BattleShipItem, NodeVtable> perShip = Ships(hostShip, line);
-            builder.BeginGroup(row);
+            builder.BeginGroup(row, expanded: expand == null ? (bool?)null : expand.State);
             try
             {
                 for (int i = 0; i < items.Length; i++)
@@ -560,6 +571,43 @@ namespace ES2Access.UI
                 // everything the popup declares after this fleet lands inside it.
                 builder.EndGroup();
             }
+        }
+
+        /// <summary>
+        /// Hand a fleet group's Right and Left to the GAME's own expand switch.
+        ///
+        /// Only a REINFORCEMENT fleet's panel has one, and where it does the answer is the game's: it
+        /// hides the ship table when the switch is off, remembers the state per fleet on the battle
+        /// notification, and re-arranges the panels around the panel that changed size. So the group's
+        /// expansion is not the mod's to keep - <see cref="NodeVtable.OnExpand"/> and
+        /// <see cref="NodeVtable.OnCollapse"/> REPLACE the builder's own expansion bookkeeping, and the
+        /// state the group declares itself with is read back off the switch.
+        /// </summary>
+        private static void GameOwnedExpansion(NodeVtable vtable, AgeControlToggle toggle)
+        {
+            AgeControlToggle it = toggle;
+            vtable.OnExpand = () => Switch(it, true);
+            vtable.OnCollapse = () => Switch(it, false);
+        }
+
+        /// <summary>Put the game's expand switch where the tree move asks for it, the way a click does
+        /// it (<see cref="AgeWidgets.Toggle"/>: the state first, then the panel's own handler, which is
+        /// what remembers the choice and re-arranges the report). A switch already where it is asked to
+        /// be is left alone, so Left on a shut group does not open it.</summary>
+        private static void Switch(AgeControlToggle toggle, bool on)
+        {
+            if (toggle.State != on)
+            {
+                AgeWidgets.Toggle(toggle);
+            }
+        }
+
+        /// <summary>The game's own expand switch for a fleet panel that has one - a reinforcement
+        /// fleet's - and null for every other panel, which keeps its expansion the mod's.</summary>
+        private static AgeControlToggle ReinforcementExpand(BattleGarrisonPanel panel)
+        {
+            ReinforcementGarrisonReportPanel reinforcement = panel as ReinforcementGarrisonReportPanel;
+            return reinforcement == null ? null : reinforcement.ExpandToggle;
         }
 
         /// <summary>The host's ship hook with the flotilla LINE it belongs to already bound - what a

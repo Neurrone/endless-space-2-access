@@ -181,10 +181,10 @@ belong in the files above.
 - Advanced battle REPORT follow-ups (2026-09-06 stage shipped the arena's ship chips as a group
   per flotilla): the hero portrait carries a LIFE GAUGE (`BattleGroupInfoPanel` :77-78) drawn as a
   picture with no figure anywhere on it, so the hero's ship health is the one ship health the report
-  does not say — the hero row reads only the portrait's dossier today. And a REINFORCEMENT fleet's
-  panel has a game-side `ExpandToggle` (`ReinforcementGarrisonReportPanel`) that the mod never
-  names, so whatever it opens is unreachable by keyboard — unverified, needs a battle with
-  reinforcements to sight either.
+  does not say — the hero row reads only the portrait's dossier today. A REINFORCEMENT fleet's
+  group hands its Right and Left to the game's own `ExpandToggle` (shipped 2026-09-06, UNVERIFIED:
+  no save on hand fights a battle with reinforcements, so the path has never been drawn — it needs
+  one to sight).
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a
