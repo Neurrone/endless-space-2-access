@@ -34,9 +34,11 @@ namespace ES2Access.Screens
     /// of power (the same ring, the same reading as every other battle surface,
     /// <see cref="BattleNotifications.Balance"/>), the morale bonus (the game stamps one happiness icon
     /// per holding side on EVERY fought phase, so it is one line in that side's heading rather than a
-    /// repeat down the phase list), and - for the enemy, whose roster panel is a garrison with no
-    /// flotilla lines to hang it on - the arena card's sentence naming the range its flotilla is optimal
-    /// at. The player's side has flotilla lines, so its cards go where the flotillas already are
+    /// repeat down the phase list), and the ARENA - the card the window draws per flotilla, carrying
+    /// the sentence that names the range that flotilla is optimal at and, inside it, one chip per ship.
+    /// Each card is a group in its side's heading (<see cref="Flotillas"/>): the flotilla, how many of
+    /// its ships stand and how many went, and the ships themselves inside it. The player's cards are
+    /// ALSO the sentence its roster lines have none of, handed to those lines where they are drawn
     /// (<see cref="BattleRosters.FlotillaExtras"/>), exactly as the advanced SETUP window hands its own
     /// in.
     ///
@@ -49,7 +51,10 @@ namespace ES2Access.Screens
     /// The two fleet toggles do not open anything of the mod's: the game slides a roster panel over the
     /// phase panel, so what this screen declares follows what is DRAWN - the phase lines while the
     /// phases are up, the roster while a roster is - and the toggles themselves are the only thing that
-    /// has to be declared for the keyboard.
+    /// has to be declared for the keyboard. The ARENA is drawn whatever the toggles say, so the arena
+    /// groups stay in the heading while a roster is up: the same ships are then reachable twice, once
+    /// per picture the window is drawing of them, which the owner ruled is the right answer
+    /// (2026-09-06) rather than hiding a surface the player can see because another one repeats it.
     ///
     /// Escape is the game's, and it is not a plain close: the window's own <c>HandleInput</c> puts the
     /// report popup back up, which is where the player came from.
@@ -186,6 +191,11 @@ namespace ES2Access.Screens
                 ModStrings.BattleYourMoraleBonus,
                 "battle-advanced/your-morale"
             );
+            Flotillas(
+                builder,
+                window.PlayerFlotillaCard2DContainer,
+                "battle-advanced/your-flotilla"
+            );
             Squadrons(builder, window, true, "battle-advanced/your-squadrons");
 
             builder.SetRegion(TheirsRegion);
@@ -198,7 +208,11 @@ namespace ES2Access.Screens
                 ModStrings.BattleEnemyMoraleBonus,
                 "battle-advanced/their-morale"
             );
-            Flotillas(builder, window.EnemyFlotillaCard2DContainer, "battle-advanced/their-flotilla");
+            Flotillas(
+                builder,
+                window.EnemyFlotillaCard2DContainer,
+                "battle-advanced/their-flotilla"
+            );
             Squadrons(builder, window, false, "battle-advanced/their-squadrons");
             builder.SetRegion(null);
         }
@@ -470,14 +484,25 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The arena cards for a side whose roster panel has no flotilla lines to carry them.
+        /// The arena cards for a side, one group per flotilla the window is drawing.
         ///
-        /// A flotilla is drawn twice on this window too - as a line of ships in the roster panel, and as
-        /// a card in the arena carrying the sentence that says which range it is optimal at and how well
-        /// its ships suit that range. The player's roster draws flotilla lines, so its cards are handed
-        /// to those lines (<see cref="FlotillaCards"/>); the enemy's roster is a garrison panel with no
-        /// flotilla line anywhere, so its cards are read here, under the flotilla number the game
-        /// numbers them by.
+        /// A flotilla is drawn twice on this window - as a line of ships in a roster panel a toggle
+        /// slides over the phases, and as a card in the arena, which is what the window shows with no
+        /// toggle on. The card carries the sentence saying which range it is optimal at and how well
+        /// its ships suit that range, and inside it one chip per ship: the tutorial's fleet state,
+        /// faded where the ship was destroyed. With the toggles off those chips are the only place a
+        /// ship is drawn at all.
+        ///
+        /// So the card is a GROUP - the flotilla the game numbers it by, how many of its ships stand
+        /// and how many were destroyed, the card's own sentence behind it and a line per ship inside
+        /// it. Zero of either is left out: a flotilla that lost nothing says how many stand, one that
+        /// lost everything says how many went, and each is the whole of what there is to know. A card
+        /// with no chip drawn stays the plain line it was, for the same reason a roster flotilla with
+        /// no ships is not a group - there is nothing to go into.
+        ///
+        /// The player's cards are ALSO handed to its roster lines (<see cref="FlotillaCards"/>), which
+        /// draw no such sentence of their own; the enemy's roster is a garrison panel with no flotilla
+        /// line anywhere, so its card's sentence is only ever read here.
         /// </summary>
         private static void Flotillas(GraphBuilder builder, AgeTransform container, string prefix)
         {
@@ -500,21 +525,151 @@ namespace ES2Access.Screens
                 // The game numbers the flotillas from one where it writes them down and from zero
                 // where it binds them.
                 int number = card.Index + 1;
-                NodeVtable vtable = new NodeVtable
-                {
-                    ControlType = ControlTypes.Text,
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(
-                            () => BattleRosters.FlotillaName(number)
-                        ),
-                    },
-                    Sections = GraphNodes.Sections(null, AgeWidgets.Raw(widget)),
-                };
-                AgeWidgets.PointAt(vtable, widget);
-                builder.AddItem(
-                    Nodes.Drawn(ControlId.For(card, prefix + "/" + i), vtable, card)
+                List<EncounterPlayShipItem> chips = Chips(card);
+                string key = prefix + "/" + i;
+                NodeVtable vtable = GraphNodes.Group(
+                    () => FlotillaName(number, chips),
+                    null,
+                    AgeWidgets.Raw(widget)
                 );
+                NodeDeclaration row = Nodes.Drawn(ControlId.For(card, key), vtable, card);
+                if (chips.Count == 0)
+                {
+                    builder.AddItem(row);
+                    continue;
+                }
+
+                builder.BeginGroup(row);
+                try
+                {
+                    for (int j = 0; j < chips.Count; j++)
+                    {
+                        Chip(builder, chips[j], key + "/ship/" + j);
+                    }
+                }
+                finally
+                {
+                    // Balanced whatever a ship's reading did, or everything declared after this card
+                    // lands inside it.
+                    builder.EndGroup();
+                }
+            }
+        }
+
+        /// <summary>Which flotilla a card is, and what became of the ships on it: how many are still
+        /// standing and how many were destroyed, each said only where there are any. It counts the
+        /// chips the arena is DRAWING, which is the same set the group holds.</summary>
+        private static string FlotillaName(int number, List<EncounterPlayShipItem> chips)
+        {
+            int lost = 0;
+            for (int i = 0; i < chips.Count; i++)
+            {
+                if (Destroyed(Aboard(chips[i])))
+                {
+                    lost++;
+                }
+            }
+
+            int standing = chips.Count - lost;
+            return new MessageBuilder()
+                .ListItem(BattleRosters.FlotillaName(number))
+                .ListItem(
+                    standing == 0
+                        ? null
+                        : ModStrings.Plural(
+                            ModStrings.BattleFlotillaShipStanding,
+                            ModStrings.BattleFlotillaShipsStanding,
+                            standing
+                        )
+                )
+                .ListItem(
+                    lost == 0
+                        ? null
+                        : ModStrings.Plural(
+                            ModStrings.BattleFlotillaShipDestroyed,
+                            ModStrings.BattleFlotillaShipsDestroyed,
+                            lost
+                        )
+                )
+                .Build();
+        }
+
+        /// <summary>One ship of an arena card, read exactly as a roster row is
+        /// (<see cref="BattleRosters.ShipLine"/>) off the wrapper the game leaves on the chip's own
+        /// hover surface. The chip draws no name and no role badge - it is a coloured picture of the
+        /// ship's role and nothing else - so there is no drawn label to fall back to and no second
+        /// hover surface to nest under it; the dossier behind it names the role anyway.</summary>
+        private static void Chip(GraphBuilder builder, EncounterPlayShipItem chip, string key)
+        {
+            AgeTransform widget = chip.AgeTransform;
+            builder.AddItem(
+                Nodes.Drawn(
+                    ControlId.For(chip, key),
+                    BattleRosters.ShipLine(Aboard(chip), widget, AgeWidgets.Raw(widget)),
+                    chip
+                )
+            );
+        }
+
+        /// <summary>The chips a card is drawing, in the game's own size order. A card keeps a chip for
+        /// every ship it could ever draw and shows the ones it has, so an undrawn chip is a ship that
+        /// is not in this battle.</summary>
+        private static List<EncounterPlayShipItem> Chips(EncounterPlayFlotillaCard2D card)
+        {
+            List<EncounterPlayShipItem> drawn = new List<EncounterPlayShipItem>();
+            try
+            {
+                EncounterPlayFlotillaCard3D card3D = card.Card3D;
+                EncounterPlayShipItem[] chips = card3D == null ? null : card3D.AllShips;
+                for (int i = 0; chips != null && i < chips.Length; i++)
+                {
+                    EncounterPlayShipItem chip = chips[i];
+                    // Spoken count: how many of a flotilla's ships stand and how many went is
+                    // counted off this list, and a card keeps a chip for every ship it could ever
+                    // draw whether this battle brought one or not.
+                    if (chip != null && AgeWidgets.Visible(chip.AgeTransform))
+                    {
+                        drawn.Add(chip);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("battle report: reading an arena card's ships threw: " + e);
+            }
+
+            return drawn;
+        }
+
+        /// <summary>The ship a chip stands for: the game builds a fresh wrapper on every refresh and
+        /// leaves it on the chip's hover surface (<c>EncounterPlayShipItem.Refresh</c>), which is the
+        /// only place a chip keeps one - its own field holds the requested DATA rather than the wrapper
+        /// a roster row is read from.</summary>
+        private static GuiBattleShip Aboard(EncounterPlayShipItem chip)
+        {
+            try
+            {
+                AgeTooltip tooltip = AgeWidgets.Raw(chip.AgeTransform);
+                return tooltip == null ? null : tooltip.Target as GuiBattleShip;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Whether the ship is gone, by the test both pictures of it are drawn from
+        /// (<c>EncounterPlayShipItem.Refresh</c>): its own destruction, or the flotilla's taking it
+        /// with it.</summary>
+        private static bool Destroyed(GuiBattleShip ship)
+        {
+            try
+            {
+                return ship != null && (ship.IsDestroyed || ship.GroupDestroyed);
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
 

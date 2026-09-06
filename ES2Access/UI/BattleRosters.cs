@@ -151,21 +151,12 @@ namespace ES2Access.UI
             }
 
             BattleShipItem it = item;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = new NodeVtable
-            {
-                ControlType = ControlTypes.Text,
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => ShipName(it)),
-                    GraphNodes.ValuePart(() => Health(it), false),
-                },
-                // The outcome sentence is the game's own, kept in a field the roster never draws, so
-                // the row says it as it is read - declared as a section rather than composed into the
-                // readout by hand, so the same words reach the review buffer exactly once.
-                Sections = GraphNodes.SpokenSections(() => OutcomeLines(it), tooltip),
-            };
-            AgeWidgets.PointAt(vtable, widget);
+            NodeVtable vtable = ShipLine(
+                Wrapper(it),
+                widget,
+                AgeWidgets.Raw(widget),
+                () => AgeText.Label(it.Title)
+            );
             Host(host, item, vtable);
 
             List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(1);
@@ -185,6 +176,51 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The reading of one ship WITHOUT the row it was found on: what it is called, how hurt it is,
+        /// the sentence the game wrote about what became of it, and the ship's own dossier behind all
+        /// three.
+        ///
+        /// The advanced report draws every ship twice - as a roster row and as a chip in its 3D arena
+        /// (<c>EncounterPlayShipItem</c>, what the tutorial calls the fleet state) - and the two
+        /// prefabs share no type, only the wrapper the game hangs on the hover surface each of them
+        /// carries. So the READING is this, and a caller brings the three things any picture of a ship
+        /// has: the wrapper the game bound to it, the rectangle it is drawn in, and that rectangle's
+        /// own hover surface, which is where the tooltip class and the outcome sentence live.
+        ///
+        /// <paramref name="drawn"/> is the caller's last resort for the NAME, for a picture that draws
+        /// one at all (the roster row's label); a chip draws no text and hands in nothing. The node is
+        /// a line rather than a control, because there is nothing to do to a ship in a battle report;
+        /// whatever else a caller hangs on the vtable - a host's pick-up, a nested badge - it hangs
+        /// after.
+        /// </summary>
+        public static NodeVtable ShipLine(
+            GuiBattleShip ship,
+            AgeTransform widget,
+            AgeTooltip tooltip,
+            Func<string> drawn = null
+        )
+        {
+            GuiBattleShip it = ship;
+            AgeTooltip tip = tooltip;
+            Func<string> named = drawn;
+            NodeVtable vtable = new NodeVtable
+            {
+                ControlType = ControlTypes.Text,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => ShipName(it, named)),
+                    GraphNodes.ValuePart(() => Health(it), false),
+                },
+                // The outcome sentence is the game's own, kept in a field neither picture draws, so
+                // the line says it as it is read - declared as a section rather than composed into the
+                // readout by hand, so the same words reach the review buffer exactly once.
+                Sections = GraphNodes.SpokenSections(() => OutcomeLines(tip), tip),
+            };
+            AgeWidgets.PointAt(vtable, widget);
+            return vtable;
+        }
+
+        /// <summary>
         /// A ship's name in full, which the roster row does not draw for a design past its first
         /// revision: the game composes the caption against the label's own width and clips the revision
         /// number off it (<c>BattleShipItem.Refresh</c> :49 asking
@@ -200,15 +236,46 @@ namespace ES2Access.UI
         /// </summary>
         public static string ShipName(BattleShipItem item)
         {
+            BattleShipItem it = item;
+            return ShipName(Wrapper(it), () => AgeText.Label(it.Title));
+        }
+
+        /// <summary>The same question of a ship the caller already holds the wrapper for, with
+        /// whatever its picture DRAWS as the last resort: a chip draws nothing and passes null, and
+        /// gets the game's own full title or nothing at all.</summary>
+        public static string ShipName(GuiBattleShip ship, Func<string> drawn)
+        {
             try
             {
-                GuiBattleShip ship = item.GuiBattleShip;
                 string full = ship == null ? null : ship.GetFullTitle(null, true);
-                return string.IsNullOrEmpty(full) ? AgeText.Label(item.Title) : AgeText.Clean(full);
+                if (!string.IsNullOrEmpty(full))
+                {
+                    return AgeText.Clean(full);
+                }
+            }
+            catch (Exception) { }
+
+            try
+            {
+                return drawn == null ? null : drawn();
             }
             catch (Exception)
             {
-                return AgeText.Label(item.Title);
+                return null;
+            }
+        }
+
+        /// <summary>The wrapper the game bound to a roster row, which is where everything the row says
+        /// beyond its own label comes from.</summary>
+        private static GuiBattleShip Wrapper(BattleShipItem item)
+        {
+            try
+            {
+                return item == null ? null : item.GuiBattleShip;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 
@@ -249,11 +316,10 @@ namespace ES2Access.UI
         /// <summary>How hurt a ship is, in the game's own stat string with the game's own word in front
         /// of it. The row draws this as a bar and writes no number, so there is nothing to read off the
         /// screen; the wrapper the row is bound to is where the game keeps it.</summary>
-        private static string Health(BattleShipItem item)
+        private static string Health(GuiBattleShip ship)
         {
             try
             {
-                GuiBattleShip ship = item.GuiBattleShip;
                 if (ship == null)
                 {
                     return null;
@@ -279,9 +345,9 @@ namespace ES2Access.UI
         /// sentence the game wrote about it. So a status is present exactly when the game chose to write
         /// one, and the mod invents nothing for the rest.
         /// </summary>
-        private static IList<string> OutcomeLines(BattleShipItem item)
+        private static IList<string> OutcomeLines(AgeTooltip tooltip)
         {
-            string said = Outcome(item);
+            string said = Outcome(tooltip);
             List<string> lines = new List<string>(1);
             if (!string.IsNullOrEmpty(said))
             {
@@ -291,11 +357,10 @@ namespace ES2Access.UI
             return lines;
         }
 
-        private static string Outcome(BattleShipItem item)
+        private static string Outcome(AgeTooltip tooltip)
         {
             try
             {
-                AgeTooltip tooltip = item.Tooltip;
                 return tooltip == null || tooltip.Class != ShipWithStatusTooltipClass
                     ? null
                     : AgeText.Clean(tooltip.Content);

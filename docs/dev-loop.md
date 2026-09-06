@@ -200,7 +200,8 @@ buckets and what each means are in `ES2Access/Dev/TooltipAudit.cs`. Reading a ru
 COUNTS on a culling surface depend on camera position, so compare buckets, not totals; and a run
 taken while a MODAL is focused inherits the screen BEHIND it — subtract findings by root path
 before judging, or a clean modal reads as a disaster. A COLLAPSED branch reads as `unread` (the blind
-spot `Coverage` shares) — expand and re-run before believing one. `unraised` is the only bucket about
+spot `Coverage` shares) — expand and re-run before believing one. A Class-backed tooltip whose
+Content is a bare NUMBER files under `decoration`, so a chip family reads as clean — find those with an `/eval` walk. `unraised` is the only bucket about
 the OTHER promise: a tooltip is DECLARED (`PointsAt`) and RAISED (`OnFocusVisual` moving the
 pointer), and one without the other reviews perfectly and never draws — contract at
 `GraphNodes.SectionsFor`, which now makes both.

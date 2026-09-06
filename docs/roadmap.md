@@ -178,6 +178,13 @@ belong in the files above.
   `BattleGroupSetupPanel`'s roster lines redraw after a drop (only the 2D flotilla cards are proven
   to), and whether the swap is worth advertising, since `DropAccepts` is the game's
   `CanAddShipItem` and that branch succeeds where it says no, so the swap works and no row offers it.
+- Advanced battle REPORT follow-ups (2026-09-06 stage shipped the arena's ship chips as a group
+  per flotilla): the hero portrait carries a LIFE GAUGE (`BattleGroupInfoPanel` :77-78) drawn as a
+  picture with no figure anywhere on it, so the hero's ship health is the one ship health the report
+  does not say — the hero row reads only the portrait's dossier today. And a REINFORCEMENT fleet's
+  panel has a game-side `ExpandToggle` (`ReinforcementGarrisonReportPanel`) that the mod never
+  names, so whatever it opens is unreachable by keyboard — unverified, needs a battle with
+  reinforcements to sight either.
 - Ground-battle setup follow-ups (2026-08-25 stage shipped the screen model): live-check the
   defender-side role wording (`%…DefenderDescription` on YOUR side; needs a battle where the
   player defends) and the `[positiveImpactWhite]` half of the manpower marker strip (needs a

@@ -158,6 +158,20 @@ Index and charter: `README.md`.
   fighter/bomber squadron cards are symmetric on the report, though: BOTH sides' arena containers are
   `EncounterPlayFlotillaCardContainer` with three `EncounterFighterBomberCard2D` each, where the
   setup window gives the enemy a single fleet-wide card.
+- **The report arena's ship chips are the tutorial's "Fleet state", and an alive one's tooltip
+  Content is a NUMBER.** Each arena card draws one `EncounterPlayShipItem` per ship it holds
+  (`EncounterPlayShipCard3D.AllShips`, in size order), which the CASUALTY REPORT tutorial calls the
+  fleet state and tells the player to hover for each ship's state; a destroyed one is drawn faded
+  rather than hidden (`AgeTransform.Enable = false` with `FadeOnDisableFactor`, so it is still
+  painted and still hoverable). `Refresh` builds a FRESH `GuiBattleShip` every time and keeps it
+  only on the chip's own `AgeTooltip.Target` — the chip's own property holds the requested ship
+  DATA, not the wrapper — and sets the tooltip's Content to `guiBattleShip.Name`, which for a ship
+  nothing happened to is the design's internal numeric name (measured: "3657"). So a chip's spoken
+  NAME has to come from `GuiBattleShip.GetFullTitle(null, true)`, exactly as a roster row's does,
+  and the Content is worth reading only in the `ShipWithSimple` case, where it is the status
+  sentence. The flotilla's dominance star is forced hidden on this window
+  (`EncounterPlayFlotillaCard3D.RefreshInfo` sets `FlotillaDominanceStar.Visible = false`
+  unconditionally), so there is nothing to read off it.
 - **A ground-battle outcome's second click is on the item's own transform.** Measured off the
   unbound prefab (`GroundBattleOutcomeSelectionNotificationWindow.OutcomeItemPrefab`, readable with no
   battle running): `GroundBattleOutcomeItem.Toggle` sits on the item's own `AgeTransform`, carries

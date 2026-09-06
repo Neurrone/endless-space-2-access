@@ -59,6 +59,15 @@ namespace ES2Access.Core.Speech
         public const string BattleEnemyFlotillaLost = "battle.enemy-flotilla-lost";
         public const string BattleEnemyFlotillasLost = "battle.enemy-flotillas-lost";
 
+        // How a flotilla came out of the fight, counted off the chips the report's arena draws for
+        // it. Each form is a whole clause because the noun agrees with the number, and the two
+        // questions are separate phrases because a flotilla answers only one of them where nothing
+        // was lost or nothing survived.
+        public const string BattleFlotillaShipStanding = "battle.flotilla-ship-standing";
+        public const string BattleFlotillaShipsStanding = "battle.flotilla-ships-standing";
+        public const string BattleFlotillaShipDestroyed = "battle.flotilla-ship-destroyed";
+        public const string BattleFlotillaShipsDestroyed = "battle.flotilla-ships-destroyed";
+
         // The exchange of fire, which the game draws as tracer and explosion and writes down
         // nowhere. Each is a whole sentence rather than a stem plus fragments, because the count
         // and the damage kind sit inside the clause a translation has to inflect - and there is
