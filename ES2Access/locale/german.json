@@ -457,6 +457,7 @@
   "hint.queue-first": "{0}, um es an den Anfang der Bauliste zu setzen",
   "hint.add-to-selection": "{0}, um zur Auswahl hinzuzufügen",
   "hint.select-up-to-here": "{0}, um bis hierher auszuwählen",
+  "hint.open-ship-design": "{0}, um das Schiffsdesign zu öffnen",
   "hint.missing-technology": "{0}, um die fehlende Technologie anzuzeigen",
   "hint.show-and-select-fleet": "{0}, um die Flotte anzuzeigen und auszuwählen",
   "hint.open-system-management": "{0}, um die Systemverwaltung zu öffnen",

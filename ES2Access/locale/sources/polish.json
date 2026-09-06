@@ -478,6 +478,7 @@
   "hint.queue-first": "{0} to queue it first",
   "hint.add-to-selection": "{0} to add to the selection",
   "hint.select-up-to-here": "{0} to select up to here",
+  "hint.open-ship-design": "{0} opens ship design",
   "hint.missing-technology": "{0} to show missing technology",
   "hint.show-and-select-fleet": "{0} to show and select fleet",
   "hint.open-system-management": "{0} to open system management screen",

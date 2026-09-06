@@ -457,6 +457,7 @@
   "hint.queue-first": "{0} 將其排入佇列第一位",
   "hint.add-to-selection": "{0} 加入選取",
   "hint.select-up-to-here": "{0} 選取到此處",
+  "hint.open-ship-design": "{0} 開啟船艦設計",
   "hint.missing-technology": "{0} 顯示缺少的技術",
   "hint.show-and-select-fleet": "{0} 顯示並選取艦隊",
   "hint.open-system-management": "{0} 開啟行星系管理畫面",

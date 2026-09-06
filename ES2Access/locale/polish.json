@@ -479,6 +479,7 @@
   "hint.queue-first": "{0}, aby dodać na początek kolejki",
   "hint.add-to-selection": "{0}, aby dodać do zaznaczenia",
   "hint.select-up-to-here": "{0}, aby zaznaczyć aż dotąd",
+  "hint.open-ship-design": "{0}, aby otworzyć projekt statku",
   "hint.missing-technology": "{0}, aby pokazać brakujące technologie",
   "hint.show-and-select-fleet": "{0}, aby pokazać i wybrać flotę",
   "hint.open-system-management": "{0}, aby otworzyć ekran zarządzania systemem",

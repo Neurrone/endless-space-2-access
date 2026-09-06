@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
@@ -113,6 +114,46 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The listener the hero panel puts on its own tile's second click
+        /// (<c>FleetHeroPanel</c> :364); no other tile has one.</summary>
+        private static readonly FieldInfo DoubleClickAlt = typeof(ShipItem).GetField(
+            "OnDoubleClickAlt",
+            BindingFlags.Instance | BindingFlags.NonPublic
+        );
+
+        /// <summary>
+        /// Whether the tile's second click opens a design - the handler's own test
+        /// (<c>ShipItem.OnDoubleClickCb</c> :200-210): a design the game marks hidden or not editable
+        /// is refused unless its definition carries an inspection bypass, and an assimilated minor
+        /// faction's ships are all of the first kind. The hero's tile is answered by the hero panel
+        /// instead (<c>HeroShipItem_OnDoubleClickAlt</c> :554-558 opens the hero's own ship page),
+        /// whatever the design says.
+        /// </summary>
+        private static bool DesignOpens(ShipItem it)
+        {
+            if (it.GuiShip == null || it.GuiShip.ShipDesign == null)
+            {
+                return false;
+            }
+
+            if (DoubleClickAlt != null && DoubleClickAlt.GetValue(it) != null)
+            {
+                return true;
+            }
+
+            global::ShipDesign design = it.GuiShip.ShipDesign;
+            if (!design.Hidden && design.Editable)
+            {
+                return true;
+            }
+
+            global::ShipDesignDefinition definition;
+            return Amplitude.Unity.Framework.Databases
+                    .GetDatabase<global::ShipDesignDefinition>()
+                    .TryGetValue(design.DefaultName, out definition)
+                && definition.InspectionBypass;
+        }
+
         /// <summary>
         /// One ship tile. Public because the hero's own ship is drawn on its own, outside any garrison
         /// table, and reads exactly the same.
@@ -169,6 +210,16 @@ namespace ES2Access.UI
             // the GAME branches on the modifier still held (<c>ShipsManagementPanel</c> :713 and :738).
             NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.SelectToggle);
             NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.SelectRange);
+
+            // The second click, said only where it will do something: the tile's own possibility
+            // gate, read the way the handler reads it.
+            NodeHints.Add(
+                vtable,
+                ModStrings.HintOpenShipDesign,
+                UiActions.DoubleClick,
+                0,
+                () => DesignOpens(it)
+            );
 
             // A range changed every row between the anchor and this one, so this row's new state is not
             // the answer - what the selection now IS, is.

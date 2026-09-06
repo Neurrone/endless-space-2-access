@@ -457,6 +457,7 @@
   "hint.queue-first": "按{0}将其排入队列首位",
   "hint.add-to-selection": "按{0}添加到选择",
   "hint.select-up-to-here": "按{0}选择到此处",
+  "hint.open-ship-design": "按{0}打开飞船设计",
   "hint.missing-technology": "按{0}显示缺少的技术",
   "hint.show-and-select-fleet": "按{0}显示并选择舰队",
   "hint.open-system-management": "按{0}打开行星系管理界面",

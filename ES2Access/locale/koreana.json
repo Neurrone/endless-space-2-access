@@ -457,6 +457,7 @@
   "hint.queue-first": "{0} 키로 대기열 맨 앞에 추가",
   "hint.add-to-selection": "{0} 키로 선택에 추가",
   "hint.select-up-to-here": "{0} 키로 여기까지 선택",
+  "hint.open-ship-design": "{0} 키로 함선 설계 열기",
   "hint.missing-technology": "{0} 키로 없는 기술 보기",
   "hint.show-and-select-fleet": "{0} 키로 함대 보기 및 선택",
   "hint.open-system-management": "{0} 키로 성계 관리 화면 열기",

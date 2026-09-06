@@ -457,6 +457,7 @@
   "hint.queue-first": "{0} para ponerlo primero en la cola",
   "hint.add-to-selection": "{0} para añadir a la selección",
   "hint.select-up-to-here": "{0} para seleccionar hasta aquí",
+  "hint.open-ship-design": "{0} para abrir el diseño aeronaval",
   "hint.missing-technology": "{0} para mostrar la tecnología que falta",
   "hint.show-and-select-fleet": "{0} para mostrar y seleccionar la flota",
   "hint.open-system-management": "{0} para abrir la pantalla de administración de sistema",

@@ -65,6 +65,7 @@ namespace ES2Access.Core.Speech
         public const string HintQueueFirst = "hint.queue-first";
         public const string HintAddToSelection = "hint.add-to-selection";
         public const string HintSelectUpToHere = "hint.select-up-to-here";
+        public const string HintOpenShipDesign = "hint.open-ship-design";
         public const string HintMissingTechnology = "hint.missing-technology";
         public const string HintShowAndSelectFleet = "hint.show-and-select-fleet";
         public const string HintOpenSystemManagement = "hint.open-system-management";
@@ -120,6 +121,7 @@ namespace ES2Access.Core.Speech
             { HintQueueFirst, "{0} to queue it first" },
             { HintAddToSelection, "{0} to add to the selection" },
             { HintSelectUpToHere, "{0} to select up to here" },
+            { HintOpenShipDesign, "{0} opens ship design" },
             { HintMissingTechnology, "{0} to show missing technology" },
             { HintShowAndSelectFleet, "{0} to show and select fleet" },
             { HintOpenSystemManagement, "{0} to open system management screen" },

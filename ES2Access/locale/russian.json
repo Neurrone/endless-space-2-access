@@ -492,6 +492,7 @@
   "hint.queue-first": "{0} — поставить первым в очередь",
   "hint.add-to-selection": "{0} — добавить к выбору",
   "hint.select-up-to-here": "{0} — выбрать до этого места",
+  "hint.open-ship-design": "{0} — открыть проект корабля",
   "hint.missing-technology": "{0} — показать отсутствующие технологии",
   "hint.show-and-select-fleet": "{0} — показать и выбрать флот",
   "hint.open-system-management": "{0} — открыть экран управления системой",
