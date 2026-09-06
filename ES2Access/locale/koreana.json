@@ -171,6 +171,7 @@
   "galaxy.fleet-en-route-unexplored-turns": "이동 중, 미탐사 성계에 {0}턴 후 도착",
   "galaxy.fleet-free-moving-to-unexplored": "미탐사 성계로 자유 이동 중",
   "galaxy.fleet-on-lane-to-unexplored": "미탐사 성계로 향하는 우주 항로 위",
+  "galaxy.fleet-on-lane-from-unexplored": "{0}에서 {1}으로 뻗은 우주 항로 위",
   "galaxy.fleet-under-way-nearby-one": "근처에 이동 중인 함대 {0}개",
   "galaxy.fleets-under-way-nearby": "근처에 이동 중인 함대 {0}개",
   "galaxy.system-population": "인구 {0}",

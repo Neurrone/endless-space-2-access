@@ -186,6 +186,7 @@
   "galaxy.fleet-en-route-unexplored-turns.one": "в пути к неисследованной системе, прибытие через {0} ход",
   "galaxy.fleet-free-moving-to-unexplored": "в свободном полёте к неисследованной системе",
   "galaxy.fleet-on-lane-to-unexplored": "на звездном пути к неисследованной системе",
+  "galaxy.fleet-on-lane-from-unexplored": "на звездном пути от {0}, направление {1}",
   "galaxy.fleet-under-way-nearby-one": "{0} флот в пути поблизости",
   "galaxy.fleets-under-way-nearby": "{0} флотов в пути поблизости",
   "galaxy.fleets-under-way-nearby.few": "{0} флота в пути поблизости",

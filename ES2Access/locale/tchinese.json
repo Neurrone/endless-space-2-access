@@ -171,6 +171,7 @@
   "galaxy.fleet-en-route-unexplored-turns": "前往未探索的行星系，{0} 回合後抵達",
   "galaxy.fleet-free-moving-to-unexplored": "自由航行前往未探索的行星系",
   "galaxy.fleet-on-lane-to-unexplored": "位於通往未探索行星系的星軌上",
+  "galaxy.fleet-on-lane-from-unexplored": "位於從 {0} 往 {1} 方延伸的星軌上",
   "galaxy.fleet-under-way-nearby-one": "附近有 {0} 支航行中的艦隊",
   "galaxy.fleets-under-way-nearby": "附近有 {0} 支航行中的艦隊",
   "galaxy.system-population": "人口 {0}",

@@ -552,6 +552,7 @@ namespace ES2Access.Core.Speech
             },
             { GalaxyFleetFreeMovingToUnexplored, "free moving to an unexplored system" },
             { GalaxyFleetOnLaneToUnexplored, "on a star lane to an unexplored system" },
+            { GalaxyFleetOnLaneFromUnexplored, "on a star lane from {0} going {1}" },
             { GalaxyFleetUnderWayNearbyOne, "{0} fleet under way nearby" },
             { GalaxyFleetsUnderWayNearby, "{0} fleets under way nearby" },
             { GalaxySystemPopulation, "{0} population" },

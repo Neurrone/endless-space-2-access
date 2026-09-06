@@ -269,12 +269,9 @@ namespace ES2Access.Screens
                 // about where it is going: a lane running into the dark is not the same picture as a
                 // fleet striking out across open space, and the map draws the one and not the other.
                 string phrase = Crossing(it)
-                    ? ModStrings.GalaxyFleetFreeMovingToUnexplored
-                    : ModStrings.GalaxyFleetOnLaneToUnexplored;
-                vtable.Announcements.Insert(
-                    1,
-                    GraphNodes.ValuePart(() => ModStrings.Get(phrase), false)
-                );
+                    ? ModStrings.Get(ModStrings.GalaxyFleetFreeMovingToUnexplored)
+                    : OnLaneIntoTheDark(it);
+                vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => phrase, false));
                 AddFleet(builder, it, AdriftKey(it), vtable, badges);
             }
             catch (Exception e)
@@ -293,6 +290,39 @@ namespace ES2Access.Screens
         private static string AdriftKey(Fleet fleet)
         {
             return "galaxy:fleet/" + fleet.GUID;
+        }
+
+        /// <summary>A fleet flying a lane whose far end the map has not named. The lane's near end is
+        /// the leg's start, and where the map HAS named that, the row says which place the line leaves
+        /// and which way it runs from there; where it has not, all that is left to say is that the far
+        /// end is dark.</summary>
+        private static string OnLaneIntoTheDark(Fleet fleet)
+        {
+            try
+            {
+                IPositioningService positioning =
+                    Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
+                Empire empire = PlayerEmpire();
+                GameNode start = positioning.GetGameNode(fleet.Position.Movement.Start);
+                GameNode goal = positioning.GetGameNode(fleet.Position.Movement.Goal);
+                if (start != null && goal != null && empire != null && Perceived(start, empire))
+                {
+                    return ModStrings.Format(
+                        ModStrings.GalaxyFleetOnLaneFromUnexplored,
+                        start.LocalizedName,
+                        CompassDirections.Direction(
+                            goal.GalaxyPosition.X - start.GalaxyPosition.X,
+                            goal.GalaxyPosition.Y - start.GalaxyPosition.Y
+                        )
+                    );
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading the near end of a fleet's lane into the dark threw: " + e);
+            }
+
+            return ModStrings.Get(ModStrings.GalaxyFleetOnLaneToUnexplored);
         }
 
         /// <summary>Whether this fleet's current leg is a crossing of OPEN SPACE rather than a flight

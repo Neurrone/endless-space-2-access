@@ -168,6 +168,12 @@ namespace ES2Access.Core.Speech
         /// dark, the other is a fleet striking out where there is no line at all.</summary>
         public const string GalaxyFleetOnLaneToUnexplored = "galaxy.fleet-on-lane-to-unexplored";
 
+        /// <summary>The same lane when the map HAS named its near end: the fleet is on a line out of
+        /// a place the player knows, so the row says which place and which way the line runs from it -
+        /// the same picture inspect mode reads off that lane (<see cref="GalaxyInspectStarlaneUnexplored"/>).</summary>
+        public const string GalaxyFleetOnLaneFromUnexplored =
+            "galaxy.fleet-on-lane-from-unexplored";
+
         // How many fleets are under way on the lanes leaving a system, said by the system itself after
         // the count of what is parked there - the two together are what its branch opens onto.
         public const string GalaxyFleetUnderWayNearbyOne = "galaxy.fleet-under-way-nearby-one";

@@ -171,6 +171,7 @@
   "galaxy.fleet-en-route-unexplored-turns": "unterwegs zu einem unerforschten System, Ankunft in {0} Zügen",
   "galaxy.fleet-free-moving-to-unexplored": "fliegt frei zu einem unerforschten System",
   "galaxy.fleet-on-lane-to-unexplored": "auf einer Sternenroute zu einem unerforschten System",
+  "galaxy.fleet-on-lane-from-unexplored": "auf einer Sternenroute von {0} Richtung {1}",
   "galaxy.fleet-under-way-nearby-one": "{0} Flotte in der Nähe unterwegs",
   "galaxy.fleets-under-way-nearby": "{0} Flotten in der Nähe unterwegs",
   "galaxy.system-population": "{0} Bevölkerung",
