@@ -593,6 +593,7 @@
   "empire.relic-slot-assign": "指派文物",
   "empire.relic-slot-remove": "移除文物",
   "empire.population-sent": "已透過太空港將 {0} 送往 {1}",
+  "empire.victory-curiosities-tracker": "已發現的奇特點",
   "empire.planet-actions-panel-opened": "已開啟 {0} 的行星行動面板",
   "empire.planet-actions-panel-closed": "已關閉行星行動面板",
   "empire.population-panel-opened": "已開啟 {0} 的人口面板",

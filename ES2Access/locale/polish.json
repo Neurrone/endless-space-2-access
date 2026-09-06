@@ -617,6 +617,7 @@
   "empire.relic-slot-assign": "Przypisz relikty",
   "empire.relic-slot-remove": "Usuń relikty",
   "empire.population-sent": "Wysłano {0} portem kosmicznym do systemu {1}",
+  "empire.victory-curiosities-tracker": "Odkryte osobliwości",
   "empire.planet-actions-panel-opened": "Panel akcji planety otwarty dla: {0}",
   "empire.planet-actions-panel-closed": "Panel akcji planety zamknięty",
   "empire.population-panel-opened": "Panel populacji otwarty dla: {0}",

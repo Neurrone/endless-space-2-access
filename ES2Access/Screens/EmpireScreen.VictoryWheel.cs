@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -193,13 +194,21 @@ namespace ES2Access.Screens
                 Amplitude.Unity.Gui.ExtendedGuiElement element =
                     Gui.GetExtendedGuiElement(trackers[index].Name);
                 // A title the corpus never wrote comes back as its own key: parked text, which is not
-                // a name to speak.
-                return element == null ? null : AgeText.Title(element.Title);
+                // a name to speak - the mod names the one tracker the game left untitled.
+                string title = element == null ? null : AgeText.Title(element.Title);
+                return title ?? TrackerName(trackers[index].Name.ToString());
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        private static string TrackerName(string tracker)
+        {
+            return tracker == "PerformanceCuriositiesDiscovered"
+                ? ModStrings.Get(ModStrings.EmpireVictoryCuriositiesTracker)
+                : null;
         }
 
         private static readonly FieldInfo SectorDefinition = GameHandlers.Field(

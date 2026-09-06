@@ -967,6 +967,7 @@ namespace ES2Access.Core.Speech
             { EmpireRelicSlotAssign, "Assign relics" },
             { EmpireRelicSlotRemove, "Remove relics" },
             { EmpirePopulationSent, "Sent {0} to {1} by spaceport" },
+            { EmpireVictoryCuriositiesTracker, "Curiosities discovered" },
             { EmpirePlanetActionsPanelOpened, "Planet actions panel open for {0}" },
             { EmpirePlanetActionsPanelClosed, "Planet actions panel closed" },
             { EmpirePopulationPanelOpened, "Population panel open for {0}" },

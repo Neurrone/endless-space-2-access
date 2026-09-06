@@ -616,6 +616,7 @@
   "empire.relic-slot-assign": "Assign relics",
   "empire.relic-slot-remove": "Remove relics",
   "empire.population-sent": "Sent {0} to {1} by spaceport",
+  "empire.victory-curiosities-tracker": "Curiosities discovered",
   "empire.planet-actions-panel-opened": "Planet actions panel open for {0}",
   "empire.planet-actions-panel-closed": "Planet actions panel closed",
   "empire.population-panel-opened": "Population panel open for {0}",

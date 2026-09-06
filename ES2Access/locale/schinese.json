@@ -593,6 +593,7 @@
   "empire.relic-slot-assign": "分配文物",
   "empire.relic-slot-remove": "移除文物",
   "empire.population-sent": "已通过太空港将{0}送往{1}",
+  "empire.victory-curiosities-tracker": "已发现的珍奇",
   "empire.planet-actions-panel-opened": "已打开{0}的行星行动面板",
   "empire.planet-actions-panel-closed": "已关闭行星行动面板",
   "empire.population-panel-opened": "已打开{0}的族群面板",

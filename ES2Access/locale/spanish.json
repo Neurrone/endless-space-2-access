@@ -593,6 +593,7 @@
   "empire.relic-slot-assign": "Asignar reliquias",
   "empire.relic-slot-remove": "Retirar reliquias",
   "empire.population-sent": "Se ha enviado {0} a {1} por puerto espacial",
+  "empire.victory-curiosities-tracker": "Curiosidades descubiertas",
   "empire.planet-actions-panel-opened": "Panel de acciones de planeta abierto para {0}",
   "empire.planet-actions-panel-closed": "Panel de acciones de planeta cerrado",
   "empire.population-panel-opened": "Panel de población abierto para {0}",

@@ -593,6 +593,7 @@
   "empire.relic-slot-assign": "유물 배치",
   "empire.relic-slot-remove": "유물 회수",
   "empire.population-sent": "{0}, 우주항구를 통해 {1}에 보냄",
+  "empire.victory-curiosities-tracker": "발견한 특이사항",
   "empire.planet-actions-panel-opened": "{0}의 행성 명령 패널 열림",
   "empire.planet-actions-panel-closed": "행성 명령 패널 닫힘",
   "empire.population-panel-opened": "{0}의 인구 패널 열림",

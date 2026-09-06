@@ -630,6 +630,7 @@
   "empire.relic-slot-assign": "Назначить реликвии",
   "empire.relic-slot-remove": "Убрать реликвии",
   "empire.population-sent": "Отправлено через космопорт: {0} в {1}",
+  "empire.victory-curiosities-tracker": "Открытые феномены",
   "empire.planet-actions-panel-opened": "Панель действий планеты открыта: {0}",
   "empire.planet-actions-panel-closed": "Панель действий планеты закрыта",
   "empire.population-panel-opened": "Панель населения открыта: {0}",

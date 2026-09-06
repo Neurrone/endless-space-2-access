@@ -89,6 +89,11 @@ namespace ES2Access.Core.Speech
         /// so this is a different sentence from a move between two planets of one system.</summary>
         public const string EmpirePopulationSent = "empire.population-sent";
 
+        /// <summary>The Curiosities figure on the victory wheel's Score rim. The game ships no title for
+        /// its tracker (the key `%PerformanceCuriositiesDiscoveredTitle` has no localization), so its hex
+        /// draws an icon only and the mod names it itself.</summary>
+        public const string EmpireVictoryCuriositiesTracker = "empire.victory-curiosities-tracker";
+
         /// <summary>The panel a systems-table cell slides out under the table, arriving and leaving.
         /// Nothing else would say so: the page does not change, and a whole tab stop's worth of content
         /// appears and disappears under the player with no sound but Tab taking longer to come round -
