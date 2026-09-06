@@ -572,8 +572,10 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Give the entries the last step collected a structural key of their own.</summary>
-        private static void Keyed(List<TooltipChildren.Dossier> found, int from, string key)
+        /// <summary>Give the entries the last step collected a structural key of their own - public
+        /// because the two blocks filled from outside this file name their entries too
+        /// (<see cref="TooltipChildren.Dossier.Key"/>).</summary>
+        public static void Keyed(List<TooltipChildren.Dossier> found, int from, string key)
         {
             for (int i = from; i < found.Count; i++)
             {

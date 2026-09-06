@@ -47,8 +47,12 @@ namespace ES2Access.Screens
                     () => StarAim(it, looking, LabelFor(it, SystemLabels()))
                 );
                 // The stat block behind the star is what the PLACE is, so it leads the "Details"
-                // region - the first thing the player reaches asking what this system is.
+                // region - the first thing the player reaches asking what this system is. Named
+                // rather than numbered, because the icons the label draws between it and the
+                // deposits come and go with the camera and a numbered node moves under the cursor
+                // when they do (<see cref="TooltipChildren.Dossier.Key"/>).
                 SystemLabelReadout.In(found, 0, SystemLabelReadout.Region.Details);
+                SystemLabelReadout.Keyed(found, 0, "star");
                 // Then every picture the label is drawing, in its own order, with the deposits back in
                 // the place the label draws them (<see cref="SystemLabelReadout.IconsAboveDeposits"/>).
                 // Each stamps the region of the row it belongs in as it goes, and the emit reads them
@@ -123,6 +127,12 @@ namespace ES2Access.Screens
                 {
                     ExploitedName(found, at, it, kind);
                     SystemLabelReadout.In(found, at, SystemLabelReadout.Region.Resources);
+                    // Named by the kind of deposit it is - the one thing about this node that does
+                    // not depend on where the camera is. The list is deduped by definition name
+                    // above, so the key is unique among a system's deposits, and it survives the
+                    // label's construction queue appearing above it as the camera comes in
+                    // (<see cref="TooltipChildren.Dossier.Key"/>).
+                    SystemLabelReadout.Keyed(found, at, "deposit/" + kind.Name);
                 }
             }
         }

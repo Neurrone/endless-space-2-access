@@ -128,10 +128,20 @@ namespace ES2Access.UI
             /// </summary>
             public object Region;
 
-            /// <summary>The structural key this dossier's node takes UNDER its owner, where the caller
-            /// has a name for the thing rather than leaving it at its place in a list ("queue"). Null
-            /// for the ordinary dossier, keyed by its index as it always was - and a key given here is
-            /// the caller promising it is stable across rebuilds, which an index is not.</summary>
+            /// <summary>
+            /// The structural key this dossier's node takes UNDER its owner, where the caller has a
+            /// name for the thing rather than leaving it at its place in a list ("queue"). Null for
+            /// the ordinary dossier, keyed by its number as it always was - and a key given here is
+            /// the caller promising it is stable across rebuilds, which a number is not.
+            ///
+            /// A NAMED ENTRY TAKES NO NUMBER: the number a keyless entry is given counts only the
+            /// keyless ones, over the whole list, so a named entry appearing or vanishing above one
+            /// renumbers nothing below it (<see cref="EmitInto"/>). A system's label draws its
+            /// construction queue only from close enough, and while the numbers were places in the
+            /// whole list, stepping onto a deposit slid the camera in, the queue arrived above it,
+            /// and the id the cursor had just been put on no longer existed - the reconciler then
+            /// threw the cursor back where it came from (measured 2026-09-06).
+            /// </summary>
             public string Key;
 
             /// <summary>What this entry's NAME already says - the words its sections then leave out
@@ -245,10 +255,12 @@ namespace ES2Access.UI
         /// (<see cref="Dossier.Region"/>) uses in place of <see cref="Emit"/>, which is the whole list
         /// under one caption of its own.
         ///
-        /// Keyed by each dossier's place in the WHOLE list and never by its place in the region, so
-        /// that sorting a surface's dossiers into regions moves no node's key: a bookmark, a landing
-        /// or a scanner go-to that names one goes on naming it. A caller with a name for one says so
-        /// (<see cref="Dossier.Key"/>) and the node takes that instead.
+        /// Keyed by each dossier's place among the KEYLESS entries of the whole list - never by its
+        /// place in the region, so that sorting a surface's dossiers into regions moves no node's key
+        /// (a bookmark, a landing or a scanner go-to that names one goes on naming it), and never by
+        /// its place in the list itself, so that a NAMED entry the game only draws sometimes cannot
+        /// renumber the unnamed ones after it (<see cref="Dossier.Key"/>). A caller with a name for
+        /// one says so and the node takes that instead.
         /// </summary>
         public static void EmitInto(
             GraphBuilder builder,
@@ -262,15 +274,17 @@ namespace ES2Access.UI
                 return;
             }
 
+            int unnamed = 0;
             for (int i = 0; i < dossiers.Count; i++)
             {
                 Dossier it = dossiers[i];
+                int number = it.Key == null ? unnamed++ : -1;
                 if (!Equals(it.Region, region))
                 {
                     continue;
                 }
 
-                string id = it.Key == null ? key + "/tooltip/" + i : key + "/" + it.Key;
+                string id = it.Key == null ? key + "/tooltip/" + number : key + "/" + it.Key;
                 builder.AddItem(Stands(ControlId.Structural(id), it));
             }
         }
