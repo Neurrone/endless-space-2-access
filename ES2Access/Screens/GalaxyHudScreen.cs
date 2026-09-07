@@ -395,10 +395,22 @@ namespace ES2Access.Screens
             _arrivalWindow = ArrivalWindowFrames;
             _centreSeat = 0;
             _centreSettle = 0;
+            _seatLands = false;
             if (GalaxyOverviewEntry.Take())
             {
                 ArmCentreSeat();
             }
+            else if (!_pushedSinceLoad && _bornOnTheMap)
+            {
+                // The one arrival the entry hook cannot report: the mod came up with the map already
+                // showing - a hot reload - so the hook went in after the overview was entered. The
+                // cursor is restored to nothing and would sit at the first stop with the camera
+                // wherever the player left it, so this seat LANDS on the system the picture is of
+                // rather than seating the stop's memory: there is no row of theirs to leave alone.
+                _seatLands = true;
+                ArmCentreSeat();
+            }
+            _pushedSinceLoad = true;
             // A mode already armed when the page is arrived at is not one the player has just armed,
             // and seating them on it would move the cursor for something that happened elsewhere. Its
             // bearings are still remembered, because the mode ENDING under the cursor is the page's to

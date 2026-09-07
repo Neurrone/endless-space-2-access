@@ -198,6 +198,7 @@
   "galaxy.system-pirate-power": "Уровень мощи пиратов {0}, {1} процентов до следующего уровня",
   "galaxy.system-minor-relation": "Отношения {0} процентов",
   "galaxy.system-pirate-lair": "Логово пиратов",
+  "galaxy.system-conquered-home": "Захваченная домашняя система {0}",
   "galaxy.system-empire-bars": "Колонии здесь: {0}",
   "galaxy.system-deposit-exploited": "{0}, эксплуатируется",
   "galaxy.system-deposit-idle": "{0}, не эксплуатируется",

@@ -191,6 +191,7 @@
   "galaxy.system-pirate-power": "Poziom potęgi piratów {0}, {1} procent do kolejnego poziomu",
   "galaxy.system-minor-relation": "Relacje {0} procent",
   "galaxy.system-pirate-lair": "Kryjówka piratów",
+  "galaxy.system-conquered-home": "Podbity system macierzysty {0}",
   "galaxy.system-empire-bars": "Kolonie tutaj: {0}",
   "galaxy.system-deposit-exploited": "{0}, w eksploatacji",
   "galaxy.system-deposit-idle": "{0}, bez eksploatacji",

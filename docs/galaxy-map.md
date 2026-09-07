@@ -123,7 +123,15 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   every home system in the galaxy from generation, so reading it ungated would name unexplored stars.
   **Mod policy:** owner and home word alike are gated on a colony the player can SEE at that node
   (`Visibility >= 1`, non-ghost — the same gate `SystemInfluence` already names owners by), so the fog
-  gives nothing away.
+  gives nothing away. The word then depends on who HOLDS the home (owner-ruled 2026-09-08): the
+  founder's own colony says "Home System", major and minor alike; another empire's colony on a
+  MAJOR's home says "Conquered {founder} home system" (the `MajorHomeSystem` tag and the founder
+  index both outlive a conquest, and the founder is named by `GetLeaderName`, so an unmet one is
+  "Unknown Empire"); a minor faction's home held by another empire says nothing — measured on a
+  Sophons AI holding the Remnant's birthplace, where a plain "Home System" beside the owner's name
+  read as the owner's own. The scanner's "homeworld" category follows the same line: a MAJOR's
+  home the player's intelligence places, plus any major's home another empire visibly holds; minor
+  factions' homes never.
 - **A system has TWO star tooltips** — the label's and `PlanetLabelsWindow_SystemOrbital.StarTooltip`
   — swapped by the camera; both class-backed, so only the drawn one has words: resolve at READ
   time, never remember one. At orbital zoom the label group's top edge leaves the screen (y=-1

@@ -197,6 +197,11 @@ namespace ES2Access.Core.Speech
         // the sentence it carries says what is happening there.
         public const string GalaxySystemPirateLair = "galaxy.system-pirate-lair";
 
+        // A major empire's home system that another empire holds now. The map keeps its home icon
+        // there in the conqueror's colour; the game's "Home System" word alone, beside the new
+        // owner's name, would read as the owner's own. {0} is the empire that started here.
+        public const string GalaxySystemConqueredHome = "galaxy.system-conquered-home";
+
         // Who holds a colony at a system several empires share. The label draws this as a row of
         // little bars tinted with each empire's colour and writes nothing at all on them - no
         // number, no name, not even a tooltip - so the caption is the mod's and the names inside it

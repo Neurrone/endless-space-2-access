@@ -182,6 +182,7 @@
   "galaxy.system-pirate-power": "Puissance pirate niveau {0}, {1} pour cent avant le prochain niveau",
   "galaxy.system-minor-relation": "Relations {0} pour cent",
   "galaxy.system-pirate-lair": "Repaire de pirates",
+  "galaxy.system-conquered-home": "Système natal de {0} conquis",
   "galaxy.system-empire-bars": "Colonies ici : {0}",
   "galaxy.system-deposit-exploited": "{0}, exploité",
   "galaxy.system-deposit-idle": "{0}, non exploité",

@@ -563,6 +563,7 @@ namespace ES2Access.Core.Speech
             { GalaxySystemPiratePower, "Pirate power level {0}, {1} percent to the next level" },
             { GalaxySystemMinorRelation, "Relations {0} percent" },
             { GalaxySystemPirateLair, "Pirate lair" },
+            { GalaxySystemConqueredHome, "Conquered {0} home system" },
             { GalaxySystemEmpireBars, "Colonies here: {0}" },
             { GalaxySystemDepositExploited, "{0}, exploited" },
             { GalaxySystemDepositIdle, "{0}, not exploited" },

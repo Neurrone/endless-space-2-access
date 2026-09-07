@@ -791,41 +791,76 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The game's own word for a home system, on any empire's.
+        /// The game's own word for a home system, and the mod's for a capital held by someone else.
         ///
         /// Said only where the player can see a colony standing here - the same gate the owner word
         /// uses, and the reason the fog gives nothing away: <c>HomeSystemEmpireIndex</c> is set on
         /// every home system in the galaxy from the moment it is generated, so reading it ungated
         /// would tell the player which unexplored star an empire they have never met came from.
         ///
-        /// The map's own icon is narrower than this - it draws one only for a MAJOR empire's home
-        /// system (<c>StarSystemLabel.RefreshHomeSystemLine</c> :2272) - so a minor civilization's
-        /// home, which is the whole of that civilization, would be said nowhere. Owner-ruled to say
-        /// it for any empire's.
+        /// Whose home it is comes from that index, the empire that started here, and the word depends
+        /// on who holds it now. The founder's own colony says "Home System", for a major and a minor
+        /// civilization alike (the map's icon is narrower: <c>StarSystemLabel.RefreshHomeSystemLine</c>
+        /// :2272 draws one only for a MAJOR's, so a minor civilization's home would be said nowhere).
+        /// Another empire's colony on a MAJOR's home says whose capital was taken - the map keeps its
+        /// icon there, tinted the conqueror's colour, and the founder is named through the fog-safe
+        /// ladder, so an unmet one is "Unknown Empire". A minor faction's home held by someone else
+        /// says nothing: the faction that made it a home is gone into its conqueror, and a plain
+        /// "Home System" beside the new owner's name read as the owner's (owner-ruled, 2026-09-08).
         /// </summary>
         private static string HomeSystemWord(StarSystemNode node, Empire empire)
         {
             try
             {
-                if (
+                ColonizedStarSystem colony =
                     node == null
                     || empire == null
                     || !node.IsHomeSystem
                     || !MapVisibility.Perceived(node, empire)
-                    || VisibleColony(node, empire) == null
-                )
+                        ? null
+                        : VisibleColony(node, empire);
+                if (colony == null)
                 {
                     return null;
                 }
 
-                // The game's own key ends in a space, because it draws it in front of something else.
-                return AgeText.Clean(Gui.Localize(HomeSystemKey)).Trim();
+                if (colony.Empire.Index == node.HomeSystemEmpireIndex)
+                {
+                    // The game's own key ends in a space, because it draws it in front of something else.
+                    return AgeText.Clean(Gui.Localize(HomeSystemKey)).Trim();
+                }
+
+                Empire founder = MajorFounder(node);
+                return founder == null
+                    ? null
+                    : ModStrings.Format(
+                        ModStrings.GalaxySystemConqueredHome,
+                        EmpireNames.Named(founder)
+                    );
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading whether a system is a home system threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>The major empire that started at this system, or null where none did. The node's
+        /// own index is the source, and it outlives the founder's tenure: conquest moves the colony,
+        /// not the index, and the <c>MajorHomeSystem</c> tag stays with it too.</summary>
+        internal static Empire MajorFounder(StarSystemNode node)
+        {
+            if (node == null || !node.IsMajorHomeSystem)
+            {
+                return null;
+            }
+
+            Game game = Gui.Game;
+            Empire[] empires = game == null ? null : game.Empires;
+            int index = node.HomeSystemEmpireIndex;
+            return empires != null && index >= 0 && index < empires.Length
+                ? empires[index] as MajorEmpire
+                : null;
         }
 
         private static readonly string NoOwnerKey = "%MarketplaceScreenNoOwnerTitle";

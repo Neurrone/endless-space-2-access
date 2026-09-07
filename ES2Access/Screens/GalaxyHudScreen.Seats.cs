@@ -749,6 +749,7 @@ namespace ES2Access.Screens
             _centrePick = null;
             _centreSeat = 0;
             _centreSettle = 0;
+            _seatLands = false;
         }
 
         // ---- the system the picture is of ----
@@ -877,6 +878,7 @@ namespace ES2Access.Screens
             {
                 _centreSeat = 0;
                 _centrePick = null;
+                _seatLands = false;
                 return;
             }
 
@@ -923,9 +925,11 @@ namespace ES2Access.Screens
 
             _centreSeat = 0;
             _centrePick = null;
+            bool lands = _seatLands;
+            _seatLands = false;
             try
             {
-                SeatOnCentredSystem(centred);
+                SeatOnCentredSystem(centred, lands);
             }
             catch (Exception e)
             {
@@ -963,7 +967,31 @@ namespace ES2Access.Screens
         /// answer below the trigger's own rather than the camera's.</summary>
         private StarSystemNode _centrePick;
 
-        private void SeatOnCentredSystem(StarSystemNode centred)
+        /// <summary>Whether the mod came up with the map already showing - a hot reload, or a start
+        /// in the middle of a game - the one way onto the map <see cref="GalaxyOverviewEntry"/> cannot
+        /// report, because its hook was installed after the overview was entered. Read once, at
+        /// construction: a cold start's page is built at the main menu, where this is false.</summary>
+        private readonly bool _bornOnTheMap = BornOnTheMap();
+
+        private bool _pushedSinceLoad;
+
+        /// <summary>Whether the outstanding centre seat lands the cursor on the row itself instead of
+        /// seating the map stop's memory - set only by the reload arrival above.</summary>
+        private bool _seatLands;
+
+        private static bool BornOnTheMap()
+        {
+            try
+            {
+                return GalaxyViewLevels.Overview;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private void SeatOnCentredSystem(StarSystemNode centred, bool lands)
         {
             GraphNavigator navigator = ModEntry.Navigator;
             if (navigator == null)
@@ -972,6 +1000,11 @@ namespace ES2Access.Screens
             }
 
             ControlId id = ControlId.For(centred, SystemKey(centred));
+            if (lands)
+            {
+                navigator.FocusNode(id);
+                return;
+            }
 
             GraphNode standing = navigator.CurrentNode;
             if (standing != null && IsMapStop(standing.StopKey))

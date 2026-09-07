@@ -238,9 +238,9 @@ belong in the files above.
   409 throughout) — Backslash, Ctrl+L and the scanner chords were exercised only as injected
   actions.
 - Scanner: CONTESTED INFLUENCE rows, FOREIGN homeworlds (needs `EmpirePosition.Known` true), and
-  quest markers, pins and missiles have never been heard. Open judgment call for the owner:
-  MINOR-faction home systems are deliberately NOT in "homeworld" (the diplomacy lens the gate came
-  from iterates major empires only) — should they be?
+  quest markers, pins and missiles have never been heard. A CONQUERED major capital — its
+  "Conquered … home system" row word and its place in "homeworld" — is proved only under an
+  in-memory founder-index tweak, never on a real conquest.
 - Quest markers are proved by SYNTHETIC markers only: the marker nodes, the open-space rows,
   the scanner category, the inspect-cell reading and the quest locate were all exercised by
   registering markers by hand, because no save reached carries a marker on any in-progress quest.

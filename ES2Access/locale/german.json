@@ -182,6 +182,7 @@
   "galaxy.system-pirate-power": "Piratenmacht Stufe {0}, {1} Prozent bis zur nächsten Stufe",
   "galaxy.system-minor-relation": "Beziehungen {0} Prozent",
   "galaxy.system-pirate-lair": "Piratenversteck",
+  "galaxy.system-conquered-home": "Erobertes Heimatsystem von {0}",
   "galaxy.system-empire-bars": "Kolonien hier: {0}",
   "galaxy.system-deposit-exploited": "{0}, ausgebeutet",
   "galaxy.system-deposit-idle": "{0}, nicht ausgebeutet",

@@ -182,6 +182,7 @@
   "galaxy.system-pirate-power": "해적 세력 레벨 {0}, 다음 레벨까지 {1} 퍼센트",
   "galaxy.system-minor-relation": "관계 {0} 퍼센트",
   "galaxy.system-pirate-lair": "해적 소굴",
+  "galaxy.system-conquered-home": "정복된 {0} 모성계",
   "galaxy.system-empire-bars": "이곳의 개척지: {0}",
   "galaxy.system-deposit-exploited": "{0}, 채굴 중",
   "galaxy.system-deposit-idle": "{0}, 미채굴",

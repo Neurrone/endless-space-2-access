@@ -182,6 +182,7 @@
   "galaxy.system-pirate-power": "海盜力量等級 {0}，距離下個等級百分之 {1}",
   "galaxy.system-minor-relation": "關係百分之 {0}",
   "galaxy.system-pirate-lair": "海盜巢穴",
+  "galaxy.system-conquered-home": "已征服的 {0} 母星系",
   "galaxy.system-empire-bars": "此處的殖民地：{0}",
   "galaxy.system-deposit-exploited": "{0}，已開採",
   "galaxy.system-deposit-idle": "{0}，未開採",

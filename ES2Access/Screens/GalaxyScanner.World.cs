@@ -370,7 +370,7 @@ namespace ES2Access.Screens
                 int scopes = ScannerScopes.System(
                     affiliation,
                     node is SpecialNode,
-                    homes.Contains(node.GUID),
+                    homes.Contains(node.GUID) || ConqueredCapital(node, empire),
                     Minor(colonies, node, empire)
                 );
                 found.Add(
@@ -1044,7 +1044,9 @@ namespace ES2Access.Screens
         /// still a secret. Asking only the first would hand the player a capital they were shown a
         /// border colony of.
         ///
-        /// Minor factions are not asked at all, matching the lens, which iterates the MAJOR empires.
+        /// Minor factions are not asked at all, matching the lens, which iterates the MAJOR empires -
+        /// and a minor faction's home held by a major is not a capital either (owner-ruled,
+        /// 2026-09-08). A MAJOR's capital held by someone else is: <see cref="ConqueredCapital"/>.
         /// </summary>
         private static HashSet<GameEntityGUID> Homes(Empire empire)
         {
@@ -1089,6 +1091,19 @@ namespace ES2Access.Screens
             }
 
             return homes;
+        }
+
+        /// <summary>A major empire's home system that another empire holds, where the player can see
+        /// the colony holding it - the gate the map row's own "Conquered ... home system" word passes,
+        /// and what the map's icon still marks (the <c>MajorHomeSystem</c> tag outlives the founder's
+        /// tenure). The founder's intelligence position no longer points here once it is lost, so this
+        /// is the only way such a capital enters the category.</summary>
+        private static bool ConqueredCapital(StarSystemNode node, Empire empire)
+        {
+            Empire founder = GalaxyHudScreen.MajorFounder(node);
+            ColonizedStarSystem colony =
+                founder == null ? null : GalaxyHudScreen.VisibleColony(node, empire);
+            return colony != null && !ReferenceEquals(colony.Empire, founder);
         }
 
         /// <summary>How close the position the game says it knows has to be to a home system before it
