@@ -339,7 +339,7 @@ namespace ES2Access.UI
             Add(lines, AgeText.Title(LevelTitle), AgeText.Label(card.LevelLabel));
             if (Drawn(card.UnspentSkillsGroup))
             {
-                Add(lines, AgeText.Title(UnspentPointsTitle), AgeText.Label(card.UnspentSkillsValue));
+                Add(lines, UnspentPointsCaption(), AgeText.Label(card.UnspentSkillsValue));
             }
         }
 
@@ -421,12 +421,12 @@ namespace ES2Access.UI
             AddTooltip(lines, Tooltip(card, card.AssignmentTooltip));
             if (Drawn(card.Cooldown))
             {
-                Add(lines, AgeText.Title(CooldownTitle), AgeText.Label(card.CooldownLabel));
+                Add(lines, CooldownCaption(), AgeText.Label(card.CooldownLabel));
             }
 
             if (Drawn(card.RelicsGroup))
             {
-                Add(lines, AgeText.Title(RelicsTitle), AgeText.Label(card.RelicsLabel));
+                Add(lines, RelicsCaption(), AgeText.Label(card.RelicsLabel));
             }
         }
 
@@ -504,6 +504,28 @@ namespace ES2Access.UI
         public static string UpkeepCaption()
         {
             return AgeText.Title(UpkeepTitle);
+        }
+
+        /// <summary>The game's word for the skill points a hero has not spent yet, for the other
+        /// places that draw the figure bare - the tooltip reader's naming pass among them. One caller
+        /// of the key, for the reason <see cref="LevelCaption"/> is one.</summary>
+        public static string UnspentPointsCaption()
+        {
+            return AgeText.Title(UnspentPointsTitle);
+        }
+
+        /// <summary>The game's word for how long a hero's assignment is still locked, for the reason
+        /// <see cref="UnspentPointsCaption"/> exists.</summary>
+        public static string CooldownCaption()
+        {
+            return AgeText.Title(CooldownTitle);
+        }
+
+        /// <summary>The game's word for the relics a Templar hero carries, for the reason
+        /// <see cref="UnspentPointsCaption"/> exists.</summary>
+        public static string RelicsCaption()
+        {
+            return AgeText.Title(RelicsTitle);
         }
 
         private static void Add(List<string> lines, string caption, string value)

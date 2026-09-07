@@ -544,6 +544,18 @@ namespace ES2Access.UI
         /// the name lives on the wrapper the row hands its own tooltip. That wrapper is where it is
         /// read from - the alternative, walking the mastery database in the order the panel fills its
         /// rows, gets the same four words by trusting two orders to agree.
+        ///
+        /// The unspent skill points are the level's twin - a bare number the card only draws while
+        /// the hero has any, landing in the level's own row - so they are captioned by field too and
+        /// marked as a fact of their own. So is the cooldown, which otherwise joins the sentence
+        /// naming the assignment it is counting down, and the relic count a Templar hero's card
+        /// draws. Each of those three borrows the word the game writes over the same figure
+        /// elsewhere, which is <see cref="HeroCards"/>'s to know.
+        ///
+        /// The assignment ICON is the one widget here with no words at all: the tooltip's card keeps
+        /// no tooltips, so the sentence the prefab would have hung on it does not exist, and the icon
+        /// table has no name for a picture the game builds per assignment. What it is showing is the
+        /// kind of posting - <see cref="Assignment"/>.
         /// </summary>
         private static Dictionary<AgeTransform, Naming> HeroCardNames(PanelFeatureHeroInfo hero)
         {
@@ -556,9 +568,68 @@ namespace ES2Access.UI
 
             Name(named, card.LevelLabel, HeroCards.LevelCaption(), true);
             Silence(named, Caption(hero.AgeTransform, HeroCards.LevelTitle, 0));
-            Name(named, card.UpkeepLabel, HeroCards.UpkeepCaption());
+            Name(named, card.UnspentSkillsValue, HeroCards.UnspentPointsCaption(), true);
+            Name(named, card.UpkeepLabel, HeroCards.UpkeepCaption(), true);
+            Assignment(named, card);
             Masteries(named, card.HeroMasteryPanel);
             return named;
+        }
+
+        /// <summary>
+        /// What the hero is posted to, and the two figures the card draws about the posting.
+        ///
+        /// The icon is named with the game's own word for the kind of assignment - "Admiral" over a
+        /// fleet, "Governor" over a colonised system, "No assignment" over neither - read off the
+        /// GUI element the card drew the picture from, which is the only place that word exists here.
+        /// Where the card's assignment LABEL says the same thing, it says it once: an unassigned hero
+        /// draws <c>%HeroAssignmentNoneTitle</c> beside the picture of having no assignment, and
+        /// "No assignment No assignment" is the row that would read out.
+        ///
+        /// The cooldown is marked as a fact of its own so that the turns left do not join the
+        /// assignment's name into one phrase. Naming it also drops the turn and lock pictures beside
+        /// it, which the row rule does for every icon in a row a reader has spoken for.
+        /// </summary>
+        private static void Assignment(
+            Dictionary<AgeTransform, Naming> named,
+            HeroDetailedCard card
+        )
+        {
+            Name(named, card.CooldownLabel, HeroCards.CooldownCaption(), true);
+            Name(named, card.RelicsLabel, HeroCards.RelicsCaption());
+            try
+            {
+                GuiHero guiHero = card.GuiHero;
+                Amplitude.Unity.Gui.GuiElement element =
+                    guiHero == null ? null : guiHero.AssignmentGuiElement;
+                string posting = element == null ? null : AgeText.Title(element.Title);
+                if (
+                    string.IsNullOrEmpty(posting)
+                    || card.AssignmentIcon == null
+                    || card.AssignmentIcon.AgeTransform == null
+                )
+                {
+                    return;
+                }
+
+                named[card.AssignmentIcon.AgeTransform] = new Naming { Text = posting };
+                if (card.AssignmentLabel != null && Same(AgeText.Label(card.AssignmentLabel), posting))
+                {
+                    Silence(named, card.AssignmentLabel.AgeTransform);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltip: naming a hero's assignment threw: " + e);
+            }
+        }
+
+        /// <summary>Whether two widgets are saying the same thing, which is what decides that one of
+        /// them is repeating the other.</summary>
+        private static bool Same(string one, string other)
+        {
+            return one != null
+                && other != null
+                && string.Equals(one.Trim(), other.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>The label a prefab drew a translation key into, which is how a caption with no
