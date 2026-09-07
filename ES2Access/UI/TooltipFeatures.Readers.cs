@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
@@ -565,7 +565,8 @@ namespace ES2Access.UI
         private static void NameText(
             Dictionary<AgeTransform, Naming> named,
             AgePrimitiveLabel label,
-            string text
+            string text,
+            bool ownLine = false
         )
         {
             if (label == null || string.IsNullOrEmpty(text))
@@ -573,7 +574,7 @@ namespace ES2Access.UI
                 return;
             }
 
-            named[label.AgeTransform] = new Naming { Text = text };
+            named[label.AgeTransform] = new Naming { Text = text, OwnLine = ownLine };
         }
 
         private static void Name(
@@ -688,7 +689,15 @@ namespace ES2Access.UI
             HeroDetailedCard card
         )
         {
-            Name(named, card.CooldownLabel, HeroCards.CooldownCaption(), true);
+            NameText(
+                named,
+                card.CooldownLabel,
+                TooltipText.Captioned(
+                    HeroCards.CooldownCaption(),
+                    HeroCards.CooldownWords(card.CooldownLabel)
+                ),
+                true
+            );
             Name(named, card.RelicsLabel, HeroCards.RelicsCaption());
             try
             {

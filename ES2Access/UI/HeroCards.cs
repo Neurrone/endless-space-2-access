@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
@@ -421,7 +422,7 @@ namespace ES2Access.UI
             AddTooltip(lines, Tooltip(card, card.AssignmentTooltip));
             if (Drawn(card.Cooldown))
             {
-                Add(lines, CooldownCaption(), AgeText.Label(card.CooldownLabel));
+                Add(lines, CooldownCaption(), CooldownWords(card.CooldownLabel));
             }
 
             if (Drawn(card.RelicsGroup))
@@ -519,6 +520,32 @@ namespace ES2Access.UI
         public static string CooldownCaption()
         {
             return AgeText.Title(CooldownTitle);
+        }
+
+        /// <summary>How long the assignment is still locked, said as a counted phrase rather than as
+        /// the bare figure the card draws. The card writes the number against the turn icon
+        /// (<c>CooldownTurnIcon</c>, texture <c>TurnSymbol</c>), and a count and its noun are one
+        /// counted phrase in every language the mod speaks - the rule and the owner ruling behind it
+        /// are in <see cref="ES2.Speech.IconCounts"/>. A label that is not a whole non-negative
+        /// integer is left exactly as it was drawn.</summary>
+        public static string CooldownWords(AgePrimitiveLabel label)
+        {
+            string text = AgeText.Label(label);
+            int turns;
+            if (
+                string.IsNullOrEmpty(text)
+                || !int.TryParse(
+                    text.Trim(),
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out turns
+                )
+            )
+            {
+                return text;
+            }
+
+            return ModStrings.Plural(ModStrings.IconTurnCount, ModStrings.IconTurnsCount, turns);
         }
 
         /// <summary>The game's word for the relics a Templar hero carries, for the reason
