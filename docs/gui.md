@@ -460,6 +460,10 @@ Measured behaviour of the drawing pipeline:
   Dust's colour; influence and essence upkeep carry symbols of their own
   (`[influenceUpkeepColored]`, `[lifeforceUpkeep]`). So a figure drawn against it is an amount of
   Dust and the mod says so, rather than repeating the caption's own word (owner ruling 2026-09-07).
+  That ruling covers the two card readers that name the figure themselves (the upkeep tooltip
+  feature and the hero card); the inline lexicon keeps saying "Upkeep" for the symbol inside game
+  text - "25 Upkeep" in the fleet list - because a lexicon change reaches every screen and the
+  owner judged the readout clear enough as it is (owner ruling 2026-09-08).
 - **A few symbols are painted straight into a panel and so are missing from the element-derived
   picture table.** `TurnSymbol` — the hourglass in front of a build's remaining turns — is drawn by
   an `AgePrimitiveImage` no `GuiElement` carries a token for, so it is a HAND-WRITTEN row
