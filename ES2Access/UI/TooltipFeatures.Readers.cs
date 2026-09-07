@@ -61,6 +61,84 @@ namespace ES2Access.UI
         private const string SquadronFighterTitle = "%SubCategoryModuleSquadronFighterTitle";
 
         private const string SquadronBomberTitle = "%SubCategoryModuleSquadronBomberTitle";
+
+        // ---- what a thing costs to keep ----
+
+        /// <summary>
+        /// An upkeep figure, said without the caption it repeats.
+        ///
+        /// The feature is a caption and a value, and the value ends in an icon standing for what the
+        /// figure is IN - "3 [dust]" for a building, which reads "Upkeep: 3 Dust" and is right. A
+        /// ship's is denominated in upkeep itself ("8.4 [upkeepColored]"), so the same two widgets
+        /// read "Upkeep: 8.4 Upkeep": the icon's word and the caption's are the same word, said
+        /// twice about one number.
+        ///
+        /// So the trailing icon is dropped only when it says what the caption already said, which
+        /// leaves every other denomination alone. The icon is identified from the string the label
+        /// was ASSIGNED, before <see cref="AgeText.Clean"/> turns the bracket into the word - the
+        /// same reason <see cref="AgeText.LabelWithoutLeadingIcon"/> reaches for the raw string - and
+        /// the comparison is between the icon's own name and the caption the game localized, so it
+        /// holds in every language. Nothing to drop is answered with null, and the panel's own two
+        /// widgets are then read exactly as any other feature's.
+        /// </summary>
+        private static Dictionary<AgeTransform, Naming> UpkeepNames(PanelFeatureUpkeep upkeep)
+        {
+            Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            NameText(named, upkeep.UpkeepValue, UpkeepWithoutRepeatedCaption(upkeep.UpkeepValue));
+            return named;
+        }
+
+        private static string UpkeepWithoutRepeatedCaption(AgePrimitiveLabel label)
+        {
+            string caption = WordOnly(AgeText.Title(UpkeepTitle));
+            if (label == null || string.IsNullOrEmpty(caption))
+            {
+                return null;
+            }
+
+            try
+            {
+                // The raw string: the bracket naming the icon is what is being tested, and it does
+                // not survive being read as text.
+                string raw = label.Text;
+                if (string.IsNullOrEmpty(raw) || raw[raw.Length - 1] != ']')
+                {
+                    return null;
+                }
+
+                int open = raw.LastIndexOf('[');
+                return open >= 0
+                    && Same(IconNames.NameFor(raw.Substring(open + 1, raw.Length - open - 2)), caption)
+                    ? AgeText.Clean(raw.Substring(0, open))
+                    : null;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltip: reading an upkeep figure threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>A caption without the punctuation it is written with, which is what there is to
+        /// compare against a word.</summary>
+        private static string WordOnly(string caption)
+        {
+            if (string.IsNullOrEmpty(caption))
+            {
+                return null;
+            }
+
+            int end = caption.Length;
+            while (end > 0 && !char.IsLetterOrDigit(caption[end - 1]))
+            {
+                end--;
+            }
+
+            return caption.Substring(0, end);
+        }
+
+        private const string UpkeepTitle = "%PanelFeatureUpkeepTitle";
+
         // ---- the fleet stat blocks ----
 
         /// <summary>

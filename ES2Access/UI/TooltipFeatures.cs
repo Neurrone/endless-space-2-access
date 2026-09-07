@@ -123,6 +123,7 @@ namespace ES2Access.UI
                 PanelFeatureAdditionalGarrisons more = feature as PanelFeatureAdditionalGarrisons;
                 PanelFeatureGroundBattleInfo invasion = feature as PanelFeatureGroundBattleInfo;
                 PanelFeatureMinorFaction minor = feature as PanelFeatureMinorFaction;
+                PanelFeatureUpkeep upkeep = feature as PanelFeatureUpkeep;
                 PanelFeaturePoliticsExperiencePrerequisite standing =
                     feature as PanelFeaturePoliticsExperiencePrerequisite;
 
@@ -171,6 +172,11 @@ namespace ES2Access.UI
                 {
                     reading.Reader = "politics-experience";
                     named = PoliticsExperienceNames(standing);
+                }
+                else if (upkeep != null)
+                {
+                    reading.Reader = "upkeep";
+                    named = UpkeepNames(upkeep);
                 }
                 else if (power != null)
                 {
