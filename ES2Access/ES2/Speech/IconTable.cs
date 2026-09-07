@@ -355,7 +355,8 @@ namespace ES2Access.ES2.Speech
             "SHIPROLECOLONIZERSMALL=icon.colonizer SHIPROLEDEFENSESMALL=icon.defender\n" +
             "SHIPROLEEXPLORATIONSMALL=icon.exploration SHIPROLEHEROSMALL=icon.hero\n" +
             "SHIPROLEJUGGERNAUTSMALL=icon.behemoth SHIPROLEMOTHERSHIPSMALL=icon.mothership\n" +
-            "SHIPROLEOBLITERATORSMALL=icon.obliterator SHIPROLEROOTCREATORSMALL=icon.essence\n" +
+            "SHIPROLEOBLITERATORSMALL=icon.obliterator SHIPROLEPRIVATEERSMALL=icon.mercenaries\n" +
+            "SHIPROLEROOTCREATORSMALL=icon.essence\n" +
             "SHIPROLESUPERCOLONIZERSMALL=icon.cryogenic-colonizer SHIPROLESUPPORTSMALL=icon.support\n" +
             "SHIPTYPEJUGGERNAUTMEDIUM=icon.juggernaut SHIPTYPEJUGGERNAUTSMALLINVERTED=icon.juggernaut\n" +
             "SHIPTYPELARGEMEDIUM=icon.carrier SHIPTYPELARGESMALLINVERTED=icon.carrier\n" +

@@ -19,13 +19,23 @@ namespace ES2Access.UI
         /// strings (<c>GuiShipDesign.ShipStat*</c> through <c>Gui.GetTitle</c>), which is the same
         /// word the ship design screen writes beside the same number.
         ///
+        /// A carrier draws two more (<c>RefreshFighterBomber</c>, a group the panel only shows for a
+        /// ship carrying squadrons), and those two the game has no ship stat for: they are the
+        /// squadron kinds themselves, named by the words the module categories are called by. Their
+        /// pictures are outside the picture vocabulary, so without the naming a carrier's tooltip
+        /// says two bare numbers.
+        ///
         /// Everything else the feature draws - the role and size rows, the balance caption - already
         /// reads correctly from its own rows, so the naming is a SUBSTITUTION and the rows are then
-        /// read exactly as any other feature's.
+        /// read exactly as any other feature's. The panel puts two of the named figures on each of
+        /// its first two rows, and they are read as drawn: "Health 2070/2070 Movement 9/9" is two
+        /// facts in one line, which is a line and not a defect (owner ruling 2026-09-07).
         /// </summary>
         private static Dictionary<AgeTransform, Naming> ShipStatNames(PanelFeatureShipInfo ship)
         {
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
+            Name(named, ship.FighterLabel, AgeText.Title(SquadronFighterTitle));
+            Name(named, ship.BomberLabel, AgeText.Title(SquadronBomberTitle));
             Name(named, ship.HealthLabel, GuiShipDesign.ShipStatHealth);
             Name(named, ship.MovementPointsLabel, GuiShipDesign.ShipStatMovement);
             Name(named, ship.ManpowerLabel, GuiShipDesign.ShipStatManpower);
@@ -45,6 +55,12 @@ namespace ES2Access.UI
             return named;
         }
 
+        /// <summary>What the game calls the two kinds of squadron a carrier flies - the titles of the
+        /// module categories the squadrons are built from, which is the only place either word exists
+        /// as a word rather than as a picture.</summary>
+        private const string SquadronFighterTitle = "%SubCategoryModuleSquadronFighterTitle";
+
+        private const string SquadronBomberTitle = "%SubCategoryModuleSquadronBomberTitle";
         // ---- the fleet stat blocks ----
 
         /// <summary>
