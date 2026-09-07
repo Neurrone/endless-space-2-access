@@ -454,6 +454,12 @@ Measured behaviour of the drawing pipeline:
   token table: its word is the STAT's own title in the element database (`Gui.GetTitle` + the
   `"%"+name+"Title"` fallback). `DevProbe.UnknownIcons()` is silent about these by design; the
   symptom is a spoken line that is only figures, and the fix is a typed reader, never a new icon row.
+- **The plain upkeep symbol is a DUST symbol.** `[upkeep]`/`[upkeepColored]` (texture
+  `GameVariables/Upkeep`) is declared in `GuiElements[GameVariables].xml` only on the money-upkeep
+  elements (`EmpireMoneyUpkeep`, `GarrisonMoneyUpkeep`, `SystemMoneyUpkeep`, `Upkeep`) and drawn in
+  Dust's colour; influence and essence upkeep carry symbols of their own
+  (`[influenceUpkeepColored]`, `[lifeforceUpkeep]`). So a figure drawn against it is an amount of
+  Dust and the mod says so, rather than repeating the caption's own word (owner ruling 2026-09-07).
 - **A few symbols are painted straight into a panel and so are missing from the element-derived
   picture table.** `TurnSymbol` — the hourglass in front of a build's remaining turns — is drawn by
   an `AgePrimitiveImage` no `GuiElement` carries a token for, so it is a HAND-WRITTEN row

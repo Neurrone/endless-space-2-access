@@ -35,6 +35,12 @@ namespace ES2Access.UI
         /// a screen full of art must not grow this without bound.</summary>
         private const int MaxRemembered = 200;
 
+        /// <summary>The game's own inline token for the Dust coin, for a reader that has to say what
+        /// a figure is denominated in and wants the word the table already has for it in every
+        /// language - spliced into a string and read back through <see cref="AgeText.Clean"/>, never
+        /// written out as an English word.</summary>
+        public const string DustToken = "[dust]";
+
         private static readonly List<string> Tokens = new List<string>();
         private static readonly List<string> Pictures = new List<string>();
 

@@ -417,7 +417,7 @@ namespace ES2Access.UI
         /// condition, so what is DRAWN is the question, not what the hero has).</summary>
         private static void Assignment(HeroDetailedCard card, List<string> lines)
         {
-            Add(lines, AgeText.Title(UpkeepTitle), AgeText.Label(card.UpkeepLabel));
+            Add(lines, UpkeepCaption(), UpkeepWords(card.UpkeepLabel));
             Add(lines, null, AgeText.Label(card.AssignmentLabel));
             AddTooltip(lines, Tooltip(card, card.AssignmentTooltip));
             if (Drawn(card.Cooldown))
@@ -505,6 +505,19 @@ namespace ES2Access.UI
         public static string UpkeepCaption()
         {
             return AgeText.Title(UpkeepTitle);
+        }
+
+        /// <summary>What the hero costs, said in the unit the figure is in rather than as the bare
+        /// number the card draws. The card writes it against <c>UpkeepIcon</c> (texture
+        /// <c>Upkeep</c>), the plain upkeep symbol, which the game defines only on its MONEY-upkeep
+        /// elements and draws in Dust's colour - influence and essence upkeep have symbols of their
+        /// own - so the figure is an amount of Dust, and the game's own dust token names it in every
+        /// language (the measurement and the ruling are in <c>docs/gui.md</c>). A card drawing no
+        /// figure is left exactly as it was drawn.</summary>
+        public static string UpkeepWords(AgePrimitiveLabel label)
+        {
+            string text = AgeText.Label(label);
+            return string.IsNullOrEmpty(text) ? text : AgeText.Clean(text + " " + IconNames.DustToken);
         }
 
         /// <summary>The game's word for the skill points a hero has not spent yet, for the other

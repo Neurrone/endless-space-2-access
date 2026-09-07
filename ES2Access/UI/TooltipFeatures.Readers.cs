@@ -65,30 +65,35 @@ namespace ES2Access.UI
         // ---- what a thing costs to keep ----
 
         /// <summary>
-        /// An upkeep figure, said without the caption it repeats.
+        /// An upkeep figure, said in the unit it is denominated in rather than in the caption's own
+        /// word.
         ///
         /// The feature is a caption and a value, and the value ends in an icon standing for what the
         /// figure is IN - "3 [dust]" for a building, which reads "Upkeep: 3 Dust" and is right. A
-        /// ship's is denominated in upkeep itself ("8.4 [upkeepColored]"), so the same two widgets
-        /// read "Upkeep: 8.4 Upkeep": the icon's word and the caption's are the same word, said
-        /// twice about one number.
+        /// ship's is drawn against the plain upkeep symbol ("8.4 [upkeepColored]"), so the same two
+        /// widgets read "Upkeep: 8.4 Upkeep": the icon's word and the caption's are the same word,
+        /// said twice about one number. That symbol is the MONEY-upkeep one (influence and essence
+        /// upkeep carry symbols of their own), so what the figure is in is Dust - the ruling and the
+        /// measurement behind it are in <c>docs/gui.md</c>.
         ///
-        /// So the trailing icon is dropped only when it says what the caption already said, which
-        /// leaves every other denomination alone. The icon is identified from the string the label
-        /// was ASSIGNED, before <see cref="AgeText.Clean"/> turns the bracket into the word - the
-        /// same reason <see cref="AgeText.LabelWithoutLeadingIcon"/> reaches for the raw string - and
-        /// the comparison is between the icon's own name and the caption the game localized, so it
-        /// holds in every language. Nothing to drop is answered with null, and the panel's own two
+        /// So where the trailing icon says what the caption already said, the game's own dust token
+        /// is put in its place and the same splice renders it: "8.4 [upkeepColored]" reads
+        /// "Upkeep: 8.4 Dust", exactly as a building's "3 [dust]" does. Every other denomination is
+        /// left alone. The icon is identified from the string the label was ASSIGNED, before
+        /// <see cref="AgeText.Clean"/> turns the bracket into the word - the same reason
+        /// <see cref="AgeText.LabelWithoutLeadingIcon"/> reaches for the raw string - and the
+        /// comparison is between the icon's own name and the caption the game localized, so it holds
+        /// in every language. Nothing to substitute is answered with null, and the panel's own two
         /// widgets are then read exactly as any other feature's.
         /// </summary>
         private static Dictionary<AgeTransform, Naming> UpkeepNames(PanelFeatureUpkeep upkeep)
         {
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
-            NameText(named, upkeep.UpkeepValue, UpkeepWithoutRepeatedCaption(upkeep.UpkeepValue));
+            NameText(named, upkeep.UpkeepValue, UpkeepInItsUnit(upkeep.UpkeepValue));
             return named;
         }
 
-        private static string UpkeepWithoutRepeatedCaption(AgePrimitiveLabel label)
+        private static string UpkeepInItsUnit(AgePrimitiveLabel label)
         {
             string caption = WordOnly(AgeText.Title(UpkeepTitle));
             if (label == null || string.IsNullOrEmpty(caption))
@@ -109,7 +114,7 @@ namespace ES2Access.UI
                 int open = raw.LastIndexOf('[');
                 return open >= 0
                     && Same(IconNames.NameFor(raw.Substring(open + 1, raw.Length - open - 2)), caption)
-                    ? AgeText.Clean(raw.Substring(0, open))
+                    ? AgeText.Clean(raw.Substring(0, open) + IconNames.DustToken)
                     : null;
             }
             catch (Exception e)
@@ -664,7 +669,12 @@ namespace ES2Access.UI
             Name(named, card.LevelLabel, HeroCards.LevelCaption(), true);
             Silence(named, Caption(hero.AgeTransform, HeroCards.LevelTitle, 0));
             Name(named, card.UnspentSkillsValue, HeroCards.UnspentPointsCaption(), true);
-            Name(named, card.UpkeepLabel, HeroCards.UpkeepCaption(), true);
+            NameText(
+                named,
+                card.UpkeepLabel,
+                TooltipText.Captioned(HeroCards.UpkeepCaption(), HeroCards.UpkeepWords(card.UpkeepLabel)),
+                true
+            );
             Assignment(named, card);
             Masteries(named, card.HeroMasteryPanel);
             return named;
