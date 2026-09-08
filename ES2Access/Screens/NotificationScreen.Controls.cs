@@ -594,13 +594,15 @@ namespace ES2Access.Screens
                 }
 
                 // The tick that folds a detail panel out and away, for a popup that drew it as a bare
-                // "+". Named by what the popup wrote about it, which is only ever its tooltip.
+                // "+". Named by what the popup wrote about it - its tooltip, else the mod's own phrase
+                // for what it unfolds where the popup wrote nothing anywhere.
                 // The "+" fades ITSELF in the first time a report is shown
                 // (<c>DamageReportNotificationWindow.OnEndShow</c> :30-34 makes it visible and starts
                 // its modifiers), so it is offered when it is drawn rather than when it is flagged
                 // visible - otherwise the popup announces a control the screen is not showing yet.
-                foreach (AgeControlToggle expander in own ? Expanders(window) : NoExpanders)
+                foreach (Expander entry in own ? Expanders(window) : NoExpanders)
                 {
+                    AgeControlToggle expander = entry.Toggle;
                     if (
                         !Painted(expander.AgeTransform, root)
                         || Has(controls, expander.AgeTransform)
@@ -609,7 +611,7 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    string unfolds = WordlessName(expander.AgeTransform, null);
+                    string unfolds = WordlessName(expander.AgeTransform, entry.NameKey);
                     Add(
                         controls,
                         "expander/" + expander.name,

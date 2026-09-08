@@ -81,7 +81,7 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<AgeTransform>> Tables;
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
             public Func<NotificationWindow, IList<Control>> Cards;
-            public Func<NotificationWindow, IList<AgeControlToggle>> Expanders;
+            public Func<NotificationWindow, IList<Expander>> Expanders;
             public Func<NotificationWindow, AgeControl> Confirm;
             public Func<NotificationWindow, IList<Gateway>> Gateways;
             public Action<NotificationBody> Body;
@@ -92,6 +92,15 @@ namespace ES2Access.Screens
         private struct Gateway
         {
             public AgeTransform Widget;
+            public string NameKey;
+        }
+
+        /// <summary>One tick that folds a popup's detail panel out: the toggle, and the mod's own name
+        /// for what it unfolds, used only where the popup wrote nothing on it and hung no tooltip.
+        /// </summary>
+        private struct Expander
+        {
+            public AgeControlToggle Toggle;
             public string NameKey;
         }
 
@@ -364,6 +373,24 @@ namespace ES2Access.Screens
                 }
             );
 
+            // Four diplomacy popups fold the other empire's dossier out with the same bare tick
+            // (EmpireInfoToggle over EmpireInfoPanel, OnEmpireInfoCb showing and hiding the panel).
+            // The popup writes nothing on it and hangs no tooltip, so the shared caption rule drops it
+            // and the dossier the body already knows how to read cannot be unfolded from the keyboard -
+            // hence the mod's own name for what it unfolds. First contact is the popup that is nothing
+            // else: an introduction and that tick.
+            variants.Add(
+                typeof(EmpireIntroductionNotificationWindow),
+                new Variant
+                {
+                    Expanders = w =>
+                        Unfolds(
+                            ((EmpireIntroductionNotificationWindow)w).EmpireInfoToggle,
+                            ModStrings.NegotiationDossier
+                        ),
+                }
+            );
+
             // A diplomat says their piece into a label of their own rather than into the shared one, and
             // an offer is a list of terms - a line per thing each side gives - drawn in the same panel
             // the negotiation table uses.
@@ -373,6 +400,11 @@ namespace ES2Access.Screens
                 {
                     Words = w => ((DiplomaticInteractionNotificationWindow)w).MoodMessageLabel,
                     Tables = w => Terms((DiplomaticInteractionNotificationWindow)w),
+                    Expanders = w =>
+                        Unfolds(
+                            ((DiplomaticInteractionNotificationWindow)w).EmpireInfoToggle,
+                            ModStrings.NegotiationDossier
+                        ),
                 }
             );
 
@@ -455,6 +487,11 @@ namespace ES2Access.Screens
                 {
                     Choices = w =>
                         Some(((ContextualDiplomaticExchangeUpdateNotificationWindow)w).ChoiceTable),
+                    Expanders = w =>
+                        Unfolds(
+                            ((ContextualDiplomaticExchangeUpdateNotificationWindow)w).EmpireInfoToggle,
+                            ModStrings.NegotiationDossier
+                        ),
                 }
             );
 
@@ -482,6 +519,13 @@ namespace ES2Access.Screens
                                 ),
                                 ModStrings.NotifyOpenAcademy
                             )
+                        ),
+                    Expanders = w =>
+                        Unfolds(
+                            (
+                                (ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w
+                            ).EmpireInfoToggle,
+                            ModStrings.NegotiationDossier
                         ),
                 }
             );
@@ -901,7 +945,7 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The ticks this popup folds its detail panels out with, where it has any.</summary>
-        private static IList<AgeControlToggle> Expanders(NotificationWindow window)
+        private static IList<Expander> Expanders(NotificationWindow window)
         {
             Variant variant = VariantOf(window);
             if (variant == null || variant.Expanders == null)
@@ -920,11 +964,23 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly AgeControlToggle[] NoExpanders = new AgeControlToggle[0];
+        private static readonly Expander[] NoExpanders = new Expander[0];
 
-        private static IList<AgeControlToggle> Unfolds(params AgeControlToggle[] toggles)
+        private static IList<Expander> Unfolds(params AgeControlToggle[] toggles)
         {
-            return toggles;
+            Expander[] expanders = new Expander[toggles.Length];
+            for (int i = 0; i < toggles.Length; i++)
+            {
+                expanders[i] = new Expander { Toggle = toggles[i] };
+            }
+
+            return expanders;
+        }
+
+        /// <summary>One tick the popup named nowhere at all, so the mod names what it unfolds.</summary>
+        private static IList<Expander> Unfolds(AgeControlToggle toggle, string nameKey)
+        {
+            return new Expander[] { new Expander { Toggle = toggle, NameKey = nameKey } };
         }
 
         private static Gateway To(AgeTransform widget, string nameKey)
