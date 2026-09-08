@@ -768,6 +768,7 @@
   "notify.open-minor-faction": "Ouvrir la diplomatie des factions mineures",
   "notify.open-score-screen": "Ouvrir l'écran de score",
   "notify.open-academy": "Ouvrir l'Académie",
+  "notify.open-system": "Ouvrir la gestion du système",
   "notify.own-elimination": "votre empire est éliminé de la partie : l'écran de score est la seule suite possible",
   "screen.academy": "Gestion de héros",
   "academy.hero-actions": "Actions de héros",

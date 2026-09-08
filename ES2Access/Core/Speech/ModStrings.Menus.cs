@@ -88,6 +88,7 @@ namespace ES2Access.Core.Speech
         public const string NotifyOpenMinorFaction = "notify.open-minor-faction";
         public const string NotifyOpenScoreScreen = "notify.open-score-screen";
         public const string NotifyOpenAcademy = "notify.open-academy";
+        public const string NotifyOpenSystem = "notify.open-system";
 
         /// <summary>What the elimination popup means when the empire knocked out is the player's own: the
         /// game writes the same sentence for their defeat as for an AI's, and the only difference on screen

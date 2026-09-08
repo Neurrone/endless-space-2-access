@@ -768,6 +768,7 @@
   "notify.open-minor-faction": "打开小型派系外交",
   "notify.open-score-screen": "打开分数界面",
   "notify.open-academy": "打开学院",
+  "notify.open-system": "打开星系管理",
   "notify.own-elimination": "你的帝国已被淘汰：只能前往分数界面",
   "screen.academy": "英雄管理",
   "academy.hero-actions": "英雄行动",

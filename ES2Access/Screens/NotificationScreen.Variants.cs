@@ -64,6 +64,11 @@ namespace ES2Access.Screens
         /// while the popup happily keeps drawing the "+". A real toggle rather than a button: the panel
         /// stays out until the player folds it back, so the state is worth announcing.
         ///
+        /// <see cref="Timer"/>: the clock a popup is running its decision against, where the game drew
+        /// it as an arc with no figure written on it. A gauge is not a control and says nothing, so the
+        /// shared reading passes over it - and the player is then deciding against a deadline nothing on
+        /// the popup mentions, until the game answers for them.
+        ///
         /// <see cref="Cards"/>: controls the popup drew as CARDS - a picture with the words scattered
         /// around it rather than written on it. The shared rule names a control from the labels it holds,
         /// and a card holds none: its title, its category and its cost are laid out beside the disk the
@@ -84,7 +89,17 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<Expander>> Expanders;
             public Func<NotificationWindow, AgeControl> Confirm;
             public Func<NotificationWindow, IList<Gateway>> Gateways;
+            public Func<NotificationWindow, Countdown> Timer;
             public Action<NotificationBody> Body;
+        }
+
+        /// <summary>A clock the popup is running its decision against: the gauge it drew, which carries
+        /// no figure at all, and the notification's own reading of how much of the time is left. An
+        /// unset <see cref="Gauge"/> means the popup is not timing this decision.</summary>
+        private struct Countdown
+        {
+            public AgeTransform Gauge;
+            public Func<float> Left;
         }
 
         /// <summary>One button out of a popup and into a page of its own: the widget, and the mod's own
@@ -187,6 +202,68 @@ namespace ES2Access.Screens
                         ),
                 }
             );
+            // What has just been built, a cloned line each - and each line is a BUTTON that opens the
+            // system it was built in (<c>ConstructionCompletedNotificationLine.OnSelectSystemCb</c>),
+            // which is the same reason the queue-empty popup above declares its container.
+            variants.Add(
+                typeof(ConstructionCompletedNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            (
+                                (ConstructionCompletedNotificationWindow)w
+                            ).CompletedConstructionLinesTable
+                        ),
+                }
+            );
+            // The systems this empire's roots no longer reach, a cloned line each, and each line opens
+            // that system (<c>LostRootsConnectivityNodeLine.OnSelectSystemCb</c>).
+            variants.Add(
+                typeof(LostRootsConnectivityNotificationWindow),
+                new Variant
+                {
+                    Tables = w => Some(((LostRootsConnectivityNotificationWindow)w).GameNodeTable),
+                }
+            );
+            // A line per empire in the alliance, cloned from the member line - drawn for every kind of
+            // alliance update but the one announcing the alliance is over (<c>Refresh</c> :88-91).
+            variants.Add(
+                typeof(AllianceUpdateNotificationWindow),
+                new Variant { Tables = w => Some(((AllianceUpdateNotificationWindow)w).MembersTable) }
+            );
+            // What a curiosity turned up, an item per effect drawn beside the description - and the
+            // whole body is a DOOR: an empty click sheet laid over the content (<c>BodyButton</c>,
+            // wired to its handler by name and to no field at all) that opens the system the
+            // expedition was on. It draws nothing, carries no tooltip and holds nothing inside it, so
+            // the shared rule drops it, and this prefab lays out no show-location button of its own -
+            // which leaves it the only way from the popup to the place it is about. As with the game's
+            // own click, the first activation may do nothing but finish the reveal the popup is still
+            // animating (<c>OnLookAtSystemCb</c> :60-88); the next one travels.
+            variants.Add(
+                typeof(CuriosityDiscoveredNotificationWindow),
+                new Variant
+                {
+                    Tables = w =>
+                        Some(((CuriosityDiscoveredNotificationWindow)w).CuriositiesEffectsTable),
+                    Gateways = w =>
+                        Out(
+                            To(
+                                AgeWidgets.Transform(
+                                    AgeWidgets.WiredTo(w.AgeTransform, LookAtSystem)
+                                ),
+                                ModStrings.NotifyOpenSystem
+                            )
+                        ),
+                }
+            );
+            // What the special node the fleet is standing on does, an item per effect - filled by the
+            // window's effect mapper rather than by the window itself (<c>Bind</c> :53-56), so only the
+            // popup's code says it is a table at all.
+            variants.Add(
+                typeof(SpecialNodeEventNotificationWindow),
+                new Variant { Tables = w => Some(((SpecialNodeEventNotificationWindow)w).EffectsTable) }
+            );
             variants.Add(
                 typeof(ElectionSurveyNotificationWindow),
                 new Variant
@@ -286,6 +363,10 @@ namespace ES2Access.Screens
                 new Variant
                 {
                     Choices = w => Some(((NarrativeEventBegunNotificationWindow)w).ChoiceTable),
+                    // Drawn as a tick, and the popup puts it up in Dismiss's place while the event is
+                    // asking (<c>RefreshButtons</c> :234-236) - so without it the ordinary way to commit
+                    // a choice is missing and only the card's own double-click chord is left.
+                    Confirm = w => ((NarrativeEventBegunNotificationWindow)w).ValidateButton,
                 }
             );
 
@@ -297,6 +378,14 @@ namespace ES2Access.Screens
                     Tables = w => QuestTables((QuestBegunNotificationWindow)w),
                     Confirm = w => ((QuestBegunNotificationWindow)w).ValidateButton,
                 }
+            );
+
+            // The quest once it is over draws what it paid and where everyone finished, the same two
+            // panels of cloned lines. Its own entry because that window is a SIBLING of the one above:
+            // the fields sit on each of them and not on the quest window they share.
+            variants.Add(
+                typeof(QuestCompletedNotificationWindow),
+                new Variant { Tables = w => QuestTables((QuestCompletedNotificationWindow)w) }
             );
 
             // Choices the popup keeps exclusive itself.
@@ -356,6 +445,7 @@ namespace ES2Access.Screens
                         AgeWidgets.Button(
                             ((HackingOperationOutcomeSelectionNotificationWindow)w).ValidateButton
                         ),
+                    Timer = w => Clock((HackingOperationOutcomeSelectionNotificationWindow)w),
                 }
             );
 
@@ -546,6 +636,22 @@ namespace ES2Access.Screens
                 new Variant { Cards = ResearchSuggestions.Cards }
             );
 
+            // Both metaplot popups type their own text into a lore label of their own and leave the
+            // shared description label out of their layout entirely - parented to nothing, invisible
+            // and empty (the leftover <see cref="DescriptionLabel"/> describes). Without this the popup
+            // interrupts the player and lands them on whatever it drew rather than on what it says.
+            variants.Add(
+                typeof(MetaplotBegunNotificationWindow),
+                new Variant { Words = w => ((MetaplotBegunNotificationWindow)w).LoreDescriptionLabel }
+            );
+            variants.Add(
+                typeof(MetaplotFinishedNotificationWindow),
+                new Variant
+                {
+                    Words = w => ((MetaplotFinishedNotificationWindow)w).LoreDescriptionLabel,
+                }
+            );
+
             // The academy having granted a role: the same roles panel the exchange popup above draws,
             // in a popup of its own, so the same cloned lines read the same way.
             variants.Add(
@@ -610,9 +716,56 @@ namespace ES2Access.Screens
             );
         }
 
+        /// <summary>The completed quest's cloned lines: what it paid, and the standings where it was
+        /// a race. Its own panels rather than the beginning popup's, and a quest with neither leaves the
+        /// field unset.</summary>
+        private static IList<AgeTransform> QuestTables(QuestCompletedNotificationWindow window)
+        {
+            return Some(
+                window.RewardsTable == null ? null : window.RewardsTable.RewardsTable,
+                window.PodiumTable == null ? null : window.PodiumTable.PodiumLineTable
+            );
+        }
+
+        /// <summary>The hacking decision's clock, where the popup is running one - which is multiplayer
+        /// only: for a decision with no deadline the popup hides the gauge outright (<c>Refresh</c>
+        /// :101-108) and the node goes with it, so nothing here asks a second time. When it runs out the
+        /// notification posts the best valid outcome itself, which is what the figure is warning the
+        /// player about.</summary>
+        private static Countdown Clock(HackingOperationOutcomeSelectionNotificationWindow window)
+        {
+            NotificationHackingOperationOutcomeSelection notification =
+                window.GuiNotification as NotificationHackingOperationOutcomeSelection;
+            return notification == null
+                ? new Countdown()
+                : new Countdown { Gauge = window.TimerGauge, Left = notification.GetTimeLeftRatio };
+        }
+
+        /// <summary>The clock this popup is running its decision against, where it declares one.
+        /// </summary>
+        private static Countdown Timer(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Timer == null)
+            {
+                return new Countdown();
+            }
+
+            try
+            {
+                return variant.Timer(window);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for the popup's clock threw: " + e);
+                return new Countdown();
+            }
+        }
+
         /// <summary>What this popup declares about itself, the popup's own kind first - a variant
-        /// registered against a base window serves every popup built on it (the two force-truce
-        /// popups, the obliterator reports).</summary>
+        /// registered against a base window would serve every popup built on it, which is what lets a
+        /// family drawing one prefab be registered once. Every entry here is on a concrete window, so
+        /// today a sibling's entry never answers for its neighbour.</summary>
         private static Variant VariantOf(NotificationWindow window)
         {
             if (window == null)
@@ -1023,6 +1176,11 @@ namespace ES2Access.Screens
         }
 
         private const string ConfirmTitleKey = "%NotificationValidateTitle";
+
+        /// <summary>What the curiosity popup calls the handler its body sheet is wired to. The prefab
+        /// exposes that button through no field, so the popup's own handler name is what identifies
+        /// it.</summary>
+        private const string LookAtSystem = "OnLookAtSystemCb";
 
         /// <summary>
         /// The label the popup put its words in: its own where it named one, else the shared description

@@ -202,17 +202,22 @@ belong in the files above.
 - Ground-battle OUTCOME-SELECTION popup: modelled 2026-08-25 (r13; `GroundOutcome` body —
   system header, shared one-of-N via `NotificationScreen.BuildChoices`, the by-name Confirm,
   the countdown declared focus-announced and multiplayer-only) — the ENTIRE live sighting is
-  pending (needs a decisive victory). The hacking outcome picker keeps its choice-only
-  baseline: its parameters sub-choice and its own outcome countdown still need the same
-  treatment.
+  pending (needs a decisive victory). The hacking outcome picker now declares the same
+  countdown through the `Timer` variant field; its parameters sub-choice still needs the
+  same treatment.
 - Notification variants awaiting a live sighting (baseline ships; upgrade per popup on
   sighting): election survey; SimpleDescription-family
-  members with own fields (alliance update, diplomatic relation change, constellation
-  event, deed completed); the 9 header-less line-class tables (bailiff + its totals
+  members with own fields (alliance update - its member table now declared, diplomatic
+  relation change, constellation event, deed completed); the 9 header-less line-class tables (bailiff + its totals
   footer, law cancelled, population change (SIGHTED 2026-09-01 and its own parity check has a
   finding: `PopulationChangeNotificationWindow` "says a figure with no caption" on a table row —
   the first of these nine to be seen live, and the finding is the work), trading blockade, treaty cancelled, relics ×2,
-  queue-empty, lost-roots connectivity); one-of-N semantics for the hacking outcome
+  queue-empty, lost-roots connectivity); the line tables declared 2026-09-08 (construction
+  completed, curiosity discovered, special-node event, quest completed - podium and rewards);
+  the hacking picker's countdown; the curiosity popup's body-sheet gateway into system
+  management (its only route there, and the first press may only finish the reveal
+  animation); the two metaplot popups' lore label declared as the popup's words; one-of-N
+  semantics for the hacking outcome
   picker — these walks, plus the narrative-event
   choice, now ALSO double as regression checks for the 2026-08-25 choice-card split (title
   announced, card text as buffer lines; all four families share `AddChoices`) — which the
