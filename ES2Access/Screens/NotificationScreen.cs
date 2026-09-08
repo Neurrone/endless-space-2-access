@@ -609,6 +609,9 @@ namespace ES2Access.Screens
                 {
                     BuildSheet(builder, window, sheet, lead);
                 }
+
+                builder.SetRegion(BodyRegion);
+                BuildCountdown(builder, window);
             }
 
             builder.BeginStop(ControlsStop);
@@ -625,6 +628,29 @@ namespace ES2Access.Screens
                 // starting place and would otherwise win.
                 builder.SetStart(lead);
             }
+        }
+
+        /// <summary>
+        /// The clock the popup is running its decision against, as the last row of its content.
+        ///
+        /// Declared here rather than among the controls because a gauge is not one: nothing is pressed
+        /// and nothing is set, and the whole of it is a figure to be ASKED for - a countdown announcing
+        /// itself under a standing cursor would talk over the choice the player is making
+        /// (<see cref="BattleRows.Countdown"/>, which owns the rule and the wording). Only a popup that
+        /// declares one has one, which today is the hacking outcome; a popup writing its own body puts
+        /// its countdown among its own rows instead, exactly as it does with its choices.
+        /// </summary>
+        private static void BuildCountdown(GraphBuilder builder, NotificationWindow window)
+        {
+            Countdown clock = Timer(window);
+            if (clock.Gauge == null)
+            {
+                return;
+            }
+
+            List<Cell> cells = new List<Cell>();
+            BattleRows.Countdown(cells, clock.Gauge, clock.Left, "timer");
+            Cells.EmitLinear(builder, cells);
         }
 
         /// <summary>The control's name: the caption the game wrote on it, else the name this mod has
