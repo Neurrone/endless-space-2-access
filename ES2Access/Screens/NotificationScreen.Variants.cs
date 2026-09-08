@@ -223,13 +223,29 @@ namespace ES2Access.Screens
                 typeof(AllianceUpdateNotificationWindow),
                 new Variant { Tables = w => Some(((AllianceUpdateNotificationWindow)w).MembersTable) }
             );
-            // What a curiosity turned up, an item per effect drawn beside the description.
+            // What a curiosity turned up, an item per effect drawn beside the description - and the
+            // whole body is a DOOR: an empty click sheet laid over the content (<c>BodyButton</c>,
+            // wired to its handler by name and to no field at all) that opens the system the
+            // expedition was on. It draws nothing, carries no tooltip and holds nothing inside it, so
+            // the shared rule drops it, and this prefab lays out no show-location button of its own -
+            // which leaves it the only way from the popup to the place it is about. As with the game's
+            // own click, the first activation may do nothing but finish the reveal the popup is still
+            // animating (<c>OnLookAtSystemCb</c> :60-88); the next one travels.
             variants.Add(
                 typeof(CuriosityDiscoveredNotificationWindow),
                 new Variant
                 {
                     Tables = w =>
                         Some(((CuriosityDiscoveredNotificationWindow)w).CuriositiesEffectsTable),
+                    Gateways = w =>
+                        Out(
+                            To(
+                                AgeWidgets.Transform(
+                                    AgeWidgets.WiredTo(w.AgeTransform, LookAtSystem)
+                                ),
+                                ModStrings.NotifyOpenSystem
+                            )
+                        ),
                 }
             );
             // What the special node the fleet is standing on does, an item per effect - filled by the
@@ -559,6 +575,22 @@ namespace ES2Access.Screens
             variants.Add(
                 typeof(TechnologyNeededNotificationWindow),
                 new Variant { Cards = ResearchSuggestions.Cards }
+            );
+
+            // Both metaplot popups type their own text into a lore label of their own and leave the
+            // shared description label out of their layout entirely - parented to nothing, invisible
+            // and empty (the leftover <see cref="DescriptionLabel"/> describes). Without this the popup
+            // interrupts the player and lands them on whatever it drew rather than on what it says.
+            variants.Add(
+                typeof(MetaplotBegunNotificationWindow),
+                new Variant { Words = w => ((MetaplotBegunNotificationWindow)w).LoreDescriptionLabel }
+            );
+            variants.Add(
+                typeof(MetaplotFinishedNotificationWindow),
+                new Variant
+                {
+                    Words = w => ((MetaplotFinishedNotificationWindow)w).LoreDescriptionLabel,
+                }
             );
 
             // The academy having granted a role: the same roles panel the exchange popup above draws,
@@ -1073,6 +1105,11 @@ namespace ES2Access.Screens
         }
 
         private const string ConfirmTitleKey = "%NotificationValidateTitle";
+
+        /// <summary>What the curiosity popup calls the handler its body sheet is wired to. The prefab
+        /// exposes that button through no field, so the popup's own handler name is what identifies
+        /// it.</summary>
+        private const string LookAtSystem = "OnLookAtSystemCb";
 
         /// <summary>
         /// The label the popup put its words in: its own where it named one, else the shared description

@@ -1158,6 +1158,7 @@ namespace ES2Access.Core.Speech
             { NotifyOpenMinorFaction, "Open minor faction diplomacy" },
             { NotifyOpenScoreScreen, "Open score screen" },
             { NotifyOpenAcademy, "Open the Academy" },
+            { NotifyOpenSystem, "Open system management" },
             {
                 NotifyOwnElimination,
                 "your empire is out of the game: the score screen is the only way on"

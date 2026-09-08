@@ -214,7 +214,10 @@ belong in the files above.
   the first of these nine to be seen live, and the finding is the work), trading blockade, treaty cancelled, relics ×2,
   queue-empty, lost-roots connectivity); the line tables declared 2026-09-08 (construction
   completed, curiosity discovered, special-node event, quest completed - podium and rewards);
-  the hacking picker's countdown; one-of-N semantics for the hacking outcome
+  the hacking picker's countdown; the curiosity popup's body-sheet gateway into system
+  management (its only route there, and the first press may only finish the reveal
+  animation); the two metaplot popups' lore label declared as the popup's words; one-of-N
+  semantics for the hacking outcome
   picker — these walks, plus the narrative-event
   choice, now ALSO double as regression checks for the 2026-08-25 choice-card split (title
   announced, card text as buffer lines; all four families share `AddChoices`);

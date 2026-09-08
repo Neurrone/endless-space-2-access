@@ -768,6 +768,7 @@
   "notify.open-minor-faction": "Abrir la diplomacia con la civilización menor",
   "notify.open-score-screen": "Abrir la pantalla de puntuación",
   "notify.open-academy": "Abrir la Academia",
+  "notify.open-system": "Abrir la gestión del sistema",
   "notify.own-elimination": "tu imperio está fuera de la partida: la pantalla de puntuación es la única forma de continuar",
   "screen.academy": "Gestión de héroes",
   "academy.hero-actions": "Acciones de héroe",

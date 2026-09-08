@@ -824,6 +824,7 @@
   "notify.open-minor-faction": "Open minor faction diplomacy",
   "notify.open-score-screen": "Open score screen",
   "notify.open-academy": "Open the Academy",
+  "notify.open-system": "Open system management",
   "notify.own-elimination": "your empire is out of the game: the score screen is the only way on",
   "screen.academy": "Hero management",
   "academy.hero-actions": "Hero actions",

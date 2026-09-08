@@ -824,6 +824,7 @@
   "notify.open-minor-faction": "Открыть дипломатию малых фракций",
   "notify.open-score-screen": "Открыть экран очков",
   "notify.open-academy": "Открыть Академию",
+  "notify.open-system": "Открыть управление системой",
   "notify.own-elimination": "ваша империя выбыла из игры: продолжить можно только через экран очков",
   "screen.academy": "Управление героем",
   "academy.hero-actions": "Действия героя",
