@@ -1,7 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
+using ES2Access.Core.Util;
 
 namespace ES2Access.UI
 {
@@ -20,6 +23,10 @@ namespace ES2Access.UI
     /// skipped rather than read: the panel keeps a block per kind of empire and hides the ones this one has
     /// nothing to say for.
     ///
+    /// A relation row is the one place the sheet says something the game draws no words for at all:
+    /// how the empire being read stands with a third empire is an icon and nothing else, so the row
+    /// reads the other empire's name and then that state in the game's own word for it.
+    ///
     /// A faction trait explains itself in a tooltip the game assembles as it draws it - a Class tooltip,
     /// per <see cref="GraphNodes.ModeFor"/> - so a trait's row indicates having one rather than reading it
     /// outright, and carries the drawn tooltip as review-buffer content regardless.
@@ -34,6 +41,17 @@ namespace ES2Access.UI
         /// real limit on any panel the game draws.</summary>
         private const int MaxDepth = 64;
 
+        /// <summary>The panel's own list of who it drew a relation row for and how they stand - one
+        /// entry per row, in the order the rows were filled.</summary>
+        private static readonly FieldInfo Relations = GameHandlers.Field(
+            typeof(NegotiationEmpireInfoPanel),
+            "empireAndRelationStateDatas"
+        );
+
+        /// <summary>The state off one of those entries; the type they are is private to the panel, so
+        /// the property is taken off the first entry there is rather than off a name.</summary>
+        private static PropertyInfo _state;
+
         /// <summary>One line the panel draws: the label's own transform - which is the rectangle the rows
         /// are worked out from, and what has to be scrolled into view - and the widget the game hung the
         /// explaining tooltip on, which for a table row is the row rather than its label.</summary>
@@ -43,6 +61,11 @@ namespace ES2Access.UI
             public AgeTransform Owner;
             public AgeTooltip Tooltip;
             public string Text;
+
+            /// <summary>What the game says about this line with a picture instead of words - a
+            /// relation row's state - read after the line's own text. Empty for every line the game
+            /// wrote down itself.</summary>
+            public string State;
         }
 
         public static readonly Func<DrawnLine, AgeTransform> LineWidget = line => line.Widget;
@@ -59,6 +82,11 @@ namespace ES2Access.UI
                 foreach (string line in AgeText.Lines(row[i].Text))
                 {
                     message.Fragment(line);
+                }
+
+                if (!string.IsNullOrEmpty(row[i].State))
+                {
+                    message.ListItem(row[i].State);
                 }
             }
 
@@ -94,6 +122,7 @@ namespace ES2Access.UI
                 );
             }
 
+            int mark = lines.Count;
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -104,6 +133,77 @@ namespace ES2Access.UI
                 {
                     Read(child, lines, tooltip, depth + 1);
                 }
+            }
+
+            RelationState(widget, lines, mark);
+        }
+
+        /// <summary>
+        /// The relation state of a row that draws it as an ICON, put on the empire's name so the row
+        /// says who they are and then how they stand - the one thing on this sheet that has to be
+        /// worked out rather than read off what is drawn.
+        ///
+        /// It is carried by the name's own line rather than declared as a line of its own because the
+        /// state has no rectangle to be placed by: it would share the name label's, and a row's lines
+        /// are ordered by where they were drawn.
+        ///
+        /// Which state belongs to which row is the row's place under the table: the panel fills a list
+        /// and hands the rows their entries from it in order.
+        /// </summary>
+        private static void RelationState(AgeTransform row, List<DrawnLine> lines, int from)
+        {
+            try
+            {
+                DiplomaticRelationStateLine drawn = row.GetComponent<DiplomaticRelationStateLine>();
+                if (drawn == null || drawn.EmpireNameLabel == null || Relations == null)
+                {
+                    return;
+                }
+
+                NegotiationEmpireInfoPanel panel =
+                    row.GetComponentInParent<NegotiationEmpireInfoPanel>();
+                if (panel == null || panel.RelationsTable == null)
+                {
+                    return;
+                }
+
+                IList datas = Relations.GetValue(panel) as IList;
+                int at = panel.RelationsTable.Children.IndexOf(row);
+                object data = datas == null || at < 0 || at >= datas.Count ? null : datas[at];
+                if (data == null)
+                {
+                    return;
+                }
+
+                if (_state == null)
+                {
+                    _state = data.GetType().GetProperty("DiplomaticRelationState");
+                }
+
+                DiplomaticRelationState state =
+                    _state == null ? null : _state.GetValue(data, null) as DiplomaticRelationState;
+                string word =
+                    state == null ? null : AgeText.Clean(Gui.GetLocalizedTitle(state.Name));
+                if (string.IsNullOrEmpty(word))
+                {
+                    return;
+                }
+
+                AgeTransform label = drawn.EmpireNameLabel.AgeTransform;
+                for (int i = from; i < lines.Count; i++)
+                {
+                    if (ReferenceEquals(lines[i].Widget, label))
+                    {
+                        DrawnLine stamped = lines[i];
+                        stamped.State = word;
+                        lines[i] = stamped;
+                        return;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("dossier: reading a relation row's state threw: " + e);
             }
         }
 
