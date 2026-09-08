@@ -215,7 +215,12 @@ belong in the files above.
   queue-empty, lost-roots connectivity); one-of-N semantics for the hacking outcome
   picker — these walks, plus the narrative-event
   choice, now ALSO double as regression checks for the 2026-08-25 choice-card split (title
-  announced, card text as buffer lines; all four families share `AddChoices`);
+  announced, card text as buffer lines; all four families share `AddChoices`) — which the
+  contextual diplomatic demand shows is only half true: `ChoiceName` takes the first label in
+  `AgeLayout.ReadingOrder` (across, then down), so a card whose title sits further RIGHT than
+  its description (an icon beside the title indents it) is named by its consequences and
+  keeps its title as a buffer line. Shared with every family; fixing it is a naming change
+  across screens and wants the full walk;
   PirateMissionReportNotificationWindow (fixture-blocked: its `Bind` needs a live
   `AttackSystemPirateDiplomaticAction` — the other five report popups are done);
   DiplomaticInteractionNotificationWindow (MoodMessageLabel, NegotiationContributionPanel).

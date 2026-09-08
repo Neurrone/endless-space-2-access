@@ -443,6 +443,21 @@ namespace ES2Access.Screens
                 }
             );
 
+            // Another empire putting a demand to the player - stop attacking us, give a system back.
+            // The answers are a set the popup keeps exclusive itself
+            // (<c>ContextualDiplomaticExchangeUpdateNotificationWindow.OnChoiceSelected</c> :239-262
+            // writes every sibling's state from the one chosen), so without this they read as loose
+            // text and there is no way to answer at all. Its confirm button carries its own caption,
+            // so the shared rule already finds that.
+            variants.Add(
+                typeof(ContextualDiplomaticExchangeUpdateNotificationWindow),
+                new Variant
+                {
+                    Choices = w =>
+                        Some(((ContextualDiplomaticExchangeUpdateNotificationWindow)w).ChoiceTable),
+                }
+            );
+
             // The academy asking the player to decide something: a set of choices it keeps exclusive
             // itself, a validate button drawn as a tick, the roles it has handed out as cloned lines, and
             // the way into the academy's own screen.
