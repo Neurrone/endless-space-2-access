@@ -446,13 +446,17 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>A troop type's upgrade chain, swept once per row per frame. The rows are POOLED -
+        /// the window keeps a chain per troop type it has listed - so the answer is kept for the frame
+        /// and no longer.</summary>
+        private static readonly FrameSweep<GroundTroopUpgrade> Upgrades =
+            new FrameSweep<GroundTroopUpgrade>("troops");
+
         private void AddUpgrades(GroundTroopUpgradeList list, int row)
         {
             try
             {
-                GroundTroopUpgrade[] upgrades =
-                    // walk: audit M1, to move behind FrameSweep
-                    list.AgeTransform.GetComponentsInChildren<GroundTroopUpgrade>(true);
+                GroundTroopUpgrade[] upgrades = Upgrades.Under(list.AgeTransform);
                 for (int i = 0; upgrades != null && i < upgrades.Length; i++)
                 {
                     AddUpgrade(upgrades[i], "troops:upgrade/" + row + "/" + i);

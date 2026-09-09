@@ -304,15 +304,31 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>A widget's buttons and the recipe container's line, each swept once per root per
+        /// frame: the page asks the same widgets the same question on every build, and neither the
+        /// buttons under a group nor the line in the container can move within a frame.</summary>
+        private static readonly FrameSweep<AgeControlButton> Buttons =
+            new FrameSweep<AgeControlButton>("recipe creation");
+
+        private static readonly FrameSweep<RecipeLine> Lines = new FrameSweep<RecipeLine>(
+            "recipe creation"
+        );
+
         /// <summary>The click target inside a widget, for a control the game builds as a group with its
-        /// button underneath.</summary>
+        /// button underneath - the widget's own where it has one, else the first the sweep names, which
+        /// is the first a search of the subtree would have stopped at.</summary>
         private static AgeControlButton Press(AgeTransform widget)
         {
             try
             {
                 AgeControlButton own = AgeWidgets.Button(widget);
-                // walk: audit M1, to move behind FrameSweep
-                return own != null ? own : widget.GetComponentInChildren<AgeControlButton>(true);
+                if (own != null)
+                {
+                    return own;
+                }
+
+                AgeControlButton[] inside = Buttons.Under(widget);
+                return inside.Length == 0 ? null : inside[0];
             }
             catch (Exception)
             {
@@ -324,11 +340,8 @@ namespace ES2Access.Screens
         {
             try
             {
-                AgeTransform container = window.RecipeContainer;
-                return container == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : container.GetComponentInChildren<RecipeLine>(true);
+                RecipeLine[] lines = Lines.Under(window.RecipeContainer);
+                return lines.Length == 0 ? null : lines[0];
             }
             catch (Exception)
             {

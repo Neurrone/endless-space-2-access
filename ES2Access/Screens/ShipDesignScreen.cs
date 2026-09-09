@@ -260,17 +260,37 @@ namespace ES2Access.Screens
             }
         }
 
+        private static ShipDesignModalWindow _panelOf;
+
+        private static ShipDesignEditionPanel _panel;
+
         /// <summary>The body the window instantiates from a prefab at load time. Asked of the window's
         /// own subtree rather than of the scene: the same panel is hosted by the hero inspection
-        /// window, and there are two of them alive at once.</summary>
+        /// window, and there are two of them alive at once.
+        ///
+        /// Found once per window and then kept, because <c>IsActive</c> asks for it on every frame of
+        /// the session whatever screen is up, and the answer cannot change under it: the window
+        /// instantiates exactly one of these into its main container as it loads and never replaces it
+        /// (<c>ShipDesignModalWindow.Load</c>). What WOULD change it - a different window, or the panel
+        /// destroyed with the one it was found in - is what the two checks below ask, and either sends
+        /// the search round again.</summary>
         private static ShipDesignEditionPanel Panel(ShipDesignModalWindow window)
         {
             try
             {
-                return window == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : window.GetComponentInChildren<ShipDesignEditionPanel>(true);
+                if (window == null)
+                {
+                    return null;
+                }
+
+                if (!ReferenceEquals(_panelOf, window) || _panel == null)
+                {
+                    _panelOf = window;
+                    // walk: once per window, kept while the panel it found is alive
+                    _panel = window.GetComponentInChildren<ShipDesignEditionPanel>(true);
+                }
+
+                return _panel;
             }
             catch (Exception)
             {
