@@ -45,29 +45,56 @@ namespace ES2Access.Screens
             {
                 int from = cells.Count;
                 AddLifeforce(cells, window.LifeforceStatusPanel);
-                Name(cells, from, AgeText.Title("%NetEmpireLifeforceTitle"), "lifeforce");
+                Named(cells, from, () => AgeText.Title("%NetEmpireLifeforceTitle"), "lifeforce");
                 from = cells.Count;
                 AddGenes(cells, window.GeneManagementShortcutPanel);
-                Name(cells, from, AgeText.Title("%AssimilationShortcutTitle"), "genes");
+                Named(cells, from, () => AgeText.Title("%AssimilationShortcutTitle"), "genes");
                 from = cells.Count;
                 AddTimeBubbles(cells, window.TimeBubbleStockPanel);
-                Name(cells, from, ModStrings.Get(ModStrings.HudSingularitiesPanel), "singularities");
+                Named(
+                    cells,
+                    from,
+                    () => ModStrings.Get(ModStrings.HudSingularitiesPanel),
+                    "singularities"
+                );
                 from = cells.Count;
                 AddGoldenAge(cells, window.GoldenAgePanel);
-                Name(cells, from, AgeText.Title("%GoldenAgeTitle"), "golden-age");
+                Named(cells, from, () => AgeText.Title("%GoldenAgeTitle"), "golden-age");
                 from = cells.Count;
                 AddPirateMark(cells, window.PirateMarkPanel);
-                Name(cells, from, ModStrings.Get(ModStrings.HudPirateMarkPanel), "pirate-mark");
+                Named(
+                    cells,
+                    from,
+                    () => ModStrings.Get(ModStrings.HudPirateMarkPanel),
+                    "pirate-mark"
+                );
                 from = cells.Count;
                 AddHonor(cells, window.HonorManagementPanel);
-                Name(cells, from, AgeText.Title("%HonorTitle"), "honor");
+                Named(cells, from, () => AgeText.Title("%HonorTitle"), "honor");
                 from = cells.Count;
                 AddRelics(cells, window.RelicManagementPanel);
-                Name(cells, from, AgeText.Title("%RelicsTitle"), "relics");
+                Named(cells, from, () => AgeText.Title("%RelicsTitle"), "relics");
             }
             catch (Exception e)
             {
                 Log.Warn("hud: reading the faction panels threw: " + e);
+            }
+        }
+
+        /// <summary>Name what a panel just added, resolving the word only if it added anything. Seven
+        /// of these run on every in-game page and an empire has at most one faction panel, so the six
+        /// that drew nothing were localizing a name for a row that was not there - and
+        /// <see cref="Name"/> with nothing to name does nothing anyway.</summary>
+        private static void Named(
+            List<Cell> cells,
+            int from,
+            Func<string> named,
+            string region
+        )
+        {
+            if (cells.Count > from)
+            {
+                Name(cells, from, named(), region);
             }
         }
 

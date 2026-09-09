@@ -880,10 +880,26 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>How many fleets are waiting to be given something to do, counted the way the
-        /// button beside it counts them.</summary>
+        /// <summary>
+        /// How many fleets are waiting to be given something to do, counted the way the button beside
+        /// it counts them - and counted once a frame however often the readout is asked.
+        ///
+        /// Counting them asks the game whether each of the empire's fleets has an idle action it could
+        /// execute, so it grows with the player's navy; the navigator composes a focused node's whole
+        /// readout on every frame and compares it with the last one, so the button pays that twice a
+        /// frame for as long as the cursor rests on it. A fleet cannot be given an order between two
+        /// reads inside one frame, which is what makes the frame the key.
+        /// </summary>
         private string IdleFleetsText()
         {
+            int frame = UnityEngine.Time.frameCount;
+            if (_idleFleetsFrame == frame)
+            {
+                return _idleFleetsSaid;
+            }
+
+            _idleFleetsFrame = frame;
+            _idleFleetsSaid = null;
             try
             {
                 Empire empire = Gui.PlayerEmpire;
@@ -893,13 +909,22 @@ namespace ES2Access.Screens
                 }
 
                 global::FleetsScreen.GetIdleFleets(empire, ref _idleFleets);
-                return ModStrings.Format(ModStrings.GalaxyIdleFleets, _idleFleets.Count);
+                _idleFleetsSaid = ModStrings.Format(
+                    ModStrings.GalaxyIdleFleets,
+                    _idleFleets.Count
+                );
             }
             catch (Exception)
             {
-                return null;
+                _idleFleetsSaid = null;
             }
+
+            return _idleFleetsSaid;
         }
+
+        private int _idleFleetsFrame = -1;
+
+        private string _idleFleetsSaid;
 
     }
 }
