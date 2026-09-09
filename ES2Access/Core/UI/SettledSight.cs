@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace ES2Access.Core.UI
 {
@@ -51,6 +51,20 @@ namespace ES2Access.Core.UI
         private readonly Dictionary<ulong, Watched> _watched = new Dictionary<ulong, Watched>();
         private readonly float _window;
 
+        // ---- what can fire ----
+        //
+        // The table grows for the whole session - a thing is dropped from it only when it stops
+        // existing - and it is asked every tick whether anything is due, on frames where nothing is
+        // waiting at all. So the earliest moment anything COULD fire is kept beside it: <see
+        // cref="Due"/> reads two numbers on a quiet tick instead of the whole table. It is a lower
+        // bound and not an exact minimum - a candidate that is cancelled leaves its own moment behind
+        // - which costs one walk that finds nothing and puts the bound right, and can never hide a
+        // crossing, since the bound is only ever moved EARLIER by a new candidate.
+
+        private bool _waiting;
+
+        private float _earliest;
+
         /// <summary><paramref name="window"/> is how long a crossing must hold before it is news, in
         /// seconds.</summary>
         public SettledSight(float window)
@@ -63,6 +77,8 @@ namespace ES2Access.Core.UI
         public void Reset()
         {
             _watched.Clear();
+            _waiting = false;
+            _earliest = 0f;
         }
 
         /// <summary>How many things are settled in sight - what a probe reads to see that a caller's
@@ -172,6 +188,12 @@ namespace ES2Access.Core.UI
 
             watched.Pending = true;
             watched.Since = now;
+            if (!_waiting || now < _earliest)
+            {
+                _earliest = now;
+            }
+
+            _waiting = true;
         }
 
         /// <summary>
@@ -181,12 +203,26 @@ namespace ES2Access.Core.UI
         /// </summary>
         public IList<Change> Due(float now)
         {
+            if (!_waiting || now - _earliest < _window)
+            {
+                return null;
+            }
+
+            _waiting = false;
             List<Change> due = null;
             foreach (KeyValuePair<ulong, Watched> pair in _watched)
             {
                 Watched watched = pair.Value;
                 if (!watched.Pending || now - watched.Since < _window)
                 {
+                    // Whatever is still waiting when the walk ends is what the next quiet tick is
+                    // measured against.
+                    if (watched.Pending && (!_waiting || watched.Since < _earliest))
+                    {
+                        _earliest = watched.Since;
+                        _waiting = true;
+                    }
+
                     continue;
                 }
 

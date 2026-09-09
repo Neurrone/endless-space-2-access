@@ -198,6 +198,27 @@ namespace ES2Access.Tests.UI
             Assert.Equal(0, sight.InSightCount);
         }
 
+        /// <summary>A crossing that was cancelled leaves its moment behind in the bookkeeping that
+        /// says when anything can next fire. A crossing started afterwards is still measured from its
+        /// OWN moment, never from the dead one.</summary>
+        [Fact]
+        public void ACrossingAfterACancelledOneKeepsItsOwnWindow()
+        {
+            SettledSight sight = new SettledSight(Window);
+
+            sight.Note(1UL, true, 0f);
+            sight.Note(1UL, false, 0.5f);
+            sight.Note(2UL, true, 3f);
+
+            Assert.Null(sight.Due(4.9f));
+
+            IList<SettledSight.Change> due = sight.Due(5f);
+
+            Assert.Single(due);
+            Assert.Equal(2UL, due[0].Key);
+            Assert.False(sight.InSightNow(1UL));
+        }
+
         /// <summary>Two fleets crossing in one batch settle apart, each on its own clock.</summary>
         [Fact]
         public void EachThingKeepsItsOwnWindow()

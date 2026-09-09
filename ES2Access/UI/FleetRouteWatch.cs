@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
@@ -62,9 +62,12 @@ namespace ES2Access.UI
             /// </summary>
             public int Missing;
 
-            /// <summary>Seen on this pass - anything not seen has left the game and is dropped without a
-            /// word, because a fleet that is gone is somebody else's news.</summary>
-            public bool Present;
+            /// <summary>The pass this fleet was last seen on - anything not seen on the current one
+            /// has left the game and is dropped without a word, because a fleet that is gone is
+            /// somebody else's news. A number rather than a flag so that a pass costs nothing to
+            /// start: clearing a flag on every entry was a walk of the whole table on every frame,
+            /// for a table that changes when a fleet is built or lost.</summary>
+            public int Pass;
         }
 
         private readonly Dictionary<ulong, Watched> _fleets = new Dictionary<ulong, Watched>();
@@ -118,11 +121,8 @@ namespace ES2Access.UI
                 return;
             }
 
-            foreach (KeyValuePair<ulong, Watched> pair in _fleets)
-            {
-                pair.Value.Present = false;
-            }
-
+            _pass++;
+            int seen = 0;
             for (int i = 0; i < fleets.Count; i++)
             {
                 Fleet fleet = fleets[i];
@@ -140,12 +140,24 @@ namespace ES2Access.UI
                     _fleets[key] = watched;
                 }
 
-                watched.Present = true;
+                if (watched.Pass != _pass)
+                {
+                    watched.Pass = _pass;
+                    seen++;
+                }
+
                 Look(fleet, watched, announce && known);
             }
 
-            Drop();
+            // Everything the table holds was seen, so there is nothing to drop and no reason to walk
+            // it: a fleet leaves the game by leaving this list, which changes the count.
+            if (seen != _fleets.Count)
+            {
+                Drop();
+            }
         }
+
+        private int _pass;
 
         private void Look(Fleet fleet, Watched watched, bool announce)
         {
@@ -254,7 +266,7 @@ namespace ES2Access.UI
             List<ulong> gone = null;
             foreach (KeyValuePair<ulong, Watched> pair in _fleets)
             {
-                if (!pair.Value.Present)
+                if (pair.Value.Pass != _pass)
                 {
                     if (gone == null)
                     {
