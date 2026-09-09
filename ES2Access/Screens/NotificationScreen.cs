@@ -6,6 +6,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
 using ES2Access.UI.Input;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -809,7 +810,34 @@ namespace ES2Access.Screens
         /// content - the quest popup's lore group is a wired button around the scroll view the
         /// paragraph is in - so a subtree reading answers "captioned" for all of them and the
         /// paragraph stops being a row of the body and becomes a button saying it.
+        ///
+        /// <see cref="CaptionsAnything"/> is the same question asked as a yes or no, for the caller
+        /// that only wants to know whether there IS a caption. It walks the same direct children in
+        /// the same way and stops at the first label with words on it: the joined caption is non-empty
+        /// exactly when one of them is, so the sort and the builder decided nothing, and every wired
+        /// control of the popup was paying for them on every frame.
         /// </summary>
+        private static bool CaptionsAnything(AgeTransform widget)
+        {
+            try
+            {
+                foreach (AgePrimitiveLabel label in widget.GetChildren<AgePrimitiveLabel>(false))
+                {
+                    if (!string.IsNullOrEmpty(AgeText.Label(label)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: reading a control's caption threw: " + e);
+                return false;
+            }
+        }
+
         private static string Captioned(AgeTransform widget)
         {
             try
@@ -1297,6 +1325,30 @@ namespace ES2Access.Screens
         /// </summary>
         private static bool Painted(AgeTransform widget, AgeTransform root)
         {
+            int frame = Time.frameCount;
+            if (_paintedFrame != frame)
+            {
+                PaintedVerdicts.Clear();
+                _paintedFrame = frame;
+            }
+
+            PairKey key = new PairKey(widget, root);
+            bool painted;
+            if (PaintedVerdicts.TryGetValue(key, out painted))
+            {
+                return painted;
+            }
+
+            painted = PaintedChain(widget, root);
+            PaintedVerdicts[key] = painted;
+            return painted;
+        }
+
+        /// <summary>The chain walk itself, which the memo above pays for once per (widget, root) per
+        /// frame. Every drawn line of the popup is asked this by up to three readers per build, and
+        /// each ask was up to sixty-four hops with an engine drawn-test at every one.</summary>
+        private static bool PaintedChain(AgeTransform widget, AgeTransform root)
+        {
             try
             {
                 if (widget == null || !AgeWidgets.Visible(widget))
@@ -1329,5 +1381,43 @@ namespace ES2Access.Screens
             }
         }
 
+        private static readonly Dictionary<PairKey, bool> PaintedVerdicts =
+            new Dictionary<PairKey, bool>();
+
+        private static int _paintedFrame = -1;
+
+        /// <summary>A question asked of one widget against one other object of the build - the window
+        /// root a chain stops at, the control list an ancestry is checked against. The build's answer
+        /// cannot move within a frame, and both halves are the same instances all three readers are
+        /// handed, so this is what those verdicts are held by.</summary>
+        private struct PairKey : IEquatable<PairKey>
+        {
+            private readonly object _widget;
+
+            private readonly object _against;
+
+            public PairKey(object widget, object against)
+            {
+                _widget = widget;
+                _against = against;
+            }
+
+            public bool Equals(PairKey other)
+            {
+                return ReferenceEquals(_widget, other._widget)
+                    && ReferenceEquals(_against, other._against);
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is PairKey && Equals((PairKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = _widget == null ? 0 : _widget.GetHashCode();
+                return hash * 31 + (_against == null ? 0 : _against.GetHashCode());
+            }
+        }
     }
 }

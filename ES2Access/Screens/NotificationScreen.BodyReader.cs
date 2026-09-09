@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using UnityEngine;
 using Line = ES2Access.UI.EmpireDossier.DrawnLine;
 
 namespace ES2Access.Screens
@@ -214,9 +215,16 @@ namespace ES2Access.Screens
         {
             List<Line> it = row;
             string caption = CardCaption(row, card);
+            // The row's words are composed here only where a tooltip is actually going to be compared
+            // against them. Explains answers null for a row with no tooltip without ever looking at
+            // the text, and Explaining's loop never runs when the line carries none - and most drawn
+            // rows carry none, so most rows were building a MessageBuilder, a split per piece and a
+            // joined string for nothing. What the row SAYS is still composed by the label part, when
+            // the player lands on it.
+            AgeTooltip own = group == null ? it[0].Tooltip : null;
             List<AgeTooltip> explaining = group == null
-                ? Single(Explains(it[0].Tooltip, RowText(it)))
-                : Explaining(group, RowText(it));
+                ? Single(own == null ? null : Explains(own, RowText(it)))
+                : Explaining(group, it);
             // Through the sink: the row points at the LAST explanation drawn along it, which is the one
             // a hover on the line raises, and every other one used to be a section on this row - words
             // the row promised and the game would only ever draw for the one it points at. Each becomes
@@ -351,14 +359,21 @@ namespace ES2Access.Screens
 
         /// <summary>The tooltips inside one table line that say something the line does not already
         /// say.</summary>
-        private static List<AgeTooltip> Explaining(AgeTransform group, string text)
+        private static List<AgeTooltip> Explaining(AgeTransform group, List<Line> row)
         {
             List<AgeTooltip> kept = new List<AgeTooltip>();
-            foreach (AgeTooltip tooltip in Tooltips(group))
+            List<AgeTooltip> found = Tooltips(group);
+            if (found.Count == 0)
             {
-                if (Explains(tooltip, text) != null)
+                return kept;
+            }
+
+            string text = RowText(row);
+            for (int i = 0; i < found.Count; i++)
+            {
+                if (Explains(found[i], text) != null)
                 {
-                    kept.Add(tooltip);
+                    kept.Add(found[i]);
                 }
             }
 
@@ -609,6 +624,36 @@ namespace ES2Access.Screens
         /// <summary>Whether this widget is part of a control that is being declared in its own right,
         /// whose caption already says what the widget says.</summary>
         private static bool PartOf(AgeTransform widget, List<Control> controls)
+        {
+            int frame = Time.frameCount;
+            if (_partOfFrame != frame)
+            {
+                PartOfVerdicts.Clear();
+                _partOfFrame = frame;
+            }
+
+            PairKey key = new PairKey(widget, controls);
+            bool part;
+            if (PartOfVerdicts.TryGetValue(key, out part))
+            {
+                return part;
+            }
+
+            part = Inside(widget, controls);
+            PartOfVerdicts[key] = part;
+            return part;
+        }
+
+        private static readonly Dictionary<PairKey, bool> PartOfVerdicts =
+            new Dictionary<PairKey, bool>();
+
+        private static int _partOfFrame = -1;
+
+        /// <summary>The ancestry walk itself, which the memo above pays for once per (widget, control
+        /// list) per frame. The three readers of the drawn lines are handed the ONE control list the
+        /// build made, so they ask the same question of the same line and used to walk it each.
+        /// </summary>
+        private static bool Inside(AgeTransform widget, List<Control> controls)
         {
             AgeTransform at = widget;
             for (int depth = 0; at != null && depth < MaxAncestors; depth++)

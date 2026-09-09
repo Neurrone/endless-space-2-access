@@ -639,7 +639,10 @@ namespace ES2Access.Screens
                         confirm as AgeControlButton,
                         confirm as AgeControlToggle,
                         null,
-                        ConfirmName()
+                        null,
+                        false,
+                        null,
+                        Confirmed
                     );
                 }
 
@@ -720,7 +723,8 @@ namespace ES2Access.Screens
             string nameKey,
             string name = null,
             bool radio = false,
-            AgeTooltip tip = null
+            AgeTooltip tip = null,
+            Func<string> names = null
         )
         {
             AgeControl control = toggle == null ? (AgeControl)button : toggle;
@@ -739,11 +743,17 @@ namespace ES2Access.Screens
                     Toggle = toggle,
                     NameKey = nameKey,
                     Name = name,
+                    Names = names,
                     Radio = radio,
                     Tip = tip,
                 }
             );
         }
+
+        /// <summary>The confirm button's fallback name, as a delegate made once at load: the game's
+        /// own word for it is a localization and was being looked up on every build of every popup
+        /// that draws the button, for a name only the focused control ever says.</summary>
+        private static readonly Func<string> Confirmed = ConfirmName;
 
         private static bool Has(List<Control> controls, AgeTransform widget)
         {
@@ -781,7 +791,7 @@ namespace ES2Access.Screens
                 if (
                     !wired
                     || !Painted(control.AgeTransform, root)
-                    || string.IsNullOrEmpty(Captioned(control.AgeTransform))
+                    || !CaptionsAnything(control.AgeTransform)
                     || Array.IndexOf(declared, control) >= 0
                 )
                 {

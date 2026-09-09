@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
@@ -246,7 +246,13 @@ namespace ES2Access.Screens
                 AdvancedReportTitleKey,
                 "battle-report/advanced"
             );
-            Command(controls, window.WatchButton, WatchName(window), "battle-report/watch");
+            BattleReportNotificationWindow watched = window;
+            Command(
+                controls,
+                window.WatchButton,
+                () => WatchName(watched),
+                "battle-report/watch"
+            );
             Command(controls, window.ReplayButton, ReplayTitleKey, "battle-report/replay");
             BattleRows.Countdown(
                 controls,
@@ -923,7 +929,7 @@ namespace ES2Access.Screens
         /// saying a siege will go on.</summary>
         private static void Readout(GraphBuilder builder, AgeTransform widget, string key)
         {
-            if (widget == null || string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
+            if (widget == null || !AgeWidgets.Says(widget))
             {
                 return;
             }
@@ -974,12 +980,32 @@ namespace ES2Access.Screens
             return string.IsNullOrEmpty(drawn) ? AgeText.Clean(titleKey) : drawn;
         }
 
+        /// <summary>The same for a fallback name that costs something to work out - the watch button's,
+        /// which reads the button's own label. The widget's drawn words win where it has any, so on
+        /// most builds the fallback is never asked for at all.</summary>
+        private static string Title(Func<string> titleKey, AgeTransform widget)
+        {
+            string drawn = AgeWidgets.TextOf(widget);
+            return string.IsNullOrEmpty(drawn) ? AgeText.Clean(titleKey()) : drawn;
+        }
+
         /// <summary>A battle row (<see cref="BattleRows.Command"/>) under these popups' own naming
         /// rule.</summary>
         private static void Command(
             List<Cell> cells,
             AgeTransform widget,
             string titleKey,
+            string key
+        )
+        {
+            AgeTransform it = widget;
+            BattleRows.Command(cells, widget, () => Title(titleKey, it), key);
+        }
+
+        private static void Command(
+            List<Cell> cells,
+            AgeTransform widget,
+            Func<string> titleKey,
             string key
         )
         {

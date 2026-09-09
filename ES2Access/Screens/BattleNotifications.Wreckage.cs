@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -301,8 +301,10 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    string text = AgeWidgets.TextOf(line);
-                    if (string.IsNullOrEmpty(text))
+                    // Whether there are words, not what they are: the label part below reads them
+                    // when the player lands, and composing the whole line here threw a depth-six walk
+                    // and a joined string away for every loot row on every frame.
+                    if (!AgeWidgets.Says(line))
                     {
                         continue;
                     }
