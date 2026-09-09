@@ -246,10 +246,19 @@ namespace ES2Access.Core.UI.Graph
         {
             List<object> stops = null;
             List<ControlId> landings = null;
+            HashSet<object> declared = null;
             foreach (KeyValuePair<object, ControlId> memory in state.StopMemory)
             {
                 GraphNode remembered = render.NodeAt(memory.Value);
                 if (remembered != null && Equals(remembered.StopKey, memory.Key)) continue;
+
+                // A stop this render declares NOTHING for is the hidden panel the rule below is about,
+                // and it is the standing state of every panel the screen is not showing: both walks want
+                // a survivor OF THAT STOP, so neither can answer, and asking them anyway re-scanned the
+                // whole previous order for every such memory, every frame, forever. Ask once which stops
+                // are here instead.
+                if (declared == null) declared = DeclaredStops(render);
+                if (!declared.Contains(memory.Key)) continue;
 
                 // The same container rule the focused cursor gets: a stop whose rows went away by the
                 // family has to be returned to on the thing that held them, or Tab back into it lands
@@ -274,6 +283,19 @@ namespace ES2Access.Core.UI.Graph
             // Collected first: the dictionary cannot be written while it is being walked.
             if (stops == null) return;
             for (int i = 0; i < stops.Count; i++) state.StopMemory[stops[i]] = landings[i];
+        }
+
+        /// <summary>The stops this render declares a node for — asked once per reconcile, by the memory
+        /// repair, to tell a stop whose control DIED from one that is merely not being shown.</summary>
+        private static HashSet<object> DeclaredStops(GraphRender render)
+        {
+            HashSet<object> stops = new HashSet<object>();
+            for (int i = 0; i < render.Order.Count; i++)
+            {
+                object stop = render.Order[i].StopKey;
+                if (stop != null) stops.Add(stop);
+            }
+            return stops;
         }
 
         /// <summary>The nearest survivor at or before <paramref name="dead"/> in a previous traversal

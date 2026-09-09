@@ -1118,6 +1118,54 @@ namespace ES2Access.Tests.UI
             Assert.Equal("m2", Key(KeyGraph.StopLanding(TwoStopRender(), state, "map")));
         }
 
+        /// <summary>The same hidden stop, and what leaving it alone COSTS: the previous render is
+        /// reachable only through the order walk, so one of its keys being looked at at all is proof the
+        /// walk ran - and for a stop this render declares nothing for, the walk could only ever come
+        /// back with the same answer.</summary>
+        [Fact]
+        public void AMemoryForAnUndeclaredStopIsLeftWithoutWalkingTheOrder()
+        {
+            GraphState state = new GraphState();
+            CountingKey counted = new CountingKey();
+            GraphRender shown = Renderer(b =>
+            {
+                b.BeginStop("map");
+                b.AddItem(new SyntheticNode(Id("m1"), Vt("M1")));
+                b.AddItem(new SyntheticNode(ControlId.Structural(counted), Vt("M2")));
+                b.BeginStop("other").AddItem(new SyntheticNode(Id("o1"), Vt("O1")));
+            })();
+            KeyGraph.Reconcile(shown, state);
+
+            GraphRender hidden = Renderer(b => b.BeginStop("other").AddItem(new SyntheticNode(Id("o1"), Vt("O1"))))();
+            ControlId remembered = Id("m1");
+            state.CurKey = Id("o1");
+            state.StopMemory["map"] = remembered;
+            counted.Touches = 0;
+
+            KeyGraph.Reconcile(hidden, state);
+
+            Assert.Equal(remembered, state.StopMemory["map"]);
+            Assert.Equal(0, counted.Touches);
+        }
+
+        /// <summary>A structural key that says when anything compared or hashed it.</summary>
+        private sealed class CountingKey
+        {
+            public int Touches;
+
+            public override int GetHashCode()
+            {
+                Touches++;
+                return 17;
+            }
+
+            public override bool Equals(object obj)
+            {
+                Touches++;
+                return ReferenceEquals(this, obj);
+            }
+        }
+
         /// <summary>A control the previous order never listed leaves no neighbourhood to fall back into,
         /// so the memory stands and the landing chain answers as it always did.</summary>
         [Fact]
