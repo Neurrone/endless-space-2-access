@@ -362,18 +362,31 @@ namespace ES2Access.Screens
             StarSystemLabel label
         )
         {
-            AgeTooltip either = StarAim(node, empire, label);
-            if (either == null)
-            {
-                return null;
-            }
-
             StarSystemNode it = node;
             Empire looking = empire;
             StarSystemLabel drawn = label;
+            // Which of the two cards is up - and, where the game is drawing neither, a carrier of the
+            // mod's own - is worked out when this section is READ, never when the row is declared:
+            // every system on the map declares this one, and asking cost two walks of the colony
+            // repository, a dictionary write and a scratch GameObject for a card nobody had asked for.
+            // Held once for the section, which lives one frame, so the reading is still this frame's.
+            AgeTooltip found = null;
+            bool asked = false;
+            Func<AgeTooltip> aim = () =>
+            {
+                if (!asked)
+                {
+                    found = StarAim(it, looking, drawn);
+                    asked = true;
+                }
+
+                return found;
+            };
             return GraphNodes.TooltipSection(
-                either,
-                () => StarDossierLines(it, looking, drawn)
+                aim,
+                // Silent where nothing carries the card, which is what "no section at all" said when
+                // the aim was taken in front of the declaration.
+                () => aim() == null ? null : StarDossierLines(it, looking, drawn)
             );
         }
 

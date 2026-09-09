@@ -231,6 +231,70 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// The same for a dossier whose WIDGET is worked out when the section is read rather than when
+        /// the row is declared - a card the game keeps two of and swaps as the camera moves, where
+        /// finding the one being drawn costs repository walks and, where the game is drawing neither, a
+        /// carrier of the mod's own.
+        ///
+        /// A row the player walks past then costs nothing at all for a card nobody asked to read,
+        /// which is what the eager form could not do: the aim was an argument, so every row on the map
+        /// paid for it on every frame.
+        ///
+        /// INDICATE by construction, and the door says so rather than asking: the only tooltip worth
+        /// deferring is one the renderer ASSEMBLES on hover, because a tooltip carrying its own words
+        /// needs no widget hunt - its lines are readable off it - and <see cref="ModeFor"/> answers
+        /// Indicate for every one of those. A caller with a Content-backed tooltip in hand belongs at
+        /// the ordinary door above.
+        ///
+        /// The aim is resolved at most once per section, and a section lives one frame (the tree is
+        /// rebuilt from live game state every frame), so "once" is once per frame and no answer here
+        /// can outlive the moment it was true.
+        /// </summary>
+        public static NodeSection TooltipSection(Func<AgeTooltip> aim, Func<IList<string>> lines)
+        {
+            if (aim == null || lines == null)
+            {
+                return null;
+            }
+
+            AgeTooltip found = null;
+            bool asked = false;
+            Func<AgeTooltip> once = () =>
+            {
+                if (!asked)
+                {
+                    found = aim();
+                    asked = true;
+                }
+
+                return found;
+            };
+            Func<IList<string>> read = lines;
+            return NodeSection.Derived(
+                lines,
+                TooltipMode.Indicate,
+                () => AgeWidgets.Draws(once()),
+                aim,
+                () => PriceOf(once()),
+                Settings.LongTooltipSettings.Announced
+                    ? (Func<IList<string>>)(() => LateWordsOf(once(), read))
+                    : null
+            );
+        }
+
+        private static string PriceOf(AgeTooltip tooltip)
+        {
+            Func<string> cost = TooltipCosts.Of(tooltip);
+            return cost == null ? null : cost();
+        }
+
+        private static IList<string> LateWordsOf(AgeTooltip tooltip, Func<IList<string>> lines)
+        {
+            Func<IList<string>> late = LongTooltips.Announced(tooltip, lines);
+            return late == null ? null : late();
+        }
+
+        /// <summary>
         /// LEAVE THE PRICE TO THE ROW, for the few controls that draw their own turn count.
         ///
         /// The construction queue's lines, the research queue's rows and the empire banner's research
