@@ -125,6 +125,13 @@ namespace ES2Access.Screens
         private readonly Roster _enemyRoster = new Roster();
         private readonly BurstWatch _yourFlotillas = new BurstWatch(BurstSeconds);
         private readonly BurstWatch _enemyFlotillas = new BurstWatch(BurstSeconds);
+
+        /// <summary>The flotillas whose loss has already been turned into words - the same guard the
+        /// ship loop keeps (<c>Seen.News</c>), for the same reason: a destroyed flotilla stays
+        /// destroyed for the rest of the cinematic, and the watch drops the re-Note without either of
+        /// its arguments having been cheap to build.</summary>
+        private readonly Dictionary<EncounterFlotilla, bool> _goneFlotillas =
+            new Dictionary<EncounterFlotilla, bool>();
         private readonly FireWatch _fire = new FireWatch(VolleySeconds);
         private readonly Dictionary<string, float> _mended = new Dictionary<string, float>();
         private readonly List<Cell> _cells = new List<Cell>();
@@ -273,6 +280,7 @@ namespace ES2Access.Screens
             _enemyRoster.Forget();
             _yourFlotillas.Reset();
             _enemyFlotillas.Reset();
+            _goneFlotillas.Clear();
             _fire.Reset();
             BattleStream.Forget();
             _clock = 0.0;
@@ -715,6 +723,12 @@ namespace ES2Access.Screens
                             continue;
                         }
 
+                        if (_goneFlotillas.ContainsKey(flotilla))
+                        {
+                            continue;
+                        }
+
+                        _goneFlotillas[flotilla] = true;
                         watch.Note(
                             g + "/" + f,
                             BattleRosters.FlotillaName(flotilla.Index + 1),

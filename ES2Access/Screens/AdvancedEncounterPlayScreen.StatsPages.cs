@@ -418,7 +418,7 @@ namespace ES2Access.Screens
                     for (int i = 0; children != null && i < children.Count; i++)
                     {
                         int at = i;
-                        Figure(vtable, () => Curve(it, container, at));
+                        Figure(vtable, () => CurveSaid(it, container, at));
                     }
 
                     return;
@@ -431,6 +431,38 @@ namespace ES2Access.Screens
         private static void Figure(NodeVtable vtable, Func<string> text)
         {
             vtable.Announcements.Add(GraphNodes.ValuePart(text, false));
+        }
+
+        private static AgeTransform _curvesFor;
+        private static int _curvesFrame = -1;
+        private static readonly Dictionary<int, string> _curvesSaid = new Dictionary<int, string>();
+
+        /// <summary>One slot's clause, composed once per (container, slot, frame). Every part of the
+        /// focused row is resolved as its readout is composed, and again where the readout asks what it
+        /// has already said; the clause behind each is two localizations and a formatted phrase, and
+        /// nothing the page draws moves within a frame.</summary>
+        private static string CurveSaid(
+            AdvancedEncounterPlayModalWindow window,
+            AgeTransform container,
+            int index
+        )
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_curvesFrame != frame || !ReferenceEquals(_curvesFor, container))
+            {
+                _curvesSaid.Clear();
+                _curvesFrame = frame;
+                _curvesFor = container;
+            }
+
+            string said;
+            if (!_curvesSaid.TryGetValue(index, out said))
+            {
+                said = Curve(window, container, index);
+                _curvesSaid[index] = said;
+            }
+
+            return said;
         }
 
         /// <summary>The walk a trajectory slot's curve is found by, made once per slot per frame.

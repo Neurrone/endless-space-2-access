@@ -350,7 +350,10 @@ namespace ES2Access.UI
                 return;
             }
 
-            if (OptionalText.Phrase(ModStrings.BattleTimeLeft, 0) == null)
+            // Existence, not the phrase: formatting one only to throw it away allocated a boxed int
+            // and a params array on every frame the countdown was drawn.
+            string phrase = ModStrings.Get(ModStrings.BattleTimeLeft);
+            if (string.IsNullOrEmpty(phrase) || phrase == ModStrings.BattleTimeLeft)
             {
                 return;
             }

@@ -91,11 +91,12 @@ namespace ES2Access.Screens
                 }
 
                 DamageGaugeCell it = cell;
+                Func<string> caption = () => Title(it.DamageData);
                 builder.AddItem(Nodes.Drawn(
                     ControlId.For(cell, prefix + "/" + i),
                     Bar(
                         cell.AgeTransform,
-                        () => AgeText.Lines(Title(it.DamageData)),
+                        () => Parsed(it, caption),
                         () => Description(it.DamageData)
                     ),
                     cell
@@ -223,12 +224,8 @@ namespace ES2Access.Screens
             // LABEL FALLBACK: the label draws a bare figure and an icon ("2074 [damageApplied]"), and
             // the game's name for what it counts is written only in the tooltip - so the tooltip's
             // sentence names the row, with the drawn figure as the fallback where it is not written.
-            Prose(
-                vtable,
-                () => AgeText.Lines(AgeText.Tooltip(tooltip)),
-                true,
-                () => AgeText.Label(it)
-            );
+            Func<string> written = () => AgeText.Tooltip(tooltip);
+            Prose(vtable, () => Parsed(tooltip, written), true, () => AgeText.Label(it));
             AgeWidgets.PointAt(vtable, widget);
             builder.AddItem(Nodes.Drawn(ControlId.For(total, key), vtable, total));
         }

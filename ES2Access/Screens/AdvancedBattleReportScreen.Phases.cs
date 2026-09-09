@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -190,7 +191,8 @@ namespace ES2Access.Screens
             // sentence the game wrote for it is the only thing that could name this row - the same rung
             // the ordinary naming ladder would have reached. Its lines are the row's own parts, so the
             // door has nothing left to announce twice.
-            Prose(vtable, () => AgeText.Lines(AgeText.Tooltip(tooltip)), false, null);
+            Func<string> written = () => AgeText.Tooltip(tooltip);
+            Prose(vtable, () => Parsed(tooltip, written), false, null);
             AgeWidgets.PointAt(vtable, widget);
             return vtable;
         }
@@ -239,6 +241,43 @@ namespace ES2Access.Screens
                         : GraphNodes.ValuePart(line, false)
                 );
             }
+        }
+
+        private static readonly Dictionary<Component, IList<string>> _prose =
+            new Dictionary<Component, IList<string>>();
+        private static int _proseFrame = -1;
+
+        /// <summary>
+        /// A block of game prose split into its lines, parsed once per (source, frame).
+        ///
+        /// <see cref="Prose"/> reads the COUNT as the node is built and then every part re-reads its
+        /// own line while the row is focused, so one row of this screen was cleaning and splitting the
+        /// same tooltip once for the count and once per part on every frame. The parse is keyed on the
+        /// widget the text is read OFF - the tooltip, the gauge cell - rather than on the text, which
+        /// is allocated fresh by each read; nothing either source draws can change within one frame.
+        /// </summary>
+        private static IList<string> Parsed(Component source, Func<string> text)
+        {
+            int frame = Time.frameCount;
+            if (_proseFrame != frame)
+            {
+                _prose.Clear();
+                _proseFrame = frame;
+            }
+
+            IList<string> known;
+            if (source != null && _prose.TryGetValue(source, out known))
+            {
+                return known;
+            }
+
+            IList<string> lines = AgeText.Lines(text());
+            if (source != null)
+            {
+                _prose[source] = lines;
+            }
+
+            return lines;
         }
 
         private static IList<string> Read(Func<IList<string>> lines)

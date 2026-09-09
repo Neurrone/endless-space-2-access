@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using UnityEngine;
 
 namespace ES2Access.UI
 {
@@ -309,7 +310,29 @@ namespace ES2Access.UI
             Action turn
         )
         {
+            // Every surface but the plan chooser asks with nothing to turn, and asks for every card it
+            // draws on every frame - four dossiers, two closures each, per card. Those answers are the
+            // same list within a frame, and every consumer only reads it. A caller WITH a chooser
+            // carries its own turn inside the entries, so it is composed each time as before.
+            int frame = Time.frameCount;
+            if (_dossiersFrame != frame)
+            {
+                _dossiers.Clear();
+                _dossiersFrame = frame;
+            }
+
+            List<TooltipChildren.Dossier> known;
+            if (turn == null && card != null && _dossiers.TryGetValue(card, out known))
+            {
+                return known;
+            }
+
             List<TooltipChildren.Dossier> dossiers = new List<TooltipChildren.Dossier>(4);
+            if (turn == null && card != null)
+            {
+                _dossiers[card] = dossiers;
+            }
+
             if (card == null)
             {
                 return dossiers;
@@ -355,6 +378,10 @@ namespace ES2Access.UI
 
             return dossiers;
         }
+
+        private static readonly Dictionary<BattlePlayCard, List<TooltipChildren.Dossier>> _dossiers =
+            new Dictionary<BattlePlayCard, List<TooltipChildren.Dossier>>();
+        private static int _dossiersFrame = -1;
 
         /// <summary>What a range diagram's entry is called, with the card first put on the plan the
         /// entry belongs to.

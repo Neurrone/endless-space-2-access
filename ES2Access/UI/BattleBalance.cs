@@ -67,10 +67,10 @@ namespace ES2Access.UI
                 return;
             }
 
-            if (
-                OptionalText.Phrase(ModStrings.BattleBalance, string.Empty, 0, string.Empty)
-                == null
-            )
+            // Existence, not the phrase: formatting one only to throw it away allocated a boxed int
+            // and a params array on every frame of every battle surface.
+            string balance = ModStrings.Get(ModStrings.BattleBalance);
+            if (string.IsNullOrEmpty(balance) || balance == ModStrings.BattleBalance)
             {
                 return;
             }
@@ -117,6 +117,38 @@ namespace ES2Access.UI
         /// decides the tie.
         /// </summary>
         internal static string BalanceText(EncounterGroup left, EncounterGroup right, bool setup)
+        {
+            int frame = Time.frameCount;
+            if (
+                _balanceFrame != frame
+                || _balanceSetup != setup
+                || !ReferenceEquals(_balanceLeft, left)
+                || !ReferenceEquals(_balanceRight, right)
+            )
+            {
+                _balanceSaid = Composed(left, right, setup);
+                _balanceFrame = frame;
+                _balanceLeft = left;
+                _balanceRight = right;
+                _balanceSetup = setup;
+            }
+
+            return _balanceSaid;
+        }
+
+        private static EncounterGroup _balanceLeft;
+        private static EncounterGroup _balanceRight;
+        private static bool _balanceSetup;
+        private static int _balanceFrame = -1;
+        private static string _balanceSaid;
+
+        /// <summary>The sentence itself, composed once per (the two groups, which question, frame).
+        /// Each <c>GetMilitaryPower</c> call allocates a garrison wrapper per garrison and a ship
+        /// wrapper per ship inside it (decompiled/Assembly-CSharp/GuiBattleHelpers.cs:11-51,
+        /// GuiBattleGarrison.cs:83-93) and each <c>SideName</c> pass walks the contender setups with a
+        /// clean per garrison; the navigator recomposes the focused node's readout every frame, and
+        /// nothing either half reads can move within one.</summary>
+        private static string Composed(EncounterGroup left, EncounterGroup right, bool setup)
         {
             try
             {
@@ -227,7 +259,9 @@ namespace ES2Access.UI
                 return;
             }
 
-            if (OptionalText.Phrase(ModStrings.BattleGroundBalance, 0, 0) == null)
+            // Existence, not the phrase - the same test the space balance makes above.
+            string ground = ModStrings.Get(ModStrings.BattleGroundBalance);
+            if (string.IsNullOrEmpty(ground) || ground == ModStrings.BattleGroundBalance)
             {
                 return;
             }
