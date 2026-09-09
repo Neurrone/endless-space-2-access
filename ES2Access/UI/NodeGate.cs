@@ -128,6 +128,9 @@ namespace ES2Access.UI
         public static string BuildingIs(string screenKey)
         {
             _building = screenKey ?? "";
+            // A new build asks the game afresh. See _verdicts for why one build may share answers.
+            _verdicts.Clear();
+            _scratch.Clear();
             return _building;
         }
 
@@ -139,6 +142,8 @@ namespace ES2Access.UI
         {
             _reported.Clear();
             _predicates.Clear();
+            _verdicts.Clear();
+            _scratch.Clear();
             _building = "";
         }
 
@@ -222,24 +227,95 @@ namespace ES2Access.UI
         {
             try
             {
+                Verdict known;
+                if (_verdicts.TryGetValue(widget, out known))
+                {
+                    return known.Hider;
+                }
+
+                _scratch.Clear();
                 AgeTransform at = widget;
+                AgeTransform hider = null;
+                // Steps as the loop below would count them: the number of widgets examined before
+                // the answer, which is what the depth cap is spent on.
+                int steps = 0;
                 for (int depth = 0; at != null && depth < MaxAncestors; depth++)
                 {
-                    if (!at.Visible || (at.Alpha <= 0f && !at.ModifiersRunning))
+                    // An ancestor already answered this build answers for everything below it, as
+                    // long as reaching its own answer fits in what is left of the cap - past that
+                    // the walk from here would have run out, and must be allowed to.
+                    if (depth > 0 && _verdicts.TryGetValue(at, out known)
+                        && known.Steps <= MaxAncestors - depth)
                     {
-                        return at;
+                        hider = known.Hider;
+                        steps = depth + known.Steps;
+                        break;
                     }
 
+                    steps = depth + 1;
+                    if (!at.Visible || (at.Alpha <= 0f && !at.ModifiersRunning))
+                    {
+                        hider = at;
+                        break;
+                    }
+
+                    _scratch.Add(at);
                     at = at.Parent;
                 }
 
-                return null;
+                // Every widget the walk passed has the same answer, reached in that many fewer
+                // steps: a table's fifty rows share one chain, and it is walked once.
+                for (int i = 0; i < _scratch.Count; i++)
+                {
+                    _verdicts[_scratch[i]] = new Verdict(hider, steps - i);
+                }
+
+                if (hider != null && !_verdicts.ContainsKey(hider))
+                {
+                    _verdicts[hider] = new Verdict(hider, 1);
+                }
+
+                _scratch.Clear();
+                return hider;
             }
             catch (Exception)
             {
+                _scratch.Clear();
                 return null;
             }
         }
+
+        /// <summary>
+        /// What the ancestor walk answered for a widget, and how many widgets it had to look at to
+        /// answer it - kept for ONE build.
+        ///
+        /// Safe for that long because the game does not move within a frame: the mod's build reads
+        /// the AGE tree and never touches it, and the engine's own layout, fades and rebinds happen
+        /// between frames. Within one build every row of a table shares the chain above it, so the
+        /// walk that cost N rows x depth now costs the depth once - and the interop is the point,
+        /// since AgeTransform.Parent consults Application.isPlaying on every hop.
+        ///
+        /// The step count is what keeps the shared answer honest against the depth cap: an answer
+        /// reached in more steps than the caller has cap left is not the caller's answer, and the
+        /// caller walks for itself. No measured chain comes near the cap, so this never fires; it
+        /// is here so the memo cannot say something the walk would not have.
+        /// </summary>
+        private struct Verdict
+        {
+            public Verdict(AgeTransform hider, int steps)
+            {
+                Hider = hider;
+                Steps = steps;
+            }
+
+            public readonly AgeTransform Hider;
+            public readonly int Steps;
+        }
+
+        private static readonly Dictionary<AgeTransform, Verdict> _verdicts =
+            new Dictionary<AgeTransform, Verdict>();
+
+        private static readonly List<AgeTransform> _scratch = new List<AgeTransform>();
 
         /// <summary>How far up a parent chain to look before deciding it is not a chain. The deepest
         /// declared node measured in this game sits 10 widgets from its renderer root.</summary>
