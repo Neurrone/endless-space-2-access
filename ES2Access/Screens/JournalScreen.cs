@@ -164,6 +164,13 @@ namespace ES2Access.Screens
 
         // ---- the Details column ----
 
+        /// <summary>What the game's table description calls the column the two buttons are drawn in.
+        /// Read off the journal's own headers while it was open (<c>GuiTableHeader.PropertyName</c>, the
+        /// same string the mod writes into each heading's node key): the journal's nine columns are
+        /// ScoreVictoryStatus, PlayerEmpire, HasWon, TurnPlusOne, GameDifficulty, GameSpeed, SessionMode,
+        /// Date and this one, which is drawn under the caption "Details".</summary>
+        private const string DetailsColumn = "EndGameSummary";
+
         /// <summary>
         /// The last column, where the game draws the row's two BUTTONS rather than a figure: open the
         /// score screen of that finished game, and delete the entry. It is read as TWO columns, one per
@@ -188,6 +195,10 @@ namespace ES2Access.Screens
         ///
         /// The buttons are found by the handler the game wired to them rather than by their names in the
         /// prefab: what a button DOES is the thing being declared here.
+        ///
+        /// The splitter is the TABLE's hook, so it is offered every cell of every drawn row, and only
+        /// this column has anything to answer. The column is asked first, and every other cell is
+        /// declined before the cell subtree is looked at at all.
         /// </summary>
         private IList<NodeVtable> DetailsCells(
             GuiTableLine line,
@@ -196,6 +207,11 @@ namespace ES2Access.Screens
             Func<bool> enabled
         )
         {
+            if (TableSheet.PropertyOf(header) != DetailsColumn)
+            {
+                return null;
+            }
+
             AgeControlButton open = Wired(cell, "OnScoreScreenCb");
             AgeControlButton remove = Wired(cell, "OnDeleteEntryCb");
             if (open == null && remove == null)
