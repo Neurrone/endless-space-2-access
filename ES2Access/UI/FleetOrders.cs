@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Amplitude.Unity.Framework;
@@ -32,10 +32,11 @@ namespace ES2Access.UI
     /// progressively relaxed rules to find out which rule was the one that bit; it belongs to the moment
     /// a key is pressed and never to a frame.
     ///
-    /// Nothing is remembered between calls: the definitions come out of the game's own database and the
-    /// routes are asked for fresh, so this is reload-safe by construction and stale by nothing. Every
-    /// entry point here is a search or an order, so all of them belong to the moment a key is pressed
-    /// and none of them to a frame.
+    /// Nothing is remembered between calls except the SELECTION, and that only against the number the
+    /// selection itself moves under (<see cref="Selected"/>): the definitions come out of the game's own
+    /// database and the routes are asked for fresh, so this is reload-safe by construction and stale by
+    /// nothing. Every entry point here is a search or an order, so all of them belong to the moment a
+    /// key is pressed and none of them to a frame.
     /// </summary>
     public static class FleetOrders
     {
@@ -155,9 +156,23 @@ namespace ES2Access.UI
         /// fleets would go" is a question with a live answer, asked of the game rather than tracked
         /// here - and a garrison that is not a fleet of the player's own is not one of them, whatever
         /// the player has clicked on.
+        ///
+        /// Remembered against <see cref="FleetRoute.SelectionStamp"/>, which is the same number the
+        /// route memo is kept on and is made of the same repository this reads: what is selected, where
+        /// each of them stands, what each has left, and the turn. Three hint predicates ask this
+        /// question of the focused node on every frame, and each was gathering a fresh list out of the
+        /// repository to answer it. The list is handed back as it is and never added to by a caller, and
+        /// a new one is made whenever the stamp moves, so a caller still walking the old one is walking
+        /// a list nothing will touch.
         /// </summary>
         public static List<Fleet> Selected()
         {
+            long stamp = FleetRoute.SelectionStamp();
+            if (stamp == _stamp && stamp != long.MinValue)
+            {
+                return _selected;
+            }
+
             List<Fleet> found = new List<Fleet>();
             try
             {
@@ -178,6 +193,11 @@ namespace ES2Access.UI
                         found.Add(fleet);
                     }
                 }
+
+                // Only a walk that finished is remembered: a frame with no empire yet and a walk that
+                // threw both answer what they answered before and ask again next time.
+                _stamp = stamp;
+                _selected = found;
             }
             catch (Exception e)
             {
@@ -186,6 +206,21 @@ namespace ES2Access.UI
 
             return found;
         }
+
+        /// <summary>Let go of the remembered selection - teardown, and a galaxy this list could not
+        /// belong to. Called from <see cref="FleetRoute.Reset"/>, which owns the stamp it is kept on.
+        /// </summary>
+        public static void Forget()
+        {
+            _stamp = long.MinValue;
+            _selected = NoneSelected;
+        }
+
+        private static long _stamp = long.MinValue;
+
+        private static List<Fleet> _selected = NoneSelected;
+
+        private static readonly List<Fleet> NoneSelected = new List<Fleet>();
 
         /// <summary>Whether the map's cursor is holding anything at all - the question a hint about
         /// moving the selection has to ask before it is worth saying.</summary>

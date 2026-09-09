@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
@@ -108,9 +108,18 @@ namespace ES2Access.UI
             _stamp = long.MinValue;
             _route = null;
             _refusal = null;
+            _previewSaid = false;
+            _previewText = null;
             _committedFleet = 0;
             _committedStamp = long.MinValue;
             _committed = null;
+            _committedSaidOf = null;
+            _committedText = null;
+            _arrivalSaidOf = null;
+            _arrivalText = null;
+            // The selection memo is stamped with the number this class computes, so it is let go of
+            // here rather than waiting for a stamp that will never come round again.
+            FleetOrders.Forget();
         }
 
         /// <summary>
@@ -118,8 +127,12 @@ namespace ES2Access.UI
         /// allocating: the selection (how many, and which), where each of them is, what each has left,
         /// and the turn. Anything the pathfinder itself depends on that this misses - a border closed by
         /// somebody else, a citadel raised - moves the turn number before it can move a route.
+        ///
+        /// Public because it is the one number the SELECTION itself moves under: <c>FleetOrders</c>
+        /// keys its own list of the selected fleets on it, so a hint asked sixty times a second reads
+        /// the list this stamp was taken with rather than gathering it again.
         /// </summary>
-        private static long SelectionStamp()
+        public static long SelectionStamp()
         {
             try
             {
@@ -176,6 +189,7 @@ namespace ES2Access.UI
             _target = target;
             _route = null;
             _refusal = null;
+            _previewSaid = false;
             Searches++;
 
             try
@@ -222,16 +236,28 @@ namespace ES2Access.UI
         public static string Preview(object target)
         {
             Ask(target);
+            if (_previewSaid)
+            {
+                return _previewText;
+            }
+
+            _previewSaid = true;
             if (_route == null)
             {
-                return _refusal;
+                _previewText = _refusal;
+                return _previewText;
             }
 
             MessageBuilder message = new MessageBuilder();
             message.ListItem(Cost(_route));
             AddShortcuts(message, _route);
-            return message.Build();
+            _previewText = message.Build();
+            return _previewText;
         }
+
+        private static bool _previewSaid;
+
+        private static string _previewText;
 
         /// <summary>The journey turn by turn, for the review buffer under a destination. One line per
         /// turn that ends somewhere with a name; a turn that ends half way down a lane is a dot on the
@@ -271,6 +297,11 @@ namespace ES2Access.UI
                 return null;
             }
 
+            if (ReferenceEquals(route, _committedSaidOf))
+            {
+                return _committedText;
+            }
+
             GameNode end = route.Places[route.Places.Length - 1];
             string name = Named(end);
             MessageBuilder message = new MessageBuilder();
@@ -292,8 +323,14 @@ namespace ES2Access.UI
                     )
             );
             AddShortcuts(message, route);
-            return message.Build();
+            _committedSaidOf = route;
+            _committedText = message.Build();
+            return _committedText;
         }
+
+        private static Route _committedSaidOf;
+
+        private static string _committedText;
 
         /// <summary>The same for a surface that has ALREADY named the destination - the map's own fleet
         /// line says "Moving to Xiu" before this is reached, and hearing the name twice in one readout
@@ -306,6 +343,11 @@ namespace ES2Access.UI
                 return null;
             }
 
+            if (ReferenceEquals(route, _arrivalSaidOf))
+            {
+                return _arrivalText;
+            }
+
             MessageBuilder message = new MessageBuilder();
             message.ListItem(
                 ModStrings.Plural(
@@ -315,8 +357,14 @@ namespace ES2Access.UI
                 )
             );
             AddShortcuts(message, route);
-            return message.Build();
+            _arrivalSaidOf = route;
+            _arrivalText = message.Build();
+            return _arrivalText;
         }
+
+        private static Route _arrivalSaidOf;
+
+        private static string _arrivalText;
 
         /// <summary>
         /// The turn a route gets to one of the places it runs through, counting the turn now in
