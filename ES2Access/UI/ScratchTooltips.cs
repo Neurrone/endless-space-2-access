@@ -43,24 +43,51 @@ namespace ES2Access.UI
     /// game is drawing one, and only fall back to a carrier where it is not. Words are identical
     /// either way, so nothing the player hears changes as the camera moves.
     ///
-    /// One carrier per KEY, kept for the session: the pointer, the drawn-tooltip reader and the
-    /// parity audit all recognise a tooltip by reference, so a dossier that swapped carriers between
-    /// frames would read as a different dossier each time. Rebinding is gated on a caller's STAMP
+    /// One carrier per KEY, and the same one for as long as anybody could be looking at it: the
+    /// pointer, the drawn-tooltip reader and the parity audit all recognise a tooltip by reference, so
+    /// a dossier that swapped carriers between frames would read as a different dossier each time. Two
+    /// things end a carrier, and both destroy its GameObject. The campaign going away - a save loaded,
+    /// a new game begun, the player back at the menu - takes every carrier with it, because a key
+    /// names a star or a planet of a galaxy that no longer exists; it is noticed by the running game's
+    /// own identity, asked once a frame, the same signal the bookmark store polls
+    /// (<c>MapBookmarkStore.Tick</c>). And the table is capped at <see cref="MaxCarriers"/>: over that,
+    /// the carrier nobody has asked for in the longest time goes, and never one asked for on this
+    /// frame, the one the pointer is aimed at (<see cref="PointerFocus.Wanted"/>) or the one the window
+    /// is drawing (<see cref="PointerFocus.Drawn"/>). A key that comes back is built again on its next
+    /// rebind, one frame later than the words - the same wait every dossier's first reading pays.
+    /// Rebinding is gated on a caller's STAMP
     /// because writing <c>Target</c> raises the engine's dirty-target edge, which resets the tooltip
     /// controller's countdown - written every frame, the tooltip would never finish appearing.
     /// </summary>
     public static class ScratchTooltips
     {
+        /// <summary>How many carriers may stand at once. A galaxy has one star dossier per system and
+        /// a handful of planet and deposit dossiers per system the player opens, so this is more than
+        /// a session of ordinary play ever reaches and small enough that a session that does reach it
+        /// - a whole large galaxy walked through - is bounded rather than growing all evening.
+        /// </summary>
+        private const int MaxCarriers = 128;
+
         private struct Slot
         {
             public AgeTooltip Tip;
             public long Stamp;
             public bool Bound;
+
+            /// <summary>The frame this key was last asked for - what decides which carrier goes when
+            /// the table is full, and what makes a carrier the player has only just been handed
+            /// unevictable.</summary>
+            public int Touched;
         }
 
         private static readonly Dictionary<string, Slot> Carriers = new Dictionary<string, Slot>();
         private static GameObject _host;
         private static IAgeScreen _screen;
+
+        /// <summary>The game the standing carriers were made for, and the frame that was last asked
+        /// about - one reference comparison a frame, not one per dossier.</summary>
+        private static object _game;
+        private static int _asked = -1;
 
         /// <summary>Whether this tooltip is one of the mod's carriers - asked by
         /// <see cref="PointerFocus"/>, which re-anchors every tooltip it aims at to the widget under
@@ -104,6 +131,8 @@ namespace ES2Access.UI
                     return false;
                 }
 
+                ForgetOtherCampaign();
+
                 Slot slot;
                 bool known = Carriers.TryGetValue(key, out slot);
                 if (!known || slot.Tip == null)
@@ -124,7 +153,9 @@ namespace ES2Access.UI
                     slot.Bound = true;
                 }
 
+                slot.Touched = UnityEngine.Time.frameCount;
                 Carriers[key] = slot;
+                Trim();
                 return rebind;
             }
             catch (Exception e)
@@ -186,6 +217,121 @@ namespace ES2Access.UI
 
             _host = null;
             _screen = null;
+            _game = null;
+            _asked = -1;
+        }
+
+        /// <summary>Drop every carrier the moment the campaign they name has gone. A key is a star,
+        /// a planet or a deposit of one galaxy, and the next game's stars are not those - a carrier
+        /// kept across the change would stand for a place nobody can reach, and every game played in
+        /// one sitting would leave its own set behind. The running game's identity is the signal, the
+        /// same one the bookmark store polls, and it is asked once a frame rather than once per
+        /// dossier.</summary>
+        private static void ForgetOtherCampaign()
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (frame == _asked)
+            {
+                return;
+            }
+
+            _asked = frame;
+            object game;
+            try
+            {
+                game = Gui.Game;
+            }
+            catch (Exception)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(game, _game))
+            {
+                return;
+            }
+
+            _game = game;
+            Dictionary<string, Slot>.Enumerator walk = Carriers.GetEnumerator();
+            while (walk.MoveNext())
+            {
+                Destroy(walk.Current.Value.Tip);
+            }
+
+            Carriers.Clear();
+        }
+
+        /// <summary>Keep the table down to <see cref="MaxCarriers"/> by destroying the carrier nobody
+        /// has asked for in the longest time. Three are never taken: one asked for on this frame,
+        /// which includes the one just handed to the caller; the one the pointer is aimed at; and the
+        /// one the tooltip window is drawing. Those are the references somebody is holding, and a
+        /// carrier destroyed out from under one of them would take the words the player is reading
+        /// with it. Where all of them are spoken for the table is simply allowed over its cap for the
+        /// frame.</summary>
+        private static void Trim()
+        {
+            while (Carriers.Count > MaxCarriers)
+            {
+                string stalest = Stalest();
+                if (stalest == null)
+                {
+                    return;
+                }
+
+                Slot slot;
+                if (Carriers.TryGetValue(stalest, out slot))
+                {
+                    Destroy(slot.Tip);
+                }
+
+                Carriers.Remove(stalest);
+            }
+        }
+
+        private static string Stalest()
+        {
+            int frame = UnityEngine.Time.frameCount;
+            AgeTooltip aimed = PointerFocus.Wanted;
+            AgeTooltip drawn = PointerFocus.Drawn;
+            string stalest = null;
+            int since = 0;
+            Dictionary<string, Slot>.Enumerator walk = Carriers.GetEnumerator();
+            while (walk.MoveNext())
+            {
+                Slot slot = walk.Current.Value;
+                if (slot.Touched == frame || Held(slot.Tip, aimed) || Held(slot.Tip, drawn))
+                {
+                    continue;
+                }
+
+                if (stalest == null || slot.Touched < since)
+                {
+                    stalest = walk.Current.Key;
+                    since = slot.Touched;
+                }
+            }
+
+            return stalest;
+        }
+
+        private static bool Held(AgeTooltip carrier, AgeTooltip held)
+        {
+            return carrier != null && ReferenceEquals(carrier, held);
+        }
+
+        private static void Destroy(AgeTooltip carrier)
+        {
+            try
+            {
+                if (carrier != null)
+                {
+                    UnityEngine.Object.Destroy(carrier.gameObject);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("tooltips: destroying a scratch carrier threw: " + e);
+            }
         }
 
         /// <summary>
