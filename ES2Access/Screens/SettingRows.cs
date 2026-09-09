@@ -919,6 +919,7 @@ namespace ES2Access.Screens
                 try
                 {
                     foreach (
+                        // walk: once per window, kept while the buttons it found are alive
                         AgeControlButton button in window.GetComponentsInChildren<AgeControlButton>(
                             true
                         )

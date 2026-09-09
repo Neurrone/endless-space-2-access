@@ -273,6 +273,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeControlButton[] buttons =
+                    // walk: audit M1, to move behind FrameSweep
                     cell == null ? null : cell.GetComponentsInChildren<AgeControlButton>(true);
                 for (int i = 0; buttons != null && i < buttons.Length; i++)
                 {

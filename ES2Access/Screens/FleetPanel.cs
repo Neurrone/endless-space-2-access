@@ -313,6 +313,7 @@ namespace ES2Access.Screens
 
                 _cells.Clear();
                 FleetActionItem[] items =
+                    // walk: audit M1, to move behind FrameSweep
                     panel.FleetActionsTable.GetComponentsInChildren<FleetActionItem>(true);
                 for (int i = 0; i < items.Length; i++)
                 {
@@ -700,6 +701,7 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // walk: audit M1, to move behind FrameSweep
             FleetLine[] lines = panel.FleetLinesTable.GetComponentsInChildren<FleetLine>(true);
             for (int i = 0; i < lines.Length; i++)
             {
@@ -1055,6 +1057,7 @@ namespace ES2Access.Screens
             {
                 ShipRows.Ship(
                     cells,
+                    // walk: audit M1, to move behind FrameSweep
                     panel.HeroShipContainer.GetComponentInChildren<ShipItem>(true),
                     window.ShipsManagementPanel,
                     "fleets:hero",

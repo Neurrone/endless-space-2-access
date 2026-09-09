@@ -30,6 +30,7 @@ namespace ES2Access.Screens
                     ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
                     : null;
                 ResearchStatusSidePanel status =
+                    // walk: audit M1, to move behind FrameSweep
                     panels == null ? null : panels.GetComponentInChildren<ResearchStatusSidePanel>(true);
                 ResearchKeySidePanel key = window.ResearchKeySidePanel;
 
@@ -88,6 +89,7 @@ namespace ES2Access.Screens
             ResearchQueueItem[] items =
                 panel.ResearchQueue == null
                     ? null
+                    // walk: audit M1, to move behind FrameSweep
                     : panel.ResearchQueue.GetComponentsInChildren<ResearchQueueItem>(true);
             int drawn = 0;
             for (int i = 0; items != null && i < items.Length; i++)

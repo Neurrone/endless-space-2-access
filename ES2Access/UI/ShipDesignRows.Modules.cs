@@ -266,6 +266,7 @@ namespace ES2Access.UI
             try
             {
                 AgeControlButton button =
+                    // walk: on the double-click handler, not on a build
                     item.AgeTransform.GetComponentInChildren<AgeControlButton>(true);
                 return button == null ? null : button.AgeTransform;
             }

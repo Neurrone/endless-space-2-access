@@ -30,6 +30,7 @@ namespace ES2Access.Screens
             _cards.Clear();
             try
             {
+                // walk: audit M1, to move behind FrameSweep
                 PlanetCard[] all = panel.GetComponentsInChildren<PlanetCard>(true);
                 for (int i = 0; i < all.Length; i++)
                 {
@@ -495,6 +496,7 @@ namespace ES2Access.Screens
             {
                 return card == null
                     ? null
+                    // walk: on the population-drop action, one ancestor hop from the card
                     : card.GetComponentInParent<StarSystemPlanetCardsPanel>();
             }
             catch (Exception)

@@ -1191,6 +1191,7 @@ namespace ES2Access.Screens
             if (_windows == null || !ReferenceEquals(_gui, gui))
             {
                 _gui = gui;
+                // walk: once per GuiManager, into the popup inventory this memo holds
                 _windows = gui.gameObject.GetComponentsInChildren<NotificationWindow>(true);
             }
 

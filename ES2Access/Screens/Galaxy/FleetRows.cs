@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -1423,6 +1423,7 @@ namespace ES2Access.Screens
                 return null;
             }
 
+            // walk: audit M1, to move behind FrameSweep
             MergedFleetLabels[] merged = window.GetComponentsInChildren<MergedFleetLabels>(true);
             for (int i = 0; i < merged.Length; i++)
             {

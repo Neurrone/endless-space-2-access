@@ -188,6 +188,7 @@ namespace ES2Access.Screens
                 }
 
                 AgePrimitiveLabel[] labels =
+                    // walk: audit M1, to move behind FrameSweep
                     window.GetComponentsInChildren<AgePrimitiveLabel>(true);
                 for (int i = 0; i < labels.Length; i++)
                 {

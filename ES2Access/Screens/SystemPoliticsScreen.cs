@@ -504,6 +504,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
+                // walk: audit M1, to move behind FrameSweep
                 AgeTransform[] found = root.GetComponentsInChildren<AgeTransform>(true);
                 for (int i = 0; i < found.Length; i++)
                 {

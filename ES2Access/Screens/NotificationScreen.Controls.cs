@@ -397,6 +397,7 @@ namespace ES2Access.Screens
             try
             {
                 NotificationWindow window =
+                    // walk: only from OnActivate, an ancestor hop to the popup's own window
                     widget == null ? null : widget.GetComponentInParent<NotificationWindow>();
                 GuiNotification notification = window == null ? null : window.GuiNotification;
                 return GlobalHud.Mine(notification) != null

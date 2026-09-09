@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace ES2Access.Tests.Lint
@@ -313,6 +315,124 @@ namespace ES2Access.Tests.Lint
         {
             return TestPaths.RepoRoot();
         }
+
+        /// <summary>The line with its string and character literals blanked and its trailing
+        /// <c>//</c> comment cut, so that a brace inside a message does not move the structure.
+        /// Literals are blanked rather than removed so column positions survive.</summary>
+        public static string Code(string line)
+        {
+            StringBuilder code = new StringBuilder(line.Length);
+            bool inString = false;
+            bool inChar = false;
+            bool verbatim = false;
+            for (int i = 0; i < line.Length; i++)
+            {
+                char c = line[i];
+                if (!inString && !inChar && c == '/' && i + 1 < line.Length && line[i + 1] == '/')
+                {
+                    break;
+                }
+
+                if (!inString && !inChar && c == '@' && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    inString = true;
+                    verbatim = true;
+                    code.Append(' ');
+                    code.Append(' ');
+                    i++;
+                    continue;
+                }
+
+                if (!inString && !inChar && c == '"')
+                {
+                    inString = true;
+                    verbatim = false;
+                    code.Append('"');
+                    continue;
+                }
+
+                if (inString)
+                {
+                    if (!verbatim && c == '\\' && i + 1 < line.Length)
+                    {
+                        code.Append(' ');
+                        code.Append(' ');
+                        i++;
+                        continue;
+                    }
+
+                    if (c == '"')
+                    {
+                        if (verbatim && i + 1 < line.Length && line[i + 1] == '"')
+                        {
+                            code.Append(' ');
+                            code.Append(' ');
+                            i++;
+                            continue;
+                        }
+
+                        inString = false;
+                        code.Append('"');
+                        continue;
+                    }
+
+                    code.Append(' ');
+                    continue;
+                }
+
+                if (!inChar && c == '\'')
+                {
+                    inChar = true;
+                    code.Append('\'');
+                    continue;
+                }
+
+                if (inChar)
+                {
+                    if (c == '\\' && i + 1 < line.Length)
+                    {
+                        code.Append(' ');
+                        code.Append(' ');
+                        i++;
+                        continue;
+                    }
+
+                    if (c == '\'')
+                    {
+                        inChar = false;
+                        code.Append('\'');
+                        continue;
+                    }
+
+                    code.Append(' ');
+                    continue;
+                }
+
+                code.Append(c);
+            }
+
+            return code.ToString();
+        }
+
+        private static readonly Dictionary<string, Structure> StructureCache =
+            new Dictionary<string, Structure>(StringComparer.Ordinal);
+
+        /// <summary>Which type and which member every line of a file sits in - built once per file
+        /// per run, like <see cref="Lines"/>.</summary>
+        public static Structure Read(string relativePath)
+        {
+            lock (StructureCache)
+            {
+                Structure structure;
+                if (!StructureCache.TryGetValue(relativePath, out structure))
+                {
+                    structure = Structure.Of(Lines(relativePath));
+                    StructureCache[relativePath] = structure;
+                }
+
+                return structure;
+            }
+        }
     }
 
     /// <summary>A lint site: the file it is in, and the trimmed text of its line.</summary>
@@ -342,6 +462,129 @@ namespace ES2Access.Tests.Lint
         public override int GetHashCode()
         {
             return File.GetHashCode() ^ Text.GetHashCode();
+        }
+    }
+
+    /// <summary>
+    /// Which type and which member every line of a file sits in.
+    ///
+    /// THE HEURISTIC. C# is not parsed here; braces are counted. Walking the file top to bottom, a
+    /// running stack of open blocks is kept. A line is first attributed to the stack as it stands
+    /// BEFORE that line's braces - so a member's own signature line reads as type scope, which is
+    /// what it is. Then, if the line looks like a type or member declaration, it is remembered as
+    /// PENDING; the next <c>{</c> opens that block, and every other <c>{</c> opens an anonymous one.
+    /// A <c>}</c> closes the innermost. Pending survives lines with no braces, which is what carries
+    /// a signature wrapped over three lines to the brace on the fourth.
+    ///
+    /// String and character literals are blanked first (<see cref="LintSources.Code"/>) so a brace
+    /// inside a message counts for nothing. What this cannot see: an expression-bodied member
+    /// (<c>=&gt;</c>) opens no block, so its line reads as type scope rather than as that member's
+    /// body. For the constructor question that errs the safe way - such a site is asked for its
+    /// why-comment rather than excused.
+    /// </summary>
+    public sealed class Structure
+    {
+        /// <summary>The enclosing member's name per line, or null at type or file scope.</summary>
+        public string[] Member;
+
+        /// <summary>The enclosing type's name per line, or null at file scope.</summary>
+        public string[] Type;
+
+        private static readonly Regex TypeDeclaration = new Regex(
+            @"^\s*(?:\[[^\]]*\]\s*)*(?:(?:public|private|protected|internal|static|sealed|abstract|partial|readonly|unsafe|new)\s+)*(?:class|struct|interface|enum)\s+(\w+)"
+        );
+
+        // A member: modifiers, then whatever the return type is, then the name and its opening
+        // parenthesis. Non-greedy up to the FIRST parenthesis, and nothing may cross an `=` or a
+        // `;`, which is what keeps a field initialiser holding a call from reading as a member.
+        private static readonly Regex MemberDeclaration = new Regex(
+            @"^\s*(?:\[[^\]]*\]\s*)*(?:public|private|protected|internal|static|virtual|override|abstract|sealed|async|extern|unsafe|new|partial)\s[^=;{}]*?(\w+)\s*(?:<[^<>()]*>)?\s*\("
+        );
+
+        public static Structure Of(string[] lines)
+        {
+            Structure structure = new Structure
+            {
+                Member = new string[lines.Length],
+                Type = new string[lines.Length],
+            };
+
+            List<Frame> stack = new List<Frame>();
+            Frame pending = null;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                Frame member = Innermost(stack, "member");
+                Frame type = Innermost(stack, "type");
+                structure.Member[i] = member == null ? null : member.Name;
+                structure.Type[i] = type == null ? null : type.Name;
+
+                string code = LintSources.Code(lines[i]);
+                if (!LintSources.IsComment(lines[i]))
+                {
+                    Match declared = TypeDeclaration.Match(code);
+                    if (declared.Success)
+                    {
+                        pending = new Frame("type", declared.Groups[1].Value);
+                    }
+                    else
+                    {
+                        Match method = MemberDeclaration.Match(code);
+                        if (method.Success)
+                        {
+                            pending = new Frame("member", method.Groups[1].Value);
+                        }
+                    }
+                }
+
+                foreach (char c in code)
+                {
+                    if (c == '{')
+                    {
+                        stack.Add(pending ?? new Frame("other", null));
+                        pending = null;
+                    }
+                    else if (c == '}' && stack.Count > 0)
+                    {
+                        stack.RemoveAt(stack.Count - 1);
+                    }
+                }
+            }
+
+            return structure;
+        }
+
+        /// <summary>Whether the line sits in a constructor: the member enclosing it is the one whose
+        /// name is its type's.</summary>
+        public bool InConstructor(int line)
+        {
+            return Member[line] != null
+                && string.Equals(Member[line], Type[line], StringComparison.Ordinal);
+        }
+
+        private static Frame Innermost(List<Frame> stack, string kind)
+        {
+            for (int i = stack.Count - 1; i >= 0; i--)
+            {
+                if (kind == null || stack[i].Kind == kind)
+                {
+                    return stack[i];
+                }
+            }
+
+            return null;
+        }
+
+        private sealed class Frame
+        {
+            public readonly string Kind;
+
+            public readonly string Name;
+
+            public Frame(string kind, string name)
+            {
+                Kind = kind;
+                Name = name;
+            }
         }
     }
 }

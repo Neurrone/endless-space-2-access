@@ -885,6 +885,7 @@ namespace ES2Access.Screens
                 SidePanelsWindow window = Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
                     : null;
+                // walk: audit M1, to move behind FrameSweep
                 TPanel panel = window == null ? null : window.GetComponentInChildren<TPanel>(true);
                 // Flow control: every side panel is instantiated and only the ones this planet needs are drawn.
                 return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;

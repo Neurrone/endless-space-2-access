@@ -278,6 +278,7 @@ namespace ES2Access.UI
                     return null;
                 }
 
+                // walk: audit M1, to move behind FrameSweep
                 AgeControlButton[] buttons = root.GetComponentsInChildren<AgeControlButton>(true);
                 AgeControlButton first = null;
                 AgeControlButton drawn = null;

@@ -130,6 +130,7 @@ namespace ES2Access.Screens
                 AgeTransform table = panel.TroopCellsTable;
                 TroopCell[] cells = table == null
                     ? new TroopCell[0]
+                    // walk: audit M1, to move behind FrameSweep
                     : table.GetComponentsInChildren<TroopCell>(true);
                 for (int i = 0; i < cells.Length; i++)
                 {

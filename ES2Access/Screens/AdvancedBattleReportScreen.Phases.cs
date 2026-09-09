@@ -37,6 +37,7 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // walk: audit M1, to move behind FrameSweep
             AdvancedReportPhaseItem[] items = container.GetComponentsInChildren<AdvancedReportPhaseItem>(
                 true
             );
@@ -115,6 +116,7 @@ namespace ES2Access.Screens
                 // Flow control: a phase panel the battle never reached is not scraped for its items.
                 return container == null || !AgeWidgets.Visible(container)
                     ? new AdvancedReportPhaseFlotillaStatItem[0]
+                    // walk: audit M1, to move behind FrameSweep
                     : container.GetComponentsInChildren<AdvancedReportPhaseFlotillaStatItem>(true);
             }
             catch (Exception)

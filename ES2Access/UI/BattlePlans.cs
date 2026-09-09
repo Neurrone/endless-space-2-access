@@ -478,6 +478,7 @@ namespace ES2Access.UI
             {
                 return container == null
                     ? null
+                    // walk: audit M1, to move behind FrameSweep
                     : container.GetComponentInChildren<BattlePlayCard>(true);
             }
             catch (Exception)

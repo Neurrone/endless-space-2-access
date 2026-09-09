@@ -120,6 +120,7 @@ namespace ES2Access.Screens
                 }
 
                 ShipDesignOverviewSlotItem[] slots =
+                    // walk: audit M1, to move behind FrameSweep
                     container.GetComponentsInChildren<ShipDesignOverviewSlotItem>(true);
                 for (int i = 0; i < slots.Length; i++)
                 {
@@ -273,6 +274,7 @@ namespace ES2Access.Screens
             try
             {
                 HeroSkillTreeItem[] trees =
+                    // walk: audit M1, to move behind FrameSweep
                     box.AgeTransform.GetComponentsInChildren<HeroSkillTreeItem>(true);
                 for (int i = 0; i < trees.Length; i++)
                 {

@@ -952,6 +952,7 @@ namespace ES2Access.Screens
             try
             {
                 HeroDetailedCard own = choice.GetComponent<HeroDetailedCard>();
+                // walk: audit M1, to move behind FrameSweep
                 return own != null ? own : choice.GetComponentInChildren<HeroDetailedCard>();
             }
             catch (Exception e)
@@ -1011,6 +1012,7 @@ namespace ES2Access.Screens
             AgeControlToggle toggle = line.GetComponent<AgeControlToggle>();
             if (toggle == null)
             {
+                // walk: audit M1, to move behind FrameSweep
                 toggle = line.GetComponentInChildren<AgeControlToggle>(true);
             }
 
@@ -1048,6 +1050,7 @@ namespace ES2Access.Screens
                 }
 
                 AgeControlButton button =
+                    // walk: audit M1, to move behind FrameSweep
                     AgeWidgets.Button(widget) ?? widget.GetComponentInChildren<AgeControlButton>(true);
                 // Different widget: the button inside the widget, which is only the answer while the popup draws it.
                 return button != null && AgeWidgets.Visible(button.AgeTransform) ? button : null;

@@ -639,6 +639,7 @@ namespace ES2Access.Screens
                 }
 
                 _from = root;
+                // walk: once per root, kept while the items are alive
                 _items = root.GetComponentsInChildren<BattleStateShipItem>(true);
                 return _items;
             }
@@ -1107,6 +1108,7 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // walk: audit M1, to move behind FrameSweep
             AgeControlToggle[] toggles = table.GetComponentsInChildren<AgeControlToggle>(true);
             for (int i = 0; i < toggles.Length; i++)
             {

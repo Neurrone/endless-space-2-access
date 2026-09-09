@@ -99,6 +99,7 @@ namespace ES2Access.UI
         /// square nobody can move or clear for the rest of the session.</summary>
         private static void Sweep()
         {
+            // walk: once per Show, and only when the drawer does not exist
             GameObject stale = GameObject.Find(HostName);
             if (stale != null)
             {

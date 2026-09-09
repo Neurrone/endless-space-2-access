@@ -595,6 +595,7 @@ namespace ES2Access.Screens
         )
         {
             ScanViewSystemEmpireRankBar[] drawn =
+                // walk: audit M1, to move behind FrameSweep
                 bars.AgeTransform.GetComponentsInChildren<ScanViewSystemEmpireRankBar>(true);
             StarSystemOverviewScanViewGuiElement element = window.SystemOverviewGuiElement;
             StarSystemOverviewScanViewGuiElement.EmpireRankingProperty[] properties =
@@ -1366,6 +1367,7 @@ namespace ES2Access.Screens
                 ScanViewWindowHeader header =
                     window == null
                         ? null
+                        // walk: once into the lens-title cache, over the three scan windows
                         : window.GetComponentInChildren<ScanViewWindowHeader>(true);
                 if (header != null)
                 {
@@ -1384,6 +1386,7 @@ namespace ES2Access.Screens
             {
                 try
                 {
+                    // walk: once into this window's output-label memo
                     _fidsi = window.GetComponentsInChildren<ScanViewSystemOverviewFidsiLabel>(true);
                 }
                 catch (Exception e)

@@ -135,6 +135,7 @@ namespace ES2Access.Screens
             try
             {
                 StarSystemConstructibleItem[] items =
+                    // walk: audit M1, to move behind FrameSweep
                     panel.ConstructibleTable.GetComponentsInChildren<StarSystemConstructibleItem>(
                         true
                     );

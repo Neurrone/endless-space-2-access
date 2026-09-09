@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
@@ -295,6 +295,7 @@ namespace ES2Access.Screens
                     return NoCards;
                 }
 
+                // walk: audit M1, to move behind FrameSweep
                 return window.GetComponentsInChildren<PlanetLabel_SystemOrbital>(true);
             }
             catch (Exception e)

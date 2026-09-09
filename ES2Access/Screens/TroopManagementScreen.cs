@@ -451,6 +451,7 @@ namespace ES2Access.Screens
             try
             {
                 GroundTroopUpgrade[] upgrades =
+                    // walk: audit M1, to move behind FrameSweep
                     list.AgeTransform.GetComponentsInChildren<GroundTroopUpgrade>(true);
                 for (int i = 0; upgrades != null && i < upgrades.Length; i++)
                 {

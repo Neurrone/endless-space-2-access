@@ -418,6 +418,7 @@ namespace ES2Access.Screens
                 NotificationItemsWindow window = GameWindows.Of<NotificationItemsWindow>();
                 return window == null
                     ? NoItems
+                    // walk: audit M1, to move behind FrameSweep
                     : window.GetComponentsInChildren<NotificationItem>(true);
             }
             catch (Exception e)

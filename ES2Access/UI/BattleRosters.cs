@@ -385,6 +385,7 @@ namespace ES2Access.UI
         )
         {
             // The fleet the player brought, and its ships.
+            // walk: audit M1, to move behind FrameSweep
             BattleGarrisonPanel[] garrisons = root.GetComponentsInChildren<BattleGarrisonPanel>(true);
             for (int i = 0; i < garrisons.Length; i++)
             {
@@ -419,6 +420,7 @@ namespace ES2Access.UI
             }
 
             // The same ships as the battle arranged them: a header for the fleet, a group per flotilla.
+            // walk: audit M1, to move behind FrameSweep
             BattleFlotillasPanel[] flotillas = root.GetComponentsInChildren<BattleFlotillasPanel>(true);
             for (int i = 0; i < flotillas.Length; i++)
             {
@@ -476,6 +478,7 @@ namespace ES2Access.UI
                 return;
             }
 
+            // walk: audit M1, to move behind FrameSweep
             FlotillaLine[] lines = table.GetComponentsInChildren<FlotillaLine>(true);
             for (int i = 0; i < lines.Length; i++)
             {
@@ -536,6 +539,7 @@ namespace ES2Access.UI
         {
             BattleShipItem[] items = ships == null
                 ? new BattleShipItem[0]
+                // walk: audit M1, to move behind FrameSweep
                 : ships.GetComponentsInChildren<BattleShipItem>(true);
             // No role word on the empty one either: with nothing inside it there is no group here,
             // and "Flotilla 1, Empty" is the whole of what the line says.

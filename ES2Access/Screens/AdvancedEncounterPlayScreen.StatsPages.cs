@@ -456,6 +456,7 @@ namespace ES2Access.Screens
                 EncounterPlayTrajectoryCurve curve =
                     child == null
                         ? null
+                        // walk: audit M1, to move behind FrameSweep
                         : child.GetComponentInChildren<EncounterPlayTrajectoryCurve>();
                 return curve == null ? null : Engagement(window, curve.TrajectoryIndex);
             }

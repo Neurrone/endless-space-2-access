@@ -343,6 +343,7 @@ namespace ES2Access.Screens
         private readonly SettingRows.ButtonBar _bar = new SettingRows.ButtonBar("options");
 
         private static readonly Predicate<AgeControlButton> NotARow =
+            // walk: audit M1, to move behind FrameSweep
             button => button.GetComponentInParent<OptionsTabPanel>() == null;
 
         /// <summary>
@@ -563,6 +564,7 @@ namespace ES2Access.Screens
                     }
                 }
 
+                // walk: audit M1, to move behind FrameSweep
                 return transform.GetComponentInChildren<AgePrimitiveLabel>();
             }
             catch (Exception)

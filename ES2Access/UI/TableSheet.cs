@@ -629,6 +629,7 @@ namespace ES2Access.UI
                     return null;
                 }
 
+                // walk: audit M1, to move behind FrameSweep
                 AgeControlButton button = cell.GetComponentInChildren<AgeControlButton>(true);
                 // Different widget: the search reaches HIDDEN children on purpose (a cell holds the
                 // controls of every shape its column can take), so which of them the game is drawing
@@ -714,6 +715,7 @@ namespace ES2Access.UI
         {
             try
             {
+                // walk: one cell's subtree, and only on the systems table's automation column
                 return cell == null ? null : cell.GetComponentInChildren<AgeControlDropList>();
             }
             catch (Exception)

@@ -210,8 +210,10 @@ namespace ES2Access.Screens
                 }
 
                 QuestReportSidePanel report =
+                    // walk: audit M1, to move behind FrameSweep
                     panels.GetComponentInChildren<QuestReportSidePanel>(true);
                 NarrativeEventsSidePanel events =
+                    // walk: audit M1, to move behind FrameSweep
                     panels.GetComponentInChildren<NarrativeEventsSidePanel>(true);
 
                 builder.BeginStop(PanelsStop);

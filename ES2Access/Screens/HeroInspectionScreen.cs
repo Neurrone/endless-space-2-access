@@ -423,6 +423,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // walk: audit M1, to move behind FrameSweep
                 return window.GetComponentInChildren<ShipDesignEditionPanel>(true);
             }
             catch (Exception)

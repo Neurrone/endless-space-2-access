@@ -80,6 +80,7 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // walk: the drawn gauge's own cell strip, behind the visibility gate above
             DamageGaugeCell[] cells = table.GetComponentsInChildren<DamageGaugeCell>(true);
             for (int i = 0; i < cells.Length; i++)
             {

@@ -158,6 +158,7 @@ namespace ES2Access.UI
                 }
 
                 NegotiationEmpireInfoPanel panel =
+                    // walk: audit M1, to move behind FrameSweep
                     row.GetComponentInParent<NegotiationEmpireInfoPanel>();
                 if (panel == null || panel.RelationsTable == null)
                 {
@@ -212,6 +213,7 @@ namespace ES2Access.UI
             {
                 return host == null
                     ? null
+                    // walk: audit M1, to move behind FrameSweep
                     : host.GetComponentInChildren<NegotiationEmpireInfoPanel>(true);
             }
             catch (Exception)

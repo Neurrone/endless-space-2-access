@@ -218,6 +218,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // walk: audit M1, to move behind FrameSweep
                 return container == null ? null : container.GetComponentInChildren<T>(true);
             }
             catch (Exception)

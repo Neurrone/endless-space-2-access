@@ -311,6 +311,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeControlButton own = AgeWidgets.Button(widget);
+                // walk: audit M1, to move behind FrameSweep
                 return own != null ? own : widget.GetComponentInChildren<AgeControlButton>(true);
             }
             catch (Exception)
@@ -326,6 +327,7 @@ namespace ES2Access.Screens
                 AgeTransform container = window.RecipeContainer;
                 return container == null
                     ? null
+                    // walk: audit M1, to move behind FrameSweep
                     : container.GetComponentInChildren<RecipeLine>(true);
             }
             catch (Exception)

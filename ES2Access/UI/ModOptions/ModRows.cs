@@ -92,6 +92,7 @@ namespace ES2Access.UI.ModOptions
         /// the registries are keyed on the widgets and the widgets are about to go.</summary>
         private static void Drop(OptionsTabPanel panel)
         {
+            // walk: once per fill, under Begin/Clear/Publish
             OptionItem[] rows = panel.OptionsTable.GetComponentsInChildren<OptionItem>(true);
             for (int i = 0; i < rows.Length; i++)
             {

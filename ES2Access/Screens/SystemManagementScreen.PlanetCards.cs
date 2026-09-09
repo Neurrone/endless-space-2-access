@@ -1190,6 +1190,7 @@ namespace ES2Access.Screens
             }
 
             PlanetLabel_SystemManagement[] labels =
+                // walk: audit M1, to move behind FrameSweep
                 window.GetComponentsInChildren<PlanetLabel_SystemManagement>(true);
             for (int i = 0; i < labels.Length; i++)
             {

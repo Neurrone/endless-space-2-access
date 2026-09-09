@@ -197,6 +197,7 @@ namespace ES2Access.Screens
                 }
 
                 _from = table;
+                // walk: once per table, kept while the cells are alive
                 _cells = table == null ? None : table.GetComponentsInChildren<TroopCell>(true);
                 return _cells;
             }

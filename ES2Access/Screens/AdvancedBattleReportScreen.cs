@@ -461,6 +461,7 @@ namespace ES2Access.Screens
                 AdvancedReportPhaseItem[] phases =
                     container == null
                         ? null
+                        // walk: audit M1, to move behind FrameSweep
                         : container.GetComponentsInChildren<AdvancedReportPhaseItem>(true);
                 for (int i = 0; phases != null && i < phases.Length; i++)
                 {
@@ -846,6 +847,7 @@ namespace ES2Access.Screens
             {
                 return container == null
                     ? null
+                    // walk: the side's slot container holds the one card the report drew
                     : container.GetComponentInChildren<BattlePlayCard>(true);
             }
             catch (Exception)

@@ -311,6 +311,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                // walk: once on entry, to open the bottom panels the option asks for
                 GuiFrameExpander[] expanders = window.GetComponentsInChildren<GuiFrameExpander>();
                 for (int i = 0; i < expanders.Length; i++)
                 {
@@ -367,8 +368,11 @@ namespace ES2Access.Screens
             // under its systems table, and they are read by the shared reader (SystemPanels); what is
             // this page's own is that all three are drawn at once, each as a stop of its own.
             StarSystemConstructiblePanel constructibles =
+                // walk: audit M1, to move behind FrameSweep
                 window.GetComponentInChildren<StarSystemConstructiblePanel>(true);
+            // walk: audit M1, to move behind FrameSweep
             StarSystemQueuePanel queue = window.GetComponentInChildren<StarSystemQueuePanel>(true);
+            // walk: audit M1, to move behind FrameSweep
             StarSystemHangarPanel hangar = window.GetComponentInChildren<StarSystemHangarPanel>(true);
             BuildBottomPanel(
                 builder,
@@ -580,6 +584,7 @@ namespace ES2Access.Screens
         {
             try
             {
+                // walk: audit M1, to move behind FrameSweep
                 AgePrimitiveLabel[] labels = group.GetComponentsInChildren<AgePrimitiveLabel>(true);
                 for (int i = 0; i < labels.Length; i++)
                 {
