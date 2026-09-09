@@ -250,6 +250,12 @@ namespace ES2Access.UI
         ///
         /// Appends, so a caller may resolve several widgets into one list; anything already in
         /// <paramref name="into"/> counts for the dedupe.
+        ///
+        /// The resolution itself is remembered for the length of ONE frame, keyed on exactly what was
+        /// asked - the widget, the reach and the depth - because this is asked per cell per row per
+        /// frame from thirteen doors and two of them routinely ask about the same widget. The dedupe
+        /// against <paramref name="into"/> is done on the way out rather than inside the walk, so what
+        /// is remembered is the widget's own answer and not one caller's list.
         /// </summary>
         public static void EffectiveTooltips(
             AgeTransform widget,
@@ -263,12 +269,68 @@ namespace ES2Access.UI
                 return;
             }
 
+            List<AgeTooltip> resolved = Resolved(widget, reach, maxDepth);
+            if (resolved.Count == 0)
+            {
+                return;
+            }
+
             Seen.Clear();
             for (int i = 0; i < into.Count; i++)
             {
                 Seen.Add(KeyOf(into[i]));
             }
 
+            for (int i = 0; i < resolved.Count; i++)
+            {
+                AgeTooltip tooltip = resolved[i];
+                if (Seen.Add(KeyOf(tooltip)))
+                {
+                    into.Add(tooltip);
+                }
+            }
+        }
+
+        /// <summary>What the walk answers for this question, held for the frame. The list is the
+        /// resolver's own, never a caller's: callers copy out of it.</summary>
+        private static List<AgeTooltip> Resolved(
+            AgeTransform widget,
+            TooltipReach reach,
+            int maxDepth
+        )
+        {
+            // Keyed on the frame and nothing else, for the reason FrameSweep is (UI/FrameSweep.cs):
+            // the widget tree does not move between two asks in one frame, and the pooled rows these
+            // tooltips hang on DO move between frames - so the first ask of the next frame drops the
+            // whole table rather than answering for a row that has gone.
+            int frame = UnityEngine.Time.frameCount;
+            if (_resolvedFrame != frame)
+            {
+                Recycle();
+                _resolvedFrame = frame;
+            }
+
+            ReachKey key = new ReachKey(widget, reach, maxDepth);
+            List<AgeTooltip> resolved;
+            if (Resolutions.TryGetValue(key, out resolved))
+            {
+                return resolved;
+            }
+
+            resolved = Spare.Count > 0 ? Take() : new List<AgeTooltip>(4);
+            Resolutions[key] = resolved;
+            Seen.Clear();
+            Collect(widget, resolved, reach, maxDepth);
+            return resolved;
+        }
+
+        private static void Collect(
+            AgeTransform widget,
+            List<AgeTooltip> into,
+            TooltipReach reach,
+            int maxDepth
+        )
+        {
             bool walks =
                 (reach & (TooltipReach.Descendants | TooltipReach.Parents | TooltipReach.Siblings))
                 != 0;
@@ -329,6 +391,70 @@ namespace ES2Access.UI
         // nothing it calls can re-enter it.
         private static readonly TooltipSet Seen = new TooltipSet();
 
+        private static readonly Dictionary<ReachKey, List<AgeTooltip>> Resolutions =
+            new Dictionary<ReachKey, List<AgeTooltip>>();
+
+        // The lists themselves outlive the frame their contents do: a screen asks the same number of
+        // questions every frame, so handing last frame's emptied lists back out costs nothing and
+        // allocating a fresh one per question per frame is exactly the per-frame garbage this
+        // runtime's collector punishes (docs/generic/performance.md).
+        private static readonly List<List<AgeTooltip>> Spare = new List<List<AgeTooltip>>();
+
+        private static int _resolvedFrame = -1;
+
+        private static void Recycle()
+        {
+            foreach (List<AgeTooltip> resolved in Resolutions.Values)
+            {
+                resolved.Clear();
+                Spare.Add(resolved);
+            }
+
+            Resolutions.Clear();
+        }
+
+        private static List<AgeTooltip> Take()
+        {
+            List<AgeTooltip> resolved = Spare[Spare.Count - 1];
+            Spare.RemoveAt(Spare.Count - 1);
+            return resolved;
+        }
+
+        /// <summary>One resolution question: which widget, in which directions, how far.</summary>
+        private struct ReachKey : IEquatable<ReachKey>
+        {
+            private readonly AgeTransform _widget;
+
+            private readonly TooltipReach _reach;
+
+            private readonly int _maxDepth;
+
+            public ReachKey(AgeTransform widget, TooltipReach reach, int maxDepth)
+            {
+                _widget = widget;
+                _reach = reach;
+                _maxDepth = maxDepth;
+            }
+
+            public bool Equals(ReachKey other)
+            {
+                return ReferenceEquals(_widget, other._widget)
+                    && _reach == other._reach
+                    && _maxDepth == other._maxDepth;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is ReachKey && Equals((ReachKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = _widget == null ? 0 : _widget.GetHashCode();
+                return (hash * 31 + (int)_reach) * 31 + _maxDepth;
+            }
+        }
+
         private static TooltipKey KeyOf(AgeTooltip tooltip)
         {
             try
@@ -365,7 +491,16 @@ namespace ES2Access.UI
             bool paintedOnly
         )
         {
-            if (widget == null || depth > maxDepth || !Visible(widget))
+            if (widget == null || depth > maxDepth)
+            {
+                return;
+            }
+
+            // Flow control: a switched-off group's tooltips are not the player's to hear, and the
+            // subtree under it is not walked. The whole ancestry is asked ONCE, of the root this walk
+            // entered through; below it each node needs only its own switch, because every node
+            // between here and that root was asked the same thing on the way down.
+            if (!(depth == 0 ? Visible(widget) : SwitchedOn(widget)))
             {
                 return;
             }

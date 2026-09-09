@@ -254,6 +254,14 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>Every button under a root, held for the frame. <c>inactiveToo</c> is true because
+        /// that is the walk this replaced: a prefab switches a button's object off and the handler it
+        /// was wired to is still the one the caller is asking about.</summary>
+        private static readonly FrameSweep<AgeControlButton> Wired = new FrameSweep<AgeControlButton>(
+            "actions",
+            true
+        );
+
         /// <summary>
         /// The button the prefab wired to <paramref name="handler"/> somewhere under
         /// <paramref name="root"/>, preferring one the player can SEE and, among those, the SMALLEST.
@@ -268,6 +276,10 @@ namespace ES2Access.UI
         ///
         /// Falls back to the first match when nothing matching is drawn, so a caller reading a window
         /// mid-fade still finds its button rather than reporting the page has none.
+        ///
+        /// The subtree is swept once per root per frame (<see cref="FrameSweep{T}"/>): a card is asked
+        /// about two handlers and a window about several, all in one build, and the widget tree does
+        /// not move between two asks in the same frame.
         /// </summary>
         public static AgeControlButton WiredTo(AgeTransform root, string handler)
         {
@@ -278,8 +290,7 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                // walk: audit M1, to move behind FrameSweep
-                AgeControlButton[] buttons = root.GetComponentsInChildren<AgeControlButton>(true);
+                AgeControlButton[] buttons = Wired.Under(root);
                 AgeControlButton first = null;
                 AgeControlButton drawn = null;
                 float smallest = float.MaxValue;

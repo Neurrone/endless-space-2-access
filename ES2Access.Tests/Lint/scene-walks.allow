@@ -101,8 +101,6 @@ ES2Access/Screens/TroopManagementScreen.cs | 1 | list.AgeTransform.GetComponents
 
 ES2Access/Screens/VictoryScreen.cs | 1 | : widget.GetComponentInChildren<AgeControlToggle>(true);
 
-ES2Access/UI/AgeActions.cs | 1 | AgeControlButton[] buttons = root.GetComponentsInChildren<AgeControlButton>(true);
-
 ES2Access/UI/BattlePlans.cs | 1 | : container.GetComponentInChildren<BattlePlayCard>(true);
 
 ES2Access/UI/BattleRosters.cs | 1 | : ships.GetComponentsInChildren<BattleShipItem>(true);

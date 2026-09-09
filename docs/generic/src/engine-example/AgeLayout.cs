@@ -80,38 +80,98 @@ namespace ES2Access.UI
         /// strip that WRAPS work: a resource strip too long for its banner is laid out by the engine on
         /// a second line, and nothing in the panel says so - the rectangles do.
         /// </summary>
+        /// <remarks>Each cell is measured ONCE, before anything is sorted: the comparisons that follow
+        /// read the rectangle they were handed rather than walking the cell's ancestry again, which is
+        /// what a sort of n cells did 2n log n times on every banded panel every frame.</remarks>
         public static List<List<T>> Rows<T>(IList<T> cells, Func<T, AgeTransform> widget)
         {
-            List<T> sorted = new List<T>(cells);
-            sorted.Sort((first, second) => TopThenLeft(widget(first), widget(second)));
+            List<Placed<T>> sorted = new List<Placed<T>>(cells.Count);
+            for (int i = 0; i < cells.Count; i++)
+            {
+                sorted.Add(Measure(cells[i], widget(cells[i])));
+            }
+
+            sorted.Sort(Order<T>.Down);
 
             List<List<T>> rows = new List<List<T>>();
-            List<T> row = null;
-            T anchor = default(T);
-            foreach (T cell in sorted)
+            List<Placed<T>> line = Order<T>.Line;
+            line.Clear();
+            Placed<T> anchor = default(Placed<T>);
+            for (int i = 0; i < sorted.Count; i++)
             {
-                if (row == null || !SameRow(widget(anchor), widget(cell)))
+                Placed<T> cell = sorted[i];
+                if (line.Count > 0 && !SameRow(anchor, cell))
                 {
-                    row = new List<T>();
-                    rows.Add(row);
+                    rows.Add(Read(line));
+                }
+
+                if (line.Count == 0)
+                {
                     anchor = cell;
                 }
 
-                row.Add(cell);
+                line.Add(cell);
             }
 
-            // Down the screen was enough to find the rows; it is not enough to read one. The sort
-            // above orders by top edge first, so two cells of one row whose tops differ by a few
-            // pixels come out in that order rather than in the order they are drawn across - which is
-            // how a strip of icons and the numbers beside them, offset by three pixels, read as every
-            // number followed by every icon. Ordering each row again, across, is what makes "left to
-            // right within a row" true rather than merely intended.
-            foreach (List<T> line in rows)
+            if (line.Count > 0)
             {
-                line.Sort((first, second) => AcrossTheRow(widget(first), widget(second)));
+                rows.Add(Read(line));
             }
 
             return rows;
+        }
+
+        /// <summary>
+        /// One row, read across and handed over as the cells themselves.
+        ///
+        /// Down the screen was enough to find the rows; it is not enough to read one. The sort that
+        /// found them orders by top edge first, so two cells of one row whose tops differ by a few
+        /// pixels come out in that order rather than in the order they are drawn across - which is how
+        /// a strip of icons and the numbers beside them, offset by three pixels, read as every number
+        /// followed by every icon. Ordering each row again, across, is what makes "left to right
+        /// within a row" true rather than merely intended.
+        /// </summary>
+        private static List<T> Read<T>(List<Placed<T>> line)
+        {
+            line.Sort(Order<T>.Across);
+
+            List<T> row = new List<T>(line.Count);
+            for (int i = 0; i < line.Count; i++)
+            {
+                row.Add(line[i].Cell);
+            }
+
+            line.Clear();
+            return row;
+        }
+
+        /// <summary>Where a cell is laid out and which way its text pulls, taken once. A cell nothing
+        /// could be measured of is ordered by neither rule and shares a row with nothing, which is the
+        /// answer the comparisons themselves gave when the measurement threw under them.</summary>
+        private static Placed<T> Measure<T>(T cell, AgeTransform widget)
+        {
+            try
+            {
+                int pull = TextPull(widget);
+                return new Placed<T>(cell, AgeWidgets.LaidOutAt(widget), pull, true);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("layout: measuring a cell threw: " + e);
+                return new Placed<T>(cell, new Rect(), 0, false);
+            }
+        }
+
+        /// <summary>Whether two measured cells are drawn on the same line - <see cref="SameRow"/>
+        /// asked of rectangles already taken.</summary>
+        private static bool SameRow<T>(Placed<T> first, Placed<T> second)
+        {
+            if (!first.Known || !second.Known)
+            {
+                return false;
+            }
+
+            return Level(Middle(first.Rect), second.Rect) && Level(Middle(second.Rect), first.Rect);
         }
 
         /// <summary>
@@ -127,30 +187,81 @@ namespace ES2Access.UI
         /// Where the box says nothing, what the label does INSIDE the box says everything: text
         /// pushed left is drawn left of text pushed right, whatever their rectangles claim.
         /// </summary>
-        private static int AcrossTheRow(AgeTransform first, AgeTransform second)
+        private static int AcrossTheRow<T>(Placed<T> first, Placed<T> second)
         {
-            try
+            if (!first.Known || !second.Known)
             {
-                Rect a = AgeWidgets.LaidOutAt(first);
-                Rect b = AgeWidgets.LaidOutAt(second);
-                if (Mathf.Abs(a.xMin - b.xMin) > SamePlace)
-                {
-                    return a.xMin < b.xMin ? -1 : 1;
-                }
-
-                int pull = TextPull(first).CompareTo(TextPull(second));
-                if (pull != 0)
-                {
-                    return pull;
-                }
-
-                return Mathf.Abs(a.yMin - b.yMin) > SamePlace ? (a.yMin < b.yMin ? -1 : 1) : 0;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("layout: ordering two cells of a row threw: " + e);
                 return 0;
             }
+
+            Rect a = first.Rect;
+            Rect b = second.Rect;
+            if (Mathf.Abs(a.xMin - b.xMin) > SamePlace)
+            {
+                return a.xMin < b.xMin ? -1 : 1;
+            }
+
+            int pull = first.Pull.CompareTo(second.Pull);
+            if (pull != 0)
+            {
+                return pull;
+            }
+
+            return Mathf.Abs(a.yMin - b.yMin) > SamePlace ? (a.yMin < b.yMin ? -1 : 1) : 0;
+        }
+
+        /// <summary><see cref="TopThenLeft"/> asked of rectangles already taken.</summary>
+        private static int DownThePanel<T>(Placed<T> first, Placed<T> second)
+        {
+            if (!first.Known || !second.Known)
+            {
+                return 0;
+            }
+
+            Rect a = first.Rect;
+            Rect b = second.Rect;
+            if (Mathf.Abs(a.yMin - b.yMin) > SamePlace)
+            {
+                return a.yMin < b.yMin ? -1 : 1;
+            }
+
+            return Mathf.Abs(a.xMin - b.xMin) > SamePlace ? (a.xMin < b.xMin ? -1 : 1) : 0;
+        }
+
+        /// <summary>A cell with its measurement, which is all the two orderings and the row test read.
+        /// </summary>
+        private struct Placed<T>
+        {
+            public readonly T Cell;
+
+            public readonly Rect Rect;
+
+            public readonly int Pull;
+
+            /// <summary>Whether the measurement was taken at all.</summary>
+            public readonly bool Known;
+
+            public Placed(T cell, Rect rect, int pull, bool known)
+            {
+                Cell = cell;
+                Rect = rect;
+                Pull = pull;
+                Known = known;
+            }
+        }
+
+        /// <summary>The two comparisons and the row buffer, made once per cell type rather than per
+        /// call: the comparisons capture nothing, so there is one delegate for each instead of two
+        /// closures per <see cref="Rows"/>. The buffer is safe to share because nothing runs between
+        /// its filling and its emptying but those comparisons - the caller's own widget lookup is done
+        /// with before the first row is started.</summary>
+        private static class Order<T>
+        {
+            public static readonly Comparison<Placed<T>> Down = DownThePanel<T>;
+
+            public static readonly Comparison<Placed<T>> Across = AcrossTheRow<T>;
+
+            public static readonly List<Placed<T>> Line = new List<Placed<T>>();
         }
 
         /// <summary>Which side of its own box a widget's text is drawn against: 0 left, 1 centred, 2
