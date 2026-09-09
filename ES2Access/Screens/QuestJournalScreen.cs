@@ -199,6 +199,13 @@ namespace ES2Access.Screens
         /// number and a tooltip explaining what the number counts, and there is nothing to do to any
         /// of it.
         /// </summary>
+        /// <summary>The walk the two side panels are found by, made once per window per frame. Both
+        /// are <c>SidePanel</c>s, so one sweep of the side-panel window answers for both: the first of
+        /// each type in it is the panel a walk for that type would have found, the order being the same
+        /// depth-first one. The window is a single shared one the game refills, so the answer is not
+        /// kept past the frame.</summary>
+        private static readonly FrameSweep<SidePanel> Panels = new FrameSweep<SidePanel>("quests");
+
         private void BuildSidePanels(GraphBuilder builder, NarrativeScreen window)
         {
             try
@@ -209,12 +216,21 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                QuestReportSidePanel report =
-                    // walk: audit M1, to move behind FrameSweep
-                    panels.GetComponentInChildren<QuestReportSidePanel>(true);
-                NarrativeEventsSidePanel events =
-                    // walk: audit M1, to move behind FrameSweep
-                    panels.GetComponentInChildren<NarrativeEventsSidePanel>(true);
+                SidePanel[] drawn = Panels.Under(panels);
+                QuestReportSidePanel report = null;
+                NarrativeEventsSidePanel events = null;
+                for (int i = 0; i < drawn.Length; i++)
+                {
+                    if (report == null)
+                    {
+                        report = drawn[i] as QuestReportSidePanel;
+                    }
+
+                    if (events == null)
+                    {
+                        events = drawn[i] as NarrativeEventsSidePanel;
+                    }
+                }
 
                 builder.BeginStop(PanelsStop);
                 AddPanel(builder, report == null ? null : report.ContentGroup, ReportRegion, "quests:report/");

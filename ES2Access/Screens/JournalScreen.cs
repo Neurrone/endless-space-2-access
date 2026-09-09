@@ -268,14 +268,18 @@ namespace ES2Access.Screens
 
         /// <summary>The button inside a cell that the game wired to one named handler - which is what the
         /// button DOES, and the only thing about it that is not a prefab naming accident.</summary>
+        /// <summary>The walk a cell's buttons are found by, made once per cell per frame. The splitter
+        /// asks the same cell for two handlers in a row, and the table calls it for every cell of every
+        /// drawn row; the cells are POOLED by the table, so nothing is kept past the frame.</summary>
+        private static readonly FrameSweep<AgeControlButton> Buttons =
+            new FrameSweep<AgeControlButton>("journal");
+
         private static AgeControlButton Wired(AgeTransform cell, string handler)
         {
             try
             {
-                AgeControlButton[] buttons =
-                    // walk: audit M1, to move behind FrameSweep
-                    cell == null ? null : cell.GetComponentsInChildren<AgeControlButton>(true);
-                for (int i = 0; buttons != null && i < buttons.Length; i++)
+                AgeControlButton[] buttons = Buttons.Under(cell);
+                for (int i = 0; i < buttons.Length; i++)
                 {
                     AgeControlButton button = buttons[i];
                     if (

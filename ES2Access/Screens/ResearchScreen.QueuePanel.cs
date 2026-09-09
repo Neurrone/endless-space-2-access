@@ -22,6 +22,32 @@ namespace ES2Access.Screens
         /// They are one stop rather than two because they are drawn as one column against the edge of
         /// the wheel, and because the key is a legend - a place to read rather than a place to go.
         /// </summary>
+        /// <summary>The two walks the side panel is read by, each made once per root per frame. The
+        /// panel is found among ALL of the game's side panels rather than by a walk for its own type:
+        /// every one of them is a <c>SidePanel</c>, so the first of that sweep whose type matches is
+        /// the panel a walk for the type would have found - the same depth-first order, one walk
+        /// instead of one per type asked for. The window is a single shared one the game refills, so
+        /// neither answer is kept past the frame.</summary>
+        private static readonly FrameSweep<SidePanel> Panels = new FrameSweep<SidePanel>("research");
+
+        private static readonly FrameSweep<ResearchQueueItem> QueueRows =
+            new FrameSweep<ResearchQueueItem>("research");
+
+        private static ResearchStatusSidePanel Status(SidePanelsWindow window)
+        {
+            SidePanel[] panels = Panels.Under(window);
+            for (int i = 0; i < panels.Length; i++)
+            {
+                ResearchStatusSidePanel status = panels[i] as ResearchStatusSidePanel;
+                if (status != null)
+                {
+                    return status;
+                }
+            }
+
+            return null;
+        }
+
         private void BuildPanels(GraphBuilder builder, TechnologyScreen window)
         {
             try
@@ -29,9 +55,7 @@ namespace ES2Access.Screens
                 SidePanelsWindow panels = Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
                     : null;
-                ResearchStatusSidePanel status =
-                    // walk: audit M1, to move behind FrameSweep
-                    panels == null ? null : panels.GetComponentInChildren<ResearchStatusSidePanel>(true);
+                ResearchStatusSidePanel status = Status(panels);
                 ResearchKeySidePanel key = window.ResearchKeySidePanel;
 
                 builder.BeginStop(StatusStop);
@@ -86,13 +110,9 @@ namespace ES2Access.Screens
                 return;
             }
 
-            ResearchQueueItem[] items =
-                panel.ResearchQueue == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : panel.ResearchQueue.GetComponentsInChildren<ResearchQueueItem>(true);
+            ResearchQueueItem[] items = QueueRows.Under(panel.ResearchQueue);
             int drawn = 0;
-            for (int i = 0; items != null && i < items.Length; i++)
+            for (int i = 0; i < items.Length; i++)
             {
                 if (Queued(items[i]))
                 {
@@ -103,7 +123,7 @@ namespace ES2Access.Screens
             // A technology can only be carried where there is another line to drop it on: with one
             // technology queued the row is not a source, so the player is never put into a mode with
             // nowhere to come out of.
-            for (int i = 0; items != null && i < items.Length; i++)
+            for (int i = 0; i < items.Length; i++)
             {
                 AddQueueItem(builder, items[i], drawn > 1);
             }

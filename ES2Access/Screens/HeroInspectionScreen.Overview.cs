@@ -96,6 +96,16 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The two walks the overview page is read by, each made once per container per
+        /// frame: the hull's fitted slots, and the three skill branches drawn round the skills box.
+        /// Both are prefab subtrees of a window the game keeps between heroes, so neither is kept past
+        /// the frame.</summary>
+        private static readonly FrameSweep<ShipDesignOverviewSlotItem> Slots =
+            new FrameSweep<ShipDesignOverviewSlotItem>("hero overview");
+
+        private static readonly FrameSweep<HeroSkillTreeItem> Trees =
+            new FrameSweep<HeroSkillTreeItem>("hero overview");
+
         /// <summary>
         /// The dots the game draws over the rendered ship, one per slot the hull has.
         ///
@@ -119,9 +129,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                ShipDesignOverviewSlotItem[] slots =
-                    // walk: audit M1, to move behind FrameSweep
-                    container.GetComponentsInChildren<ShipDesignOverviewSlotItem>(true);
+                ShipDesignOverviewSlotItem[] slots = Slots.Under(container);
                 for (int i = 0; i < slots.Length; i++)
                 {
                     ShipDesignOverviewSlotItem slot = slots[i];
@@ -273,9 +281,7 @@ namespace ES2Access.Screens
             // skill page's own branches and the figures beside them are in.
             try
             {
-                HeroSkillTreeItem[] trees =
-                    // walk: audit M1, to move behind FrameSweep
-                    box.AgeTransform.GetComponentsInChildren<HeroSkillTreeItem>(true);
+                HeroSkillTreeItem[] trees = Trees.Under(box.AgeTransform);
                 for (int i = 0; i < trees.Length; i++)
                 {
                     HeroSkillTreeItem tree = trees[i];

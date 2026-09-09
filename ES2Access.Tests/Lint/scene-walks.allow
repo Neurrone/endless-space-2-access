@@ -37,13 +37,6 @@ ES2Access/Screens/GlobalHud.Notifications.cs | 1 | : window.GetComponentsInChild
 
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | _cells = table == null ? None : table.GetComponentsInChildren<TroopCell>(true);
 
-ES2Access/Screens/HeroInspectionScreen.Overview.cs | 1 | box.AgeTransform.GetComponentsInChildren<HeroSkillTreeItem>(true);
-ES2Access/Screens/HeroInspectionScreen.Overview.cs | 1 | container.GetComponentsInChildren<ShipDesignOverviewSlotItem>(true);
-
-ES2Access/Screens/HeroInspectionScreen.cs | 1 | return window.GetComponentInChildren<ShipDesignEditionPanel>(true);
-
-ES2Access/Screens/JournalScreen.cs | 1 | cell == null ? null : cell.GetComponentsInChildren<AgeControlButton>(true);
-
 ES2Access/Screens/NotificationScreen.Controls.cs | 1 | widget == null ? null : widget.GetComponentInParent<NotificationWindow>();
 
 ES2Access/Screens/NotificationScreen.cs | 1 | _windows = gui.gameObject.GetComponentsInChildren<NotificationWindow>(true);
@@ -55,14 +48,8 @@ ES2Access/Screens/PlanetConstructiblesScreen.cs | 1 | panel.ConstructibleTable.G
 
 ES2Access/Screens/PlanetOverviewScreen.cs | 1 | TPanel panel = window == null ? null : window.GetComponentInChildren<TPanel>(true);
 
-ES2Access/Screens/QuestJournalScreen.cs | 1 | panels.GetComponentInChildren<NarrativeEventsSidePanel>(true);
-ES2Access/Screens/QuestJournalScreen.cs | 1 | panels.GetComponentInChildren<QuestReportSidePanel>(true);
-
 ES2Access/Screens/RecipeCreationScreen.cs | 1 | : container.GetComponentInChildren<RecipeLine>(true);
 ES2Access/Screens/RecipeCreationScreen.cs | 1 | return own != null ? own : widget.GetComponentInChildren<AgeControlButton>(true);
-
-ES2Access/Screens/ResearchScreen.QueuePanel.cs | 1 | : panel.ResearchQueue.GetComponentsInChildren<ResearchQueueItem>(true);
-ES2Access/Screens/ResearchScreen.QueuePanel.cs | 1 | panels == null ? null : panels.GetComponentInChildren<ResearchStatusSidePanel>(true);
 
 ES2Access/Screens/SettingRows.cs | 1 | AgeControlButton button in window.GetComponentsInChildren<AgeControlButton>(
 

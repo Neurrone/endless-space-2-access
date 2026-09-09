@@ -421,16 +421,16 @@ namespace ES2Access.Screens
 
         private static ShipDesignEditionPanel Designer(HeroInspectionModalWindow window)
         {
-            try
-            {
-                // walk: audit M1, to move behind FrameSweep
-                return window.GetComponentInChildren<ShipDesignEditionPanel>(true);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            ShipDesignEditionPanel[] found = Designers.Under(window);
+            return found.Length == 0 ? null : found[0];
         }
+
+        /// <summary>The walk the ship page's designer is found by, made once per window per frame. The
+        /// window holds all three pages whether they are shown or not, so this is the whole hero
+        /// window; the first hit is the panel <c>GetComponentInChildren</c> answered with, both being
+        /// the same depth-first walk.</summary>
+        private static readonly FrameSweep<ShipDesignEditionPanel> Designers =
+            new FrameSweep<ShipDesignEditionPanel>("hero inspection");
 
         // ---- the band along the bottom ----
 
