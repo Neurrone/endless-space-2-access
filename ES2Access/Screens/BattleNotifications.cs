@@ -676,6 +676,11 @@ namespace ES2Access.Screens
         /// <summary>The strategies a ground battle offers, as the one-of-N the game made them: a card
         /// each, exactly one in force, and one the empire has not unlocked refusing with the game's own
         /// reason for it.</summary>
+        /// <summary>The walk the strategy cards are found by, made once per table per frame. The
+        /// popup is POOLED and rebound to the next battle, so it is not kept past the frame.</summary>
+        private static readonly FrameSweep<GroundBattlePlayCard> Strategy =
+            new FrameSweep<GroundBattlePlayCard>("battle notification");
+
         private static void Strategies(GraphBuilder builder, AccordionSlider slider, string prefix)
         {
             AgeTransform table = slider == null ? null : slider.CardTable;
@@ -688,10 +693,7 @@ namespace ES2Access.Screens
 
             try
             {
-                // walk: audit M1, to move behind FrameSweep
-                GroundBattlePlayCard[] cards = table.GetComponentsInChildren<GroundBattlePlayCard>(
-                    true
-                );
+                GroundBattlePlayCard[] cards = Strategy.Under(table);
                 for (int i = 0; i < cards.Length; i++)
                 {
                     GroundBattlePlayCard card = cards[i];

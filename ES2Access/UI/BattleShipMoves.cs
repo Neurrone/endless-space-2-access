@@ -98,39 +98,6 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>Which chip on the arena is this ship - the object every command below acts on.
-        /// Found by walking the cards the window is drawing, because the chips are pooled by the
-        /// container and only a card knows which of them it is currently holding.</summary>
-        public static EncounterPlayShipItemInteractive Chip(
-            EncounterPlayFlotillaCard3DInteractive[] cards,
-            EncounterShipSetup setup
-        )
-        {
-            try
-            {
-                for (int i = 0; cards != null && setup != null && i < cards.Length; i++)
-                {
-                    EncounterPlayFlotillaCard3DInteractive card = cards[i];
-                    EncounterPlayShipItem[] ships = card == null ? null : card.AllShips;
-                    for (int j = 0; ships != null && j < ships.Length; j++)
-                    {
-                        EncounterPlayShipItemInteractive chip =
-                            ships[j] as EncounterPlayShipItemInteractive;
-                        if (chip != null && chip.ShipSetup == setup)
-                        {
-                            return chip;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("battle setup: looking for a ship's chip threw: " + e);
-            }
-
-            return null;
-        }
-
         /// <summary>One press's worth: the ship the row is drawing, picked up under the name the
         /// roster reads it by. Null where the arena is not drawing a chip for it - the enemy's side, a
         /// report rather than a setup - which is what keeps the pick-up word off every roster row the

@@ -433,6 +433,12 @@ namespace ES2Access.Screens
             vtable.Announcements.Add(GraphNodes.ValuePart(text, false));
         }
 
+        /// <summary>The walk a trajectory slot's curve is found by, made once per slot per frame.
+        /// Drawn curves only, which is the question the row asked. The slots are POOLED by the page,
+        /// so nothing is kept past the frame.</summary>
+        private static readonly FrameSweep<EncounterPlayTrajectoryCurve> Curves =
+            new FrameSweep<EncounterPlayTrajectoryCurve>("advanced play", false);
+
         /// <summary>
         /// One of the curves the arena draws for this side, as the clause it is: which flotilla the
         /// line belongs to and the range the plan has it fighting at. Null for a slot the container is
@@ -453,11 +459,8 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform child = AgeWidgets.DrawnChild(Children(container), index);
-                EncounterPlayTrajectoryCurve curve =
-                    child == null
-                        ? null
-                        // walk: audit M1, to move behind FrameSweep
-                        : child.GetComponentInChildren<EncounterPlayTrajectoryCurve>();
+                EncounterPlayTrajectoryCurve[] found = Curves.Under(child);
+                EncounterPlayTrajectoryCurve curve = found.Length == 0 ? null : found[0];
                 return curve == null ? null : Engagement(window, curve.TrajectoryIndex);
             }
             catch (Exception e)

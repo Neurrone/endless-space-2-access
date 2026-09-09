@@ -37,10 +37,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // walk: audit M1, to move behind FrameSweep
-            AdvancedReportPhaseItem[] items = container.GetComponentsInChildren<AdvancedReportPhaseItem>(
-                true
-            );
+            AdvancedReportPhaseItem[] items = PhaseItems.Under(container);
             // The flotillas, in the order every phase drew them.
             List<AdvancedReportPhaseFlotillaStatItem[]> phases =
                 new List<AdvancedReportPhaseFlotillaStatItem[]>();
@@ -108,6 +105,17 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The two walks the phase table is read by, each made once per container per frame.
+        /// The phase container is walked by the table itself and again by the morale row, which asks
+        /// the same container for the same items in the same build; a phase's own stat container is
+        /// walked once per phase. Report windows are POOLED between battles, so neither is kept past
+        /// the frame.</summary>
+        private static readonly FrameSweep<AdvancedReportPhaseItem> PhaseItems =
+            new FrameSweep<AdvancedReportPhaseItem>("battle report");
+
+        private static readonly FrameSweep<AdvancedReportPhaseFlotillaStatItem> PhaseStats =
+            new FrameSweep<AdvancedReportPhaseFlotillaStatItem>("battle report");
+
         private static AdvancedReportPhaseFlotillaStatItem[] Stats(AdvancedReportPhaseItem phase)
         {
             try
@@ -116,8 +124,7 @@ namespace ES2Access.Screens
                 // Flow control: a phase panel the battle never reached is not scraped for its items.
                 return container == null || !AgeWidgets.Visible(container)
                     ? new AdvancedReportPhaseFlotillaStatItem[0]
-                    // walk: audit M1, to move behind FrameSweep
-                    : container.GetComponentsInChildren<AdvancedReportPhaseFlotillaStatItem>(true);
+                    : PhaseStats.Under(container);
             }
             catch (Exception)
             {

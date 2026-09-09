@@ -131,7 +131,7 @@ namespace ES2Access.Screens
         )
         {
             EncounterShipSetup setup = BattleShipMoves.SetupOf(item);
-            EncounterPlayShipItemInteractive chip = BattleShipMoves.Chip(Cards3D(window), setup);
+            EncounterPlayShipItemInteractive chip = Arranged(window).Chip(setup);
             if (setup == null || chip == null)
             {
                 return;
@@ -153,31 +153,6 @@ namespace ES2Access.Screens
             NodeHints.Add(vtable, ModStrings.HintLockShip, UiActions.DoubleClick);
             vtable.OnPickUp = () => BattleShipMoves.Pick(at, BattleRosters.ShipName(row));
             Destination(window, line, vtable);
-        }
-
-        /// <summary>Every flotilla card the arena is drawing for the player's side, as the interactive
-        /// kind that holds ships - what a chip is looked up in, and what a drop is aimed at. The 2D
-        /// cards are the game's own index into them, so this walks the same container
-        /// <see cref="Card"/> does.</summary>
-        private static EncounterPlayFlotillaCard3DInteractive[] Cards3D(
-            AdvancedEncounterPlayModalWindow window
-        )
-        {
-            List<EncounterPlayFlotillaCard3DInteractive> cards =
-                new List<EncounterPlayFlotillaCard3DInteractive>(4);
-            IList<AgeTransform> children = Children(Cards(window));
-            for (int i = 0; children != null && i < children.Count; i++)
-            {
-                EncounterPlayFlotillaCard3DInteractive card = Card3D(
-                    children[i].GetComponent<EncounterPlayFlotillaCard2D>()
-                );
-                if (card != null)
-                {
-                    cards.Add(card);
-                }
-            }
-
-            return cards.ToArray();
         }
 
         /// <summary>The card in the arena a 2D card is bound to, where it is the kind that arranges
@@ -216,26 +191,119 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                AgeTransform box = Cards(window);
-                IList<AgeTransform> children = Children(box);
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    EncounterPlayFlotillaCard2D card =
-                        children[i].GetComponent<EncounterPlayFlotillaCard2D>();
-                    // The game numbers the flotillas from one where it writes them down and from zero
-                    // where it binds them.
-                    if (card != null && card.Index == number - 1)
-                    {
-                        return card;
-                    }
-                }
+                // The game numbers the flotillas from one where it writes them down and from zero
+                // where it binds them.
+                return Arranged(window).Flotilla(number - 1);
             }
             catch (Exception e)
             {
                 Log.Warn("advanced play: looking for a flotilla card threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The arena as one frame sees it: the card each flotilla index is bound to, and the chip each
+        /// ship is drawn as.
+        ///
+        /// Every ship row of the roster asks the same questions - which flotilla card its line names,
+        /// which chip the ship IS, and which card a drop lands on - and asking them per row meant
+        /// walking the card container once per question per row, and reading each card's
+        /// <c>AllShips</c> (a getter that builds a fresh array on every get) once per card per row.
+        /// Within one frame the arena has not moved, so the answers are worked out once and a row is
+        /// a dictionary lookup. The chips are indexed in the order the per-row scan walked them -
+        /// cards in container order, ships in card order - and the first entry for a ship wins, which
+        /// is the chip that scan stopped at.
+        ///
+        /// Kept for the frame and no longer, and rebuilt the moment the window changes: the cards and
+        /// their chips are POOLED and rebound to the next battle.
+        /// </summary>
+        private sealed class Arena
+        {
+            private readonly Dictionary<int, EncounterPlayFlotillaCard2D> _flotillas =
+                new Dictionary<int, EncounterPlayFlotillaCard2D>();
+
+            private readonly Dictionary<
+                EncounterShipSetup,
+                EncounterPlayShipItemInteractive
+            > _chips = new Dictionary<EncounterShipSetup, EncounterPlayShipItemInteractive>();
+
+            public void Add(EncounterPlayFlotillaCard2D card)
+            {
+                if (card == null)
+                {
+                    return;
+                }
+
+                if (!_flotillas.ContainsKey(card.Index))
+                {
+                    _flotillas.Add(card.Index, card);
+                }
+
+                EncounterPlayFlotillaCard3DInteractive card3D = Card3D(card);
+                if (card3D == null)
+                {
+                    return;
+                }
+
+                EncounterPlayShipItem[] ships = card3D.AllShips;
+                for (int i = 0; ships != null && i < ships.Length; i++)
+                {
+                    EncounterPlayShipItemInteractive chip =
+                        ships[i] as EncounterPlayShipItemInteractive;
+                    EncounterShipSetup setup = chip == null ? null : chip.ShipSetup;
+                    if (setup != null && !_chips.ContainsKey(setup))
+                    {
+                        _chips.Add(setup, chip);
+                    }
+                }
             }
 
-            return null;
+            public EncounterPlayFlotillaCard2D Flotilla(int index)
+            {
+                EncounterPlayFlotillaCard2D card;
+                return _flotillas.TryGetValue(index, out card) ? card : null;
+            }
+
+            public EncounterPlayShipItemInteractive Chip(EncounterShipSetup setup)
+            {
+                EncounterPlayShipItemInteractive chip;
+                return setup != null && _chips.TryGetValue(setup, out chip) ? chip : null;
+            }
+        }
+
+        private static Arena _arena = new Arena();
+
+        private static int _arenaFrame = -1;
+
+        private static AdvancedEncounterPlayModalWindow _arenaWindow;
+
+        private static Arena Arranged(AdvancedEncounterPlayModalWindow window)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_arenaFrame == frame && ReferenceEquals(_arenaWindow, window))
+            {
+                return _arena;
+            }
+
+            Arena arena = new Arena();
+            try
+            {
+                IList<AgeTransform> children = Children(Cards(window));
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    arena.Add(children[i].GetComponent<EncounterPlayFlotillaCard2D>());
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("advanced play: reading the arena's cards threw: " + e);
+            }
+
+            _arena = arena;
+            _arenaFrame = frame;
+            _arenaWindow = window;
+            return arena;
         }
 
         /// <summary>Where the window keeps the cards: the one container among the arena's that draws

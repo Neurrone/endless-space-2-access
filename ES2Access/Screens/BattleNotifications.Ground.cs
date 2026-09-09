@@ -127,11 +127,7 @@ namespace ES2Access.Screens
                 );
                 BattleRows.Note(builder, panel.NoTroopsLabel, prefix + "/no-troops");
 
-                AgeTransform table = panel.TroopCellsTable;
-                TroopCell[] cells = table == null
-                    ? new TroopCell[0]
-                    // walk: audit M1, to move behind FrameSweep
-                    : table.GetComponentsInChildren<TroopCell>(true);
+                TroopCell[] cells = TroopCells.Under(panel.TroopCellsTable);
                 for (int i = 0; i < cells.Length; i++)
                 {
                     Troop(builder, cells[i], prefix + "/troop/" + i);
@@ -145,6 +141,13 @@ namespace ES2Access.Screens
 
         /// <summary>One kind of troop: what it is (the game's own name for it, which the cell draws
         /// nowhere - it draws a picture and a number) and how many of them are left.</summary>
+        /// <summary>The walk a contender's troop cells are found by, made once per table per frame.
+        /// The popup is POOLED and rebound to the next battle, so it is not kept past the frame.
+        /// </summary>
+        private static readonly FrameSweep<TroopCell> TroopCells = new FrameSweep<TroopCell>(
+            "battle notification"
+        );
+
         private static void Troop(GraphBuilder builder, TroopCell cell, string key)
         {
             AgeTransform widget = cell == null ? null : cell.AgeTransform;

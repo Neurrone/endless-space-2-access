@@ -458,11 +458,7 @@ namespace ES2Access.Screens
             try
             {
                 AgeTransform container = window.AdvancedReportPhaseItemContainer;
-                AdvancedReportPhaseItem[] phases =
-                    container == null
-                        ? null
-                        // walk: audit M1, to move behind FrameSweep
-                        : container.GetComponentsInChildren<AdvancedReportPhaseItem>(true);
+                AdvancedReportPhaseItem[] phases = PhaseItems.Under(container);
                 for (int i = 0; phases != null && i < phases.Length; i++)
                 {
                     AgeTransform icon = AgeWidgets.Transform(

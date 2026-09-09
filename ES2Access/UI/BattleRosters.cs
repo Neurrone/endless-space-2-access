@@ -377,6 +377,26 @@ namespace ES2Access.UI
 
         private const string ShipWithStatusTooltipClass = "ShipWithSimple";
 
+        /// <summary>The four walks a roster is collected by, each made once per root per frame. One
+        /// side of one battle costs a walk for its garrisons, one for its flotilla panels, one per
+        /// panel for its lines and one per fleet or flotilla for its ships - and the live play view
+        /// and the report ask for the same rosters in the same frame, so the memo is what stops the
+        /// second asker paying for the first's answer again. The panels are POOLED between battles,
+        /// which is why nothing is kept past the frame.</summary>
+        private static readonly FrameSweep<BattleGarrisonPanel> Garrisons =
+            new FrameSweep<BattleGarrisonPanel>("battle roster");
+
+        private static readonly FrameSweep<BattleFlotillasPanel> Panels =
+            new FrameSweep<BattleFlotillasPanel>("battle roster");
+
+        private static readonly FrameSweep<FlotillaLine> Lines = new FrameSweep<FlotillaLine>(
+            "battle roster"
+        );
+
+        private static readonly FrameSweep<BattleShipItem> ShipItems = new FrameSweep<BattleShipItem>(
+            "battle roster"
+        );
+
         private static void Collect(
             List<Entry> entries,
             AgeTransform root,
@@ -385,8 +405,7 @@ namespace ES2Access.UI
         )
         {
             // The fleet the player brought, and its ships.
-            // walk: audit M1, to move behind FrameSweep
-            BattleGarrisonPanel[] garrisons = root.GetComponentsInChildren<BattleGarrisonPanel>(true);
+            BattleGarrisonPanel[] garrisons = Garrisons.Under(root);
             for (int i = 0; i < garrisons.Length; i++)
             {
                 BattleGarrisonPanel panel = garrisons[i];
@@ -420,8 +439,7 @@ namespace ES2Access.UI
             }
 
             // The same ships as the battle arranged them: a header for the fleet, a group per flotilla.
-            // walk: audit M1, to move behind FrameSweep
-            BattleFlotillasPanel[] flotillas = root.GetComponentsInChildren<BattleFlotillasPanel>(true);
+            BattleFlotillasPanel[] flotillas = Panels.Under(root);
             for (int i = 0; i < flotillas.Length; i++)
             {
                 BattleFlotillasPanel panel = flotillas[i];
@@ -478,8 +496,7 @@ namespace ES2Access.UI
                 return;
             }
 
-            // walk: audit M1, to move behind FrameSweep
-            FlotillaLine[] lines = table.GetComponentsInChildren<FlotillaLine>(true);
+            FlotillaLine[] lines = Lines.Under(table);
             for (int i = 0; i < lines.Length; i++)
             {
                 FlotillaLine line = lines[i];
@@ -537,10 +554,7 @@ namespace ES2Access.UI
             AgeControlToggle expand = null
         )
         {
-            BattleShipItem[] items = ships == null
-                ? new BattleShipItem[0]
-                // walk: audit M1, to move behind FrameSweep
-                : ships.GetComponentsInChildren<BattleShipItem>(true);
+            BattleShipItem[] items = ShipItems.Under(ships);
             // No role word on the empty one either: with nothing inside it there is no group here,
             // and "Flotilla 1, Empty" is the whole of what the line says.
             NodeVtable vtable =

@@ -1097,6 +1097,12 @@ namespace ES2Access.Screens
         /// <summary>The three camera modes, which are a radio group in the game and read as one. They
         /// change nothing about what is said - the narration is the same wherever the camera is - and are
         /// declared because they are drawn and because a player may want the overview.</summary>
+        /// <summary>The walk the camera bar is read by, made once per table per frame. The bar is a
+        /// fixed strip of the battle view's own window, which the game keeps between battles - so the
+        /// answer is only good for the frame it was walked in.</summary>
+        private static readonly FrameSweep<AgeControlToggle> Cameras3D =
+            new FrameSweep<AgeControlToggle>("space battle");
+
         private void Cameras(global::BattleScreen window)
         {
             GuiRadioGroup group = window.CameraRadioGroup;
@@ -1108,8 +1114,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // walk: audit M1, to move behind FrameSweep
-            AgeControlToggle[] toggles = table.GetComponentsInChildren<AgeControlToggle>(true);
+            AgeControlToggle[] toggles = Cameras3D.Under(table);
             for (int i = 0; i < toggles.Length; i++)
             {
                 AgeControlToggle toggle = toggles[i];

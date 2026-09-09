@@ -472,14 +472,20 @@ namespace ES2Access.UI
             return lines;
         }
 
+        /// <summary>The walk a plan slot's card is found by, made once per container per frame - the
+        /// first hit is what <c>GetComponentInChildren</c> answered with, both being the same
+        /// depth-first walk. The slots are POOLED by the deck, so nothing is kept past the frame.
+        /// </summary>
+        private static readonly FrameSweep<BattlePlayCard> Cards = new FrameSweep<BattlePlayCard>(
+            "battle plans"
+        );
+
         private static BattlePlayCard Card(AgeTransform container)
         {
             try
             {
-                return container == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : container.GetComponentInChildren<BattlePlayCard>(true);
+                BattlePlayCard[] found = Cards.Under(container);
+                return found.Length == 0 ? null : found[0];
             }
             catch (Exception)
             {
