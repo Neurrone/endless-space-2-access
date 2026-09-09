@@ -144,7 +144,10 @@ namespace ES2Access.UI.ModOptions
                 return;
             }
 
-            if (Index(window.GameMenuItems, PauseMenuItemName) >= 0)
+            if (
+                StillOnTheMenu(window.GameMenuItems)
+                || Index(window.GameMenuItems, PauseMenuItemName) >= 0
+            )
             {
                 return;
             }
@@ -173,6 +176,7 @@ namespace ES2Access.UI.ModOptions
 
             window.GameMenuItems = grown;
             _pauseMenu = window;
+            _pauseMenuItem = cloned;
             Order(window.ButtonsCircularTable, cloned.AgeTransform, options + 1);
             Arrange(window, grown);
             Log.Info(
@@ -389,6 +393,7 @@ namespace ES2Access.UI.ModOptions
         {
             GameMenuModalWindow window = _pauseMenu ?? PauseMenu();
             _pauseMenu = null;
+            _pauseMenuItem = null;
             if (window == null || window.GameMenuItems == null)
             {
                 return;
@@ -438,6 +443,35 @@ namespace ES2Access.UI.ModOptions
             }
 
             return names.ToString();
+        }
+
+        /// <summary>Whether the entry this mod put on the menu is still alive and still in it - the
+        /// steady-state answer, which the comment on the pump's call promises costs two null checks
+        /// and a scan. The scan by NAME behind it reads <c>item.name</c>, and a GameMenuItem is a
+        /// UnityEngine.Object whose name getter marshals a fresh managed string on every get: one
+        /// string per menu item per frame, for the whole of a running game. This is the same
+        /// question asked of the clone itself. It answers no where the name scan would answer yes
+        /// only if a clone from some earlier life of the mod is standing on the menu, which
+        /// Shutdown's removal by name is there to prevent - so the name scan stays behind it.
+        /// </summary>
+        private static bool StillOnTheMenu(GameMenuItem[] items)
+        {
+            GameMenuItem mine = _pauseMenuItem;
+            // Unity's own null: a destroyed item reads null however live the reference is.
+            if (mine == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < items.Length; i++)
+            {
+                if (ReferenceEquals(items[i], mine))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static int Index(GameMenuItem[] items, string name)
@@ -658,13 +692,29 @@ namespace ES2Access.UI.ModOptions
 
             try
             {
-                FieldInfo field = typeof(MainMenuScreen).GetField(
+                return GuiElementField == null
+                    ? null
+                    : GuiElementField.GetValue(screen) as MainMenuScreenGuiElement;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Resolved once: this runs every frame the main-menu window is LOADED, which is
+        /// not only while it is shown, and a member lookup per frame is what the field cache exists
+        /// to stop.</summary>
+        private static readonly FieldInfo GuiElementField = FindGuiElementField();
+
+        private static FieldInfo FindGuiElementField()
+        {
+            try
+            {
+                return typeof(MainMenuScreen).GetField(
                     "mainMenuScreenGuiElement",
                     BindingFlags.Instance | BindingFlags.NonPublic
                 );
-                return field == null
-                    ? null
-                    : field.GetValue(screen) as MainMenuScreenGuiElement;
             }
             catch (Exception)
             {
@@ -677,6 +727,7 @@ namespace ES2Access.UI.ModOptions
 
         private static bool _stopped;
         private static GameMenuModalWindow _pauseMenu;
+        private static GameMenuItem _pauseMenuItem;
         private static MainMenuScreenGuiElement _mainMenuElement;
         private static MainMenuScreenGuiElement.MainMenuEntry[] _mainMenuEntries;
     }
