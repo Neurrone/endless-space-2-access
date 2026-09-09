@@ -341,16 +341,40 @@ namespace ES2Access.UI
         // ---- whose influence covers a square of the map ----
 
         /// <summary>
-        /// WHOSE INFLUENCE STANDS OVER A CELL of the map - the inspect cursor's question, which is
-        /// about an AREA and so is not a question the game will answer.
+        /// THE INFLUENCE FIELD WITH THE SQUARE LEFT OUT OF IT: every circle the game is resolving,
+        /// every node a square could be standing on, and the empires those answers may be named after.
         ///
-        /// The game only ever resolves influence at a POINT (<c>TryGetInfluence</c>), so every identity
-        /// here is one of its own answers, asked at the covering grid and at the exact position of every
-        /// galaxy node inside the cell - exact, because the Unfallen root override only fires on an
-        /// exact position match (<c>ColonizedStarSystemRepository</c> :98-110) and a grid that missed it
-        /// would be certifying a point the game answers differently. Whether those answers hold
-        /// everywhere BETWEEN the samples is the one thing the mod decides, and it decides it with a
-        /// proof rather than a guess (<see cref="InfluenceCell"/>).
+        /// Gathered by <see cref="Gather"/> and read by <see cref="OverCell(InfluenceField, double,
+        /// double, double, double)"/>, so a walk that reads many squares walks the galaxy once.
+        /// </summary>
+        public sealed class InfluenceField
+        {
+            /// <summary>One galaxy node where it stands. Whether it falls inside a square is the
+            /// square's own question, and the position is kept beside the numbers because the point
+            /// query has to be asked at the very coordinates the node occupies.</summary>
+            public struct PlacedNode
+            {
+                public GalaxyPosition At;
+                public double X;
+                public double Y;
+            }
+
+            /// <summary>The service the point queries go to, and null where there is nothing to
+            /// classify at all - no game, no player, or a gathering that threw.</summary>
+            public IInfluenceService Influence;
+
+            public Empire Empire;
+
+            public readonly List<InfluenceSource> Sources = new List<InfluenceSource>();
+
+            public readonly List<Empire> Known = new List<Empire>();
+
+            public readonly List<PlacedNode> Placed = new List<PlacedNode>();
+        }
+
+        /// <summary>
+        /// GATHER THE FIELD ONCE, for a walk about to read many squares - the inspect skip, which asks
+        /// what stands over every candidate square between where the cursor is and where it lands.
         ///
         /// The circles are read the way the game builds them: one per galaxy node standing on colonies,
         /// centred on that node, with the strongest colony there setting the radius - the same walk
@@ -363,45 +387,29 @@ namespace ES2Access.UI
         /// the field as an anonymous rival it can only cost the cell its certificate, which reads as
         /// "edge of" and names nobody new.
         ///
-        /// Whether the cell may be read AT ALL is the caller's: the mode asks its own fog first, and a
-        /// cell nobody has explored is told nothing about (<see cref="Screens.GalaxyInspect"/>).
-        ///
-        /// The classification is then told to somebody STANDING in the cell
-        /// (<see cref="InfluenceReading.EdgeWhereNobodyHolds"/>): a rim thinner than the sample spacing
-        /// leaves every point query answering nobody while the circle is still overhead, and there is
-        /// no held ground there for anyone to contest - the cursor is simply on the edge of it.
-        ///
-        /// Cost: nothing at all where no circle reaches the cell, which is most of the map - the grid is
-        /// only asked for once something is there to classify. Measured over 86 nodes: 0.01 ms for
-        /// empty space, 1.18 ms inside a bubble (1 by 1) and 1.37 ms (11 by 11). Only ever on a
-        /// KEYPRESS.
+        /// Nothing here is a function of the square, so one gathering serves every square a keypress
+        /// reads: no frame runs inside a keypress, and the game cannot found a colony, widen a radius or
+        /// move a node between the first candidate and the last.
         /// </summary>
-        public static CellInfluence OverCell(
-            double lowX,
-            double lowY,
-            double highX,
-            double highY,
-            Empire empire
-        )
+        public static InfluenceField Gather(Empire empire)
         {
+            InfluenceField field = new InfluenceField();
             try
             {
                 IInfluenceService influence = Services.GetService<IInfluenceService>();
                 if (influence == null || empire == null || !GameGalaxy.Present())
                 {
-                    return CellInfluence.Nothing;
+                    return field;
                 }
 
                 GameNode[] nodes = GameGalaxy.GameNodes();
                 if (nodes == null)
                 {
-                    return CellInfluence.Nothing;
+                    return field;
                 }
 
-                List<InfluenceSource> sources = new List<InfluenceSource>();
-                List<Empire> known = new List<Empire>();
-                List<GameNode> inside = new List<GameNode>();
-                bool anyReaches = false;
+                field.Influence = influence;
+                field.Empire = empire;
                 for (int i = 0; i < nodes.Length; i++)
                 {
                     GameNode node = nodes[i];
@@ -410,12 +418,11 @@ namespace ES2Access.UI
                         continue;
                     }
 
-                    double x = node.GalaxyPosition.X;
-                    double y = node.GalaxyPosition.Y;
-                    if (x >= lowX && x < highX && y >= lowY && y < highY)
-                    {
-                        inside.Add(node);
-                    }
+                    InfluenceField.PlacedNode placed = new InfluenceField.PlacedNode();
+                    placed.At = node.GalaxyPosition;
+                    placed.X = placed.At.X;
+                    placed.Y = placed.At.Y;
+                    field.Placed.Add(placed);
 
                     ColonizedStarSystem colony;
                     float radius;
@@ -428,20 +435,103 @@ namespace ES2Access.UI
                     }
 
                     InfluenceSource source = new InfluenceSource();
-                    source.X = x;
-                    source.Y = y;
+                    source.X = placed.X;
+                    source.Y = placed.Y;
                     source.Radius = radius;
-                    source.Empire = Nameable(colony, empire, known);
-                    sources.Add(source);
-                    anyReaches =
-                        anyReaches
-                        || InfluenceCell.Reaches(source, lowX, lowY, highX, highY);
+                    source.Empire = Nameable(colony, empire, field.Known);
+                    field.Sources.Add(source);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: gathering the influence field over the map threw: " + e);
+                field.Influence = null;
+            }
+
+            return field;
+        }
+
+        /// <summary>Whose influence stands over one square, gathering the field for itself - the reading
+        /// a caller makes when it is only asking about the one square.</summary>
+        public static CellInfluence OverCell(
+            double lowX,
+            double lowY,
+            double highX,
+            double highY,
+            Empire empire
+        )
+        {
+            return OverCell(Gather(empire), lowX, lowY, highX, highY);
+        }
+
+        /// <summary>
+        /// WHOSE INFLUENCE STANDS OVER A CELL of the map - the inspect cursor's question, which is
+        /// about an AREA and so is not a question the game will answer.
+        ///
+        /// The game only ever resolves influence at a POINT (<c>TryGetInfluence</c>), so every identity
+        /// here is one of its own answers, asked at the covering grid and at the exact position of every
+        /// galaxy node inside the cell - exact, because the Unfallen root override only fires on an
+        /// exact position match (<c>ColonizedStarSystemRepository</c> :98-110) and a grid that missed it
+        /// would be certifying a point the game answers differently. Whether those answers hold
+        /// everywhere BETWEEN the samples is the one thing the mod decides, and it decides it with a
+        /// proof rather than a guess (<see cref="InfluenceCell"/>).
+        ///
+        /// Nothing here walks the galaxy: the circles and the nodes come in already gathered
+        /// (<see cref="Gather"/>) and everything the square decides for itself - which circles reach in,
+        /// which nodes are standing in it - is arithmetic on the numbers that gathering measured.
+        ///
+        /// Whether the cell may be read AT ALL is the caller's: the mode asks its own fog first, and a
+        /// cell nobody has explored is told nothing about (<see cref="Screens.GalaxyInspect"/>).
+        ///
+        /// The classification is then told to somebody STANDING in the cell
+        /// (<see cref="InfluenceReading.EdgeWhereNobodyHolds"/>): a rim thinner than the sample spacing
+        /// leaves every point query answering nobody while the circle is still overhead, and there is
+        /// no held ground there for anyone to contest - the cursor is simply on the edge of it.
+        ///
+        /// Cost: nothing at all where no circle reaches the cell, which is most of the map - the grid is
+        /// only asked for once something is there to classify. Measured over 86 nodes, gathering
+        /// included: 0.01 ms for empty space, 1.18 ms inside a bubble (1 by 1) and 1.37 ms (11 by 11).
+        /// Only ever on a KEYPRESS.
+        /// </summary>
+        public static CellInfluence OverCell(
+            InfluenceField field,
+            double lowX,
+            double lowY,
+            double highX,
+            double highY
+        )
+        {
+            try
+            {
+                if (field.Influence == null)
+                {
+                    return CellInfluence.Nothing;
+                }
+
+                // The empires the gathering could name are the reading's own to add to: a point query
+                // inside the square can name one no circle-bearing node did, and that discovery belongs
+                // to the square and not to the field every other square is reading.
+                List<InfluenceSource> sources = field.Sources;
+                List<Empire> known = new List<Empire>(field.Known);
+                bool anyReaches = false;
+                for (int i = 0; i < sources.Count && !anyReaches; i++)
+                {
+                    anyReaches = InfluenceCell.Reaches(sources[i], lowX, lowY, highX, highY);
                 }
 
                 List<InfluenceAnswer> answers = new List<InfluenceAnswer>();
-                for (int i = 0; i < inside.Count; i++)
+                for (int i = 0; i < field.Placed.Count; i++)
                 {
-                    Ask(influence, inside[i].GalaxyPosition, empire, known, answers);
+                    InfluenceField.PlacedNode placed = field.Placed[i];
+                    if (
+                        placed.X >= lowX
+                        && placed.X < highX
+                        && placed.Y >= lowY
+                        && placed.Y < highY
+                    )
+                    {
+                        Ask(field.Influence, placed.At, field.Empire, known, answers);
+                    }
                 }
 
                 if (anyReaches)
@@ -453,9 +543,9 @@ namespace ES2Access.UI
                         for (int b = 0; b < ys.Length; b++)
                         {
                             Ask(
-                                influence,
+                                field.Influence,
                                 new GalaxyPosition((float)xs[a], (float)ys[b]),
-                                empire,
+                                field.Empire,
                                 known,
                                 answers
                             );
@@ -469,7 +559,7 @@ namespace ES2Access.UI
                     highX,
                     highY,
                     sources,
-                    influence.InfluenceStrenghtPower,
+                    field.Influence.InfluenceStrenghtPower,
                     answers,
                     InfluenceCell.CoveringRadius(
                         highX - lowX,

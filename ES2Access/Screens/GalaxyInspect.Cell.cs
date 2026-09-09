@@ -332,6 +332,12 @@ namespace ES2Access.Screens
             public readonly List<NamedSystem> Perceived = new List<NamedSystem>();
             public readonly List<MarkedSpot> Bookmarks = new List<MarkedSpot>();
             public readonly List<DrawnLane> Lanes = new List<DrawnLane>();
+
+            /// <summary>The influence field the squares of this walk are classified against, gathered
+            /// on the first square that needs it rather than with the rest: a skip across the fog
+            /// never asks whose the ground is (<see cref="CellNow"/>), and there is no sense walking
+            /// the galaxy's colonies for a press that lands without asking.</summary>
+            public SystemInfluence.InfluenceField Influence;
         }
 
         /// <summary>The one gathering a whole keypress reads its cells out of, where a keypress reads
@@ -345,7 +351,8 @@ namespace ES2Access.Screens
         /// Safe because no frame runs inside a keypress: the game cannot move a fleet, light a lane
         /// or name a system between the first candidate and the last, so every cell in the walk was
         /// already being told the same story about the galaxy - it was just being told it again from
-        /// the beginning each time.
+        /// the beginning each time. The influence field the walk classifies its squares against rides
+        /// on the same gathering, for the same reason (<see cref="CellNow"/>).
         /// </summary>
         private void HoldSweep()
         {

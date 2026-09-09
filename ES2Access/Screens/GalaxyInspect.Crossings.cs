@@ -179,7 +179,12 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The influence over the cell the cursor is standing on now - the mode's own fog gate
-        /// in front of it, so a square of map nobody has explored is told nothing about.</summary>
+        /// in front of it, so a square of map nobody has explored is told nothing about.
+        ///
+        /// The colonies whose circles the answer is made of are the same colonies whatever square is
+        /// asking, so a walk that reads many squares (<see cref="HoldSweep"/>) gathers them once and
+        /// every square after the first is arithmetic against that one gathering. Off a walk each
+        /// reading still asks for itself.</summary>
         private CellInfluence CellNow()
         {
             if (Fogged() >= InspectGrid.Squares(_size))
@@ -188,13 +193,22 @@ namespace ES2Access.Screens
             }
 
             GalaxyPosition origin = GalaxyCoordinates.Origin();
-            return SystemInfluence.OverCell(
-                origin.X + InspectGrid.Low(_x, _size),
-                origin.Y + InspectGrid.Low(_y, _size),
-                origin.X + InspectGrid.High(_x, _size),
-                origin.Y + InspectGrid.High(_y, _size),
-                Gui.PlayerEmpire
-            );
+            double lowX = origin.X + InspectGrid.Low(_x, _size);
+            double lowY = origin.Y + InspectGrid.Low(_y, _size);
+            double highX = origin.X + InspectGrid.High(_x, _size);
+            double highY = origin.Y + InspectGrid.High(_y, _size);
+            Sweep sweep = _sweep;
+            if (sweep == null)
+            {
+                return SystemInfluence.OverCell(lowX, lowY, highX, highY, Gui.PlayerEmpire);
+            }
+
+            if (sweep.Influence == null)
+            {
+                sweep.Influence = SystemInfluence.Gather(Gui.PlayerEmpire);
+            }
+
+            return SystemInfluence.OverCell(sweep.Influence, lowX, lowY, highX, highY);
         }
 
         /// <summary>Whose influence the cursor was last read as standing in, and the cell that answer
