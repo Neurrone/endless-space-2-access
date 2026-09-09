@@ -42,6 +42,7 @@ namespace ES2Access.UI.Input
         private HashSet<KeyCode> _claimedKeys;
         private readonly Dictionary<string, InputAction> _byKey =
             new Dictionary<string, InputAction>();
+        private Dictionary<KeyCode, List<InputAction>> _conditional;
         private int _bindingGeneration;
 
         /// <summary>Offered every triggered action; returning true consumes it. Null means nothing is
@@ -304,6 +305,7 @@ namespace ES2Access.UI.Input
             }
 
             _claimedKeys = null;
+            _conditional = null;
             _bindingGeneration++;
             return action;
         }
@@ -311,6 +313,7 @@ namespace ES2Access.UI.Input
         private void InvalidateClaimedKeys()
         {
             _claimedKeys = null;
+            _conditional = null;
             _bindingGeneration++;
         }
 
@@ -489,16 +492,72 @@ namespace ES2Access.UI.Input
         /// </summary>
         private bool ClaimsConditionally(KeyCode key)
         {
-            for (int i = 0; i < _actions.Count; i++)
+            List<InputAction> onThisKey;
+            if (!Conditional().TryGetValue(key, out onThisKey))
             {
-                InputAction action = _actions[i];
-                if (action.ClaimedWhen != null && action.BoundTo(key) && action.ClaimsItsKeys())
+                return false;
+            }
+
+            for (int i = 0; i < onThisKey.Count; i++)
+            {
+                if (onThisKey[i].ClaimsItsKeys())
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        // Which conditional actions sit on each key, in registration order - the same actions, asked
+        // the same question, in the same order as the pass over the whole table this replaces. Built
+        // beside ClaimedKeys() and dropped by the same hook, because both are derived from the
+        // chords: the galaxy camera polls its own bindings every frame, and PageUp and PageDown -
+        // conditional keys, so never in the claimed set - cost a scan of all 134 actions each.
+        private Dictionary<KeyCode, List<InputAction>> Conditional()
+        {
+            if (_conditional != null)
+            {
+                return _conditional;
+            }
+
+            Dictionary<KeyCode, List<InputAction>> byKey =
+                new Dictionary<KeyCode, List<InputAction>>();
+            for (int i = 0; i < _actions.Count; i++)
+            {
+                InputAction action = _actions[i];
+                if (action.ClaimedWhen == null)
+                {
+                    continue;
+                }
+
+                IList<InputBinding> bindings = action.Bindings;
+                for (int j = 0; j < bindings.Count; j++)
+                {
+                    KeyboardBinding keyboard = bindings[j] as KeyboardBinding;
+                    if (keyboard == null)
+                    {
+                        continue;
+                    }
+
+                    List<InputAction> onThisKey;
+                    if (!byKey.TryGetValue(keyboard.Key, out onThisKey))
+                    {
+                        onThisKey = new List<InputAction>(1);
+                        byKey.Add(keyboard.Key, onThisKey);
+                    }
+
+                    // An action bound to one key twice is asked once, as it was before: BoundTo
+                    // stopped at the first of its bindings on the key.
+                    if (!onThisKey.Contains(action))
+                    {
+                        onThisKey.Add(action);
+                    }
+                }
+            }
+
+            _conditional = byKey;
+            return byKey;
         }
 
         /// <summary>Whether the focused surface is taking this key as typed text - the other
