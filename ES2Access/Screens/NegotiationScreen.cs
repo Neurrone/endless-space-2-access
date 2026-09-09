@@ -892,15 +892,26 @@ namespace ES2Access.Screens
         /// resource term is haggled with.</summary>
         private static string[] Basket()
         {
-            string[] shelf = NegotiationTerms.Columns();
-            return new string[]
+            // Localization, like the shelf's own three: rebuilt when the language moves, not per frame.
+            string language = ES2Access.Localization.ModLocale.Language;
+            if (_basketColumns == null || _basketLanguage != language)
             {
-                shelf[0],
-                shelf[1],
-                shelf[2],
-                ModStrings.Get(ModStrings.NegotiationQuantity),
-            };
+                string[] shelf = NegotiationTerms.Columns();
+                _basketColumns = new string[]
+                {
+                    shelf[0],
+                    shelf[1],
+                    shelf[2],
+                    ModStrings.Get(ModStrings.NegotiationQuantity),
+                };
+                _basketLanguage = language;
+            }
+
+            return _basketColumns;
         }
+
+        private static string[] _basketColumns;
+        private static string _basketLanguage;
 
         // ---- what the computer thinks ----
 

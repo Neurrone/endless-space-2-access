@@ -311,7 +311,13 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                ThresholdTracks.Add(_cells, at, Mark(at, i), Keys + "threshold/" + i);
+                int index = i;
+                ThresholdTracks.Add(
+                    _cells,
+                    at,
+                    () => Mark(at, index),
+                    Keys + "threshold/" + i
+                );
             }
         }
 

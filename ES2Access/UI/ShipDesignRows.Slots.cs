@@ -203,23 +203,51 @@ namespace ES2Access.UI
         /// about a filled slot, while the ordering has to hold for every slot on the ship whatever is in
         /// it. Answered from the definition, so it is the same answer every frame.
         /// </summary>
+        private static readonly Dictionary<SlotDefinition, string[]> _typesByDefinition =
+            new Dictionary<SlotDefinition, string[]>();
+        private static string _typesLanguage;
+
         private static string[] SlotTypes(ShipDesignEditionSlotItem slot)
         {
             try
             {
+                // The answer is definition data read through the language and nothing else: the
+                // restriction list is built off the slot's SlotDefinition on every get
+                // (decompiled/Assembly-CSharp/GuiSlot.cs:62-77), and the words are localization. So the
+                // memo is keyed on the definition and emptied when the language moves - it outlives the
+                // frame because neither half of it can change within a session's language.
+                string language = Localization.ModLocale.Language;
+                if (_typesLanguage != language)
+                {
+                    _typesByDefinition.Clear();
+                    _typesLanguage = language;
+                }
+
+                SlotDefinition definition = slot.GuiSlot.Slot.Definition;
+                string[] known;
+                if (definition != null && _typesByDefinition.TryGetValue(definition, out known))
+                {
+                    return known;
+                }
+
                 string[] categories = slot.GuiSlot.ModuleTypeRestrictions;
-                if (categories == null || categories.Length == 0)
+                string[] names = null;
+                if (categories != null && categories.Length > 0)
                 {
-                    return null;
+                    names = new string[categories.Length];
+                    for (int i = 0; i < categories.Length; i++)
+                    {
+                        names[i] = AgeText.Title(Gui.GetTitle(categories[i]));
+                    }
+
+                    SlotOrder.Alphabetical(names);
                 }
 
-                string[] names = new string[categories.Length];
-                for (int i = 0; i < categories.Length; i++)
+                if (definition != null)
                 {
-                    names[i] = AgeText.Title(Gui.GetTitle(categories[i]));
+                    _typesByDefinition[definition] = names;
                 }
 
-                SlotOrder.Alphabetical(names);
                 return names;
             }
             catch (Exception)

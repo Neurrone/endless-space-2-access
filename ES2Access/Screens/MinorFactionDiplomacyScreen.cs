@@ -422,14 +422,16 @@ namespace ES2Access.Screens
                 }
 
                 AgeTooltip tip = tooltip;
-                string band = BandName(at, tooltip);
+                AgeTransform segment = at;
+                // The band's phrase costs two string scans, a substring, a localization and a format;
+                // the fallback is two closures. Composing it when the band is READ - and falling back
+                // there too - is the same choice this made at build time, since neither half can move
+                // between the build and the read of one frame.
+                Func<string> unnamed = TooltipChildren.NameOf(tip, at);
                 _bands.Add(
                     new TooltipChildren.Dossier
                     {
-                        Name =
-                            band != null
-                                ? (Func<string>)(() => band)
-                                : TooltipChildren.NameOf(tip, at),
+                        Name = () => BandName(segment, tip) ?? unnamed(),
                         Tooltip = tip,
                         Anchor = at,
                     }

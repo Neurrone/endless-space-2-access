@@ -5,6 +5,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
 using ES2Access.UI.Input;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -258,9 +259,8 @@ namespace ES2Access.Screens
 
             GroundTroopRepartiter it = row;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            string label = CardActions.FirstLine(tooltip);
             NodeVtable vtable = GraphNodes.Checkbox(
-                () => label,
+                CardActions.NameFromTooltip(tooltip),
                 () => it.LockToggle != null && it.LockToggle.State,
                 () => AgeWidgets.Toggle(it.LockToggle),
                 () => AgeWidgets.Offered(AgeWidgets.Transform(it.LockToggle)),
@@ -495,7 +495,7 @@ namespace ES2Access.Screens
                 AgeWidgets.Offered(it.HeaderGroup)
                 && (!picks || AgeWidgets.Offered(AgeWidgets.Transform(it.Toggle)));
             Func<string> label = () => AgeWidgets.TextOf(it.ContentGroup);
-            Func<string> header = () => Header(it);
+            Func<string> header = () => HeaderSaid(it);
             Func<IList<string>> details = () => Details(it, enabled);
             AgeTooltip tooltip = Tooltip(upgrade, picks);
             AgeTransform anchor = Anchor(upgrade, picks);
@@ -542,6 +542,28 @@ namespace ES2Access.Screens
                 ControlId.For(upgrade.AgeTransform, key),
                 vtable
             );
+        }
+
+        private static GroundTroopUpgrade _headerUpgrade;
+        private static int _headerFrame = -1;
+        private static string _headerSaid;
+
+        /// <summary>The header once per (card, frame). Its cost branch runs the game's own cost
+        /// interpreter (<c>Gui.FormatCosts</c> reaches
+        /// <c>DepartmentOfTheTreasury.GetProductionCost</c>, which takes a lock and evaluates an
+        /// expression), and the navigator recomposes the focused card's readout - every part of it -
+        /// on every frame. Nothing the three branches read can move within one frame.</summary>
+        private static string HeaderSaid(GroundTroopUpgrade upgrade)
+        {
+            int frame = Time.frameCount;
+            if (_headerFrame != frame || !ReferenceEquals(_headerUpgrade, upgrade))
+            {
+                _headerSaid = Header(upgrade);
+                _headerFrame = frame;
+                _headerUpgrade = upgrade;
+            }
+
+            return _headerSaid;
         }
 
         /// <summary>What the card's header says: the badge for one already owned, the technology one is
@@ -875,13 +897,48 @@ namespace ES2Access.Screens
             Cells.EmitLinear(builder, _cells);
         }
 
+        private struct TroopLabel
+        {
+            public GroundBattleTroopType Type;
+            public string Name;
+        }
+
+        private static readonly List<TroopLabel> _troopNames = new List<TroopLabel>(8);
+        private static GroundTroopManagementModalWindow _troopNamesWindow;
+        private static int _troopNamesFrame = -1;
+
         /// <summary>What the game calls a troop type. Drawn once per visual row, in the middle column,
-        /// so the other two columns take their row names from there.</summary>
+        /// so the other two columns take their row names from there - and read off that column ONCE per
+        /// (window, frame) rather than per row of each of them, which was a walk of the column with a
+        /// GetComponent per row for every row of the other two.</summary>
         private static string TroopName(
             GroundTroopManagementModalWindow window,
             GroundBattleTroopType type
         )
         {
+            TroopNames(window);
+            for (int i = 0; i < _troopNames.Count; i++)
+            {
+                if (_troopNames[i].Type == type)
+                {
+                    return _troopNames[i].Name;
+                }
+            }
+
+            return null;
+        }
+
+        private static void TroopNames(GroundTroopManagementModalWindow window)
+        {
+            int frame = Time.frameCount;
+            if (_troopNamesFrame == frame && ReferenceEquals(_troopNamesWindow, window))
+            {
+                return;
+            }
+
+            _troopNamesFrame = frame;
+            _troopNamesWindow = window;
+            _troopNames.Clear();
             try
             {
                 AgeTransform table = window.DescriptionsTable;
@@ -890,15 +947,19 @@ namespace ES2Access.Screens
                 {
                     GroundTroopDescription row =
                         rows[i] == null ? null : rows[i].GetComponent<GroundTroopDescription>();
-                    if (row != null && row.TroopType == type)
+                    if (row != null)
                     {
-                        return AgeText.Label(row.NameLabel);
+                        _troopNames.Add(
+                            new TroopLabel
+                            {
+                                Type = row.TroopType,
+                                Name = AgeText.Label(row.NameLabel),
+                            }
+                        );
                     }
                 }
             }
             catch (Exception) { }
-
-            return null;
         }
 
         private static GroundTroopManagementModalWindow Window()

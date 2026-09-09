@@ -47,13 +47,25 @@ namespace ES2Access.UI
         /// column, the name's included.</summary>
         public static string[] Columns()
         {
-            return new string[]
+            // The headings are localization, not game state: they change when the language does and at
+            // no other moment, and the sheet only ever reads the array back.
+            string language = Localization.ModLocale.Language;
+            if (_columns == null || _columnsLanguage != language)
             {
-                AgeText.Title("%NegotiationModalWindowTermNameHeaderTitle"),
-                AgeText.Title("%NegotiationModalWindowTermTypeHeaderTitle"),
-                AgeText.Title("%NegotiationModalWindowTermCostHeaderTitle"),
-            };
+                _columns = new string[]
+                {
+                    AgeText.Title("%NegotiationModalWindowTermNameHeaderTitle"),
+                    AgeText.Title("%NegotiationModalWindowTermTypeHeaderTitle"),
+                    AgeText.Title("%NegotiationModalWindowTermCostHeaderTitle"),
+                };
+                _columnsLanguage = language;
+            }
+
+            return _columns;
         }
+
+        private static string[] _columns;
+        private static string _columnsLanguage;
 
         /// <summary>The prefab names of the three headings the game draws over a shelf, in the order
         /// <see cref="Columns"/> puts them - name first, which is the shelf's own identity column and
@@ -658,11 +670,31 @@ namespace ES2Access.UI
                     + "/term/"
                     + (term == null ? "?" : term.Name.ToString())
                     + "/"
-                    + (term == null ? "?" : term.ApplicationMethod.ToString());
+                    + (term == null ? "?" : MethodName(term.ApplicationMethod));
             }
             catch (Exception)
             {
                 return keyPrefix + "/term/?";
+            }
+        }
+
+        /// <summary>The enum member's own name, spelled out rather than reflected for: the key is built
+        /// for every drawn row of a shelf hundreds of terms long, on every frame, and
+        /// <c>Enum.ToString</c> is a boxing name lookup. The three cases are the whole enum
+        /// (<c>DiplomaticTerm.ApplicationMethod</c>) and the fallback is what <c>ToString</c> answers
+        /// for a value outside it, so the key text is character for character what it was.</summary>
+        private static string MethodName(DiplomaticTerm.ApplicationMethod method)
+        {
+            switch (method)
+            {
+                case DiplomaticTerm.ApplicationMethod.ReceiverOnly:
+                    return "ReceiverOnly";
+                case DiplomaticTerm.ApplicationMethod.ProviderOnly:
+                    return "ProviderOnly";
+                case DiplomaticTerm.ApplicationMethod.Symmetrical:
+                    return "Symmetrical";
+                default:
+                    return ((int)method).ToString();
             }
         }
 

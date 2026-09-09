@@ -89,7 +89,6 @@ ES2Access/Screens/SystemManagementScreen.Spaceport.cs | 1 | string content = too
 ES2Access/Screens/SystemPoliticsScreen.cs | 1 | Func<IList<string>> words = AgeWidgets.TooltipLines(TableSheet.TooltipOf(cell));
 
 ES2Access/Screens/TroopManagementScreen.cs | 1 | () => named ? name : CardActions.FirstLine(tooltip),
-ES2Access/Screens/TroopManagementScreen.cs | 1 | string label = CardActions.FirstLine(tooltip);
 
 ES2Access/Screens/VictoryScreen.cs | 1 | return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
 

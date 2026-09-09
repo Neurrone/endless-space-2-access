@@ -692,6 +692,40 @@ namespace ES2Access.UI
             return cell;
         }
 
+        private static readonly Dictionary<string, string> _statCaptions =
+            new Dictionary<string, string>();
+        private static string _statCaptionsLanguage;
+
+        /// <summary>The game's own title for a statistic, resolved once per key rather than once per
+        /// figure per frame. <see cref="AddStat"/> runs for every figure a panel draws on every build,
+        /// and its caption is localization and nothing else - it moves when the language moves, which
+        /// is what the memo is keyed on. Nothing is remembered before the language is known, so a key
+        /// asked while the localization service is still coming up is not frozen unresolved.</summary>
+        private static string StatCaption(string titleKey)
+        {
+            string language = Localization.ModLocale.Language;
+            if (string.IsNullOrEmpty(language))
+            {
+                return AgeText.Clean(titleKey);
+            }
+
+            if (_statCaptionsLanguage != language)
+            {
+                _statCaptions.Clear();
+                _statCaptionsLanguage = language;
+            }
+
+            string lookup = titleKey ?? string.Empty;
+            string caption;
+            if (!_statCaptions.TryGetValue(lookup, out caption))
+            {
+                caption = AgeText.Clean(titleKey);
+                _statCaptions[lookup] = caption;
+            }
+
+            return caption;
+        }
+
         /// <summary>
         /// A figure the game draws as a number beside a bare symbol, named at declaration time.
         ///
@@ -742,7 +776,7 @@ namespace ES2Access.UI
             AgeTooltip tip = carried.Own;
             AgeTransform group = widget.Parent;
             AgeTransform laid = row ?? group ?? widget;
-            string caption = AgeText.Clean(titleKey);
+            string caption = StatCaption(titleKey);
             bool named = !string.IsNullOrEmpty(caption) && caption[0] != '%';
             AgeTransform at = widget;
             NodeVtable vtable = new NodeVtable
