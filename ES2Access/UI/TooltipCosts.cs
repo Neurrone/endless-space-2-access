@@ -5,6 +5,7 @@ using Amplitude.Extensions;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using UnityEngine;
 
 namespace ES2Access.UI
 {
@@ -24,7 +25,8 @@ namespace ES2Access.UI
     /// calls that panel's own <c>Bind</c> makes, on the target and context the tooltip carries
     /// (<c>GuiTooltipWindow.DoBind</c> hands the panels those two). What the player hears is
     /// therefore what the panel draws, minus its "Cost:" caption, and it stays right when a bonus
-    /// changes a price - nothing here is cached but the class's own answer.
+    /// changes a price - nothing here is held longer than the frame it was computed on, and the
+    /// class's own answer, which is authored data, is held for good.
     ///
     /// Five panel kinds draw a cost, and the differences between them are real: a recipe's says only
     /// how many turns, a ship design adds its manpower, a hacking program says whether something is
@@ -109,10 +111,29 @@ namespace ES2Access.UI
             {
                 object target = tooltip.Target;
                 object context = tooltip.Context;
+
+                int frame = Time.frameCount;
+                if (_pricedFrame != frame)
+                {
+                    Priced.Clear();
+                    _pricedFrame = frame;
+                }
+
+                PriceKey key = new PriceKey(target, context, panels);
+                string said;
+                if (Priced.TryGetValue(key, out said))
+                {
+                    return said;
+                }
+
                 for (int i = 0; i < panels.Length; i++)
                 {
                     Draw(message, panels[i], target, context);
                 }
+
+                said = message.Build();
+                Priced[key] = said;
+                return said;
             }
             catch (Exception e)
             {
@@ -338,6 +359,60 @@ namespace ES2Access.UI
                 return None;
             }
         }
+
+        /// <summary>What a price was computed from: the two objects the tooltip window hands its
+        /// panels, and the panels themselves (one array per class, so the reference stands for the
+        /// class).</summary>
+        private struct PriceKey : IEquatable<PriceKey>
+        {
+            private readonly object _target;
+
+            private readonly object _context;
+
+            private readonly Panel[] _panels;
+
+            public PriceKey(object target, object context, Panel[] panels)
+            {
+                _target = target;
+                _context = context;
+                _panels = panels;
+            }
+
+            public bool Equals(PriceKey other)
+            {
+                return ReferenceEquals(_target, other._target)
+                    && ReferenceEquals(_context, other._context)
+                    && ReferenceEquals(_panels, other._panels);
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is PriceKey && Equals((PriceKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = _target == null ? 0 : _target.GetHashCode();
+                hash = hash * 31 + (_context == null ? 0 : _context.GetHashCode());
+                return hash * 31 + (_panels == null ? 0 : _panels.GetHashCode());
+            }
+        }
+
+        // The composed price is held for ONE frame and no longer. The focused control's whole readout
+        // is composed two to three times a frame (the announcer's leaf text, then the live watch), and
+        // each compose ran the treasury's remaining-turns simulation afresh - a new PrerequisiteContext,
+        // the prerequisite interpreter and a pass over the cost entries, for an answer that cannot have
+        // moved between two asks in the same frame.
+        //
+        // A turn-long key would be wrong, whatever the class comment above says about a price moving
+        // with the turn: the TURNS half of the line is computed off the empire's stock right now
+        // (GetRemainingTurns reads costProvider.CurrentStocks and the empire's net income), and a
+        // buyout, a trade or a resource spent elsewhere moves a stock in the middle of a turn. The
+        // frame is the longest key that cannot say a stale number.
+        private static readonly Dictionary<PriceKey, string> Priced =
+            new Dictionary<PriceKey, string>();
+
+        private static int _pricedFrame = -1;
 
         /// <summary>A prefab path names its panel class in its last segment, and only the five that
         /// draw a price are of interest.</summary>
