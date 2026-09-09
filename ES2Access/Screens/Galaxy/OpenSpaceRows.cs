@@ -393,6 +393,7 @@ namespace ES2Access.Screens
                 CoordinationRequestLabelsWindow pins =
                     GameWindows.Shown<CoordinationRequestLabelsWindow>();
                 Collect(pins == null ? null : pins.RequestLabelsContainer, _pins);
+                IndexLabels();
             }
             catch (Exception e)
             {
@@ -465,7 +466,11 @@ namespace ES2Access.Screens
                     Amplitude.Unity.Framework.Services
                         .GetService<ICoordinationRequestRepositoryService>();
                 IEnumerable<CoordinationRequest> all = requests;
-                if (all != null && empire != null)
+                // Asked before it is walked: the repository's enumerator is an object allocated on
+                // every frame the map is up, and it holds nothing in most games
+                // (CoordinationRequestsManager.cs:21 answers its list's own Count, or nought where
+                // there is no list - the state the walk itself threw on).
+                if (all != null && empire != null && requests.CoordinationRequestCount > 0)
                 {
                     foreach (CoordinationRequest request in all)
                     {
@@ -484,18 +489,74 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>
+        /// Which mote stands for which thing, worked out once for the whole build.
+        ///
+        /// Each of the three families used to answer that by walking its whole collected list with a
+        /// freshly captured predicate, once per probe, per missile and per pin - and the map asks for
+        /// every one of them on every frame. The lists are gathered here in one place, so the reverse
+        /// lookup is built here too, in the same pass, and it keeps the FIRST label bound to a thing,
+        /// which is what a walk stopping at its first hit answered.
+        /// </summary>
+        private void IndexLabels()
+        {
+            _probeMotes.Clear();
+            _shotMotes.Clear();
+            _pinMotes.Clear();
+            for (int i = 0; i < _probes.Count; i++)
+            {
+                IVisibleMovableGameEntityWithVision entity = _probes[i].Entity;
+                if (entity != null && !_probeMotes.ContainsKey(entity))
+                {
+                    _probeMotes[entity] = _probes[i];
+                }
+            }
+
+            for (int i = 0; i < _projectiles.Count; i++)
+            {
+                IVisibleMovableGameEntityWithVision entity = _projectiles[i].Entity;
+                if (entity != null && !_shotMotes.ContainsKey(entity))
+                {
+                    _shotMotes[entity] = _projectiles[i];
+                }
+            }
+
+            for (int i = 0; i < _pins.Count; i++)
+            {
+                CoordinationRequest request = _pins[i].CoordinationRequest;
+                if (request != null && !_pinMotes.ContainsKey(request))
+                {
+                    _pinMotes[request] = _pins[i];
+                }
+            }
+        }
+
+        private readonly Dictionary<IVisibleMovableGameEntityWithVision, ProbeLabel> _probeMotes =
+            new Dictionary<IVisibleMovableGameEntityWithVision, ProbeLabel>();
+
+        private readonly Dictionary<
+            IVisibleMovableGameEntityWithVision,
+            ObliteratorProjectileLabel
+        > _shotMotes =
+            new Dictionary<IVisibleMovableGameEntityWithVision, ObliteratorProjectileLabel>();
+
+        private readonly Dictionary<CoordinationRequest, CoordinationRequestLabel> _pinMotes =
+            new Dictionary<CoordinationRequest, CoordinationRequestLabel>();
+
         /// <summary>The mote the map happens to be drawing for this missile. No drawn policy: the
         /// caller keeps the label only as a shortcut to the dossier and treats a null as "the camera
         /// has culled it", which is the same answer a culled label would give.</summary>
         private ObliteratorProjectileLabel LabelFor(ObliteratorProjectile shot)
         {
-            return LabelFor(_projectiles, l => ReferenceEquals(l.Entity, shot), null);
+            ObliteratorProjectileLabel mote;
+            return shot != null && _shotMotes.TryGetValue(shot, out mote) ? mote : null;
         }
 
         /// <summary>The same for an ally's pin, with the same no-policy reasoning.</summary>
         private CoordinationRequestLabel LabelFor(CoordinationRequest request)
         {
-            return LabelFor(_pins, l => ReferenceEquals(l.CoordinationRequest, request), null);
+            CoordinationRequestLabel mote;
+            return request != null && _pinMotes.TryGetValue(request, out mote) ? mote : null;
         }
 
         /// <summary>One probe the player has been shown, and the star it is drawn nearest to.</summary>
@@ -585,21 +646,111 @@ namespace ES2Access.Screens
         /// has culled it out.</summary>
         private ProbeLabel LabelFor(Probe probe)
         {
-            return LabelFor(_probes, l => ReferenceEquals(l.Entity, probe), null);
+            ProbeLabel mote;
+            return probe != null && _probeMotes.TryGetValue(probe, out mote) ? mote : null;
         }
 
-        /// <summary>The declared system nearest a point on the map, with no radius: the point is one
-        /// the map is drawing something at, and the nearest star is what a sighted player reads its
-        /// position against however far off it is.</summary>
+        /// <summary>
+        /// The declared system nearest a point on the map, with no radius: the point is one the map is
+        /// drawing something at, and the nearest star is what a sighted player reads its position
+        /// against however far off it is.
+        ///
+        /// Found by walking outwards from the point's own ROW rather than by measuring every star,
+        /// because <see cref="_systems"/> is already in reading order and reading order is rows: its
+        /// first key is <c>Round(north)</c>, descending (<see cref="MapCoordinates.ReadingOrder"/>),
+        /// so the row number falls as the index rises and a binary search lands on the point's own
+        /// row. From there the two directions are walked in step, always taking whichever side's row
+        /// is nearer the point's northing.
+        ///
+        /// What makes stopping safe is that a row is a WHOLE unit of galaxy: a star in row r has a
+        /// raw northing within half a unit of r, so nothing in that row can be nearer the point than
+        /// |r - north| - 1/2 straight up or down. Once the nearer of the two sides is further off
+        /// than the best star found, no star on either side can beat it, since each side's rows only
+        /// get further away. The bound is compared with a hair of slack because the distances are the
+        /// game's own float arithmetic and the bound is not: erring towards measuring one row too
+        /// many costs nothing, and pruning one row too few would be an answer.
+        ///
+        /// Ties go to the LOWEST index, which is what offering every star in list order to a
+        /// <see cref="NearestPick"/> did - it keeps the first of an equal pair - so two stars the
+        /// same distance from a probe pick the same one as before.
+        /// </summary>
         private StarSystemNode NearestSystem(GalaxyPosition position)
         {
-            NearestPick pick = new NearestPick(double.PositiveInfinity);
-            for (int i = 0; i < _systems.Count; i++)
+            double east;
+            double north;
+            GalaxyCoordinates.Offsets(position, out east, out north);
+            int lo = 0;
+            int hi = _systems.Count;
+            int row = MapCoordinates.Round(north);
+            while (lo < hi)
             {
-                pick.Offer(i, GalaxyPosition.SqrDistance(_systems[i].GalaxyPosition, position));
+                int mid = lo + ((hi - lo) / 2);
+                if (RowOf(_systems[mid]) > row)
+                {
+                    lo = mid + 1;
+                }
+                else
+                {
+                    hi = mid;
+                }
             }
 
-            return pick.Found ? _systems[pick.Index] : null;
+            int down = lo;
+            int up = lo - 1;
+            int found = -1;
+            double best = 0;
+            while (down < _systems.Count || up >= 0)
+            {
+                double below =
+                    down < _systems.Count
+                        ? RowReach(RowOf(_systems[down]), north)
+                        : double.PositiveInfinity;
+                double above = up >= 0 ? RowReach(RowOf(_systems[up]), north) : double.PositiveInfinity;
+                int take;
+                double reach;
+                if (below <= above)
+                {
+                    take = down++;
+                    reach = below;
+                }
+                else
+                {
+                    take = up--;
+                    reach = above;
+                }
+
+                if (found >= 0 && reach > (best * 1.000001) + 1e-6)
+                {
+                    break;
+                }
+
+                double away = GalaxyPosition.SqrDistance(_systems[take].GalaxyPosition, position);
+                if (found < 0 || away < best || (away == best && take < found))
+                {
+                    best = away;
+                    found = take;
+                }
+            }
+
+            return found >= 0 ? _systems[found] : null;
+        }
+
+        /// <summary>The row of the map a star reads in - the first key of the reading order.</summary>
+        private static int RowOf(StarSystemNode node)
+        {
+            double east;
+            double north;
+            GalaxyCoordinates.Offsets(node.GalaxyPosition, out east, out north);
+            return MapCoordinates.Round(north);
+        }
+
+        /// <summary>How near a star in this row could possibly be to a point at this northing,
+        /// squared - nought for the row the point is in and its neighbours, since a row is a unit
+        /// high and a star sits within half a unit of its row's number.</summary>
+        private static double RowReach(int row, double north)
+        {
+            double gap = Math.Abs(row - north) - 0.5;
+            return gap <= 0 ? 0 : gap * gap;
         }
 
         /// <summary>Where a probe's node hangs: out in open space, at the top of the stop, wherever the
