@@ -180,8 +180,8 @@ ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (table == null || !AgeWidgets.V
 ES2Access/Screens/Galaxy/ScanHacking.cs | 2 | if (widget == null || !AgeWidgets.Painted(widget))
 ES2Access/Screens/Galaxy/ScanHacking.cs | 1 | if (widget == null || toggle == null || !AgeWidgets.Visible(widget))
 
+ES2Access/Screens/Galaxy/ScanLens.cs | 1 | bar == null || !AgeWidgets.Visible(bar.AgeTransform)
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | curves == null || !AgeWidgets.Visible(curves.AgeTransform)
-ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (bar == null || caption == null || !AgeWidgets.Visible(bar.AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (group == null || !AgeWidgets.Visible(group.AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (headers[i] != null && AgeWidgets.Visible(headers[i].AgeTransform))
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))

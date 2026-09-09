@@ -65,6 +65,46 @@ namespace ES2Access.Screens
         private readonly Amplitude.Unity.Framework.PrerequisiteContext _prerequisites =
             new Amplitude.Unity.Framework.PrerequisiteContext();
 
+        /// <summary>The bars of the rank graph, swept once per frame rather than per build: the graph
+        /// is a fixed prefab subtree and the build asks for it every frame the panel is up.</summary>
+        private readonly FrameSweep<ScanViewSystemEmpireRankBar> _rankBars =
+            new FrameSweep<ScanViewSystemEmpireRankBar>("scan: the rank bar graph");
+
+        /// <summary>
+        /// The rank history's PAST columns - every turn but the one being played - held for as long as
+        /// that turn lasts and that colony is the one bound.
+        ///
+        /// A past turn's column is read out of the game's own recording
+        /// (<c>IGameStatisticsManagementService.TakeSnapshot</c>), which is written when the turn ends
+        /// and never rewritten: asking for a turn with no snapshot even INSERTS the empty one it
+        /// answers with, so a turn that reads blank keeps reading blank. The columns therefore settle
+        /// the moment the turn does, and re-reading them per frame walked every turn ever played,
+        /// twice, for figures that cannot have moved. The live column is the one thing that can, and
+        /// it is still read afresh on every build.
+        /// </summary>
+        private ColonizedStarSystem _historyOf;
+
+        private Empire _historyFor;
+
+        private int _historyTurn = -1;
+
+        private readonly List<string> _historyTurns = new List<string>();
+
+        private readonly List<Func<string>> _historyRanks = new List<Func<string>>();
+
+        private readonly List<Func<string>> _historyKnown = new List<Func<string>>();
+
+        /// <summary>Scratch for the one repository pass that places every rank bar at once: the
+        /// properties being ranked, this system's own reading of each, and where it comes among the
+        /// player's other systems for each.</summary>
+        private readonly List<StaticString> _rankOn = new List<StaticString>();
+
+        private readonly List<float> _rankMine = new List<float>();
+
+        private readonly List<int> _rankPlace = new List<int>();
+
+        private readonly List<int> _rankRow = new List<int>();
+
         /// <summary>The stop the lens's own title strip and the page's zoom ladder sit in.</summary>
         public static readonly object TitleStop = "scan:title";
 
@@ -117,6 +157,7 @@ namespace ES2Access.Screens
             _arrived = false;
             _infoKnown = false;
             _descriptor = Descriptor();
+            ForgetHistory();
         }
 
         /// <summary>Given back when the page goes.</summary>
@@ -127,6 +168,19 @@ namespace ES2Access.Screens
             _arrived = false;
             _infoKnown = false;
             _descriptor = null;
+            ForgetHistory();
+        }
+
+        /// <summary>Let go of the colony the rank history was held for - it is a live game object, and
+        /// the page that was reading it has gone.</summary>
+        private void ForgetHistory()
+        {
+            _historyOf = null;
+            _historyFor = null;
+            _historyTurn = -1;
+            _historyTurns.Clear();
+            _historyRanks.Clear();
+            _historyKnown.Clear();
         }
 
         /// <summary>
@@ -587,55 +641,50 @@ namespace ES2Access.Screens
         /// and no part of the table below it - four bars in a picture are not a grid, and reading them
         /// as one said a cell's place in a thirty-row column over every line. Answers the LAST row it
         /// declared, which is the seam the history table hangs under.</summary>
-        private static ControlId RankProperties(
+        private ControlId RankProperties(
             GraphBuilder builder,
             StarSystemOverviewScanViewWindow window,
             ScanViewSystemEmpireRankBarGraph bars,
             ColonizedStarSystem colony
         )
         {
-            ScanViewSystemEmpireRankBar[] drawn =
-                // walk: audit M1, to move behind FrameSweep
-                bars.AgeTransform.GetComponentsInChildren<ScanViewSystemEmpireRankBar>(true);
+            ScanViewSystemEmpireRankBar[] drawn = _rankBars.Under(bars.AgeTransform);
             StarSystemOverviewScanViewGuiElement element = window.SystemOverviewGuiElement;
             StarSystemOverviewScanViewGuiElement.EmpireRankingProperty[] properties =
                 element == null ? null : element.EmpireRankingProperties;
-            ControlId last = null;
+            // Which bars contribute a line, and which property each is ranked on, gathered before
+            // anything is placed: placing one is a walk of every colonized system in the galaxy, and
+            // one walk answers for the whole graph.
+            _rankRow.Clear();
+            _rankOn.Clear();
             for (int i = 0; properties != null && i < drawn.Length; i++)
             {
                 ScanViewSystemEmpireRankBar bar = drawn[i];
-                ScanViewCaptionItemGuiElement caption = bar == null ? null : bar.GuiElement;
                 // Flow control: whether this property contributes a line. The game switches a bar OFF
                 // outright where its ranking property has no caption item to be drawn under
                 // (<c>ScanViewSystemEmpireRankBarGraph.BindBar</c> :113), and a line for a bar nobody
                 // is shown would be a ranking the picture does not make.
-                if (bar == null || caption == null || !AgeWidgets.Visible(bar.AgeTransform))
+                int property =
+                    bar == null || !AgeWidgets.Visible(bar.AgeTransform)
+                        ? -1
+                        : PropertyOf(properties, bar);
+                if (property >= 0)
                 {
-                    continue;
+                    _rankRow.Add(i);
+                    _rankOn.Add(properties[property].PropertyName);
                 }
+            }
 
-                int property = -1;
-                for (int j = 0; property < 0 && j < properties.Length; j++)
-                {
-                    if (properties[j].Name == caption.Name)
-                    {
-                        property = j;
-                    }
-                }
-
-                if (property < 0)
-                {
-                    continue;
-                }
-
-                int others;
-                int place = Place(colony, properties[property].PropertyName, out others);
-                string name = AgeText.Clean(Gui.Localize(caption.Title));
-                string reading = ModStrings.Format(
-                    ModStrings.ScanSystemRank,
-                    place,
-                    others + 1
-                );
+            int others;
+            Places(colony, _rankOn, _rankPlace, out others);
+            int total = others + 1;
+            ControlId last = null;
+            for (int row = 0; row < _rankRow.Count; row++)
+            {
+                int i = _rankRow[row];
+                ScanViewSystemEmpireRankBar bar = drawn[i];
+                int place = _rankPlace[row];
+                ScanViewCaptionItemGuiElement named = bar.GuiElement;
                 last = ControlId.For(bar, "scan:system/rank/property/" + i);
                 builder.AddItem(
                     Nodes.Drawn(
@@ -644,10 +693,18 @@ namespace ES2Access.Screens
                         // VALUE. Declared as two labels the reading was spoken and then dropped from
                         // the review buffer, which takes the head and no other label part
                         // (<see cref="NodeBuffer"/>) - owner-reported, "Defense" reviewing with no
-                        // rank at all. Unwatched: the place is worked out once per build, off a walk
-                        // of the empire's systems, and asking it again every frame would run that walk
-                        // at 60 Hz for a number that only a rebuild can change.
-                        GraphNodes.Readout(() => name, () => reading, null, null, false),
+                        // rank at all. Unwatched: the place is worked out once per build, off ONE walk
+                        // of the empire's systems for the whole graph, and asking it again every frame
+                        // would run that walk at 60 Hz for a number only a rebuild can change. The
+                        // words are composed INSIDE the two readers rather than in front of them: a
+                        // build is every frame, and a row nobody is standing on has nothing to say.
+                        GraphNodes.Readout(
+                            () => AgeText.Clean(Gui.Localize(named.Title)),
+                            () => ModStrings.Format(ModStrings.ScanSystemRank, place, total),
+                            null,
+                            null,
+                            false
+                        ),
                         bar.AgeTransform
                     )
                 );
@@ -656,22 +713,63 @@ namespace ES2Access.Screens
             return last;
         }
 
-        /// <summary>Where this system comes among the player's own for one property, and how many of
-        /// theirs there are besides it - the graph's own count, walked over the same repository it
-        /// walks.</summary>
-        private static int Place(
+        /// <summary>Which of the graph's ranking properties a bar is drawn for, matched the way the
+        /// graph itself matches them - the caption item's own name
+        /// (<c>ScanViewSystemEmpireRankBarGraph.BindBar</c> :103-112) - or -1 for a bar the graph is
+        /// drawing under no caption at all.</summary>
+        private static int PropertyOf(
+            StarSystemOverviewScanViewGuiElement.EmpireRankingProperty[] properties,
+            ScanViewSystemEmpireRankBar bar
+        )
+        {
+            ScanViewCaptionItemGuiElement caption = bar.GuiElement;
+            for (int j = 0; caption != null && j < properties.Length; j++)
+            {
+                if (properties[j].Name == caption.Name)
+                {
+                    return j;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>Where this system comes among the player's own for EVERY property the graph ranks
+        /// it by, and how many of theirs there are besides it - the graph's own count, walked over the
+        /// same repository it walks, and walked ONCE: the empire's systems are read one at a time and
+        /// every property is scored off that one reading, because the walk is the whole cost and the
+        /// bars all ask about the same systems.</summary>
+        private void Places(
             ColonizedStarSystem colony,
-            Amplitude.StaticString property,
+            List<StaticString> properties,
+            List<int> places,
             out int others
         )
         {
             others = 0;
-            int better = 0;
+            places.Clear();
+            for (int i = 0; i < properties.Count; i++)
+            {
+                places.Add(1);
+            }
+
+            // Nothing is ranked, so nobody is walked: a graph drawing no bar asked for no walk before
+            // this pass existed either.
+            if (places.Count == 0)
+            {
+                return;
+            }
+
             try
             {
                 IColonizedStarSystemRepositoryService repository =
                     Amplitude.Unity.Framework.Services.GetService<IColonizedStarSystemRepositoryService>();
-                float mine = colony.GetPropertyValue(property);
+                _rankMine.Clear();
+                for (int i = 0; i < properties.Count; i++)
+                {
+                    _rankMine.Add(colony.GetPropertyValue(properties[i]));
+                }
+
                 IEnumerator<ColonizedStarSystem> walk =
                     repository == null ? null : repository.GetValues().GetEnumerator();
                 while (walk != null && walk.MoveNext())
@@ -687,9 +785,12 @@ namespace ES2Access.Screens
                     }
 
                     others++;
-                    if (other.GetPropertyValue(property) > mine)
+                    for (int i = 0; i < properties.Count; i++)
                     {
-                        better++;
+                        if (other.GetPropertyValue(properties[i]) > _rankMine[i])
+                        {
+                            places[i] = places[i] + 1;
+                        }
                     }
                 }
             }
@@ -697,8 +798,6 @@ namespace ES2Access.Screens
             {
                 Log.Warn("scan: ranking a system against the empire's threw: " + e);
             }
-
-            return better + 1;
         }
 
         /// <summary>
@@ -723,7 +822,7 @@ namespace ES2Access.Screens
         /// marketplace's price history keeps for the same reason. A turn neither curve has a reading
         /// for is no column at all.
         /// </summary>
-        private static void RankHistory(
+        private void RankHistory(
             ColonizedStarSystem colony,
             List<string> turns,
             List<Func<string>> ranks,
@@ -741,44 +840,74 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                // Newest first: the loop runs back from the turn in progress, so the first column
-                // added is the live reading and the last is turn one.
-                for (int turn = game.Turn; turn >= 0; turn--)
+                // Newest first: the live column, then the recorded ones back to turn one.
+                // The turn in progress has no snapshot yet; the histogram appends the LIVE readings
+                // for it, and so does this - on every build, because it is the one column a turn can
+                // still move.
+                string count = Figure(
+                    player.GetPropertyValue(SimulationProperties.Empire.KnownSystemCount)
+                );
+                string rank = Ranked(colony.GetScoreRank(player.Index) + 1, count);
+                if (count != null || rank != null)
                 {
-                    string count;
-                    string rank;
-                    if (turn == game.Turn)
-                    {
-                        // The turn in progress has no snapshot yet; the histogram appends the LIVE
-                        // readings for it, and so does this.
-                        count = Figure(
-                            player.GetPropertyValue(SimulationProperties.Empire.KnownSystemCount)
-                        );
-                        rank = Ranked(colony.GetScoreRank(player.Index) + 1, count);
-                    }
-                    else
-                    {
-                        count = KnownAt(stats, player, turn);
-                        rank = Ranked(RankAt(stats, player, colony, turn), count);
-                    }
-
-                    if (count == null && rank == null)
-                    {
-                        continue;
-                    }
-
                     // Copied per column: a cell reads its own turn's figure, and a loop variable read
                     // later would hand every one of them the last turn's.
                     string rankHere = rank;
                     string countHere = count;
-                    turns.Add(ModStrings.Format(ModStrings.HudTurnLogTurn, turn + 1));
+                    turns.Add(ModStrings.Format(ModStrings.HudTurnLogTurn, game.Turn + 1));
                     ranks.Add(() => rankHere);
                     known.Add(() => countHere);
                 }
+
+                PastColumns(game, stats, player, colony);
+                turns.AddRange(_historyTurns);
+                ranks.AddRange(_historyRanks);
+                known.AddRange(_historyKnown);
             }
             catch (Exception e)
             {
                 Log.Warn("scan: reading a system's rank history threw: " + e);
+            }
+        }
+
+        /// <summary>The columns for the turns already played, built once per (turn, colony) and read
+        /// back on every build after that (<see cref="_historyOf"/>).</summary>
+        private void PastColumns(
+            Game game,
+            IGameStatisticsManagementService stats,
+            Empire player,
+            ColonizedStarSystem colony
+        )
+        {
+            if (
+                _historyTurn == game.Turn
+                && ReferenceEquals(_historyOf, colony)
+                && ReferenceEquals(_historyFor, player)
+            )
+            {
+                return;
+            }
+
+            _historyTurns.Clear();
+            _historyRanks.Clear();
+            _historyKnown.Clear();
+            _historyTurn = game.Turn;
+            _historyOf = colony;
+            _historyFor = player;
+            for (int turn = game.Turn - 1; turn >= 0; turn--)
+            {
+                string count = KnownAt(stats, player, turn);
+                string rank = Ranked(RankAt(stats, player, colony, turn), count);
+                if (count == null && rank == null)
+                {
+                    continue;
+                }
+
+                string rankHere = rank;
+                string countHere = count;
+                _historyTurns.Add(ModStrings.Format(ModStrings.HudTurnLogTurn, turn + 1));
+                _historyRanks.Add(() => rankHere);
+                _historyKnown.Add(() => countHere);
             }
         }
 
