@@ -158,9 +158,8 @@ namespace ES2Access.Screens
             }
 
             EmpirePerformanceHex it = hex;
-            string name = HexName(sector, index);
             NodeVtable vtable = GraphNodes.Readout(
-                () => name,
+                () => HexName(sector, index),
                 () => AgeText.Label(it.ValueLabel),
                 null,
                 AgeWidgets.Raw(widget)

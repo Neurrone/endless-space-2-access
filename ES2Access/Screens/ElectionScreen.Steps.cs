@@ -361,13 +361,11 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                string label = AgeText.Clean(Gui.GetLocalizedTitle(party.Key.Name));
-                string share = new MessageBuilder()
-                    .PushFraction(party.Value[1], counts.Total)
-                    .Build();
+                KeyValuePair<PoliticsDefinition, int[]> it = party;
+                int total = counts.Total;
                 NodeVtable vtable = GraphNodes.Readout(
-                    () => label,
-                    () => share,
+                    () => AgeText.Clean(Gui.GetLocalizedTitle(it.Key.Name)),
+                    () => new MessageBuilder().PushFraction(it.Value[1], total).Build(),
                     null,
                     AgeWidgets.Raw(child)
                 );
@@ -400,12 +398,19 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string said = ModStrings.Format(
-                ModStrings.ElectionRepresentativesCounted,
-                counts.Counted,
-                counts.Total
+            int counted = counts.Counted;
+            int total = counts.Total;
+            NodeVtable vtable = GraphNodes.Readout(
+                () =>
+                    ModStrings.Format(
+                        ModStrings.ElectionRepresentativesCounted,
+                        counted,
+                        total
+                    ),
+                () => null,
+                null,
+                Raw(bar)
             );
-            NodeVtable vtable = GraphNodes.Readout(() => said, () => null, null, Raw(bar));
             AgeWidgets.PointAt(vtable, bar);
             Cells.Add(cells, bar, ControlId.Structural("election:counted"), vtable);
         }

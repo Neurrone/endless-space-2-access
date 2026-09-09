@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.UI.Graph;
 
@@ -36,6 +37,19 @@ namespace ES2Access.UI
         /// </summary>
         public static void Add(List<Cell> cells, AgeTransform widget, string words, string key)
         {
+            string said = words;
+            Add(cells, widget, () => said, key);
+        }
+
+        /// <summary>The same mark, with its words composed when the mark is READ - for a track whose
+        /// caller would otherwise word every circle on it on every frame of the screen.</summary>
+        public static void Add(
+            List<Cell> cells,
+            AgeTransform widget,
+            Func<string> words,
+            string key
+        )
+        {
             // Banding input: Cells.Add takes the mark without asking the gate, and the circles are
             // worked into a row by where they are drawn along the track.
             if (widget == null || !AgeWidgets.Visible(widget))
@@ -54,12 +68,11 @@ namespace ES2Access.UI
                 return;
             }
 
-            string said = words;
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => said),
+                    GraphNodes.LabelPart(words),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
             };

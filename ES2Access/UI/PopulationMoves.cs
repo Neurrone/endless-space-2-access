@@ -136,23 +136,79 @@ namespace ES2Access.UI
                 return false;
             }
 
-            DepartmentOfTheInterior interior =
-                Gui.PlayerEmpire.GetAgency<DepartmentOfTheInterior>();
-            for (int i = 0; interior != null && i < interior.ColonizedStarSystems.Count; i++)
+            Colonies();
+            // Somewhere to ship to is a colony that is not this one. The empire's colonies are counted
+            // once a frame (below); this is the same question the loop used to ask of each of them.
+            return _colonies != 0
+                && (_colonyFirst != from.GUID || _colonyOthers != 0);
+        }
+
+        /// <summary>
+        /// The empire's colonies, counted once a frame instead of once per card that asks.
+        ///
+        /// Every expanded card on the empire page asks whether there is anywhere to carry a unit to,
+        /// and the answer walks the whole colonized-system list - a list that grows all game. Nobody is
+        /// walking it twice for a different answer: within one frame the game has not moved, which is
+        /// the same reason a subtree is swept once a frame (<see cref="FrameSweep{T}"/>).
+        ///
+        /// What is kept is the count, the first colony's GUID and how many of the rest are a DIFFERENT
+        /// system - enough to answer "is there one that is not this one" for any card, without assuming
+        /// the game lists a system only once.
+        /// </summary>
+        private static void Colonies()
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_colonyFrame == frame)
             {
-                ColonizedStarSystem other = interior.ColonizedStarSystems[i];
-                if (
-                    other != null
-                    && other.GUID != from.GUID
-                    && other.State == StarSystemState.Colony
-                )
-                {
-                    return true;
-                }
+                return;
             }
 
-            return false;
+            _colonyFrame = frame;
+            _colonies = 0;
+            _colonyOthers = 0;
+            _colonyFirst = GameEntityGUID.Zero;
+            try
+            {
+                Empire empire = Gui.PlayerEmpire;
+                DepartmentOfTheInterior interior =
+                    empire == null ? null : empire.GetAgency<DepartmentOfTheInterior>();
+                for (int i = 0; interior != null && i < interior.ColonizedStarSystems.Count; i++)
+                {
+                    ColonizedStarSystem other = interior.ColonizedStarSystems[i];
+                    if (other == null || other.State != StarSystemState.Colony)
+                    {
+                        continue;
+                    }
+
+                    if (_colonies == 0)
+                    {
+                        _colonyFirst = other.GUID;
+                    }
+                    else if (other.GUID != _colonyFirst)
+                    {
+                        _colonyOthers++;
+                    }
+
+                    _colonies++;
+                }
+            }
+            catch (Exception)
+            {
+                // A count that threw halfway is no count at all, and every card asking this frame
+                // reads the same "nowhere to carry to" the throw used to hand each of them.
+                _colonies = 0;
+                _colonyOthers = 0;
+                _colonyFirst = GameEntityGUID.Zero;
+            }
         }
+
+        private static int _colonyFrame = -1;
+
+        private static int _colonies;
+
+        private static GameEntityGUID _colonyFirst;
+
+        private static int _colonyOthers;
 
         // ---- the ring's slots ----
 

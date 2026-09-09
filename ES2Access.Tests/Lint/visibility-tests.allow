@@ -538,6 +538,7 @@ ES2Access/UI/AgeReading.cs | 1 | if (widget == null || !widget.Visible)
 
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(left))
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(right))
+ES2Access/UI/BalanceGauges.cs | 1 | return AgeWidgets.Paints(gauge.LeftGauge) || AgeWidgets.Paints(gauge.RightGauge);
 
 ES2Access/UI/BattleBalance.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
 

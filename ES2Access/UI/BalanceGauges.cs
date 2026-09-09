@@ -83,7 +83,11 @@ namespace ES2Access.UI
         public static void Add(List<Cell> cells, RepartitionHorizontalGauge gauge, string key)
         {
             AgeTransform widget = gauge == null ? null : gauge.AgeTransform;
-            if (widget == null || string.IsNullOrEmpty(Text(gauge)))
+            // Flow control: a bar with neither half drawn is no line at all. Asked of the two halves
+            // rather than of the phrase they would compose, which is the same question - each drawn
+            // half puts its side's name and its share into the phrase, and a bar with neither drawn
+            // composes nothing - and it is asked on every build of every screen that draws a gauge.
+            if (widget == null || !Drawn(gauge))
             {
                 return;
             }
@@ -99,6 +103,30 @@ namespace ES2Access.UI
             AgeTooltip tooltip = Scratch.Count == 0 ? null : Scratch[Scratch.Count - 1];
             NodeVtable vtable = GraphNodes.Readout(() => null, () => Text(it), null, tooltip);
             Cells.Add(cells, widget, ControlId.For(widget, key), vtable);
+        }
+
+        /// <summary>Whether the bar has a half to read at all - the existence test behind
+        /// <see cref="Add"/>, and the same two questions <see cref="Text"/> asks before it says
+        /// anything. A read that throws is no bar, which is what the composed phrase's own catch made
+        /// of it.</summary>
+        private static bool Drawn(RepartitionHorizontalGauge gauge)
+        {
+            if (gauge == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                // Flow control: whether the bar is a line at all - the same two questions the phrase
+                // asks before it says anything, and the game hides a half worth nothing.
+                return AgeWidgets.Paints(gauge.LeftGauge) || AgeWidgets.Paints(gauge.RightGauge);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("balance gauge: asking whether a bar is drawn threw: " + e);
+                return false;
+            }
         }
 
         // Reused rather than allocated per call: these bars are declared on every build. Safe as one

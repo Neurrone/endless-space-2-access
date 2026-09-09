@@ -511,19 +511,29 @@ namespace ES2Access.Screens
         )
         {
             ThresholdItem item = widget == null ? null : widget.GetComponent<ThresholdItem>();
-            string drawn = item == null ? null : AgeText.Label(item.ThresholdMaxValue);
-            string figure = string.IsNullOrEmpty(drawn) ? threshold.ToString() : drawn;
-            bool reached = threshold > 0 && count >= threshold;
+            ThresholdItem it = item;
             ThresholdTracks.Add(
                 cells,
                 widget,
-                ModStrings.Format(
-                    reached
-                        ? ModStrings.PopulationThresholdReached
-                        : ModStrings.PopulationThresholdNotReached,
-                    figure
-                ),
+                () => ThresholdWords(it, threshold, count),
                 "population:threshold/" + index
+            );
+        }
+
+        /// <summary>What one mark says - the number of them it takes and whether the empire has that
+        /// many - composed when the mark is read, because a track is several of them and only the one
+        /// under the cursor is ever heard. The figure is the game's own if it wrote one on the circle.
+        /// </summary>
+        private static string ThresholdWords(ThresholdItem item, int threshold, int count)
+        {
+            string drawn = item == null ? null : AgeText.Label(item.ThresholdMaxValue);
+            string figure = string.IsNullOrEmpty(drawn) ? threshold.ToString() : drawn;
+            bool reached = threshold > 0 && count >= threshold;
+            return ModStrings.Format(
+                reached
+                    ? ModStrings.PopulationThresholdReached
+                    : ModStrings.PopulationThresholdNotReached,
+                figure
             );
         }
 
