@@ -85,6 +85,63 @@ namespace ES2Access.UI
     public static class SystemInfluence
     {
         /// <summary>
+        /// ONE ANSWER PER FRAME PER (node, empire), for the three readings a focused system row asks
+        /// for - because the navigator composes the whole readout of the focused node every frame, and
+        /// on the frame the cursor moves it composes it twice (once to announce it, once to refill the
+        /// review buffer), while the two spoken readings ask <see cref="OwnersAt"/> between them
+        /// twice more.
+        ///
+        /// The frame is the whole key. Influence is USUALLY a turn's business, and the row that says
+        /// so is saying why it is not watched - but the game re-resolves it on events that are not
+        /// turn boundaries too: a diplomatic relation changing marks it dirty for the next client
+        /// update, and a change to an empire's system-influence resource runs the pass outright
+        /// (<c>ColonizedStarSystemRepository</c> :281-291, :311-313). A memo held for the turn would
+        /// therefore keep saying who was contesting a place after a treaty had settled it, so this
+        /// holds for exactly as long as nothing can have happened.
+        ///
+        /// One slot, because the player is standing on one row: anything else asking answers the
+        /// question itself. There is nothing to tear down - the cache lives in the mod assembly beside
+        /// the game types it names, so it dies when the assembly is replaced.
+        /// </summary>
+        private static GameNode _askedOf;
+
+        private static Empire _askedBy;
+
+        private static int _askedOn = -1;
+
+        private static readonly List<Empire> _owners = new List<Empire>();
+
+        private static bool _ownersKnown;
+
+        private static string _under;
+
+        private static bool _underKnown;
+
+        private static string _contested;
+
+        private static bool _contestedKnown;
+
+        private static void Asking(GameNode node, Empire empire)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (
+                frame == _askedOn
+                && ReferenceEquals(node, _askedOf)
+                && ReferenceEquals(empire, _askedBy)
+            )
+            {
+                return;
+            }
+
+            _askedOn = frame;
+            _askedOf = node;
+            _askedBy = empire;
+            _ownersKnown = false;
+            _underKnown = false;
+            _contestedKnown = false;
+        }
+
+        /// <summary>
         /// How far this system's own influence reaches, and which way it is going next turn.
         ///
         /// Only for a system that projects at all: the service answers with the strongest colony
@@ -151,6 +208,18 @@ namespace ES2Access.UI
         /// </summary>
         public static string UnderInfluence(GameNode node, Empire empire)
         {
+            Asking(node, empire);
+            if (!_underKnown)
+            {
+                _under = UnderInfluenceNow(node, empire);
+                _underKnown = true;
+            }
+
+            return _under;
+        }
+
+        private static string UnderInfluenceNow(GameNode node, Empire empire)
+        {
             try
             {
                 if (node == null || !MapVisibility.Perceived(node, empire))
@@ -196,6 +265,18 @@ namespace ES2Access.UI
         /// resolution can ever hand to anybody.
         /// </summary>
         public static string Contested(GameNode node, Empire empire)
+        {
+            Asking(node, empire);
+            if (!_contestedKnown)
+            {
+                _contested = ContestedNow(node, empire);
+                _contestedKnown = true;
+            }
+
+            return _contested;
+        }
+
+        private static string ContestedNow(GameNode node, Empire empire)
         {
             try
             {
@@ -594,34 +675,49 @@ namespace ES2Access.UI
             return EmpireNames.Named(empire);
         }
 
-        /// <summary>The empires holding this place. Asked through the same visibility gate the rest of
-        /// the map's ownership reading uses (<c>Visibility[empire] >= 1</c>), so a colony the player has
+        /// <summary>
+        /// The empires holding this place. Asked through the same visibility gate the rest of the
+        /// map's ownership reading uses (<c>Visibility[empire] >= 1</c>), so a colony the player has
         /// never seen can neither silence a line nor be named by one - and an OUTPOST counts, because
-        /// holding a place is holding it whether or not it has grown up yet.</summary>
+        /// holding a place is holding it whether or not it has grown up yet.
+        ///
+        /// The repository's own list rather than its enumerable: <c>GetValuesAsAList</c> hands back the
+        /// list standing at the node (null where nobody is), while <c>GetValues</c> allocates a
+        /// yield-return state machine to walk the same one
+        /// (<c>ColonizedStarSystemRepository</c> :443-461). The answer is filled into one list held for
+        /// the frame (<see cref="Asking"/>) and read by both callers, so a place with no owners costs
+        /// no allocation at all. Never written to by a caller - both only ask whether an empire is in
+        /// it.
+        /// </summary>
         private static List<Empire> OwnersAt(GameNode node, Empire empire)
         {
-            List<Empire> owners = new List<Empire>();
-            IColonizedStarSystemRepositoryService colonies =
-                Services.GetService<IColonizedStarSystemRepositoryService>();
-            if (colonies == null)
+            Asking(node, empire);
+            if (_ownersKnown)
             {
-                return owners;
+                return _owners;
             }
 
-            foreach (ColonizedStarSystem colony in colonies.GetValues(node.NodePosition))
+            _owners.Clear();
+            _ownersKnown = true;
+            IColonizedStarSystemRepositoryService colonies =
+                Services.GetService<IColonizedStarSystemRepositoryService>();
+            List<ColonizedStarSystem> standing =
+                colonies == null ? null : colonies.GetValuesAsAList(node.NodePosition);
+            for (int i = 0; standing != null && i < standing.Count; i++)
             {
+                ColonizedStarSystem colony = standing[i];
                 if (
                     colony.Empire != null
                     && (int)colony.Visibility[empire] >= (int)EntityVisibility.Layer.Known
                     && colony.State != StarSystemState.Ghost
-                    && !EmpireIndex.Holds(owners, colony.Empire)
+                    && !EmpireIndex.Holds(_owners, colony.Empire)
                 )
                 {
-                    owners.Add(colony.Empire);
+                    _owners.Add(colony.Empire);
                 }
             }
 
-            return owners;
+            return _owners;
         }
     }
 }
