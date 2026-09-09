@@ -139,6 +139,13 @@ namespace ES2Access.UI
             return string.IsNullOrEmpty(described) ? panel.GetType().Name : described;
         }
 
+        /// <summary>Which panel classes declare a heading field and which do not, learned once per
+        /// class: a type's own fields are fixed for the length of the run, and this is asked of every
+        /// drawn panel on every frame of six screens. A class that has none is remembered too, as the
+        /// null it answered with.</summary>
+        private static readonly Dictionary<Type, FieldInfo> Titles =
+            new Dictionary<Type, FieldInfo>();
+
         /// <summary>The heading a panel draws across its own top, where it has one. The field is looked
         /// up by name because it is declared on the panels that have one rather than on the base class
         /// they share.</summary>
@@ -146,10 +153,17 @@ namespace ES2Access.UI
         {
             try
             {
-                FieldInfo field = panel.GetType().GetField(
-                    "PanelTitle",
-                    BindingFlags.Instance | BindingFlags.Public
-                );
+                Type kind = panel.GetType();
+                FieldInfo field;
+                if (!Titles.TryGetValue(kind, out field))
+                {
+                    field = kind.GetField(
+                        "PanelTitle",
+                        BindingFlags.Instance | BindingFlags.Public
+                    );
+                    Titles[kind] = field;
+                }
+
                 AgePrimitiveLabel label =
                     field == null ? null : field.GetValue(panel) as AgePrimitiveLabel;
                 return AgeWidgets.Drawn(label) == null ? null : label;
