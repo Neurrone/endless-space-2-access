@@ -777,8 +777,15 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>The focused control's id (carries its Reference for tier-1 recovery). Null until first render.</summary>
         public ControlId CurKey;
 
-        /// <summary>The down-right total order from the previous render. Null on first render.</summary>
+        /// <summary>The down-right total order from the previous render, once something has asked for
+        /// it. Null until then — only a DEATH reads it (the nearest-survivor walk), so it is computed on
+        /// demand from <see cref="OrderSource"/> rather than paid for on every rebuild.</summary>
         public List<ControlId> KeyOrder;
+
+        /// <summary>The previous render, held as the thing <see cref="KeyOrder"/> is computed FROM when a
+        /// death finally asks. Null where a caller handed the order in ready-made (a test), which stands
+        /// as it is.</summary>
+        public GraphRender OrderSource;
 
         /// <summary>If set, focus jumps here on the next render when present (consumed either way).</summary>
         public ControlId NextSuggestedMove;

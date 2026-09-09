@@ -907,6 +907,36 @@ namespace ES2Access.Tests.UI
             Assert.Equal("b", Focused(g)); // the survivor before it in the previous order
         }
 
+        /// <summary>The traversal order is a walk of every node and only a DEATH reads it, so a rebuild
+        /// that still has the cursor's control keeps the RENDER rather than the order - and the rebuild
+        /// that loses one recovers out of that kept render just the same.</summary>
+        [Fact]
+        public void ARebuildKeepingTheCursorKeepsTheRenderRatherThanTheOrder()
+        {
+            GraphState state = new GraphState();
+            bool withC = true;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.AddItem(new SyntheticNode(Id("a"), Vt("A")));
+                b.AddItem(new SyntheticNode(Id("b"), Vt("B")));
+                if (withC) b.AddItem(new SyntheticNode(Id("c"), Vt("C")));
+                return b.Build();
+            }, state);
+            g.Rerender();
+            g.Move(GraphDir.Down);
+            g.Move(GraphDir.Down);
+
+            g.Rerender();
+            Assert.Equal("c", Focused(g));
+            Assert.Null(state.KeyOrder);
+            Assert.Same(g.Current, state.OrderSource);
+
+            withC = false;
+            g.Rerender();
+            Assert.Equal("b", Focused(g));
+        }
+
         /// <summary>The Create-button shape: the control under the cursor is destroyed by pressing it.
         /// Recovery is the same backward walk it always was - pinned here because the stop memory is now
         /// rewritten on the same rebuild, and it must follow the cursor rather than fight it.</summary>

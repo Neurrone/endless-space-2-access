@@ -86,7 +86,7 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>
         /// Move focus from the cached <see cref="GraphState.CurKey"/> to a valid control in
-        /// <paramref name="render"/>, then recompute the traversal order.
+        /// <paramref name="render"/>, and leave this render as the one a later recovery walks.
         /// </summary>
         public static void Reconcile(GraphRender render, GraphState state)
         {
@@ -129,7 +129,7 @@ namespace ES2Access.Core.UI.Graph
                 // Fallback: nearest survivor walking the previous order backward.
                 if (resolved == null)
                 {
-                    GraphNode survivor = SurvivorBefore(render, state.KeyOrder, old, null);
+                    GraphNode survivor = SurvivorBefore(render, PreviousOrder(state), old, null);
                     if (survivor != null) resolved = survivor.Id;
                 }
             }
@@ -154,7 +154,21 @@ namespace ES2Access.Core.UI.Graph
             state.CurKey = resolved;
             RememberStop(render, state, resolved);
             RepairStopMemory(render, state);
-            state.KeyOrder = ComputeOrder(render);
+
+            // The order this render would walk is not computed here: it is a pass over every node, and
+            // the only readers are the two recovery walks above, which run on the rebuild a control DIES
+            // on. Keeping the render is enough to answer them when one does.
+            state.OrderSource = render;
+            state.KeyOrder = null;
+        }
+
+        /// <summary>The previous render's traversal order, computed the first time a death asks for it
+        /// and remembered for the rest of this reconcile (both recovery walks run within one).</summary>
+        private static List<ControlId> PreviousOrder(GraphState state)
+        {
+            if (state.KeyOrder == null && state.OrderSource != null)
+                state.KeyOrder = ComputeOrder(state.OrderSource);
+            return state.KeyOrder;
         }
 
         /// <summary>
@@ -207,9 +221,9 @@ namespace ES2Access.Core.UI.Graph
         /// stop, so that Tab back into the stop lands beside where the player was rather than at the top.
         ///
         /// This runs on every reconcile because it can only work on the ONE rebuild that the death
-        /// happens on: <see cref="GraphState.KeyOrder"/> is still the order from BEFORE it, the only
-        /// record of what stood next to the dead control, and the last line of Reconcile is about to
-        /// replace it. Nothing else notices these deaths — a stop the player is not standing in has no
+        /// happens on: the order it walks is still the one from BEFORE it (the previous render, held by
+        /// <see cref="GraphState.OrderSource"/>), the only record of what stood next to the dead
+        /// control, and the last lines of Reconcile are about to replace it. Nothing else notices these deaths — a stop the player is not standing in has no
         /// cursor to reconcile, which is exactly the case that stranded them (a fleet disbanded from its
         /// panel: the map's memory kept naming the dead fleet, and coming back landed on the first node
         /// of the tree).
@@ -241,7 +255,7 @@ namespace ES2Access.Core.UI.Graph
                 }
 
                 if (survivor == null)
-                    survivor = SurvivorBefore(render, state.KeyOrder, memory.Value, memory.Key);
+                    survivor = SurvivorBefore(render, PreviousOrder(state), memory.Value, memory.Key);
                 if (survivor == null) continue;
 
                 if (stops == null) { stops = new List<object>(); landings = new List<ControlId>(); }
