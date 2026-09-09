@@ -8,29 +8,16 @@ keep the measuring section, or move it into `docs/dev-loop.md` once it has been 
 
 ## Findings, most costly first
 
-1. `ES2Access/UI/EmpireDossier.cs:138` - `RelationState` runs at the tail of every recursive
-   `Read`, so each build does a `GetComponent<DiplomaticRelationStateLine>` per widget in the
-   dossier, and per relation row a `GetComponentInParent`, a reflected property read, a linear
-   `IndexOf` over the relations table and a localized string, all for text only the focused row
-   reads. `Build` is called per frame from `NegotiationScreen.cs:497` and
-   `NotificationScreen.BodyReader.cs:664`. Fix: resolve the panel once in `Build`, stamp the
-   states in one pass over `panel.RelationsTable.Children`, and build the string at announce
-   time (a `Func<string>` in the part).
-2. `ES2Access/Screens/NotificationScreen.Variants.cs:253` - the curiosity-discovered door is
-   resolved with `AgeWidgets.WiredTo`, a raw `GetComponentsInChildren<AgeControlButton>` over
-   the whole popup, on every build while the popup is up (`Gateways` from `Controls` from
-   `Build`). The same subtree is already swept that frame by `WindowControls`
-   (`NotificationScreen.cs:122`, a `FrameSweep`). Fix: pick the button out of that memoized
-   array by `OnActivateMethod == LookAtSystem`.
-3. `ES2Access/Screens/Galaxy/FleetRows.cs:270` - `OnLaneIntoTheDark(it)` is built eagerly per
-   adrift fleet per frame (positioning service, two `GetGameNode` calls, perceived visibility,
-   a compass direction and a `ModStrings.Format`), where the sibling phrase forty lines above
-   is deferred to announce time. Small today (`_adrift` is short). Fix: move both branches
-   inside the `ValuePart` lambda.
-4. `ES2Access/Screens/AdvancedBattleReportScreen.cs:617` - `Chips(card)` runs per card per
-   frame and reads `card3D.AllShips`, whose getter allocates a new array on every get, plus a
-   list per card and a `Visible` ancestor walk per chip. Bounded (cards x ships, single
-   digits); fold it into the build measurement rather than fixing it blind.
+Findings 1-3 of the 2026-09-09 review landed on main (the dossier's relation states stamped
+in one pass, the curiosity door picked out of the memoised sweep, the adrift phrase inside
+its part) and are deleted per the rule above. The full audit of every screen that followed,
+with its mechanism-level plan and what has landed, is `performance-audit.md` (untracked).
+
+1. `ES2Access/Screens/AdvancedBattleReportScreen.cs` - `Chips(card)` runs per card per frame
+   and reads `card3D.AllShips`, whose getter allocates a new array on every get, plus a list
+   per card and a `Visible` ancestor walk per chip. Bounded (cards x ships, single digits);
+   it has one caller, once per card per frame, so a memo cannot hit - fold it into the build
+   measurement of a battle report rather than fixing it blind.
 
 Not findings, checked: `3aa2e1e` (the reload cursor seat) holds three fields that only decide
 where the cursor lands once; nothing in the range adds hook-carried state a build depends on.
