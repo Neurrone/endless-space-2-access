@@ -283,8 +283,82 @@ namespace ES2Access.Screens
             return x == _x && y == _y ? null : MapCoordinates.Text(east, north, 0.0, 0.0);
         }
 
+        /// <summary>One system the map names, with where it stands on the player's own grid already
+        /// measured - the measuring is the same answer for every square, so it is done once.</summary>
+        private struct NamedSystem
+        {
+            public StarSystemNode Node;
+            public double East;
+            public double North;
+        }
+
+        /// <summary>One lane the map is painting, with both its ends already measured.</summary>
+        private struct DrawnLane
+        {
+            public Link Link;
+            public bool Wormhole;
+            public double EastOne;
+            public double NorthOne;
+            public double EastTwo;
+            public double NorthTwo;
+        }
+
+        /// <summary>One place the player has named, and the slot it is named in.</summary>
+        private struct MarkedSpot
+        {
+            public char Digit;
+            public GalaxyPosition At;
+        }
+
         /// <summary>
-        /// Everything the map draws inside the cell, at this distance.
+        /// The galaxy with the cursor left out of it: everything <see cref="Read"/> asks the GAME
+        /// for, which is the same answer wherever the square happens to be standing.
+        ///
+        /// A cell's reading is two questions and only the second is about the cell - what is the map
+        /// drawing, and which of it falls inside this square. The first is a walk of every node in
+        /// the galaxy and every lane leaving one; the second is arithmetic on numbers already in
+        /// hand. Held across a walk that reads many squares (<see cref="HoldSweep"/>), the walk asks
+        /// the game once and does the arithmetic per square.
+        /// </summary>
+        private sealed class Sweep
+        {
+            public Empire Empire;
+            public bool ShowsDetail;
+            public IList<Fleet> Fleets = NoFleetsHere;
+            public IList<GalaxyHudScreen.ScannedProbe> Probes;
+            public IList<GalaxyHudScreen.SightedShot> Shots;
+            public IList<GalaxyHudScreen.SightedPin> Pins;
+            public List<QuestMarkers.Marker> Markers;
+            public readonly List<NamedSystem> Perceived = new List<NamedSystem>();
+            public readonly List<MarkedSpot> Bookmarks = new List<MarkedSpot>();
+            public readonly List<DrawnLane> Lanes = new List<DrawnLane>();
+        }
+
+        /// <summary>The one gathering a whole keypress reads its cells out of, where a keypress reads
+        /// more than one; null when each reading is to ask the game for itself.</summary>
+        private Sweep _sweep;
+
+        /// <summary>
+        /// GATHER THE GALAXY ONCE for a walk that is about to read many squares - the skip, which
+        /// asks what is in every candidate cell between where the cursor is and where it lands.
+        ///
+        /// Safe because no frame runs inside a keypress: the game cannot move a fleet, light a lane
+        /// or name a system between the first candidate and the last, so every cell in the walk was
+        /// already being told the same story about the galaxy - it was just being told it again from
+        /// the beginning each time.
+        /// </summary>
+        private void HoldSweep()
+        {
+            _sweep = Gather();
+        }
+
+        private void DropSweep()
+        {
+            _sweep = null;
+        }
+
+        /// <summary>
+        /// Everything the map draws, at this distance.
         ///
         /// Nothing here decides for itself what may be seen: the places are the ones the map NAMES
         /// (<see cref="MapVisibility.Perceived"/>, the label window's own gate), the fleets are the
@@ -315,16 +389,18 @@ namespace ES2Access.Screens
         /// subject: at those two rungs a point bookmark is the only thing in a square of empty sky
         /// there is to say.
         /// </summary>
-        private Contents Read()
+        private Sweep Gather()
         {
-            Contents contents = new Contents();
+            Sweep sweep = new Sweep();
             try
             {
                 Empire empire = Gui.PlayerEmpire;
                 if (empire == null || !GameGalaxy.Present())
                 {
-                    return contents;
+                    return sweep;
                 }
+
+                sweep.Empire = empire;
 
                 // One read of the table per gathering, in the tree's own vocabulary: the lozenges
                 // from level 5, everything the picture only draws beside a full nameplate - probes,
@@ -332,10 +408,9 @@ namespace ES2Access.Screens
                 // (<see cref="BandKind.OpenSpace"/>, the tree's own gate for the same rows), the lines
                 // from level 3.
                 bool showsFleets = ZoomBands.Shows(BandKind.Fleets);
-                bool showsDetail = ZoomBands.Shows(BandKind.OpenSpace);
+                sweep.ShowsDetail = ZoomBands.Shows(BandKind.OpenSpace);
                 bool showsLanes = ZoomBands.Shows(BandKind.Lanes);
 
-                List<StarSystemNode> perceived = new List<StarSystemNode>();
                 foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
                 {
                     if (!MapVisibility.Perceived(node, empire))
@@ -343,29 +418,19 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    perceived.Add(node);
-                    if (!Holds(node.GalaxyPosition))
-                    {
-                        continue;
-                    }
-
-                    if (node is SpecialNode)
-                    {
-                        contents.Special.Add(node);
-                    }
-                    else
-                    {
-                        contents.Places.Add(node);
-                    }
+                    NamedSystem named = new NamedSystem();
+                    named.Node = node;
+                    GalaxyCoordinates.Offsets(
+                        node.GalaxyPosition,
+                        out named.East,
+                        out named.North
+                    );
+                    sweep.Perceived.Add(named);
                 }
 
-                IList<Fleet> fleets = showsFleets ? FleetPresence.Drawing() : NoFleetsHere;
-                for (int i = 0; i < fleets.Count; i++)
+                if (showsFleets)
                 {
-                    if (Holds(fleets[i].GalaxyPosition))
-                    {
-                        contents.Fleets.Add(fleets[i]);
-                    }
+                    sweep.Fleets = FleetPresence.Drawing();
                 }
 
                 // The SIGHTED probes, and named by the very call the scanner names them with
@@ -373,46 +438,12 @@ namespace ES2Access.Screens
                 // words off the dossier hanging on one, so a probe whose mote the map was not
                 // drawing was missing from its own square, and its name was a second composition
                 // that could drift from the one the tree and the scanner say. One list, one name.
-                if (showsDetail)
+                if (sweep.ShowsDetail)
                 {
-                    IList<GalaxyHudScreen.ScannedProbe> probes = _screen.ScannedProbes();
-                    for (int i = 0; i < probes.Count; i++)
-                    {
-                        Probe probe = probes[i].Probe;
-                        if (probe != null && Holds(probe.GalaxyPosition))
-                        {
-                            contents.Probes.Add(probes[i]);
-                        }
-                    }
-
-                    IList<GalaxyHudScreen.SightedShot> shots = _screen.SightedProjectiles;
-                    for (int i = 0; i < shots.Count; i++)
-                    {
-                        ObliteratorProjectile shot = shots[i].Shot;
-                        if (Holds(shot.GalaxyPosition))
-                        {
-                            contents.Projectiles.Add(shot);
-                        }
-                    }
-
-                    IList<GalaxyHudScreen.SightedPin> pins = _screen.SightedPins;
-                    for (int i = 0; i < pins.Count; i++)
-                    {
-                        CoordinationRequest pin = pins[i].Request;
-                        if (Holds(pin.GalaxyPosition))
-                        {
-                            contents.Pins.Add(pin);
-                        }
-                    }
-
-                    List<QuestMarkers.Marker> markers = QuestMarkers.Of(empire);
-                    for (int i = 0; i < markers.Count; i++)
-                    {
-                        if (Holds(markers[i].At))
-                        {
-                            contents.Markers.Add(markers[i]);
-                        }
-                    }
+                    sweep.Probes = _screen.ScannedProbes();
+                    sweep.Shots = _screen.SightedProjectiles;
+                    sweep.Pins = _screen.SightedPins;
+                    sweep.Markers = QuestMarkers.Of(empire);
                 }
 
                 // No band gate: a bookmark is the player's own annotation and is held at every rung.
@@ -420,16 +451,111 @@ namespace ES2Access.Screens
                 GalaxyPosition spot;
                 for (int i = 0; _screen.BookmarkPointAt(i, out digit, out spot); i++)
                 {
-                    if (Holds(spot))
-                    {
-                        contents.Bookmarks.Add(digit);
-                    }
+                    MarkedSpot marked = new MarkedSpot();
+                    marked.Digit = digit;
+                    marked.At = spot;
+                    sweep.Bookmarks.Add(marked);
                 }
 
                 if (showsLanes)
                 {
-                    Lanes(contents, perceived, empire);
+                    GatherLanes(sweep, empire);
                 }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: gathering what the map draws for the inspect cursor threw: " + e);
+            }
+
+            return sweep;
+        }
+
+        /// <summary>Which of what the map draws falls inside the square - arithmetic on a gathering
+        /// (<see cref="Gather"/>) and nothing asked of the game but the fog over a lane.</summary>
+        private Contents Read()
+        {
+            Contents contents = new Contents();
+            try
+            {
+                Sweep sweep = _sweep ?? Gather();
+                if (sweep.Empire == null)
+                {
+                    return contents;
+                }
+
+                for (int i = 0; i < sweep.Perceived.Count; i++)
+                {
+                    NamedSystem named = sweep.Perceived[i];
+                    if (!InspectGrid.Holds(_x, _y, _size, named.East, named.North))
+                    {
+                        continue;
+                    }
+
+                    if (named.Node is SpecialNode)
+                    {
+                        contents.Special.Add(named.Node);
+                    }
+                    else
+                    {
+                        contents.Places.Add(named.Node);
+                    }
+                }
+
+                for (int i = 0; i < sweep.Fleets.Count; i++)
+                {
+                    if (Holds(sweep.Fleets[i].GalaxyPosition))
+                    {
+                        contents.Fleets.Add(sweep.Fleets[i]);
+                    }
+                }
+
+                if (sweep.ShowsDetail)
+                {
+                    for (int i = 0; i < sweep.Probes.Count; i++)
+                    {
+                        Probe probe = sweep.Probes[i].Probe;
+                        if (probe != null && Holds(probe.GalaxyPosition))
+                        {
+                            contents.Probes.Add(sweep.Probes[i]);
+                        }
+                    }
+
+                    for (int i = 0; i < sweep.Shots.Count; i++)
+                    {
+                        ObliteratorProjectile shot = sweep.Shots[i].Shot;
+                        if (Holds(shot.GalaxyPosition))
+                        {
+                            contents.Projectiles.Add(shot);
+                        }
+                    }
+
+                    for (int i = 0; i < sweep.Pins.Count; i++)
+                    {
+                        CoordinationRequest pin = sweep.Pins[i].Request;
+                        if (Holds(pin.GalaxyPosition))
+                        {
+                            contents.Pins.Add(pin);
+                        }
+                    }
+
+                    for (int i = 0; i < sweep.Markers.Count; i++)
+                    {
+                        if (Holds(sweep.Markers[i].At))
+                        {
+                            contents.Markers.Add(sweep.Markers[i]);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < sweep.Bookmarks.Count; i++)
+                {
+                    if (Holds(sweep.Bookmarks[i].At))
+                    {
+                        contents.Bookmarks.Add(sweep.Bookmarks[i].Digit);
+                    }
+                }
+
+                Lanes(contents, sweep);
             }
             catch (Exception e)
             {
@@ -470,13 +596,49 @@ namespace ES2Access.Screens
         /// (<see cref="Lit"/>): the geometry runs end to end whatever anyone has explored, and the fog
         /// cuts it short.
         /// </summary>
-        private void Lanes(Contents contents, List<StarSystemNode> perceived, Empire empire)
+        private void Lanes(Contents contents, Sweep sweep)
+        {
+            for (int i = 0; i < sweep.Lanes.Count; i++)
+            {
+                DrawnLane lane = sweep.Lanes[i];
+                if (
+                    !InspectGrid.Crosses(
+                        _x,
+                        _y,
+                        _size,
+                        lane.EastOne,
+                        lane.NorthOne,
+                        lane.EastTwo,
+                        lane.NorthTwo
+                    )
+                )
+                {
+                    continue;
+                }
+
+                if (!Lit(lane.EastOne, lane.NorthOne, lane.EastTwo, lane.NorthTwo))
+                {
+                    continue;
+                }
+
+                string said = LaneText(lane.Link, sweep.Empire, lane.Wormhole);
+                if (said != null)
+                {
+                    contents.Lanes.Add(said);
+                    contents.Links.Add(lane.Link);
+                }
+            }
+        }
+
+        /// <summary>Every lane the map is painting anywhere, named once however many of the systems
+        /// it joins the player can see - which end of it a cell is standing on is the cell's own
+        /// question (<see cref="Lanes"/>).</summary>
+        private static void GatherLanes(Sweep sweep, Empire empire)
         {
             HashSet<GameEntityGUID> seen = new HashSet<GameEntityGUID>();
-            for (int i = 0; i < perceived.Count; i++)
+            for (int i = 0; i < sweep.Perceived.Count; i++)
             {
-                StarSystemNode node = perceived[i];
-                List<Link> links = node.Links;
+                List<Link> links = sweep.Perceived[i].Node.Links;
                 for (int j = 0; j < links.Count; j++)
                 {
                     Link link = links[j];
@@ -486,52 +648,26 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    if (!MapVisibility.Drawn(link, empire) || seen.Contains(link.GUID))
-                    {
-                        continue;
-                    }
-
-                    double eastOne;
-                    double northOne;
-                    double eastTwo;
-                    double northTwo;
-                    GalaxyCoordinates.Offsets(
-                        link.ExtremityNode1.GalaxyPosition,
-                        out eastOne,
-                        out northOne
-                    );
-                    GalaxyCoordinates.Offsets(
-                        link.ExtremityNode2.GalaxyPosition,
-                        out eastTwo,
-                        out northTwo
-                    );
-                    if (
-                        !InspectGrid.Crosses(
-                            _x,
-                            _y,
-                            _size,
-                            eastOne,
-                            northOne,
-                            eastTwo,
-                            northTwo
-                        )
-                    )
+                    if (seen.Contains(link.GUID) || !MapVisibility.Drawn(link, empire))
                     {
                         continue;
                     }
 
                     seen.Add(link.GUID);
-                    if (!Lit(eastOne, northOne, eastTwo, northTwo))
-                    {
-                        continue;
-                    }
-
-                    string said = LaneText(link, empire, wormhole);
-                    if (said != null)
-                    {
-                        contents.Lanes.Add(said);
-                        contents.Links.Add(link);
-                    }
+                    DrawnLane lane = new DrawnLane();
+                    lane.Link = link;
+                    lane.Wormhole = wormhole;
+                    GalaxyCoordinates.Offsets(
+                        link.ExtremityNode1.GalaxyPosition,
+                        out lane.EastOne,
+                        out lane.NorthOne
+                    );
+                    GalaxyCoordinates.Offsets(
+                        link.ExtremityNode2.GalaxyPosition,
+                        out lane.EastTwo,
+                        out lane.NorthTwo
+                    );
+                    sweep.Lanes.Add(lane);
                 }
             }
         }

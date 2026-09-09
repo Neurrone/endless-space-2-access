@@ -42,17 +42,22 @@ namespace ES2Access.Screens
         /// an arrow key's - camera, square, and the cell read out - queued behind that line so both
         /// are heard whole.
         ///
-        /// The walk re-reads every cell it passes, which is the cell scan run once per candidate. That
-        /// is a keypress's cost and never a frame's, and it is what keeps the skip and the arrows
-        /// telling the same story about what is in a cell.
+        /// The walk re-reads every cell it passes, which is what keeps the skip and the arrows telling
+        /// the same story about what is in a cell. What it does NOT do is ask the game again for each
+        /// of them: the galaxy is gathered once for the whole press (<see cref="HoldSweep"/>) and each
+        /// candidate is that gathering measured against a different square, so a sweep over twelve
+        /// empty cells is one walk of the galaxy and not twelve.
         /// </summary>
         private bool Skip(int east, int north)
         {
             int x;
             int y;
             int skipped;
-            if (
-                !CellSkip.Find(
+            bool found;
+            HoldSweep();
+            try
+            {
+                found = CellSkip.Find(
                     _x,
                     _y,
                     _size,
@@ -63,8 +68,14 @@ namespace ES2Access.Screens
                     out x,
                     out y,
                     out skipped
-                )
-            )
+                );
+            }
+            finally
+            {
+                DropSweep();
+            }
+
+            if (!found)
             {
                 // Not one step possible - the same answer the plain arrow gives in this position.
                 Voice.Say(ModStrings.Get(ModStrings.GalaxyInspectEdge), true);
