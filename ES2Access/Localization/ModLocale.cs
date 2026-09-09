@@ -4,6 +4,7 @@ using System.IO;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.Localization;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI.Input;
 using Newtonsoft.Json;
@@ -77,6 +78,9 @@ namespace ES2Access.Localization
             // own to watch. Said here because this runs before the screens build, so nothing speaks
             // the old wording even once.
             ChordNames.Forget();
+            // And the hint sentences, which are keyed on the chords in them: a language that spells
+            // a chord the same way leaves that key matching a sentence written in the old one.
+            NodeHints.Forget();
         }
 
         /// <summary>Forget the resolved language so a reloaded plugin resolves it again.</summary>

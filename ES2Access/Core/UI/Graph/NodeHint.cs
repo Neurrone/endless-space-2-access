@@ -90,6 +90,18 @@ namespace ES2Access.Core.UI.Graph
         public static void Reset()
         {
             Chord = null;
+            Forget();
+        }
+
+        /// <summary>
+        /// Drop the remembered sentences. They are keyed on the chords in them, so a REBIND is
+        /// already covered - the renderer answers a different chord and the key misses. A LANGUAGE
+        /// change is not: it rewrites the template under a chord that may be spelled the same, so
+        /// whoever installs a language says so here.
+        /// </summary>
+        public static void Forget()
+        {
+            _lines.Clear();
         }
 
         /// <summary>Declare a hint on <paramref name="vtable"/>, creating its list on first use. The
@@ -161,7 +173,7 @@ namespace ES2Access.Core.UI.Graph
 
                     if (string.IsNullOrEmpty(hint.SecondActionKey))
                     {
-                        into.Add(ModStrings.Format(hint.TemplateKey, chord));
+                        into.Add(Sentence(hint.TemplateKey, chord, null));
                         continue;
                     }
 
@@ -173,13 +185,68 @@ namespace ES2Access.Core.UI.Graph
                         continue;
                     }
 
-                    into.Add(ModStrings.Format(hint.TemplateKey, chord, second));
+                    into.Add(Sentence(hint.TemplateKey, chord, second));
                 }
                 catch (Exception)
                 {
                     // A hint is the least important thing in a buffer: a gate that throws costs the
                     // player one sentence, never the content it was appended to.
                 }
+            }
+        }
+
+        // The sentence is a pure function of its template and the chords in it, and the chords only
+        // move when a binding does. The gate above stays live - it is the screen's own state, asked
+        // afresh every read - and only the wording is remembered, which is what a params array and a
+        // string.Format per hint per frame on the focused control were paying for.
+        private static readonly Dictionary<LineKey, string> _lines = new Dictionary<LineKey, string>();
+
+        private static string Sentence(string template, string chord, string second)
+        {
+            LineKey key = new LineKey(template, chord, second);
+            string remembered;
+            if (_lines.TryGetValue(key, out remembered))
+            {
+                return remembered;
+            }
+
+            string line = second == null
+                ? ModStrings.Format(template, chord)
+                : ModStrings.Format(template, chord, second);
+            _lines[key] = line;
+            return line;
+        }
+
+        private struct LineKey : IEquatable<LineKey>
+        {
+            public LineKey(string template, string chord, string second)
+            {
+                _template = template;
+                _chord = chord;
+                _second = second;
+            }
+
+            private readonly string _template;
+            private readonly string _chord;
+            private readonly string _second;
+
+            public bool Equals(LineKey other)
+            {
+                return _template == other._template
+                    && _chord == other._chord
+                    && _second == other._second;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is LineKey && Equals((LineKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                return (_template == null ? 0 : _template.GetHashCode())
+                    ^ ((_chord == null ? 0 : _chord.GetHashCode()) << 1)
+                    ^ (_second == null ? 0 : _second.GetHashCode());
             }
         }
     }

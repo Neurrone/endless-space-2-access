@@ -146,6 +146,9 @@ namespace ES2Access.Core.UI.Graph
             _memoParts = null;
             _memoFilter = null;
             _memoCarry = null;
+            _hintLines.Clear();
+            _hintSaid.Clear();
+            _hintText = null;
         }
 
         /// <summary>The live drag (<see cref="CarryState"/>) - the same object the carry keys act on, so
@@ -321,9 +324,37 @@ namespace ES2Access.Core.UI.Graph
                 if (words == null || words.Count == 0) return null;
             }
 
-            List<string> lines = new List<string>(2);
-            NodeHints.Lines(lines, vt);
-            return lines.Count == 0 ? null : Join(lines);
+            // Rendered into a reused list and joined only when the sentences have actually moved:
+            // the parts of the focused node are re-asked every frame purely to string-compare the
+            // readout, and the hints are the same words on nearly all of them.
+            _hintLines.Clear();
+            NodeHints.Lines(_hintLines, vt);
+            if (_hintLines.Count == 0)
+            {
+                return null;
+            }
+
+            if (SameLines(_hintLines, _hintSaid))
+            {
+                return _hintText;
+            }
+
+            _hintSaid.Clear();
+            for (int i = 0; i < _hintLines.Count; i++) _hintSaid.Add(_hintLines[i]);
+            _hintText = Join(_hintLines);
+            return _hintText;
+        }
+
+        private static readonly List<string> _hintLines = new List<string>(2);
+        private static readonly List<string> _hintSaid = new List<string>(2);
+        private static string _hintText;
+
+        private static bool SameLines(List<string> lines, List<string> said)
+        {
+            if (lines.Count != said.Count) return false;
+            for (int i = 0; i < lines.Count; i++)
+                if (lines[i] != said[i]) return false;
+            return true;
         }
 
         private static GraphNode _memoNode;

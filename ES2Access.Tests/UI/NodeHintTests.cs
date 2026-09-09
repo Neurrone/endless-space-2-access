@@ -229,5 +229,44 @@ namespace ES2Access.Tests.UI
 
             Assert.Contains("en premier avec Ctrl+Shift+Enter", Buffer(vtable));
         }
+
+        /// <summary>A rebind re-words the sentence with nothing having to say so: the wording is
+        /// remembered against the chord in it, so a renderer answering a new chord answers a new
+        /// sentence.</summary>
+        [Fact]
+        public void ARebindReWordsTheSentence()
+        {
+            string chord = "Backslash";
+            NodeHints.Chord = (action, index) =>
+                action == "ui.contextual" && index == 0 ? chord : null;
+            NodeVtable vtable = Control();
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
+            Assert.Contains("Backslash to move the fleet here", Buffer(vtable));
+
+            chord = "Ctrl+Backslash";
+            Assert.Contains("Ctrl+Backslash to move the fleet here", Buffer(vtable));
+        }
+
+        /// <summary>A language change rewrites the template under a chord that may be spelled the
+        /// same, which is the one move the remembered wording cannot see: whoever installs the new
+        /// table says so.</summary>
+        [Fact]
+        public void ForgettingLetsANewStringTableReWordTheSentence()
+        {
+            InstallFakeFormatter();
+            NodeVtable vtable = Control();
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+            Assert.Contains("Ctrl+Shift+Enter", Buffer(vtable)[Buffer(vtable).Count - 1]);
+
+            ModStrings.Install(
+                new Dictionary<string, string>
+                {
+                    { ModStrings.HintQueueFirst, "en premier avec {0}" },
+                }
+            );
+            NodeHints.Forget();
+
+            Assert.Contains("en premier avec Ctrl+Shift+Enter", Buffer(vtable));
+        }
     }
 }
