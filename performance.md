@@ -24,25 +24,8 @@ where the cursor lands once; nothing in the range adds hook-carried state a buil
 
 ## Measuring a screen's build
 
-The dev server's `/wait` frames-vs-elapsed ratio says that something burns frames; this says
-which screen and how much. On the screen in question, with the game running:
-
-```
-POST /eval?settle=0&speech=0
-var scr = ES2Access.ModEntry.Screens.Current; var sw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < 200; i++) { var b = new ES2Access.Core.UI.Graph.GraphBuilder(); scr.Build(b); b.Build(); } sw.Elapsed.TotalMilliseconds / 200.0
-```
-
-is one build in milliseconds. Run it twice; the first run of a cold path includes JIT. Take the
-best of three or four. A build should be under one millisecond; over that is a finding to fix,
-not a note. Time a suspect helper the same way through the screen's own fields, and time the
-whole per-frame cost by invoking `ModEntry.Update` through reflection in the same loop.
-
-Before and after every fix: `GET /gui/graph?buffers=1` on the screen (with `edges=1` when the
-tree shape is what changed), diffed byte for byte, and the build number in the commit body.
-
-The number without a game is a `Stopwatch` around the same loop in a test, which catches
-regressions in `Core/` projections but not Unity walks.
-
+Moved to `docs/dev-loop.md` ("Measuring a screen's build") on 2026-09-09, once it had been
+used for the three verification rounds of the audit.
 ## What CLAUDE.md should say
 
 Add a `## Performance` section to `CLAUDE.md` (Conventions is the neighbour) with these rules,

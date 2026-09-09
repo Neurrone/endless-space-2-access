@@ -91,6 +91,25 @@ proves ONLY surfaces actually opened.
 physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`
 is the layer's end of one).
 
+### Measuring a screen's build
+
+The `/wait` frames-vs-elapsed ratio says that something burns frames; this says which screen
+and how much. On the screen in question, with the cursor where a player would leave it:
+
+```
+POST /eval?settle=0&speech=0
+var nav = ES2Access.ModEntry.Navigator; var scr = ES2Access.ModEntry.Screens.Current; var sw = System.Diagnostics.Stopwatch.StartNew(); for (int i = 0; i < 200; i++) { nav.InspectRender(scr, true); } sw.Elapsed.TotalMilliseconds / 200.0
+```
+
+is one build in milliseconds, through the navigator's own render (the real expansion set and
+the existence gate; a bare `new GraphBuilder()` measures a smaller tree). Run it twice, the
+first run of a cold path includes JIT; take the best of three. Under one millisecond is the
+bar (CLAUDE.md, Performance). `ModEntry.Update`, reflected and invoked in the same loop, is
+the whole per-frame cost; `ScreenManager.Tick()` on `ModEntry.Screens` is the screens' share
+of it. A helper is timed the same way through the screen's own fields. Before and after a
+cost change: `GET /gui/graph?buffers=1` on the screen diffed byte for byte (the full walk when
+the change is a shared helper), and the numbers in the commit body.
+
 ### REPL gotchas (`POST /eval`)
 
 - Multi-statement bodies ARE accepted, and top-level `var` declarations PERSIST across
