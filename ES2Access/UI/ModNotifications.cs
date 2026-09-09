@@ -437,14 +437,29 @@ namespace ES2Access.UI
 
         private static IDictionary MapOf(GuiNotificationManager manager)
         {
+            // The pump asks this every frame the mapping is not in hand, so a game whose field has
+            // been renamed would otherwise pay a member lookup and log an error at frame rate. The
+            // answer to "does this type have that field" cannot change within a session: it is
+            // resolved once, reported once, and after that the tick costs a bool.
+            if (_mappingLost)
+            {
+                return null;
+            }
+
             try
             {
-                FieldInfo field = typeof(GuiNotificationManager).GetField(
-                    "guiNotificationTypeByEventType",
-                    BindingFlags.Instance | BindingFlags.NonPublic
-                );
-                if (field == null)
+                if (!_mapFieldAsked)
                 {
+                    _mapField = typeof(GuiNotificationManager).GetField(
+                        "guiNotificationTypeByEventType",
+                        BindingFlags.Instance | BindingFlags.NonPublic
+                    );
+                    _mapFieldAsked = true;
+                }
+
+                if (_mapField == null)
+                {
+                    _mappingLost = true;
                     Log.Error(
                         "notifications: GuiNotificationManager has no guiNotificationTypeByEventType"
                             + " field; mod notifications are off"
@@ -452,7 +467,7 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                return field.GetValue(manager) as IDictionary;
+                return _mapField.GetValue(manager) as IDictionary;
             }
             catch (Exception e)
             {
@@ -460,6 +475,10 @@ namespace ES2Access.UI
                 return null;
             }
         }
+
+        private static FieldInfo _mapField;
+        private static bool _mapFieldAsked;
+        private static bool _mappingLost;
 
         /// <summary>
         /// Runs inside the game's own dispatch: records the line and returns. Speaking - and the
