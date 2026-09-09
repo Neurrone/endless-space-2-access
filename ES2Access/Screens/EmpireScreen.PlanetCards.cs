@@ -25,13 +25,17 @@ namespace ES2Access.Screens
         /// or dropped onto - the same gesture and the same shared arithmetic the star system page's
         /// ring uses, through this panel's own drop client.
         /// </summary>
+        /// <summary>The walk the panel's cards are found by, made once per panel per frame. The cards
+        /// are POOLED by the panel and rebound as the table's selection moves, so the answer is only
+        /// good for the frame it was walked in.</summary>
+        private static readonly FrameSweep<PlanetCard> CardsIn = new FrameSweep<PlanetCard>("empire");
+
         private void BuildCards(GraphBuilder builder, StarSystemPlanetCardsPanel panel)
         {
             _cards.Clear();
             try
             {
-                // walk: audit M1, to move behind FrameSweep
-                PlanetCard[] all = panel.GetComponentsInChildren<PlanetCard>(true);
+                PlanetCard[] all = CardsIn.Under(panel);
                 for (int i = 0; i < all.Length; i++)
                 {
                     // The kept cards are SORTED by rectangle below and read in that order, so a card

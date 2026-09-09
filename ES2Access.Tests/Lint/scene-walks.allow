@@ -14,10 +14,7 @@ ES2Access/Screens/AdvancedBattleReportScreen.cs | 1 | : container.GetComponentIn
 
 ES2Access/Screens/EconomyScreen.cs | 1 | return own != null ? own : widget.GetComponentInChildren<AgeControlToggle>(true);
 
-ES2Access/Screens/EmpireScreen.DetailPanels.cs | 1 | return container == null ? null : container.GetComponentInChildren<T>(true);
-
 ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | : card.GetComponentInParent<StarSystemPlanetCardsPanel>();
-ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | PlanetCard[] all = panel.GetComponentsInChildren<PlanetCard>(true);
 
 ES2Access/Screens/FleetPanel.cs | 1 | FleetLine[] lines = panel.FleetLinesTable.GetComponentsInChildren<FleetLine>(true);
 ES2Access/Screens/FleetPanel.cs | 1 | panel.FleetActionsTable.GetComponentsInChildren<FleetActionItem>(true);
@@ -32,8 +29,6 @@ ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | return window.GetComponentsInChildr
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | : window.GetComponentInChildren<ScanViewWindowHeader>(true);
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | _fidsi = window.GetComponentsInChildren<ScanViewSystemOverviewFidsiLabel>(true);
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | bars.AgeTransform.GetComponentsInChildren<ScanViewSystemEmpireRankBar>(true);
-
-ES2Access/Screens/GlobalHud.Notifications.cs | 1 | : window.GetComponentsInChildren<NotificationItem>(true);
 
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | _cells = table == null ? None : table.GetComponentsInChildren<TroopCell>(true);
 
@@ -64,8 +59,6 @@ ES2Access/Screens/SystemManagementScreen.cs | 1 | GuiFrameExpander[] expanders =
 ES2Access/Screens/SystemManagementScreen.cs | 1 | StarSystemHangarPanel hangar = window.GetComponentInChildren<StarSystemHangarPanel>(true);
 ES2Access/Screens/SystemManagementScreen.cs | 1 | StarSystemQueuePanel queue = window.GetComponentInChildren<StarSystemQueuePanel>(true);
 ES2Access/Screens/SystemManagementScreen.cs | 1 | window.GetComponentInChildren<StarSystemConstructiblePanel>(true);
-
-ES2Access/Screens/SystemPoliticsScreen.cs | 1 | AgeTransform[] found = root.GetComponentsInChildren<AgeTransform>(true);
 
 ES2Access/Screens/TargetSelectionScreen.cs | 1 | : widget.GetComponentInChildren<AgeControlToggle>(true);
 

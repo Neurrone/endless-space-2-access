@@ -56,7 +56,7 @@ namespace ES2Access.Screens
                     return;
                 }
 
-                NotificationItem[] items = NotificationItems();
+                Dictionary<GuiNotification, NotificationItem> items = NotificationIcons();
                 foreach (GuiNotification notification in service.GetPlayerEmpireGuiNotifications())
                 {
                     if (Mine(notification) != null)
@@ -389,43 +389,57 @@ namespace ES2Access.Screens
         /// there. Today the game binds it to the notification's title, and the buffer drops a first
         /// line that only repeats the control's name, so the usual result is a buffer holding exactly
         /// the one line the strip shows.</summary>
-        private static AgeTooltip IconTooltip(GuiNotification notification, NotificationItem[] items)
+        private static AgeTooltip IconTooltip(
+            GuiNotification notification,
+            Dictionary<GuiNotification, NotificationItem> items
+        )
         {
+            NotificationItem item;
+            return items.TryGetValue(notification, out item) ? item.Tootlip : null;
+        }
+
+        /// <summary>The walk the strip's icons are found by, and the index from a notification to the
+        /// icon showing it - both made once per frame. The strip pools its icons, so the walk answers
+        /// with every icon ever shown, and asking it per notification was a scan of that whole pool per
+        /// row; the pool is also why neither the walk nor the index outlives the frame. A notification
+        /// appears on one icon, so the first entry for it is the icon the scan stopped at.</summary>
+        private static readonly FrameSweep<NotificationItem> Icons = new FrameSweep<NotificationItem>(
+            "hud"
+        );
+
+        private static readonly Dictionary<GuiNotification, NotificationItem> Shown =
+            new Dictionary<GuiNotification, NotificationItem>();
+
+        private static int _shownFrame = -1;
+
+        private static Dictionary<GuiNotification, NotificationItem> NotificationIcons()
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_shownFrame == frame)
+            {
+                return Shown;
+            }
+
+            Shown.Clear();
+            _shownFrame = frame;
             try
             {
-                for (int i = 0; i < items.Length; i++)
+                NotificationItem[] icons = Icons.Under(GameWindows.Of<NotificationItemsWindow>());
+                for (int i = 0; i < icons.Length; i++)
                 {
-                    if (ReferenceEquals(items[i].GuiNotification, notification))
+                    GuiNotification shown = icons[i] == null ? null : icons[i].GuiNotification;
+                    if (shown != null && !Shown.ContainsKey(shown))
                     {
-                        return items[i].Tootlip;
+                        Shown.Add(shown, icons[i]);
                     }
                 }
             }
             catch (Exception e)
             {
-                Log.Warn("hud: matching a notification to its icon threw: " + e);
+                Log.Warn("hud: matching the notifications to their icons threw: " + e);
             }
 
-            return null;
-        }
-
-        private static readonly NotificationItem[] NoItems = new NotificationItem[0];
-
-        private static NotificationItem[] NotificationItems()
-        {
-            try
-            {
-                NotificationItemsWindow window = GameWindows.Of<NotificationItemsWindow>();
-                return window == null
-                    ? NoItems
-                    // walk: audit M1, to move behind FrameSweep
-                    : window.GetComponentsInChildren<NotificationItem>(true);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("hud: finding the notification icons threw: " + e);
-                return NoItems;
-            }
+            return Shown;
         }
 
         private static void Open(GuiNotification notification)

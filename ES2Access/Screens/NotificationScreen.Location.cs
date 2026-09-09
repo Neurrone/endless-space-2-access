@@ -35,14 +35,7 @@ namespace ES2Access.Screens
                     return false;
                 }
 
-                AgeControlButton button = Button(window, ShowLocationButton);
-                // The LAYOUT question, not the painted one: forty-one of the sixty-nine prefabs
-                // bind a show-location button their layout never holds, an orphan with no parent
-                // at all (ES2 facts), and that orphan is what has to be caught. Painted is the wrong
-                // test here because a CLOSED popup draws nothing at all, so it answers false for every
-                // notification on the strip - where the go-to-location key is most of the time
-                // (measured 2026-08-22: the hint and the key both vanished from every strip row).
-                return button != null && AgeWidgets.Under(button.AgeTransform, Root(window));
+                return LaysOutShowLocation(window);
             }
             catch (Exception e)
             {
@@ -50,6 +43,46 @@ namespace ES2Access.Screens
                 return false;
             }
         }
+
+        /// <summary>
+        /// The LAYOUT question, not the painted one: forty-one of the sixty-nine prefabs bind a
+        /// show-location button their layout never holds, an orphan with no parent at all (ES2 facts),
+        /// and that orphan is what has to be caught. Painted is the wrong test here because a CLOSED
+        /// popup draws nothing at all, so it answers false for every notification on the strip - where
+        /// the go-to-location key is most of the time (measured 2026-08-22: the hint and the key both
+        /// vanished from every strip row).
+        ///
+        /// Asked of the WINDOW and remembered for the frame. Every notification of a kind names the
+        /// same window instance, and the strip and the turn log ask this of every notification they
+        /// hold - so the reflected property read, the root lookup and the ancestry walk were paid per
+        /// row where they only ever answer per prefab. What is per notification is
+        /// <c>HasLocation</c>, which is asked before this and is the caller's own test.
+        /// </summary>
+        private static bool LaysOutShowLocation(NotificationWindow window)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_laysOutFrame != frame)
+            {
+                LaysOut.Clear();
+                _laysOutFrame = frame;
+            }
+
+            bool drawn;
+            if (LaysOut.TryGetValue(window, out drawn))
+            {
+                return drawn;
+            }
+
+            AgeControlButton button = Button(window, ShowLocationButton);
+            drawn = button != null && AgeWidgets.Under(button.AgeTransform, Root(window));
+            LaysOut.Add(window, drawn);
+            return drawn;
+        }
+
+        private static readonly Dictionary<NotificationWindow, bool> LaysOut =
+            new Dictionary<NotificationWindow, bool>();
+
+        private static int _laysOutFrame = -1;
 
         /// <summary>
         /// DO WHAT THE SHOW-LOCATION BUTTON DOES, without opening the popup.

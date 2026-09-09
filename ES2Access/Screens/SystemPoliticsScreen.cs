@@ -495,6 +495,14 @@ namespace ES2Access.Screens
 
         /// <summary>A widget the window keeps no field for, found by the name the prefab gives it.
         /// </summary>
+        /// <summary>The walk a widget is found by name in, made once per root per frame. The modal
+        /// asks it of three roots per build - the panel for its title, the whole window for its bottom
+        /// band, and a line for its modifiers table - and a whole-modal sweep grows with the table the
+        /// screen drew, so a second ask against the same root reads the first ask's answer.</summary>
+        private static readonly FrameSweep<AgeTransform> Widgets = new FrameSweep<AgeTransform>(
+            "system politics"
+        );
+
         private static AgeTransform Named(AgeTransform root, string name)
         {
             try
@@ -504,8 +512,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                // walk: audit M1, to move behind FrameSweep
-                AgeTransform[] found = root.GetComponentsInChildren<AgeTransform>(true);
+                AgeTransform[] found = Widgets.Under(root);
                 for (int i = 0; i < found.Length; i++)
                 {
                     if (found[i] != null && found[i].name == name)

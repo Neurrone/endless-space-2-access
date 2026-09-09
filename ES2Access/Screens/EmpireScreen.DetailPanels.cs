@@ -213,18 +213,20 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The walk one detail panel is found by, made once per container per frame - one
+        /// sweep per kind asked for, since the kind is what is being walked for. The first hit is what
+        /// <c>GetComponentInChildren</c> answered with, both being the same depth-first walk.</summary>
+        private static class Sweep<T>
+            where T : UnityEngine.Component
+        {
+            public static readonly FrameSweep<T> Of = new FrameSweep<T>("empire");
+        }
+
         private static T Child<T>(AgeTransform container)
             where T : UnityEngine.Component
         {
-            try
-            {
-                // walk: audit M1, to move behind FrameSweep
-                return container == null ? null : container.GetComponentInChildren<T>(true);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            T[] found = Sweep<T>.Of.Under(container);
+            return found.Length == 0 ? null : found[0];
         }
     }
 }
