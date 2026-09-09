@@ -19,6 +19,35 @@ namespace ES2Access.Screens
         private readonly TradeWeave _weave = new TradeWeave();
 
         /// <summary>
+        /// WHAT THE WEAVE WAS BUILT FROM, so that a build which would weave the same thing again does
+        /// not weave it at all: the path array of every route taken, in the order they were taken, and
+        /// the blockade flags read off each of them.
+        ///
+        /// Those are the whole input. A route's path is replaced wholesale when the game recomputes it
+        /// (<c>TradingRoute.Path</c> is a plain field with a setter), so the array's identity answers
+        /// "is this the same path" exactly; the blockade flags are mutated in place, so they are read
+        /// as bits. Reading them costs the walk and none of the allocation - no <c>int[]</c> per route,
+        /// no per-node tie list, no per-lane ride list - and a turn spent looking at the map rebuilds
+        /// nothing at all.
+        ///
+        /// Not keyed on the turn: a blockade lands when a fleet moves onto the road, which is why this
+        /// reads the MODEL rather than the renderer in the first place.
+        /// </summary>
+        private readonly List<object> _wovenFrom = new List<object>();
+
+        private readonly List<bool> _wovenFlags = new List<bool>();
+
+        private Empire _wovenFor;
+
+        private bool _woven;
+
+        private int _wovenPaths;
+
+        private int _wovenBits;
+
+        private bool _wovenSame;
+
+        /// <summary>
         /// Read the empire's routes off the trade model, once per build.
         ///
         /// GATED ON THE MODE AND NOTHING ELSE, because that is how the drawing is gated: the renderer
@@ -37,16 +66,25 @@ namespace ES2Access.Screens
         /// </summary>
         private void GatherTradeRoutes(Empire empire)
         {
-            _weave.Clear();
             try
             {
                 DepartmentOfCommerce commerce =
                     !Scanning || empire == null ? null : empire.GetAgency<DepartmentOfCommerce>();
                 if (commerce == null)
                 {
+                    DropWeave();
                     return;
                 }
 
+                // Nothing the weave is made of has moved, so the weave standing from the last build is
+                // the weave this build would make.
+                if (!WeaveMoved(commerce, empire))
+                {
+                    return;
+                }
+
+                _weave.Clear();
+                _woven = true;
                 IList<TradingCompany> companies = commerce.TradingCompanies;
                 for (int i = 0; companies != null && i < companies.Count; i++)
                 {
@@ -64,8 +102,130 @@ namespace ES2Access.Screens
             }
             catch (Exception e)
             {
+                // A half-built weave is never kept: the next build walks the routes again rather than
+                // leaving the map talking about the part of a network that was read before the throw.
+                DropWeave();
                 Log.Warn("scan: reading the trade routes threw: " + e);
             }
+        }
+
+        /// <summary>Nothing woven, and nothing remembered about what it was woven from - so the next
+        /// build that finds a trade network builds the whole of it.</summary>
+        private void DropWeave()
+        {
+            _weave.Clear();
+            _woven = false;
+            _wovenFor = null;
+            _wovenFrom.Clear();
+            _wovenFlags.Clear();
+        }
+
+        /// <summary>Whether anything the weave is made of has changed since it was built - the routes
+        /// walked in the order <see cref="TakeRoutes"/> walks them, reading each one's path and
+        /// blockade flags and comparing them against what the last build read
+        /// (<see cref="_wovenFrom"/>). Records as it compares, so one pass both answers and updates.
+        /// </summary>
+        private bool WeaveMoved(DepartmentOfCommerce commerce, Empire empire)
+        {
+            _wovenSame = _woven && ReferenceEquals(_wovenFor, empire);
+            _wovenFor = empire;
+            _wovenPaths = 0;
+            _wovenBits = 0;
+            IList<TradingCompany> companies = commerce.TradingCompanies;
+            for (int i = 0; companies != null && i < companies.Count; i++)
+            {
+                TradingCompany company = companies[i];
+                if (company == null)
+                {
+                    continue;
+                }
+
+                NoteRoutes(company.TradingRoutes);
+                NoteRoutes(company.ExternalTradingRoutes);
+            }
+
+            if (_wovenPaths != _wovenFrom.Count)
+            {
+                _wovenSame = false;
+                _wovenFrom.RemoveRange(_wovenPaths, _wovenFrom.Count - _wovenPaths);
+            }
+
+            if (_wovenBits != _wovenFlags.Count)
+            {
+                _wovenSame = false;
+                _wovenFlags.RemoveRange(_wovenBits, _wovenFlags.Count - _wovenBits);
+            }
+
+            return !_wovenSame;
+        }
+
+        /// <summary>One of a company's two route lists, read for what the weave takes from it and
+        /// nothing else - the same routes <see cref="TakeRoutes"/> would take, in the same order.
+        /// </summary>
+        private void NoteRoutes(IList<TradingRoute> routes)
+        {
+            for (int i = 0; routes != null && i < routes.Count; i++)
+            {
+                TradingRoute route = routes[i];
+                NodePosition[] path = route == null ? null : route.Path;
+                if (path == null || path.Length < 2)
+                {
+                    continue;
+                }
+
+                NotePath(path);
+                TradingRouteBlockade blockade = route.Blockade;
+                NoteFlag(
+                    blockade != null
+                        && (
+                            blockade.IsBeingSoftBlockadedOnHQ
+                            || blockade.IsBeingSoftBlockadedOnSubsidiary
+                        )
+                );
+                TradingRouteBlockadedNodeInfo[] info = blockade == null ? null : blockade.NodeInfo;
+                for (int j = 0; info != null && j < info.Length; j++)
+                {
+                    NoteFlag(info[j] != null && info[j].IsBeingSoftBlockaded);
+                }
+            }
+        }
+
+        private void NotePath(object path)
+        {
+            if (_wovenPaths < _wovenFrom.Count)
+            {
+                if (!ReferenceEquals(_wovenFrom[_wovenPaths], path))
+                {
+                    _wovenSame = false;
+                    _wovenFrom[_wovenPaths] = path;
+                }
+            }
+            else
+            {
+                _wovenSame = false;
+                _wovenFrom.Add(path);
+            }
+
+            _wovenPaths++;
+        }
+
+        private void NoteFlag(bool flag)
+        {
+            if (_wovenBits < _wovenFlags.Count)
+            {
+                if (_wovenFlags[_wovenBits] != flag)
+                {
+                    _wovenSame = false;
+                    _wovenFlags[_wovenBits] = flag;
+                }
+            }
+            else
+            {
+                _wovenSame = false;
+                _wovenFlags.Add(flag);
+            }
+
+            _wovenBits++;
         }
 
         /// <summary>Every route in one of a company's two lists, taken the way the renderer takes it

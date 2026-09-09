@@ -185,7 +185,10 @@ namespace ES2Access.ES2.UI
                 return null;
             }
 
-            return new List<Ride>(lane.Rides);
+            // The stored list, as <see cref="At"/> already answers with: a lane's rides are read by
+            // index and never written by a reader, and the weave is rebuilt from scratch when the
+            // routes move, so the copy was one list per lane row per frame for no difference.
+            return lane.Rides;
         }
 
         /// <summary>The renderer's own key: the pair of node indices with the smaller one in the low
