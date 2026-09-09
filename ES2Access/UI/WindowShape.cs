@@ -386,18 +386,18 @@ namespace ES2Access.UI
                 return;
             }
 
-            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+            // Only a line that is not part of a CONTROL: the caption on a button is that button's
+            // name, and reading it here as well would say it twice - once as the button and once as a
+            // line of prose beside it. This is what makes the two halves of a shape reading safe to
+            // use together on the same window. Asked FIRST because it is two cached-field reads and an
+            // ancestor walk, where the words below it are a component search and a full clean: a page
+            // whose nodes are mostly buttons pays neither.
             if (
-                label != null
-                && !string.IsNullOrEmpty(AgeText.Label(label))
-                && AgeWidgets.Control(widget) == null
+                AgeWidgets.Control(widget) == null
                 && AgeWidgets.ParentControl(widget) == null
+                && Labelled(widget)
             )
             {
-                // Only a line that is not part of a CONTROL: the caption on a button is that button's
-                // name, and reading it here as well would say it twice - once as the button and once as a
-                // line of prose beside it. This is what makes the two halves of a shape reading safe to
-                // use together on the same window.
                 // Keyed on the LABEL's own transform (through Referenced) and on where it is drawn, with
                 // its name only as a readable suffix: a position in the collected list would move under
                 // the cursor the moment a line above it appeared or went, and the name alone is not
@@ -416,6 +416,15 @@ namespace ES2Access.UI
             {
                 Lines(cells, children[i], prefix, maxDepth, depth + 1, path + "/" + i);
             }
+        }
+
+        /// <summary>Whether the widget itself writes a line of prose - the question this walk declares a
+        /// readout on. The cleaned reading, not the raw string: a label carrying nothing but an icon
+        /// token cleans to nothing and is no line at all.</summary>
+        private static bool Labelled(AgeTransform widget)
+        {
+            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+            return label != null && !string.IsNullOrEmpty(AgeText.Label(label));
         }
 
         /// <summary>Whether this control is one the caller has already dealt with - itself, or anything
@@ -464,9 +473,9 @@ namespace ES2Access.UI
             // deliberately not asked here - the gate settles that when the cell is declared - so this
             // drops the retired PIECES of a live control and nothing else. The tooltip needs no such
             // question: it is the widget's OWN, not one gathered off the pieces below it.
-            string caption = AgeWidgets.PaintedPartsText(widget);
+            bool captioned = AgeWidgets.PaintedPartsSays(widget);
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            if (string.IsNullOrEmpty(caption) && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))
+            if (!captioned && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))
             {
                 // Neither words on it nor a sentence about it: a click-catcher, not a control.
                 return;
@@ -480,12 +489,23 @@ namespace ES2Access.UI
             string key = prefix + "/" + widget.name + "/" + AgeWidgets.IndexInParent(widget);
             if (toggle == null)
             {
-                cells.Add(Cells.Control(widget, button, tooltip, caption, key));
+                // The caption is read when the button is spoken, in the same order the eager form
+                // decided it in: its own drawn words, and the tooltip's first sentence where it drew
+                // none.
+                cells.Add(
+                    Cells.Control(
+                        widget,
+                        button,
+                        tooltip,
+                        () => AgeWidgets.PaintedPartsText(widget),
+                        key
+                    )
+                );
                 return;
             }
 
             AgeControlToggle it = toggle;
-            Func<string> label = string.IsNullOrEmpty(caption)
+            Func<string> label = !captioned
                 ? CardActions.NameFromTooltip(tooltip)
                 // The same reading the caption was built from, so the build-time test and the announce-time
                 // words cannot disagree about a retired piece.

@@ -359,14 +359,6 @@ namespace ES2Access.UI
                 }
 
                 AgeControlButton button = AgeWidgets.Button(widget);
-                // Only the words the game is DRAWING inside this line. A strip whose rows come out of
-                // a pool keeps a group per row it has EVER filled and retires the surplus by fading
-                // the row while the group around it stays at full alpha - so a line read by text alone
-                // says the previous binding's figure: the ship design costs box announced "1
-                // Adamantian" for a design that costs no strategic resource at all
-                // (<see cref="AgeWidgets.PaintedPartsText"/>). A line left with nothing to say then
-                // falls out at the empty-text early-out below.
-                string text = AgeWidgets.PaintedPartsText(widget);
                 bool activatable =
                     button != null
                     && !string.IsNullOrEmpty(button.OnActivateMethod)
@@ -402,7 +394,14 @@ namespace ES2Access.UI
                     return;
                 }
 
-                if (string.IsNullOrEmpty(text) && !activatable)
+                // Only the words the game is DRAWING inside this line. A strip whose rows come out of
+                // a pool keeps a group per row it has EVER filled and retires the surplus by fading
+                // the row while the group around it stays at full alpha - so a line read by text alone
+                // says the previous binding's figure: the ship design costs box announced "1
+                // Adamantian" for a design that costs no strategic resource at all
+                // (<see cref="AgeWidgets.PaintedPartsText"/>). A line left with nothing to say falls
+                // out here, and the words themselves are read again when the line is spoken.
+                if (!activatable && !AgeWidgets.PaintedPartsSays(widget))
                 {
                     return;
                 }
@@ -414,9 +413,15 @@ namespace ES2Access.UI
                 // frame, and a leaf that passed on its one drawn piece would otherwise go on to speak
                 // the retired pieces beside it and to carry their tooltips.
                 string key = PathKey(keyPrefix, widget, panel);
+                AgeTransform at = widget;
                 cells.Add(
                     activatable
-                        ? Cells.PaintedControl(widget, button, text, key)
+                        ? Cells.PaintedControl(
+                            widget,
+                            button,
+                            () => AgeWidgets.PaintedPartsText(at),
+                            key
+                        )
                         : Cells.PaintedReadout(widget, key)
                 );
             }

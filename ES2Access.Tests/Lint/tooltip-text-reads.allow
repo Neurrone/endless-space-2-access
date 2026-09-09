@@ -105,6 +105,7 @@ ES2Access/UI/BattleRosters.cs | 1 | : AgeText.Clean(tooltip.Content);
 ES2Access/UI/BattleRosters.cs | 1 | name.ListItem(CardActions.FirstLine(AgeWidgets.Raw(invisibility)));
 
 ES2Access/UI/Cells.cs | 1 | named ? (Func<string>)(() => caption) : (() => CardActions.FirstLine(tip))
+ES2Access/UI/Cells.cs | 1 | return !string.IsNullOrEmpty(text) ? text : CardActions.FirstLine(tooltip);
 ES2Access/UI/Cells.cs | 1 | string caption = named ? text : CardActions.FirstLine(last);
 ES2Access/UI/Cells.cs | 1 | string caption = named ? text : CardActions.FirstLine(tooltip);
 
@@ -131,4 +132,4 @@ ES2Access/UI/TableSheet.Pieces.cs | 1 | IList<string> lines = AgeText.Lines(AgeT
 
 ES2Access/UI/TableSheet.Text.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
 
-ES2Access/UI/WindowShape.cs | 1 | if (string.IsNullOrEmpty(caption) && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))
+ES2Access/UI/WindowShape.cs | 1 | if (!captioned && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))

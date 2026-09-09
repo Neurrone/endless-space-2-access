@@ -373,16 +373,51 @@ namespace ES2Access.UI
             string key
         )
         {
-            AgeControlButton it = button;
-            AgeTransform at = widget;
             // A control the game draws as a bare icon has no caption of its own; the sentence it
             // explains itself with on hover is what a sighted player reads, so it is the name here
             // too. The readout then drops that line from the tooltip it announces, so the control
             // never says the same sentence twice and the rest of it is still handed over.
             bool named = !string.IsNullOrEmpty(text);
             string caption = named ? text : CardActions.FirstLine(tooltip);
+            return Named(widget, button, tooltip, () => caption, key);
+        }
+
+        /// <summary>The same control for a caller whose caption is a subtree walk it would rather not
+        /// run on every frame of every panel: the words are read when the node is spoken, and the
+        /// fall-back to the tooltip's first sentence is made there too, in the same order.</summary>
+        public static Cell Control(
+            AgeTransform widget,
+            AgeControlButton button,
+            AgeTooltip tooltip,
+            Func<string> text,
+            string key
+        )
+        {
+            AgeTooltip tip = tooltip;
+            Func<string> words = text;
+            return Named(widget, button, tooltip, () => Caption(words, tip), key);
+        }
+
+        /// <summary>The caption a control is called by, resolved where the node is read: its own words
+        /// where it drew any, and the sentence its tooltip opens with where it drew none.</summary>
+        private static string Caption(Func<string> words, AgeTooltip tooltip)
+        {
+            string text = words();
+            return !string.IsNullOrEmpty(text) ? text : CardActions.FirstLine(tooltip);
+        }
+
+        private static Cell Named(
+            AgeTransform widget,
+            AgeControlButton button,
+            AgeTooltip tooltip,
+            Func<string> caption,
+            string key
+        )
+        {
+            AgeControlButton it = button;
+            AgeTransform at = widget;
             NodeVtable vtable = GraphNodes.Button(
-                () => caption,
+                caption,
                 () => AgeWidgets.Press(it),
                 // The whole availability question rather than the enable flag: this game leaves a
                 // button blocked for a missing technology switched ON so a click can explain itself,
@@ -481,6 +516,23 @@ namespace ES2Access.UI
             return Control(widget, button, text, key, true);
         }
 
+        /// <summary>The same line for a pooled walk that would rather read the drawn pieces once, when
+        /// the node is spoken, than on every frame it declares the line - <see cref="Control(AgeTransform,
+        /// AgeControlButton, AgeTooltip, Func{string}, string)"/>, with the tooltip gathered off the
+        /// pieces rather than named.</summary>
+        public static Cell PaintedControl(
+            AgeTransform widget,
+            AgeControlButton button,
+            Func<string> text,
+            string key
+        )
+        {
+            TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget, true));
+            AgeTooltip last = carried.Own;
+            Func<string> words = text;
+            return Clickable(widget, button, key, () => Caption(words, last), last, carried);
+        }
+
         private static Cell Control(
             AgeTransform widget,
             AgeControlButton button,
@@ -491,12 +543,24 @@ namespace ES2Access.UI
         {
             TooltipChildren.Carried carried = TooltipChildren.Split(Gathered(widget, painted));
             AgeTooltip last = carried.Own;
-            AgeControlButton it = button;
-            AgeTransform at = widget;
             bool named = !string.IsNullOrEmpty(text);
             string caption = named ? text : CardActions.FirstLine(last);
+            return Clickable(widget, button, key, () => caption, last, carried);
+        }
+
+        private static Cell Clickable(
+            AgeTransform widget,
+            AgeControlButton button,
+            string key,
+            Func<string> caption,
+            AgeTooltip last,
+            TooltipChildren.Carried carried
+        )
+        {
+            AgeControlButton it = button;
+            AgeTransform at = widget;
             NodeVtable vtable = GraphNodes.Button(
-                () => caption,
+                caption,
                 () => AgeWidgets.Press(it),
                 () => AgeWidgets.Offered(at)
             );
@@ -571,11 +635,21 @@ namespace ES2Access.UI
             }
 
             AgeControlButton button = AgeWidgets.Button(widget);
+            AgeTransform at = widget;
             return button == null
                 ? null
                 : Kept(
                     cells,
-                    Control(widget, button, AgeWidgets.Raw(widget), AgeWidgets.TextOf(widget), key)
+                    // The words are read when the line is spoken rather than on every frame it is
+                    // declared; where the control drew none, the tooltip's first sentence still names
+                    // it, decided in that same order.
+                    Control(
+                        widget,
+                        button,
+                        AgeWidgets.Raw(widget),
+                        () => AgeWidgets.TextOf(at),
+                        key
+                    )
                 );
         }
 
@@ -586,7 +660,7 @@ namespace ES2Access.UI
             // The emptiness test is CONTENT, not existence: a band the game drew and left blank has
             // nothing to name a node after. Whether the game is drawing it is the gate's question,
             // asked of this same widget by Kept.
-            if (widget != null && !string.IsNullOrEmpty(AgeWidgets.TextOf(widget)))
+            if (widget != null && AgeWidgets.Says(widget))
             {
                 Kept(cells, Readout(widget, AgeWidgets.Raw(widget), key));
             }
