@@ -57,7 +57,7 @@ namespace ES2Access.UI
                     return;
                 }
 
-                AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+                AgePrimitiveLabel label = LabelOn(widget);
                 Add(lines, label == null ? null : AgeText.Label(label));
                 // Only the words written onto the tooltip itself (the same gate and split
                 // <see cref="TooltipLines"/> uses for its first half), never the drawn tooltip
@@ -271,9 +271,33 @@ namespace ES2Access.UI
             catch (Exception) { }
         }
 
+        /// <summary>
+        /// The label a widget draws its words with, read off the field the engine caches rather than
+        /// by searching the object's components.
+        ///
+        /// <c>AgeTransform.AgePrimitive</c> is the primitive found once in <c>Awake</c>
+        /// (firstpass/AgeTransform.cs:372-385, :3771), and it is the only one the renderer ever draws
+        /// (:2005-2016). A label IS a primitive, so a widget whose cached primitive is null carries no
+        /// label at all, and one whose cached primitive is the label carries no earlier label than
+        /// that: both answers are the component search's own. The one case they can part is a widget
+        /// carrying a second, undrawn primitive behind an image - nothing in this game builds one, but
+        /// nothing in the engine forbids it either, so that case still pays for the search.
+        /// </summary>
+        private static AgePrimitiveLabel LabelOn(AgeTransform widget)
+        {
+            AgePrimitive primitive = widget.AgePrimitive;
+            if (primitive == null)
+            {
+                return null;
+            }
+
+            AgePrimitiveLabel label = primitive as AgePrimitiveLabel;
+            return label != null ? label : widget.GetComponent<AgePrimitiveLabel>();
+        }
+
         private static void AddLabel(AgeTransform widget, List<string> parts)
         {
-            AgePrimitiveLabel label = widget.GetComponent<AgePrimitiveLabel>();
+            AgePrimitiveLabel label = LabelOn(widget);
             if (label == null)
             {
                 return;
