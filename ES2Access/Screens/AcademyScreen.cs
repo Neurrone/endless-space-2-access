@@ -514,7 +514,10 @@ namespace ES2Access.Screens
         {
             try
             {
-                // walk: audit M1, to move behind FrameSweep
+                // The panel holds a TABLE of gauges, so the question a row asks is which one it is
+                // inside - an ancestor walk from the row IS that answer, and no sweep of the panel
+                // would serve it. (The audit read this as one gauge per panel, resolvable once.)
+                // walk: bounded by the row's depth inside its own gauge
                 return widget.GetComponentInParent<HeroUnlockGaugeItem>();
             }
             catch (Exception)
