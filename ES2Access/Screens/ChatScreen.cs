@@ -184,6 +184,17 @@ namespace ES2Access.Screens
                     return;
                 }
 
+                builder.BeginStop(AlertStop);
+                ControlId id = ControlId.For(button, "chat:new-messages");
+                // The gate asked BEFORE the node is built rather than after: this contribution is
+                // made on every page in the game, and on nearly all of them the button is not up.
+                // The same test the gate itself applies, under the same flag, so a run with the
+                // gate switched off still declares what it declared before.
+                if (!NodeGate.StillDrawn(widget, id))
+                {
+                    return;
+                }
+
                 AgeControlButton it = button;
                 AgeTooltip tooltip = AgeWidgets.Raw(widget);
                 NodeVtable vtable = GraphNodes.Button(
@@ -193,9 +204,8 @@ namespace ES2Access.Screens
                     tooltip
                 );
                 AgeWidgets.Point(vtable, it, tooltip, widget);
-                builder.BeginStop(AlertStop);
                 builder.StartRow();
-                builder.AddItem(Nodes.Drawn(ControlId.For(button, "chat:new-messages"), vtable, button));
+                builder.AddItem(Nodes.Drawn(id, vtable, button));
                 builder.EndRow();
             }
             catch (Exception e)
