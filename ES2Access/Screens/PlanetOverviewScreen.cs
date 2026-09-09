@@ -610,8 +610,7 @@ namespace ES2Access.Screens
         /// are the separators between the card's blocks.</summary>
         private static void AddRow(List<Cell> cells, AgeTransform row, string key)
         {
-            string text = AgeWidgets.TextOf(row);
-            if (string.IsNullOrEmpty(text))
+            if (!AgeWidgets.Says(row))
             {
                 return;
             }

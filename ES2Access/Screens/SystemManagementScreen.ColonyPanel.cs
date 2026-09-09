@@ -581,14 +581,14 @@ namespace ES2Access.Screens
             AgeControlDropList it = list;
             ColonyInfoSidePanel owner = panel;
             AgeTransform widget = AgeWidgets.Transform(list);
-            string title = LabelIn(group);
+            AgeTransform captions = group;
             NodeVtable vtable = GraphNodes.ComboBox(
-                () => title,
+                () => LabelIn(captions),
                 () => DropListScreen.EntryText(it, it.SelectedItem),
                 () =>
                     DropListScreen.Open(
                         it,
-                        title,
+                        LabelIn(captions),
                         index =>
                         {
                             it.SelectedItem = index;

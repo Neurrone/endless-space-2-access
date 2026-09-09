@@ -916,7 +916,7 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
-                    GraphNodes.ValuePart(() => SensitivityText(it, true)),
+                    GraphNodes.ValuePart(() => SensitivitySaid(it)),
                 },
                 // The graph's tooltip opens with the sentence that is already the row's NAME and then
                 // says what the sensitivity is for. It reads by its own kind, and the readout drops the
@@ -933,6 +933,26 @@ namespace ES2Access.Screens
                 Id = ControlId.For(widget, keyPrefix + widget.name + "/sensitivity"),
                 Vtable = vtable,
             };
+        }
+
+        private static RepresentativesStarSystemSidePanel _sensitivityPanel;
+        private static int _sensitivityFrame = -1;
+        private static string _sensitivitySaid;
+
+        /// <summary>The spoken bars, read from the game's party list once per (panel, frame): the
+        /// navigator recomposes the focused node's whole readout every frame, and the gauges the shares
+        /// are measured off cannot move within one frame.</summary>
+        private static string SensitivitySaid(RepresentativesStarSystemSidePanel panel)
+        {
+            int frame = Time.frameCount;
+            if (_sensitivityFrame != frame || !ReferenceEquals(_sensitivityPanel, panel))
+            {
+                _sensitivitySaid = SensitivityText(panel, true);
+                _sensitivityFrame = frame;
+                _sensitivityPanel = panel;
+            }
+
+            return _sensitivitySaid;
         }
 
         private static string SensitivityText(
