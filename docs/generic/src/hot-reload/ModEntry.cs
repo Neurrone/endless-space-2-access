@@ -971,6 +971,34 @@ namespace ES2Access
         };
 
         /// <summary>
+        /// "3 of 12", remembered. Most list rows carry one, and the focused row's whole readout is
+        /// recomposed every frame purely to be string-compared with the last one - so this ran a
+        /// MessageBuilder, a params array with two boxed ints, a string.Format and a table lookup
+        /// sixty times a second for a pair of numbers that had not moved. Keyed on the language too,
+        /// because the template it is formatted from is one of the mod's own words.
+        /// </summary>
+        private static string PositionText(int index, int count)
+        {
+            if (index == _positionIndex && count == _positionCount
+                && ReferenceEquals(ModLocale.Language, _positionLanguage))
+            {
+                return _positionText;
+            }
+
+            _positionIndex = index;
+            _positionCount = count;
+            _positionLanguage = ModLocale.Language;
+            _positionText = new MessageBuilder().PushFraction(index, count).Build();
+            return _positionText;
+        }
+
+        // A pair no caller can ask for, so the first ask always composes.
+        private static int _positionIndex = int.MinValue;
+        private static int _positionCount = int.MinValue;
+        private static string _positionLanguage;
+        private static string _positionText;
+
+        /// <summary>
         /// Teach the announcer and the table emitter the mod's own wording, and hand it the live drag so
         /// that a control that can be picked up or dropped onto says so. These are static because every
         /// control's readout passes through them; Stop drops them again. Called AFTER the navigator
@@ -982,8 +1010,7 @@ namespace ES2Access
         private static void InstallAnnouncerWording()
         {
             GraphAnnouncer.Carry = Carry;
-            GraphAnnouncer.PositionText = (index, count) =>
-                new MessageBuilder().PushFraction(index, count).Build();
+            GraphAnnouncer.PositionText = PositionText;
             GraphAnnouncer.ExpandedStateText = expanded =>
                 ModStrings.Get(expanded ? ModStrings.NavExpanded : ModStrings.NavCollapsed);
 
