@@ -106,6 +106,12 @@ namespace ES2Access.Screens
 
         private float _orderedFromY;
 
+        /// <summary>Every star this build is listing, by its GUID - what a bookmark is resolved
+        /// through (<see cref="Listed"/>). Filled in the pass that puts the lists in order, because
+        /// it answers the same question they do and changes exactly when they change.</summary>
+        private readonly Dictionary<ulong, StarSystemNode> _listedByGuid =
+            new Dictionary<ulong, StarSystemNode>();
+
         /// <summary>The fleets crossing open space towards somewhere the map has not named - the ones
         /// with no system to hang under (<see cref="AddAdrift"/>).</summary>
         private readonly List<Fleet> _adrift = new List<Fleet>();
@@ -136,6 +142,17 @@ namespace ES2Access.Screens
             public Constellation Under;
 
             public ControlId Id;
+
+            /// <summary>The stretch of sky <see cref="Id"/> was composed for, and the empire it was
+            /// composed for. The key is built from those two and the slot, and the slot does not
+            /// move, so an unchanged pair is an unchanged key. A sky that is named at all has been
+            /// explored - <see cref="InGroups"/> only answers yes for a group
+            /// <see cref="Partition"/> declared, and it declares none for an unexplored
+            /// constellation - so the branch inside <c>GroupKey</c> is settled by the sky as well.
+            /// </summary>
+            public Constellation KeyedUnder;
+
+            public Empire KeyedFor;
 
             /// <summary>Whether this build is declaring the row at all.</summary>
             public bool Listed;
@@ -222,34 +239,15 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The system a bookmark names, where this build's own lists of places hold it -
-        /// which is what decides whether a bookmarked system has a row to carry the word.</summary>
+        /// which is what decides whether a bookmarked system has a row to carry the word. Read off
+        /// the index those lists are put in order with, rather than scanned for down all three of
+        /// them: a colony is in the named list too, and a star is in exactly one of the two lists,
+        /// so one entry per GUID answers what walking colonies, then named, then located answered.
+        /// </summary>
         private StarSystemNode Listed(ulong guid)
         {
-            for (int i = 0; i < _colonies.Count; i++)
-            {
-                if ((ulong)_colonies[i].GUID == guid)
-                {
-                    return _colonies[i];
-                }
-            }
-
-            for (int i = 0; i < _systems.Count; i++)
-            {
-                if ((ulong)_systems[i].GUID == guid)
-                {
-                    return _systems[i];
-                }
-            }
-
-            for (int i = 0; i < _located.Count; i++)
-            {
-                if ((ulong)_located[i].GUID == guid)
-                {
-                    return _located[i];
-                }
-            }
-
-            return null;
+            StarSystemNode node;
+            return _listedByGuid.TryGetValue(guid, out node) ? node : null;
         }
 
         /// <summary>This slot's kept point, brought up to date for this build: where it is, which
@@ -278,10 +276,23 @@ namespace ES2Access.Screens
             point.Under = _showsSystems ? point.Sky : null;
             point.Listed = true;
             point.Emitted = false;
-            point.Id = ControlId.Structural(
-                (point.Sky == null ? StrayBookmarkKey : GroupKey(point.Sky, empire) + "/bookmark/")
-                    + digit
-            );
+            if (
+                point.Id == null
+                || !ReferenceEquals(point.KeyedUnder, point.Sky)
+                || !ReferenceEquals(point.KeyedFor, empire)
+            )
+            {
+                point.KeyedUnder = point.Sky;
+                point.KeyedFor = empire;
+                point.Id = ControlId.Structural(
+                    (
+                        point.Sky == null
+                            ? StrayBookmarkKey
+                            : GroupKey(point.Sky, empire) + "/bookmark/"
+                    ) + digit
+                );
+            }
+
             return point;
         }
 
@@ -703,6 +714,17 @@ namespace ES2Access.Screens
 
             _systems.Sort(ReadingOrder);
             _located.Sort(ReadingOrder);
+            _listedByGuid.Clear();
+            for (int i = 0; i < _systems.Count; i++)
+            {
+                _listedByGuid[(ulong)_systems[i].GUID] = _systems[i];
+            }
+
+            for (int i = 0; i < _located.Count; i++)
+            {
+                _listedByGuid[(ulong)_located[i].GUID] = _located[i];
+            }
+
             _orderedFromX = home.X;
             _orderedFromY = home.Y;
         }
