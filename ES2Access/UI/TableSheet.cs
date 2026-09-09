@@ -616,10 +616,17 @@ namespace ES2Access.UI
             return SaysRowRefusal(vtable);
         }
 
-        /// <summary>The button a cell carries, where it has one the game is drawing. A column can carry
-        /// a dummy with no handler at all - the Empire page's resources column does - which is not one
-        /// of these: pressing it does what a click on any plain cell does, and that is the sheet's own
-        /// job.</summary>
+        /// <summary>A cell's controls, swept once per cell per frame. Rows are POOLED - a table adds
+        /// and retires them as the world changes - so the answer is kept for the frame and no longer.
+        /// </summary>
+        private static readonly FrameSweep<AgeControlButton> CellButtons =
+            new FrameSweep<AgeControlButton>("table");
+
+        /// <summary>The button a cell carries, where it has one the game is drawing - the first the
+        /// sweep names, which is the first a search of the cell's subtree would have stopped at. A
+        /// column can carry a dummy with no handler at all - the Empire page's resources column does -
+        /// which is not one of these: pressing it does what a click on any plain cell does, and that is
+        /// the sheet's own job.</summary>
         private static AgeControlButton CellButton(AgeTransform cell)
         {
             try
@@ -629,8 +636,8 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                // walk: audit M1, to move behind FrameSweep
-                AgeControlButton button = cell.GetComponentInChildren<AgeControlButton>(true);
+                AgeControlButton[] buttons = CellButtons.Under(cell);
+                AgeControlButton button = buttons.Length == 0 ? null : buttons[0];
                 // Different widget: the search reaches HIDDEN children on purpose (a cell holds the
                 // controls of every shape its column can take), so which of them the game is drawing
                 // is the answer to "is this cell a button at all" - and it is asked of the button,

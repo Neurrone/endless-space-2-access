@@ -205,14 +205,19 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>A tab widget's toggles, swept once per tab per frame: the tabs are read on every
+        /// build and a tab's own control cannot move within a frame.</summary>
+        private static readonly FrameSweep<AgeControlToggle> Toggles =
+            new FrameSweep<AgeControlToggle>("victory");
+
+        /// <summary>The toggle a tab is: the first the sweep names, which is the first a search of its
+        /// subtree would have stopped at.</summary>
         private static AgeControlToggle Toggle(AgeTransform widget)
         {
             try
             {
-                return widget == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : widget.GetComponentInChildren<AgeControlToggle>(true);
+                AgeControlToggle[] inside = Toggles.Under(widget);
+                return inside.Length == 0 ? null : inside[0];
             }
             catch (Exception)
             {

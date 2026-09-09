@@ -115,8 +115,15 @@ namespace ES2Access.Screens
             for (int i = 0; children != null && i < children.Count; i++)
             {
                 AgeTransform widget = children[i];
+                // Asked before the card's radio is looked for: a spare the table is pooling is not a
+                // card at all, and searching it for a control is work for a row nothing will declare.
+                if (!target.Bound(widget))
+                {
+                    continue;
+                }
+
                 AgeControlToggle toggle = Toggle(widget);
-                if (toggle == null || !target.Bound(widget))
+                if (toggle == null)
                 {
                     continue;
                 }
@@ -243,14 +250,19 @@ namespace ES2Access.Screens
             return -1;
         }
 
+        /// <summary>A card's toggles, swept once per card per frame. The table POOLS its cards and
+        /// re-binds them on every showing, so the answer is kept for the frame and no longer.</summary>
+        private static readonly FrameSweep<AgeControlToggle> Toggles =
+            new FrameSweep<AgeControlToggle>("target selection");
+
+        /// <summary>The radio a card is: the first the sweep names, which is the first a search of the
+        /// card's subtree would have stopped at.</summary>
         private static AgeControlToggle Toggle(AgeTransform widget)
         {
             try
             {
-                return widget == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : widget.GetComponentInChildren<AgeControlToggle>(true);
+                AgeControlToggle[] inside = Toggles.Under(widget);
+                return inside.Length == 0 ? null : inside[0];
             }
             catch (Exception)
             {

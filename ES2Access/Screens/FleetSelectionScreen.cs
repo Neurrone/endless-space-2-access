@@ -176,6 +176,11 @@ namespace ES2Access.Screens
 
         // ---- reading the window ----
 
+        /// <summary>The modal's labels, swept once per frame. Its table is POOLED - a row per fleet the
+        /// window has listed - so the answer is kept for the frame and no longer.</summary>
+        private static readonly FrameSweep<AgePrimitiveLabel> Labels =
+            new FrameSweep<AgePrimitiveLabel>("fleet selection");
+
         /// <summary>The window's own title, found where it is drawn: the class exposes its table and its
         /// Validate button and nothing else.</summary>
         private static string Title(FleetSelectionModalWindow window)
@@ -187,9 +192,7 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                AgePrimitiveLabel[] labels =
-                    // walk: audit M1, to move behind FrameSweep
-                    window.GetComponentsInChildren<AgePrimitiveLabel>(true);
+                AgePrimitiveLabel[] labels = Labels.Under(window);
                 for (int i = 0; i < labels.Length; i++)
                 {
                     if (labels[i] != null && labels[i].name == "WindowTitle")

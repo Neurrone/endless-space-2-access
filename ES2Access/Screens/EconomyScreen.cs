@@ -404,13 +404,25 @@ namespace ES2Access.Screens
             Cells.Add(cells, at, ControlId.For(toggle, "economy:tab/" + index), vtable);
         }
 
+        /// <summary>A tab widget's toggles, swept once per tab per frame: the strip is rebuilt on every
+        /// build and a tab's own control cannot move within a frame.</summary>
+        private static readonly FrameSweep<AgeControlToggle> Toggles =
+            new FrameSweep<AgeControlToggle>("economy");
+
+        /// <summary>The toggle a tab is: its own where it carries one, else the first the sweep names,
+        /// which is the first a search of its subtree would have stopped at.</summary>
         private static AgeControlToggle Toggle(AgeTransform widget)
         {
             try
             {
                 AgeControlToggle own = widget.GetComponent<AgeControlToggle>();
-                // walk: audit M1, to move behind FrameSweep
-                return own != null ? own : widget.GetComponentInChildren<AgeControlToggle>(true);
+                if (own != null)
+                {
+                    return own;
+                }
+
+                AgeControlToggle[] inside = Toggles.Under(widget);
+                return inside.Length == 0 ? null : inside[0];
             }
             catch (Exception)
             {

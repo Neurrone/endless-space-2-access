@@ -500,7 +500,12 @@ namespace ES2Access.Screens
         /// (<see cref="TableSheet.ButtonCell"/>). Enter here is the cell's own click carried on to the
         /// row's toggle, which is the two-step the mouse makes: the cell button records which cell was
         /// hit and the row's own handler reads that and opens either the hero picker or the assigned
-        /// hero's dossier.</summary>
+        /// hero's dossier.
+        ///
+        /// Named by the cell CLASS the game gives that column, which is the same test the game's own
+        /// click handler makes to decide it is the hero column (<c>MilitaryScreen.OnLineSelection</c>
+        /// :487-492) - and it is one component read, where letting every column ask for a button cell
+        /// meant searching each of the eight cells' subtrees, per row, per frame.</summary>
         private NodeVtable HeroCell(
             GuiTableLine line,
             AgeTransform cell,
@@ -508,7 +513,9 @@ namespace ES2Access.Screens
             Func<bool> enabled
         )
         {
-            return _table.ButtonCell(cell, header, enabled);
+            return cell == null || cell.GetComponent<GuiTableCellAssignedHero>() == null
+                ? null
+                : _table.ButtonCell(cell, header, enabled);
         }
 
         // ---- what can be done to the picked fleet ----

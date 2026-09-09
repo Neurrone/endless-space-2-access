@@ -22,8 +22,6 @@ ES2Access/Screens/BattleNotifications.Ground.cs | 1 | : table.GetComponentsInChi
 
 ES2Access/Screens/BattleNotifications.cs | 1 | GroundBattlePlayCard[] cards = table.GetComponentsInChildren<GroundBattlePlayCard>(
 
-ES2Access/Screens/EconomyScreen.cs | 1 | return own != null ? own : widget.GetComponentInChildren<AgeControlToggle>(true);
-
 ES2Access/Screens/EmpireScreen.DetailPanels.cs | 1 | return container == null ? null : container.GetComponentInChildren<T>(true);
 
 ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | : card.GetComponentInParent<StarSystemPlanetCardsPanel>();
@@ -32,8 +30,6 @@ ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | PlanetCard[] all = panel.Get
 ES2Access/Screens/FleetPanel.cs | 1 | FleetLine[] lines = panel.FleetLinesTable.GetComponentsInChildren<FleetLine>(true);
 ES2Access/Screens/FleetPanel.cs | 1 | panel.FleetActionsTable.GetComponentsInChildren<FleetActionItem>(true);
 ES2Access/Screens/FleetPanel.cs | 1 | panel.HeroShipContainer.GetComponentInChildren<ShipItem>(true),
-
-ES2Access/Screens/FleetSelectionScreen.cs | 1 | window.GetComponentsInChildren<AgePrimitiveLabel>(true);
 
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | MergedFleetLabels[] merged = window.GetComponentsInChildren<MergedFleetLabels>(true);
 
@@ -81,10 +77,6 @@ ES2Access/Screens/SystemManagementScreen.cs | 1 | GuiFrameExpander[] expanders =
 
 ES2Access/Screens/SystemPoliticsScreen.cs | 1 | AgeTransform[] found = root.GetComponentsInChildren<AgeTransform>(true);
 
-ES2Access/Screens/TargetSelectionScreen.cs | 1 | : widget.GetComponentInChildren<AgeControlToggle>(true);
-
-ES2Access/Screens/VictoryScreen.cs | 1 | : widget.GetComponentInChildren<AgeControlToggle>(true);
-
 ES2Access/UI/BattlePlans.cs | 1 | : container.GetComponentInChildren<BattlePlayCard>(true);
 
 ES2Access/UI/BattleRosters.cs | 1 | : ships.GetComponentsInChildren<BattleShipItem>(true);
@@ -101,5 +93,4 @@ ES2Access/UI/ModOptions/ModRows.cs | 1 | OptionItem[] rows = panel.OptionsTable.
 
 ES2Access/UI/ShipDesignRows.Modules.cs | 1 | item.AgeTransform.GetComponentInChildren<AgeControlButton>(true);
 
-ES2Access/UI/TableSheet.cs | 1 | AgeControlButton button = cell.GetComponentInChildren<AgeControlButton>(true);
 ES2Access/UI/TableSheet.cs | 1 | return cell == null ? null : cell.GetComponentInChildren<AgeControlDropList>();
