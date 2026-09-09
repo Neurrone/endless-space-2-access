@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -268,10 +268,20 @@ namespace ES2Access.Screens
                 // Which kind of journey it is, since the unnamed destination is all either can say
                 // about where it is going: a lane running into the dark is not the same picture as a
                 // fleet striking out across open space, and the map draws the one and not the other.
-                string phrase = Crossing(it)
-                    ? ModStrings.Get(ModStrings.GalaxyFleetFreeMovingToUnexplored)
-                    : OnLaneIntoTheDark(it);
-                vtable.Announcements.Insert(1, GraphNodes.ValuePart(() => phrase, false));
+                // Read at announcing time like every sibling phrase on this row: working out which of
+                // the two it is costs a positioning service, two node lookups and a link scan, and the
+                // row that pays for that is the one being read rather than every adrift fleet on the
+                // map on every frame.
+                vtable.Announcements.Insert(
+                    1,
+                    GraphNodes.ValuePart(
+                        () =>
+                            Crossing(it)
+                                ? ModStrings.Get(ModStrings.GalaxyFleetFreeMovingToUnexplored)
+                                : OnLaneIntoTheDark(it),
+                        false
+                    )
+                );
                 AddFleet(builder, it, AdriftKey(it), vtable, badges);
             }
             catch (Exception e)
@@ -400,13 +410,25 @@ namespace ES2Access.Screens
             adrift.Clear();
             try
             {
+                // Read into a set first: the test below is made of every drawn fleet against every
+                // system the map has named, and as a linear scan that is the galaxy multiplied by
+                // itself on every frame. The set is filled from the same list and nothing else, and a
+                // GameNode inherits object identity - neither it nor StarSystemNode overrides Equals or
+                // GetHashCode - so membership in it is the ReferenceEquals scan it replaces.
+                DeclaredSystems.Clear();
+                for (int i = 0; i < declared.Count; i++)
+                {
+                    DeclaredSystems.Add(declared[i]);
+                }
+
                 IPositioningService positioning =
                     Amplitude.Unity.Framework.Services.GetService<IPositioningService>();
                 IList<Fleet> drawn = FleetPresence.Drawing();
                 for (int i = 0; i < drawn.Count; i++)
                 {
                     GameNode goal = GoalOf(positioning, drawn[i]);
-                    if (goal != null && !Declares(declared, goal))
+                    StarSystemNode star = goal as StarSystemNode;
+                    if (goal != null && (star == null || !DeclaredSystems.Contains(star)))
                     {
                         adrift.Add(drawn[i]);
                     }
@@ -418,18 +440,7 @@ namespace ES2Access.Screens
             }
         }
 
-        private static bool Declares(List<StarSystemNode> declared, GameNode node)
-        {
-            for (int i = 0; i < declared.Count; i++)
-            {
-                if (ReferenceEquals(declared[i], node))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+        private static readonly HashSet<StarSystemNode> DeclaredSystems = new HashSet<StarSystemNode>();
 
         /// <summary>Whether the leg a fleet is flying is a crossing of open space - it is under way and
         /// the two ends of its leg have no line between them - and if so, where it is flying to.
@@ -1163,6 +1174,54 @@ namespace ES2Access.Screens
         {
             try
             {
+                AgeTransform found;
+                if (Lozenges(docks, flying).TryGetValue(fleet.GUID.ToUInt64(null), out found))
+                {
+                    return found;
+                }
+
+                // A search that threw answered null for every fleet it had not already matched, and
+                // still does: the index holds what was read before the throw and nothing after it.
+                return _lozengesFailed ? null : MergedLozenge(fleet);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: matching a fleet to its map label threw: " + e);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Which lozenge the map is drawing each fleet in, built once a frame out of the two label
+        /// arrays the sweeps already hold.
+        ///
+        /// The matching used to run the other way round - every fleet row against every dock label and
+        /// then against every fleet label, each with an ancestor visibility walk - so a galaxy's worth
+        /// of rows paid for the label pool twice over. Inverted, each label is read once and each row is
+        /// a dictionary lookup, and the answer is the same one because the FIRST match still wins in the
+        /// same order: the docks are filled in array order before any fleet label is, so a fleet in a
+        /// dock's slot keeps the dock's lozenge, and a fleet claimed by two labels of a kind keeps the
+        /// earlier one's. A label whose lozenge widget is missing is still an entry, mapping to null -
+        /// a fleet the map has matched and drawn no lozenge for was never one to look for a merged
+        /// marker for.
+        /// </summary>
+        private static Dictionary<ulong, AgeTransform> Lozenges(
+            DockLabel[] docks,
+            FleetLabel[] flying
+        )
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_lozengeFrame == frame)
+            {
+                return LozengeOf;
+            }
+
+            _lozengeFrame = frame;
+            LozengeOf.Clear();
+            _lozengesFailed = false;
+            try
+            {
                 for (int i = 0; i < docks.Length; i++)
                 {
                     DockLabel dock = docks[i];
@@ -1172,12 +1231,13 @@ namespace ES2Access.Screens
                         continue;
                     }
 
+                    AgeTransform lozenge = Lozenge(dock.FleetLozenge);
                     ReadOnlyCollection<GalaxyFleet> docked = dock.DockingSlot.GalaxyFleets;
                     for (int j = 0; j < docked.Count; j++)
                     {
-                        if (docked[j] != null && docked[j].Fleet.GUID == fleet.GUID)
+                        if (docked[j] != null)
                         {
-                            return Lozenge(dock.FleetLozenge);
+                            Claim(docked[j].Fleet.GUID, lozenge);
                         }
                     }
                 }
@@ -1186,25 +1246,38 @@ namespace ES2Access.Screens
                 {
                     FleetLabel label = flying[i];
                     // Different widget: picking which of the pooled labels is the one drawn for this fleet.
-                    if (
-                        label.GalaxyFleet != null
-                        && label.GalaxyFleet.Fleet.GUID == fleet.GUID
-                        && AgeWidgets.Visible(label.AgeTransform)
-                    )
+                    if (label.GalaxyFleet == null || !AgeWidgets.Visible(label.AgeTransform))
                     {
-                        return Lozenge(label.FleetLozenge);
+                        continue;
                     }
-                }
 
-                return MergedLozenge(fleet);
+                    Claim(label.GalaxyFleet.Fleet.GUID, Lozenge(label.FleetLozenge));
+                }
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: matching a fleet to its map label threw: " + e);
+                _lozengesFailed = true;
             }
 
-            return null;
+            return LozengeOf;
         }
+
+        private static void Claim(GameEntityGUID fleet, AgeTransform lozenge)
+        {
+            ulong key = fleet.ToUInt64(null);
+            if (!LozengeOf.ContainsKey(key))
+            {
+                LozengeOf[key] = lozenge;
+            }
+        }
+
+        private static readonly Dictionary<ulong, AgeTransform> LozengeOf =
+            new Dictionary<ulong, AgeTransform>();
+
+        private static int _lozengeFrame = -1;
+
+        private static bool _lozengesFailed;
 
         /// <summary>The lozenges the map draws fleets and docks with, each swept once per FRAME rather
         /// than once per system: the build asks both of them again for every system on the map - what
@@ -1215,6 +1288,12 @@ namespace ES2Access.Screens
 
         private static readonly LabelSweep<FleetLabel> Fleets =
             new LabelSweep<FleetLabel>("galaxy", FleetLabelsWindow);
+
+        /// <summary>The markers the map folds several fleets into, swept out of the same window and for
+        /// the same reason: every fleet whose own label is hidden - which is every merged one, and every
+        /// match that fails - used to search the whole labels window again.</summary>
+        private static readonly LabelSweep<MergedFleetLabels> Merged =
+            new LabelSweep<MergedFleetLabels>("galaxy", FleetLabelsWindow);
 
         private static DockLabel[] DockLabels()
         {
@@ -1415,16 +1494,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static AgeTransform MergedLozenge(Fleet fleet)
         {
-            FleetLabelsWindow window = Gui.GuiServiceAvailable
-                ? Gui.GuiService.GetWindow<FleetLabelsWindow>(false)
-                : null;
-            if (window == null)
-            {
-                return null;
-            }
-
-            // walk: audit M1, to move behind FrameSweep
-            MergedFleetLabels[] merged = window.GetComponentsInChildren<MergedFleetLabels>(true);
+            MergedFleetLabels[] merged = Merged.Labels();
             for (int i = 0; i < merged.Length; i++)
             {
                 MergedFleetLabels group = merged[i];

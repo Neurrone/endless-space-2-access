@@ -139,9 +139,9 @@ ES2Access/Screens/FleetPanel.cs | 1 | || !AgeWidgets.Visible(window.HeroAndShips
 ES2Access/Screens/Galaxy/ConstellationRows.cs | 1 | !AgeWidgets.Visible(group)
 ES2Access/Screens/Galaxy/ConstellationRows.cs | 1 | || !AgeWidgets.Visible(mapper.AgeTransform)
 
-ES2Access/Screens/Galaxy/FleetRows.cs | 1 | && AgeWidgets.Visible(label.AgeTransform)
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (buttons == null || !AgeWidgets.Visible(group.AgeTransform))
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (dock.DockingSlot == null || !AgeWidgets.Visible(dock.AgeTransform))
+ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (label.GalaxyFleet == null || !AgeWidgets.Visible(label.AgeTransform))
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | if (widget == null || group == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransform)
 
