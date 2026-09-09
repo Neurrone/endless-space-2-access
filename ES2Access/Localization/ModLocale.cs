@@ -5,6 +5,7 @@ using Amplitude.Unity.Framework;
 using Amplitude.Unity.Localization;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using ES2Access.UI.Input;
 using Newtonsoft.Json;
 
 // The engine has its own Amplitude.Unity.Framework.Path.
@@ -71,6 +72,11 @@ namespace ES2Access.Localization
             _language = language;
             LanguageResolved = true;
             Install(language);
+            // Whatever was composed out of the old language's words is now wrong, and the chord
+            // names are spelled through the GAME's key-name table, which has no generation of its
+            // own to watch. Said here because this runs before the screens build, so nothing speaks
+            // the old wording even once.
+            ChordNames.Forget();
         }
 
         /// <summary>Forget the resolved language so a reloaded plugin resolves it again.</summary>

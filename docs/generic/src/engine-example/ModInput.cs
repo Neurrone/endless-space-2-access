@@ -40,6 +40,9 @@ namespace ES2Access.UI.Input
         private readonly Queue<Injection> _injected = new Queue<Injection>();
         private readonly List<KeyboardBinding> _leftToGame = new List<KeyboardBinding>();
         private HashSet<KeyCode> _claimedKeys;
+        private readonly Dictionary<string, InputAction> _byKey =
+            new Dictionary<string, InputAction>();
+        private int _bindingGeneration;
 
         /// <summary>Offered every triggered action; returning true consumes it. Null means nothing is
         /// listening, so every action falls through to its own <see cref="InputAction.Performed"/>.
@@ -294,26 +297,41 @@ namespace ES2Access.UI.Input
             // key and never stands down from the new one.
             action.BindingsChanged = InvalidateClaimedKeys;
             _actions.Add(action);
+            if (key != null && !_byKey.ContainsKey(key))
+            {
+                // First registration wins, which is what the scan this replaces answered.
+                _byKey.Add(key, action);
+            }
+
             _claimedKeys = null;
+            _bindingGeneration++;
             return action;
         }
 
         private void InvalidateClaimedKeys()
         {
             _claimedKeys = null;
+            _bindingGeneration++;
         }
 
+        /// <summary>
+        /// Bumped whenever an action is registered or one of its bindings moves - the memo key for
+        /// anything that composes a phrase out of the binding table
+        /// (<see cref="ChordNames"/>). Every path that can change a binding passes through
+        /// <see cref="Register"/> or <see cref="InputAction.BindingsChanged"/>, which is what makes
+        /// this the whole of the answer.
+        /// </summary>
+        public int BindingGeneration
+        {
+            get { return _bindingGeneration; }
+        }
+
+        /// <summary>The action registered under this name, or null. An action registered under a
+        /// null name is not findable - nothing registers one.</summary>
         public InputAction Find(string key)
         {
-            for (int i = 0; i < _actions.Count; i++)
-            {
-                if (_actions[i].Key == key)
-                {
-                    return _actions[i];
-                }
-            }
-
-            return null;
+            InputAction action;
+            return key != null && _byKey.TryGetValue(key, out action) ? action : null;
         }
 
         /// <summary>

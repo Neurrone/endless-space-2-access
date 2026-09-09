@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using ES2Access.Core.Speech;
@@ -28,10 +29,32 @@ namespace ES2Access.UI.Input
     {
         /// <summary>The chord at <paramref name="bindingIndex"/> of the action called
         /// <paramref name="actionKey"/>, or null where the action, the binding, or the input manager
-        /// itself is not there.</summary>
+        /// itself is not there.
+        ///
+        /// Remembered: see <see cref="Forget"/> for what the answer is allowed to move with.</summary>
         public static string Of(ModInput input, string actionKey, int bindingIndex)
         {
-            InputAction action = input == null ? null : input.Find(actionKey);
+            if (input == null)
+            {
+                return null;
+            }
+
+            Fresh(input);
+            ChordKey key = new ChordKey(actionKey, bindingIndex);
+            string remembered;
+            if (_chords.TryGetValue(key, out remembered))
+            {
+                return remembered;
+            }
+
+            string composed = Compose(input, actionKey, bindingIndex);
+            _chords[key] = composed;
+            return composed;
+        }
+
+        private static string Compose(ModInput input, string actionKey, int bindingIndex)
+        {
+            InputAction action = input.Find(actionKey);
             IList<InputBinding> bindings = action == null ? null : action.Bindings;
             if (bindings == null || bindingIndex < 0 || bindingIndex >= bindings.Count)
             {
@@ -64,10 +87,139 @@ namespace ES2Access.UI.Input
                 return label;
             }
 
-            string chord = Of(ModEntry.Input, actionKey, bindingIndex);
-            return string.IsNullOrEmpty(chord)
+            ModInput input = ModEntry.Input;
+            if (input == null)
+            {
+                // Nothing to name the chord from, which is the answer an unbound action gives too.
+                return label;
+            }
+
+            // Before the lookup, not after: the stamp is what says the remembered labels still
+            // belong to the bindings they were composed under.
+            Fresh(input);
+            LabelKey key = new LabelKey(label, actionKey, bindingIndex);
+            string remembered;
+            if (_labels.TryGetValue(key, out remembered))
+            {
+                return remembered;
+            }
+
+            string chord = Of(input, actionKey, bindingIndex);
+            string composed = string.IsNullOrEmpty(chord)
                 ? label
                 : ModStrings.Format(ModStrings.LabelWithChord, label, chord);
+            if (_labels.Count >= MaxLabels)
+            {
+                _labels.Clear();
+            }
+
+            _labels[key] = composed;
+            return composed;
+        }
+
+        /// <summary>
+        /// Drop every remembered chord and label. The composition reads three things: the action
+        /// table (a rebind moves it), the mod's own words and the GAME's key-name table (a language
+        /// change moves both). The first is watched by <see cref="ModInput.BindingGeneration"/>; the
+        /// second has no generation to watch, so <c>ModLocale</c> says so here on the frame it
+        /// installs a new language, before any screen builds.
+        /// </summary>
+        public static void Forget()
+        {
+            _memoInput = null;
+            _chords.Clear();
+            _labels.Clear();
+        }
+
+        // Composing a chord costs a scan of the whole action table, a StringBuilder, an
+        // Enum.ToString, the game's localizer and a clean - and every context label the HUD and the
+        // galaxy declare asks for one on every frame they build, silent or not. The answer moves
+        // only when a binding does or the language does, so it is kept until one of them says
+        // otherwise.
+        private static ModInput _memoInput;
+        private static int _memoGeneration;
+        private static readonly Dictionary<ChordKey, string> _chords =
+            new Dictionary<ChordKey, string>();
+        private static readonly Dictionary<LabelKey, string> _labels =
+            new Dictionary<LabelKey, string>();
+
+        /// <summary>How many composed labels to keep. Capped rather than pruned: most labels are the
+        /// mod's own constant words, but a few carry a caption the game rewrites (the end-turn
+        /// button's), and forgetting the lot costs one recomposition each.</summary>
+        private const int MaxLabels = 512;
+
+        private static void Fresh(ModInput input)
+        {
+            int generation = input.BindingGeneration;
+            if (ReferenceEquals(input, _memoInput) && generation == _memoGeneration)
+            {
+                return;
+            }
+
+            _memoInput = input;
+            _memoGeneration = generation;
+            _chords.Clear();
+            _labels.Clear();
+        }
+
+        private struct ChordKey : IEquatable<ChordKey>
+        {
+            public ChordKey(string actionKey, int slot)
+            {
+                _actionKey = actionKey;
+                _slot = slot;
+            }
+
+            private readonly string _actionKey;
+            private readonly int _slot;
+
+            public bool Equals(ChordKey other)
+            {
+                return _slot == other._slot && _actionKey == other._actionKey;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is ChordKey && Equals((ChordKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                return (_actionKey == null ? 0 : _actionKey.GetHashCode()) ^ _slot;
+            }
+        }
+
+        private struct LabelKey : IEquatable<LabelKey>
+        {
+            public LabelKey(string label, string actionKey, int slot)
+            {
+                _label = label;
+                _actionKey = actionKey;
+                _slot = slot;
+            }
+
+            private readonly string _label;
+            private readonly string _actionKey;
+            private readonly int _slot;
+
+            public bool Equals(LabelKey other)
+            {
+                return _slot == other._slot
+                    && _actionKey == other._actionKey
+                    && _label == other._label;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is LabelKey && Equals((LabelKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                return (_label == null ? 0 : _label.GetHashCode())
+                    ^ ((_actionKey == null ? 0 : _actionKey.GetHashCode()) << 1)
+                    ^ _slot;
+            }
         }
 
         /// <summary>The same for a binding already in hand.</summary>

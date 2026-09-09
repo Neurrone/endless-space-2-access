@@ -45,6 +45,7 @@ namespace ES2Access.UI.Input
             if (binding != null)
             {
                 _bindings.Add(binding);
+                Changed();
             }
 
             return this;
@@ -56,8 +57,10 @@ namespace ES2Access.UI.Input
         }
 
         /// <summary>Told whenever this action's bindings change, so whoever owns the action can drop
-        /// what it derived from them - the input manager's set of claimed key codes. Set by
-        /// <see cref="ModInput.Register"/>; null for an action nobody registered.</summary>
+        /// what it derived from them - the input manager's set of claimed key codes, and its binding
+        /// generation. Set by <see cref="ModInput.Register"/>, which registers before the action is
+        /// bound, so the first <see cref="Bind"/> is reported too; null for an action nobody
+        /// registered.</summary>
         internal Action BindingsChanged;
 
         /// <summary>
@@ -89,6 +92,14 @@ namespace ES2Access.UI.Input
                 _bindings.RemoveAt(_bindings.Count - 1);
             }
 
+            Changed();
+        }
+
+        // Every path that moves a binding says so, so that what is derived from the chords - the
+        // claimed-key set, and the composed chord names keyed on the manager's binding generation -
+        // is dropped by all of them and not only by a rebind.
+        private void Changed()
+        {
             Action changed = BindingsChanged;
             if (changed != null)
             {
