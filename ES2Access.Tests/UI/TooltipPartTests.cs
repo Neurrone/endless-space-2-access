@@ -360,6 +360,39 @@ namespace ES2Access.Tests.UI
             );
         }
 
+        /// <summary>Each earlier part is asked what it says ONCE per readout, however many lines the
+        /// tooltip has to compare against it. One of those parts is the price, which runs the game's own
+        /// remaining-turns computation, and a three-line tooltip used to run it three times over.</summary>
+        [Fact]
+        public void TheDedupeAsksEachEarlierPartOncePerReadout()
+        {
+            int asked = 0;
+            GraphBuilder b = new GraphBuilder();
+            b.AddItem(new SyntheticNode(
+                Id("t"),
+                new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        new NodeAnnouncement(
+                            () => { asked++; return "Steam Cloud"; },
+                            kind: AnnouncementKinds.Label
+                        ),
+                    },
+                    Sections = new[]
+                    {
+                        Section(TooltipMode.Announce, "Not running", "Saves stay local", "Steam Cloud"),
+                    },
+                }
+            ));
+
+            Assert.Equal(
+                "Steam Cloud, Not running Saves stay local",
+                GraphAnnouncer.LeafText(Node(b.Build(), "t"))
+            );
+            Assert.Equal(2, asked); // once as the readout's own label, once for the dedupe
+        }
+
         /// <summary>Both sides are resolved at SPEAK time: a label read off the tooltip's first line
         /// changes when the tooltip does, and a dedupe settled at declare time would go on dropping
         /// last turn's sentence.</summary>

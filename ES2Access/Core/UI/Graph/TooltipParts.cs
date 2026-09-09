@@ -286,10 +286,19 @@ namespace ES2Access.Core.UI.Graph
             return copy;
         }
 
-        // Whether the readout is going to say this line anyway, in the words it would say it in.
-        private static bool AlreadySaid(NodeAnnouncement[] said, string line)
+        // What the earlier parts of the readout say, asked of each of them ONCE. The dedupe below
+        // compares every tooltip line against all of them, and asking per line ran the label, the role,
+        // the value and - the expensive one - the cost provider again for each line of the tooltip,
+        // every frame the cursor sits there. A part that throws says nothing, as it always did.
+        private static string[] Spoken(NodeAnnouncement[] said)
         {
-            for (int i = 0; said != null && i < said.Length; i++)
+            if (said == null)
+            {
+                return new string[0];
+            }
+
+            string[] texts = new string[said.Length];
+            for (int i = 0; i < said.Length; i++)
             {
                 NodeAnnouncement part = said[i];
                 if (part == null || part.Text == null)
@@ -297,17 +306,24 @@ namespace ES2Access.Core.UI.Graph
                     continue;
                 }
 
-                string text;
                 try
                 {
-                    text = part.Text();
+                    texts[i] = part.Text();
                 }
                 catch (Exception)
                 {
-                    continue;
                 }
+            }
 
-                if (SpokenText.SameLine(text, line))
+            return texts;
+        }
+
+        // Whether the readout is going to say this line anyway, in the words it would say it in.
+        private static bool AlreadySaid(string[] said, string line)
+        {
+            for (int i = 0; i < said.Length; i++)
+            {
+                if (SpokenText.SameLine(said[i], line))
                 {
                     return true;
                 }
@@ -334,6 +350,7 @@ namespace ES2Access.Core.UI.Graph
         {
             MessageBuilder message = new MessageBuilder();
             List<string> earlier = new List<string>();
+            string[] saidText = null; // the earlier parts, resolved on the first line that asks
             for (int s = 0; sections != null && s < sections.Count; s++)
             {
                 IList<string> spoken = Resolve(sections[s]);
@@ -346,7 +363,12 @@ namespace ES2Access.Core.UI.Graph
                     }
 
                     string line = spoken[i].Trim();
-                    if (AlreadySaid(said, line) || SpokenText.Mentions(earlier, start, line))
+                    if (saidText == null)
+                    {
+                        saidText = Spoken(said);
+                    }
+
+                    if (AlreadySaid(saidText, line) || SpokenText.Mentions(earlier, start, line))
                     {
                         continue;
                     }
