@@ -63,7 +63,6 @@ ES2Access/Screens/NotificationScreen.Variants.cs | 1 | toggle = line.GetComponen
 ES2Access/Screens/NotificationScreen.cs | 1 | _windows = gui.gameObject.GetComponentsInChildren<NotificationWindow>(true);
 
 ES2Access/Screens/OptionsScreen.cs | 1 | button => button.GetComponentInParent<OptionsTabPanel>() == null;
-ES2Access/Screens/OptionsScreen.cs | 1 | return transform.GetComponentInChildren<AgePrimitiveLabel>();
 
 ES2Access/Screens/QuestJournalScreen.cs | 1 | panels.GetComponentInChildren<NarrativeEventsSidePanel>(true);
 ES2Access/Screens/QuestJournalScreen.cs | 1 | panels.GetComponentInChildren<QuestReportSidePanel>(true);

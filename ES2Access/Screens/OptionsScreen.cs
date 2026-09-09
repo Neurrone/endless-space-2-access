@@ -305,7 +305,7 @@ namespace ES2Access.Screens
         /// </summary>
         private void BuildButtons(GraphBuilder builder, OptionsModalWindow window)
         {
-            List<AgeControlButton> commands = _bar.Drawn(window, NotARow);
+            List<AgeControlButton> commands = _bar.DrawnWhere(window, NotARow);
             if (commands.Count == 0)
             {
                 return;
@@ -342,8 +342,12 @@ namespace ES2Access.Screens
 
         private readonly SettingRows.ButtonBar _bar = new SettingRows.ButtonBar("options");
 
+        /// <summary>Whether a wired button is part of the bar rather than a row the MOD put in a
+        /// settings table. Where a button sits is a property of the window's own build, so it is asked
+        /// once per button per window (<see cref="SettingRows.ButtonBar.DrawnWhere"/>) rather than of
+        /// the ancestry of every drawn button on every frame.</summary>
         private static readonly Predicate<AgeControlButton> NotARow =
-            // walk: audit M1, to move behind FrameSweep
+            // walk: once per button per window, when the bar's wired set is collected
             button => button.GetComponentInParent<OptionsTabPanel>() == null;
 
         /// <summary>
@@ -539,8 +543,16 @@ namespace ES2Access.Screens
 
         private static readonly Action ReleasePointer = PointerFocus.Release;
 
+        /// <summary>The labels under a widget the two cheap probes both missed, swept once per widget
+        /// per frame. Only the widgets that hang no label on themselves or on a direct child reach it -
+        /// an icon-only command, a drop list's current entry - and those are asked for the same answer
+        /// by a build and by the focused row's live value part on the same frame.</summary>
+        private static readonly FrameSweep<AgePrimitiveLabel> Labels =
+            new FrameSweep<AgePrimitiveLabel>("options", false);
+
         /// <summary>The label showing a widget's text: the widget itself when it is one, else the
-        /// first one under it.</summary>
+        /// first one under it - the first in the order a search of the subtree finds them, which is
+        /// the first element of the sweep.</summary>
         internal static AgePrimitiveLabel LabelIn(AgeTransform transform)
         {
             try
@@ -564,8 +576,8 @@ namespace ES2Access.Screens
                     }
                 }
 
-                // walk: audit M1, to move behind FrameSweep
-                return transform.GetComponentInChildren<AgePrimitiveLabel>();
+                AgePrimitiveLabel[] deeper = Labels.Under(transform);
+                return deeper.Length == 0 ? null : deeper[0];
             }
             catch (Exception)
             {

@@ -840,6 +840,7 @@ namespace ES2Access.Screens
             private readonly string _subject;
             private Component _from;
             private List<AgeControlButton> _wired;
+            private List<AgeControlButton> _placed;
 
             internal ButtonBar(string subject)
             {
@@ -856,11 +857,45 @@ namespace ES2Access.Screens
                 Predicate<AgeControlButton> keep
             )
             {
-                List<AgeControlButton> bar = new List<AgeControlButton>();
+                return Order(Wired(window), keep);
+            }
+
+            /// <summary><see cref="Drawn"/> for a <paramref name="sits"/> that asks where a button IS
+            /// in the window rather than what state it is in - which branch of the prefab holds it. A
+            /// window builds its bar once when it loads and never rebuilds it, so that answer is
+            /// settled the moment the wired set is: it is asked once per button and kept beside the
+            /// wired list, and dropped with it. Which of them are drawn, where, and whether they are
+            /// available is still read live.</summary>
+            internal List<AgeControlButton> DrawnWhere(
+                Component window,
+                Predicate<AgeControlButton> sits
+            )
+            {
                 List<AgeControlButton> wired = Wired(window);
-                for (int i = 0; i < wired.Count; i++)
+                if (_placed == null)
                 {
-                    AgeControlButton button = wired[i];
+                    _placed = new List<AgeControlButton>();
+                    for (int i = 0; i < wired.Count; i++)
+                    {
+                        if (sits(wired[i]))
+                        {
+                            _placed.Add(wired[i]);
+                        }
+                    }
+                }
+
+                return Order(_placed, null);
+            }
+
+            private List<AgeControlButton> Order(
+                List<AgeControlButton> from,
+                Predicate<AgeControlButton> keep
+            )
+            {
+                List<AgeControlButton> bar = new List<AgeControlButton>();
+                for (int i = 0; i < from.Count; i++)
+                {
+                    AgeControlButton button = from[i];
                     AgeTransform transform = AgeWidgets.Transform(button);
                     // Flow control: the window keeps every button and draws the ones this page has a use for.
                     if (
@@ -910,6 +945,7 @@ namespace ES2Access.Screens
 
                 _from = window;
                 _wired = Collect(window);
+                _placed = null;
                 return _wired;
             }
 
