@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
@@ -85,6 +85,15 @@ namespace ES2Access.Screens
         public static readonly object ShipsStop = "fleets:ships";
 
         // The regions inside those stops: the band of commands, and the list it acts on.
+        /// <summary>The panel's two pooled tables, swept once per table per frame. Both are fixed
+        /// prefab subtrees holding far more than the game draws - about thirty action items against a
+        /// handful - and the page builds itself more than once in a frame, so the walk belongs to the
+        /// frame rather than to the caller.</summary>
+        private static readonly FrameSweep<FleetActionItem> ActionItems =
+            new FrameSweep<FleetActionItem>("fleets");
+
+        private static readonly FrameSweep<FleetLine> LineItems = new FrameSweep<FleetLine>("fleets");
+
         private static readonly object ManagementActionsRegion = "fleets:mgmt/actions";
         private static readonly object ManagementListRegion = "fleets:mgmt/list";
         private static readonly object HeroRegion = "fleets:ships/hero";
@@ -312,9 +321,7 @@ namespace ES2Access.Screens
                 }
 
                 _cells.Clear();
-                FleetActionItem[] items =
-                    // walk: audit M1, to move behind FrameSweep
-                    panel.FleetActionsTable.GetComponentsInChildren<FleetActionItem>(true);
+                FleetActionItem[] items = ActionItems.Under(panel.FleetActionsTable);
                 for (int i = 0; i < items.Length; i++)
                 {
                     AddAction(_cells, items[i], page);
@@ -445,16 +452,41 @@ namespace ES2Access.Screens
         /// Nodes rather than buffer lines: four explanations merged into one paragraph is what a
         /// player cannot step through, and the badge that says whether this action costs the fleet's
         /// action point is the one the rest of the panel never mentions.
+        ///
+        /// Resolved once per (item, frame): each of the four is a depth-4 tooltip descent with an
+        /// ancestor visibility walk at every node, and the page can build itself several times in one
+        /// frame - within which the panel has not been rebound and the four groups hold what they held.
+        /// The list is handed on to the cell and read from there, never added to, so one list serves
+        /// every build of the frame.
         /// </summary>
         private static List<TooltipChildren.Dossier> Badges(FleetActionItem item)
         {
-            List<TooltipChildren.Dossier> badges = new List<TooltipChildren.Dossier>(4);
+            int frame = UnityEngine.Time.frameCount;
+            if (_badgeFrame != frame)
+            {
+                _badgeFrame = frame;
+                BadgesOf.Clear();
+            }
+
+            List<TooltipChildren.Dossier> badges;
+            if (BadgesOf.TryGetValue(item, out badges))
+            {
+                return badges;
+            }
+
+            badges = new List<TooltipChildren.Dossier>(4);
             TooltipChildren.AddPlainInside(badges, item.OnGoingGroup);
             TooltipChildren.AddPlainInside(badges, item.ActionPointGroup);
             TooltipChildren.AddPlainInside(badges, item.ExecutionStockGroup);
             TooltipChildren.AddPlainInside(badges, item.DurationGroup);
+            BadgesOf[item] = badges;
             return badges;
         }
+
+        private static readonly Dictionary<FleetActionItem, List<TooltipChildren.Dossier>> BadgesOf =
+            new Dictionary<FleetActionItem, List<TooltipChildren.Dossier>>();
+
+        private static int _badgeFrame = -1;
 
         /// <summary>
         /// The action's own gesture - and, for the six whose gesture only brings the camera in, the
@@ -701,8 +733,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            // walk: audit M1, to move behind FrameSweep
-            FleetLine[] lines = panel.FleetLinesTable.GetComponentsInChildren<FleetLine>(true);
+            FleetLine[] lines = LineItems.Under(panel.FleetLinesTable);
             for (int i = 0; i < lines.Length; i++)
             {
                 FleetLine line = lines[i];
@@ -1057,8 +1088,7 @@ namespace ES2Access.Screens
             {
                 ShipRows.Ship(
                     cells,
-                    // walk: audit M1, to move behind FrameSweep
-                    panel.HeroShipContainer.GetComponentInChildren<ShipItem>(true),
+                    ShipRows.Tile(panel.HeroShipContainer),
                     window.ShipsManagementPanel,
                     "fleets:hero",
                     true

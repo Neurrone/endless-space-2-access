@@ -47,6 +47,16 @@ namespace ES2Access.UI
         /// readout. Never longer than the frame - the table pools its tiles.</summary>
         private static readonly FrameSweep<ShipItem> Tiles = new FrameSweep<ShipItem>("ships");
 
+        /// <summary>The ONE tile a container is drawing - the hero's berth, which holds a single ship
+        /// or none. The same sweep and so the same answer a component search for the first tile under
+        /// it gives: both walk the subtree in the order the transforms sit in, inactive included, and
+        /// this takes the first the walk met.</summary>
+        public static ShipItem Tile(AgeTransform container)
+        {
+            ShipItem[] tiles = Tiles.Under(container);
+            return tiles.Length == 0 ? null : tiles[0];
+        }
+
         /// <summary>What a carried ship is, for the controls that will take one - see
         /// <see cref="CarryItem.Kind"/>.</summary>
         public const string ShipKind = "ship";
