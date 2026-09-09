@@ -24,6 +24,11 @@ namespace ES2Access.Screens
         private readonly List<Screen> _registered = new List<Screen>();
         private readonly GraphNavigator _navigator;
         private List<Screen> _stack = new List<Screen>();
+        // The list Resolve fills. Two buffers swapped rather than one allocated per frame: the
+        // answer is the same list of one to four screens on almost every frame, and Tick runs on
+        // every one of them. Nothing keeps a Stack reference past its own call, which is what lets
+        // last frame's list be refilled rather than orphaned.
+        private List<Screen> _spare = new List<Screen>();
         private Screen _focused;
 
         public ScreenManager(GraphNavigator navigator)
@@ -91,7 +96,16 @@ namespace ES2Access.Screens
             Screen current = Current;
             if (current != null)
             {
-                Safe(current.OnUpdate, current, "OnUpdate");
+                // Called here rather than handed to Safe as a delegate: a method group becomes an
+                // allocation, and this one was made on every frame of the game.
+                try
+                {
+                    current.OnUpdate();
+                }
+                catch (Exception e)
+                {
+                    Log.Warn("screens: " + current.Key + ".OnUpdate threw: " + e);
+                }
             }
 
             // OnUpdate may have changed what is showing; re-syncing is free when nothing moved.
@@ -109,6 +123,7 @@ namespace ES2Access.Screens
             }
 
             _stack = new List<Screen>();
+            _spare = new List<Screen>();
             _focused = null;
             // A landing survives a screen losing focus on purpose, so the mod going away is the one
             // thing that has to say so: nothing may outlive Stop.
@@ -132,7 +147,8 @@ namespace ES2Access.Screens
         // stable: two screens on the same layer must stay in registration order.
         private List<Screen> Resolve()
         {
-            List<Screen> active = new List<Screen>();
+            List<Screen> active = _spare;
+            active.Clear();
             for (int i = 0; i < _registered.Count; i++)
             {
                 Screen screen = _registered[i];
@@ -173,6 +189,9 @@ namespace ES2Access.Screens
                 }
             }
 
+            // Last frame's list becomes next frame's buffer; the diff above is finished with it.
+            _spare = _stack;
+            _spare.Clear();
             _stack = desired;
         }
 
