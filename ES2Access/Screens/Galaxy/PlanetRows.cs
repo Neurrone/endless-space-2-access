@@ -281,6 +281,12 @@ namespace ES2Access.Screens
         private static readonly PlanetLabel_SystemOrbital[] NoCards =
             new PlanetLabel_SystemOrbital[0];
 
+        /// <summary>The orbital window's cards, walked once per frame however many rows ask. The
+        /// window draws one system's planets at a time, so this is one root and one walk - and the
+        /// walk is the whole prefab subtree, which was being made afresh on every build.</summary>
+        private static readonly FrameSweep<PlanetLabel_SystemOrbital> OrbitalCards =
+            new FrameSweep<PlanetLabel_SystemOrbital>("galaxy");
+
         /// <summary>The orbital cards the map is drawing right now. It draws them for ONE system - the
         /// one the camera has come in on - so a system anywhere else on the map gets none, and asking
         /// for another system's cards while this one's are up would hand out the wrong planets'
@@ -295,8 +301,7 @@ namespace ES2Access.Screens
                     return NoCards;
                 }
 
-                // walk: audit M1, to move behind FrameSweep
-                return window.GetComponentsInChildren<PlanetLabel_SystemOrbital>(true);
+                return OrbitalCards.Under(window);
             }
             catch (Exception e)
             {

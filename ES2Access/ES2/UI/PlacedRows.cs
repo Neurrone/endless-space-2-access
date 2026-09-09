@@ -268,6 +268,10 @@ namespace ES2Access.ES2.UI
         ///
         /// The stop's own name is stripped off the head, so <c>galaxy:probe/1621</c> is a
         /// <c>probe</c> and not a <c>galaxy:probe</c>.
+        ///
+        /// Read backwards from the end rather than split: this is asked for every anchored row on
+        /// every build, and a split allocated an array and a string per segment of the path to hand
+        /// back one of them.
         /// </summary>
         public static string SegmentOf(object structuralKey)
         {
@@ -278,29 +282,38 @@ namespace ES2Access.ES2.UI
             }
 
             int colon = path.IndexOf(':');
-            if (colon >= 0)
+            int head = colon + 1;
+            int cut = path.LastIndexOf('/');
+            if (cut < head)
             {
-                path = path.Substring(colon + 1);
+                // No separator in what is left after the stop's name: the whole of it is the last
+                // segment, and there is nothing before it.
+                cut = head - 1;
             }
 
-            string[] parts = path.Split('/');
-            if (parts.Length == 0)
+            int last = cut + 1;
+            if (last < path.Length && !IsNumber(path, last, path.Length - last))
+            {
+                return path.Substring(last, path.Length - last);
+            }
+
+            if (cut < head)
             {
                 return null;
             }
 
-            string last = parts[parts.Length - 1];
-            if (last.Length > 0 && !IsNumber(last))
+            int before = cut - 1 < head ? -1 : path.LastIndexOf('/', cut - 1);
+            if (before < head)
             {
-                return last;
+                before = head - 1;
             }
 
-            return parts.Length >= 2 ? parts[parts.Length - 2] : null;
+            return path.Substring(before + 1, cut - before - 1);
         }
 
-        private static bool IsNumber(string text)
+        private static bool IsNumber(string text, int from, int length)
         {
-            for (int i = 0; i < text.Length; i++)
+            for (int i = from; i < from + length; i++)
             {
                 if (text[i] < '0' || text[i] > '9')
                 {
@@ -308,7 +321,7 @@ namespace ES2Access.ES2.UI
                 }
             }
 
-            return text.Length > 0;
+            return length > 0;
         }
     }
 }
