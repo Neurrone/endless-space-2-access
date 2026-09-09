@@ -23,8 +23,39 @@ namespace ES2Access.UI
     /// </summary>
     public static class MiningProbes
     {
+        /// <summary>
+        /// ONE READING PER PLANET PER FRAME. The line is asked from three of the planet row's parts,
+        /// and the navigator composes the focused row's whole readout every frame - twice on the frame
+        /// the cursor lands - while every asking rebuilt a <c>GuiPlanet</c> wrapper and, on the
+        /// player's own probe, refilled its mining dictionary with a <c>GuiResourceDeposit</c> and a
+        /// property read per deposit (<c>GuiPlanet</c> :145-161).
+        ///
+        /// The frame and not the turn: the countdown is a turn's business, but whether there is a
+        /// probe on the world at all is settled by a fleet's action, and nothing here says that only
+        /// lands at a turn boundary.
+        /// </summary>
+        private static Planet _read;
+
+        private static int _readOn = -1;
+
+        private static string _line;
+
         /// <summary>What a planet's mining probe says, or null where there is none.</summary>
         public static string Line(Planet planet)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (frame == _readOn && ReferenceEquals(planet, _read))
+            {
+                return _line;
+            }
+
+            _readOn = frame;
+            _read = planet;
+            _line = Reading(planet);
+            return _line;
+        }
+
+        private static string Reading(Planet planet)
         {
             try
             {
