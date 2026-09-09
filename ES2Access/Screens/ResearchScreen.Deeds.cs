@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
@@ -6,6 +6,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.ES2.Speech;
 using ES2Access.UI;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -164,8 +165,45 @@ namespace ES2Access.Screens
         }
 
         /// <summary>Which empire completed this deed, out of the one quest every empire is racing on
-        /// its own copy of - the same search the marker makes to pick the logo it draws.</summary>
+        /// its own copy of - the same search the marker makes to pick the logo it draws.
+        ///
+        /// Held for the frame. The service's own getter is a LINQ pass over every quest of every
+        /// empire into a fresh list (<c>QuestManager.GetQuestsByInstanceId</c>), and the readout of a
+        /// focused failed deed is composed two to three times a frame, so the whole quest table was
+        /// being scanned that often for an answer that cannot move between two asks in the same
+        /// frame. Not longer: a quest's state is written by the game's own resolution, and the frame
+        /// is the shortest thing this file can name that is certainly on the far side of that.
+        /// </summary>
         private static string Winner(GuiDeed deed)
+        {
+            int frame = Time.frameCount;
+            if (_winnerFrame != frame)
+            {
+                Winners.Clear();
+                _winnerFrame = frame;
+            }
+
+            string won;
+            if (deed != null && Winners.TryGetValue(deed, out won))
+            {
+                return won;
+            }
+
+            won = FindWinner(deed);
+            if (deed != null)
+            {
+                Winners[deed] = won;
+            }
+
+            return won;
+        }
+
+        private static readonly Dictionary<GuiDeed, string> Winners =
+            new Dictionary<GuiDeed, string>();
+
+        private static int _winnerFrame = -1;
+
+        private static string FindWinner(GuiDeed deed)
         {
             try
             {

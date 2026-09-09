@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
@@ -669,6 +669,15 @@ namespace ES2Access.Screens
             if (!string.IsNullOrEmpty(caption))
             {
                 return caption;
+            }
+
+            if (control.Names != null)
+            {
+                string named = control.Names();
+                if (!string.IsNullOrEmpty(named))
+                {
+                    return named;
+                }
             }
 
             if (!string.IsNullOrEmpty(control.Name))

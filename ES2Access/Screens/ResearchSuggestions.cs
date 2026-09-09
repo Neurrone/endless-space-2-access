@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -66,7 +66,7 @@ namespace ES2Access.Screens
                         Key = "suggestion/" + i,
                         Widget = widget,
                         Toggle = item.Toggle,
-                        Name = Name(item),
+                        Names = () => Name(item),
                         Acts = true,
                         Details = Details(item),
                         Dossiers = Dossiers(item),

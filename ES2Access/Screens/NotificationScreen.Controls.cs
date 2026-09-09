@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -454,6 +454,12 @@ namespace ES2Access.Screens
             /// <summary>The name the GAME has for this control where it wrote none on it - the confirm
             /// button a choice popup draws as a tick.</summary>
             public string Name;
+
+            /// <summary>The same, worked out when the control is READ. For a name whose pieces cost
+            /// real reading - a suggestion card's three drawn labels joined into one line - declaring
+            /// it as a string composed the phrase for every card of the popup on every frame, and only
+            /// the focused one is ever said.</summary>
+            public Func<string> Names;
 
             /// <summary>The action whose chord does this control's job from anywhere on the popup, said
             /// after the name ("Next notification (Alt+Right)"). Only the browsing pair carries one:

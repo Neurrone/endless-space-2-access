@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
@@ -9,6 +9,7 @@ using ES2Access.ES2.Speech;
 using ES2Access.ES2.UI;
 using ES2Access.UI;
 using ES2Access.UI.Input;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -874,18 +875,43 @@ namespace ES2Access.Screens
         // ---- what a technology says ----
 
         /// <summary>The game's own word for the state a technology is in - the same string it writes
-        /// into the technology's tooltip.</summary>
+        /// into the technology's tooltip.
+        ///
+        /// The six keys are written out rather than composed around the enum's name. This is asked
+        /// two to three times a frame on the focused dot, and spelling the state boxed the value and
+        /// ran Enum.ToString to build a string the corpus already has a constant for.</summary>
         private static string StateWord(GuiTechnology2 technology)
         {
             try
             {
-                return AgeText.Clean(
-                    Gui.Localize("%TechnologyStatus" + State(technology) + "Title")
-                );
+                return AgeText.Clean(Gui.Localize(StateKey(State(technology))));
             }
             catch (Exception)
             {
                 return null;
+            }
+        }
+
+        /// <summary>The corpus key for a state, the same string <c>"%TechnologyStatus" + state +
+        /// "Title"</c> spelled out.</summary>
+        private static string StateKey(ScienceConstructibleElement.State state)
+        {
+            switch (state)
+            {
+                case ScienceConstructibleElement.State.NotAvailable:
+                    return "%TechnologyStatusNotAvailableTitle";
+                case ScienceConstructibleElement.State.Available:
+                    return "%TechnologyStatusAvailableTitle";
+                case ScienceConstructibleElement.State.Disabled:
+                    return "%TechnologyStatusDisabledTitle";
+                case ScienceConstructibleElement.State.Queued:
+                    return "%TechnologyStatusQueuedTitle";
+                case ScienceConstructibleElement.State.InProgress:
+                    return "%TechnologyStatusInProgressTitle";
+                case ScienceConstructibleElement.State.Researched:
+                    return "%TechnologyStatusResearchedTitle";
+                default:
+                    return "%TechnologyStatus" + state + "Title";
             }
         }
 
@@ -932,13 +958,43 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What a technology says about the ones it is joined to, in one part of its readout.
-        /// Worked out when the dot is read rather than watched: the wheel's arcs only change when a
-        /// technology is researched, and walking a ring is no reason to re-read 162 of them a frame.
-        /// </summary>
+        ///
+        /// Held for the frame it was worked out on. "Read when the dot is read rather than watched"
+        /// is not the saving it sounds like: the announcer composes the focused node's WHOLE readout
+        /// two to three times a frame, so a part that is merely un-watched is still asked that often,
+        /// and each ask swept all 162 of the wheel's arcs. The frame is the key because that is what
+        /// the sentence is computed from - which arcs the wheel is drawing, and what it drew them
+        /// between - and the wheel redraws its arcs when a technology is researched, which is
+        /// something the player does between frames.</summary>
         private static string Relationships(GuiTechnology2 technology)
         {
-            return ResearchText.Relationships(Links(technology));
+            if (technology == null)
+            {
+                return ResearchText.Relationships(Links(null));
+            }
+
+            int frame = Time.frameCount;
+            if (_linkFrame != frame)
+            {
+                Linked.Clear();
+                _linkFrame = frame;
+            }
+
+            string said;
+            if (Linked.TryGetValue(technology, out said))
+            {
+                return said;
+            }
+
+            said = ResearchText.Relationships(Links(technology));
+            Linked[technology] = said;
+            return said;
         }
+
+        private static readonly Dictionary<GuiTechnology2, string> Linked =
+            new Dictionary<GuiTechnology2, string>();
+
+        private static int _linkFrame = -1;
 
         /// <summary>
         /// The arcs the wheel draws from this technology to others, said from this end of each of

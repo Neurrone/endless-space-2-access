@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -1110,8 +1110,10 @@ namespace ES2Access.Screens
             }
 
             AgeTransform it = widget;
-            string text = AgeWidgets.TextOf(widget);
-            if (string.IsNullOrEmpty(text))
+            // Whether there are words, not what they are: the phrase is composed by the label part
+            // below, when the player lands here, and asking for it twice a frame per drawn row was a
+            // depth-six walk and a joined string thrown away.
+            if (!AgeWidgets.Says(widget))
             {
                 return;
             }

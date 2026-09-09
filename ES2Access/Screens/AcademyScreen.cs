@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -318,6 +318,7 @@ namespace ES2Access.Screens
                 AddLine(
                     cells,
                     widget,
+                    !string.IsNullOrEmpty(AgeWidgets.TooltipTitle(dossier)),
                     () => AgeWidgets.TooltipTitle(dossier),
                     dossier,
                     keyPrefix + widget.name
@@ -410,6 +411,7 @@ namespace ES2Access.Screens
                 AddLine(
                     cells,
                     widget,
+                    AgeWidgets.Says(words),
                     () => AgeWidgets.TextOf(words),
                     Sentence(widget),
                     keyPrefix + value.name
@@ -453,16 +455,23 @@ namespace ES2Access.Screens
 
         /// <summary>One line the mod has read itself: the words it says, the sentence explaining them, and
         /// the pointer aimed at whatever the game hangs that sentence on - which for a figure drawn as a
-        /// bare icon (a class in the odds strip) is the only way its dossier is ever drawn.</summary>
+        /// bare icon (a class in the odds strip) is the only way its dossier is ever drawn.
+        ///
+        /// <paramref name="says"/> is whether there is a line here at all, asked by the caller and not
+        /// by composing <paramref name="label"/>: the two callers ask it of different things - one of a
+        /// tooltip's title, one of a widget's words - and the second is a depth-six walk that has no
+        /// business running once per row per frame when the phrase itself is composed on landing.
+        /// </summary>
         private static void AddLine(
             List<Cell> cells,
             AgeTransform host,
+            bool says,
             Func<string> label,
             AgeTooltip tooltip,
             string key
         )
         {
-            if (string.IsNullOrEmpty(label()))
+            if (!says)
             {
                 return;
             }
