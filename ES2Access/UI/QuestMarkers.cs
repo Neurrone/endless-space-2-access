@@ -61,11 +61,29 @@ namespace ES2Access.UI
             public QuestMarker Pin;
         }
 
-        /// <summary>Every marker the map is showing this empire, in journal order. Empty rather than
-        /// null for every failure, so no caller has to guard.</summary>
+        /// <summary>
+        /// Every marker the map is showing this empire, in journal order. Empty rather than null for
+        /// every failure, so no caller has to guard.
+        ///
+        /// The list is the walk's own and is handed out again, unchanged, to every caller that asks
+        /// for the same empire within one frame - which on the map is three asks per build plus the
+        /// inspect cell's and the scanner's. Keyed on (empire, <c>Time.frameCount</c>) the way
+        /// <see cref="FrameSweep{T}"/> keys its walks, and for the same reason: the journal moves
+        /// between frames and never within one, and a key that is the frame number needs nothing
+        /// remembered to clear. Read it, do not keep it: the next frame refills this very list.
+        /// </summary>
         public static List<Marker> Of(Empire empire)
         {
-            List<Marker> found = new List<Marker>();
+            int frame = UnityEngine.Time.frameCount;
+            if (frame == _frame && ReferenceEquals(empire, _asked))
+            {
+                return _found;
+            }
+
+            _frame = frame;
+            _asked = empire;
+            List<Marker> found = _found;
+            found.Clear();
             try
             {
                 DepartmentOfInternalAffairs affairs =
@@ -134,6 +152,15 @@ namespace ES2Access.UI
 
             return found;
         }
+
+        /// <summary>The walk's own list, refilled in place. It holds the frame's quests and pins,
+        /// which is the one reference this keeps to game objects; there is no teardown for it and
+        /// none is needed, since it dies with the assembly the moment that is replaced.</summary>
+        private static readonly List<Marker> _found = new List<Marker>();
+
+        private static Empire _asked;
+
+        private static int _frame = -1;
 
         /// <summary>What a marker is called: the quest's title in the tracked or the ordinary form -
         /// the map's own distinction, and the phrase a system's review buffer has always used.
