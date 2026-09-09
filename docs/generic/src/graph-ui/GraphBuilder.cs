@@ -507,11 +507,16 @@ namespace ES2Access.Core.UI.Graph
             render.SeatOnContainer = SeatOnContainer;
             foreach (GraphNode node in _declared) AddNodeTo(render, node);
 
-            WireMenuEdges(render);
+            // Both wiring passes work stop by stop, and grouping the declared nodes is a pass over all of
+            // them: they share the one grouping rather than each building (and throwing away) its own.
+            List<object> stops = new List<object>();
+            Dictionary<object, List<GraphNode>> byStop = GroupByStop(stops);
+
+            WireMenuEdges(stops, byStop);
             foreach (RawEdge e in _rawEdges)
                 if (render.Nodes.ContainsKey(e.From) && render.Nodes.ContainsKey(e.To))
                     render.Nodes[e.From].Transitions[e.Dir] = new Transition(e.To, e.Label);
-            StitchModeBoundaries();
+            StitchModeBoundaries(stops, byStop);
 
             render.StartKey = _start != null && render.Nodes.ContainsKey(_start)
                 ? _start
@@ -520,6 +525,28 @@ namespace ES2Access.Core.UI.Graph
                 if (render.Nodes.ContainsKey(landing.Value)) render.StopLandings[landing.Key] = landing.Value;
             StampPositions();
             return render;
+        }
+
+        // The declared nodes grouped by their Tab-stop — each stop's own nodes in declaration order,
+        // and <paramref name="stops"/> filled with the stops in first-appearance order. Both wiring
+        // passes read it and neither writes it. A stop cannot begin inside an open row, so a row's
+        // nodes never straddle two of these lists.
+        private Dictionary<object, List<GraphNode>> GroupByStop(List<object> stops)
+        {
+            Dictionary<object, List<GraphNode>> byStop = new Dictionary<object, List<GraphNode>>();
+            foreach (GraphNode node in _declared)
+            {
+                List<GraphNode> list;
+                if (!byStop.TryGetValue(node.StopKey, out list))
+                {
+                    list = new List<GraphNode>();
+                    byStop.Add(node.StopKey, list);
+                    stops.Add(node.StopKey);
+                }
+                list.Add(node);
+            }
+
+            return byStop;
         }
 
         // Where a stop mixes MENU rows with RAW content (search/sort/filter controls above a sheet),
@@ -547,22 +574,8 @@ namespace ES2Access.Core.UI.Graph
         // columns (<see cref="NodeVtable.Column"/>, stamped by the sheet and by the band), the seam is
         // paired column by column, and only a column the other side does not have falls back to the
         // single target. A bar of ordinary controls stamps no columns and so keeps the old rule exactly.
-        private void StitchModeBoundaries()
+        private void StitchModeBoundaries(List<object> stops, Dictionary<object, List<GraphNode>> byStop)
         {
-            Dictionary<object, List<GraphNode>> byStop = new Dictionary<object, List<GraphNode>>();
-            List<object> stops = new List<object>();
-            foreach (GraphNode n in _declared)
-            {
-                List<GraphNode> list;
-                if (!byStop.TryGetValue(n.StopKey, out list))
-                {
-                    list = new List<GraphNode>();
-                    byStop.Add(n.StopKey, list);
-                    stops.Add(n.StopKey);
-                }
-                list.Add(n);
-            }
-
             foreach (object stop in stops)
             {
                 List<GraphNode> nodes = byStop[stop];
@@ -736,36 +749,37 @@ namespace ES2Access.Core.UI.Graph
 
         // Left/right within a row; up/down between consecutive rows OF THE SAME STOP (arrows never cross a
         // Tab-stop). Shared non-null row keys preserve the column; otherwise vertical lands on first item.
-        private void WireMenuEdges(GraphRender render)
+        private void WireMenuEdges(List<object> stops, Dictionary<object, List<GraphNode>> byStop)
         {
-            // Segment rows in DECLARATION order: within a stop, consecutive menu rows chain vertically
+            // Segment rows in DECLARATION order within each stop: consecutive menu rows chain vertically
             // only when no raw node was declared between them. Interleaved raw content (a sheet between
             // menu controls) BREAKS the chain — StitchModeBoundaries wires the seams. Without the break,
             // menu edges would skip straight over the raw block; the stitcher (which only fills missing
             // edges) would find the gap already bridged, leaving the block an unreachable island.
-            List<List<Row>> byStop = new List<List<Row>>();
-            Dictionary<object, List<Row>> openSegment = new Dictionary<object, List<Row>>(); // stop → its currently-open segment
-            foreach (GraphNode node in _declared)
+            List<List<Row>> segments = new List<List<Row>>();
+            for (int s = 0; s < stops.Count; s++)
             {
-                Row row;
-                if (_rowOf.TryGetValue(node, out row))
+                List<GraphNode> nodes = byStop[stops[s]];
+                List<Row> open = null; // this stop's currently-open segment
+                for (int i = 0; i < nodes.Count; i++)
                 {
-                    List<Row> seg;
-                    if (!openSegment.TryGetValue(node.StopKey, out seg))
+                    Row row;
+                    if (!_rowOf.TryGetValue(nodes[i], out row))
                     {
-                        seg = new List<Row>();
-                        openSegment.Add(node.StopKey, seg);
-                        byStop.Add(seg);
+                        open = null; // raw node: close this stop's segment
+                        continue;
                     }
-                    if (seg.Count == 0 || seg[seg.Count - 1] != row) seg.Add(row);
-                }
-                else
-                {
-                    openSegment.Remove(node.StopKey); // raw node: close this stop's segment
+
+                    if (open == null)
+                    {
+                        open = new List<Row>();
+                        segments.Add(open);
+                    }
+                    if (open.Count == 0 || open[open.Count - 1] != row) open.Add(row);
                 }
             }
 
-            foreach (List<Row> rows in byStop)
+            foreach (List<Row> rows in segments)
             {
                 for (int r = 0; r < rows.Count; r++)
                 {
