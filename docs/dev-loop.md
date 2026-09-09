@@ -164,6 +164,8 @@ on a state. Boot ≤ 1 min. Both scripts via the PowerShell tool (Bash-invoked P
 execution policy). First act in-game: minimize the tutorial popup (`walks/cs/tut.cs` does it
 from `/eval`) — expanded, it eats every injection as `unconsumed`. If a launch fails with the
 process alive, `tasklist /FI "PID eq <pid>"` shows whether it is orphaned into another session.
+`POST /quit` can leave the process hung and non-responding: poll it and terminate it after two
+minutes (measured 2026-09-09, seven minutes at 2.6 GB after the dev server had stopped answering).
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
@@ -173,7 +175,14 @@ behaviour under test is something a patch captures DURING the load, because the 
 patch after the moment it was watching for and the case reads as unfixed; there, reload FIRST and
 leave the load alone. `POST /loadsave` as
 soon as a walk's state is suspect; time a transition with a boolean `/wait` predicate, never a
-logging probe.
+logging probe. A build of another commit for a walk pair goes in a scratch worktree with
+`GamePaths.props` copied in and `touch -r vendor/prism/prism.dll` first — the game locks the
+deployed copy, and only a matching timestamp lets MSBuild skip it.
+
+**Classifying a walk diff.** A non-zero `diffwalks` total is not yet a change: re-walk the
+differing family on the SAME build first. The game's tutorial sequence advancing mid-walk and
+a leftover tooltip window at a station both produced self-diffs on 2026-09-09; a difference that
+survives the re-walk is bisected by deploying intermediate commits.
 
 **Evidence crop.** A Class-backed tooltip's review buffer reads EMPTY in `/gui/graph?buffers=1`
 unless the node is focused first (its words only exist once the tooltip window draws them — see
