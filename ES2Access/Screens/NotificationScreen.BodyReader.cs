@@ -400,7 +400,7 @@ namespace ES2Access.Screens
                     !InBody(line.Widget, title, buttons)
                     // A line inside a panel the popup has folded away is not a line: the detail of a
                     // damage report sits behind a "+" at alpha 0 and keeps every word it last held.
-                    || !Painted(line.Owner, root)
+                    || !Painted(line.Widget, root)
                     || PartOf(line.Widget, controls)
                     || IsWords(line, words)
                     || AgeWidgets.Under(line.Widget, dossier)

@@ -53,12 +53,11 @@ namespace ES2Access.UI
         private static PropertyInfo _state;
 
         /// <summary>One line the panel draws: the label's own transform - which is the rectangle the rows
-        /// are worked out from, and what has to be scrolled into view - and the widget the game hung the
-        /// explaining tooltip on, which for a table row is the row rather than its label.</summary>
+        /// are worked out from, and what has to be scrolled into view - and the tooltip that explains it,
+        /// which for a table row is the row's rather than the label's own.</summary>
         public struct DrawnLine
         {
             public AgeTransform Widget;
-            public AgeTransform Owner;
             public AgeTooltip Tooltip;
             public string Text;
 
@@ -107,7 +106,6 @@ namespace ES2Access.UI
             }
 
             AgeTooltip tooltip = widget.AgeTooltip ?? inherited;
-            AgeTransform owner = widget.AgeTooltip != null ? widget : null;
             string text = AgeText.Label(widget.GetComponent<AgePrimitiveLabel>());
             if (!string.IsNullOrEmpty(text))
             {
@@ -115,7 +113,6 @@ namespace ES2Access.UI
                     new DrawnLine
                     {
                         Widget = widget,
-                        Owner = owner ?? widget,
                         Tooltip = tooltip,
                         Text = text,
                     }
@@ -299,7 +296,7 @@ namespace ES2Access.UI
                     List<DrawnLine> it = row.GetRange(at, end - at);
                     at = end;
                     AgeTooltip tooltip = it[0].Tooltip;
-                    AgeTransform under = it[0].Owner;
+                    AgeTransform under = it[0].Widget;
                     NodeVtable vtable = new NodeVtable
                     {
                         Announcements = new List<NodeAnnouncement>

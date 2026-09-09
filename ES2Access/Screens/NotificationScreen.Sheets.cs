@@ -83,7 +83,7 @@ namespace ES2Access.Screens
                         // The same folded-panel test DrawnRows applies: a line the popup keeps at
                         // alpha 0 still holds its last words, and a stale one admitted here would
                         // be spoken as a column name on every row of the sheet.
-                        && Painted(line.Owner, root)
+                        && Painted(line.Widget, root)
                         && !PartOf(line.Widget, controls)
                         && !IsWords(line, words)
                     )
