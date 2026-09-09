@@ -258,11 +258,21 @@ namespace ES2Access.Screens
                 }
             );
             // What the special node the fleet is standing on does, an item per effect - filled by the
-            // window's effect mapper rather than by the window itself (<c>Bind</c> :53-56), so only the
-            // popup's code says it is a table at all.
+            // window's two effect mappers rather than by the window itself (<c>Bind</c> :53-56), so only
+            // the popup's code says it is a table at all. The tables are the MAPPERS' own item lists,
+            // not the EffectsTable that holds them: that outer container's children are the two
+            // headings and the two mappers, so declaring it would read a whole mapper - every theater
+            // effect at once - as one line.
             variants.Add(
                 typeof(SpecialNodeEventNotificationWindow),
-                new Variant { Tables = w => Some(((SpecialNodeEventNotificationWindow)w).EffectsTable) }
+                new Variant
+                {
+                    Tables = w =>
+                        Some(
+                            ((SpecialNodeEventNotificationWindow)w).EffectMapper.AgeTransform,
+                            ((SpecialNodeEventNotificationWindow)w).SpecialEffectMapper.AgeTransform
+                        ),
+                }
             );
             variants.Add(
                 typeof(ElectionSurveyNotificationWindow),

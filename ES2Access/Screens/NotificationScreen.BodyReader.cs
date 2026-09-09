@@ -400,8 +400,6 @@ namespace ES2Access.Screens
                     !InBody(line.Widget, title, buttons)
                     // A line inside a panel the popup has folded away is not a line: the detail of a
                     // damage report sits behind a "+" at alpha 0 and keeps every word it last held.
-                    // Asked of the label itself rather than of where it is measured, since a clipped
-                    // line is measured at the scrolling window it shows through.
                     || !Painted(line.Owner, root)
                     || PartOf(line.Widget, controls)
                     || IsWords(line, words)
@@ -725,13 +723,16 @@ namespace ES2Access.Screens
         /// Everything a subtree is showing, in the order it is laid out - hoisted to
         /// <see cref="EmpireDossier.Read"/>, which the popup body and the dossier both walk with.
         ///
-        /// Each line is then measured where the popup DRAWS it (<see cref="AgeWidgets.Clipped"/>). A
-        /// paragraph the game laid out taller than the scrolling window it shows it through - the quest
-        /// popup's lore - keeps a rectangle that runs off the bottom of the popup, and this screen works
-        /// out its content area as what lies between the two strips: measured whole, such a paragraph is
-        /// level with the buttons along the bottom and is dropped from the body altogether. The line
-        /// still says all of it - the game holds the whole string whatever it shows - and it is still
-        /// the label's own line; only where it is measured changes.
+        /// Every line keeps its OWN rectangle. A line the popup shows through a scrolling window used
+        /// to be re-measured at that window (<see cref="AgeWidgets.Clipped"/>) so that a paragraph
+        /// laid out taller than its viewport - the quest popup's lore - was not level with the button
+        /// bar and dropped from a content area worked out from rectangles. Nothing works the content
+        /// area out that way any more: <see cref="InBody"/> asks the CONTAINERS, and a label is under
+        /// the same bars whether it is measured at itself or at the window it shows through. What the
+        /// re-measurement did instead was sort, key, group and band that line at the window, and in a
+        /// box taller than its viewport there is always one such line - a different one each time the
+        /// box scrolls, which is what focusing a row does. That made the row count and the cursor's
+        /// place move under the player as they walked.
         /// </summary>
         private static void Walk(
             AgeTransform widget,
@@ -740,27 +741,14 @@ namespace ES2Access.Screens
             int depth
         )
         {
-            int from = lines.Count;
             EmpireDossier.Read(widget, lines, inherited, depth);
-            for (int i = from; i < lines.Count; i++)
-            {
-                Line line = lines[i];
-                AgeTransform shown = AgeWidgets.Clipped(line.Widget);
-                if (!ReferenceEquals(shown, line.Widget))
-                {
-                    line.Widget = shown;
-                    lines[i] = line;
-                }
-            }
         }
 
         /// <summary>Whether a drawn line is the popup's own words, which lead the body as a row of their
-        /// own and are not among what it drew. Asked of the label itself (<c>Owner</c>) as well as of
-        /// where the line is measured, because a description shown through a scrolling window is
-        /// measured at the window.</summary>
+        /// own and are not among what it drew.</summary>
         private static bool IsWords(Line line, AgeTransform words)
         {
-            return ReferenceEquals(line.Widget, words) || ReferenceEquals(line.Owner, words);
+            return ReferenceEquals(line.Widget, words);
         }
 
         /// <summary>The dossier panel a popup carries, whichever popup it is - the same panel serves
