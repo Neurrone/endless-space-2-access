@@ -755,7 +755,7 @@ namespace ES2Access.Screens
         /// the introduction, a diplomatic offer and the negotiation table.</summary>
         private static NegotiationEmpireInfoPanel InfoPanel(NotificationWindow window)
         {
-            return EmpireDossier.Panel(window == null ? null : window.gameObject);
+            return EmpireDossier.Panel(window);
         }
 
         private static bool Open(NegotiationEmpireInfoPanel panel)

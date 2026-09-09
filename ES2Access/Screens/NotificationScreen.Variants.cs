@@ -249,9 +249,7 @@ namespace ES2Access.Screens
                     Gateways = w =>
                         Out(
                             To(
-                                AgeWidgets.Transform(
-                                    AgeWidgets.WiredTo(w.AgeTransform, LookAtSystem)
-                                ),
+                                AgeWidgets.Transform(WiredIn(w, LookAtSystem)),
                                 ModStrings.NotifyOpenSystem
                             )
                         ),
@@ -834,13 +832,54 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The three walks a popup's own cards and gateways make, each made once per root per
+        /// frame. A choice line is asked for its toggle where the line is found and again wherever the
+        /// line is placed, and the card inside it is walked for its dossiers as well - and a popup that
+        /// has been rebound to the next notification is a different root, so nothing is kept past the
+        /// frame. The first hit of a sweep is what <c>GetComponentInChildren</c> answered with: both are
+        /// the same depth-first walk of the same subtree.</summary>
+        private static readonly FrameSweep<AgeControlToggle> Toggles =
+            new FrameSweep<AgeControlToggle>("notification");
+
+        private static readonly FrameSweep<AgeControlButton> Buttons =
+            new FrameSweep<AgeControlButton>("notification");
+
+        /// <summary>Drawn cards only, which is the question <see cref="HeroCard"/> asked: a card the
+        /// popup has switched off is not the card a choice is showing.</summary>
+        private static readonly FrameSweep<HeroDetailedCard> HeroCardsInside =
+            new FrameSweep<HeroDetailedCard>("notification", false);
+
+        /// <summary>One line of a hand-wired choice: the line the player is choosing, and the toggle
+        /// that works it. The two travel together because finding the toggle means looking inside the
+        /// line, and a line is a choice at all only because it has one - so the answer is worked out
+        /// once, where the line is found, rather than again wherever the line is used.</summary>
+        private struct Choice
+        {
+            public AgeTransform Widget;
+            public AgeControlToggle Switched;
+        }
+
+        /// <summary>Whether a control the popup drew sits inside one of its choice lines.</summary>
+        private static bool Inside(List<Choice> choices, AgeTransform widget)
+        {
+            for (int i = 0; i < choices.Count; i++)
+            {
+                if (AgeWidgets.Under(widget, choices[i].Widget))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>The lines of a hand-wired choice: the cards, outcomes or parameters the popup laid out
         /// in the container it fills with them, and only the ones the player can currently see. The line
         /// rather than the switch inside it, because the line is the whole of what is being chosen - the
         /// words on it, and the reason the game gives for refusing it.</summary>
-        private static List<AgeTransform> ChoiceWidgets(NotificationWindow window)
+        private static List<Choice> ChoiceWidgets(NotificationWindow window)
         {
-            List<AgeTransform> lines = new List<AgeTransform>();
+            List<Choice> lines = new List<Choice>();
             Variant variant = VariantOf(window);
             if (variant == null || variant.Choices == null)
             {
@@ -860,9 +899,12 @@ namespace ES2Access.Screens
                     List<AgeTransform> children = container.Children;
                     for (int i = 0; children != null && i < children.Count; i++)
                     {
-                        if (Switch(children[i]) != null)
+                        AgeControlToggle switched = Switch(children[i]);
+                        if (switched != null)
                         {
-                            lines.Add(children[i]);
+                            lines.Add(
+                                new Choice { Widget = children[i], Switched = switched }
+                            );
                         }
                     }
                 }
@@ -882,13 +924,13 @@ namespace ES2Access.Screens
         /// choose at all. The card's title is its name and everything else written on it is content the
         /// player reviews a line at a time (<see cref="ChoiceName"/>, <see cref="ChoiceDetail"/>).
         /// </summary>
-        private static void AddChoices(List<Control> controls, List<AgeTransform> choices)
+        private static void AddChoices(List<Control> controls, List<Choice> choices)
         {
             for (int i = 0; i < choices.Count; i++)
             {
-                AgeTransform choice = choices[i];
-                AgeControlToggle switched = Switch(choice);
-                if (switched == null || string.IsNullOrEmpty(switched.OnSwitchMethod))
+                AgeTransform choice = choices[i].Widget;
+                AgeControlToggle switched = choices[i].Switched;
+                if (string.IsNullOrEmpty(switched.OnSwitchMethod))
                 {
                     continue;
                 }
@@ -952,8 +994,13 @@ namespace ES2Access.Screens
             try
             {
                 HeroDetailedCard own = choice.GetComponent<HeroDetailedCard>();
-                // walk: audit M1, to move behind FrameSweep
-                return own != null ? own : choice.GetComponentInChildren<HeroDetailedCard>();
+                if (own != null)
+                {
+                    return own;
+                }
+
+                HeroDetailedCard[] inside = HeroCardsInside.Under(choice);
+                return inside.Length == 0 ? null : inside[0];
             }
             catch (Exception e)
             {
@@ -1012,8 +1059,8 @@ namespace ES2Access.Screens
             AgeControlToggle toggle = line.GetComponent<AgeControlToggle>();
             if (toggle == null)
             {
-                // walk: audit M1, to move behind FrameSweep
-                toggle = line.GetComponentInChildren<AgeControlToggle>(true);
+                AgeControlToggle[] inside = Toggles.Under(line);
+                toggle = inside.Length == 0 ? null : inside[0];
             }
 
             // Different widget: the toggle a line is worked by, which is only the answer while the line draws it.
@@ -1038,6 +1085,56 @@ namespace ES2Access.Screens
             return string.IsNullOrEmpty(hinted) ? OptionalText.Phrase(nameKey) : hinted;
         }
 
+        /// <summary>
+        /// The button this popup wired to <paramref name="handler"/>, picked out of the control sweep
+        /// the build already makes over the window rather than by a sweep of its own
+        /// (<see cref="AgeWidgets.WiredTo"/>, which walks for buttons alone and so walks the popup a
+        /// second time in the same frame). Same subtree - a window's <c>AgeTransform</c> sits on the
+        /// window's own object - and the same depth-first order, so the buttons arrive in the order
+        /// that helper sees them in.
+        ///
+        /// Same choice among them, too: the drawn button, the SMALLEST of several drawn ones, and the
+        /// first match only where nothing matching is drawn.
+        /// </summary>
+        private static AgeControlButton WiredIn(NotificationWindow window, string handler)
+        {
+            AgeControl[] controls = WindowControls.Under(window);
+            AgeControlButton first = null;
+            AgeControlButton drawn = null;
+            float smallest = float.MaxValue;
+            for (int i = 0; i < controls.Length; i++)
+            {
+                AgeControlButton button = controls[i] as AgeControlButton;
+                if (button == null || button.OnActivateMethod != handler)
+                {
+                    continue;
+                }
+
+                if (first == null)
+                {
+                    first = button;
+                }
+
+                AgeTransform widget = AgeWidgets.Transform(button);
+                // Different widget: the popup wires several buttons to one handler - a glyph and the
+                // invisible sheet stretched behind it - and this asks which of THEM the game is
+                // drawing, so the one named and pointed at is the one the player can see.
+                if (!AgeWidgets.Visible(widget))
+                {
+                    continue;
+                }
+
+                float area = widget.Width * widget.Height;
+                if (area < smallest)
+                {
+                    smallest = area;
+                    drawn = button;
+                }
+            }
+
+            return drawn ?? first;
+        }
+
         /// <summary>The clickable control a popup's gateway field stands on - its own, else the one inside
         /// it, since these fields are plain transforms and the prefab decides which.</summary>
         private static AgeControlButton Clickable(AgeTransform widget)
@@ -1049,9 +1146,9 @@ namespace ES2Access.Screens
                     return null;
                 }
 
+                AgeControlButton[] inside = Buttons.Under(widget);
                 AgeControlButton button =
-                    // walk: audit M1, to move behind FrameSweep
-                    AgeWidgets.Button(widget) ?? widget.GetComponentInChildren<AgeControlButton>(true);
+                    AgeWidgets.Button(widget) ?? (inside.Length == 0 ? null : inside[0]);
                 // Different widget: the button inside the widget, which is only the answer while the popup draws it.
                 return button != null && AgeWidgets.Visible(button.AgeTransform) ? button : null;
             }

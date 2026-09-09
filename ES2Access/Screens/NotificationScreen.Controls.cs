@@ -542,9 +542,7 @@ namespace ES2Access.Screens
                 AgeControlToggle autoPopup = Toggle(window, AutoPopupToggle);
 
                 Add(controls, "dismiss", dismiss, ModStrings.NotifyDismiss);
-                List<AgeTransform> choices = own
-                    ? ChoiceWidgets(window)
-                    : new List<AgeTransform>();
+                List<Choice> choices = own ? ChoiceWidgets(window) : new List<Choice>();
                 foreach (
                     AgeControl extra in own ? (IList<AgeControl>)Extras(window) : NoExtras
                 )
@@ -556,7 +554,7 @@ namespace ES2Access.Screens
                         extra as AgeControlToggle,
                         null,
                         null,
-                        In(extra.AgeTransform, choices) != null
+                        Inside(choices, extra.AgeTransform)
                     );
                 }
 

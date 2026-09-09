@@ -52,10 +52,6 @@ ES2Access/Screens/JournalScreen.cs | 1 | cell == null ? null : cell.GetComponent
 
 ES2Access/Screens/NotificationScreen.Controls.cs | 1 | widget == null ? null : widget.GetComponentInParent<NotificationWindow>();
 
-ES2Access/Screens/NotificationScreen.Variants.cs | 1 | AgeWidgets.Button(widget) ?? widget.GetComponentInChildren<AgeControlButton>(true);
-ES2Access/Screens/NotificationScreen.Variants.cs | 1 | return own != null ? own : choice.GetComponentInChildren<HeroDetailedCard>();
-ES2Access/Screens/NotificationScreen.Variants.cs | 1 | toggle = line.GetComponentInChildren<AgeControlToggle>(true);
-
 ES2Access/Screens/NotificationScreen.cs | 1 | _windows = gui.gameObject.GetComponentsInChildren<NotificationWindow>(true);
 
 ES2Access/Screens/OptionsScreen.cs | 1 | button => button.GetComponentInParent<OptionsTabPanel>() == null;
@@ -83,9 +79,6 @@ ES2Access/UI/BattleRosters.cs | 1 | : ships.GetComponentsInChildren<BattleShipIt
 ES2Access/UI/BattleRosters.cs | 1 | BattleFlotillasPanel[] flotillas = root.GetComponentsInChildren<BattleFlotillasPanel>(true);
 ES2Access/UI/BattleRosters.cs | 1 | BattleGarrisonPanel[] garrisons = root.GetComponentsInChildren<BattleGarrisonPanel>(true);
 ES2Access/UI/BattleRosters.cs | 1 | FlotillaLine[] lines = table.GetComponentsInChildren<FlotillaLine>(true);
-
-ES2Access/UI/EmpireDossier.cs | 1 | : host.GetComponentInChildren<NegotiationEmpireInfoPanel>(true);
-ES2Access/UI/EmpireDossier.cs | 1 | row.GetComponentInParent<NegotiationEmpireInfoPanel>();
 
 ES2Access/UI/InspectMarker.cs | 1 | GameObject stale = GameObject.Find(HostName);
 

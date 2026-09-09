@@ -61,10 +61,11 @@ namespace ES2Access.UI
             public AgeTooltip Tooltip;
             public string Text;
 
-            /// <summary>What the game says about this line with a picture instead of words - a
-            /// relation row's state - read after the line's own text. Empty for every line the game
-            /// wrote down itself.</summary>
-            public string State;
+            /// <summary>What the game says about this line with a picture instead of words - the
+            /// panel's own entry for a relation row, which the state is read out of when the row is
+            /// read, after the line's own text. Null for every line the game wrote down itself.
+            /// </summary>
+            public object Relation;
         }
 
         public static readonly Func<DrawnLine, AgeTransform> LineWidget = line => line.Widget;
@@ -83,9 +84,10 @@ namespace ES2Access.UI
                     message.Fragment(line);
                 }
 
-                if (!string.IsNullOrEmpty(row[i].State))
+                string state = StateWord(row[i].Relation);
+                if (!string.IsNullOrEmpty(state))
                 {
-                    message.ListItem(row[i].State);
+                    message.ListItem(state);
                 }
             }
 
@@ -119,7 +121,6 @@ namespace ES2Access.UI
                 );
             }
 
-            int mark = lines.Count;
             List<AgeTransform> children = widget.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
@@ -131,8 +132,6 @@ namespace ES2Access.UI
                     Read(child, lines, tooltip, depth + 1);
                 }
             }
-
-            RelationState(widget, lines, mark);
         }
 
         /// <summary>
@@ -145,34 +144,70 @@ namespace ES2Access.UI
         /// are ordered by where they were drawn.
         ///
         /// Which state belongs to which row is the row's place under the table: the panel fills a list
-        /// and hands the rows their entries from it in order.
+        /// and hands the rows their entries from it in order. So the whole sheet is stamped in one pass
+        /// down that table rather than by asking every widget the reader descends whether it happens to
+        /// be a relation row - only a direct child of the table was ever an answer, since a row the
+        /// table does not hold has no place in the list to be read from.
         /// </summary>
-        private static void RelationState(AgeTransform row, List<DrawnLine> lines, int from)
+        private static void StampRelationStates(
+            NegotiationEmpireInfoPanel panel,
+            List<DrawnLine> lines
+        )
         {
             try
             {
-                DiplomaticRelationStateLine drawn = row.GetComponent<DiplomaticRelationStateLine>();
-                if (drawn == null || drawn.EmpireNameLabel == null || Relations == null)
-                {
-                    return;
-                }
-
-                NegotiationEmpireInfoPanel panel =
-                    // walk: audit M1, to move behind FrameSweep
-                    row.GetComponentInParent<NegotiationEmpireInfoPanel>();
-                if (panel == null || panel.RelationsTable == null)
+                if (Relations == null || panel.RelationsTable == null)
                 {
                     return;
                 }
 
                 IList datas = Relations.GetValue(panel) as IList;
-                int at = panel.RelationsTable.Children.IndexOf(row);
-                object data = datas == null || at < 0 || at >= datas.Count ? null : datas[at];
-                if (data == null)
+                List<AgeTransform> rows = panel.RelationsTable.Children;
+                for (
+                    int at = 0;
+                    datas != null && rows != null && at < rows.Count && at < datas.Count;
+                    at++
+                )
                 {
-                    return;
-                }
+                    AgeTransform row = rows[at];
+                    DiplomaticRelationStateLine drawn =
+                        row == null ? null : row.GetComponent<DiplomaticRelationStateLine>();
+                    if (drawn == null || drawn.EmpireNameLabel == null || datas[at] == null)
+                    {
+                        continue;
+                    }
 
+                    AgeTransform label = drawn.EmpireNameLabel.AgeTransform;
+                    for (int i = 0; i < lines.Count; i++)
+                    {
+                        if (ReferenceEquals(lines[i].Widget, label))
+                        {
+                            DrawnLine stamped = lines[i];
+                            stamped.Relation = datas[at];
+                            lines[i] = stamped;
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("dossier: reading the relation rows' states threw: " + e);
+            }
+        }
+
+        /// <summary>The game's own word for the state one relation entry holds, composed when the row
+        /// is read rather than when it is declared: it is a localized title, and a sheet that is
+        /// rebuilt every frame would otherwise pay for one per relation row per frame.</summary>
+        private static string StateWord(object data)
+        {
+            if (data == null)
+            {
+                return null;
+            }
+
+            try
+            {
                 if (_state == null)
                 {
                     _state = data.GetType().GetProperty("DiplomaticRelationState");
@@ -180,47 +215,31 @@ namespace ES2Access.UI
 
                 DiplomaticRelationState state =
                     _state == null ? null : _state.GetValue(data, null) as DiplomaticRelationState;
-                string word =
-                    state == null ? null : AgeText.Clean(Gui.GetLocalizedTitle(state.Name));
-                if (string.IsNullOrEmpty(word))
-                {
-                    return;
-                }
-
-                AgeTransform label = drawn.EmpireNameLabel.AgeTransform;
-                for (int i = from; i < lines.Count; i++)
-                {
-                    if (ReferenceEquals(lines[i].Widget, label))
-                    {
-                        DrawnLine stamped = lines[i];
-                        stamped.State = word;
-                        lines[i] = stamped;
-                        return;
-                    }
-                }
+                return state == null ? null : AgeText.Clean(Gui.GetLocalizedTitle(state.Name));
             }
             catch (Exception e)
             {
                 Log.Warn("dossier: reading a relation row's state threw: " + e);
+                return null;
             }
         }
 
         /// <summary>The dossier panel a window carries, wherever it keeps it - the same panel serves the
         /// introduction popup, a diplomatic offer and the negotiation table.</summary>
-        public static NegotiationEmpireInfoPanel Panel(UnityEngine.GameObject host)
+        public static NegotiationEmpireInfoPanel Panel(UnityEngine.Component host)
         {
-            try
-            {
-                return host == null
-                    ? null
-                    // walk: audit M1, to move behind FrameSweep
-                    : host.GetComponentInChildren<NegotiationEmpireInfoPanel>(true);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            NegotiationEmpireInfoPanel[] found = Panels.Under(host);
+            return found.Length == 0 ? null : found[0];
         }
+
+        /// <summary>The dossier walk, made once per host per frame. One build asks for the panel up to
+        /// three times - the body reader deciding what is not its own, the sheet reader doing the same,
+        /// and the dossier's own declaration - and the answer is the same each time: the popup's widget
+        /// tree does not move between two asks in the same frame. The first panel of the sweep is the
+        /// one <c>GetComponentInChildren</c> answered with, since both are the same depth-first walk.
+        /// </summary>
+        private static readonly FrameSweep<NegotiationEmpireInfoPanel> Panels =
+            new FrameSweep<NegotiationEmpireInfoPanel>("dossier");
 
         public static bool Open(NegotiationEmpireInfoPanel panel)
         {
@@ -280,6 +299,8 @@ namespace ES2Access.UI
             {
                 return;
             }
+
+            StampRelationStates(panel, lines);
 
             builder.SetRegion(regionKey);
             int index = 0;

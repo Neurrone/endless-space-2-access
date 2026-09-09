@@ -361,6 +361,7 @@ ES2Access/Screens/NotificationScreen.Sheets.cs | 2 | if (widget == null || depth
 ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | || !AgeWidgets.Visible(widget)
 
 ES2Access/Screens/NotificationScreen.Variants.cs | 1 | && AgeWidgets.Visible(own.AgeTransform)
+ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (!AgeWidgets.Visible(widget))
 ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (!Painted(controls[i].Widget, root))
 ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (container == null || !AgeWidgets.Visible(container))
 ES2Access/Screens/NotificationScreen.Variants.cs | 1 | if (line == null || !AgeWidgets.Visible(line))
