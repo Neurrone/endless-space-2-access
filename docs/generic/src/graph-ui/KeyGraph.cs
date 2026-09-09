@@ -103,19 +103,27 @@ namespace ES2Access.Core.UI.Graph
 
             if (old != null)
             {
+                // The structural key is ASKED FIRST, because on a rebuild where nothing moved it names
+                // the very node tier 1 would walk the whole render to find: a subject belongs to at most
+                // one node (a second surface showing the same entity must not carry the reference), so a
+                // structural hit that is still about the same object IS the tier-1 answer, in one
+                // dictionary lookup instead of a scan of every node. It only stands in for tier 1 while
+                // it agrees about the subject; where the key was reused for something else - or the node
+                // moved and took its key with it - the scan below still decides.
+                GraphNode structural;
+                if (!render.Nodes.TryGetValue(old, out structural)) structural = null;
+                if (structural != null && (old.Subject == null || structural.Id.SubjectMatches(old.Subject)))
+                    resolved = structural.Id;
+
                 // Tier 1: the same backing object, even if its structural key changed (it moved).
-                if (old.Subject != null)
+                if (resolved == null && old.Subject != null)
                 {
                     foreach (KeyValuePair<ControlId, GraphNode> kv in render.Nodes)
                         if (kv.Value.Id.SubjectMatches(old.Subject)) { resolved = kv.Value.Id; break; }
                 }
 
                 // Tier 2: the same structural key, even if the backing object was rebuilt.
-                if (resolved == null)
-                {
-                    GraphNode structural;
-                    if (render.Nodes.TryGetValue(old, out structural)) resolved = structural.Id;
-                }
+                if (resolved == null && structural != null) resolved = structural.Id;
 
                 // Tier 3: the row that CONTAINED it, when this build has stopped showing whole families
                 // of rows rather than losing one (<see cref="GraphBuilder.SeatOnContainer"/>) — the

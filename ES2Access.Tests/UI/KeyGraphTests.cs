@@ -857,28 +857,34 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void TwoNodesSharingABackingObjectAreOneControlToTheCursor()
+        public void TwoNodesSharingABackingObjectAreOneControlAsSoonAsOneOfThemGoes()
         {
-            // The consequence of following the reference BEFORE the structural key, pinned here
-            // because it is the trap adapters keep walking into: two surfaces that show the same
-            // entity and both carry it as a reference are indistinguishable to reconciliation, so the
-            // cursor lands on whichever one comes first and the player is teleported off the surface
-            // they were reading. ES2 Access hit it twice - a research-queue row against its wheel
-            // node, and the two ends of one starlane, each declared under its own system. Where two
-            // nodes show one entity, at most one of them may carry the reference.
+            // The trap adapters keep walking into, pinned here: two surfaces that show the same entity
+            // and both carry it as a reference are indistinguishable to reconciliation. A rebuild that
+            // keeps both of them holds the cursor where it was, because the structural key answers
+            // first and it is still about the same entity - but the moment the surface under the cursor
+            // goes, the walk finds the OTHER one and the player is teleported onto a surface they were
+            // not reading. ES2 Access hit it twice - a research-queue row against its wheel node, and
+            // the two ends of one starlane, each declared under its own system. Where two nodes show
+            // one entity, at most one of them may carry the reference.
             GraphState state = new GraphState();
             object thing = new object();
+            bool withThere = true;
             KeyGraph g = new KeyGraph(() =>
             {
                 GraphBuilder b = new GraphBuilder();
                 b.AddItem(new SyntheticNode(ControlId.For(thing, "here"), Vt("Here")));
-                b.AddItem(new SyntheticNode(ControlId.For(thing, "there"), Vt("There")));
+                if (withThere) b.AddItem(new SyntheticNode(ControlId.For(thing, "there"), Vt("There")));
                 return b.Build();
             }, state);
             g.Rerender();
             g.Move(GraphDir.Down);
             Assert.Equal("there", Focused(g));
 
+            g.Rerender();
+            Assert.Equal("there", Focused(g));
+
+            withThere = false;
             g.Rerender();
             Assert.Equal("here", Focused(g));
         }
