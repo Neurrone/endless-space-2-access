@@ -25,8 +25,12 @@ namespace ES2Access.UI
     /// StarSystemNodes</c>). Keep the seam here: a second site naming the type re-opens the split.
     ///
     /// The reflected members are cached in statics with no invalidation, which is sound because a
-    /// process loads exactly one build of the game. They are <c>PropertyInfo</c>s and nothing else -
-    /// no game object is held here, so a hot reload needs no teardown.
+    /// process loads exactly one build of the game. Beside them the galaxy OBJECT is held for the
+    /// length of one frame, keyed on (the game, <c>Time.frameCount</c>) the way
+    /// <see cref="FrameSweep{T}"/> keys its walks: the map build asks for it twice and every other
+    /// caller once more, and a game does not swap its galaxy out between two reads inside one frame.
+    /// That is the only game reference here, it is dropped the moment there is no game, and it dies
+    /// with the assembly on a hot reload like every other static the mod holds.
     /// </summary>
     public static class GameGalaxy
     {
@@ -72,12 +76,27 @@ namespace ES2Access.UI
             return Read(ref _gameNodes, "GameNodes") as GameNode[];
         }
 
+        private static object _galaxy;
+
+        private static Game _galaxyOf;
+
+        private static int _galaxyFrame = -1;
+
         private static object Instance()
         {
             Game game = Gui.Game;
             if (game == null)
             {
+                _galaxy = null;
+                _galaxyOf = null;
+                _galaxyFrame = -1;
                 return null;
+            }
+
+            int frame = UnityEngine.Time.frameCount;
+            if (frame == _galaxyFrame && ReferenceEquals(game, _galaxyOf))
+            {
+                return _galaxy;
             }
 
             if (_galaxyOfGame == null)
@@ -89,7 +108,10 @@ namespace ES2Access.UI
                 }
             }
 
-            return _galaxyOfGame.GetValue(game, null);
+            _galaxy = _galaxyOfGame.GetValue(game, null);
+            _galaxyOf = game;
+            _galaxyFrame = frame;
+            return _galaxy;
         }
 
         private static object Read(ref PropertyInfo cache, string name)

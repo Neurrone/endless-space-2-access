@@ -78,6 +78,34 @@ namespace ES2Access.Screens
 
         private readonly HashSet<StarSystemNode> _colonySet = new HashSet<StarSystemNode>();
 
+        /// <summary>
+        /// What the galaxy answered THIS frame, before anything is put in reading order - one list per
+        /// membership, filled by the gather and read by nothing but <see cref="Order"/>.
+        ///
+        /// The gather itself has to run every frame: what the map is naming turns on each node's own
+        /// exploration and visibility, and the game bumps no generation covering both -
+        /// <c>IVisibilityService.VisibilityRevision</c> counts fog-of-war reveals and the end of the
+        /// visibility refresh pass (decompiled/Assembly-CSharp/VisibilityController.cs:179, :201,
+        /// :234, :1041) and says nothing about a node reaching Identified or about a colony being
+        /// founded. What does NOT have to run every frame is the SORT: where a star reads is decided
+        /// by its position and by where home is, and neither of those moves.
+        /// </summary>
+        private readonly List<StarSystemNode> _gatheredColonies = new List<StarSystemNode>();
+
+        private readonly HashSet<StarSystemNode> _gatheredColonySet = new HashSet<StarSystemNode>();
+
+        private readonly List<StarSystemNode> _gatheredSystems = new List<StarSystemNode>();
+
+        private readonly List<StarSystemNode> _gatheredLocated = new List<StarSystemNode>();
+
+        /// <summary>Where home was when the lists were last put in order - part of the key because
+        /// reading order is measured FROM home (<see cref="ComparePositions"/>) and rounded into rows
+        /// afterwards, so a different origin is a different order even though nothing has moved.
+        /// </summary>
+        private float _orderedFromX;
+
+        private float _orderedFromY;
+
         /// <summary>The fleets crossing open space towards somewhere the map has not named - the ones
         /// with no system to hang under (<see cref="AddAdrift"/>).</summary>
         private readonly List<Fleet> _adrift = new List<Fleet>();
@@ -441,50 +469,55 @@ namespace ES2Access.Screens
                 }
 
                 ReadBand(builder);
-                _systems.Clear();
-                _located.Clear();
-                _colonies.Clear();
-                _namedSet.Clear();
-                _locatedSet.Clear();
-                _colonySet.Clear();
+                _gatheredColonies.Clear();
+                _gatheredColonySet.Clear();
                 DepartmentOfTheInterior interior = empire.GetAgency<DepartmentOfTheInterior>();
                 if (interior != null)
                 {
-                    foreach (ColonizedStarSystem colony in interior.ColonizedStarSystems)
+                    // Indexed rather than walked: the game hands the colonies back as a
+                    // ReadOnlyCollection, whose interface enumerator is an object allocated on every
+                    // frame the map is up.
+                    ReadOnlyCollection<ColonizedStarSystem> owned = interior.ColonizedStarSystems;
+                    for (int i = 0; i < owned.Count; i++)
                     {
                         // An empire can hold more than one thing in the same system - a colony and a
                         // ghost of it - and the system is still one place on the map.
-                        if (colony.Node != null && _colonySet.Add(colony.Node))
+                        StarSystemNode node = owned[i].Node;
+                        if (node != null && _gatheredColonySet.Add(node))
                         {
-                            _colonies.Add(colony.Node);
-                            _systems.Add(colony.Node);
-                            _namedSet.Add(colony.Node);
+                            _gatheredColonies.Add(node);
                         }
                     }
                 }
 
-                foreach (StarSystemNode node in GameGalaxy.StarSystemNodes())
+                _gatheredSystems.Clear();
+                _gatheredLocated.Clear();
+                // The galaxy's own node array, read in place. `Galaxy.StarSystemNodes` is a yield
+                // iterator over exactly this array making exactly this type test
+                // (decompiled/Assembly-CSharp/Galaxy.cs:26-38), and the mod wrapped it in a second
+                // iterator - two compiler-generated objects and two enumerators per frame, for a
+                // filtered read of an array the game already holds.
+                GameNode[] all = GameGalaxy.GameNodes();
+                for (int i = 0; all != null && i < all.Length; i++)
                 {
-                    if (_colonySet.Contains(node))
+                    StarSystemNode node = all[i] as StarSystemNode;
+                    if (node == null || _gatheredColonySet.Contains(node))
                     {
                         continue;
                     }
 
                     if (Perceived(node, empire))
                     {
-                        _systems.Add(node);
-                        _namedSet.Add(node);
+                        _gatheredSystems.Add(node);
                     }
                     else if (MapVisibility.Located(node, empire))
                     {
                         // The map is drawing a star here and naming nothing (<see cref="AddLocated"/>).
-                        _located.Add(node);
-                        _locatedSet.Add(node);
+                        _gatheredLocated.Add(node);
                     }
                 }
 
-                _systems.Sort(ReadingOrder);
-                _located.Sort(ReadingOrder);
+                Order(GalaxyCoordinates.Origin());
                 FreeMovingAdrift(_systems, _adrift);
                 _adrift.Sort(FleetReadingOrder);
 
@@ -605,6 +638,88 @@ namespace ES2Access.Screens
             {
                 Log.Warn("galaxy: reading the systems threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// Put this frame's gather in reading order - or leave the last frame's order standing, where
+        /// it is the same set of stars read from the same home.
+        ///
+        /// The comparison is by MEMBERSHIP rather than by the order the gather arrived in: a count
+        /// against each settled set and a lookup per gathered star. That settles set equality outright,
+        /// because neither side holds a duplicate - a colony is deduped as it is taken and a node
+        /// appears once in the galaxy's array - and set equality is the whole of what the sorted lists
+        /// depend on, since a star does not move and the rule that orders them
+        /// (<see cref="ComparePositions"/>) reads nothing else but home, which is the other half of
+        /// the key. Two sorts of the whole galaxy, each comparison measuring two positions from home
+        /// and rounding both into rows, is what that buys back on every frame nothing was discovered,
+        /// colonized or lost - which is nearly all of them.
+        ///
+        /// Keeping the order is also the STABLER answer where two stars round into the same row and
+        /// the same column: <c>List.Sort</c> is unstable, so re-running it over an unchanged galaxy is
+        /// free to swap such a pair under the cursor.
+        /// </summary>
+        private void Order(GalaxyPosition home)
+        {
+            if (
+                home.X == _orderedFromX
+                && home.Y == _orderedFromY
+                && _gatheredColonies.Count == _colonySet.Count
+                && _gatheredColonies.Count + _gatheredSystems.Count == _namedSet.Count
+                && _gatheredLocated.Count == _locatedSet.Count
+                && AllIn(_gatheredColonies, _colonySet)
+                && AllIn(_gatheredSystems, _namedSet)
+                && AllIn(_gatheredLocated, _locatedSet)
+            )
+            {
+                return;
+            }
+
+            _systems.Clear();
+            _located.Clear();
+            _colonies.Clear();
+            _namedSet.Clear();
+            _locatedSet.Clear();
+            _colonySet.Clear();
+            for (int i = 0; i < _gatheredColonies.Count; i++)
+            {
+                StarSystemNode node = _gatheredColonies[i];
+                _colonies.Add(node);
+                _colonySet.Add(node);
+                _systems.Add(node);
+                _namedSet.Add(node);
+            }
+
+            for (int i = 0; i < _gatheredSystems.Count; i++)
+            {
+                _systems.Add(_gatheredSystems[i]);
+                _namedSet.Add(_gatheredSystems[i]);
+            }
+
+            for (int i = 0; i < _gatheredLocated.Count; i++)
+            {
+                _located.Add(_gatheredLocated[i]);
+                _locatedSet.Add(_gatheredLocated[i]);
+            }
+
+            _systems.Sort(ReadingOrder);
+            _located.Sort(ReadingOrder);
+            _orderedFromX = home.X;
+            _orderedFromY = home.Y;
+        }
+
+        /// <summary>Whether the settled membership holds every star gathered. With the counts equal
+        /// on both sides and neither holding a duplicate, that is set equality.</summary>
+        private static bool AllIn(List<StarSystemNode> gathered, HashSet<StarSystemNode> settled)
+        {
+            for (int i = 0; i < gathered.Count; i++)
+            {
+                if (!settled.Contains(gathered[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
