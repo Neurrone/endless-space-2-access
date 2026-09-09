@@ -14,6 +14,12 @@ namespace ES2Access.UI
     /// Reading the layout rather than declaring it means one rule covers every window built from the
     /// same skeleton, including the ones that add a control of their own in a place no list of
     /// special cases would have predicted.
+    ///
+    /// Order and rows (<see cref="Rows"/>, <see cref="TopThenLeft"/>, <see cref="SameRow"/>) are asked
+    /// of <see cref="AgeWidgets.LaidOutAt"/> - the drawn rectangle with scrolling undone - so that a
+    /// panel's fixed parts and its scrolling parts keep the arrangement the panel was built with
+    /// however far the player has scrolled. <see cref="Band"/> and <see cref="ReadingOrder"/> ask
+    /// about what is on SCREEN and so keep drawn rectangles.
     /// </summary>
     public static class AgeLayout
     {
@@ -54,8 +60,8 @@ namespace ES2Access.UI
         {
             try
             {
-                Rect a = first.GetGlobalPosition();
-                Rect b = second.GetGlobalPosition();
+                Rect a = AgeWidgets.LaidOutAt(first);
+                Rect b = AgeWidgets.LaidOutAt(second);
                 return Level(Middle(a), b) && Level(Middle(b), a);
             }
             catch (Exception e)
@@ -125,8 +131,8 @@ namespace ES2Access.UI
         {
             try
             {
-                Rect a = first.GetGlobalPosition();
-                Rect b = second.GetGlobalPosition();
+                Rect a = AgeWidgets.LaidOutAt(first);
+                Rect b = AgeWidgets.LaidOutAt(second);
                 if (Mathf.Abs(a.xMin - b.xMin) > SamePlace)
                 {
                     return a.xMin < b.xMin ? -1 : 1;
@@ -205,8 +211,8 @@ namespace ES2Access.UI
         {
             try
             {
-                Rect a = first.GetGlobalPosition();
-                Rect b = second.GetGlobalPosition();
+                Rect a = AgeWidgets.LaidOutAt(first);
+                Rect b = AgeWidgets.LaidOutAt(second);
                 if (Mathf.Abs(a.yMin - b.yMin) > SamePlace)
                 {
                     return a.yMin < b.yMin ? -1 : 1;

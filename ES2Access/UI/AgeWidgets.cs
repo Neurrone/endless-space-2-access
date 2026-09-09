@@ -585,6 +585,52 @@ namespace ES2Access.UI
         /// rounding, not a line of anything.</summary>
         private const float Rounding = 1f;
 
+        /// <summary>
+        /// Where a widget is LAID OUT, with any scrolling undone: its own rectangle when nothing
+        /// scrolls it, and otherwise that rectangle moved back to where it sits when its scroll view
+        /// is at the start. The offset is the distance the view has dragged its content area away from
+        /// its viewport (<see cref="AgeControlScrollView.VirtualArea"/> against
+        /// <see cref="AgeControlScrollView.Viewport"/>), which is zero at the top of the scroll.
+        ///
+        /// This is the rectangle every layout question about ORDER and ROWS has to be asked of. A
+        /// panel that puts a fixed heading above a scrolling content area draws both in the same
+        /// screen space, so once the player scrolls, a content line can be drawn level with the
+        /// heading, or above it - and a rule that reads screen positions then bands the two into one
+        /// row and reads the heading out of the middle of the content. In the laid-out frame the
+        /// content starts below the heading and stays there, because that is the arrangement the
+        /// panel was built with and scrolling does not change it.
+        ///
+        /// The nearest scroll view is the one that answers, the same walk
+        /// <see cref="Clipped"/> makes. Clipping is a different question - it asks where a widget is
+        /// SHOWN, which is a screen fact - so the two are deliberately not the same measurement.
+        /// </summary>
+        public static Rect LaidOutAt(AgeTransform widget)
+        {
+            Rect it = widget.GetGlobalPosition();
+            AgeTransform at = widget.Parent;
+            for (int depth = 0; at != null && depth < MaxAncestors; depth++)
+            {
+                AgeControlScrollView view = at.GetComponent<AgeControlScrollView>();
+                if (view != null)
+                {
+                    if (view.Viewport == null || view.VirtualArea == null)
+                    {
+                        return it;
+                    }
+
+                    Rect box = view.Viewport.GetGlobalPosition();
+                    Rect content = view.VirtualArea.GetGlobalPosition();
+                    it.x += box.xMin - content.xMin;
+                    it.y += box.yMin - content.yMin;
+                    return it;
+                }
+
+                at = at.Parent;
+            }
+
+            return it;
+        }
+
         /// <summary>The heading the game wrote across the top of a <c>GuiPanel</c>, which is what a
         /// sighted player reads above its content. Found where it is drawn: these are plain panels and
         /// none of them binds the label, but every one of them names it "PanelTitle" in the prefab.
