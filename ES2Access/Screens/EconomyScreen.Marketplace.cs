@@ -565,9 +565,15 @@ namespace ES2Access.Screens
         }
 
         /// <summary>One of the two arrows beside a number the game lets the player step. The game writes
-        /// no word on them at all, so the mod names them; what a press does is the game's own sentence,
-        /// and the number it lands on is spoken back, because the press changes a figure somewhere else
-        /// in the strip and nothing else would say so.</summary>
+        /// no word on them at all, so the mod names them; what a press does is the game's own sentence.
+        ///
+        /// The figure the arrow moves is the arrow's own VALUE part, watched: the arrow reads as its name,
+        /// its role and the figure standing where the press would leave it, and while the arrow is focused
+        /// a change to that figure speaks on its own - the mod's press, either multiplier chord, or the
+        /// game moving the number for its own reasons. Nothing has to know that a press happened, so
+        /// nothing can lose one: a report that arrives a frame late is still the same change. A press the
+        /// game refuses moves nothing and so says nothing, beyond the unavailable the arrow already
+        /// carries.</summary>
         private void AddStepper(
             AgeControlButton button,
             string nameKey,
@@ -585,34 +591,13 @@ namespace ES2Access.Screens
 
             AgeControlButton it = button;
             AgeTooltip tooltip = AgeWidgets.Raw(at);
-            Func<string> landed = state;
-            // Whether the press that is being reported on actually happened. Asking the button again
-            // afterwards is not the same question: the press the game accepts LAST is the one that takes
-            // the value to its limit and switches the button off, so a refusal test run after the fact
-            // swallowed exactly the number the player most wanted (measured: incrementing to a stock of
-            // five said "unavailable" and never said five).
-            bool[] acted = new bool[1];
             NodeVtable vtable = GraphNodes.Button(
                 () => ModStrings.Get(nameKey),
-                () =>
-                {
-                    acted[0] = true;
-                    AgeWidgets.Press(it);
-                },
+                () => AgeWidgets.Press(it),
                 () => AgeWidgets.Offered(at),
                 tooltip
             );
-            // Nothing at all on a press the game refuses: the player heard "unavailable" on the way in.
-            vtable.StateText = () =>
-            {
-                if (!acted[0])
-                {
-                    return null;
-                }
-
-                acted[0] = false;
-                return landed();
-            };
+            vtable.Announcements.Add(GraphNodes.ValuePart(state));
             // The same press again for the two multiplier chords. A node with only an activation does
             // NOTHING for them - they are their own vtable entries - so the button the game reads the
             // held modifier inside (<c>OnQuantityPlusCb</c> :368-379) has to be wired three times to be
@@ -623,7 +608,6 @@ namespace ES2Access.Screens
             {
                 if (offered())
                 {
-                    acted[0] = true;
                     AgeWidgets.Press(it);
                 }
             };
