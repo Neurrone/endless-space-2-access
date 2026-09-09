@@ -141,6 +141,96 @@ namespace ES2Access.UI
             return Phrase(parts);
         }
 
+        /// <summary>
+        /// Whether the widget has words to say - the question a caller asks when it is deciding
+        /// whether there is a line here at all, rather than what the line says.
+        ///
+        /// The answer is exactly <c>!string.IsNullOrEmpty(TextOf(widget))</c>: the same walk, the same
+        /// depth and the same drawn gates, and the same cleaned reading of each label, because the
+        /// cleaning is what turns an icon-only caption into nothing. What it does not do is finish the
+        /// walk, keep a list or compose a phrase - it stops at the first label with something on it,
+        /// and the words are read again by the node's own reader when the player lands on it.
+        /// </summary>
+        public static bool Says(AgeTransform widget, int maxDepth = 6)
+        {
+            return Said(widget, maxDepth, false);
+        }
+
+        /// <summary>The same question for <see cref="PaintedPartsText"/>: the widget's own alpha is
+        /// not asked, the pieces below it are.</summary>
+        public static bool PaintedPartsSays(AgeTransform widget, int maxDepth = 6)
+        {
+            try
+            {
+                // Flow control, and the root's own half of PaintedPartsText's gate: a widget the panel
+                // switched off says nothing, and the walk below it is not entered.
+                if (widget == null || !widget.Visible)
+                {
+                    return false;
+                }
+
+                if (Written(widget))
+                {
+                    return true;
+                }
+
+                IList<AgeTransform> children = widget.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    if (Said(children[i], maxDepth - 1, true))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return false;
+        }
+
+        private static bool Said(AgeTransform widget, int depth, bool paintedOnly)
+        {
+            if (widget == null || depth < 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                // Flow control: the same stop <see cref="Collect"/> makes, so the two walks visit the
+                // same nodes and an undrawn branch contributes no words to either.
+                if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
+                {
+                    return false;
+                }
+
+                if (Written(widget))
+                {
+                    return true;
+                }
+
+                IList<AgeTransform> children = widget.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    if (Said(children[i], depth - 1, paintedOnly))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return false;
+        }
+
+        /// <summary>Whether this one widget's own label has anything left to say once it is cleaned -
+        /// <see cref="AddLabel"/>'s test, without the list.</summary>
+        private static bool Written(AgeTransform widget)
+        {
+            AgePrimitiveLabel label = LabelOn(widget);
+            return label != null && !string.IsNullOrEmpty(AgeText.Label(label));
+        }
+
         private static string Phrase(List<string> parts)
         {
             Core.Speech.MessageBuilder message = new Core.Speech.MessageBuilder();

@@ -531,8 +531,9 @@ ES2Access/Screens/TutorialSelectionScreen.cs | 1 | if (!widget.Visible)
 
 ES2Access/Screens/VictoryAchievedScreen.cs | 1 | if (!AgeWidgets.Visible(window.WinnerListGroup) || list == null)
 
-ES2Access/UI/AgeReading.cs | 2 | if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
+ES2Access/UI/AgeReading.cs | 3 | if (!widget.Visible || (paintedOnly && widget.Alpha <= 0f))
 ES2Access/UI/AgeReading.cs | 1 | if (widget != null && widget.Visible)
+ES2Access/UI/AgeReading.cs | 1 | if (widget == null || !widget.Visible)
 
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(left))
 ES2Access/UI/BalanceGauges.cs | 1 | if (AgeWidgets.Paints(right))
