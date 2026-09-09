@@ -272,10 +272,9 @@ namespace ES2Access.Screens
 
             SalableItem it = item;
             AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            string label = SalableName(widget);
             Func<bool> offered = () => AgeWidgets.Operable(widget);
             NodeVtable vtable = GraphNodes.Radio(
-                () => label,
+                () => SalableName(widget),
                 () => it.SelectionToggle.State,
                 () => AgeWidgets.Toggle(it.SelectionToggle),
                 offered,

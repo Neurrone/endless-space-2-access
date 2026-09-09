@@ -4,6 +4,7 @@ using Amplitude;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.Localization;
 using ES2Access.UI;
 
 namespace ES2Access.Screens
@@ -290,6 +291,12 @@ namespace ES2Access.Screens
             builder.PopContext();
         }
 
+        // Refilled rather than allocated per build: the list is read out within the call that fills it
+        // and never handed on, which is how the game's own banner uses the same call
+        // (<c>MarketplaceEventsBanner.QueueNext</c> :104-105 clears and refills one member list).
+        private static readonly List<KeyValuePair<StaticString, StaticString>> FeedbackBuffer =
+            new List<KeyValuePair<StaticString, StaticString>>();
+
         private static List<KeyValuePair<StaticString, StaticString>> Feedback()
         {
             try
@@ -301,10 +308,9 @@ namespace ES2Access.Screens
                     return null;
                 }
 
-                List<KeyValuePair<StaticString, StaticString>> found =
-                    new List<KeyValuePair<StaticString, StaticString>>();
-                service.GetEventsFeedback(found);
-                return found;
+                FeedbackBuffer.Clear();
+                service.GetEventsFeedback(FeedbackBuffer);
+                return FeedbackBuffer;
             }
             catch (Exception e)
             {
@@ -319,9 +325,7 @@ namespace ES2Access.Screens
         {
             try
             {
-                Amplitude.Unity.Gui.GuiElement guiElement = Gui.GetGuiElement(element);
-                string name =
-                    guiElement == null ? null : AgeText.Clean(Gui.Localize(guiElement.Title));
+                string name = CatalogueTitle(ElementTitles, element, extended: false);
                 return string.IsNullOrEmpty(name)
                     ? null
                     : AgeText.Clean(Gui.Localize(effect.ToString(), name));
@@ -330,6 +334,64 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        // What the two catalogues call the things a market line names. An element's title is datafile
+        // text looked up by name, so the NAME is the words for as long as the language stands - which
+        // is the one thing that can move it, and what the stamp watches (`ModLocale.Language`, the memo
+        // key its own doc comment names for a phrase kept across frames). Who PLACED an advertisement
+        // is deliberately not remembered here: a leader's name flips the turn the player first meets
+        // that empire (`GuiEmpire.GetLeaderName` :311), so it is asked afresh every build.
+        private static readonly Dictionary<StaticString, string> ElementTitles =
+            new Dictionary<StaticString, string>();
+
+        private static readonly Dictionary<StaticString, string> ItemTitles =
+            new Dictionary<StaticString, string>();
+
+        private static string _titlesLanguage;
+
+        /// <summary>See <see cref="ElementTitles"/>. Null - which is what an unnamed thing reads as, and
+        /// what the callers gate their rows on - is remembered too, so a thing the corpus has no word
+        /// for costs one lookup rather than one a frame.</summary>
+        private static string CatalogueTitle(
+            Dictionary<StaticString, string> titles,
+            StaticString name,
+            bool extended
+        )
+        {
+            if (StaticString.IsNullOrEmpty(name))
+            {
+                return null;
+            }
+
+            string language = ModLocale.Language;
+            if (language != _titlesLanguage)
+            {
+                ElementTitles.Clear();
+                ItemTitles.Clear();
+                _titlesLanguage = language;
+            }
+
+            string title;
+            if (titles.TryGetValue(name, out title))
+            {
+                return title;
+            }
+
+            try
+            {
+                Amplitude.Unity.Gui.GuiElement element = extended
+                    ? Gui.GetExtendedGuiElement(name)
+                    : Gui.GetGuiElement(name);
+                title = element == null ? null : AgeText.Clean(Gui.Localize(element.Title));
+            }
+            catch (Exception)
+            {
+                title = null;
+            }
+
+            titles[name] = title;
+            return title;
         }
 
         /// <summary>
@@ -409,10 +471,7 @@ namespace ES2Access.Screens
                     : Gui.GuiWrapperProviderService
                         .GetGuiEmpire(ad.EmpireIndex)
                         .GetLeaderName(Gui.PlayerEmpire);
-                Amplitude.Unity.Gui.ExtendedGuiElement element =
-                    Gui.GetExtendedGuiElement(ad.ItemName);
-                string what =
-                    element == null ? null : AgeText.Clean(Gui.Localize(element.Title));
+                string what = CatalogueTitle(ItemTitles, ad.ItemName, extended: true);
                 if (string.IsNullOrEmpty(what))
                 {
                     return null;

@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.Localization;
 using ES2Access.UI;
 
 namespace ES2Access.Screens
@@ -129,16 +130,7 @@ namespace ES2Access.Screens
             // table is opened with, and the answer is then one press right of the row's name rather than
             // the length of the window away. So column 1 is the latest turn and the walk goes back.
             int columns = last - first + 1;
-            string[] headers = new string[columns + 1];
-            for (int c = 0; c < columns; c++)
-            {
-                // The DISPLAYED turn, under this table's own word for a turn column: a bare number
-                // crossed into says nothing about what kind of number it is.
-                headers[c + 1] = ModStrings.Format(
-                    ModStrings.EconomyPriceHistoryTurn,
-                    last - c + 1
-                );
-            }
+            string[] headers = HistoryHeaders(first, last);
 
             builder.BeginStop(HistoryStop);
             GraphSheet sheet = new GraphSheet(builder, "economy:history/");
@@ -163,22 +155,24 @@ namespace ES2Access.Screens
                     int column = last - history[s].Turn;
                     if (column >= 0 && column < columns)
                     {
-                        string drawn = Gui.FormatAmount(
-                            UnityEngine.Mathf.RoundToInt(history[s].Value),
-                            true,
-                            false,
-                            false
-                        );
-                        cells[column] = () => drawn;
+                        // The reading is taken here - it is what says this turn has a cell at all -
+                        // and the WORDS for it are the cell's own, composed when the cell is read.
+                        float value = history[s].Value;
+                        cells[column] = () =>
+                            Gui.FormatAmount(
+                                UnityEngine.Mathf.RoundToInt(value),
+                                true,
+                                false,
+                                false
+                            );
                     }
                 }
 
-                string title = AgeText.Clean(buyable.Title);
                 NodeVtable primary = new NodeVtable
                 {
                     Announcements = new List<NodeAnnouncement>
                     {
-                        GraphNodes.LabelPart(() => title),
+                        GraphNodes.LabelPart(() => AgeText.Clean(buyable.Title)),
                     },
                 };
                 sheet.Row(primary, HistoryKey(buyable), null, cells);
@@ -189,6 +183,54 @@ namespace ES2Access.Screens
             // same rule every other table on this page lands by.
             builder.LandStopOn(sheet.FirstRow);
         }
+
+        /// <summary>
+        /// The turn columns, worded when the window moves rather than once a frame.
+        ///
+        /// A heading is the DISPLAYED turn number and nothing else, so the pair of end turns decides the
+        /// whole row of them; the window only moves when a turn passes or the section listed changes.
+        /// The language stamp is there because the word around the number is the mod's own
+        /// (<see cref="ModLocale.Language"/>).
+        /// </summary>
+        private string[] HistoryHeaders(int first, int last)
+        {
+            string language = ModLocale.Language;
+            if (
+                _historyHeaders != null
+                && first == _historyHeadersFirst
+                && last == _historyHeadersLast
+                && language == _historyHeadersLanguage
+            )
+            {
+                return _historyHeaders;
+            }
+
+            int columns = last - first + 1;
+            string[] headers = new string[columns + 1];
+            for (int c = 0; c < columns; c++)
+            {
+                // The DISPLAYED turn, under this table's own word for a turn column: a bare number
+                // crossed into says nothing about what kind of number it is.
+                headers[c + 1] = ModStrings.Format(
+                    ModStrings.EconomyPriceHistoryTurn,
+                    last - c + 1
+                );
+            }
+
+            _historyHeaders = headers;
+            _historyHeadersFirst = first;
+            _historyHeadersLast = last;
+            _historyHeadersLanguage = language;
+            return headers;
+        }
+
+        private string[] _historyHeaders;
+
+        private int _historyHeadersFirst;
+
+        private int _historyHeadersLast;
+
+        private string _historyHeadersLanguage;
 
         /// <summary>The one sentence the game writes about the graph, which it hangs on the panel itself
         /// rather than on any caption - there is no drawn heading here to carry it, so the row says the

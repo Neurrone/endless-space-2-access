@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.Localization;
 using ES2Access.UI;
 
 namespace ES2Access.Screens
@@ -196,13 +197,77 @@ namespace ES2Access.Screens
             int drawn
         )
         {
+            int registry = RegistryCount();
+            string language = ModLocale.Language;
+            if (registry != _familyRegistry || language != _familyLanguage)
+            {
+                FamilyNameCache.Clear();
+                _familyRegistry = registry;
+                _familyLanguage = language;
+            }
+
+            for (int i = 0; i < FamilyNameCache.Count; i++)
+            {
+                FamilyNaming known = FamilyNameCache[i];
+                if (known.Type == type && known.Families == families && known.Drawn == drawn)
+                {
+                    return known.Names;
+                }
+            }
+
             string[] names = new string[Math.Max(drawn, families)];
             for (int i = 0; i < names.Length; i++)
             {
                 names[i] = FamilyName(type, families, i);
             }
 
+            FamilyNaming naming = new FamilyNaming();
+            naming.Type = type;
+            naming.Families = families;
+            naming.Drawn = drawn;
+            naming.Names = names;
+            FamilyNameCache.Add(naming);
             return names;
+        }
+
+        // What each grid's columns are called, kept across frames. Answering it costs a linear scan of
+        // the game's whole resource registry PER COLUMN, and the answer is written into the registry
+        // and the corpus: the registry is loaded with the game and never gains an entry during one
+        // (which is why its own Count is what the stamp watches - a mod that changed it would be a
+        // different registry), and the words come out of the corpus, which only the language moves.
+        // Every grid that asks keeps its own row, because the answer depends on which resources the
+        // grid is counting and how many columns the game drew.
+        private sealed class FamilyNaming
+        {
+            public ResourceDefinition.Type Type;
+
+            public int Families;
+
+            public int Drawn;
+
+            public string[] Names;
+        }
+
+        private static readonly List<FamilyNaming> FamilyNameCache = new List<FamilyNaming>(3);
+
+        private static int _familyRegistry = int.MinValue;
+
+        private static string _familyLanguage;
+
+        /// <summary>How many resources the registry holds, or -1 where it cannot be read - a state of
+        /// its own, so an unreadable registry is not mistaken for an empty one.</summary>
+        private static int RegistryCount()
+        {
+            try
+            {
+                System.Collections.Generic.IList<GuiResource> all =
+                    Gui.GuiWrapperProviderService.GuiResources;
+                return all == null ? -1 : all.Count;
+            }
+            catch (Exception)
+            {
+                return -1;
+            }
         }
 
         /// <summary>
@@ -369,15 +434,11 @@ namespace ES2Access.Screens
 
             ResourceItem it = item;
             AgeTooltip tooltip = item.Tooltip ?? AgeWidgets.Raw(widget);
-            bool named = Identified(tooltip);
-            string label = named
-                ? AgeWidgets.TooltipTitle(tooltip)
-                : CardActions.FirstLine(tooltip);
             NodeVtable vtable = new NodeVtable
             {
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.LabelPart(() => label),
+                    GraphNodes.LabelPart(() => ResourceName(tooltip)),
                     GraphNodes.ValuePart(() => ResourceRows.Figures(it)),
                 },
                 Sections = GraphNodes.Sections(null, tooltip),
@@ -386,6 +447,16 @@ namespace ES2Access.Screens
             return vtable;
         }
 
+        /// <summary>What a lattice cell is called: the resource's own wrapper title where the empire has
+        /// located it, and the one sentence the game writes in its place where it has not. A label
+        /// fallback for a cell the game draws no name on - composed when the cell is read, because a
+        /// grid is two dozen of them and only the one under the cursor is ever heard.</summary>
+        private static string ResourceName(AgeTooltip tooltip)
+        {
+            return Identified(tooltip)
+                ? AgeWidgets.TooltipTitle(tooltip)
+                : CardActions.FirstLine(tooltip);
+        }
 
         /// <summary>
         /// The system development projects: one line per slot the empire has, or the one line saying it
