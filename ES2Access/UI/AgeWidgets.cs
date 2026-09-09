@@ -230,6 +230,29 @@ namespace ES2Access.UI
         }
 
         /// <summary>
+        /// Whether the game has this widget itself switched on - the ONE-STEP form of
+        /// <see cref="Visible"/>, for a walk that has already asked the full question of the root it
+        /// descended from.
+        ///
+        /// The ancestry is what <see cref="Visible"/> adds, and a walk that entered through a gated
+        /// root already knows the answer for every hop between here and that root: each of them was
+        /// asked this on the way down. Alpha is deliberately not part of it - that is the different
+        /// question <see cref="Paints"/> asks of a POOLED child, and asking it here would drop a
+        /// widget the game is fading in.
+        /// </summary>
+        public static bool SwitchedOn(AgeTransform widget)
+        {
+            try
+            {
+                return widget != null && widget.Visible;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Whether a row of a POOLED table is really on the screen.
         ///
         /// A table the game fills with <c>ReserveChildren</c> + <c>RefreshChildrenIList</c> never
