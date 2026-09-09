@@ -19,13 +19,15 @@ current focus once per frame after everything settles. The cost side of this bar
 rebuilds proportional to the open screen, never the world — is
 [performance.md](performance.md)'s "bound immediate-mode rebuilds".
 
-Cursor survival across rebuilds is tiered (`KeyGraph.Reconcile`): follow the **backing
-object** if it moved (identity ride-along via `ControlId.Reference`); else the same
-**structural key**; else the **nearest survivor** walking the previous traversal order; else
+Cursor survival across rebuilds is tiered (`KeyGraph.Reconcile`): the same **structural
+key**, accepted when the node found still carries the same **backing object** (an O(1)
+lookup, the silent-frame case); else the backing object wherever it moved to (identity
+ride-along via `ControlId.Reference`, a scan of every node, paid only when the key changed);
+else the **nearest survivor** walking the previous traversal order, computed only then; else
 the start node. Give any node whose row/entity can move or vanish a `ControlId.Referenced`
 identity and reconciliation is free — with one converse rule: **one object, one node**.
-Reference identity is followed *before* the structural key, so two nodes sharing a backing
-object are one control to the cursor, and focus teleports between the surfaces that share it
+Reference identity decides, so two nodes sharing a backing object are one control to the
+cursor, and focus teleports between the surfaces that share it
 (ES2: a research-queue row and its tech-wheel node shared the technology wrapper; queueing a
 technology threw focus into the queue panel). Where two surfaces show the same entity, at
 most one carries the object reference — the other keys structurally. But first ask whether

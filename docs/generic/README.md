@@ -44,7 +44,9 @@ From step 8 onward, every screen runs through
 propose the model, get approval, implement, verify with evidence, hand over the manual test.
 
 Cross-cutting, read alongside any feature work: [performance.md](performance.md) — keeping
-per-frame cost invisible (no scene scans, snapshot+reconcile, allocation discipline).
+per-frame cost invisible (no scene scans, a frame-keyed sweep, row text built when read,
+snapshot+reconcile with frame-keyed memos, the engine's own silent frame, allocation
+discipline, and the one-millisecond build measured through a dump pair).
 World/map screens (a cursor over the game's own world graph, zoom tiers as information
 surfaces, fog discipline): [world-navigation.md](world-navigation.md).
 

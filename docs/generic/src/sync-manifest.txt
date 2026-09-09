@@ -33,6 +33,7 @@ docs/generic/src/graph-ui/ControlId.cs | ES2Access/Core/UI/Graph/ControlId.cs
 docs/generic/src/engine-example/ControlTypes.cs | ES2Access/UI/ControlTypes.cs
 docs/generic/src/engine-example/DrawnTooltip.cs | ES2Access/UI/DrawnTooltip.cs
 docs/generic/src/engine-example/DropListScreen.cs | ES2Access/Screens/DropListScreen.cs
+docs/generic/src/engine-example/FrameSweep.cs | ES2Access/UI/FrameSweep.cs
 docs/generic/src/engine-example/GameKeyStandDown.cs | ES2Access/UI/Input/GameKeyStandDown.cs
 docs/generic/src/graph-ui/GraphAnnouncer.cs | ES2Access/Core/UI/Graph/GraphAnnouncer.cs
 docs/generic/src/graph-ui/GraphBuilder.cs | ES2Access/Core/UI/Graph/GraphBuilder.cs
