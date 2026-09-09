@@ -1,7 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using System.Text;
 using ES2Access.ES2.Speech;
+using ES2Access.Localization;
 
 namespace ES2Access.UI
 {
@@ -418,11 +421,102 @@ namespace ES2Access.UI
         /// would answer either nothing or, worse, whatever the pointer happens to be over. Written out
         /// at a call site, the two are one call apart and indistinguishable; named, the choice is on
         /// the page.
+        ///
+        /// The answer is held against the tooltip's own <c>Content</c> STRING - the very instance,
+        /// not its characters - and the language in force. This is the reading behind an announced
+        /// tooltip's section and behind every label of a <c>TextOf</c> walk, so it is asked several
+        /// times a frame on the focused control and once per node of a depth-six descent besides,
+        /// and each ask was a <see cref="Clean"/> (three to eight strings), a split array and a trim
+        /// per line. Strings are immutable, so the same instance is the same words; the game hands
+        /// its tooltip a NEW instance whenever it rebinds one, which is exactly when the split has to
+        /// run again. The language is in the key because it is the one other thing the answer is
+        /// computed from - <see cref="Clean"/> localizes a leftover key and names every icon - and it
+        /// can change without a tooltip being rebound. The list is handed back read-only: it is one
+        /// object shared by every caller of that frame and the ones after it, and no caller of this
+        /// has ever written to what it got.
         /// </summary>
         public static IList<string> ContentLines(AgeTooltip tooltip)
         {
-            return Lines(Tooltip(tooltip));
+            string raw = RawContent(tooltip);
+            if (string.IsNullOrEmpty(raw))
+            {
+                return Lines(Tooltip(tooltip));
+            }
+
+            ContentKey key = new ContentKey(raw, ModLocale.Language);
+            ReadOnlyCollection<string> said;
+            if (SplitContent.TryGetValue(key, out said))
+            {
+                return said;
+            }
+
+            // Tooltip content is rebound with a fresh string every time a number in it moves, so a
+            // memo keyed on the instance would otherwise hold every string the session ever drew.
+            if (SplitContent.Count >= SplitContentCap)
+            {
+                SplitContent.Clear();
+            }
+
+            said = new ReadOnlyCollection<string>(Lines(Tooltip(tooltip)));
+            SplitContent[key] = said;
+            return said;
         }
+
+        /// <summary>The words bound onto a tooltip, exactly as the game left them.</summary>
+        private static string RawContent(AgeTooltip tooltip)
+        {
+            if (tooltip == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                return tooltip.Content;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>What a split was computed from: the content instance, by reference, and the
+        /// language whose words <see cref="Clean"/> used.</summary>
+        private struct ContentKey : IEquatable<ContentKey>
+        {
+            private readonly string _content;
+
+            private readonly string _language;
+
+            public ContentKey(string content, string language)
+            {
+                _content = content;
+                _language = language;
+            }
+
+            public bool Equals(ContentKey other)
+            {
+                return ReferenceEquals(_content, other._content) && _language == other._language;
+            }
+
+            public override bool Equals(object other)
+            {
+                return other is ContentKey && Equals((ContentKey)other);
+            }
+
+            public override int GetHashCode()
+            {
+                // The identity hash, not the string's: hashing the characters would walk the whole
+                // tooltip on every lookup, which is the walk this exists to avoid.
+                int hash = _content == null ? 0 : RuntimeHelpers.GetHashCode(_content);
+                return hash * 31 + (_language == null ? 0 : _language.GetHashCode());
+            }
+        }
+
+        private const int SplitContentCap = 1024;
+
+        private static readonly Dictionary<ContentKey, ReadOnlyCollection<string>> SplitContent =
+            new Dictionary<ContentKey, ReadOnlyCollection<string>>();
 
         /// <summary>The tooltip attached to <paramref name="transform"/>, if it has one.</summary>
         public static string Tooltip(AgeTransform transform)
