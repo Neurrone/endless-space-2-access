@@ -345,14 +345,14 @@ ES2Access/Screens/NegotiationScreen.cs | 1 | if (none != null && AgeWidgets.Visi
 ES2Access/Screens/NegotiationScreen.cs | 2 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 ES2Access/Screens/NegotiationScreen.cs | 1 | if (table != null && AgeWidgets.Visible(table))
 
-ES2Access/Screens/NotificationScreen.BodyReader.cs | 1 | || !Painted(line.Owner, root)
+ES2Access/Screens/NotificationScreen.BodyReader.cs | 1 | || !Painted(line.Widget, root)
 
 ES2Access/Screens/NotificationScreen.Controls.cs | 1 | !Painted(expander.AgeTransform, root)
 ES2Access/Screens/NotificationScreen.Controls.cs | 1 | if (!Painted(controls[i].Widget, root))
 ES2Access/Screens/NotificationScreen.Controls.cs | 1 | if (control == null || !AgeWidgets.Visible(control.AgeTransform))
 ES2Access/Screens/NotificationScreen.Controls.cs | 1 | || !Painted(control.AgeTransform, root)
 
-ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | && Painted(line.Owner, root)
+ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | && Painted(line.Widget, root)
 ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (child != null && AgeWidgets.Visible(child) && Draws(child, 0))
 ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (child == null || !child.Visible || !Draws(child, 0))
 ES2Access/Screens/NotificationScreen.Sheets.cs | 1 | if (table == null || !Painted(table, root))
