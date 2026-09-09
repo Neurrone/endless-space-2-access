@@ -245,17 +245,13 @@ namespace ES2Access.Screens
 
             try
             {
-                // Content: the trading lines are this system's only while the group is drawn.
-                IList<string> trade = AgeWidgets.Visible(window.TradingGroup)
-                    ? AgeWidgets.DrawnLines(window.TradingGroup)
-                    : null;
                 IList<AgeTransform> children =
                     window.PlanetLabelsGroup == null ? null : window.PlanetLabelsGroup.Children;
                 // Every section the lens draws is a region, however many of them there happen to be: a
                 // lone region's jump is swallowed silently, and a section that comes and goes with the
                 // count is a panel that changes shape under the player (owner ruling, 2026-08-18).
                 builder.SetRegion(TradeRegion);
-                AddDrawnLines(builder, trade, "scan:trade");
+                AddDrawnLines(builder, window.TradingGroup, "scan:trade");
 
                 AddHeroPanel(builder, window);
 
@@ -764,21 +760,56 @@ namespace ES2Access.Screens
         }
 
         /// <summary>A read-only panel as one node per line of words it draws.</summary>
-        private static void AddDrawnLines(GraphBuilder builder, IList<string> lines, string key)
+        private static void AddDrawnLines(GraphBuilder builder, AgeTransform group, string key)
         {
+            IList<string> lines = DrawnLines(group);
             for (int i = 0; lines != null && i < lines.Count; i++)
             {
-                string line = lines[i];
+                int at = i;
                 // Synthetic: these are LINES scraped out of a panel, not controls - there is no one
                 // widget any of them is drawn by.
                 builder.AddItem(
                     Nodes.Synthetic(
-                        ControlId.Structural(key + "/" + i),
-                        GraphBuilder.Label(() => line)
+                        ControlId.Structural(key + "/" + at),
+                        GraphBuilder.Label(() => LineAt(group, at))
                     )
                 );
             }
         }
+
+        /// <summary>The words a scraped group is drawing, worked out once per (group, frame).
+        ///
+        /// Scraping them is a subtree walk eight deep with a component read and a text clean at every
+        /// node, and the page builds itself more than once in a frame - the count is what says how many
+        /// rows there are, so the walk cannot wait for a row to be read, but it can be made once for
+        /// all of them. Within a frame the panel has not been rebound, so every ask of it answers the
+        /// same words.</summary>
+        private static IList<string> DrawnLines(AgeTransform group)
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_scrapedFrame == frame && ReferenceEquals(_scrapedGroup, group))
+            {
+                return _scraped;
+            }
+
+            _scrapedFrame = frame;
+            _scrapedGroup = group;
+            // Content: the trading lines are this system's only while the group is drawn.
+            _scraped = AgeWidgets.Visible(group) ? AgeWidgets.DrawnLines(group) : null;
+            return _scraped;
+        }
+
+        private static string LineAt(AgeTransform group, int at)
+        {
+            IList<string> lines = DrawnLines(group);
+            return lines == null || at >= lines.Count ? null : lines[at];
+        }
+
+        private static int _scrapedFrame = -1;
+
+        private static AgeTransform _scrapedGroup;
+
+        private static IList<string> _scraped;
 
         private static GuiManager GuiState()
         {

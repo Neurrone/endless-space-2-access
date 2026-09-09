@@ -452,7 +452,7 @@ ES2Access/Screens/ResourcesExportModScreen.cs | 3 | if (widget == null || !AgeWi
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/ResourcesExportModScreen.cs | 1 | || AgeWidgets.Visible(window.LoadingGroup);
 
-ES2Access/Screens/ScanViewScreen.cs | 1 | IList<string> trade = AgeWidgets.Visible(window.TradingGroup)
+ES2Access/Screens/ScanViewScreen.cs | 1 | _scraped = AgeWidgets.Visible(group) ? AgeWidgets.DrawnLines(group) : null;
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (category == null || !AgeWidgets.Visible(category.AgeTransform))
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
 ES2Access/Screens/ScanViewScreen.cs | 1 | if (line == null || !AgeWidgets.Visible(line.AgeTransform))
