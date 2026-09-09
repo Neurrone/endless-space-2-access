@@ -58,6 +58,14 @@ Architecture: `ES2Access.Loader` is the actual BepInEx plugin and never reloads 
 - `ES2Access/Core/` is the game-agnostic framework and `ES2Access/ES2/` holds this game's own tables and wordings; both compile against the BCL only (no Unity, BepInEx, or Harmony) so they stay unit-testable off-engine, and `ES2Access.Tests` build-enforces that by compiling both folders' sources directly.
 - Mod-authored spoken phrases come from `ModStrings` keys (translations in `ES2Access/locale/<language>.json`, named after the game's own language names; `english.json` is the template). Never inline English literals in speech, and keep each translatable template a complete phrase — don't glue fragments that grammar would need to inflect. Game-authored text arrives already localized via `Gui.Localize`. `MessageBuilder` pulls its separators and fraction/quantity templates from `ModStrings`.
 
+## Performance
+
+- A screen's `Build` runs every frame. Nothing inside it, inside an `IsActive`, `ScreenName` or tooltip-existence predicate, or inside an argument evaluated eagerly for it, may walk a subtree (`GetComponentsInChildren`, `GetComponentInChildren`, `GetComponentInParent` per row), scan the scene, iterate a whole game collection, or invoke a game refresh. That work belongs in a `FrameSweep` keyed on the frame, in a snapshot keyed on something read from the game, or inside the part's read-at-announce lambda.
+- Text for a row is built when the row is read, never for every row per frame: `Func<string>` parts, not strings.
+- A cache on a build path is keyed on game state (frame count, object identity, a count, a game-owned generation), never on a hook having fired. Remembered state may delay an announcement; it may not change what is built or how much a build costs.
+- Before handing over a screen, measure one build with the recipe in `performance.md` and put the number in the commit message. Over one millisecond is a finding.
+- A source lint, not a reviewer, guards the walk sites: every `GetComponentsInChildren`, `GetComponentInChildren`, `GetComponentInParent`, `GetComponentsInParent`, `FindObjectOfType`, `FindObjectsOfTypeAll` or `GameObject.Find` outside a constructor or `UI/FrameSweep.cs` is on `ES2Access.Tests/Lint/scene-walks.allow` with a `// walk:` comment saying why it is one-time or bounded (`SceneWalkLintTests`), and a failure of that lint ends by saying an exception must be reported to me.
+
 ## Workflow
 
 Read `docs/generic/making-screens-accessible.md` — measure, propose the
