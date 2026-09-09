@@ -28,6 +28,7 @@ save, another faction or another galaxy and it walks that one.
 | File | Purpose |
 |---|---|
 | `walk-all.sh` | Runs the nine families into one output dir, `--reset` optionally loads a save first, prints the dump count and the skip list |
+| `00-menus.sh` | The screens that exist before any save is loaded: the main menu, the mod's settings, the new-game lobby and the faction choice, custom-faction editor and advanced settings it opens, load/save, the game options tab by tab, the DLC browser, the credits, the disclaimer, and every registered screen key. Standalone — `walk-all.sh` does not run it |
 | `01-galaxy.sh` | Galaxy HUD, map tree (two systems expanded, first revisited — the pooled-row shrink leg), selected-fleet panel, scan view, map + HUD tooltip pass |
 | `02-system.sh` | Star-system page for the first owned system, the second, the first again (pool shrink); planet overview; improvements and system-politics modals |
 | `03-empire.sh` | Technology wheel, quest journal, empire page, economy, senate, and the government / laws / population modals |
@@ -38,7 +39,7 @@ save, another faction or another galaxy and it walks that one.
 | `08-notifications.sh` | The notification popup a pending notification raises, and the HUD after the turn-log key |
 | `09-bykey.sh` | Every registered mod screen dumped by key — the safety net for everything the fixture cannot open |
 | `lib.sh` | Shared helpers: pausing, injecting, dumping, tooltip capture, window open/hide, discovery, type-ahead landing, skip recording |
-| `cs/*.cs` | The `/eval` bodies: `tut` (minimise the tutorial), `drain` (close everything), `reset` (normalise the mod's graph state), `sysopen`, `home`, `minor`, `restore` |
+| `cs/*.cs` | The `/eval` bodies: `tut` (minimise the tutorial), `drain` (close everything), `reset` (normalise the mod's graph state), `sysopen`, `home`, `minor`, `restore`, and out of game `menudrain` (close what is on top) and `menuhome` (leave the lobby and put the menu back) |
 | `fixture.env` | The three knobs — see §2 |
 | `diffwalks.sh` | Normalised diff of two walk outputs |
 | `normalize.sed` | The normalisation rules (§4) |
@@ -50,6 +51,9 @@ save, another faction or another galaxy and it walks that one.
 * **In game**, on whatever save you mean to walk. The harness never loads one: `--reset` is
   the only path that does, and it is for setting up *before* a pair, never between the two
   halves of one.
+  `00-menus.sh` is the one family this does not apply to: it walks what the game draws
+  *before* a save is loaded, so it is run on its own against a freshly launched game sitting
+  at the main menu.
 * **The tutorial popup is minimised.** Expanded, it eats every injection as `unconsumed`.
   Every family script's prologue checks and does it, so this is automatic — the check is
   `cs/tut.cs`, which minimises any bound, shown `TutorialPopupPanel` whose minimize toggle
@@ -122,7 +126,7 @@ than `capture` precisely because they *depend* on an expansion they just made.
 
 ## 4. Normalisation and the volatile classes
 
-`diffwalks.sh` runs `normalize.sed` over both sides. Four classes vary between two runs of
+`diffwalks.sh` runs `normalize.sed` over both sides. Five classes vary between two runs of
 the same route and would otherwise read as a disaster:
 
 1. **Instance-hash node ids.** `GraphSheet` row keys and drop-list ids derive from
@@ -133,7 +137,13 @@ the same route and would otherwise read as a disaster:
 3. **`DevProbe.Tooltip()`'s `defaultRead` array**, which *accumulates* class names for the
    life of the session: the same probe run twice can list one more class. Normalised to
    `[#]`.
-4. **The focus marker `> `** — not normalised. Instead every `capture` reseats the cursor
+4. **The studio's news banner** (`mainmenu:news`) — the main menu's banner turns its story over
+   every few seconds and is absent between stories, so on two runs minutes apart the headline
+   differs, and the row itself exists on one side and not the other, which moves the total in
+   every menu entry's ordinal ("1 of 10" against "1 of 9"). The news row and its buffer line are
+   deleted, and the total of every `[mainmenu:` ordinal is normalised to `#`; the news row is the
+   menu's last, so no entry's own position moves with it.
+5. **The focus marker `> `** — not normalised. Instead every `capture` reseats the cursor
    deterministically. A diff showing only `> ` moving means the route lost the cursor;
    read `routelog.txt`, do not blame the change.
 
