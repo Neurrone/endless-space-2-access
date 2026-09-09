@@ -633,7 +633,11 @@ namespace ES2Access.UI
             AgeTransform at = widget.Parent;
             for (int depth = 0; at != null && depth < MaxAncestors; depth++)
             {
-                AgeControlScrollView view = at.GetComponent<AgeControlScrollView>();
+                // The engine caches its own control in Awake and every AgeTransform has at most one
+                // (firstpass/AgeTransform.cs:316-325,3768), so this is the same component a
+                // GetComponent would find here - without the native call, on a walk asked twice per
+                // sort comparison of every banded panel.
+                AgeControlScrollView view = at.AgeControl as AgeControlScrollView;
                 if (view != null)
                 {
                     if (view.Viewport == null || view.VirtualArea == null)
