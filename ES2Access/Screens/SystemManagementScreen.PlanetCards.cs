@@ -1175,6 +1175,12 @@ namespace ES2Access.Screens
             return status == null ? null : status.AgeTransform;
         }
 
+        /// <summary>The label window's cards, swept once per frame. The window POOLS them - it keeps a
+        /// card per planet of the biggest system seen and retires the rest - so the answer is kept for
+        /// the frame and no longer.</summary>
+        private static readonly FrameSweep<PlanetLabel_SystemManagement> Cards =
+            new FrameSweep<PlanetLabel_SystemManagement>("system management");
+
         /// <summary>The planet cards the page is drawing, left to right. Ordered by where they are on
         /// screen rather than by the order the window pools them in, which is the model's order and
         /// runs the other way.</summary>
@@ -1189,9 +1195,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            PlanetLabel_SystemManagement[] labels =
-                // walk: audit M1, to move behind FrameSweep
-                window.GetComponentsInChildren<PlanetLabel_SystemManagement>(true);
+            PlanetLabel_SystemManagement[] labels = Cards.Under(window);
             for (int i = 0; i < labels.Length; i++)
             {
                 // Flow control: the kept cards are sorted by rectangle and walked in that order, so a

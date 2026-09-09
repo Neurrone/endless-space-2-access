@@ -65,10 +65,6 @@ ES2Access/Screens/NotificationScreen.cs | 1 | _windows = gui.gameObject.GetCompo
 ES2Access/Screens/OptionsScreen.cs | 1 | button => button.GetComponentInParent<OptionsTabPanel>() == null;
 ES2Access/Screens/OptionsScreen.cs | 1 | return transform.GetComponentInChildren<AgePrimitiveLabel>();
 
-ES2Access/Screens/PlanetConstructiblesScreen.cs | 1 | panel.ConstructibleTable.GetComponentsInChildren<StarSystemConstructibleItem>(
-
-ES2Access/Screens/PlanetOverviewScreen.cs | 1 | TPanel panel = window == null ? null : window.GetComponentInChildren<TPanel>(true);
-
 ES2Access/Screens/QuestJournalScreen.cs | 1 | panels.GetComponentInChildren<NarrativeEventsSidePanel>(true);
 ES2Access/Screens/QuestJournalScreen.cs | 1 | panels.GetComponentInChildren<QuestReportSidePanel>(true);
 
@@ -85,13 +81,7 @@ ES2Access/Screens/ShipDesignScreen.cs | 1 | : window.GetComponentInChildren<Ship
 ES2Access/Screens/SpaceBattleScreen.cs | 1 | AgeControlToggle[] toggles = table.GetComponentsInChildren<AgeControlToggle>(true);
 ES2Access/Screens/SpaceBattleScreen.cs | 1 | _items = root.GetComponentsInChildren<BattleStateShipItem>(true);
 
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | window.GetComponentsInChildren<PlanetLabel_SystemManagement>(true);
-
-ES2Access/Screens/SystemManagementScreen.cs | 1 | AgePrimitiveLabel[] labels = group.GetComponentsInChildren<AgePrimitiveLabel>(true);
 ES2Access/Screens/SystemManagementScreen.cs | 1 | GuiFrameExpander[] expanders = window.GetComponentsInChildren<GuiFrameExpander>();
-ES2Access/Screens/SystemManagementScreen.cs | 1 | StarSystemHangarPanel hangar = window.GetComponentInChildren<StarSystemHangarPanel>(true);
-ES2Access/Screens/SystemManagementScreen.cs | 1 | StarSystemQueuePanel queue = window.GetComponentInChildren<StarSystemQueuePanel>(true);
-ES2Access/Screens/SystemManagementScreen.cs | 1 | window.GetComponentInChildren<StarSystemConstructiblePanel>(true);
 
 ES2Access/Screens/SystemPoliticsScreen.cs | 1 | AgeTransform[] found = root.GetComponentsInChildren<AgeTransform>(true);
 

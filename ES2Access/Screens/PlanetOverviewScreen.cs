@@ -874,9 +874,18 @@ namespace ES2Access.Screens
             }
         }
 
+        /// <summary>The side-panel window's panels, swept once per frame: this page asks for two of
+        /// them on every build, and the window adds and drops panels as the game changes what a page
+        /// needs, so the answer is kept for the frame and no longer.</summary>
+        private static readonly FrameSweep<SidePanel> Panels = new FrameSweep<SidePanel>(
+            "planet overview"
+        );
+
         /// <summary>One of the panels the planet screen adds to the shared side-panel window. Found by
         /// type rather than held, because the window that owns them is not ours and rebuilds them.
-        /// </summary>
+        /// Picked out of the one sweep of the window: every panel of this kind IS a
+        /// <see cref="SidePanel"/>, so the first of them the sweep names is the first the window holds,
+        /// which is the panel a search for the type alone would have stopped at.</summary>
         private static TPanel Panel<TPanel>()
             where TPanel : SidePanel
         {
@@ -885,8 +894,13 @@ namespace ES2Access.Screens
                 SidePanelsWindow window = Gui.GuiServiceAvailable
                     ? Gui.GuiService.GetWindow<SidePanelsWindow>(false)
                     : null;
-                // walk: audit M1, to move behind FrameSweep
-                TPanel panel = window == null ? null : window.GetComponentInChildren<TPanel>(true);
+                SidePanel[] panels = Panels.Under(window);
+                TPanel panel = null;
+                for (int i = 0; panel == null && i < panels.Length; i++)
+                {
+                    panel = panels[i] as TPanel;
+                }
+
                 // Flow control: every side panel is instantiated and only the ones this planet needs are drawn.
                 return panel != null && AgeWidgets.Visible(panel.AgeTransform) ? panel : null;
             }

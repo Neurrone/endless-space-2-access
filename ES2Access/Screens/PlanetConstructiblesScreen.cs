@@ -57,6 +57,12 @@ namespace ES2Access.Screens
         /// </summary>
         private readonly List<Cell> _cells = new List<Cell>();
 
+        /// <summary>The panel's table, swept once per frame. It is POOLED - the panel keeps a tile per
+        /// constructible it has ever listed and retires the rest - so the answer is kept for the frame
+        /// and no longer.</summary>
+        private static readonly FrameSweep<StarSystemConstructibleItem> Tiles =
+            new FrameSweep<StarSystemConstructibleItem>("planet constructibles");
+
         public override string Key
         {
             get { return "screen.planet-constructibles"; }
@@ -134,11 +140,7 @@ namespace ES2Access.Screens
             _cells.Clear();
             try
             {
-                StarSystemConstructibleItem[] items =
-                    // walk: audit M1, to move behind FrameSweep
-                    panel.ConstructibleTable.GetComponentsInChildren<StarSystemConstructibleItem>(
-                        true
-                    );
+                StarSystemConstructibleItem[] items = Tiles.Under(panel.ConstructibleTable);
                 for (int i = 0; i < items.Length; i++)
                 {
                     Add(_cells, items[i], panel);

@@ -367,13 +367,13 @@ namespace ES2Access.Screens
             // The three panels along the bottom are the same prefabs the Empire summary slides out
             // under its systems table, and they are read by the shared reader (SystemPanels); what is
             // this page's own is that all three are drawn at once, each as a stop of its own.
-            StarSystemConstructiblePanel constructibles =
-                // walk: audit M1, to move behind FrameSweep
-                window.GetComponentInChildren<StarSystemConstructiblePanel>(true);
-            // walk: audit M1, to move behind FrameSweep
-            StarSystemQueuePanel queue = window.GetComponentInChildren<StarSystemQueuePanel>(true);
-            // walk: audit M1, to move behind FrameSweep
-            StarSystemHangarPanel hangar = window.GetComponentInChildren<StarSystemHangarPanel>(true);
+            StarSystemConstructiblePanel constructibles = PanelIn<StarSystemConstructiblePanel>(
+                window.ConstructiblePanelContainer
+            );
+            StarSystemQueuePanel queue = PanelIn<StarSystemQueuePanel>(window.QueuePanelContainer);
+            StarSystemHangarPanel hangar = PanelIn<StarSystemHangarPanel>(
+                window.HangarPanelContainer
+            );
             BuildBottomPanel(
                 builder,
                 ConstructiblesStop,
@@ -578,14 +578,19 @@ namespace ES2Access.Screens
             catch (Exception) { }
         }
 
+        /// <summary>The labels of a control's group, swept once per group per frame: the page asks the
+        /// same group for its caption on every build, and the caption cannot move within a frame.
+        /// </summary>
+        private static readonly FrameSweep<AgePrimitiveLabel> PolicyLabels =
+            new FrameSweep<AgePrimitiveLabel>("system management");
+
         /// <summary>The caption written beside a control - a drop list's own name, which the game draws
         /// as a label next to it rather than on it.</summary>
         private static string LabelIn(AgeTransform group)
         {
             try
             {
-                // walk: audit M1, to move behind FrameSweep
-                AgePrimitiveLabel[] labels = group.GetComponentsInChildren<AgePrimitiveLabel>(true);
+                AgePrimitiveLabel[] labels = PolicyLabels.Under(group);
                 for (int i = 0; i < labels.Length; i++)
                 {
                     string text = AgeText.Label(labels[i]);
@@ -611,6 +616,33 @@ namespace ES2Access.Screens
             {
                 return null;
             }
+        }
+
+        /// <summary>The panel the page hung in one of its own containers. The page keeps a container
+        /// per bottom panel and instantiates exactly one panel into each as a DIRECT child
+        /// (<c>StarSystemScreen.Load</c>), and the instantiation is what gives that child its
+        /// <c>AgeTransform</c> - so the one panel under the whole window is the one direct child of
+        /// its container that carries the component, and finding it costs three child lists rather
+        /// than a walk of the window with the constructible table in the middle of it.</summary>
+        private static T PanelIn<T>(AgeTransform container)
+            where T : UnityEngine.Component
+        {
+            try
+            {
+                IList<AgeTransform> children = container == null ? null : container.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    AgeTransform child = children[i];
+                    T panel = child == null ? null : child.GetComponent<T>();
+                    if (panel != null)
+                    {
+                        return panel;
+                    }
+                }
+            }
+            catch (Exception) { }
+
+            return null;
         }
 
         private static StarSystemScreen Window()
