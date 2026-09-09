@@ -542,9 +542,18 @@ namespace ES2Access.Screens
             }
         }
 
+        // Refilled rather than allocated: BuildPanel walks the groups of one panel and, inside that,
+        // the rows of one group, on every frame the menu is up. The two buffers are never live at the
+        // same level, and each is consumed before the next call refills it.
+        private static readonly List<InGameSettingCategoryItem> _groups =
+            new List<InGameSettingCategoryItem>();
+
+        private static readonly List<SettingItem> _rows = new List<SettingItem>();
+
         private static List<InGameSettingCategoryItem> Groups(InGameSettingsPanel panel)
         {
-            List<InGameSettingCategoryItem> groups = new List<InGameSettingCategoryItem>();
+            List<InGameSettingCategoryItem> groups = _groups;
+            groups.Clear();
             try
             {
                 if (panel.InGameSettingCategoriesTable == null)
@@ -579,7 +588,8 @@ namespace ES2Access.Screens
         /// hidden ones are not there to be walked past.</summary>
         private static List<SettingItem> Rows(InGameSettingCategoryItem group)
         {
-            List<SettingItem> rows = new List<SettingItem>();
+            List<SettingItem> rows = _rows;
+            rows.Clear();
             try
             {
                 if (group.SettingItemsTable == null)

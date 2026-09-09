@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.UI;
+using UnityEngine;
 
 namespace ES2Access.Screens
 {
@@ -41,6 +42,40 @@ namespace ES2Access.Screens
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<Cell> _cells = new List<Cell>();
         private readonly List<AgePrimitiveLabel> _labels = new List<AgePrimitiveLabel>();
+
+        private readonly Dictionary<AgeTransform, AgePrimitiveLabel> _topLabels =
+            new Dictionary<AgeTransform, AgePrimitiveLabel>();
+        private int _topLabelsFrame = -1;
+
+        /// <summary>The topmost label drawn under a widget, found once per (widget, frame). The card
+        /// titles are read while a card is focused, which the navigator does on every frame, and the
+        /// window's own heading is descended for twice per frame - each descent is three or four levels
+        /// with a sort at the end, and nothing under either can move within a frame.</summary>
+        private AgePrimitiveLabel TopLabel(AgeTransform widget, int depth)
+        {
+            int frame = Time.frameCount;
+            if (_topLabelsFrame != frame)
+            {
+                _topLabels.Clear();
+                _topLabelsFrame = frame;
+            }
+
+            AgePrimitiveLabel known;
+            if (widget != null && _topLabels.TryGetValue(widget, out known))
+            {
+                return known;
+            }
+
+            _labels.Clear();
+            CollectLabels(widget, _labels, depth);
+            AgePrimitiveLabel top = _labels.Count == 0 ? null : _labels[0];
+            if (widget != null)
+            {
+                _topLabels[widget] = top;
+            }
+
+            return top;
+        }
 
         public override string Key
         {
@@ -116,14 +151,12 @@ namespace ES2Access.Screens
         /// rather than by name.</summary>
         private void AddHeading(GraphBuilder builder, TutorialSelectionModalWindow window)
         {
-            _labels.Clear();
-            CollectLabels(WindowTransform(window), _labels, 3);
-            if (_labels.Count == 0)
+            AgePrimitiveLabel heading = TopLabel(WindowTransform(window), 3);
+            if (heading == null)
             {
                 return;
             }
 
-            AgePrimitiveLabel heading = _labels[0];
             builder.AddItem(Nodes.Drawn(
                 ControlId.For(heading, "tutorial-selection:heading"),
                 GraphNodes.Readout(() => AgeText.Label(heading), () => null, null, null),
@@ -136,9 +169,8 @@ namespace ES2Access.Screens
         {
             try
             {
-                _labels.Clear();
-                CollectLabels(WindowTransform(window), _labels, 3);
-                return _labels.Count == 0 ? null : AgeText.Label(_labels[0]);
+                AgePrimitiveLabel heading = TopLabel(WindowTransform(window), 3);
+                return heading == null ? null : AgeText.Label(heading);
             }
             catch (Exception)
             {
@@ -225,9 +257,8 @@ namespace ES2Access.Screens
         /// </summary>
         private string Title(AgeControlToggle card)
         {
-            _labels.Clear();
-            CollectLabels(AgeWidgets.Transform(card), _labels, 4);
-            return _labels.Count == 0 ? null : AgeText.Label(_labels[0]);
+            AgePrimitiveLabel top = TopLabel(AgeWidgets.Transform(card), 4);
+            return top == null ? null : AgeText.Label(top);
         }
 
         /// <summary>Everything the card says under its heading, a line at a time. The game writes the

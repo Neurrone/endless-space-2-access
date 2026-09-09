@@ -229,7 +229,7 @@ namespace ES2Access.Screens
 
             vtable.OnFocusVisual = () => PointerFocus.MoveToToggle(pick, tooltip, it);
             vtable.OnBlurVisual = AgeWidgets.ReleasePointer;
-            string cardKey = "faction-choice:card/" + index;
+            string cardKey = Minted(_cardKeys, CardKeyPrefix, index);
             TooltipChildren.Declare(
                 builder,
                 Nodes.Drawn(ControlId.For(card, cardKey), vtable, card),
@@ -323,8 +323,8 @@ namespace ES2Access.Screens
                     // it).
                     TooltipChildren.Declare(
                         builder,
-                        Nodes.Drawn(ControlId.Structural(HullKey + index), vtable, it),
-                        HullKey + index,
+                        Nodes.Drawn(ControlId.Structural(Minted(_hullKeys, HullKey, index)), vtable, it),
+                        Minted(_hullKeys, HullKey, index),
                         dossiers
                     );
                 }
@@ -394,6 +394,25 @@ namespace ES2Access.Screens
         }
 
         private const string HullKey = "faction-choice:hull/";
+
+        private const string CardKeyPrefix = "faction-choice:card/";
+
+        // The keys are the same text for the same index on every frame, and a card list or a hull
+        // count does not grow inside a session: minted once and read back instead of concatenated per
+        // row per frame.
+        private static readonly List<string> _cardKeys = new List<string>();
+
+        private static readonly List<string> _hullKeys = new List<string>();
+
+        private static string Minted(List<string> keys, string prefix, int index)
+        {
+            while (keys.Count <= index)
+            {
+                keys.Add(prefix + keys.Count);
+            }
+
+            return keys[index];
+        }
 
         /// <summary>How many hulls this faction flies: the list the window filtered for it, which is
         /// the same list its arrows step through. -1 where the window will not say.</summary>

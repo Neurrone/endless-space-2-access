@@ -479,8 +479,8 @@ namespace ES2Access.Screens
             {
                 for (int i = 0; i < row.Count; i++)
                 {
-                    builder.SetRegion("newgame:competitor/" + index);
-                    builder.PushContext(ModStrings.Format(ModStrings.NewGamePlayer, index + 1));
+                    builder.SetRegion(SlotKey(index));
+                    builder.PushContext(SlotContext(index));
                     try
                     {
                         BuildCompetitorSlot(builder, Get<CompetitorSlot>(row[i]), index);
@@ -498,6 +498,44 @@ namespace ES2Access.Screens
             SettingRows.AddButton(builder, panel.InviteButton, "newgame:competitors/invite");
         }
 
+        // A slot's key and the phrase the band is read under depend on the slot's INDEX and nothing
+        // else - the phrase also on the language, which is what empties it. Minted once instead of a
+        // concatenation and a ModStrings.Format per slot per frame.
+        private static readonly List<string> _slotKeys = new List<string>();
+
+        private static readonly List<string> _slotContexts = new List<string>();
+
+        private static string _slotContextsLanguage;
+
+        private static string SlotKey(int index)
+        {
+            while (_slotKeys.Count <= index)
+            {
+                _slotKeys.Add("newgame:competitor/" + _slotKeys.Count);
+            }
+
+            return _slotKeys[index];
+        }
+
+        private static string SlotContext(int index)
+        {
+            string language = Localization.ModLocale.Language;
+            if (_slotContextsLanguage != language)
+            {
+                _slotContexts.Clear();
+                _slotContextsLanguage = language;
+            }
+
+            while (_slotContexts.Count <= index)
+            {
+                _slotContexts.Add(
+                    ModStrings.Format(ModStrings.NewGamePlayer, _slotContexts.Count + 1)
+                );
+            }
+
+            return _slotContexts[index];
+        }
+
         private void BuildCompetitorSlot(GraphBuilder builder, CompetitorSlot slot, int index)
         {
             if (slot == null)
@@ -505,7 +543,7 @@ namespace ES2Access.Screens
                 return;
             }
 
-            string key = "newgame:competitor/" + index;
+            string key = SlotKey(index);
             SettingRows.AddTextField(builder, slot.PlayerNameTextField, key + "/name", _editor);
 
             // The crown is drawn to the LEFT of the name and so before it, but it is a mark ON the name

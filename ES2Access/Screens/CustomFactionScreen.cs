@@ -63,6 +63,28 @@ namespace ES2Access.Screens
         // Reused across builds rather than allocated per frame: Build runs every tick.
         private readonly List<AgeTransform> _cells = new List<AgeTransform>();
 
+        /// <summary>The two buffers <see cref="Walk"/> fills, one set per level it can recurse to, so a
+        /// band's nodes cost no list of their own on any frame. Indexed by the walk's own
+        /// <c>depth</c>, which counts down from <see cref="GroupDepth"/> and so names the level: a
+        /// nested call fills a different pair from the one its caller is still reading.</summary>
+        private readonly List<AgeTransform>[] _order = new List<AgeTransform>[GroupDepth + 1];
+
+        private readonly List<AgeControl>[] _inside = new List<AgeControl>[GroupDepth + 1];
+
+        private List<AgeTransform> OrderAt(int depth)
+        {
+            List<AgeTransform> buffer = _order[depth] ?? (_order[depth] = new List<AgeTransform>());
+            buffer.Clear();
+            return buffer;
+        }
+
+        private List<AgeControl> InsideAt(int depth)
+        {
+            List<AgeControl> buffer = _inside[depth] ?? (_inside[depth] = new List<AgeControl>());
+            buffer.Clear();
+            return buffer;
+        }
+
         /// <summary>The deferred keyboard hand-over for this page's text boxes.</summary>
         private readonly TextFieldEditor _editor = new TextFieldEditor();
 
@@ -250,7 +272,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            List<AgeTransform> order = new List<AgeTransform>();
+            List<AgeTransform> order = OrderAt(depth);
             foreach (List<AgeTransform> row in AgeLayout.Rows(_cells, Itself))
             {
                 order.AddRange(row);
@@ -275,7 +297,7 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                List<AgeControl> inside = new List<AgeControl>();
+                List<AgeControl> inside = InsideAt(depth);
                 Collect(child, inside, GroupDepth);
                 if (inside.Count == 0)
                 {

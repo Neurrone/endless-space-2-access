@@ -278,15 +278,24 @@ namespace ES2Access.Screens
             }
         }
 
-        // Alpha is 0 on a closed flyout and on the whole menu while it animates in, so the visible-only
-        // filter would hide entries that are perfectly real; visibility is checked explicitly instead.
+        // Refilled rather than allocated: the menu is walked entry by entry and, inside that, sub-entry
+        // by sub-entry, on every frame it is up. The two buffers are never live at the same level, and
+        // each is consumed before the next call refills it.
+        private static readonly List<MainMenuItem> _items = new List<MainMenuItem>();
+
+        private static readonly List<MainMenuSubItem> _subItems = new List<MainMenuSubItem>();
+
         private static List<MainMenuItem> Items(GameMainMenu window)
         {
-            List<MainMenuItem> items = new List<MainMenuItem>();
+            List<MainMenuItem> items = _items;
+            items.Clear();
             try
             {
                 foreach (MainMenuItem item in window.MainMenuItemsContainer.GetChildren<MainMenuItem>(false))
                 {
+                    // Flow control, and why it is asked here: alpha is 0 on a closed flyout and on the
+                    // whole menu while it animates in, so GetChildren's own visible-only filter would
+                    // hide entries that are perfectly real - visibility is checked explicitly instead.
                     if (item != null && AgeWidgets.Visible(item.AgeTransform))
                     {
                         items.Add(item);
@@ -303,7 +312,8 @@ namespace ES2Access.Screens
 
         private static List<MainMenuSubItem> SubItems(MainMenuItem item)
         {
-            List<MainMenuSubItem> subItems = new List<MainMenuSubItem>();
+            List<MainMenuSubItem> subItems = _subItems;
+            subItems.Clear();
             try
             {
                 if (item.SubItemsContainer == null)
