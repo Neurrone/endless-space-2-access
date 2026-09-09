@@ -36,9 +36,16 @@ namespace ES2Access.UI
     /// which matters now that the tree hangs every fleet under the place the map draws it and there is
     /// no fleet stop left to catch one that belongs nowhere.
     ///
-    /// Nothing here is cached and nothing runs per frame: every entry point walks a repository, so
-    /// they belong behind an announcement part that is READ on focus and a section that is read into
-    /// the buffer, never behind a live part watched at 60 Hz.
+    /// Every entry point still ANSWERS from a repository walk, so they belong behind an announcement
+    /// part that is READ on focus and a section that is read into the buffer, never behind a live part
+    /// watched at 60 Hz. What has changed is that the walk is made once a frame for the whole map
+    /// rather than once per asking place: the galaxy build asks "what is parked here" of every located
+    /// star and "what is flying this" of every lane out of an open system, and each of those questions
+    /// used to walk a whole repository. The three memos below are keyed on
+    /// <c>Time.frameCount</c> and nothing else, the same shape the map's own <c>MovingNear</c> uses:
+    /// within one frame the game has not moved, so a remembered answer is the answer, and the first
+    /// ask of the next frame throws the lot away - which is what makes it safe to hold repository
+    /// objects here with nothing to remember to clear.
     /// </summary>
     public static class FleetPresence
     {
@@ -111,10 +118,17 @@ namespace ES2Access.UI
         /// </summary>
         public static IList<Fleet> Drawing()
         {
+            Frame();
+            if (_drawnBuilt)
+            {
+                return DrawnFleets;
+            }
+
+            _drawnBuilt = true;
             try
             {
-                List<Fleet> fleets = new List<Fleet>();
-                List<GameEntityGUID> seen = new List<GameEntityGUID>();
+                List<Fleet> fleets = DrawnFleets;
+                HashSet<ulong> seen = SeenFleets;
 
                 IVisibleGalaxyFleetRepositoryService flying =
                     Services.GetService<IVisibleGalaxyFleetRepositoryService>();
@@ -127,7 +141,7 @@ namespace ES2Access.UI
                         if (fleet != null && !fleet.IsDestroyed && Drawn(fleet))
                         {
                             fleets.Add(fleet);
-                            seen.Add(fleet.GUID);
+                            seen.Add(fleet.GUID.ToUInt64(null));
                         }
                     }
                 }
@@ -152,11 +166,10 @@ namespace ES2Access.UI
                             if (
                                 fleet != null
                                 && !fleet.IsDestroyed
-                                && !seen.Contains(fleet.GUID)
+                                && seen.Add(fleet.GUID.ToUInt64(null))
                             )
                             {
                                 fleets.Add(fleet);
-                                seen.Add(fleet.GUID);
                             }
                         }
                     }
@@ -167,11 +180,64 @@ namespace ES2Access.UI
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading every fleet the map draws threw: " + e);
-                return None;
+                DrawnFleets.Clear();
+                return DrawnFleets;
             }
         }
 
         private static readonly Fleet[] None = new Fleet[0];
+
+        // ---- the frame memos ----
+        //
+        // One walk of each repository per frame, handed to every place that asks. The lists and the
+        // dictionaries are REUSED rather than rebuilt, so a quiet frame allocates nothing at all; they
+        // are emptied by the first ask of a new frame, which is also what keeps the repository objects
+        // in them from outliving the frame that drew them.
+
+        private static int _frame = -1;
+
+        private static readonly List<Fleet> DrawnFleets = new List<Fleet>();
+
+        private static readonly HashSet<ulong> SeenFleets = new HashSet<ulong>();
+
+        private static bool _drawnBuilt;
+
+        private static readonly Dictionary<ulong, List<List<Garrison>>> ParkedSlots =
+            new Dictionary<ulong, List<List<Garrison>>>();
+
+        private static bool _parkedBuilt;
+
+        private static readonly Dictionary<int, Flying> FlyingLegs = new Dictionary<int, Flying>();
+
+        private static bool _flyingBuilt;
+
+        /// <summary>The fleets on one leg, gathered per empire as <see cref="GroupsOn"/> hands them
+        /// out - the owners beside the groups, because which group an owner already has is what the
+        /// gathering asks on every fleet.</summary>
+        private sealed class Flying
+        {
+            public readonly List<Empire> Owners = new List<Empire>(2);
+
+            public readonly List<List<Garrison>> Groups = new List<List<Garrison>>(2);
+        }
+
+        private static void Frame()
+        {
+            int frame = UnityEngine.Time.frameCount;
+            if (_frame == frame)
+            {
+                return;
+            }
+
+            _frame = frame;
+            DrawnFleets.Clear();
+            SeenFleets.Clear();
+            _drawnBuilt = false;
+            ParkedSlots.Clear();
+            _parkedBuilt = false;
+            FlyingLegs.Clear();
+            _flyingBuilt = false;
+        }
 
         private static IList<Fleet> Fleets(List<List<Garrison>> groups)
         {
@@ -200,21 +266,42 @@ namespace ES2Access.UI
         /// <summary>The garrisons the map draws in one lozenge, in the order it draws them.</summary>
         private static List<List<Garrison>> GroupsAt(GameNode node)
         {
+            if (node == null)
+            {
+                return null;
+            }
+
+            List<List<Garrison>> groups;
+            return ParkedByNode().TryGetValue(node.GUID.ToUInt64(null), out groups) ? groups : null;
+        }
+
+        /// <summary>Every slot the map is drawing a lozenge for, gathered under the node it stands at:
+        /// one walk of the repository serves every system the frame declares. A node holding more than
+        /// one slot keeps them in the repository's own order, which is the order the walk met them and
+        /// therefore the order a single system's own walk used to return.</summary>
+        private static Dictionary<ulong, List<List<Garrison>>> ParkedByNode()
+        {
+            Frame();
+            if (_parkedBuilt)
+            {
+                return ParkedSlots;
+            }
+
+            _parkedBuilt = true;
             try
             {
                 IVisibleDockingSlotRepositoryService repository =
                     Services.GetService<IVisibleDockingSlotRepositoryService>();
-                if (node == null || repository == null)
+                if (repository == null)
                 {
-                    return null;
+                    return ParkedSlots;
                 }
 
-                List<List<Garrison>> groups = null;
                 ReadOnlyCollection<DockingSlotCursorTarget> slots = repository.DockingSlots;
                 for (int i = 0; i < slots.Count; i++)
                 {
                     DockingSlotCursorTarget slot = slots[i];
-                    if (slot == null || slot.GameNode == null || slot.GameNode.GUID != node.GUID)
+                    if (slot == null || slot.GameNode == null)
                     {
                         continue;
                     }
@@ -225,21 +312,23 @@ namespace ES2Access.UI
                         continue;
                     }
 
-                    if (groups == null)
+                    ulong at = slot.GameNode.GUID.ToUInt64(null);
+                    List<List<Garrison>> groups;
+                    if (!ParkedSlots.TryGetValue(at, out groups))
                     {
                         groups = new List<List<Garrison>>(2);
+                        ParkedSlots[at] = groups;
                     }
 
                     groups.Add(docked);
                 }
-
-                return groups;
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading the fleets at a system threw: " + e);
-                return null;
             }
+
+            return ParkedSlots;
         }
 
         /// <summary>What a dock label puts in its lozenge: the system's own hangar while it is holding
@@ -286,50 +375,104 @@ namespace ES2Access.UI
         {
             try
             {
-                IVisibleGalaxyFleetRepositoryService repository =
-                    Services.GetService<IVisibleGalaxyFleetRepositoryService>();
-                if (link == null || repository == null)
+                if (link == null)
                 {
                     return null;
                 }
 
-                NodePosition one = link.ExtremityNode1.NodePosition;
-                NodePosition two = link.ExtremityNode2.NodePosition;
-                List<Empire> owners = null;
-                List<List<Garrison>> groups = null;
-                ReadOnlyCollection<GalaxyFleet> flying = repository.GalaxyFleets;
-                for (int i = 0; i < flying.Count; i++)
-                {
-                    Fleet fleet = flying[i] == null ? null : flying[i].Fleet;
-                    if (fleet == null || fleet.IsDestroyed || !Drawn(fleet) || !Between(fleet, one, two))
-                    {
-                        continue;
-                    }
-
-                    if (groups == null)
-                    {
-                        owners = new List<Empire>(2);
-                        groups = new List<List<Garrison>>(2);
-                    }
-
-                    int at = owners.IndexOf(fleet.Empire);
-                    if (at < 0)
-                    {
-                        owners.Add(fleet.Empire);
-                        groups.Add(new List<Garrison>(2));
-                        at = groups.Count - 1;
-                    }
-
-                    groups[at].Add(fleet);
-                }
-
-                return groups;
+                Flying flying;
+                return FlyingByLeg()
+                    .TryGetValue(
+                        Leg(link.ExtremityNode1.NodePosition, link.ExtremityNode2.NodePosition),
+                        out flying
+                    )
+                    ? flying.Groups
+                    : null;
             }
             catch (Exception e)
             {
                 Log.Warn("galaxy: reading the fleets on a starlane threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>Every fleet the map draws under way, gathered under the LEG it is flying: one walk
+        /// of the repository serves every lane out of every open system. A fleet in orbit is drawn at
+        /// its system rather than on a lane and one with no valid leg is drawn wherever it was left, so
+        /// neither is filed here; the rest are filed by the pair of node positions the game stores,
+        /// taken either way round (<see cref="Leg"/>), which is the test each lane used to make of every
+        /// fleet in the galaxy. The fleets inside a group and the groups inside a leg keep the
+        /// repository's own order, so a lane reads what it read before.</summary>
+        private static Dictionary<int, Flying> FlyingByLeg()
+        {
+            Frame();
+            if (_flyingBuilt)
+            {
+                return FlyingLegs;
+            }
+
+            _flyingBuilt = true;
+            try
+            {
+                IVisibleGalaxyFleetRepositoryService repository =
+                    Services.GetService<IVisibleGalaxyFleetRepositoryService>();
+                if (repository == null)
+                {
+                    return FlyingLegs;
+                }
+
+                ReadOnlyCollection<GalaxyFleet> drawn = repository.GalaxyFleets;
+                for (int i = 0; i < drawn.Count; i++)
+                {
+                    Fleet fleet = drawn[i] == null ? null : drawn[i].Fleet;
+                    if (fleet == null || fleet.IsDestroyed || !Drawn(fleet))
+                    {
+                        continue;
+                    }
+
+                    FleetPosition position = fleet.Position;
+                    if (position.IsInOrbit || !position.IsInMovement)
+                    {
+                        continue;
+                    }
+
+                    int leg = Leg(position.Movement.Start, position.Movement.Goal);
+                    Flying on;
+                    if (!FlyingLegs.TryGetValue(leg, out on))
+                    {
+                        on = new Flying();
+                        FlyingLegs[leg] = on;
+                    }
+
+                    int at = on.Owners.IndexOf(fleet.Empire);
+                    if (at < 0)
+                    {
+                        on.Owners.Add(fleet.Empire);
+                        on.Groups.Add(new List<Garrison>(2));
+                        at = on.Groups.Count - 1;
+                    }
+
+                    on.Groups[at].Add(fleet);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("galaxy: reading the fleets on a starlane threw: " + e);
+            }
+
+            return FlyingLegs;
+        }
+
+        /// <summary>One key for a leg whichever way round it is flown - the two node indices, smaller
+        /// first. A node index is a short, so the pair fits an int with no collision and no boxing.
+        /// </summary>
+        private static int Leg(NodePosition one, NodePosition two)
+        {
+            int first = one.NodeIndex;
+            int second = two.NodeIndex;
+            return first <= second
+                ? ((ushort)first << 16) | (ushort)second
+                : ((ushort)second << 16) | (ushort)first;
         }
 
         /// <summary>
@@ -400,22 +543,6 @@ namespace ES2Access.UI
             return fleet.Visibility == null
                 || empire == null
                 || (int)fleet.Visibility[empire] >= (int)EntityVisibility.Layer.Marked;
-        }
-
-        /// <summary>Whether the leg a fleet is currently flying is this lane, taken either way round.
-        /// A fleet in orbit is drawn at its system rather than on a lane, and one with no valid leg is
-        /// drawn wherever it was left.</summary>
-        private static bool Between(Fleet fleet, NodePosition one, NodePosition two)
-        {
-            FleetPosition position = fleet.Position;
-            if (position.IsInOrbit || !position.IsInMovement)
-            {
-                return false;
-            }
-
-            NodePosition start = position.Movement.Start;
-            NodePosition goal = position.Movement.Goal;
-            return (start == one && goal == two) || (start == two && goal == one);
         }
 
         private const string CountPlayer = "%PanelFeatureFleetCountPlayer";
