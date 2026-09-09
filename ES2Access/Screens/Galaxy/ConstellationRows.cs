@@ -324,12 +324,25 @@ namespace ES2Access.Screens
             ConstellationLabel[] labels
         )
         {
-            return LabelFor(labels, l => ReferenceEquals(l.Constellation, constellation), null)
-                ?? LabelFor(
-                    labels,
-                    l => l.Constellation != null && l.Constellation.GUID == constellation.GUID,
-                    null
-                );
+            return ConstellationLabelIndex.For(constellation, labels);
+        }
+
+        private static readonly LabelIndex<ConstellationLabel, Constellation> ConstellationLabelIndex =
+            new LabelIndex<ConstellationLabel, Constellation>(
+                "galaxy",
+                LabelledConstellation,
+                ConstellationIdentity,
+                null
+            );
+
+        private static Constellation LabelledConstellation(ConstellationLabel label)
+        {
+            return label.Constellation;
+        }
+
+        private static ulong ConstellationIdentity(Constellation constellation)
+        {
+            return constellation.GUID;
         }
 
         /// <summary>Every constellation label the window is holding, swept once per FRAME and never

@@ -952,6 +952,136 @@ namespace ES2Access.Screens
             return null;
         }
 
+        /// <summary>
+        /// THE LABEL WALK, made once for a whole build instead of once per row.
+        ///
+        /// <see cref="LabelFor{TLabel}"/> answers one thing's label by walking the window's whole
+        /// pool, which made a build quadratic - every row on the map against every label the window
+        /// pools - and allocated a capturing delegate per call, two of them where the first pass
+        /// missed. The pool itself was already swept once per frame (<see cref="LabelSweep{T}"/>);
+        /// this is the MATCH memoised on the same terms, keyed on the swept ARRAY: the sweep builds a
+        /// fresh one every frame and hands the same one to every caller within a frame, so an
+        /// unchanged reference is proof that nothing has been re-swept since the index was filled.
+        ///
+        /// The two-pass rule is kept exactly. Pass one is the label bound to this very instance; pass
+        /// two, where the family has one, is a label bound to another instance carrying the same
+        /// identity - what a window that rebuilt its labels from a copy leaves behind. Each map keeps
+        /// the FIRST label in pool order that answers, which is what a walk stopping at its first hit
+        /// returned, and the whole first pass is exhausted before the second is consulted.
+        ///
+        /// The DRAWN-NESS POLICY is applied as the index is filled, so a culled label never enters it
+        /// - the same labels the walk skipped, at one test per label per frame rather than one per
+        /// label per row. A fill that throws leaves the index empty and every lookup answers null,
+        /// which is what the walk answered when it threw.
+        ///
+        /// Like <see cref="FrameSweep{T}"/> this holds game objects for the length of a frame and
+        /// needs no teardown: it dies with the assembly it lives in.
+        /// </summary>
+        private sealed class LabelIndex<TLabel, TEntity>
+            where TLabel : class
+            where TEntity : class
+        {
+            private readonly string _subject;
+
+            private readonly Func<TLabel, TEntity> _boundTo;
+
+            /// <summary>The identity the second pass matches on, or null for a family with no second
+            /// pass.</summary>
+            private readonly Func<TEntity, ulong> _identity;
+
+            /// <summary>The caller's drawn-ness policy, or null for "any bound label answers".
+            /// </summary>
+            private readonly Func<TLabel, bool> _drawn;
+
+            private readonly Dictionary<TEntity, TLabel> _bound = new Dictionary<TEntity, TLabel>();
+
+            private readonly Dictionary<ulong, TLabel> _named = new Dictionary<ulong, TLabel>();
+
+            private TLabel[] _pool;
+
+            public LabelIndex(
+                string subject,
+                Func<TLabel, TEntity> boundTo,
+                Func<TEntity, ulong> identity,
+                Func<TLabel, bool> drawn
+            )
+            {
+                _subject = subject;
+                _boundTo = boundTo;
+                _identity = identity;
+                _drawn = drawn;
+            }
+
+            /// <summary>The label standing for this thing, or null - including for a null thing, which
+            /// no caller on the map asks about and which a pool holding an unbound label would
+            /// otherwise answer with somebody else's widget.</summary>
+            public TLabel For(TEntity entity, TLabel[] labels)
+            {
+                Fill(labels);
+                TLabel hit;
+                if (entity == null)
+                {
+                    return null;
+                }
+
+                if (_bound.TryGetValue(entity, out hit))
+                {
+                    return hit;
+                }
+
+                return _identity != null && _named.TryGetValue(_identity(entity), out hit)
+                    ? hit
+                    : null;
+            }
+
+            private void Fill(TLabel[] labels)
+            {
+                if (ReferenceEquals(_pool, labels))
+                {
+                    return;
+                }
+
+                _pool = labels;
+                _bound.Clear();
+                _named.Clear();
+                try
+                {
+                    for (int i = 0; labels != null && i < labels.Length; i++)
+                    {
+                        TLabel label = labels[i];
+                        if (label == null || (_drawn != null && !_drawn(label)))
+                        {
+                            continue;
+                        }
+
+                        TEntity entity = _boundTo(label);
+                        if (entity == null || _bound.ContainsKey(entity))
+                        {
+                            continue;
+                        }
+
+                        _bound[entity] = label;
+                        if (_identity == null)
+                        {
+                            continue;
+                        }
+
+                        ulong named = _identity(entity);
+                        if (!_named.ContainsKey(named))
+                        {
+                            _named[named] = label;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _bound.Clear();
+                    _named.Clear();
+                    Log.Warn(_subject + ": matching a thing to its map label threw: " + e);
+                }
+            }
+        }
+
         /// <summary>The on-map label carrying this system's tooltip - matched by the node reference
         /// the label was bound to, with the entity's own identity as a fallback for the rare case the
         /// window rebuilt its labels from a copy rather than the same instance this stop is holding.
@@ -959,12 +1089,25 @@ namespace ES2Access.Screens
         /// bound label is this system's whether or not the camera has it in frame.</summary>
         private static StarSystemLabel LabelFor(StarSystemNode node, StarSystemLabel[] labels)
         {
-            return LabelFor(labels, l => ReferenceEquals(l.StarSystemNode, node), null)
-                ?? LabelFor(
-                    labels,
-                    l => l.StarSystemNode != null && l.StarSystemNode.GUID == node.GUID,
-                    null
-                );
+            return SystemLabelIndex.For(node, labels);
+        }
+
+        private static readonly LabelIndex<StarSystemLabel, StarSystemNode> SystemLabelIndex =
+            new LabelIndex<StarSystemLabel, StarSystemNode>(
+                "galaxy",
+                LabelledSystem,
+                SystemIdentity,
+                null
+            );
+
+        private static StarSystemNode LabelledSystem(StarSystemLabel label)
+        {
+            return label.StarSystemNode;
+        }
+
+        private static ulong SystemIdentity(StarSystemNode node)
+        {
+            return node.GUID;
         }
 
         /// <summary>Every label the map is currently drawing for a system - never held ACROSS frames,

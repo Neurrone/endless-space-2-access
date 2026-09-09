@@ -196,7 +196,7 @@ ES2Access/Screens/Galaxy/ScanLens.cs | 1 | || !AgeWidgets.Visible(bars.AgeTransf
 ES2Access/Screens/Galaxy/ScanLens.cs | 1 | || !AgeWidgets.Visible(panel.AgeTransform)
 
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | if (table == null || !AgeWidgets.Painted(table))
-ES2Access/Screens/Galaxy/ScanRows.cs | 1 | l => AgeWidgets.Visible(l.AgeTransform)
+ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return AgeWidgets.Visible(label.AgeTransform);
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return item != null && item.IsBound && AgeWidgets.Painted(widget) ? widget : null;
 ES2Access/Screens/Galaxy/ScanRows.cs | 1 | return rating == null || !AgeWidgets.Painted(rating.AgeTransform)
 

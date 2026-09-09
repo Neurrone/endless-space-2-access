@@ -845,11 +845,22 @@ namespace ES2Access.Screens
             // The drawn policy is VISIBILITY, and it is load-bearing here rather than tidy: this
             // window POOLS its labels and culls them by camera position, so a label the camera has
             // culled is still bound to whatever it last drew and would answer for the wrong star.
-            return LabelFor(
-                labels,
-                l => ReferenceEquals(l.GameNode, node),
-                l => AgeWidgets.Visible(l.AgeTransform)
-            );
+            return LensLabelIndex.For(node, labels);
+        }
+
+        private static readonly LabelIndex<ScanNodeLabel, GameNode> LensLabelIndex =
+            new LabelIndex<ScanNodeLabel, GameNode>("scan", LabelledNode, null, DrawnLensLabel);
+
+        private static GameNode LabelledNode(ScanNodeLabel label)
+        {
+            return label.GameNode;
+        }
+
+        private static bool DrawnLensLabel(ScanNodeLabel label)
+        {
+            // Different widget: the test decides which pooled label is the one standing over the star,
+            // not whether a node the tree declares has a widget of its own.
+            return AgeWidgets.Visible(label.AgeTransform);
         }
     }
 }
