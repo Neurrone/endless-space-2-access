@@ -596,29 +596,10 @@ namespace ES2Access.Screens
                 );
                 made.Scopes = ScannerScopes.Curiosity(
                     explorable,
-                    !explorable && LowExpeditionPower(refusals)
+                    !explorable && CuriosityExpeditions.LowExpeditionPower(refusals)
                 );
                 found.Add(made);
             }
-        }
-
-        /// <summary>Whether the game refused this curiosity for expedition power - the failure the
-        /// card turns into a padlock (<c>PlanetCuriosityItem.ShowLockIfNeeded</c> looks for exactly
-        /// these two flags).</summary>
-        private static bool LowExpeditionPower(List<FailureInfo> refusals)
-        {
-            for (int i = 0; i < refusals.Count; i++)
-            {
-                if (
-                    refusals[i].Flag == FailureFlags.EmpireExpeditionPowerTooLow
-                    || refusals[i].Flag == FailureFlags.FleetExpeditionPowerTooLow
-                )
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>The resources a world is sitting on, split the way the game splits them - by the

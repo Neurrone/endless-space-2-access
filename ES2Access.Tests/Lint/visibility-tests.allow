@@ -563,6 +563,8 @@ ES2Access/UI/CardActions.cs | 1 | ? widget != null && AgeWidgets.Visible(widget)
 
 ES2Access/UI/Cells.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
 
+ES2Access/UI/CuriosityExpeditions.cs | 1 | return item.Lock.Visible;
+
 ES2Access/UI/DiplomacyActions.cs | 1 | return item != null && AgeWidgets.Visible(item.AgeTransform);
 
 ES2Access/UI/DiscoveryCards.cs | 1 | if (items[i] != null && AgeWidgets.Visible(items[i]))

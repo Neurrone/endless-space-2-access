@@ -294,18 +294,44 @@ namespace ES2Access.UI
 
                 Cells.WireHintGesture(vtable, at);
 
-                // The colony card's curiosity: the game's own ALT-click queues the expedition at the
-                // FRONT of the system's queue, and the modified click's fall back cannot carry it -
-                // the chord holds Ctrl and Shift, and the game's handler reads Alt
-                // (<c>docs/interaction.md</c>). Asked of the WIDGET, so the galaxy's orbital card -
-                // where the same prefab means a fleet search with no queue behind it - is left alone.
-                PlanetCuriosityItem curiosity = CuriosityExpeditions.ColonyCuriosity(at);
-                if (curiosity != null && vtable.OnAltClick == null)
+                // A CURIOSITY, either card's: both of them hang the same prefab off the card, and
+                // both owe the padlock in words. What only ONE of them owes is below.
+                PlanetCuriosityItem curiosity = CuriosityExpeditions.Curiosity(at);
+                if (curiosity != null)
                 {
-                    PlanetCuriosityItem queueing = curiosity;
-                    AgeTransform icon = at;
-                    vtable.OnAltClick = () => CuriosityExpeditions.QueueFirst(icon, queueing);
-                    NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.AltClick);
+                    // THE PADLOCK, in words. A curiosity the game refuses because the expedition
+                    // power - the empire's, or the orbiting fleet's - is too low draws a lock over
+                    // its icon instead of the icon, and that is the one thing about the refusal a
+                    // mouse reads at a glance and the keyboard could not. Said as state, straight
+                    // after "unavailable" (owner ruling 2026-09-10); every other refusal, and an
+                    // offered curiosity, read exactly as before, because their reason is the
+                    // sentence the game wrote into the tooltip and the tooltip says it by its own
+                    // rule.
+                    PlanetCuriosityItem locked = curiosity;
+                    vtable.Announcements.Add(
+                        new NodeAnnouncement(
+                            () =>
+                                CuriosityExpeditions.LowExpeditionPower(locked)
+                                    ? ModStrings.Get(ModStrings.GalaxyScannerCuriositiesLowPower)
+                                    : null,
+                            live: true,
+                            kind: AnnouncementKinds.Enabled
+                        )
+                    );
+
+                    // The COLONY card's: the game's own ALT-click queues the expedition at the FRONT
+                    // of the system's queue, and the modified click's fall back cannot carry it -
+                    // the chord holds Ctrl and Shift, and the game's handler reads Alt
+                    // (<c>docs/interaction.md</c>). Asked of the WIDGET, so the galaxy's orbital
+                    // card - where the same prefab means a fleet search with no queue behind it -
+                    // is left alone.
+                    PlanetCuriosityItem queueing = CuriosityExpeditions.Colony(curiosity);
+                    if (queueing != null && vtable.OnAltClick == null)
+                    {
+                        AgeTransform icon = at;
+                        vtable.OnAltClick = () => CuriosityExpeditions.QueueFirst(icon, queueing);
+                        NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.AltClick);
+                    }
                 }
 
                 ScrollIntoView.Anchor(vtable, at);
