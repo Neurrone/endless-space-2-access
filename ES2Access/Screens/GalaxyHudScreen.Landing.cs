@@ -871,7 +871,7 @@ namespace ES2Access.Screens
                 {
                     if (ReferenceEquals(sites[i].Fleet, fleet))
                     {
-                        target = MapTarget.Point(Reveal(sites[i]), Berth(fleet), fleet);
+                        target = MapTarget.Point(Reveal(sites[i]), Anchor(fleet), fleet);
                         return true;
                     }
                 }
@@ -1077,7 +1077,7 @@ namespace ES2Access.Screens
             bool holding;
             FleetSite site = sites[Holding(sites, won, out holding)];
             settled &= holding;
-            return MapTarget.Point(Reveal(site), Berth(site.Fleet), site.Fleet);
+            return MapTarget.Point(Reveal(site), Anchor(site.Fleet), site.Fleet);
         }
 
         /// <summary>
@@ -1105,10 +1105,22 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Where the map draws a fleet: its berth in the system's docking slot while it is
+        /// <summary>Where the cell is SENT for a fleet: the fleet's own position in the game, which
+        /// for a docked fleet is its star's square.
+        ///
+        /// Not the berth the map draws it in: that is a decoration a couple of squares off the star,
+        /// and a cell sent there reads out empty sky while the tree row, the scanner and the square
+        /// itself all name the fleet at the star (owner ruling, 2026-09-10).</summary>
+        private static Vector3 Anchor(Fleet fleet)
+        {
+            return (Vector3)fleet.GalaxyPosition;
+        }
+
+        /// <summary>Where the map DRAWS a fleet: its berth in the system's docking slot while it is
         /// parked there, and its own position while it is out on a lane. The two are different questions
         /// because a parked fleet's position is the STAR's, and a request aimed at the berth is a
-        /// request for the fleet.</summary>
+        /// request for the fleet - which is the whole of what this answer is for, matching a point the
+        /// game named against the fleet that stands there.</summary>
         private static Vector3 Berth(Fleet fleet)
         {
             try
