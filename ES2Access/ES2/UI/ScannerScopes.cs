@@ -41,8 +41,14 @@ namespace ES2Access.ES2.UI
         /// the question a player asks when they are looking for someone to assimilate.</summary>
         public const int MinorFaction = 5;
 
+        /// <summary>A world the galaxy gave a name of its own - a faction's homeworld planet, the
+        /// Academy's, a quest's. Not a fact about who holds the place, which is why it is not laid
+        /// over the affiliation trio: it is a fact about the WORLD, and its results are worlds rather
+        /// than the systems every other column of this category holds.</summary>
+        public const int UniquePlanet = 6;
+
         /// <summary>A special node - a nebula, a black hole, an asteroid field.</summary>
-        public const int Special = 6;
+        public const int Special = 7;
 
         /// <summary>
         /// A curiosity's two questions beyond WHAT it is (owner ruling 2026-08-23), laid over the
@@ -78,9 +84,10 @@ namespace ES2Access.ES2.UI
         /// else (fleets, probes).</summary>
         public const int AffiliationWidth = 4;
 
-        /// <summary>How many the star systems have: the affiliation trio plus the three that ask a
-        /// different question about the same place.</summary>
-        public const int SystemWidth = 7;
+        /// <summary>How many the star systems have: the affiliation trio plus the four that ask a
+        /// different question about the same sky - two about the place, one about the worlds in it,
+        /// one about what the map draws instead of a star.</summary>
+        public const int SystemWidth = 8;
 
         /// <summary>How many a category has that is only ever asked "what is there" (quest markers,
         /// ally pins, obliterator missiles): one, which is "all".</summary>
@@ -169,6 +176,21 @@ namespace ES2Access.ES2.UI
             }
 
             return minor ? scopes | Bit(MinorFaction) : scopes;
+        }
+
+        /// <summary>
+        /// A world the galaxy named for itself, as a member of the star systems' taxonomy.
+        ///
+        /// It is in its own subcategory and in NOTHING else - not even in "all", which is the one
+        /// place this taxonomy departs from the rule that bit zero is set on everything. "All" is the
+        /// places the map is naming, one row per place, and a world is not a place in that sense: a
+        /// system with three named worlds in it would otherwise be four entries of a list a player
+        /// sweeps to count the stars. The subcategory answers a question about what is IN the systems,
+        /// so it is read there and nowhere else.
+        /// </summary>
+        public static int UniqueWorld()
+        {
+            return Bit(UniquePlanet);
         }
 
         /// <summary>One row of the counts table: how many of these things each subcategory holds,

@@ -701,6 +701,7 @@ namespace ES2Access.Core.Speech
             { GalaxyScannerProbesEnemy, "enemy" },
             { GalaxyScannerSystemsHomeworld, "homeworld" },
             { GalaxyScannerSystemsMinorFactions, "minor factions" },
+            { GalaxyScannerSystemsUnique, "unique planets" },
             { GalaxyScannerSystemsSpecial, "special" },
             { GalaxyScannerQuestMarkers, "Quest markers" },
             { GalaxyScannerQuestMarkersAll, "all" },

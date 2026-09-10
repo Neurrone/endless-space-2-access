@@ -256,10 +256,12 @@ belong in the files above.
   inspect-cell reading and the quest locate were all exercised by registering markers by hand,
   because no save reached carries a marker on any in-progress quest. A real free-floating marker on a fleet
   crossing a lane has never been seen — the open-space case was forced with a marker bound to a
-  Ship, and the en-route-fleet fallback (`docs/galaxy-map.md`) has never been exercised at all.
+  Ship, and the en-route-fleet host only on a fleet ordered down a lane by hand.
 - The scanner's Unexplored category listing LOCATED-and-unnamed stars, and the located row a quest
   pin forces at a star below Located, were proved by lowering two nodes' exploration by hand: no
-  save reached has ever carried a Located-and-not-Perceived system.
+  save reached has ever carried a Located-and-not-Perceived system. The survey gate on the scanner's
+  unique-planets column, and a quest pin on a world whose system is not surveyed, are proved the
+  same way only: every unique world a save reached shows sits in a surveyed system.
 - Ally pins and obliterator missiles are label-free too (2026-08-16, owner-ruled): enumerated from
   the simulation under the game's own knowledge gates, every word recomposed from the entity, and
   the pin's dismiss routed through the game's own two orders instead of its button. Nothing about

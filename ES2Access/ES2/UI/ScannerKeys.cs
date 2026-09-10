@@ -67,7 +67,17 @@ namespace ES2Access.ES2.UI
         /// their row is kinds.</summary>
         public static readonly string[][] Subcategories = new string[][]
         {
-            new string[] { All, "friendly", "neutral", "enemy", "homeworld", "minor", "special" },
+            new string[]
+            {
+                All,
+                "friendly",
+                "neutral",
+                "enemy",
+                "homeworld",
+                "minor",
+                "unique",
+                "special",
+            },
             new string[] { "unoccupied", "occupied" },
             new string[] { All },
             new string[] { All },

@@ -346,6 +346,9 @@ namespace ES2Access.Screens
         ///
         /// What a special node is NOT is owned, so it takes no place in the affiliation trio and
         /// belongs to "special" alone (<see cref="ScannerScopes.System"/>).
+        ///
+        /// This is the whole of the category except its one column of WORLDS, which the planet walk
+        /// fills (<see cref="UniqueWorld"/>) and which no row here is in.
         /// </summary>
         private static void Systems(
             List<Found> found,
@@ -389,11 +392,13 @@ namespace ES2Access.Screens
 
         /// <summary>
         /// One walk of every planet the map is showing, filling the five categories that are questions
-        /// about worlds: what could be settled, and what has been found on them.
+        /// about worlds - what could be settled, and what has been found on them - and the one column
+        /// of the star systems that asks about a world rather than a place
+        /// (<see cref="UniqueWorld"/>).
         ///
-        /// ONE walk, not five. The five ask the same two questions of the same planets - is the player
-        /// allowed to know what is on this world, and what is on it - and walking the galaxy five
-        /// times over would be five chances for the five to disagree about which planets exist.
+        /// ONE walk, not six. They ask the same two questions of the same planets - is the player
+        /// allowed to know what is on this world, and what is on it - and walking the galaxy six
+        /// times over would be six chances for them to disagree about which planets exist.
         ///
         /// THE GATES ARE THE DRAWN CARD'S OWN. A planet is here at all only where the tree declares a
         /// node for it (<see cref="GalaxyHudScreen.PlanetsDeclared"/>: the game is showing this empire
@@ -408,6 +413,7 @@ namespace ES2Access.Screens
         /// </summary>
         private static void Worlds(List<Found>[] world, Empire empire)
         {
+            List<Found> unique = world[CategorySystems];
             List<Found> colonizable = world[CategoryColonizable];
             List<Found> anomalies = world[CategoryAnomalies];
             List<Found> curiosities = world[CategoryCuriosities];
@@ -439,11 +445,53 @@ namespace ES2Access.Screens
                         continue;
                     }
 
+                    UniqueWorld(unique, node, planet, i, name);
                     Anomalies(anomalies, node, planet, i, name, titles);
                     Deposits(luxury, strategic, node, planet, i, name, titles);
                     Colonizable(colonizable, node, planet, i, name, empire, able, titles);
                 }
             }
+        }
+
+        /// <summary>
+        /// A world the galaxy named for itself - a major faction's homeworld planet, the Academy's,
+        /// a quest's - as a result of the star systems' own "unique planets" column.
+        ///
+        /// The game tags them and the mod does not list them: a planet is unique when a descriptor of
+        /// type <c>UniquePlanet</c> gave it a name (<c>Planet.IsUnique</c>), which is the same fact
+        /// that makes <c>Planet.LocalizedName</c> answer with that name instead of the star's and a
+        /// numeral. The gate is the SURVEY the caller has already asked (<see cref="Worlds"/>): the
+        /// identity of a world is on the orbital card, not on the map, so a name here below that
+        /// threshold would be the fog handing over which star the enemy capital is on.
+        ///
+        /// The result is the WORLD - it lands on the planet's row like every other planet result -
+        /// and it is in this column alone, never in the category's "all"
+        /// (<see cref="ScannerScopes.UniqueWorld"/>).
+        /// </summary>
+        private static void UniqueWorld(
+            List<Found> found,
+            StarSystemNode node,
+            Planet planet,
+            int orbit,
+            string name
+        )
+        {
+            if (!planet.IsUnique)
+            {
+                return;
+            }
+
+            Found made = Make(
+                "planet/" + planet.GUID + "/unique",
+                name,
+                node.GalaxyPosition,
+                ScannerScopes.UniqueWorld(),
+                node,
+                null
+            );
+            made.Planet = planet;
+            made.Orbit = orbit;
+            found.Add(made);
         }
 
         /// <summary>What has been found on a world, one entry per KIND of anomaly - named by the

@@ -1105,6 +1105,7 @@ namespace ES2Access.Screens
                 ModStrings.GalaxyScannerSystemsEnemy,
                 ModStrings.GalaxyScannerSystemsHomeworld,
                 ModStrings.GalaxyScannerSystemsMinorFactions,
+                ModStrings.GalaxyScannerSystemsUnique,
                 ModStrings.GalaxyScannerSystemsSpecial,
             },
             new string[]

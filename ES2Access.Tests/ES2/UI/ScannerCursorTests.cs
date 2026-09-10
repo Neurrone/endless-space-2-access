@@ -345,9 +345,11 @@ namespace ES2Access.Tests.ES2.UI
 
         // ---- the taxonomy the galaxy grew into: rows of DIFFERENT widths ----
         //
-        // Systems have SEVEN subcategories (the affiliation trio plus homeworld, minor factions and
-        // special), fleets and probes four, and the three that are only ever asked "what is there" -
-        // quest markers, ally pins, obliterator missiles - have one apiece.
+        // Systems have EIGHT subcategories (the affiliation trio plus homeworld, minor factions,
+        // unique planets and special), fleets and probes four, and the three that are only ever asked
+        // "what is there" - quest markers, ally pins, obliterator missiles - have one apiece. This
+        // galaxy holds no world the game named for itself, so that column is empty in every case
+        // below and the cycle steps over it exactly as it steps over an empty "enemy".
 
         private static int[][] Galaxy(
             int markers,
@@ -360,7 +362,7 @@ namespace ES2Access.Tests.ES2.UI
         {
             return new int[][]
             {
-                new int[] { 13, 2, 10, 0, homeworlds, minors, specials },
+                new int[] { 13, 2, 10, 0, homeworlds, minors, 0, specials },
                 new int[] { 6, 6, 0, 0 },
                 new int[] { 1, 1, 0, 0 },
                 new int[] { markers },
@@ -377,7 +379,7 @@ namespace ES2Access.Tests.ES2.UI
             cursor.Arm();
 
             // all -> friendly -> neutral -> (enemy is empty, skipped) -> homeworld -> minor factions
-            // -> special -> all
+            // -> (unique planets is empty, skipped) -> special -> all
             Assert.Equal(ScannerAnswer.Scope, cursor.CycleSubcategory(1, counts));
             Assert.Equal(ScannerScopes.Friendly, cursor.Subcategory);
             cursor.CycleSubcategory(1, counts);

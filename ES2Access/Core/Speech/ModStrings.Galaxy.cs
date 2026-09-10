@@ -530,13 +530,16 @@
         public const string GalaxyScannerProbesNeutral = "galaxy.scanner.probes-neutral";
         public const string GalaxyScannerProbesEnemy = "galaxy.scanner.probes-enemy";
 
-        /// <summary>The three subcategories the star systems have that the affiliation trio cannot
+        /// <summary>The four subcategories the star systems have that the affiliation trio cannot
         /// express: an empire's capital, which is a fact about a system as well as about who holds it;
-        /// the systems a minor faction lives on, which are neutral AND findable as theirs; and the
-        /// phenomena the map draws among the stars, which nobody holds at all.</summary>
+        /// the systems a minor faction lives on, which are neutral AND findable as theirs; the worlds
+        /// the galaxy gave names of their own, which are the one column of this category whose rows
+        /// are worlds rather than places; and the phenomena the map draws among the stars, which
+        /// nobody holds at all.</summary>
         public const string GalaxyScannerSystemsHomeworld = "galaxy.scanner.systems-homeworld";
         public const string GalaxyScannerSystemsMinorFactions =
             "galaxy.scanner.systems-minor-factions";
+        public const string GalaxyScannerSystemsUnique = "galaxy.scanner.systems-unique";
         public const string GalaxyScannerSystemsSpecial = "galaxy.scanner.systems-special";
 
         /// <summary>The three categories that are only ever asked "what is there": each has a single

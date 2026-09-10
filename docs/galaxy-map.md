@@ -249,6 +249,18 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   2026-09-10): ONE place phrase for a world, used by every scanner category that names one and by
   the quest pins - the planet's name, and the system after it only where the name does not already
   begin with it (`ES2Access/UI/PlanetPlace.cs`).
+- **A UNIQUE world is one the galaxy tagged, and the tag is what names it.** A
+  `SimulationDescriptor` of type `UniquePlanet` sets `Planet.UniquePlanetName`
+  (`Planet.AddDescriptor` :635-646), which is both what `IsUnique` answers and what
+  `LocalizedName` says instead of "&lt;star&gt; &lt;numeral&gt;"; the ~25 of them
+  (`Public/Simulation/SimulationDescriptors[UniquePlanet*].xml`) are every major faction's homeworld
+  planet, the Academy's and the quest worlds. **Mod policy** (owner ruling 2026-09-10): they are a
+  subcategory of the scanner's SYSTEMS category, gated like the orbital card's own contents - the
+  system perceived, its planets declared, and the system SURVEYED, since a world's identity is on
+  the card and not on the map - and their results are WORLDS, landing on the planet's row. They are
+  in that column alone and never in the category's "all", which stays one row per place a player
+  sweeping for stars can count. An enemy capital's homeworld planet is in the list once the survey
+  shows it, and that is intended.
 - **A marker is a CHILD OF THE THING IT MARKS, not of the star it happens to stand over** (owner
   ruling 2026-09-10): under the world's row for a planet target, under the world the curiosity sits on
   for a curiosity target, under the fleet's own row for a fleet target, under the star's row for a node
@@ -256,10 +268,13 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   row says the same place phrase the scanner result does, so the two cannot describe one pin
   differently. Where the host has no row this build - the bands hide the planets and the fleets at
   their own distances - the pin falls to the nearest thing that does have one (the star, else the open
-  sky) and is worded at that level, never leaking a name the map is withholding. Known gap: a fleet
-  UNDER WAY on a lane has a row under the end it is arriving at, and its pin still takes the open-sky
-  row - the tree cannot answer "does this fleet have a row" for a mover without walking every system's
-  lanes, which the per-frame build may not do.
+  sky) and is worded at that level, never leaking a name the map is withholding. A fleet UNDER WAY is
+  at no star at all, and its pin still hangs under the fleet: the row's host is the end the fleet is
+  ARRIVING at, which is the fleet's own leg goal and the same fact the row's key is built from - one
+  lookup per marked fleet, never a walk of the lanes (owner ruling 2026-09-10). What the pin SAYS,
+  though, follows the name rather than the host (same ruling): a pin on a world keeps the world's
+  words wherever the band happens to hang its row, and falls back to the star only below the SURVEY,
+  where the card itself has no name for the world.
 - **Every star the map draws and refuses to name is a way out, not only the lanes** (owner ruling
   2026-09-10): a `Located` and not `Perceived` system is a result of the scanner's Unexplored category
   as well as the "Unexplored system" row it already had, landing on that row. A star below `Located` is

@@ -30,6 +30,24 @@ namespace ES2Access.Tests.ES2.UI
         }
 
         [Fact]
+        public void AUniqueWorldIsInItsOwnColumnAndNotInAll()
+        {
+            int scopes = ScannerScopes.UniqueWorld();
+            Assert.True(ScannerScopes.Holds(scopes, ScannerScopes.UniquePlanet));
+            // "All" is the places the map is naming, one row per place. A world is not one of those,
+            // so the column that holds the worlds is the only one it is in - and a system with three
+            // named worlds does not become four entries of the list a player counts the stars in.
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.All));
+            Assert.False(ScannerScopes.Holds(scopes, ScannerScopes.Special));
+            Assert.False(
+                ScannerScopes.Holds(
+                    ScannerScopes.System(ScannerScopes.Neutral, false, false, false),
+                    ScannerScopes.UniquePlanet
+                )
+            );
+        }
+
+        [Fact]
         public void ASpecialNodeIsSpecialAndNothingElse()
         {
             int scopes = ScannerScopes.System(ScannerScopes.Neutral, true, false, false);
