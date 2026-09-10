@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ES2Access.Core.Speech;
@@ -24,12 +24,13 @@ namespace ES2Access.UI
     /// compares exactly that).
     ///
     /// One enumeration, because four surfaces used to walk it and they could disagree: the line a
-    /// system's review buffer says, the marker's own node under that system, the top-level row an
-    /// open-space marker gets, the scanner's Quest markers category, and the inspect cell's reading.
-    /// A marker is placed on a THING, not on a place, so where it STANDS is that thing's own node -
-    /// a planet's system, a curiosity's system, the node a fleet is standing at - and a marker on a
-    /// fleet in mid-lane stands at no node at all, which is what <see cref="Marker.Node"/> being
-    /// invalid means.
+    /// system's review buffer says, the marker's own node under the thing it marks, the top-level row
+    /// an open-space marker gets, the scanner's Quest markers category, and the inspect cell's
+    /// reading. A marker is placed on a THING, not on a place, and the thing is kept
+    /// (<see cref="Resolve"/>) rather than folded down to the star it stands over: where its row hangs
+    /// and what its name says are both questions about the world, the curiosity, the fleet or the star
+    /// it was planted on. A marker on a fleet in mid-lane stands at no star at all, which is what
+    /// <see cref="Marker.System"/> being null means.
     /// </summary>
     internal static class QuestMarkers
     {
@@ -52,9 +53,30 @@ namespace ES2Access.UI
             /// <summary>Where the pin stands on the map.</summary>
             public GalaxyPosition At;
 
-            /// <summary>The node it stands at, or <c>NodePosition.Invalid</c> for one planted out in
-            /// the open (a fleet crossing a lane).</summary>
-            public NodePosition Node;
+            /// <summary>The star it stands at, or null for one planted out in the open (a fleet
+            /// crossing a lane).</summary>
+            public StarSystemNode System;
+
+            /// <summary>Whether the map is NAMING that star. False for a place the picture draws
+            /// without naming, and for one it draws nothing at all - both of which are said in the
+            /// mod's own unexplored words rather than by a name the player has never been shown.
+            /// </summary>
+            public bool Named;
+
+            /// <summary>The world it stands on - the planet it is planted on, or the world a
+            /// curiosity sits on - or null.</summary>
+            public Planet Planet;
+
+            /// <summary>Whether what it is planted on is a curiosity, which is a thing on a world
+            /// rather than the world itself.</summary>
+            public bool OnCuriosity;
+
+            /// <summary>The fleet it is planted on, or null.</summary>
+            public Fleet Fleet;
+
+            /// <summary>The empire the walk was made for, which is whose map every name here is
+            /// read off.</summary>
+            public Empire Empire;
 
             /// <summary>The pin itself, for a caller that needs to tell two markers of one quest
             /// apart.</summary>
@@ -130,18 +152,18 @@ namespace ES2Access.UI
                             }
                         }
 
-                        found.Add(
-                            new Marker
-                            {
-                                Quest = quest,
-                                Step = step,
-                                Title = title,
-                                Pinned = ReferenceEquals(quest, pinned),
-                                At = pin.GalaxyPosition,
-                                Node = NodeOf(pin),
-                                Pin = pin,
-                            }
-                        );
+                        Marker made = new Marker
+                        {
+                            Quest = quest,
+                            Step = step,
+                            Title = title,
+                            Pinned = ReferenceEquals(quest, pinned),
+                            At = pin.GalaxyPosition,
+                            Pin = pin,
+                            Empire = empire,
+                        };
+                        Resolve(pin, empire, ref made);
+                        found.Add(made);
                     }
                 }
             }
@@ -162,11 +184,82 @@ namespace ES2Access.UI
 
         private static int _frame = -1;
 
-        /// <summary>What a marker is called: the quest's title in the tracked or the ordinary form -
-        /// the map's own distinction, and the phrase a system's review buffer has always used.
+        /// <summary>
+        /// What a marker is called: the quest's title in the tracked or the ordinary form - the map's
+        /// own distinction - and then WHERE the pin is planted, in the same words the tree row and the
+        /// scanner result both say (owner ruling 2026-09-10), so the two cannot describe one pin
+        /// differently.
+        ///
+        /// The place is the thing the pin is ON, not the sky it hangs over: a world, a curiosity's
+        /// world, a fleet and the star it is parked at, or the star itself. A star the map draws
+        /// without naming - and one it draws nothing at all for, which a pin still gives the position
+        /// of - is the mod's unexplored words: the simulation knows the name and the picture is
+        /// withholding it. A pin on nothing the tree can place says the quest and nothing else.
         /// </summary>
         public static string Name(Marker marker)
         {
+            if (marker.Fleet != null)
+            {
+                string fleet = AgeText.Clean(marker.Fleet.LocalizedName);
+                return marker.Named
+                    ? ModStrings.Format(
+                        marker.Pinned
+                            ? ModStrings.GalaxyQuestMarkerOnFleetAtPinned
+                            : ModStrings.GalaxyQuestMarkerOnFleetAt,
+                        marker.Title,
+                        fleet,
+                        AgeText.Clean(marker.System.LocalizedName)
+                    )
+                    : ModStrings.Format(
+                        marker.Pinned
+                            ? ModStrings.GalaxyQuestMarkerOnFleetPinned
+                            : ModStrings.GalaxyQuestMarkerOnFleet,
+                        marker.Title,
+                        fleet
+                    );
+            }
+
+            if (marker.Planet != null && marker.Named)
+            {
+                string place = PlanetPlace.Of(marker.System, marker.Planet, marker.Empire);
+                if (!string.IsNullOrEmpty(place))
+                {
+                    return ModStrings.Format(
+                        marker.OnCuriosity
+                            ? (
+                                marker.Pinned
+                                    ? ModStrings.GalaxyQuestMarkerCuriosityPinned
+                                    : ModStrings.GalaxyQuestMarkerCuriosity
+                            )
+                            : (
+                                marker.Pinned
+                                    ? ModStrings.GalaxyQuestMarkerOnPlanetPinned
+                                    : ModStrings.GalaxyQuestMarkerOnPlanet
+                            ),
+                        marker.Title,
+                        place
+                    );
+                }
+            }
+
+            if (marker.System != null)
+            {
+                return marker.Named
+                    ? ModStrings.Format(
+                        marker.Pinned
+                            ? ModStrings.GalaxyQuestMarkerAtSystemPinned
+                            : ModStrings.GalaxyQuestMarkerAtSystem,
+                        marker.Title,
+                        AgeText.Clean(marker.System.LocalizedName)
+                    )
+                    : ModStrings.Format(
+                        marker.Pinned
+                            ? ModStrings.GalaxyQuestMarkerUnexploredPinned
+                            : ModStrings.GalaxyQuestMarkerUnexplored,
+                        marker.Title
+                    );
+            }
+
             return ModStrings.Format(
                 marker.Pinned
                     ? ModStrings.GalaxySystemQuestMarkerPinned
@@ -219,41 +312,53 @@ namespace ES2Access.UI
             return false;
         }
 
-        /// <summary>Where a marker stands, as the node it is at. The game resolves a marker's position
-        /// through the thing it is bound to (<c>QuestMarker.GalaxyPosition</c>), and the same five
-        /// kinds of thing answer here - a node, a planet's system, a curiosity's system, a colony's
-        /// system, the node a fleet is standing at - because a position on the map is not a place in
-        /// the tree. Invalid for anything else, which includes a fleet in mid-lane.</summary>
-        private static NodePosition NodeOf(QuestMarker marker)
+        /// <summary>
+        /// What a marker is planted ON, which is where its row hangs and what its name says.
+        ///
+        /// The game resolves a marker's position through the thing it is bound to
+        /// (<c>QuestMarker.GalaxyPosition</c>), and the same five kinds of thing answer here - a node,
+        /// a planet, a curiosity, a colony and a fleet. Each of them is a different PLACE in the tree
+        /// though they all stand at one star (owner ruling 2026-09-10), so the thing itself is kept
+        /// rather than folded down to the star: a pin on a world hangs under that world's row, one on
+        /// a curiosity under the world the curiosity sits on, one on a fleet under that fleet's row.
+        /// A fleet crossing a lane stands at no star at all, which is what <see cref="Marker.System"/>
+        /// being null means.
+        /// </summary>
+        private static void Resolve(QuestMarker marker, Empire empire, ref Marker made)
         {
             IGameEntity target = marker == null ? null : marker.Target;
-            GameNode node = target as GameNode;
-            if (node != null)
-            {
-                return node.NodePosition;
-            }
+            StarSystemNode system = target as StarSystemNode;
 
             Planet planet = target as Planet;
-            if (planet != null && planet.StarSystemNode != null)
+            if (planet != null)
             {
-                return planet.StarSystemNode.NodePosition;
+                made.Planet = planet;
+                system = planet.StarSystemNode;
             }
 
             Curiosity curiosity = target as Curiosity;
-            if (curiosity != null && curiosity.CuriosityController != null)
+            if (curiosity != null)
             {
-                StarSystemNode at = curiosity.CuriosityController.GetNode();
-                return at == null ? NodePosition.Invalid : at.NodePosition;
+                made.OnCuriosity = true;
+                made.Planet = curiosity.CuriosityController as Planet;
+                system = curiosity.GetNode();
             }
 
             ColonizedStarSystem colony = target as ColonizedStarSystem;
-            if (colony != null && colony.Node != null)
+            if (colony != null)
             {
-                return colony.Node.NodePosition;
+                system = colony.Node as StarSystemNode;
             }
 
             Fleet fleet = target as Fleet;
-            return fleet == null ? NodePosition.Invalid : fleet.NodePosition;
+            if (fleet != null)
+            {
+                made.Fleet = fleet;
+                system = FleetOrders.Orbit(fleet) as StarSystemNode;
+            }
+
+            made.System = system;
+            made.Named = system != null && MapVisibility.Perceived(system, empire);
         }
-    }
+        }
 }

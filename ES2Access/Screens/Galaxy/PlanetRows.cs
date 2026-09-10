@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
@@ -59,6 +59,10 @@ namespace ES2Access.Screens
                     // across a rebuild. There is no second copy to collide with any more: a lane leading
                     // here rebases onto this system rather than re-declaring its insides.
                     ControlId id = ControlId.For(planet, key);
+                    // A quest pin planted on the world - or on a curiosity standing on it - is a child
+                    // of the world (owner ruling 2026-09-10), so it is one more reason for the row to
+                    // be a level of the tree rather than a leaf.
+                    bool pinned = MarksPlanet(planet, looking);
                     if (card != null)
                     {
                         // The card carries a row of buttons the game draws under it, so where the game
@@ -74,7 +78,7 @@ namespace ES2Access.Screens
                             looking
                         );
                         NodeVtable readout = OrbitalReadout(card, system, looking);
-                        if (actions.Count == 0 && dossiers.Count == 0)
+                        if (actions.Count == 0 && dossiers.Count == 0 && !pinned)
                         {
                             // Synthetic: an orbital is read out of the system's model; the card is only what the reading came from.
                             builder.AddItem(Nodes.Synthetic(id, readout));
@@ -89,6 +93,7 @@ namespace ES2Access.Screens
                             object outerRegion = TooltipChildren.Actions(builder, key);
                             CardActions.Emit(builder, key, actions);
                             TooltipChildren.Emit(builder, key, dossiers, outerRegion);
+                            AddPlanetMarkers(builder, key, planet, looking);
                         }
 
                         builder.EndGroup();
@@ -110,7 +115,7 @@ namespace ES2Access.Screens
                     AgeTransform circle = Circle(table, i);
                     if (ZoomBands.Fidelity(BandKind.Planets) == BandFidelity.Dot)
                     {
-                        AddPlanetDot(builder, id, system, planet, looking, circle);
+                        AddPlanetDot(builder, id, key, system, planet, looking, circle, pinned);
                         continue;
                     }
 
@@ -148,7 +153,7 @@ namespace ES2Access.Screens
                         null,
                         looking
                     );
-                    if (pages.Count == 0)
+                    if (pages.Count == 0 && !pinned)
                     {
                         // Synthetic: a page of a system's data sheet is a level the mod invented over the game's own panels.
                         builder.AddItem(Nodes.Synthetic(id, vtable));
@@ -166,6 +171,7 @@ namespace ES2Access.Screens
                             pages,
                             TooltipChildren.Actions(builder, key)
                         );
+                        AddPlanetMarkers(builder, key, planet, looking);
                     }
 
                     builder.EndGroup();
@@ -199,10 +205,12 @@ namespace ES2Access.Screens
         private static void AddPlanetDot(
             GraphBuilder builder,
             ControlId id,
+            string key,
             StarSystemNode system,
             Planet planet,
             Empire empire,
-            AgeTransform circle
+            AgeTransform circle,
+            bool pinned
         )
         {
             AgeTooltip drawn = AgeWidgets.Raw(circle);
@@ -251,8 +259,24 @@ namespace ES2Access.Screens
                 AgeWidgets.PointAt(vtable, circle);
             }
 
-            // Synthetic: a dot in a system's label is the map's drawing of a world, not a control.
-            builder.AddItem(Nodes.Synthetic(id, vtable));
+            if (!pinned)
+            {
+                // Synthetic: a dot in a system's label is the map's drawing of a world, not a control.
+                builder.AddItem(Nodes.Synthetic(id, vtable));
+                return;
+            }
+
+            // A quest pin planted on the world hangs under it even here, where the picture is drawing
+            // the world as one coloured circle: the pin is drawn at every distance.
+            vtable.ControlType = ControlTypes.Group;
+            // Synthetic for the same reason as the leaf above.
+            builder.BeginGroup(Nodes.Synthetic(id, vtable));
+            if (builder.IsExpanded(id))
+            {
+                AddPlanetMarkers(builder, key, planet, empire);
+            }
+
+            builder.EndGroup();
         }
 
         /// <summary>The mark the circle wears for a world nothing else in the galaxy is like
@@ -1148,7 +1172,14 @@ namespace ES2Access.Screens
         {
             return orbit < 0 || orbit >= node.Planets.Count
                 ? null
-                : ControlId.For(node.Planets[orbit], SystemKey(node) + "/planet/" + orbit);
+                : ControlId.For(node.Planets[orbit], PlanetKey(node, orbit));
+        }
+
+        /// <summary>The key that id is built from, which anything hanging UNDER a world needs as well -
+        /// a quest pin planted on it (<see cref="GalaxyHudScreen.AddPlanetMarkers"/>).</summary>
+        internal static string PlanetKey(StarSystemNode node, int orbit)
+        {
+            return SystemKey(node) + "/planet/" + orbit;
         }
     }
 }

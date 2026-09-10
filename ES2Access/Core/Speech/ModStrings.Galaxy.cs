@@ -1,4 +1,4 @@
-namespace ES2Access.Core.Speech
+﻿namespace ES2Access.Core.Speech
 {
     /// <summary>
     /// The GALAXY MAP's own words: what the map draws around a star, which way a
@@ -284,6 +284,35 @@ namespace ES2Access.Core.Speech
         // the map's own brightening says.
         public const string GalaxySystemQuestMarker = "galaxy.system-quest-marker";
         public const string GalaxySystemQuestMarkerPinned = "galaxy.system-quest-marker-pinned";
+
+        // Where the pin is planted, said after the quest's title so a tree row and a scanner result
+        // describe one pin in the same words (owner ruling 2026-09-10). One complete phrase per kind
+        // of place rather than a place fragment glued onto a stem: "at", "on" and "on fleet ... at"
+        // each govern their noun differently in the languages the game ships, and the pinned form is
+        // a second sentence rather than a word swapped into the first.
+        public const string GalaxyQuestMarkerAtSystem = "galaxy.quest-marker-at-system";
+        public const string GalaxyQuestMarkerAtSystemPinned =
+            "galaxy.quest-marker-at-system-pinned";
+        public const string GalaxyQuestMarkerOnPlanet = "galaxy.quest-marker-on-planet";
+        public const string GalaxyQuestMarkerOnPlanetPinned =
+            "galaxy.quest-marker-on-planet-pinned";
+        public const string GalaxyQuestMarkerCuriosity = "galaxy.quest-marker-curiosity";
+        public const string GalaxyQuestMarkerCuriosityPinned =
+            "galaxy.quest-marker-curiosity-pinned";
+        public const string GalaxyQuestMarkerOnFleetAt = "galaxy.quest-marker-on-fleet-at";
+        public const string GalaxyQuestMarkerOnFleetAtPinned =
+            "galaxy.quest-marker-on-fleet-at-pinned";
+        public const string GalaxyQuestMarkerOnFleet = "galaxy.quest-marker-on-fleet";
+        public const string GalaxyQuestMarkerOnFleetPinned = "galaxy.quest-marker-on-fleet-pinned";
+        public const string GalaxyQuestMarkerUnexplored = "galaxy.quest-marker-unexplored";
+        public const string GalaxyQuestMarkerUnexploredPinned =
+            "galaxy.quest-marker-unexplored-pinned";
+
+        // A world and the sky it is in, as ONE phrase every surface that names a planet uses. The
+        // system half is only ever filled where the world's own name does not already carry it
+        // (<see cref="ES2Access.UI.PlanetPlace"/>), so this is the two-name form and not a template
+        // with an optional half.
+        public const string GalaxyPlanetPlace = "galaxy.planet-place";
 
         // How far a colony's influence reaches, and which way it is going next turn. The map draws the
         // reach as a disk and the change as a second, fainter edge outside it, and writes no number on

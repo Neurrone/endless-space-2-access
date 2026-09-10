@@ -237,9 +237,35 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   entity repository; `QuestMarker.Load()` (:136-151) is what fills its `Target`. A node, a planet's
   system, a curiosity's system, a colony's system and the node a fleet is standing at all answer with
   a `NodePosition`; anything else - a fleet in mid-lane included - has none, which is what makes a
-  marker "out in the open". `QuestMarker.GUID` is its own identity, which is how two markers of two
-  quests at one star stay apart. Registering one by hand (`IQuestManagementService.Register` after
-  `Load()`) is the only way to see any of this where a galaxy carries no markers.
+  marker "out in the open". A curiosity's own place is `CuriosityController`, which is either the
+  `Planet` it sits on or the `StarSystemNode` (`Curiosity.GetNode()` :142-156). `QuestMarker.GUID` is
+  its own identity, which is how two markers of two quests at one star stay apart. Registering one by
+  hand (`IQuestManagementService.Register` after `Load()`) is the only way to see any of this where a
+  galaxy carries no markers.
+- **A world is named after its star unless somebody renamed it or the galaxy made it unique.**
+  `Planet.LocalizedName` (:208-227) is the unique planet's own gui element, else `UserDefinedName`,
+  else "&lt;system&gt; &lt;numeral&gt;". So saying the system after every planet name would repeat the star on
+  the ordinary case and drop it on exactly the two that need it. **Mod policy** (owner ruling
+  2026-09-10): ONE place phrase for a world, used by every scanner category that names one and by
+  the quest pins - the planet's name, and the system after it only where the name does not already
+  begin with it (`ES2Access/UI/PlanetPlace.cs`).
+- **A marker is a CHILD OF THE THING IT MARKS, not of the star it happens to stand over** (owner
+  ruling 2026-09-10): under the world's row for a planet target, under the world the curiosity sits on
+  for a curiosity target, under the fleet's own row for a fleet target, under the star's row for a node
+  or colony target. The top-level open-sky row is left for a pin whose target has no row at all. The
+  row says the same place phrase the scanner result does, so the two cannot describe one pin
+  differently. Where the host has no row this build - the bands hide the planets and the fleets at
+  their own distances - the pin falls to the nearest thing that does have one (the star, else the open
+  sky) and is worded at that level, never leaking a name the map is withholding. Known gap: a fleet
+  UNDER WAY on a lane has a row under the end it is arriving at, and its pin still takes the open-sky
+  row - the tree cannot answer "does this fleet have a row" for a mover without walking every system's
+  lanes, which the per-frame build may not do.
+- **Every star the map draws and refuses to name is a way out, not only the lanes** (owner ruling
+  2026-09-10): a `Located` and not `Perceived` system is a result of the scanner's Unexplored category
+  as well as the "Unexplored system" row it already had, landing on that row. A star below `Located` is
+  drawn nowhere and is in neither - EXCEPT where a quest pin stands over it, which gives its position
+  away: that node is folded into the located places for the build, gets the ordinary located row, and
+  carries the pin. Its real name is never spoken and never indexed at either.
 
 ## Lanes, lines and the map's own drawing
 

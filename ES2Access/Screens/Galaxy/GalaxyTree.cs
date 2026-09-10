@@ -528,6 +528,7 @@ namespace ES2Access.Screens
                     }
                 }
 
+                MarkedPlaces(empire);
                 Order(GalaxyCoordinates.Origin());
                 FreeMovingAdrift(_systems, _adrift);
                 _adrift.Sort(FleetReadingOrder);
@@ -536,6 +537,10 @@ namespace ES2Access.Screens
                 {
                     _adrift.Clear();
                 }
+
+                // After the lists and after the fleets: where a pin hangs is a question about which
+                // of them holds the thing it is planted on (<see cref="MarkerHomes"/>).
+                MarkerHomes(empire);
 
                 // Gathered whatever the band is: the lists are what the inspect cell reads a square's
                 // contents out of as well, and the cell operates below the band the open-space ROWS

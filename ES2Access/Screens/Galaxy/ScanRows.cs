@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
@@ -748,13 +748,16 @@ namespace ES2Access.Screens
             {
                 for (int i = 0; i < node.Planets.Count; i++)
                 {
+                    string key = place + "/planet/" + i;
                     AddPlanetDot(
                         builder,
-                        ControlId.For(node.Planets[i], place + "/planet/" + i),
+                        ControlId.For(node.Planets[i], key),
+                        key,
                         node,
                         node.Planets[i],
                         empire,
-                        ScanCircle(label, i)
+                        ScanCircle(label, i),
+                        false
                     );
                 }
             }

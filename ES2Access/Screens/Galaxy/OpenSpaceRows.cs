@@ -26,11 +26,12 @@ namespace ES2Access.Screens
         /// The markers standing at one system, as lines for its review buffer - which quests have a
         /// pin here and which of them the player is tracking.
         ///
-        /// The same list its own child nodes are built from (<see cref="AddQuestMarkers"/>), because
-        /// the buffer says what is here and the nodes are how the player goes to it, and those two
-        /// disagreeing is a place that says a quest is here and has no row for it.
+        /// EVERY marker at the star, not only the ones whose row hangs directly under it: the buffer
+        /// says what is HERE, and a pin planted on one of the system's worlds or on a fleet parked in
+        /// it is here. Each line names its own place (<see cref="QuestMarkers.Name"/>), so a line the
+        /// system says and the row the player walks to it through say the same thing.
         /// </summary>
-        private IList<string> QuestMarkerLines(StarSystemNode node, Empire empire)
+        private static IList<string> QuestMarkerLines(StarSystemNode node, Empire empire)
         {
             List<QuestMarkers.Marker> here = MarkersAt(node, empire);
             if (here.Count == 0)
@@ -51,8 +52,9 @@ namespace ES2Access.Screens
             return lines;
         }
 
-        /// <summary>The markers the map draws AT this system, in journal order.</summary>
-        private List<QuestMarkers.Marker> MarkersAt(StarSystemNode node, Empire empire)
+        /// <summary>The markers the map draws AT this system, whatever they are planted on, in journal
+        /// order.</summary>
+        private static List<QuestMarkers.Marker> MarkersAt(StarSystemNode node, Empire empire)
         {
             List<QuestMarkers.Marker> here = new List<QuestMarkers.Marker>();
             if (node == null)
@@ -63,7 +65,7 @@ namespace ES2Access.Screens
             List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
             for (int i = 0; i < all.Count; i++)
             {
-                if (all[i].Node.IsValid && all[i].Node == node.NodePosition)
+                if (ReferenceEquals(all[i].System, node))
                 {
                     here.Add(all[i]);
                 }
@@ -73,16 +75,167 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// A quest marker as a CHILD of the system it stands at - after the planets, the lanes and the
-        /// fleets, which is the order the rest of a system reads in.
+        /// Where a marker's row hangs this build - the one answer the tree, the landing, the scanner
+        /// and the open-space count all read, so no two of them can put one pin in two places.
+        ///
+        /// A marker is a CHILD OF THE THING IT MARKS (owner ruling 2026-09-10): a world's pin under
+        /// that world's row, a curiosity's under the world it sits on, a fleet's under that fleet's
+        /// row, a star's under the star. What decides it is not the pin but whether the thing it is
+        /// planted on has a row on THIS build - the bands hide the planets and the fleets at their own
+        /// distances - so the answer is worked out once, where every list the tree is about to declare
+        /// from is already filled.
+        ///
+        /// The fallback ladder is the nearest thing that does have a row: the star, and then the open
+        /// sky. A pin never says more than its host row could - a world in a system the map is not
+        /// naming falls to the star's row and is worded at the star's level
+        /// (<see cref="QuestMarkers.Name"/>).
+        /// </summary>
+        private enum MarkerHome
+        {
+            /// <summary>A row of its own out in the open: nothing it is planted on has one.</summary>
+            Open,
+
+            /// <summary>A child of the star it stands at.</summary>
+            System,
+
+            /// <summary>A child of the world it is planted on.</summary>
+            Planet,
+
+            /// <summary>A child of the fleet it is planted on, wherever that fleet's row hangs.
+            /// </summary>
+            Fleet,
+        }
+
+        /// <summary>This build's answer for every marker on the map, keyed on the pin itself.</summary>
+        private static readonly Dictionary<QuestMarker, MarkerHome> _markerHomes =
+            new Dictionary<QuestMarker, MarkerHome>();
+
+        private void MarkerHomes(Empire empire)
+        {
+            _markerHomes.Clear();
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                _markerHomes[all[i].Pin] = HomeFor(all[i], empire);
+            }
+        }
+
+        private MarkerHome HomeFor(QuestMarkers.Marker marker, Empire empire)
+        {
+            bool place =
+                marker.System != null
+                && (_namedSet.Contains(marker.System) || _locatedSet.Contains(marker.System));
+            if (marker.Fleet != null)
+            {
+                if (_showsFleets && Berthed(marker, place))
+                {
+                    return MarkerHome.Fleet;
+                }
+
+                return place && _showsDetail ? MarkerHome.System : MarkerHome.Open;
+            }
+
+            if (
+                marker.Planet != null
+                && marker.Named
+                && place
+                && _showsDetail
+                && PlanetsDeclared(marker.System, empire)
+            )
+            {
+                return MarkerHome.Planet;
+            }
+
+            return place && _showsDetail ? MarkerHome.System : MarkerHome.Open;
+        }
+
+        /// <summary>Whether the tree is declaring a row for the fleet a pin is planted on. The two
+        /// lists asked are the two the rows themselves are built from - what the map parks at the star
+        /// (<see cref="FleetPresence.FleetsAt"/>) and what it draws crossing open space with no place
+        /// to hang under (<c>_adrift</c>) - so a pin is never hung under a fleet row that is not
+        /// there. A fleet under WAY on a lane has a row under the end it is arriving at and is not
+        /// asked for here: its pin keeps the open-sky row it has always had, which is the fallback for
+        /// every host the tree cannot find.</summary>
+        private bool Berthed(QuestMarkers.Marker marker, bool place)
+        {
+            if (place)
+            {
+                IList<Fleet> parked = FleetPresence.FleetsAt(marker.System);
+                for (int i = 0; i < parked.Count; i++)
+                {
+                    if (ReferenceEquals(parked[i], marker.Fleet))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            for (int i = 0; i < _adrift.Count; i++)
+            {
+                if (ReferenceEquals(_adrift[i], marker.Fleet))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Every star the map draws NOTHING at that a quest pin is standing over, folded into the
+        /// located places so that the ordinary "Unexplored system" row is declared for it.
+        ///
+        /// The pin gives the position away - it is drawn at the star whether or not the star is - so
+        /// there is a place on the map with something on it and, until 2026-09-10, no row anywhere in
+        /// the tree (owner ruling that day). What it gets is exactly the located row's contract
+        /// (<see cref="AddLocated"/>): the mod's own unexplored words and the coordinates, no name, no
+        /// planets, no lanes, no owner. The system's real name is neither spoken nor indexed at one.
+        ///
+        /// Only from the band that declares the marker rows at all, and never under a lens - which
+        /// draws its own tree and hangs no pin under anything - so the row appears exactly where the
+        /// pin it exists for does.
+        /// </summary>
+        private void MarkedPlaces(Empire empire)
+        {
+            if (!_showsDetail || Scanning)
+            {
+                return;
+            }
+
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                StarSystemNode node = all[i].System;
+                if (
+                    node == null
+                    || _gatheredColonySet.Contains(node)
+                    || MapVisibility.Perceived(node, empire)
+                    || MapVisibility.Located(node, empire)
+                    || _gatheredLocated.Contains(node)
+                )
+                {
+                    continue;
+                }
+
+                _gatheredLocated.Add(node);
+            }
+        }
+
+        /// <summary>
+        /// A quest marker as a CHILD of the thing it marks - the star itself, after the planets, the
+        /// lanes and the fleets, which is the order the rest of a system reads in.
         ///
         /// A marker was a buffer line and nothing else until 2026-08-22, which meant the one place the
         /// game itself offers a "go here" for - the quest pin - was somewhere the tree could not put
         /// the player. It is a leaf: no tooltip (the game hangs none on a marker), and ENTER IS INERT,
         /// because a pin is not clickable on the map either and there is no journal-opening gesture to
         /// invent. What it carries beyond its name is the step's own objective, in the game's words.
+        ///
+        /// Only the pins whose home is this star (<see cref="MarkerHome"/>): one planted on a world or
+        /// on a fleet hangs under that world's or that fleet's own row, and falls back here only where
+        /// the map is drawing no row for it.
         /// </summary>
-        private void AddQuestMarkers(
+        private static void AddQuestMarkers(
             GraphBuilder builder,
             string key,
             StarSystemNode node,
@@ -92,20 +245,106 @@ namespace ES2Access.Screens
             List<QuestMarkers.Marker> here = MarkersAt(node, empire);
             for (int i = 0; i < here.Count; i++)
             {
-                // Synthetic: a quest marker is a game fact the map draws as a pin over the world, not as a control.
-                builder.AddItem(Nodes.Synthetic(MarkerId(node, here[i]), MarkerNode(here[i])));
+                if (Home(here[i]) == MarkerHome.System)
+                {
+                    // Synthetic: a quest marker is a game fact the map draws as a pin over the world, not as a control.
+                    builder.AddItem(Nodes.Synthetic(MarkerUnder(key, here[i]), MarkerNode(here[i])));
+                }
             }
         }
 
-        /// <summary>Every marker planted out in the OPEN - on a fleet crossing a lane - as a row of
-        /// the galaxy's own drifting region, beside the probes and the missiles, since there is no
-        /// place in the tree for it to hang under.</summary>
-        private void AddOpenSpaceMarkers(GraphBuilder builder, Empire empire)
+        /// <summary>The pins planted on one WORLD - the world itself, or a curiosity standing on it -
+        /// as children of that world's row.</summary>
+        private static void AddPlanetMarkers(
+            GraphBuilder builder,
+            string key,
+            Planet planet,
+            Empire empire
+        )
         {
             List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
             for (int i = 0; i < all.Count; i++)
             {
-                if (!all[i].Node.IsValid)
+                if (ReferenceEquals(all[i].Planet, planet) && Home(all[i]) == MarkerHome.Planet)
+                {
+                    // Synthetic: the same, for a pin the map draws over a world.
+                    builder.AddItem(Nodes.Synthetic(MarkerUnder(key, all[i]), MarkerNode(all[i])));
+                }
+            }
+        }
+
+        /// <summary>The pins planted on one FLEET, as children of that fleet's row wherever it hangs.
+        /// </summary>
+        private static void AddFleetMarkers(GraphBuilder builder, string key, Fleet fleet, Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (ReferenceEquals(all[i].Fleet, fleet) && Home(all[i]) == MarkerHome.Fleet)
+                {
+                    // Synthetic: the same, for a pin the map draws over a fleet.
+                    builder.AddItem(Nodes.Synthetic(MarkerUnder(key, all[i]), MarkerNode(all[i])));
+                }
+            }
+        }
+
+        /// <summary>How many pins hang under a star's own row, which is what turns a bare located row
+        /// into a level of the tree rather than a leaf.</summary>
+        private static int MarkersHere(StarSystemNode node, Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            int pins = 0;
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (ReferenceEquals(all[i].System, node) && Home(all[i]) == MarkerHome.System)
+                {
+                    pins++;
+                }
+            }
+
+            return pins;
+        }
+
+        /// <summary>Whether one world is carrying a pin, which is what turns its row into a level of
+        /// the tree rather than a leaf.</summary>
+        private static bool MarksPlanet(Planet planet, Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (ReferenceEquals(all[i].Planet, planet) && Home(all[i]) == MarkerHome.Planet)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>The same for a fleet.</summary>
+        private static bool MarksFleet(Fleet fleet, Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (ReferenceEquals(all[i].Fleet, fleet) && Home(all[i]) == MarkerHome.Fleet)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>Every marker planted where nothing the tree declares can hold it - a fleet under
+        /// way on a lane, a pin bound to something that is not a place at all - as a row of the
+        /// galaxy's own drifting region, beside the probes and the missiles.</summary>
+        private static void AddOpenSpaceMarkers(GraphBuilder builder, Empire empire)
+        {
+            List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (Home(all[i]) == MarkerHome.Open)
                 {
                     // Synthetic: the same, for a marker whose place the galaxy no longer holds.
                     builder.AddItem(Nodes.Synthetic(MarkerRowId(all[i]), MarkerNode(all[i])));
@@ -115,19 +354,27 @@ namespace ES2Access.Screens
 
         /// <summary>Whether the map is drawing any marker out in the open - what decides whether the
         /// drifting region exists at all.</summary>
-        private int OpenSpaceMarkers(Empire empire)
+        private static int OpenSpaceMarkers(Empire empire)
         {
             List<QuestMarkers.Marker> all = QuestMarkers.Of(empire);
             int loose = 0;
             for (int i = 0; i < all.Count; i++)
             {
-                if (!all[i].Node.IsValid)
+                if (Home(all[i]) == MarkerHome.Open)
                 {
                     loose++;
                 }
             }
 
             return loose;
+        }
+
+        /// <summary>Where this build put one pin. Open sky for a pin the gather never saw, which is
+        /// what a marker the journal grew between the gather and the render is.</summary>
+        private static MarkerHome Home(QuestMarkers.Marker marker)
+        {
+            MarkerHome home;
+            return _markerHomes.TryGetValue(marker.Pin, out home) ? home : MarkerHome.Open;
         }
 
         /// <summary>What one marker's row says: the quest it belongs to, in the tracked or the
@@ -151,7 +398,15 @@ namespace ES2Access.Screens
         /// of two quests at one star stay apart and neither moves when the other goes.</summary>
         private static ControlId MarkerId(StarSystemNode node, QuestMarkers.Marker marker)
         {
-            return ControlId.Structural(SystemKey(node) + "/marker/" + marker.Pin.GUID);
+            return MarkerUnder(SystemKey(node), marker);
+        }
+
+        /// <summary>The same, under whatever row hosts it - a star's, a world's or a fleet's - whose
+        /// key the host passes in. The one place a marker's key is composed, so the row and every
+        /// landing aimed at it are built by the same code.</summary>
+        private static ControlId MarkerUnder(string key, QuestMarkers.Marker marker)
+        {
+            return ControlId.Structural(key + "/marker/" + marker.Pin.GUID);
         }
 
         /// <summary>A marker's own top-level row, for one standing out in the open.</summary>
@@ -160,24 +415,14 @@ namespace ES2Access.Screens
             return ControlId.Structural("galaxy:marker/" + marker.Pin.GUID);
         }
 
-        /// <summary>The system a marker stands at, where the map is naming one - which is what decides
-        /// whether the marker is a child of a place or a row out in the open.</summary>
+        /// <summary>The star a marker stands at, where this build is declaring a row for it - named or
+        /// only located, both of which the tree holds (<see cref="AddLocated"/>).</summary>
         private StarSystemNode MarkerSystem(QuestMarkers.Marker marker)
         {
-            if (!marker.Node.IsValid)
-            {
-                return null;
-            }
-
-            for (int i = 0; i < _systems.Count; i++)
-            {
-                if (_systems[i].NodePosition == marker.Node)
-                {
-                    return _systems[i];
-                }
-            }
-
-            return null;
+            StarSystemNode node = marker.System;
+            return node != null && (_namedSet.Contains(node) || _locatedSet.Contains(node))
+                ? node
+                : null;
         }
 
         // ---- sending the selected fleets somewhere ----

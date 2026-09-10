@@ -636,7 +636,12 @@ namespace ES2Access.Screens
         )
         {
             ControlId id = PlacedRows.Anchor(fleet, key);
-            if (badges == null || badges.Count == 0)
+            // A quest pin planted on the fleet is a child of the fleet, wherever the fleet's own row
+            // hangs (owner ruling 2026-09-10) - so a fleet a quest points at is a level of the tree
+            // even where the map hangs no badge on its lozenge.
+            Empire empire = PlayerEmpire();
+            bool pinned = MarksFleet(fleet, empire);
+            if ((badges == null || badges.Count == 0) && !pinned)
             {
                 // Synthetic: the row stands for a thing in the galaxy model; the enumeration above is the honesty about it.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
@@ -647,7 +652,12 @@ namespace ES2Access.Screens
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
-                TooltipChildren.Emit(builder, key, badges, builder.Region);
+                if (badges != null && badges.Count > 0)
+                {
+                    TooltipChildren.Emit(builder, key, badges, builder.Region);
+                }
+
+                AddFleetMarkers(builder, key, fleet, empire);
             }
 
             builder.EndGroup();

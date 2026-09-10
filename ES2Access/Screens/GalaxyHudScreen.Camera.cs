@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
@@ -449,7 +449,7 @@ namespace ES2Access.Screens
                 List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
                 for (int i = 0; i < markers.Count; i++)
                 {
-                    if (!markers[i].Node.IsValid && id.Equals(MarkerRowId(markers[i])))
+                    if (Home(markers[i]) == MarkerHome.Open && id.Equals(MarkerRowId(markers[i])))
                     {
                         return markers[i].Pin;
                     }
@@ -525,7 +525,7 @@ namespace ES2Access.Screens
                 List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
                 for (int i = 0; i < markers.Count; i++)
                 {
-                    if (!markers[i].Node.IsValid && ReferenceEquals(markers[i].Pin, thing))
+                    if (Home(markers[i]) == MarkerHome.Open && ReferenceEquals(markers[i].Pin, thing))
                     {
                         return MarkerRowId(markers[i]);
                     }

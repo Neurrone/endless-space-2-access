@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Amplitude.Unity.Framework;
 using ES2Access.Core.Speech;
@@ -190,7 +190,6 @@ namespace ES2Access.Screens
                 MapTarget target;
                 if (!_screen.MarkerTarget(markers[i], out target))
                 {
-                    // A marker at a system the map is not naming: nowhere to go and nothing to say.
                     continue;
                 }
 
@@ -430,7 +429,10 @@ namespace ES2Access.Screens
                 for (int i = 0; i < node.Planets.Count; i++)
                 {
                     Planet planet = node.Planets[i];
-                    string name = GalaxyHudScreen.PlanetName(node, planet, empire);
+                    // The one place phrase every scanner category that names a world says
+                    // (<see cref="PlanetPlace"/>), so an anomaly, a curiosity, a deposit and a
+                    // settleable world all say where they are the same way.
+                    string name = PlanetPlace.Of(node, planet, empire);
                     Curiosities(curiosities, node, planet, i, name, empire, titles);
                     if (!surveyed)
                     {
@@ -992,6 +994,25 @@ namespace ES2Access.Screens
             {
                 if (!MapVisibility.Perceived(node, empire))
                 {
+                    // A star the map DRAWS and refuses to name is a way out too - the picture has
+                    // told the player there is something there and nothing else about it, and the
+                    // tree already gives it a row saying exactly that (owner ruling 2026-09-10,
+                    // <see cref="GalaxyHudScreen.AddLocated"/>). Its own name is never spoken here
+                    // and never indexed: two of them are told apart by their coordinates.
+                    if (MapVisibility.Located(node, empire))
+                    {
+                        found.Add(
+                            Make(
+                                "unexplored/" + node.GUID,
+                                ModStrings.Get(ModStrings.GalaxySystemUnexplored),
+                                node.GalaxyPosition,
+                                ScannerScopes.Only(),
+                                node,
+                                null
+                            )
+                        );
+                    }
+
                     continue;
                 }
 

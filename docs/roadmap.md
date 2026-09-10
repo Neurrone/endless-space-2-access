@@ -251,11 +251,15 @@ belong in the files above.
   quest markers, pins and missiles have never been heard. A CONQUERED major capital — its
   "Conquered … home system" row word and its place in "homeworld" — is proved only under an
   in-memory founder-index tweak, never on a real conquest.
-- Quest markers are proved by SYNTHETIC markers only: the marker nodes, the open-space rows,
-  the scanner category, the inspect-cell reading and the quest locate were all exercised by
-  registering markers by hand, because no save reached carries a marker on any in-progress quest.
-  A real free-floating marker on a fleet crossing a lane has never been seen — the
-  open-space case was forced with a marker bound to a Ship.
+- Quest markers are proved by SYNTHETIC markers only: the marker nodes under a system, a world, a
+  curiosity's world, a fleet and an unexplored star, the open-space rows, the scanner category, the
+  inspect-cell reading and the quest locate were all exercised by registering markers by hand,
+  because no save reached carries a marker on any in-progress quest. A real free-floating marker on a fleet
+  crossing a lane has never been seen — the open-space case was forced with a marker bound to a
+  Ship, and the en-route-fleet fallback (`docs/galaxy-map.md`) has never been exercised at all.
+- The scanner's Unexplored category listing LOCATED-and-unnamed stars, and the located row a quest
+  pin forces at a star below Located, were proved by lowering two nodes' exploration by hand: no
+  save reached has ever carried a Located-and-not-Perceived system.
 - Ally pins and obliterator missiles are label-free too (2026-08-16, owner-ruled): enumerated from
   the simulation under the game's own knowledge gates, every word recomposed from the entity, and
   the pin's dismiss routed through the game's own two orders instead of its button. Nothing about

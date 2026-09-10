@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
@@ -618,29 +618,69 @@ namespace ES2Access.Screens
             return false;
         }
 
-        /// <summary>Where a marker's node hangs: under the system it stands at, or a row of its own
-        /// out in the open. False where the map is not naming the system it stands at, which is the
-        /// one case that has neither.</summary>
+        /// <summary>
+        /// Where a marker's node hangs: under the world, the fleet or the star it is planted on, or a
+        /// row of its own out in the open - the same answer the tree declared it at
+        /// (<see cref="MarkerHome"/>), so the scanner's go-to and the game's own Show Location land on
+        /// the row the player can walk to.
+        ///
+        /// Everything but the open-sky row is a CHILD of a place - drawn at the star, not a thing of
+        /// its own out on the map - so it lands the way a planet does: the free cursor ends, the
+        /// branches open on the way in (the ancestry is the key's own), and the camera comes in.
+        /// </summary>
         internal bool MarkerTarget(QuestMarkers.Marker marker, out MapTarget target)
         {
             target = default(MapTarget);
-            StarSystemNode at = MarkerSystem(marker);
-            if (at == null)
+            switch (Home(marker))
             {
-                if (!marker.Node.IsValid)
-                {
+                case MarkerHome.Planet:
+                    target = MapTarget.Under(
+                        marker.System,
+                        MarkerUnder(
+                            PlanetKey(marker.System, marker.System.Planets.IndexOf(marker.Planet)),
+                            marker
+                        ),
+                        marker.At
+                    );
+                    return true;
+                case MarkerHome.Fleet:
+                    ControlId under = MarkerUnder(FleetKey(marker), marker);
+                    target =
+                        marker.System != null
+                            ? MapTarget.Under(marker.System, under, marker.At)
+                            : MapTarget.Point(under, marker.At);
+                    return true;
+                case MarkerHome.System:
+                    target = MapTarget.Under(
+                        marker.System,
+                        MarkerId(marker.System, marker),
+                        marker.At
+                    );
+                    return true;
+                default:
                     target = MapTarget.Point(MarkerRowId(marker), marker.At);
                     return true;
-                }
+            }
+        }
 
-                return false;
+        /// <summary>The key of the row the fleet a pin is planted on is declared under - the system it
+        /// is parked at, or the top of the stop for one crossing open space. Composed by the same two
+        /// calls the fleet rows themselves are keyed by, never parsed back out of an id.</summary>
+        private static string FleetKey(QuestMarkers.Marker marker)
+        {
+            if (marker.System != null)
+            {
+                IList<Fleet> parked = FleetPresence.FleetsAt(marker.System);
+                for (int i = 0; i < parked.Count; i++)
+                {
+                    if (ReferenceEquals(parked[i], marker.Fleet))
+                    {
+                        return SystemKey(marker.System) + "/fleet/" + marker.Fleet.GUID;
+                    }
+                }
             }
 
-            // A marker standing at a system is a CHILD of it - drawn at the star, not a thing of its
-            // own out on the map - so it lands the way a planet does: the free cursor ends, the branch
-            // opens, and the camera comes in.
-            target = MapTarget.Under(at, MarkerId(at, marker), marker.At);
-            return true;
+            return AdriftKey(marker.Fleet);
         }
 
         /// <summary>The same question the GAME's locate asks, for a caller inside the mod: where on
@@ -720,7 +760,7 @@ namespace ES2Access.Screens
                 List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
                 for (int i = 0; i < markers.Count; i++)
                 {
-                    if (!markers[i].Node.IsValid && id.Equals(MarkerRowId(markers[i])))
+                    if (Home(markers[i]) == MarkerHome.Open && id.Equals(MarkerRowId(markers[i])))
                     {
                         at = markers[i].At;
                         return true;
@@ -826,12 +866,13 @@ namespace ES2Access.Screens
             return true;
         }
 
-        /// <summary>A system's node id, but only while this page is declaring that system: the map
-        /// draws the names of the systems the player has seen, and the tree says the same
-        /// (<see cref="Perceived"/>).</summary>
+        /// <summary>A system's node id, but only while this page is declaring that system - the ones
+        /// the map NAMES (<see cref="Perceived"/>) and the ones it only draws a star at, which have a
+        /// row of their own saying where they are and nothing else (<see cref="AddLocated"/>). A place
+        /// the picture draws nothing at has no row and no landing.</summary>
         private ControlId SystemId(StarSystemNode node)
         {
-            return node != null && _namedSet.Contains(node)
+            return node != null && (_namedSet.Contains(node) || _locatedSet.Contains(node))
                 ? ControlId.Structural(SystemKey(node))
                 : null;
         }
@@ -962,7 +1003,7 @@ namespace ES2Access.Screens
             List<QuestMarkers.Marker> markers = QuestMarkers.Of(PlayerEmpire());
             for (int i = 0; i < markers.Count; i++)
             {
-                if (!markers[i].Node.IsValid)
+                if (Home(markers[i]) == MarkerHome.Open)
                 {
                     Add(spots, markers[i].At, MarkerRowId(markers[i]), null, -1);
                 }

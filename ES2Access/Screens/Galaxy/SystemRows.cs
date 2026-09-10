@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -88,7 +88,11 @@ namespace ES2Access.Screens
 
             string place = SystemKey(node, empire);
             ControlId id = ControlId.For(it, place);
-            if (fleets.Count == 0)
+            // A quest pin standing here is the one other thing the picture puts at a place like this,
+            // and the pin is drawn whether the star is or not - which is what a row exists for at a
+            // node the map draws nothing at (<see cref="MarkedPlaces"/>).
+            int pins = MarkersHere(node, empire);
+            if (fleets.Count == 0 && pins == 0)
             {
                 // Synthetic: a system is a place in the galaxy model, and the walk that listed it is what says it is there.
                 builder.AddItem(Nodes.Synthetic(id, vtable));
@@ -106,6 +110,7 @@ namespace ES2Access.Screens
             if (builder.IsExpanded(id))
             {
                 AddFleets(builder, place, fleets);
+                AddQuestMarkers(builder, place, node, empire);
             }
 
             builder.EndGroup();
