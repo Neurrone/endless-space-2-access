@@ -612,6 +612,19 @@ namespace ES2Access.Core.Speech
             { GalaxyQuestMarkerOnPlanetPinned, "Tracked quest: {0}, on {1}" },
             { GalaxyQuestMarkerCuriosity, "Quest: {0}, curiosity on {1}" },
             { GalaxyQuestMarkerCuriosityPinned, "Tracked quest: {0}, curiosity on {1}" },
+            { GalaxyQuestMarkerOnUnknownPlanet, "Quest: {0}, on an unknown planet at {1}" },
+            {
+                GalaxyQuestMarkerOnUnknownPlanetPinned,
+                "Tracked quest: {0}, on an unknown planet at {1}"
+            },
+            {
+                GalaxyQuestMarkerCuriosityUnknownPlanet,
+                "Quest: {0}, curiosity on an unknown planet at {1}"
+            },
+            {
+                GalaxyQuestMarkerCuriosityUnknownPlanetPinned,
+                "Tracked quest: {0}, curiosity on an unknown planet at {1}"
+            },
             { GalaxyQuestMarkerOnFleetAt, "Quest: {0}, on fleet {1} at {2}" },
             { GalaxyQuestMarkerOnFleetAtPinned, "Tracked quest: {0}, on fleet {1} at {2}" },
             { GalaxyQuestMarkerOnFleet, "Quest: {0}, on fleet {1}" },

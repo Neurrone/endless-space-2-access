@@ -224,31 +224,49 @@ namespace ES2Access.UI
             // survey and not the band (owner ruling 2026-09-10). Where the row hangs is a question
             // about what this build is drawing and it changes with the camera; what the row SAYS is a
             // question about what the player has been shown, and it does not. Below the survey the
-            // planet has no name to say - the card calls it unknown - so the pin falls through to the
-            // star it stands at, which the map is naming.
-            if (
-                marker.Planet != null
-                && marker.Named
-                && GalaxyHudScreen.Surveyed(marker.System, marker.Empire)
-            )
+            // planet has no name to say - the card calls it unknown - so the pin says an unknown
+            // world at the star it stands at (owner ruling 2026-09-10): it is drawn ON the planet,
+            // and the star's own form would say the pin stands on the system instead.
+            if (marker.Planet != null && marker.Named)
             {
-                string place = PlanetPlace.Of(marker.System, marker.Planet, marker.Empire);
-                if (!string.IsNullOrEmpty(place))
+                if (GalaxyHudScreen.Surveyed(marker.System, marker.Empire))
+                {
+                    string place = PlanetPlace.Of(marker.System, marker.Planet, marker.Empire);
+                    if (!string.IsNullOrEmpty(place))
+                    {
+                        return ModStrings.Format(
+                            marker.OnCuriosity
+                                ? (
+                                    marker.Pinned
+                                        ? ModStrings.GalaxyQuestMarkerCuriosityPinned
+                                        : ModStrings.GalaxyQuestMarkerCuriosity
+                                )
+                                : (
+                                    marker.Pinned
+                                        ? ModStrings.GalaxyQuestMarkerOnPlanetPinned
+                                        : ModStrings.GalaxyQuestMarkerOnPlanet
+                                ),
+                            marker.Title,
+                            place
+                        );
+                    }
+                }
+                else
                 {
                     return ModStrings.Format(
                         marker.OnCuriosity
                             ? (
                                 marker.Pinned
-                                    ? ModStrings.GalaxyQuestMarkerCuriosityPinned
-                                    : ModStrings.GalaxyQuestMarkerCuriosity
+                                    ? ModStrings.GalaxyQuestMarkerCuriosityUnknownPlanetPinned
+                                    : ModStrings.GalaxyQuestMarkerCuriosityUnknownPlanet
                             )
                             : (
                                 marker.Pinned
-                                    ? ModStrings.GalaxyQuestMarkerOnPlanetPinned
-                                    : ModStrings.GalaxyQuestMarkerOnPlanet
+                                    ? ModStrings.GalaxyQuestMarkerOnUnknownPlanetPinned
+                                    : ModStrings.GalaxyQuestMarkerOnUnknownPlanet
                             ),
                         marker.Title,
-                        place
+                        AgeText.Clean(marker.System.LocalizedName)
                     );
                 }
             }

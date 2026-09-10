@@ -294,6 +294,19 @@
         public const string GalaxyQuestMarkerCuriosity = "galaxy.quest-marker-curiosity";
         public const string GalaxyQuestMarkerCuriosityPinned =
             "galaxy.quest-marker-curiosity-pinned";
+
+        // The same two places below the SURVEY, where the card itself has no name for the world and
+        // says "Unknown" (owner ruling 2026-09-10): the pin is drawn ON the planet, so it stays a
+        // planet phrase and borrows the star's name for the sky it is in rather than falling back to
+        // the star's own form, which would tell a player the pin stands on the system.
+        public const string GalaxyQuestMarkerOnUnknownPlanet =
+            "galaxy.quest-marker-on-unknown-planet";
+        public const string GalaxyQuestMarkerOnUnknownPlanetPinned =
+            "galaxy.quest-marker-on-unknown-planet-pinned";
+        public const string GalaxyQuestMarkerCuriosityUnknownPlanet =
+            "galaxy.quest-marker-curiosity-unknown-planet";
+        public const string GalaxyQuestMarkerCuriosityUnknownPlanetPinned =
+            "galaxy.quest-marker-curiosity-unknown-planet-pinned";
         public const string GalaxyQuestMarkerOnFleetAt = "galaxy.quest-marker-on-fleet-at";
         public const string GalaxyQuestMarkerOnFleetAtPinned =
             "galaxy.quest-marker-on-fleet-at-pinned";

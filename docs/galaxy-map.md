@@ -273,8 +273,11 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
   ARRIVING at, which is the fleet's own leg goal and the same fact the row's key is built from - one
   lookup per marked fleet, never a walk of the lanes (owner ruling 2026-09-10). What the pin SAYS,
   though, follows the name rather than the host (same ruling): a pin on a world keeps the world's
-  words wherever the band happens to hang its row, and falls back to the star only below the SURVEY,
-  where the card itself has no name for the world.
+  words wherever the band happens to hang its row, and below the SURVEY - where the card itself has
+  no name for the world and the row reads the game's "Unknown" - it stays a WORLD phrase with the
+  star's name borrowed for the sky it is in ("on an unknown planet at &lt;system&gt;", "curiosity on an
+  unknown planet at &lt;system&gt;"), never the star's own "at &lt;system&gt;" form, which would tell a player
+  the pin stands on the system when the picture draws it on a planet (owner ruling 2026-09-10).
 - **Every star the map draws and refuses to name is a way out, not only the lanes** (owner ruling
   2026-09-10): a `Located` and not `Perceived` system is a result of the scanner's Unexplored category
   as well as the "Unexplored system" row it already had, landing on that row. A star below `Located` is
