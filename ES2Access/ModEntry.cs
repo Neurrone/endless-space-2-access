@@ -1020,6 +1020,11 @@ namespace ES2Access
             NodeHints.Chord = (actionKey, bindingIndex) =>
                 ChordNames.Of(Input, actionKey, bindingIndex);
 
+            // And whether they are said at all. Read once, here, because the readout path asks the
+            // policy per focused node and the settings file is a dictionary lookup plus a parse;
+            // NodeHints.Reset puts the default back when the assembly goes.
+            HintSettings.Apply();
+
             // The carry's own three gestures, named to Core so its pick-up announcement and its two
             // derived hints spell whatever chords those actions are bound to now.
             CarryState.PickUpAction = UiActions.Drag;

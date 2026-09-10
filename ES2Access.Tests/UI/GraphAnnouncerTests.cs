@@ -567,6 +567,16 @@ namespace ES2Access.Tests.UI
             Assert.Equal("The Analytical Engine, button, 2 of 3", HintedReadout(vt));
         }
 
+        /// <summary>The player who has learnt the gestures hears none of them, and the rest of the
+        /// readout is untouched (owner ruling 2026-09-10).</summary>
+        [Fact]
+        public void NoHintIsSaidWhereThePlayerHasTurnedTheReadingOff()
+        {
+            Chords();
+            NodeHints.Reading = HintReading.Never;
+            Assert.Equal("The Analytical Engine, button, 2 of 3", HintedReadout(Hinted()));
+        }
+
         /// <summary>The expanded/collapsed word is about the control, so it stays ahead of the
         /// keyboard sentence even where there is no tooltip to anchor it.</summary>
         [Fact]

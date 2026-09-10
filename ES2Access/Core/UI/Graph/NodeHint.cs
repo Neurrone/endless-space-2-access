@@ -69,6 +69,26 @@ namespace ES2Access.Core.UI.Graph
     }
 
     /// <summary>
+    /// WHETHER THE USAGE HINTS ON A CONTROL ARE READ OUT when focus lands on it.
+    ///
+    /// Not a bool, and never written as one: the answer the owner wants next is a THIRD one - read a
+    /// hint only where it differs from the hint on the control focus just left - so the setting is a
+    /// named choice from the start and a member can be added to it without anything on disk having to
+    /// be migrated (owner ruling 2026-09-10).
+    ///
+    /// Whichever way this stands, the hint lines are still in the control's review buffer: the
+    /// setting is about what is SAID unasked, not about what the mod knows.
+    /// </summary>
+    public enum HintReading
+    {
+        /// <summary>Every control's hints, every time focus lands on it. The default.</summary>
+        Always,
+
+        /// <summary>None of them. The player who has learnt the gestures.</summary>
+        Never,
+    }
+
+    /// <summary>
     /// The hint surface: how a declared <see cref="NodeHint"/> becomes the last thing said about a
     /// control - the last lines of its review buffer, and the last part of its focus readout
     /// (<c>GraphAnnouncer.EffectiveAnnouncements</c>, which composes the same lines into one part).
@@ -86,10 +106,36 @@ namespace ES2Access.Core.UI.Graph
         /// where the action or that binding does not exist. Installed by the host.</summary>
         public static Func<string, int, string> Chord;
 
-        /// <summary>Drop the injected renderer - mod teardown, and test isolation.</summary>
+        /// <summary>
+        /// Whether a control's hints are spoken when focus lands on it - the player's own setting,
+        /// pushed here by the host once the settings file has been read, and asked on the readout
+        /// path of every focused node. Core cannot see the settings file, so this static is the whole
+        /// of the policy as far as the announcer is concerned, exactly as <see cref="Chord"/> is the
+        /// whole of the keyboard.
+        /// </summary>
+        public static HintReading Reading;
+
+        /// <summary>What a stored value means. Anything the file does not hold - and anything it holds
+        /// that this build has no name for - is the default, which is why turning the setting ON is
+        /// what takes the key back off disk.</summary>
+        public static HintReading Parse(string stored)
+        {
+            return stored == NeverStored ? HintReading.Never : HintReading.Always;
+        }
+
+        /// <summary>What to write for a choice, or null where it is the default and the key belongs
+        /// off the disk altogether.</summary>
+        public static string Stored(HintReading reading)
+        {
+            return reading == HintReading.Never ? NeverStored : null;
+        }
+
+        /// <summary>Drop the injected renderer and the player's setting - mod teardown, and test
+        /// isolation.</summary>
         public static void Reset()
         {
             Chord = null;
+            Reading = HintReading.Always;
             Forget();
         }
 
@@ -103,6 +149,10 @@ namespace ES2Access.Core.UI.Graph
         {
             _lines.Clear();
         }
+
+        /// <summary>The one word the settings file holds, and only while the answer is not the
+        /// default.</summary>
+        private const string NeverStored = "never";
 
         /// <summary>Declare a hint on <paramref name="vtable"/>, creating its list on first use. The
         /// order hints are added in is the order they read.</summary>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.Options;
 using ES2Access.Core.Speech;
+using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.Loader;
 
@@ -27,9 +28,11 @@ namespace ES2Access.UI.ModOptions
     /// <summary>
     /// THE GENERAL TAB - the window's first, where a setting that belongs to no other tab lives.
     ///
-    /// Two rows, in this order: whether the tooltips the game assembles on hover are read out
+    /// Three rows, in this order: whether the tooltips the game assembles on hover are read out
     /// once they have drawn (<see cref="ES2Access.UI.Settings.LongTooltipSettings"/>, which is
-    /// the mod's own settings file like every other mod setting), then whether the game's cut
+    /// the mod's own settings file like every other mod setting), whether a control's usage hints
+    /// are said on arrival (<see cref="ES2Access.UI.Settings.HintSettings"/> - the two automatic
+    /// readouts together, which is why they sit side by side), then whether the game's cut
     /// scenes are described. The cut-scene setting is the odd one out: it is a BepInEx
     /// config entry the LOADER owns (<c>[Speech] cutsceneDescriptions</c>), and that file stays the
     /// one store - this row is the player's way into it rather than a second copy of it. So the row
@@ -73,6 +76,19 @@ namespace ES2Access.UI.ModOptions
                     options.Add(longTooltips);
                 }
 
+                Option hints = ModRows.Toggle(
+                    panel,
+                    "readUsageHints",
+                    ModStrings.Get(ModStrings.ModSettingsReadUsageHints),
+                    ReadUsageHints,
+                    WriteUsageHints,
+                    ModStrings.Get(ModStrings.ModSettingsReadUsageHintsDescription)
+                );
+                if (hints != null)
+                {
+                    options.Add(hints);
+                }
+
                 Option cutscenes = ModRows.Toggle(
                     panel,
                     "cutsceneDescriptions",
@@ -101,6 +117,21 @@ namespace ES2Access.UI.ModOptions
         private static void WriteAnnounceLongTooltips(bool wanted)
         {
             ES2Access.UI.Settings.LongTooltipSettings.Announced = wanted;
+        }
+
+        private static bool ReadUsageHints()
+        {
+            return ES2Access.UI.Settings.HintSettings.Reading != HintReading.Never;
+        }
+
+        /// <summary>A box has two states and the setting has room for more, so the box says only which
+        /// of the two IT can mean; a third answer, when it comes, is chosen somewhere a box cannot
+        /// reach and is not silently overwritten by ticking this one on and off.</summary>
+        private static void WriteUsageHints(bool wanted)
+        {
+            ES2Access.UI.Settings.HintSettings.Reading = wanted
+                ? HintReading.Always
+                : HintReading.Never;
         }
 
         private static bool ReadCutsceneDescriptions()

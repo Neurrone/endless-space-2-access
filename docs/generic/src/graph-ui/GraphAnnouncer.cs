@@ -333,6 +333,10 @@ namespace ES2Access.Core.UI.Graph
         private static NodeAnnouncement HintPart(NodeVtable vt)
         {
             if (vt.Hints == null || vt.Hints.Count == 0) return null;
+            // The player who has learnt the gestures hears none of them (owner ruling 2026-09-10).
+            // Dropped HERE and not from the declaration, because the review buffer reads the same
+            // hints off the same vtable and keeps them: the setting is about what is said unasked.
+            if (NodeHints.Reading == HintReading.Never) return null;
             NodeVtable it = vt;
             Func<IList<string>> late = TooltipParts.LateReader(vt.Sections);
             return new NodeAnnouncement(

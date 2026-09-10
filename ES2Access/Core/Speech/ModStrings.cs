@@ -190,6 +190,14 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsAnnounceLongTooltipsDescription =
             "mod-settings.general.announce-long-tooltips-description";
 
+        /// <summary>The General tab's third row: whether the short sentences that name a gesture -
+        /// what Ctrl+L does here, what Backslash does here - are read out when focus lands on the
+        /// control, or left to the review buffer, which holds them either way. On by default: they
+        /// are how the gestures are learnt.</summary>
+        public const string ModSettingsReadUsageHints = "mod-settings.general.read-usage-hints";
+        public const string ModSettingsReadUsageHintsDescription =
+            "mod-settings.general.read-usage-hints-description";
+
         /// <summary>What the Scanner tab says about itself. The key-binding tab has no words of the
         /// mod's own at all: it wears the game's "%OptionToggleControlsTitle" and
         /// "%OptionToggleControlsDescription", so it matches the game's own Controls tab in every
@@ -237,6 +245,8 @@ namespace ES2Access.Core.Speech
         /// <summary>The three refusals. All keep what was there: a name already in the cycle would be
         /// two categories the player cannot tell apart, a word already asked for would be two columns
         /// holding the same things, and a category with no name is one the cycle reads as silence.
+        /// The name clash is the one that goes up as a DIALOG rather than a spoken line (owner ruling
+        /// 2026-09-10), so its sentence is written to be read off a box.
         /// </summary>
         public const string ScannerEditNameTaken = "mod-settings.scanner.name-taken";
         public const string ScannerEditKeywordTaken = "mod-settings.scanner.keyword-taken";
@@ -405,8 +415,13 @@ namespace ES2Access.Core.Speech
             { ModSettingsAnnounceLongTooltips, "Announce long tooltips" },
             {
                 ModSettingsAnnounceLongTooltipsDescription,
-                "Whether longer tooltips like improvements, heroes, technologies and ship designs "
+                "Whether longer tooltips like improvements, heroes, technologies and ship stats "
                     + "are automatically read"
+            },
+            { ModSettingsReadUsageHints, "Read usage hints" },
+            {
+                ModSettingsReadUsageHintsDescription,
+                "Whether usage hints in buffers are automatically read"
             },
             { ModSettingsScanner, "Scanner" },
             {
@@ -423,7 +438,7 @@ namespace ES2Access.Core.Speech
             { ScannerEditAddKeyword, "Add keyword" },
             { ScannerEditRemoved, "{0} removed" },
             { ScannerEditCleared, "Custom category {0} cleared" },
-            { ScannerEditNameTaken, "{0} is already the name of a category" },
+            { ScannerEditNameTaken, "The category name {0} is already in use." },
             { ScannerEditNameBlank, "A custom category needs a name" },
             {
                 ScannerEditKeywordTaken,

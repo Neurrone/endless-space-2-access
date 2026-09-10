@@ -247,6 +247,42 @@ namespace ES2Access.Tests.UI
             Assert.Contains("Ctrl+Backslash to move the fleet here", Buffer(vtable));
         }
 
+        /// <summary>
+        /// The player's setting is a NAMED choice rather than a bool, because a third answer is coming
+        /// and nothing on disk may need migrating when it does: an unknown word reads as the default,
+        /// and the default writes no key at all.
+        /// </summary>
+        [Fact]
+        public void OnlyTheRefusalIsWrittenDownAndAnythingElseReadsAsReadingThem()
+        {
+            Assert.Equal(HintReading.Always, NodeHints.Parse(null));
+            Assert.Equal(HintReading.Always, NodeHints.Parse(string.Empty));
+            Assert.Equal(HintReading.Always, NodeHints.Parse("only-when-it-changes"));
+            Assert.Equal(HintReading.Never, NodeHints.Parse("never"));
+
+            Assert.Null(NodeHints.Stored(HintReading.Always));
+            Assert.Equal(
+                HintReading.Never,
+                NodeHints.Parse(NodeHints.Stored(HintReading.Never))
+            );
+        }
+
+        /// <summary>Turning the readout off is not forgetting the gesture: the lines are still there to
+        /// be reviewed.</summary>
+        [Fact]
+        public void TheBufferKeepsItsHintsWhileTheReadoutIsToldNotToSayThem()
+        {
+            InstallFakeFormatter();
+            NodeHints.Reading = HintReading.Never;
+            NodeVtable vtable = Control();
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
+
+            Assert.Equal(
+                new[] { "Dusay", "Two planets", "Backslash to move the fleet here" },
+                Buffer(vtable)
+            );
+        }
+
         /// <summary>A language change rewrites the template under a chord that may be spelled the
         /// same, which is the one move the remembered wording cannot see: whoever installs the new
         /// table says so.</summary>
