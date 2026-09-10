@@ -59,13 +59,28 @@ namespace ES2Access.Screens
         /// The menu is ours while it is fully shown and nothing is on top of it. Both covering cases
         /// are covered by the game's own state: a window that replaces the menu (Credits, the DLC
         /// browser) hides it, which drops IsReady, and a modal that floats over it is reported by the
-        /// gui manager. IsReady additionally waits out the show animation, so nothing is announced
-        /// while the menu is still fading in.
+        /// gui manager.
+        ///
+        /// IsReady is not the whole of "shown", though: the ENTRIES arrive after it. Showing the menu
+        /// starts a modifier per entry and a coroutine that holds their container DISABLED until the
+        /// last of them has finished running (<c>MainMenuScreen.ConstrainMenuItemsOnCircleDuringAnimation</c>),
+        /// and a build during that stretch reads every entry through a disabled ancestor and announces
+        /// the first one "unavailable" while it is still flying in. So the container's own Enable is
+        /// the gate, and measured across a menu show (2026-09-10) it is the LAST thing to become true -
+        /// two frames after the last entry transform, title label and background modifier stopped
+        /// running - which makes it the whole of "fully visible" on its own. With the animated-menu
+        /// preference off nothing is animated and the coroutine hands the container back on its first
+        /// pass, so the gate costs one frame and nothing else.
         /// </summary>
         public override bool IsActive()
         {
             GameMainMenu window = Window();
             if (window == null || !window.IsReady)
+            {
+                return false;
+            }
+
+            if (window.MainMenuItemsContainer == null || !window.MainMenuItemsContainer.Enable)
             {
                 return false;
             }
