@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -25,8 +25,8 @@ namespace ES2Access.Screens
             }
 
             BuildTreeInfo(builder, panel);
-            // The wheel wears the page's own drawn heading, which is why the page declares no heading
-            // stop of its own - see BuildHeading.
+            // The wheel wears the page's own drawn heading, which no page declares as a stop - it is the
+            // screen name's own second half (see Heading).
             BuildTrees(builder, panel, AgeWidgets.TextOf(Heading(window)));
             BuildTreeStats(builder, panel);
         }

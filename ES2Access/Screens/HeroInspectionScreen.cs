@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -18,10 +18,10 @@ namespace ES2Access.Screens
     /// middle, the skill tree on the right. Which page is up is the game's own state
     /// (<c>CurrentHubMode</c>), and that is what this screen is built off: during the slide BOTH panels
     /// are still drawn, so "what is visible" would declare two pages at once for a fifth of a second.
-    /// The page's own drawn heading is a node, first in reading order - except on the skill page, where
-    /// the heading names the wheel that is the whole page and is said as the wheel's own name instead -
-    /// and a page change puts the cursor back on the page's landing, which is what says a page changed,
-    /// in the game's own words for it.
+    /// The page's own drawn heading is no stop of anyone's: it is the second half of the screen name
+    /// (<see cref="ScreenName"/>), and on the skill page it names the wheel that is the whole page and is
+    /// said as the wheel's own name as well. A page change puts the cursor back on the page's landing,
+    /// which is what says a page changed, in the game's own words for it.
     ///
     /// The game's own way into the side pages is Left and Right (<c>HandleInput</c> :125-148), and those
     /// arrows are the mod's while this screen is focused, so that route is dead. It costs nothing: each
@@ -49,7 +49,6 @@ namespace ES2Access.Screens
         /// <summary>The prefix this window's ids and stops are keyed under.</summary>
         private const string Keys = "hero:";
 
-        private static readonly object TitleStop = "hero:title";
         private static readonly object ShipOverviewStop = "hero:ship";
         private static readonly object CardStop = "hero:card";
         private static readonly object SkillsOverviewStop = "hero:skills";
@@ -97,8 +96,9 @@ namespace ES2Access.Screens
             get { return 45; }
         }
 
-        /// <summary>The hero and the page, which is what has just opened. The page's own heading says the
-        /// same words where it is drawn, so focus deliberately does not land on it.</summary>
+        /// <summary>The hero and the page, which is what has just opened. The page's name here is the
+        /// heading the page draws across its own top, which is why no page declares that heading as a
+        /// stop: it would be the screen name said twice.</summary>
         public override string ScreenName
         {
             get
@@ -123,8 +123,9 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What the page is for: the hero on the overview, the wheel on the skill page, the
-        /// design on the ship page. The heading is a Shift+Tab away, and saying it as the screen name and
-        /// then again as the first control is the one thing an arrival must not do.</summary>
+        /// design on the ship page. First in the tab order on every page, because the heading above it is
+        /// not a stop - saying it as the screen name and then again as the first control is the one thing
+        /// an arrival must not do.</summary>
         public override object InitialFocusStop
         {
             get
@@ -221,8 +222,8 @@ namespace ES2Access.Screens
         /// Escape on a side page - and the whole screen now means something else.
         ///
         /// Two things happen, in this order, and both are needed. The page's own name is SAID, because
-        /// the graph would not say it: the cursor is about to land in the page's content, and the one
-        /// node that carries the page's name is its heading. And the cursor is dropped, because the
+        /// nothing else would say it: the screen name is not re-announced for a page change, the cursor
+        /// is about to land in the page's content, and the heading that names the page is no node. And the cursor is dropped, because the
         /// graph's own focus recovery would otherwise keep whichever node survived the change - the
         /// Close button along the bottom is on every page - and leave the player standing on the old
         /// page's business. The next build seats it again, on this page's own landing.
@@ -265,11 +266,9 @@ namespace ES2Access.Screens
                         BuildSkillPage(builder, window);
                         break;
                     case HeroInspectionModalWindow.HeroHubMode.ShipDesign:
-                        BuildHeading(builder, window);
                         BuildShipPage(builder, window);
                         break;
                     default:
-                        BuildHeading(builder, window);
                         BuildOverview(builder, window);
                         break;
                 }
@@ -343,29 +342,8 @@ namespace ES2Access.Screens
         // ---- the page's own heading ----
 
         /// <summary>
-        /// The one line the game writes across the top of whichever page is up. Declared once, in the
-        /// first stop, and never repeated per band.
-        ///
-        /// Not on the SKILL page, where the same words are the name of the panel below them and are
-        /// said there instead (<see cref="BuildTrees"/>): the page is the wheel, so a stop holding
-        /// nothing but its heading is a stop between the player and the only thing on the page.
-        /// </summary>
-        private void BuildHeading(GraphBuilder builder, HeroInspectionModalWindow window)
-        {
-            AgeTransform heading = Heading(window);
-            if (heading == null)
-            {
-                return;
-            }
-
-            builder.BeginStop(TitleStop);
-            _cells.Clear();
-            Cells.AddReadout(_cells, heading, Keys + "heading");
-            Cells.EmitLinear(builder, _cells);
-        }
-
-        /// <summary>
-        /// The label the current page draws its own name in.
+        /// The label the current page draws its own name in - the words the screen name ends with, and
+        /// the words said when the page changes under the player. No page declares it as a node.
         ///
         /// Each page keeps it somewhere else: the skill tree's is the panel's own
         /// <c>TitleLabel</c> (<c>SkillTreeBasePanel.cs:10</c>, which is also where the game appends
