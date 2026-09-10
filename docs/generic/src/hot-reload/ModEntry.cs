@@ -1205,6 +1205,9 @@ namespace ES2Access
             // every mod notification still standing is dismissed, so nothing from this assembly is
             // left in a list the game will keep asking for titles.
             Step("mod notifications", ModNotifications.Stop);
+            // The serials the two notification stops key their rows on name objects of a game this
+            // assembly is about to stop knowing about.
+            Step("notification serials", NotificationSerials.Clear);
             Step("notification strip", NotificationStrip.Remove);
             // And the two detection points that feed it, each giving back its patch, its
             // subscription and what it was remembering about the galaxy.

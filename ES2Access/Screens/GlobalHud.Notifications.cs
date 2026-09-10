@@ -57,7 +57,11 @@ namespace ES2Access.Screens
                 }
 
                 Dictionary<GuiNotification, NotificationItem> items = NotificationIcons();
-                foreach (GuiNotification notification in service.GetPlayerEmpireGuiNotifications())
+                // The one walk of the whole list, so the serials the two stops key their rows on are
+                // pruned to what the empire still holds here and nowhere else.
+                List<GuiNotification> standing = service.GetPlayerEmpireGuiNotifications();
+                NotificationSerials.Prune(standing);
+                foreach (GuiNotification notification in standing)
                 {
                     if (Mine(notification) != null)
                     {
@@ -82,7 +86,10 @@ namespace ES2Access.Screens
                     // nothing here whose paint state could vouch for the row. The enumeration is
                     // where the honesty lives - the service lists the notifications that exist.
                     builder.AddItem(
-                        Nodes.Synthetic(ControlId.For(it, "hud:notification/" + count), vtable)
+                        Nodes.Synthetic(
+                            ControlId.For(it, "hud:notification/" + NotificationSerials.Of(it)),
+                            vtable
+                        )
                     );
                     count++;
                 }
@@ -219,7 +226,6 @@ namespace ES2Access.Screens
                     builder.PushContext(ModStrings.Format(ModStrings.HudTurnLogTurn, turn));
                     try
                     {
-                        int within = 0;
                         for (int i = 0; i < logged.Count; i++)
                         {
                             ModNotification it = logged[i];
@@ -238,10 +244,9 @@ namespace ES2Access.Screens
                             // Synthetic: the turn log is the mod's own record of notifications that have
                             // been and gone - the HUD draws nothing for a dismissed one.
                             builder.AddItem(Nodes.Synthetic(
-                                ControlId.For(it, "hud:turn-log/" + turn + "/" + within),
+                                ControlId.For(it, "hud:turn-log/" + turn + "/" + NotificationSerials.Of(it)),
                                 vtable
                             ));
-                            within++;
                         }
                     }
                     finally
