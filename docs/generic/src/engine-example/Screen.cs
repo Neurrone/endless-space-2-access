@@ -519,12 +519,27 @@ namespace ES2Access.Screens
         ///
         /// An arrival that CROSSES INTO another panel is not silenced but TRIMMED (owner ruling
         /// 2026-09-10): the panel entered names itself - under a mode that name is what tells the
-        /// player which keys they have - and the row seated under it is still left to the mode
-        /// (<see cref="ES2Access.Core.UI.Graph.GraphAnnouncer.ComposeCrossing"/>).
+        /// player which keys they have - and the row seated under it is left to the mode
+        /// (<see cref="ES2Access.Core.UI.Graph.GraphAnnouncer.ComposeCrossing"/>), whose own subject
+        /// finishes that one line (<see cref="TakeModeSubject"/>).
         /// </summary>
         public virtual bool SilentUnderMode
         {
             get { return false; }
+        }
+
+        /// <summary>
+        /// What the MODE of this screen would say about what the cursor now stands on - null on every
+        /// screen but one whose mode is up (<see cref="SilentUnderMode"/>).
+        ///
+        /// Asked while a crossing is composed, so that the panel's name and the mode's subject are ONE
+        /// utterance: the label, a pause of a second, and then the square was two lines for one arrival
+        /// (owner ruling 2026-09-10). TAKEN and not merely read - the caller speaks what comes back, so
+        /// the screen gives up whatever reading of the same arrival it was going to make on its own.
+        /// </summary>
+        public virtual string TakeModeSubject()
+        {
+            return null;
         }
 
         /// <summary>

@@ -141,9 +141,10 @@ namespace ES2Access.Core.UI.Graph
         /// (<c>Screen.SilentUnderMode</c>).
         ///
         /// The panel still names itself: under such a mode its name is what tells the player which
-        /// keys they now have, and the mode reads its own subject a moment later. Everything below it
-        /// — the group the cursor was seated in, the row itself — belongs to the mode and is left to
-        /// it, so this is the outermost newly-entered level and no more.
+        /// keys they now have, and the caller finishes the line with the mode's own subject
+        /// (<c>Screen.TakeModeSubject</c>). Everything below it — the group the cursor was seated in,
+        /// the row itself — belongs to the mode and is left to it, so this is the outermost
+        /// newly-entered level and no more.
         ///
         /// Null where the move crossed no level but the control itself, which is every move inside
         /// one panel.

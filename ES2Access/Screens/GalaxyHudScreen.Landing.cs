@@ -294,6 +294,18 @@ namespace ES2Access.Screens
             int x = MapCoordinates.Round(target.At.x - origin.X);
             int y = MapCoordinates.Round(target.At.z - origin.Y);
             bool standing = GalaxyInspect.Active;
+
+            // A PARKED CELL MOVES BEFORE THE SEAT THAT ANNOUNCES IT. The arrival on the map says the
+            // square in the same line as the map's own name (<c>Screen.TakeModeSubject</c>), and a cell
+            // still standing where it was would make that line name the place the player has just been
+            // taken away from. The move is silent, so nothing is said twice by doing it first; an
+            // arming cannot be reordered this way (<see cref="GalaxyInspect.ArmAt"/> refuses off the
+            // map), and a cell already driving the map is read by its own jump below.
+            if (plan.MoveCell && !standing && !_inspect.MoveTo(x, y))
+            {
+                return false;
+            }
+
             if (!standing)
             {
                 GraphNavigator navigator = ModEntry.Navigator;
@@ -306,7 +318,7 @@ namespace ES2Access.Screens
 
             if (plan.MoveCell)
             {
-                return standing ? _inspect.JumpTo(x, y) : _inspect.MoveTo(x, y);
+                return !standing || _inspect.JumpTo(x, y);
             }
 
             return plan.ArmCell && _inspect.ArmAt(x, y);

@@ -630,7 +630,7 @@ namespace ES2Access.Screens
             _live = false;
             _driving = null;
             _wasOnMap = false;
-            _resume = 0;
+            _readOnArrival = false;
             _leaps.Clear();
             _entry = null;
             InspectMarker.Hide();
@@ -755,13 +755,18 @@ namespace ES2Access.Screens
         /// the arrows mean the cell again. So the cell is read out - the same sentence a move reads, and
         /// no new words - which is how the player hears that the mode is driving again.
         ///
-        /// It waits a few frames rather than speaking on the frame the focus changed: the stop being
-        /// arrived at announces itself in a burst that interrupts, and a line queued into the middle of
-        /// that burst is thrown away.
+        /// It speaks on the frame the player is back on the map. What it used to wait a fifth of a
+        /// second for was the arriving stop's own burst, which interrupts and would throw a line queued
+        /// into the middle of it away - but the arrivals that make a burst are exactly the ones that
+        /// now say the square THEMSELVES (<see cref="TakeSubject"/>), and what is left here is the
+        /// arrival nobody announced: a silent seat on the map (<see cref="MoveTo"/>), and the page
+        /// getting the focus back with the cursor already standing on the map. The only line either of
+        /// those makes is the screen's own name, which is queued from the top of the same frame's tick
+        /// and is therefore ahead of this one (measured 2026-09-10).
         ///
-        /// EVERY resume speaks. A jump made while the mode is parked deliberately lands the player
-        /// back on the map in silence, so that this reading is the one utterance it makes
-        /// (<see cref="MoveTo"/>).
+        /// EVERY resume that is still owed speaks. A jump made while the mode is parked deliberately
+        /// lands the player back on the map in silence, so that this reading is the one utterance it
+        /// makes.
         /// </summary>
         public void Update()
         {
@@ -776,9 +781,15 @@ namespace ES2Access.Screens
             }
 
             bool onMap = Active;
+            bool resume = false;
             if (onMap && !_wasOnMap)
             {
-                _resume = ResumeFrames;
+                // Not for an arrival that has already been read: the line the navigator spoke as the
+                // player crossed onto the map ended with this cell's own square (TakeSubject), and a
+                // reading behind it would say the same thing twice. The taking happens a frame ahead of
+                // this where the seat is made after the page's own update (a game locate), so it is
+                // remembered rather than asked for here.
+                resume = !_readOnArrival;
             }
             else if (!onMap && _wasOnMap)
             {
@@ -793,12 +804,8 @@ namespace ES2Access.Screens
             }
 
             _wasOnMap = onMap;
-            if (_resume <= 0)
-            {
-                return;
-            }
-
-            if (--_resume != 0 || !onMap)
+            _readOnArrival = false;
+            if (!resume)
             {
                 return;
             }
@@ -806,10 +813,25 @@ namespace ES2Access.Screens
             Voice.Say(Look(), false);
         }
 
-        /// <summary>How long the resume line waits for the stop the player has just landed on to finish
-        /// announcing itself - a fifth of a second, several times the gap between the parts of one
-        /// arrival.</summary>
-        private const int ResumeFrames = 12;
+        /// <summary>
+        /// The cell's own line for an arrival on the map that is about to speak it, or null while the
+        /// mode is not driving the map (<see cref="Screen.TakeModeSubject"/>).
+        ///
+        /// TAKEN, not merely read: the caller says what comes back, so the reading this mode would have
+        /// made of the same arrival is given up here - the resume it has not armed yet included, which
+        /// is where a game locate leaves it (the seat is made after this mode's own update, so the
+        /// arrival is a frame away).
+        /// </summary>
+        public string TakeSubject()
+        {
+            if (!Active)
+            {
+                return null;
+            }
+
+            _readOnArrival = true;
+            return Look();
+        }
 
         // ---- the mode ----
 
@@ -828,11 +850,13 @@ namespace ES2Access.Screens
 
         private readonly GalaxyHudScreen _screen;
 
-        /// <summary>Whether the player was standing on the map last frame, and what is left of the wait
-        /// before the cell is read out again (<see cref="Update"/>).</summary>
+        /// <summary>Whether the player was standing on the map last frame - what makes coming back to it
+        /// a thing that happens on one frame (<see cref="Update"/>).</summary>
         private bool _wasOnMap;
 
-        private int _resume;
+        /// <summary>Whether the arrival on the map has already had the cell read out for it by the
+        /// navigator (<see cref="TakeSubject"/>), and so is owed no reading of this mode's own.</summary>
+        private bool _readOnArrival;
 
         /// <summary>Where the cursor is, in the pair the map is spoken in - whole units from home.
         /// </summary>
@@ -937,7 +961,7 @@ namespace ES2Access.Screens
             _driving = this;
             // Entry announces the mode and reads the cell itself; the resume line is for coming BACK.
             _wasOnMap = true;
-            _resume = 0;
+            _readOnArrival = false;
             _leaps.Clear();
             // A camera closer than the ceiling is pulled out to it, so enough of the map is visible
             // around the square; one already further out is the player's own choice and stays
@@ -987,7 +1011,7 @@ namespace ES2Access.Screens
             _live = false;
             _driving = null;
             _wasOnMap = false;
-            _resume = 0;
+            _readOnArrival = false;
             _leaps.Clear();
             InspectMarker.Hide();
             // The game's tooltip was the CELL's while the mode drove the map (Point), so the mode

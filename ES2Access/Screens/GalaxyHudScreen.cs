@@ -549,6 +549,13 @@ namespace ES2Access.Screens
             get { return GalaxyInspect.Active; }
         }
 
+        /// <summary>The square under the cell, for an arrival on the map that is about to say it
+        /// (<see cref="Screen.TakeModeSubject"/>).</summary>
+        public override string TakeModeSubject()
+        {
+            return _inspect.TakeSubject();
+        }
+
         /// <summary>Frames still to wait for the orbital surface of a system the camera has just been
         /// snapped into (<see cref="ViewBindFrames"/>).</summary>
         private int _binding;
