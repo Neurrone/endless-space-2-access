@@ -913,6 +913,32 @@ namespace ES2Access.Tests.UI
             Assert.Equal("b", Focused(g)); // the survivor before it in the previous order
         }
 
+        /// <summary>The first row of a panel dying is the notification the player just threw away: the
+        /// walk backward leaves the panel altogether, so the stop is asked first and answered forward
+        /// when nothing above the dead row is left in it.</summary>
+        [Fact]
+        public void AVanishedFirstRowFallsBackToTheNextSurvivorInItsOwnStop()
+        {
+            GraphState state = new GraphState();
+            bool withB = true;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.BeginStop("s1").AddItem(new SyntheticNode(Id("a1"), Vt("A1")));
+                b.BeginStop("s2");
+                if (withB) b.AddItem(new SyntheticNode(Id("b1"), Vt("B1")));
+                b.AddItem(new SyntheticNode(Id("b2"), Vt("B2")));
+                return b.Build();
+            }, state);
+            g.Rerender();
+            g.MoveStop(1, true);
+            Assert.Equal("b1", Focused(g));
+
+            withB = false;
+            g.Rerender();
+            Assert.Equal("b2", Focused(g));
+        }
+
         /// <summary>The traversal order is a walk of every node and only a DEATH reads it, so a rebuild
         /// that still has the cursor's control keeps the RENDER rather than the order - and the rebuild
         /// that loses one recovers out of that kept render just the same.</summary>

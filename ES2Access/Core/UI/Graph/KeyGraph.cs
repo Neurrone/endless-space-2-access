@@ -134,10 +134,21 @@ namespace ES2Access.Core.UI.Graph
                     if (container != null && container.Focusable) resolved = container.Id;
                 }
 
-                // Fallback: nearest survivor walking the previous order backward.
+                // Fallback: the nearest survivor in the previous order, asked of the dead control's OWN
+                // stop first and both ways round. A panel that still has rows is where the player was
+                // reading, and walking only backward walks OUT of it whenever the row that died was the
+                // stop's first — throw the first of three notifications away and the cursor lands in
+                // whatever panel happened to be declared before the strip. Backward first, so a row
+                // dying under the cursor still reads its neighbour above; forward only when there is
+                // nothing above it left in the stop.
                 if (resolved == null)
                 {
-                    GraphNode survivor = SurvivorBefore(render, PreviousOrder(state), old, null);
+                    List<ControlId> order = PreviousOrder(state);
+                    GraphNode was = state.OrderSource == null ? null : state.OrderSource.NodeAt(old);
+                    object stop = was == null ? null : was.StopKey;
+                    GraphNode survivor = stop == null ? null : SurvivorBefore(render, order, old, stop);
+                    if (survivor == null && stop != null) survivor = SurvivorAfter(render, order, old, stop);
+                    if (survivor == null) survivor = SurvivorBefore(render, order, old, null);
                     if (survivor != null) resolved = survivor.Id;
                 }
             }
@@ -306,6 +317,24 @@ namespace ES2Access.Core.UI.Graph
         {
             if (order == null) return null;
             for (int i = IndexOf(order, dead); i >= 0; i--)
+            {
+                GraphNode survivor;
+                if (render.Nodes.TryGetValue(order[i], out survivor)
+                    && (stopKey == null || Equals(survivor.StopKey, stopKey)))
+                    return survivor;
+            }
+            return null;
+        }
+
+        /// <summary>The same walk the other way: the first control still declared AFTER the dead one in
+        /// the previous order. Only ever asked with a stop, because leaving a stop forward is the same
+        /// wrong answer as leaving it backward.</summary>
+        private static GraphNode SurvivorAfter(GraphRender render, List<ControlId> order, ControlId dead, object stopKey)
+        {
+            if (order == null) return null;
+            int at = IndexOf(order, dead);
+            if (at < 0) return null;
+            for (int i = at + 1; i < order.Count; i++)
             {
                 GraphNode survivor;
                 if (render.Nodes.TryGetValue(order[i], out survivor)
