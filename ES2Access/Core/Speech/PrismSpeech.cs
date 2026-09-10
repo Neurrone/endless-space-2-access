@@ -169,21 +169,54 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public void Shutdown()
         {
+            Trace("speech shutdown entered");
             if (_backend != IntPtr.Zero)
             {
                 // Stop before free: freeing alone does not guarantee in-flight speech halts.
+                Trace("prism_backend_stop");
                 PrismNative.prism_backend_stop(_backend);
+                Trace("prism_backend_free");
                 PrismNative.prism_backend_free(_backend);
                 _backend = IntPtr.Zero;
+                Trace("backend released");
             }
 
             if (_ctx != IntPtr.Zero)
             {
+                Trace("prism_shutdown");
                 PrismNative.prism_shutdown(_ctx);
                 _ctx = IntPtr.Zero;
+                Trace("context released");
             }
 
             Available = false;
+            Trace("speech shutdown done");
+        }
+
+        /// <summary>
+        /// Where the shutdown trace goes. Core compiles against the BCL alone, so it cannot reach
+        /// Unity's player log itself: the mod installs its own dual logger here at start and takes
+        /// it back at stop. Each P/Invoke below can block on a screen reader that is not answering,
+        /// and the line before it is the only thing that says which one.
+        /// </summary>
+        public static Action<string> Tracer;
+
+        private static void Trace(string message)
+        {
+            Action<string> tracer = Tracer;
+            if (tracer == null)
+            {
+                return;
+            }
+
+            try
+            {
+                tracer(message);
+            }
+            catch
+            {
+                // A trace must never be what stops the backend being freed.
+            }
         }
     }
 }

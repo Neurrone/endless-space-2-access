@@ -254,6 +254,8 @@ namespace ES2Access.Loader.Dev
                 _thread.Join(ShutdownJoinMilliseconds);
                 _thread = null;
             }
+
+            LoaderLog.QuitTrace("DevHttpServer.Stop done");
         }
 
         private void Serve()
@@ -273,11 +275,14 @@ namespace ES2Access.Loader.Dev
                         LoaderLog.Warn("Dev server stopped accepting requests: " + e.Message);
                     }
 
+                    LoaderLog.QuitTrace("listener thread ending (GetContext threw)");
                     return;
                 }
 
                 ThreadPool.QueueUserWorkItem(state => Answer((HttpListenerContext)state), context);
             }
+
+            LoaderLog.QuitTrace("listener thread ending (no longer running)");
         }
 
         private void Answer(HttpListenerContext context)

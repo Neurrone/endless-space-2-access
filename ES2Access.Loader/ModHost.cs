@@ -20,6 +20,13 @@ namespace ES2Access.Loader
         private readonly LoaderPlugin _plugin;
         private readonly DevServer _dev;
 
+        /// <summary>Whether the process is on its way down, as opposed to the mod merely being
+        /// swapped out by POST /reload. Set once by the loader's OnApplicationQuit, which Unity
+        /// runs before OnDestroy, so everything either side of the unload can tell the two apart.
+        /// Static because it outlives any one load of the mod, and never cleared: a quit does not
+        /// come back.</summary>
+        public static bool Quitting;
+
         internal ModHost(LoaderPlugin plugin, DevServer dev, string pluginDirectory)
         {
             _plugin = plugin;

@@ -171,17 +171,22 @@ namespace ES2Access.Loader.Dev
 
         public void Stop()
         {
+            LoaderLog.QuitTrace("DevServer.Stop entered");
             if (_http != null)
             {
+                LoaderLog.QuitTrace("stopping the HTTP listener");
                 _http.Stop();
                 _http = null;
+                LoaderLog.QuitTrace("HTTP listener stopped");
             }
 
             // Nothing new can arrive now, but a request already inside is parked on work only a
             // FRAME retires - a main-thread job, or a predicate - and no frame is coming. Both are
             // ended here, or shutdown sits out every one of their timeouts.
             _mainThread.Drain();
+            LoaderLog.QuitTrace("main-thread queue drained");
             _waits.AbandonAll("the dev server stopped before this wait was satisfied");
+            LoaderLog.QuitTrace("outstanding waits abandoned");
 
             if (_logTap != null)
             {
@@ -189,6 +194,10 @@ namespace ES2Access.Loader.Dev
                 _logTap.Dispose();
                 _logTap = null;
             }
+
+            // Past this line the trace reaches the disk logger and Unity only - the tap that was
+            // mirroring it into GET /log is gone, which is what this line records.
+            LoaderLog.QuitTrace("log tap removed, DevServer.Stop done");
         }
 
         /// <summary>Record a line the mod spoke, so POST /eval can report what it provoked. Kept
@@ -642,14 +651,18 @@ namespace ES2Access.Loader.Dev
 
         private DevResponse Quit()
         {
+            LoaderLog.QuitTrace("POST /quit received");
             _mainThread.Post(() => _plugin.StartCoroutine(QuitAfterAnswering()));
             return DevResponse.Json(DevJson.Ok());
         }
 
         private static IEnumerator QuitAfterAnswering()
         {
+            LoaderLog.QuitTrace("quit coroutine started, waiting " + QuitDelaySeconds + " s");
             yield return new WaitForSeconds(QuitDelaySeconds);
+            LoaderLog.QuitTrace("calling Application.Quit()");
             Application.Quit();
+            LoaderLog.QuitTrace("Application.Quit() returned");
         }
 
         private static string Key(string method, string path)

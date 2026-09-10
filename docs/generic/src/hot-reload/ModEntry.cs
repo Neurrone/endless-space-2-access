@@ -153,6 +153,9 @@ namespace ES2Access
             _announcedStartup = false;
 
             Log.Install(host.LogInfo, host.LogWarning, host.LogError);
+            // Core cannot reach Unity's player log on its own, and the speech backend's release is
+            // the part of teardown most likely to block on something outside the process.
+            PrismSpeech.Tracer = QuitTrace;
             ModLocale.PluginDirectory = host.PluginDirectory;
             // Before anything reads a setting: the keys the player has moved are applied to the
             // actions as they are registered, further down.
@@ -1279,6 +1282,9 @@ namespace ES2Access
                     Speech.Shutdown();
                     Speech = null;
                 }
+
+                // A delegate into this assembly, on a static that outlives it.
+                PrismSpeech.Tracer = null;
             });
 
             // Last of all, because every step above logs through them: the sinks are delegates over
@@ -1295,6 +1301,7 @@ namespace ES2Access
         /// </summary>
         private static void Step(string what, Action step)
         {
+            QuitTrace("step '" + what + "' starting");
             try
             {
                 step();
@@ -1309,6 +1316,45 @@ namespace ES2Access
                 {
                     // Nothing left that can report this, and the remaining steps still matter more.
                 }
+            }
+
+            QuitTrace("step '" + what + "' done");
+        }
+
+        /// <summary>
+        /// One line of the shutdown trace, written to BOTH the BepInEx log and Unity's own player
+        /// log under a greppable prefix, because a quit that hangs has been seen to lose the
+        /// BepInEx half entirely. Nothing in here may throw: teardown carries on regardless of
+        /// whether either logger is still alive - and the last steps run after
+        /// <see cref="Log.Reset"/> has taken the mod's sinks back, leaving only the Unity half.
+        ///
+        /// Silent unless the process is actually quitting: teardown runs on every POST /reload
+        /// too, and seventy step lines per reload would bury the reload loop's own output.
+        /// </summary>
+        private static void QuitTrace(string message)
+        {
+            if (!ModHost.Quitting)
+            {
+                return;
+            }
+
+            string line = "quit trace: " + message;
+            try
+            {
+                Log.Info(line);
+            }
+            catch
+            {
+                // The Unity half below still stands.
+            }
+
+            try
+            {
+                Debug.Log(line);
+            }
+            catch
+            {
+                // Late in shutdown Unity may no longer accept a log line.
             }
         }
 

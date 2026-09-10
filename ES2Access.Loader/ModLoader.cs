@@ -124,6 +124,14 @@ namespace ES2Access.Loader
             Activate(prepared);
         }
 
+        private static void QuitTrace(string message)
+        {
+            if (ModHost.Quitting)
+            {
+                LoaderLog.QuitTrace(message);
+            }
+        }
+
         public void Unload()
         {
             MethodInfo stop = _stop;
@@ -135,7 +143,11 @@ namespace ES2Access.Loader
             {
                 try
                 {
+                    // Gated, unlike the rest of the loader's trace: Unload also runs on every
+                    // POST /reload, and the quit trace is about a quit.
+                    QuitTrace("calling the mod's Stop");
                     Invoke(stop, null);
+                    QuitTrace("the mod's Stop returned");
                 }
                 catch (Exception e)
                 {

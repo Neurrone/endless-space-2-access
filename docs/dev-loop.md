@@ -166,6 +166,9 @@ from `/eval`) — expanded, it eats every injection as `unconsumed`. If a launch
 process alive, `tasklist /FI "PID eq <pid>"` shows whether it is orphaned into another session.
 `POST /quit` can leave the process hung and non-responding: poll it and terminate it after two
 minutes (measured 2026-09-09, seven minutes at 2.6 GB after the dev server had stopped answering).
+The whole quit sequence now traces itself under a `quit trace:` prefix into both logs, so read
+`<GameDir>\EndlessSpace2_Data\output_log.txt` first — the player log is the one that survived a hang —
+and the BepInEx log second.
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer

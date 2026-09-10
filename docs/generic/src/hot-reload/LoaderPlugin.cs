@@ -55,6 +55,7 @@ namespace ES2Access.Loader
         private void Awake()
         {
             LoaderLog.Install(Logger.LogInfo, Logger.LogWarning, Logger.LogError);
+            TraceRuntimeExit();
 
             string pluginDirectory = Path.GetDirectoryName(
                 Assembly.GetExecutingAssembly().Location
@@ -134,10 +135,52 @@ namespace ES2Access.Loader
             }
         }
 
+        /// <summary>Unity calls this before OnDestroy, so the pair of them says which half of the
+        /// engine's own shutdown a hang is in.</summary>
+        private void OnApplicationQuit()
+        {
+            ModHost.Quitting = true;
+            LoaderLog.QuitTrace("OnApplicationQuit");
+        }
+
         private void OnDestroy()
         {
+            LoaderLog.QuitTrace("OnDestroy entered");
+            LoaderLog.QuitTrace("unloading the mod");
             _mods.Unload();
+            LoaderLog.QuitTrace("mod unloaded");
+            LoaderLog.QuitTrace("stopping the dev server");
             _dev.Stop();
+            LoaderLog.QuitTrace("dev server stopped");
+            LoaderLog.QuitTrace("OnDestroy done");
+        }
+
+        // Best-effort, all three of these: the runtime is coming down around them, Unity may
+        // already have refused further log lines, and a finalizer pass is not guaranteed to run
+        // at all. They are worth having anyway - a quit that hangs AFTER the mod is down looks
+        // identical in the logs to one that never got this far unless these lines exist.
+        private void TraceRuntimeExit()
+        {
+            AppDomain.CurrentDomain.ProcessExit += delegate
+            {
+                LoaderLog.QuitTrace("AppDomain ProcessExit");
+            };
+            AppDomain.CurrentDomain.DomainUnload += delegate
+            {
+                LoaderLog.QuitTrace("AppDomain DomainUnload");
+            };
+        }
+
+        ~LoaderPlugin()
+        {
+            try
+            {
+                UnityEngine.Debug.Log("quit trace: finalizer pass reached");
+            }
+            catch
+            {
+                // Nothing can be reported from here if Unity is already gone.
+            }
         }
 
         private void ParseForcedResolution(string setting)
