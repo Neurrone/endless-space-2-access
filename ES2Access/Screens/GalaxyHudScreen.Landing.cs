@@ -125,13 +125,18 @@ namespace ES2Access.Screens
         /// the neighbour of the row the player is standing on - and it keeps the picture at the
         /// distance they put it.
         ///
-        /// Under a live cell every one of them arrives the same way: ONLY THE CELL MOVES (owner
-        /// rulings 2026-08-31). The zoom is not touched - the cell's own slide is the whole camera
-        /// move - and neither is the tree cursor, so leaving the mode puts the player back on the row
-        /// they armed it from rather than on whatever they last looked at through the square. That
-        /// second half reverses an earlier ruling of the same day which had the landing seat the
-        /// cursor underneath the cell; what died with it was a deferred seat, its camera-free mark and
-        /// a re-seat call on the mode - a lever apiece, all removed rather than left inert.
+        /// Under a live cell every one of them arrives the same way: THE CELL MOVES AND THE CURSOR
+        /// FOLLOWS SILENTLY UNDERNEATH (owner rulings 2026-08-31 and 2026-09-10). The zoom is not
+        /// touched - the cell's own slide is the whole camera move, and the band is not forced either -
+        /// and nothing extra is said, the cell's own arrival line being the announcement. What the
+        /// silent seat buys is the END of the mode: the row landed on becomes the row Escape restores
+        /// to and its place the one the camera comes back to (<see cref="GalaxyInspect.Rebase"/>), so
+        /// leaving the square leaves the player standing on the location they were shown rather than
+        /// back where they armed it. That reverses the second of the two 2026-08-31 rulings, which had
+        /// the tree cursor stay put.
+        ///
+        /// A request the tree has NO ROW for arms the cell instead of being answered with a word
+        /// (owner ruling 2026-09-10, <see cref="ReadThroughTheCell"/>).
         ///
         /// The camera moves are marked as the MOD's own (<see cref="GalaxyLocate.Suppressed"/>): the
         /// mod pans through the same calls the game leads the player with, and an unmarked pan here
@@ -149,13 +154,23 @@ namespace ES2Access.Screens
         {
             try
             {
-                MapLanding plan = MapLandings.Decide(target.Thing, GalaxyInspect.Live, reach);
-                if (plan.Unplaced || (target.Id == null && target.Select == null))
+                // A target the tree has no row for IS a bare coordinate, whatever kind it calls itself.
+                MapLanding plan = MapLandings.Decide(
+                    target.Id == null && target.Select == null ? MapThing.Nowhere : target.Thing,
+                    GalaxyInspect.Live,
+                    reach
+                );
+                if (plan.Unplaced)
                 {
                     // Owner ruling 2026-08-22: everything the game can point the player at is supposed
                     // to have a row, so a request that lands on nothing is a DEFECT to model and not a
-                    // behaviour to fall back on. The camera HAS moved, so the player is told; the
-                    // request is logged where the dev sweep can find it; and nothing else moves.
+                    // behaviour to fall back on - and it is logged where the dev sweep can find it.
+                    // What the PLAYER gets is the CELL (owner ruling 2026-09-10): a square of bare map
+                    // is the one reader this map has for a coordinate, so the cursor is armed there
+                    // where it is down and moved there where it is up, and the cell says where it
+                    // arrived. The old line is kept for the case that has no cell either - no map stop
+                    // to arm one on - because a camera that moved and said nothing is the very thing
+                    // this branch exists to prevent.
                     Log.Warn(
                         "galaxy go-to: nothing on the map stands at "
                             + target.At.x.ToString("F2")
@@ -163,7 +178,11 @@ namespace ES2Access.Screens
                             + target.At.z.ToString("F2")
                             + " - the tree has no row for what the game pointed at"
                     );
-                    Voice.Say(ModStrings.Get(ModStrings.GalaxyShownOnMap), false);
+                    if (!ReadThroughTheCell(target, plan))
+                    {
+                        Voice.Say(ModStrings.Get(ModStrings.GalaxyShownOnMap), false);
+                    }
+
                     return false;
                 }
 
@@ -182,24 +201,32 @@ namespace ES2Access.Screens
 
                 if (plan.MoveCell)
                 {
-                    GalaxyPosition origin = GalaxyCoordinates.Origin();
-                    _inspect.JumpTo(
-                        MapCoordinates.Round(target.At.x - origin.X),
-                        MapCoordinates.Round(target.At.z - origin.Y)
-                    );
+                    ReadThroughTheCell(target, plan);
                 }
 
                 GraphNavigator navigator = ModEntry.Navigator;
-                if (plan.FocusNode)
+                if (plan.FocusNode && !plan.MoveCell)
                 {
                     // Before the cursor is sent anywhere: the picture has to be drawing the kind of
                     // thing it is being sent to, or there is no row to land on.
+                    //
+                    // Never under the CELL, where nothing touches the zoom (owner ruling 2026-08-31,
+                    // kept by the seat of 2026-09-10): the silent seat takes whatever row the band the
+                    // player chose is drawing, and where that band draws none the cell is what they
+                    // are reading anyway - leaving it then falls back to the nearest row still
+                    // standing at the place itself (<see cref="RestoreRow"/>).
                     EnsureBand(target, leaving);
                 }
 
                 if (plan.FocusNode && target.Id != null && navigator != null)
                 {
                     navigator.FocusNode(target.Id, plan.AnnounceNode);
+                    if (plan.RebaseEntry)
+                    {
+                        // ...and leaving the cell now ends here rather than where it was armed
+                        // (owner ruling 2026-09-10, <see cref="GalaxyInspect.Rebase"/>).
+                        _inspect.Rebase(target.Id, target.At);
+                    }
                 }
 
                 if (target.Select != null && !plan.MoveCell)
@@ -217,6 +244,45 @@ namespace ES2Access.Screens
                 Log.Warn("galaxy: going to a place on the map threw: " + e);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Put the free cell on what the landing found, and answer whether it is there.
+        ///
+        /// ONE RULE FOR WHO SAYS IT: a cell the player is STANDING on reads itself as it arrives, and a
+        /// cell they are not standing on is moved silently and read by the mode's own resume once they
+        /// are back on the map (<see cref="GalaxyInspect.MoveTo"/>) - the same one utterance a bookmark
+        /// jump made off the map gets. Jumping outright in that second case says the cell twice, once
+        /// where nobody is listening and once on the resume.
+        ///
+        /// Where the tree has NO ROW for the point (owner ruling 2026-09-10) this is also what ARMS the
+        /// mode. Arming refuses unless the tree cursor stands on the map (<see cref="GalaxyInspect.ArmAt"/>),
+        /// which a show-location made from the notification strip does not, so the cursor is seated on
+        /// the map stop first and silently: the least that makes the mode exist at all, and no further -
+        /// there is no row for a bare coordinate to seat anybody on. Where the landing is going to seat
+        /// the cursor itself, that seat is left to do it.
+        /// </summary>
+        private bool ReadThroughTheCell(MapTarget target, MapLanding plan)
+        {
+            GalaxyPosition origin = GalaxyCoordinates.Origin();
+            int x = MapCoordinates.Round(target.At.x - origin.X);
+            int y = MapCoordinates.Round(target.At.z - origin.Y);
+            bool standing = GalaxyInspect.Active;
+            if (!standing && !plan.FocusNode)
+            {
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator == null || !navigator.FocusStop(SystemStop, false))
+                {
+                    return false;
+                }
+            }
+
+            if (plan.MoveCell)
+            {
+                return standing ? _inspect.JumpTo(x, y) : _inspect.MoveTo(x, y);
+            }
+
+            return plan.ArmCell && _inspect.ArmAt(x, y);
         }
 
         /// <summary>

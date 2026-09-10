@@ -375,6 +375,32 @@ namespace ES2Access.Screens
             return true;
         }
 
+        /// <summary>
+        /// Make a row the mode's ENTRY - the row leaving puts the player back on, and the place the
+        /// camera comes back to (owner ruling 2026-09-10).
+        ///
+        /// The one caller is the page's landing (<c>GalaxyHudScreen.GoTo</c>): a "go and look at this"
+        /// made while the cell is up moves the cell and seats the tree cursor silently underneath, and
+        /// leaving the mode has to end on the location the player was shown rather than back where
+        /// they armed it. Silent, and nothing else about the mode changes - the cell stays where the
+        /// landing put it, and the leap trail is untouched, because a landing is not a leap the player
+        /// can back out of.
+        ///
+        /// Refused while the mode is down: there is no entry to rebase, and remembering one would make
+        /// the NEXT entry leave from a place nobody armed it from.
+        /// </summary>
+        public bool Rebase(ControlId row, GalaxyPosition at)
+        {
+            if (!_live || row == null)
+            {
+                return false;
+            }
+
+            _entry = row;
+            _entryAt = at;
+            return true;
+        }
+
         /// <summary>Once per frame from the pump, after the screens have settled and before the
         /// pointer commits: where the game's own tooltip is pointed while the cell drives the map,
         /// and an ending that is waiting to be spoken.</summary>
@@ -824,8 +850,10 @@ namespace ES2Access.Screens
         /// still there the next time they open the mode in this session.</summary>
         private int _size = InspectGrid.DefaultSize;
 
-        /// <summary>The control the mode was opened from, so leaving it puts the player back where
-        /// they were rather than wherever the tree happens to seat them.</summary>
+        /// <summary>The control the mode was ENTERED from, so leaving it puts the player back where
+        /// they were rather than wherever the tree happens to seat them. A landing made under the cell
+        /// re-bases both this and <see cref="_entryAt"/> onto what it showed them
+        /// (<see cref="Rebase"/>).</summary>
         private ControlId _entry;
 
         /// <summary>Where on the map that control stands, kept so that leaving takes the CAMERA back
@@ -969,8 +997,9 @@ namespace ES2Access.Screens
             _aim.Clear();
             PointerFocus.Release();
             GraphNavigator navigator = ModEntry.Navigator;
-            // ESCAPE RESTORES: the row the mode was armed from, which nothing moved while it was up
-            // (owner ruling 2026-08-31). Where that row has DIED under the player - a bookmark whose
+            // ESCAPE RESTORES: the row the mode was ENTERED from - the row it was armed on, or the
+            // location a landing made under the cell last showed the player (owner ruling 2026-09-10,
+            // <see cref="Rebase"/>). Where that row has DIED under the player - a bookmark whose
             // slot a dedupe took, a fleet the tree has re-filed - the nearest thing still standing
             // near where it stood answers instead, because the place is what they meant. A landing
             // Enter made overrides both: that is the player choosing somewhere, not coming back.

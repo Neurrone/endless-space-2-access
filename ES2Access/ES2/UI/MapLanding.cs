@@ -67,6 +67,18 @@ namespace ES2Access.ES2.UI
         /// player is reading, so the tree move is felt only when the mode ends.</summary>
         public bool AnnounceNode;
 
+        /// <summary>Make the row landed on the one LEAVING the free cursor puts the player back on,
+        /// and its place the one the camera comes back to (owner ruling 2026-09-10). Set exactly where
+        /// the cursor is seated silently under a live cell: what the player was last shown through the
+        /// square is where the mode ends, rather than the row they armed it from.</summary>
+        public bool RebaseEntry;
+
+        /// <summary>Turn the free cursor ON at the point. The answer to a place the tree has no row
+        /// for (owner ruling 2026-09-10): the cell is the only reader this map has for a bare
+        /// coordinate, so where it is down it is armed there rather than the request being answered
+        /// with a word.</summary>
+        public bool ArmCell;
+
         /// <summary>What the caller must do to the camera. <see cref="MapCameraMove.None"/> with
         /// <see cref="MoveCell"/> set means the cell's own slide is the whole camera move.</summary>
         public MapCameraMove Camera;
@@ -110,6 +122,12 @@ namespace ES2Access.ES2.UI
     /// and let the cell's slide be the whole camera move. Leaving the mode then puts the cursor on
     /// what was landed on, and stepping INSIDE it zooms as any tree walk does - the ordinary machinery,
     /// unchanged.</item>
+    /// <item>WHAT WAS SHOWN THROUGH THE CELL IS WHERE LEAVING IT PUTS THE PLAYER (owner ruling
+    /// 2026-09-10, reversing the second 2026-08-31 ruling, which had the tree cursor stay put under
+    /// the cell). The row is seated SILENTLY - the cell's own arrival line is the whole announcement,
+    /// and nothing extra is said - and it becomes the row Escape restores to, with the camera
+    /// recentred there (<see cref="RebaseEntry"/>). The player asked to be shown a place; leaving the
+    /// square leaves them standing on it rather than back where they armed the mode.</item>
     /// <item>A LOCAL HOP DOES NOT FRAME (owner ruling 2026-09-02, <see cref="MapReach.Local"/>).
     /// Following a starlane is a walk to the next row along, not a request to be shown a place, so
     /// its camera is the camera an in-place expansion of that system would have given: at the far
@@ -122,9 +140,12 @@ namespace ES2Access.ES2.UI
     /// no row.</item>
     /// <item>Out of the free cursor the landing's own announcement is the whole utterance, once.
     /// </item>
-    /// <item>A point with NOTHING on it is a defect, not a behaviour (owner ruling, 2026-08-22):
-    /// everything the game can point the player at is supposed to have a row. The caller says the
-    /// "shown on the map" line, logs the request so the sweep can find it, and moves nothing.</item>
+    /// <item>A point with NOTHING on it is still a defect to LOG (owner ruling, 2026-08-22):
+    /// everything the game can point the player at is supposed to have a row, and the caller logs the
+    /// request so the sweep can find it. What the PLAYER gets is no longer a word and a shrug (owner
+    /// ruling 2026-09-10) but the CELL: a square of bare map is exactly what it reads, so it is ARMED
+    /// on the point where it is down and MOVED there where it is up, and the cell's own entry or
+    /// arrival line is the news. The tree cursor is not moved - there is no row to move it to.</item>
     /// </list>
     /// </summary>
     public static class MapLandings
@@ -143,11 +164,11 @@ namespace ES2Access.ES2.UI
                     {
                         Frame = frame,
                         MoveCell = inspectLive,
-                        // Under the cell the TREE CURSOR DOES NOT MOVE AT ALL (owner ruling
-                        // 2026-08-31, reversing the reseat ruling of the same day): the cell is the
-                        // only thing that goes anywhere.
-                        FocusNode = !inspectLive,
+                        // Under the cell the cursor goes to the row too, SILENTLY, and that row is
+                        // where leaving the mode puts the player (owner ruling 2026-09-10).
+                        FocusNode = true,
                         AnnounceNode = !inspectLive,
+                        RebaseEntry = inspectLive,
                         // Out of the cell a place is zoomed to. UNDER the cell nothing is: the cell's
                         // own slide is the whole camera move, exactly as it is for a point.
                         Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Zoom,
@@ -158,8 +179,9 @@ namespace ES2Access.ES2.UI
                     {
                         Frame = frame,
                         MoveCell = inspectLive,
-                        FocusNode = !inspectLive,
+                        FocusNode = true,
                         AnnounceNode = !inspectLive,
+                        RebaseEntry = inspectLive,
                         // The cell slides itself; out of the mode the caller does it.
                         Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Slide,
                     };
@@ -175,7 +197,14 @@ namespace ES2Access.ES2.UI
                     };
 
                 default:
-                    return new MapLanding { Unplaced = true };
+                    // Nothing for the tree to land on, so the cell is the reading: armed on the point
+                    // where it is down, moved there where it is up (owner ruling 2026-09-10).
+                    return new MapLanding
+                    {
+                        Unplaced = true,
+                        MoveCell = inspectLive,
+                        ArmCell = !inspectLive,
+                    };
             }
         }
     }

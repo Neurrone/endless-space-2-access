@@ -645,8 +645,8 @@ outposts and the influence/colonizability facts live in `planets.md`; fleets and
 - **`RequestStarSystemManagementViewLevel` silently degrades to a galaxy centre.** For a system that
   is blacked out (:1224-1228) or that the player neither owns nor has a traitor in (:1244-1247) it
   calls `RequestGalaxyOverviewViewLevel(component.Position)` instead — no page opens, and the only
-  feedback a mouse user gets is the camera sliding; the mod's reveal capture fires and it says
-  "Shown on the map" rather than announcing a page.
+  feedback a mouse user gets is the camera sliding; the mod's reveal capture fires and answers it
+  as an ordinary landing on the system the position stands at rather than announcing a page.
 - **`GalaxyView` has two `SelectGameNode` overloads and they do different things.** The one taking a
   `GameNode` force-zooms (`SelectNode` → `ZoomInOnNode`); the one taking the map's own `GalaxyNode` —
   which is what a real left click reaches, via `GalaxyStarSystemCursorTarget.GalaxyStarSystem` — asks

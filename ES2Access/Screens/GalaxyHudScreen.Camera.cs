@@ -209,6 +209,16 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // WHILE THE FREE CELL IS UP IT IS THE ONLY THING MOVING THE CAMERA (owner ruling
+            // 2026-08-31, kept by the silent seat of 2026-09-10). A landing made under the cell now
+            // seats the tree cursor on what it found, and a seat is a placement like any other - so
+            // without this the page would ask the camera for the place the cell has just slid to, on
+            // top of the cell's own slide.
+            if (GalaxyInspect.Live)
+            {
+                return;
+            }
+
             if (Scanning && ScanLensPanels.SystemInfoStop.Equals(node.StopKey))
             {
                 CentreOnScanSystem();
