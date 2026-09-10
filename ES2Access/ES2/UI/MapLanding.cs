@@ -24,6 +24,24 @@ namespace ES2Access.ES2.UI
         Nowhere,
     }
 
+    /// <summary>WHO ASKED - the one thing that decides what a landing made under a live cell does
+    /// beyond moving the cell (owner ruling 2026-09-10).</summary>
+    public enum MapOrigin
+    {
+        /// <summary>The GAME is leading the player somewhere: a notification's show-location, a
+        /// tutorial's, the quest journal's, the go-to-location key - everything that arrives through
+        /// the game's own "show me this" call. Under a live cell such a landing seats the tree cursor
+        /// on the row silently and re-bases the mode's exit on it, and a bare coordinate arms the
+        /// cell.</summary>
+        GameLocate,
+
+        /// <summary>The PLAYER is driving one of the mod's own map keys: the scanner's go-to, a
+        /// bookmark chord, the next-idle-fleet key, following a starlane. Under a live cell the cell
+        /// is the only thing that moves - the tree cursor and the row the mode was armed from stay
+        /// where the player left them, so leaving the square puts them back where they were.</summary>
+        ModJump,
+    }
+
     /// <summary>What the camera has to do beyond whatever the cell cursor already does.</summary>
     public enum MapCameraMove
     {
@@ -69,14 +87,15 @@ namespace ES2Access.ES2.UI
 
         /// <summary>Make the row landed on the one LEAVING the free cursor puts the player back on,
         /// and its place the one the camera comes back to (owner ruling 2026-09-10). Set exactly where
-        /// the cursor is seated silently under a live cell: what the player was last shown through the
-        /// square is where the mode ends, rather than the row they armed it from.</summary>
+        /// the cursor is seated silently under a live cell on a landing the GAME asked for
+        /// (<see cref="MapOrigin.GameLocate"/>): what the player was last SHOWN through the square is
+        /// where the mode ends, rather than the row they armed it from.</summary>
         public bool RebaseEntry;
 
         /// <summary>Turn the free cursor ON at the point. The answer to a place the tree has no row
-        /// for (owner ruling 2026-09-10): the cell is the only reader this map has for a bare
-        /// coordinate, so where it is down it is armed there rather than the request being answered
-        /// with a word.</summary>
+        /// for when the GAME is the one pointing (owner ruling 2026-09-10): the cell is the only
+        /// reader this map has for a bare coordinate, so where it is down it is armed there rather
+        /// than the request being answered with a word.</summary>
         public bool ArmCell;
 
         /// <summary>What the caller must do to the camera. <see cref="MapCameraMove.None"/> with
@@ -122,12 +141,16 @@ namespace ES2Access.ES2.UI
     /// and let the cell's slide be the whole camera move. Leaving the mode then puts the cursor on
     /// what was landed on, and stepping INSIDE it zooms as any tree walk does - the ordinary machinery,
     /// unchanged.</item>
-    /// <item>WHAT WAS SHOWN THROUGH THE CELL IS WHERE LEAVING IT PUTS THE PLAYER (owner ruling
-    /// 2026-09-10, reversing the second 2026-08-31 ruling, which had the tree cursor stay put under
-    /// the cell). The row is seated SILENTLY - the cell's own arrival line is the whole announcement,
-    /// and nothing extra is said - and it becomes the row Escape restores to, with the camera
-    /// recentred there (<see cref="RebaseEntry"/>). The player asked to be shown a place; leaving the
-    /// square leaves them standing on it rather than back where they armed the mode.</item>
+    /// <item>WHAT THE GAME SHOWED THROUGH THE CELL IS WHERE LEAVING IT PUTS THE PLAYER (owner ruling
+    /// 2026-09-10, reversing the second 2026-08-31 ruling for one caller only). The row is seated
+    /// SILENTLY - the cell's own arrival line is the whole announcement, and nothing extra is said -
+    /// and it becomes the row Escape restores to, with the camera recentred there
+    /// (<see cref="RebaseEntry"/>). The game led the player to a place; leaving the square leaves them
+    /// standing on it rather than back where they armed the mode. It is exactly the landings the GAME
+    /// asks for that do this (<see cref="MapOrigin.GameLocate"/>): the mod's own jumps - the scanner,
+    /// a bookmark, the next idle fleet, a starlane - keep the 2026-08-31 line, where the cell is the
+    /// only thing that moves and the mode ends where it was armed. The player driving a square about
+    /// the map has not asked to be moved; the game pointing them at a place has.</item>
     /// <item>A LOCAL HOP DOES NOT FRAME (owner ruling 2026-09-02, <see cref="MapReach.Local"/>).
     /// Following a starlane is a walk to the next row along, not a request to be shown a place, so
     /// its camera is the camera an in-place expansion of that system would have given: at the far
@@ -145,7 +168,10 @@ namespace ES2Access.ES2.UI
     /// request so the sweep can find it. What the PLAYER gets is no longer a word and a shrug (owner
     /// ruling 2026-09-10) but the CELL: a square of bare map is exactly what it reads, so it is ARMED
     /// on the point where it is down and MOVED there where it is up, and the cell's own entry or
-    /// arrival line is the news. The tree cursor is not moved - there is no row to move it to.</item>
+    /// arrival line is the news. The tree cursor is not moved - there is no row to move it to. Again
+    /// only where the GAME is the one pointing: the mod's own jumps that can reach a bare square
+    /// already arm the cell on their own path (the scanner's square result), and the rest move
+    /// nothing.</item>
     /// </list>
     /// </summary>
     public static class MapLandings
@@ -153,10 +179,13 @@ namespace ES2Access.ES2.UI
         public static MapLanding Decide(
             MapThing thing,
             bool inspectLive,
+            MapOrigin origin,
             MapReach reach = MapReach.Elsewhere
         )
         {
             bool frame = reach == MapReach.Elsewhere;
+            // Under the cell, being LED is what moves anything but the cell.
+            bool led = origin == MapOrigin.GameLocate;
             switch (thing)
             {
                 case MapThing.Place:
@@ -165,10 +194,12 @@ namespace ES2Access.ES2.UI
                         Frame = frame,
                         MoveCell = inspectLive,
                         // Under the cell the cursor goes to the row too, SILENTLY, and that row is
-                        // where leaving the mode puts the player (owner ruling 2026-09-10).
-                        FocusNode = true,
+                        // where leaving the mode puts the player - for a landing the GAME asked for
+                        // (owner ruling 2026-09-10). Under one of the mod's own jumps nothing but the
+                        // cell moves, as it has since 2026-08-31.
+                        FocusNode = !inspectLive || led,
                         AnnounceNode = !inspectLive,
-                        RebaseEntry = inspectLive,
+                        RebaseEntry = inspectLive && led,
                         // Out of the cell a place is zoomed to. UNDER the cell nothing is: the cell's
                         // own slide is the whole camera move, exactly as it is for a point.
                         Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Zoom,
@@ -179,9 +210,9 @@ namespace ES2Access.ES2.UI
                     {
                         Frame = frame,
                         MoveCell = inspectLive,
-                        FocusNode = true,
+                        FocusNode = !inspectLive || led,
                         AnnounceNode = !inspectLive,
-                        RebaseEntry = inspectLive,
+                        RebaseEntry = inspectLive && led,
                         // The cell slides itself; out of the mode the caller does it.
                         Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Slide,
                     };
@@ -197,13 +228,15 @@ namespace ES2Access.ES2.UI
                     };
 
                 default:
-                    // Nothing for the tree to land on, so the cell is the reading: armed on the point
-                    // where it is down, moved there where it is up (owner ruling 2026-09-10).
+                    // Nothing for the tree to land on, so where the GAME is pointing the cell is the
+                    // reading: armed on the point where it is down, moved there where it is up (owner
+                    // ruling 2026-09-10). One of the mod's own jumps moves nothing at all - the only
+                    // one that can reach a bare square arms the cell on its own path.
                     return new MapLanding
                     {
                         Unplaced = true,
-                        MoveCell = inspectLive,
-                        ArmCell = !inspectLive,
+                        MoveCell = inspectLive && led,
+                        ArmCell = !inspectLive && led,
                     };
             }
         }

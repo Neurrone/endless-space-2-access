@@ -501,7 +501,6 @@ namespace ES2Access.Core.Speech
             { GalaxyOutpostHeld, "{0} outpost" },
             { GalaxyOutpostsHeld, "{0} outposts" },
             { GalaxyManageSystem, "Manage system" },
-            { GalaxyShownOnMap, "Shown on the map" },
             { GalaxyQuestShownOnMap, "{0}, objective shown on the map" },
             { GalaxyStarlane, "{0} to {1}" },
             { GalaxyStarlaneUnexplored, "{0} to an unexplored system" },

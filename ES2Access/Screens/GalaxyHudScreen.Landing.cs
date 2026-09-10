@@ -100,9 +100,11 @@ namespace ES2Access.Screens
                 Voice.Say(QuestLocated(wanted.Quest), false);
             }
 
-            // Everything else - the cell, the cursor, the camera, and the "shown on the map" line a
-            // request nothing answers gets - is the page's one landing (<see cref="GoTo"/>).
-            GoTo(target, MapCamera.Auto);
+            // Everything else - the cell, the cursor and the camera - is the page's one landing
+            // (<see cref="GoTo"/>), and this is its one GAME-LED caller: the game is taking the player
+            // somewhere, so under a live cell the cursor is seated with it and a bare coordinate arms
+            // it (<see cref="MapOrigin.GameLocate"/>).
+            GoTo(target, MapCamera.Auto, MapOrigin.GameLocate);
         }
 
         /// <summary>
@@ -125,18 +127,21 @@ namespace ES2Access.Screens
         /// the neighbour of the row the player is standing on - and it keeps the picture at the
         /// distance they put it.
         ///
-        /// Under a live cell every one of them arrives the same way: THE CELL MOVES AND THE CURSOR
-        /// FOLLOWS SILENTLY UNDERNEATH (owner rulings 2026-08-31 and 2026-09-10). The zoom is not
-        /// touched - the cell's own slide is the whole camera move, and the band is not forced either -
-        /// and nothing extra is said, the cell's own arrival line being the announcement. What the
-        /// silent seat buys is the END of the mode: the row landed on becomes the row Escape restores
-        /// to and its place the one the camera comes back to (<see cref="GalaxyInspect.Rebase"/>), so
-        /// leaving the square leaves the player standing on the location they were shown rather than
-        /// back where they armed it. That reverses the second of the two 2026-08-31 rulings, which had
-        /// the tree cursor stay put.
+        /// Under a live cell every one of them MOVES THE CELL AND NOTHING ELSE - the zoom is not
+        /// touched, the cell's own slide is the whole camera move, the band is not forced and nothing
+        /// extra is said, the cell's own arrival line being the announcement (owner ruling
+        /// 2026-08-31). <paramref name="origin"/> is the one exception, and it is the game's own
+        /// show-location (<see cref="MapOrigin.GameLocate"/>, <see cref="FollowTheGame"/>, owner
+        /// ruling 2026-09-10): there the tree cursor is ALSO seated on the row, silently, and that
+        /// seat re-bases the END of the mode - the row landed on becomes the row Escape restores to
+        /// and its place the one the camera comes back to (<see cref="GalaxyInspect.Rebase"/>), so
+        /// being led somewhere and then leaving the square leaves the player standing where they were
+        /// led. The mod's own jumps keep the 2026-08-31 line: the player driving a square about the
+        /// map did not ask to be moved, so leaving it puts them back on the row they armed it from.
         ///
-        /// A request the tree has NO ROW for arms the cell instead of being answered with a word
-        /// (owner ruling 2026-09-10, <see cref="ReadThroughTheCell"/>).
+        /// A request the tree has NO ROW for arms the cell instead of being answered with a word -
+        /// again only where the game is the one pointing (owner ruling 2026-09-10,
+        /// <see cref="ReadThroughTheCell"/>).
         ///
         /// The camera moves are marked as the MOD's own (<see cref="GalaxyLocate.Suppressed"/>): the
         /// mod pans through the same calls the game leads the player with, and an unmarked pan here
@@ -149,6 +154,7 @@ namespace ES2Access.Screens
         internal bool GoTo(
             MapTarget target,
             MapCamera camera,
+            MapOrigin origin,
             MapReach reach = MapReach.Elsewhere
         )
         {
@@ -158,6 +164,7 @@ namespace ES2Access.Screens
                 MapLanding plan = MapLandings.Decide(
                     target.Id == null && target.Select == null ? MapThing.Nowhere : target.Thing,
                     GalaxyInspect.Live,
+                    origin,
                     reach
                 );
                 if (plan.Unplaced)
@@ -165,12 +172,13 @@ namespace ES2Access.Screens
                     // Owner ruling 2026-08-22: everything the game can point the player at is supposed
                     // to have a row, so a request that lands on nothing is a DEFECT to model and not a
                     // behaviour to fall back on - and it is logged where the dev sweep can find it.
-                    // What the PLAYER gets is the CELL (owner ruling 2026-09-10): a square of bare map
-                    // is the one reader this map has for a coordinate, so the cursor is armed there
-                    // where it is down and moved there where it is up, and the cell says where it
-                    // arrived. The old line is kept for the case that has no cell either - no map stop
-                    // to arm one on - because a camera that moved and said nothing is the very thing
-                    // this branch exists to prevent.
+                    // What the PLAYER gets, where the GAME is the one pointing, is the CELL (owner
+                    // ruling 2026-09-10): a square of bare map is the one reader this map has for a
+                    // coordinate, so the cursor is armed there where it is down and moved there where
+                    // it is up, and the cell says where it arrived. Where there is no cell to arm
+                    // either - no map stop declared, no navigator - the landing says nothing at all
+                    // and this log is the whole record of it (owner ruling 2026-09-10, retiring the
+                    // "shown on the map" line the case used to get).
                     Log.Warn(
                         "galaxy go-to: nothing on the map stands at "
                             + target.At.x.ToString("F2")
@@ -178,11 +186,7 @@ namespace ES2Access.Screens
                             + target.At.z.ToString("F2")
                             + " - the tree has no row for what the game pointed at"
                     );
-                    if (!ReadThroughTheCell(target, plan))
-                    {
-                        Voice.Say(ModStrings.Get(ModStrings.GalaxyShownOnMap), false);
-                    }
-
+                    ReadThroughTheCell(target, plan);
                     return false;
                 }
 
@@ -264,6 +268,14 @@ namespace ES2Access.Screens
         /// </summary>
         private bool ReadThroughTheCell(MapTarget target, MapLanding plan)
         {
+            if (!plan.MoveCell && !plan.ArmCell)
+            {
+                // A landing with no cell in its plan touches nothing - not even the seat below, which
+                // exists only to give an arming somewhere to happen (one of the mod's own jumps at a
+                // coordinate the tree has no row for is exactly this case).
+                return false;
+            }
+
             GalaxyPosition origin = GalaxyCoordinates.Origin();
             int x = MapCoordinates.Round(target.At.x - origin.X);
             int y = MapCoordinates.Round(target.At.z - origin.Y);

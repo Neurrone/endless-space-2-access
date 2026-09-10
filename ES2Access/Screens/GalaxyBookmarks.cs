@@ -3,6 +3,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.ES2.Bookmarks;
+using ES2Access.ES2.UI;
 using ES2Access.UI;
 using ES2Access.UI.Bookmarks;
 using ES2Access.UI.Input;
@@ -374,7 +375,7 @@ namespace ES2Access.Screens
                 MapTarget target = system != null
                     ? MapTarget.Place(system, aim, at)
                     : MapTarget.Point(aim, at);
-                _screen.GoTo(target, MapCamera.Auto);
+                _screen.GoTo(target, MapCamera.Auto, MapOrigin.ModJump);
                 return true;
             }
 

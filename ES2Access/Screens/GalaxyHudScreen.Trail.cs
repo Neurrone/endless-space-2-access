@@ -291,12 +291,12 @@ namespace ES2Access.Screens
         {
             if (hop.Origin == null)
             {
-                GoTo(MapTarget.Point(hop.Return, hop.At), MapCamera.Auto);
+                GoTo(MapTarget.Point(hop.Return, hop.At), MapCamera.Auto, MapOrigin.ModJump);
                 return;
             }
 
             OpenPlace(hop.Origin);
-            GoTo(MapTarget.Place(hop.Origin, hop.Return, hop.At), MapCamera.Auto);
+            GoTo(MapTarget.Place(hop.Origin, hop.Return, hop.At), MapCamera.Auto, MapOrigin.ModJump);
         }
 
         /// <summary>
@@ -483,6 +483,7 @@ namespace ES2Access.Screens
             GoTo(
                 MapTarget.Place(where, id, where.GalaxyPosition),
                 MapCamera.Zoom,
+                MapOrigin.ModJump,
                 MapReach.Local
             );
         }

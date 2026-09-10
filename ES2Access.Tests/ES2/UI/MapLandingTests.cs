@@ -15,7 +15,7 @@ namespace ES2Access.Tests.ES2.UI
         [Fact]
         public void APlaceLandsOnItsNodeAndZooms()
         {
-            MapLanding plan = MapLandings.Decide(MapThing.Place, false);
+            MapLanding plan = MapLandings.Decide(MapThing.Place, false, MapOrigin.GameLocate);
             Assert.False(plan.ExitInspect);
             Assert.False(plan.MoveCell);
             Assert.True(plan.FocusNode);
@@ -27,7 +27,7 @@ namespace ES2Access.Tests.ES2.UI
         [Fact]
         public void AThingAtABarePointLandsOnItsRowAndSlides()
         {
-            MapLanding plan = MapLandings.Decide(MapThing.Point, false);
+            MapLanding plan = MapLandings.Decide(MapThing.Point, false, MapOrigin.GameLocate);
             Assert.True(plan.FocusNode);
             Assert.True(plan.AnnounceNode);
             Assert.Equal(MapCameraMove.Slide, plan.Camera);
@@ -36,7 +36,7 @@ namespace ES2Access.Tests.ES2.UI
         [Fact]
         public void AWorldLandsOnItsOwnNodeAndZoomsIn()
         {
-            MapLanding plan = MapLandings.Decide(MapThing.PlanetBound, false);
+            MapLanding plan = MapLandings.Decide(MapThing.PlanetBound, false, MapOrigin.GameLocate);
             Assert.False(plan.ExitInspect);
             Assert.False(plan.MoveCell);
             Assert.True(plan.FocusNode);
@@ -49,7 +49,7 @@ namespace ES2Access.Tests.ES2.UI
         [Fact]
         public void APlaceKeepsTheCellUpAndDoesNotZoom()
         {
-            MapLanding plan = MapLandings.Decide(MapThing.Place, true);
+            MapLanding plan = MapLandings.Decide(MapThing.Place, true, MapOrigin.GameLocate);
             Assert.False(plan.ExitInspect);
             Assert.True(plan.MoveCell);
             // Owner ruling 2026-09-10: the cursor is seated on the row underneath, silently, and that
@@ -63,14 +63,15 @@ namespace ES2Access.Tests.ES2.UI
         }
 
         /// <summary>The ruling in one line: under the cell a place and a point do exactly the same
-        /// thing - move the cell, seat the cursor silently under it, touch the zoom not at all - so no
-        /// gesture arrives differently from any other.</summary>
+        /// thing - move the cell, seat the cursor silently under it where the GAME is the one
+        /// pointing, touch the zoom not at all - so no gesture arrives differently from any other.
+        /// </summary>
         [Fact]
         public void UnderTheCellTheCellMovesAndTheCursorFollowsSilently()
         {
             foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point })
             {
-                MapLanding plan = MapLandings.Decide(thing, true);
+                MapLanding plan = MapLandings.Decide(thing, true, MapOrigin.GameLocate);
                 Assert.True(plan.MoveCell);
                 Assert.True(plan.FocusNode);
                 Assert.False(plan.AnnounceNode);
@@ -80,16 +81,50 @@ namespace ES2Access.Tests.ES2.UI
 
             // The one landing that still moves the cursor and zooms with the cursor up is the one that
             // TAKES IT DOWN first, and it is no longer reading the map through a square by then.
-            MapLanding world = MapLandings.Decide(MapThing.PlanetBound, true);
+            MapLanding world = MapLandings.Decide(MapThing.PlanetBound, true, MapOrigin.GameLocate);
             Assert.True(world.ExitInspect);
             Assert.True(world.FocusNode);
             Assert.Equal(MapCameraMove.Zoom, world.Camera);
         }
 
+        // ---- who asked (owner ruling 2026-09-10) ----
+
+        /// <summary>One of the MOD's own jumps under the cell - the scanner's go-to, a bookmark, the
+        /// next idle fleet, a starlane - moves the cell and nothing else, as it has since 2026-08-31:
+        /// the player is driving the square, so leaving it puts them back on the row they armed it
+        /// from rather than wherever their sweep took them.</summary>
+        [Fact]
+        public void OneOfTheModSOwnJumpsUnderTheCellMovesOnlyTheCell()
+        {
+            foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point })
+            {
+                MapLanding plan = MapLandings.Decide(thing, true, MapOrigin.ModJump);
+                Assert.True(plan.MoveCell);
+                Assert.False(plan.FocusNode);
+                Assert.False(plan.AnnounceNode);
+                Assert.False(plan.RebaseEntry);
+                Assert.Equal(MapCameraMove.None, plan.Camera);
+            }
+        }
+
+        /// <summary>Who asked changes nothing at all with the cell DOWN: the tree is what the player
+        /// is reading either way, so every gesture lands on the row and says it.</summary>
+        [Fact]
+        public void OutOfTheCellItDoesNotMatterWhoAsked()
+        {
+            foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
+            {
+                Assert.Equal(
+                    MapLandings.Decide(thing, false, MapOrigin.GameLocate),
+                    MapLandings.Decide(thing, false, MapOrigin.ModJump)
+                );
+            }
+        }
+
         [Fact]
         public void AThingAtABarePointKeepsTheCellUpAndLetsItSlide()
         {
-            MapLanding plan = MapLandings.Decide(MapThing.Point, true);
+            MapLanding plan = MapLandings.Decide(MapThing.Point, true, MapOrigin.GameLocate);
             Assert.True(plan.MoveCell);
             // The cursor follows underneath without a word (owner ruling 2026-09-10).
             Assert.True(plan.FocusNode);
@@ -103,7 +138,7 @@ namespace ES2Access.Tests.ES2.UI
         [Fact]
         public void AWorldENDSTheFreeCursorFirst()
         {
-            MapLanding plan = MapLandings.Decide(MapThing.PlanetBound, true);
+            MapLanding plan = MapLandings.Decide(MapThing.PlanetBound, true, MapOrigin.GameLocate);
             Assert.True(plan.ExitInspect);
             Assert.False(plan.MoveCell);
             Assert.True(plan.FocusNode);
@@ -121,7 +156,7 @@ namespace ES2Access.Tests.ES2.UI
         {
             foreach (bool inspecting in new[] { false, true })
             {
-                MapLanding plan = MapLandings.Decide(MapThing.Nowhere, inspecting);
+                MapLanding plan = MapLandings.Decide(MapThing.Nowhere, inspecting, MapOrigin.GameLocate);
                 Assert.True(plan.Unplaced);
                 Assert.False(plan.ExitInspect);
                 Assert.False(plan.FocusNode);
@@ -137,13 +172,29 @@ namespace ES2Access.Tests.ES2.UI
         [Fact]
         public void APointWithNothingOnItIsReadThroughTheCell()
         {
-            MapLanding down = MapLandings.Decide(MapThing.Nowhere, false);
+            MapLanding down = MapLandings.Decide(MapThing.Nowhere, false, MapOrigin.GameLocate);
             Assert.True(down.ArmCell);
             Assert.False(down.MoveCell);
 
-            MapLanding up = MapLandings.Decide(MapThing.Nowhere, true);
+            MapLanding up = MapLandings.Decide(MapThing.Nowhere, true, MapOrigin.GameLocate);
             Assert.True(up.MoveCell);
             Assert.False(up.ArmCell);
+        }
+
+        /// Owner ruling 2026-09-10: reading a bare coordinate through the cell is the answer to the
+        /// GAME pointing at one. The mod's own jumps move nothing - the only one of them that can
+        /// reach a square of empty sky, the scanner, arms the cell on its own path.
+        [Fact]
+        public void OneOfTheModSOwnJumpsAtABareCoordinateTouchesNothing()
+        {
+            foreach (bool inspecting in new[] { false, true })
+            {
+                MapLanding plan = MapLandings.Decide(MapThing.Nowhere, inspecting, MapOrigin.ModJump);
+                Assert.True(plan.Unplaced);
+                Assert.False(plan.MoveCell);
+                Assert.False(plan.ArmCell);
+                Assert.False(plan.FocusNode);
+            }
         }
 
         // ---- the invariants across the whole table ----
@@ -154,16 +205,18 @@ namespace ES2Access.Tests.ES2.UI
             foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
             {
                 foreach (bool inspecting in new[] { false, true })
+                foreach (MapOrigin origin in new[] { MapOrigin.GameLocate, MapOrigin.ModJump })
                 {
-                    MapLanding plan = MapLandings.Decide(thing, inspecting);
+                    MapLanding plan = MapLandings.Decide(thing, inspecting, origin);
                     Assert.False(plan.MoveCell && plan.AnnounceNode);
                     Assert.False(plan.MoveCell && plan.ExitInspect);
-                    // Every landing that is not a defect sends the cursor to its row; whether that
-                    // move is HEARD is the same question as whether the cell is what the player is
-                    // reading, and the entry is re-based over exactly the moves nobody hears.
-                    Assert.True(plan.FocusNode);
+                    // A landing that is not a defect always moves the player: the cursor to its row,
+                    // the cell to its square, or both. And the entry is re-based over exactly the
+                    // cursor moves nobody hears, which is what makes leaving the cell end where the
+                    // game led.
+                    Assert.True(plan.FocusNode || plan.MoveCell);
                     Assert.NotEqual(plan.MoveCell, plan.AnnounceNode);
-                    Assert.Equal(plan.MoveCell, plan.RebaseEntry);
+                    Assert.Equal(plan.FocusNode && plan.MoveCell, plan.RebaseEntry);
                     Assert.False(plan.ArmCell);
                 }
             }
@@ -180,9 +233,10 @@ namespace ES2Access.Tests.ES2.UI
             foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
             {
                 foreach (bool inspecting in new[] { false, true })
+                foreach (MapOrigin origin in new[] { MapOrigin.GameLocate, MapOrigin.ModJump })
                 {
-                    MapLanding far = MapLandings.Decide(thing, inspecting, MapReach.Elsewhere);
-                    MapLanding near = MapLandings.Decide(thing, inspecting, MapReach.Local);
+                    MapLanding far = MapLandings.Decide(thing, inspecting, origin, MapReach.Elsewhere);
+                    MapLanding near = MapLandings.Decide(thing, inspecting, origin, MapReach.Local);
                     Assert.True(far.Frame);
                     Assert.False(near.Frame);
                     Assert.Equal(far.Camera, near.Camera);
@@ -202,7 +256,7 @@ namespace ES2Access.Tests.ES2.UI
         {
             foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
             {
-                Assert.True(MapLandings.Decide(thing, false).Frame);
+                Assert.True(MapLandings.Decide(thing, false, MapOrigin.GameLocate).Frame);
             }
         }
 
@@ -211,7 +265,7 @@ namespace ES2Access.Tests.ES2.UI
         {
             foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.PlanetBound })
             {
-                MapLanding plan = MapLandings.Decide(thing, false);
+                MapLanding plan = MapLandings.Decide(thing, false, MapOrigin.GameLocate);
                 Assert.False(plan.ExitInspect);
                 Assert.False(plan.MoveCell);
                 Assert.False(plan.ArmCell);

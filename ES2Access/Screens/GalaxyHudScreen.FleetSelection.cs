@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Reflection;
 using ES2Access.Core.Util;
+using ES2Access.ES2.UI;
 using ES2Access.UI;
 
 namespace ES2Access.Screens
@@ -63,7 +64,7 @@ namespace ES2Access.Screens
                 MapTarget target;
                 if (TargetFor(fleet, out target))
                 {
-                    GoTo(target, MapCamera.None);
+                    GoTo(target, MapCamera.None, MapOrigin.ModJump);
                 }
 
                 SelectSeated(fleet);

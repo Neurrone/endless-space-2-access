@@ -73,13 +73,8 @@
         public const string GalaxyOutpostsHeld = "galaxy.outposts-held";
         public const string GalaxyManageSystem = "galaxy.manage-system";
 
-        // The game has taken the camera to a point the map draws nothing at - a quest marker out
-        // between the stars, a battle at a place the player cannot see. The camera HAS moved, so
-        // silence would leave the player reading somewhere the game is no longer showing.
-        public const string GalaxyShownOnMap = "galaxy.shown-on-map";
-
-        // The same reveal, made by the quest banner's pin, which knows which quest it is about. Said
-        // whether or not the marker turned out to be somewhere the tree can name.
+        // A reveal made by the quest banner's pin, which knows which quest it is about. Said whether
+        // or not the marker turned out to be somewhere the tree can name.
         public const string GalaxyQuestShownOnMap = "galaxy.quest-shown-on-map";
 
         // The lanes out of a system. The game draws these as lines and writes nothing on them, and

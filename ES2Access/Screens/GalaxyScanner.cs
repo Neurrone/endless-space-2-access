@@ -1301,7 +1301,7 @@ namespace ES2Access.Screens
             // (<see cref="GalaxyHudScreen.GoTo"/>, <see cref="MapLandings"/>). Before 2026-08-22 this
             // method answered those questions itself and got the planet case wrong: it jumped the CELL
             // onto a world, which the cell cannot read.
-            if (_screen.GoTo(Target(found), MapCamera.Auto))
+            if (_screen.GoTo(Target(found), MapCamera.Auto, MapOrigin.ModJump))
             {
                 return;
             }
