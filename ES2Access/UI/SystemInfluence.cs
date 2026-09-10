@@ -202,6 +202,14 @@ namespace ES2Access.UI
         /// <c>InfluenceOwner</c>, which looks through an integrated minor faction to the empire that
         /// absorbed it and would name somebody whose colour is nowhere on the map.
         ///
+        /// And only where that colour IS on the map: the game draws each colony's disk from the
+        /// colony's own node and hides it while that node is invisible to the player
+        /// (<c>GalaxyStarSystem.UpdateInfluenceRange</c> :1926), so an influencer whose node the player
+        /// has not perceived says nothing here - the same rule the cell reading applies through
+        /// <see cref="Nameable"/>. Otherwise this row would hand the player an "Unknown Empire" that
+        /// the map is drawing nowhere near this node, the existence and rough position of an empire
+        /// they have not met yet.
+        ///
         /// The owners are every colony standing at the node that this empire can see - an outpost
         /// included, because holding a place is holding it whether or not it has grown up yet, and a
         /// system shared with a minor faction has two of them.
@@ -229,7 +237,11 @@ namespace ES2Access.UI
 
                 ColonizedStarSystem source = node.SystemWhichInfluences;
                 Empire influencer = source == null ? null : source.Empire;
-                if (influencer == null || EmpireIndex.Holds(OwnersAt(node, empire), influencer))
+                if (
+                    influencer == null
+                    || !MapVisibility.Perceived(source.Node, empire)
+                    || EmpireIndex.Holds(OwnersAt(node, empire), influencer)
+                )
                 {
                     return null;
                 }
@@ -262,7 +274,9 @@ namespace ES2Access.UI
         /// the colony, against that colony's radius, boundary counting as inside. A colony is asked
         /// only where it is the source the game resolves AT ITS OWN NODE - two empires sharing a system
         /// have one circle between them, the stronger one, because that is the only one the game's own
-        /// resolution can ever hand to anybody.
+        /// resolution can ever hand to anybody. And only a colony whose node the player has perceived,
+        /// for the reason <see cref="UnderInfluence"/> gives: a reach the map is not drawing is not
+        /// named.
         /// </summary>
         public static string Contested(GameNode node, Empire empire)
         {
@@ -302,6 +316,7 @@ namespace ES2Access.UI
                     Empire behind = colony.Destroyed ? null : colony.Empire;
                     if (
                         behind == null
+                        || !MapVisibility.Perceived(colony.Node, empire)
                         || ReferenceEquals(behind, winner)
                         || EmpireIndex.Holds(owners, behind)
                         || (reaching != null && EmpireIndex.Holds(reaching, behind))
