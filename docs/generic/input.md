@@ -43,7 +43,7 @@ Proven across wotr-access/SoC/ES2 (make rebindable eventually):
 | Shift+Left / Shift+Right | Coarse adjust, ~10 increments (repeating) — see [widgets.md](widgets.md) |
 | Tab / Shift+Tab | Cycle tab-stops, landing on the stop's remembered position |
 | Enter | Activate (primary) |
-| Backspace | Secondary action |
+| Backspace | Return to the previous position |
 | Escape | Back / close |
 | Home / End | First / last |
 | Alt+Up / Alt+Down | Region jump between the current panel's sections (repeating; never crosses a panel — Tab does that): see [ui-navigation.md](ui-navigation.md) |

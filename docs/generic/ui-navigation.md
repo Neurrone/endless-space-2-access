@@ -23,7 +23,9 @@ Cursor survival across rebuilds is tiered (`KeyGraph.Reconcile`): the same **str
 key**, accepted when the node found still carries the same **backing object** (an O(1)
 lookup, the silent-frame case); else the backing object wherever it moved to (identity
 ride-along via `ControlId.Reference`, a scan of every node, paid only when the key changed);
-else the **nearest survivor** walking the previous traversal order, computed only then; else
+else the **nearest survivor** in the previous traversal order, computed only then - asked of
+the dead node's own stop first, backward then forward, so a stop's first row dying does not
+land the cursor in the panel declared before it, and only then of the whole order; else
 the start node. Give any node whose row/entity can move or vanish a `ControlId.Referenced`
 identity and reconciliation is free — with one converse rule: **one object, one node**.
 Reference identity decides, so two nodes sharing a backing object are one control to the
@@ -59,7 +61,7 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 - **`GraphTypes`** — `GraphNode` (4-way `Transitions`, `Parent` chain, stop/region keys,
   expandability, auto position) and `NodeVtable`: **behaviors as data**. Announcement parts
   (`NodeAnnouncement`, each a `Func<string>` resolved at speak time — read live, never cache),
-  `OnActivate`/`OnSecondary`/`OnAdjust` (adjust preempts Left/Right navigation),
+  `OnActivate`/`OnReturnToPrevious`/`OnAdjust` (adjust preempts Left/Right navigation),
   `OnFollow` (a leaf naming a place declared elsewhere — the descend key follows the
   reference instead of expanding; see the one-object-one-node paragraph above),
   `StateText` (spoken interrupting right after activate/adjust), `Sections` (ordered
