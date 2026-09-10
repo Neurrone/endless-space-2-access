@@ -262,9 +262,23 @@ namespace ES2Access.Screens
         /// Where the tree has NO ROW for the point (owner ruling 2026-09-10) this is also what ARMS the
         /// mode. Arming refuses unless the tree cursor stands on the map (<see cref="GalaxyInspect.ArmAt"/>),
         /// which a show-location made from the notification strip does not, so the cursor is seated on
-        /// the map stop first and silently: the least that makes the mode exist at all, and no further -
-        /// there is no row for a bare coordinate to seat anybody on. Where the landing is going to seat
-        /// the cursor itself, that seat is left to do it.
+        /// the map stop first: the least that makes the mode exist at all, and no further - there is no
+        /// row for a bare coordinate to seat anybody on.
+        ///
+        /// THE SEAT IS THE ARRIVAL (owner rulings 2026-09-10, second pass). It is made for every parked
+        /// cell and not only for the arming one: the row seat the landing goes on to ask for is a
+        /// REQUEST that lands whenever the tree next draws that row - frames later, or never, where its
+        /// branch does not open - and leaving the player's return to the map to it left them standing on
+        /// the notification strip with the square moved underneath them in silence. Being put on the map
+        /// is also what makes the mode DRIVE again (<see cref="GalaxyInspect.Active"/>), which is what
+        /// starts the resume that reads the square. Whether that arrival speaks is the plan's
+        /// (<see cref="MapLanding.AnnounceStop"/>): the game leading the player somewhere says where they
+        /// now are, and the mod's own jumps keep the silent seat of 2026-08-31.
+        ///
+        /// A seat that FAILS - no navigator, no map stop declared on this render - stops an arming,
+        /// which has nowhere to happen without it, and not a cell that is already up: moving a live cell
+        /// needs nothing of the tree, and refusing there would leave a show-location made from a popup
+        /// pointing at the old square.
         /// </summary>
         private bool ReadThroughTheCell(MapTarget target, MapLanding plan)
         {
@@ -280,10 +294,11 @@ namespace ES2Access.Screens
             int x = MapCoordinates.Round(target.At.x - origin.X);
             int y = MapCoordinates.Round(target.At.z - origin.Y);
             bool standing = GalaxyInspect.Active;
-            if (!standing && !plan.FocusNode)
+            if (!standing)
             {
                 GraphNavigator navigator = ModEntry.Navigator;
-                if (navigator == null || !navigator.FocusStop(SystemStop, false))
+                bool seated = navigator != null && navigator.FocusStop(SystemStop, plan.AnnounceStop);
+                if (!seated && !plan.MoveCell)
                 {
                     return false;
                 }

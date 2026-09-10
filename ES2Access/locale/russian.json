@@ -290,6 +290,7 @@
   "galaxy.bookmark.no-home": "Нет домашней системы",
   "galaxy.bookmark.file-header": "{0}, {1}, ход {2}",
   "galaxy.inspect.entered": "Режим обзора",
+  "galaxy.inspect.map-stop": "Обзор карты галактики",
   "galaxy.inspect.exited": "Выход из режима обзора",
   "galaxy.inspect.cursor-size": "Курсор {0} на {1}",
   "galaxy.inspect.edge": "Край карты",

@@ -1651,7 +1651,22 @@ namespace ES2Access.UI
                 return;
             }
 
-            Voice.Say(GraphAnnouncer.Compose(result.From, node, result.TransitionLabel), true);
+            // A MODE of the screen owns the reading of what the cursor is standing on, so a move INTO
+            // another panel says the panel and stops there: the row it seated the cursor on is the
+            // mode's business, and the mode reads its own subject a moment later (the galaxy's inspect
+            // cell, whose square is the second half of every arrival on the map - owner ruling
+            // 2026-09-10). Only a move that CROSSES panels: inside one panel the crossing is empty, and
+            // saying nothing at all would silence the landings a mode's own keys make.
+            bool crossed =
+                _screen != null
+                && _screen.SilentUnderMode
+                && (result.From == null || !Equals(result.From.StopKey, node.StopKey));
+            Voice.Say(
+                crossed
+                    ? GraphAnnouncer.ComposeCrossing(result.From, node)
+                    : GraphAnnouncer.Compose(result.From, node, result.TransitionLabel),
+                true
+            );
             CancelPendingFocus();
             _lastSpokenKey = node.Id;
             _lastSpokenNode = node;

@@ -758,13 +758,26 @@ namespace ES2Access.Screens
         /// is what makes leaving and re-entering the stop read the instruction again - the point of
         /// putting it here. The nodes UNDER it key on their own places and are untouched by it.
         ///
+        /// While the INSPECT CELL is up the stop is named after the cell instead (owner ruling
+        /// 2026-09-10): the arrows mean a square of sky and not the tree, so a player arriving here -
+        /// by a Tab, or seated by a landing the game made - is told which of the two they have. It is
+        /// the same rename working the same way: the identity change is what makes every arrival read
+        /// it, and it goes back to being a map the moment the mode ends. The row arrived on is left
+        /// unread while the cell is up (<c>Screen.SilentUnderMode</c>), so this line and the cell's own
+        /// resume are the whole arrival.
+        ///
         /// The focus chord rides on the map's name only. It belongs to the word "map" - it is how the
-        /// player gets back here - and gluing it onto the game's own question would make a sentence out
-        /// of two voices. The suffix is static per binding, so the identity above still turns only on
-        /// which of the two branches answered.
+        /// player gets back here - and gluing it onto the game's own question, or onto the mode's, would
+        /// make a sentence out of two voices. The suffix is static per binding, so the identity above
+        /// still turns only on which of the three branches answered.
         /// </summary>
         private static string MapContext()
         {
+            if (GalaxyInspect.Live)
+            {
+                return ModStrings.Get(ModStrings.GalaxyInspectMapStop);
+            }
+
             string instruction = GlobalHud.Instruction();
             return string.IsNullOrEmpty(instruction)
                 ? ChordNames.Label(ModStrings.Get(ModStrings.GalaxyMapPanel), UiActions.FocusMap, 0)

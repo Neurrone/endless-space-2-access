@@ -283,6 +283,7 @@
   "galaxy.bookmark.no-home": "Brak systemu macierzystego",
   "galaxy.bookmark.file-header": "{0}, {1}, tura {2}",
   "galaxy.inspect.entered": "Tryb podglądu",
+  "galaxy.inspect.map-stop": "Podgląd mapy galaktyki",
   "galaxy.inspect.exited": "Wyjście z trybu podglądu",
   "galaxy.inspect.cursor-size": "Kursor {0} na {1}",
   "galaxy.inspect.edge": "Krawędź mapy",

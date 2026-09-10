@@ -135,6 +135,31 @@ namespace ES2Access.Core.UI.Graph
             return Compose(null, to);
         }
 
+        /// <summary>
+        /// The PANEL a move arrived in, and nothing that is inside it — what an arrival says while a
+        /// MODE of the screen owns the reading of whatever the cursor is standing on
+        /// (<c>Screen.SilentUnderMode</c>).
+        ///
+        /// The panel still names itself: under such a mode its name is what tells the player which
+        /// keys they now have, and the mode reads its own subject a moment later. Everything below it
+        /// — the group the cursor was seated in, the row itself — belongs to the mode and is left to
+        /// it, so this is the outermost newly-entered level and no more.
+        ///
+        /// Null where the move crossed no level but the control itself, which is every move inside
+        /// one panel.
+        /// </summary>
+        public static string ComposeCrossing(GraphNode from, GraphNode to)
+        {
+            if (to == null) return null;
+
+            List<GraphNode> toPath = PathOf(to);
+            List<GraphNode> fromPath = from != null ? PathOf(from) : EmptyPath;
+            int i = 0;
+            while (i < fromPath.Count && i < toPath.Count && fromPath[i].Id.Equals(toPath[i].Id)) i++;
+
+            return i < toPath.Count - 1 ? LeafText(toPath[i]) : null;
+        }
+
         /// <summary>Drop every injected delegate — mod teardown, and test isolation.</summary>
         public static void Reset()
         {

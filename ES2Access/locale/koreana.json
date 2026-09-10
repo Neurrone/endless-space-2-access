@@ -271,6 +271,7 @@
   "galaxy.bookmark.no-home": "모성계 없음",
   "galaxy.bookmark.file-header": "{0}, {1}, {2}턴",
   "galaxy.inspect.entered": "조사 모드",
+  "galaxy.inspect.map-stop": "은하계 지도 조사 중",
   "galaxy.inspect.exited": "조사 모드 종료",
   "galaxy.inspect.cursor-size": "커서 가로 {0} 세로 {1}",
   "galaxy.inspect.edge": "지도 가장자리",

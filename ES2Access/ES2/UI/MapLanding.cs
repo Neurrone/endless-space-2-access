@@ -92,6 +92,18 @@ namespace ES2Access.ES2.UI
         /// where the mode ends, rather than the row they armed it from.</summary>
         public bool RebaseEntry;
 
+        /// <summary>Say what the map widget is as the cursor is put back on it - the arrival's own
+        /// line, and the whole of it: under a live cell the stop is named after the mode rather than
+        /// after the map (<c>GalaxyHudScreen.MapContext</c>) and the row landed on is not read at all,
+        /// the cell's own resume being the second half of the arrival (owner rulings 2026-09-10).
+        ///
+        /// Set exactly where the GAME led the player somewhere with the cell up
+        /// (<see cref="MapOrigin.GameLocate"/>). The mod's own jumps keep the silent seat they have
+        /// had since 2026-08-31: the player driving a square about the map never left the map in the
+        /// first place as far as they are concerned, so the cell's reading is their whole arrival.
+        /// </summary>
+        public bool AnnounceStop;
+
         /// <summary>Turn the free cursor ON at the point. The answer to a place the tree has no row
         /// for when the GAME is the one pointing (owner ruling 2026-09-10): the cell is the only
         /// reader this map has for a bare coordinate, so where it is down it is armed there rather
@@ -151,6 +163,17 @@ namespace ES2Access.ES2.UI
     /// a bookmark, the next idle fleet, a starlane - keep the 2026-08-31 line, where the cell is the
     /// only thing that moves and the mode ends where it was armed. The player driving a square about
     /// the map has not asked to be moved; the game pointing them at a place has.</item>
+    /// <item>AND IT PUTS THEM ON THE MAP, WHICH SAYS SO (owner rulings 2026-09-10, the second
+    /// pass). The silent row seat above is a REQUEST - it lands whenever the tree next draws that
+    /// row, which is frames later where its branch has to open and never where the branch never
+    /// does - so on its own it left the player standing on the notification strip with the square
+    /// moved underneath them and nothing said at all (measured: the cursor was still on the strip
+    /// row 0.4 s after the press, and the cell's reading only came when the request landed). So a
+    /// landing the GAME asked for seats the MAP WIDGET too, on the frame of the press, and that
+    /// arrival is what speaks: the stop is named after the mode while the cell is up
+    /// (<c>GalaxyHudScreen.MapContext</c>), the row landed on is not read
+    /// (<see cref="AnnounceStop"/>), and the mode's own resume reads the square a fifth of a second
+    /// later. Two lines, neither of them dependent on the row seat arriving.</item>
     /// <item>A LOCAL HOP DOES NOT FRAME (owner ruling 2026-09-02, <see cref="MapReach.Local"/>).
     /// Following a starlane is a walk to the next row along, not a request to be shown a place, so
     /// its camera is the camera an in-place expansion of that system would have given: at the far
@@ -199,6 +222,7 @@ namespace ES2Access.ES2.UI
                         // cell moves, as it has since 2026-08-31.
                         FocusNode = !inspectLive || led,
                         AnnounceNode = !inspectLive,
+                        AnnounceStop = inspectLive && led,
                         RebaseEntry = inspectLive && led,
                         // Out of the cell a place is zoomed to. UNDER the cell nothing is: the cell's
                         // own slide is the whole camera move, exactly as it is for a point.
@@ -212,6 +236,7 @@ namespace ES2Access.ES2.UI
                         MoveCell = inspectLive,
                         FocusNode = !inspectLive || led,
                         AnnounceNode = !inspectLive,
+                        AnnounceStop = inspectLive && led,
                         RebaseEntry = inspectLive && led,
                         // The cell slides itself; out of the mode the caller does it.
                         Camera = inspectLive ? MapCameraMove.None : MapCameraMove.Slide,
@@ -236,6 +261,7 @@ namespace ES2Access.ES2.UI
                     {
                         Unplaced = true,
                         MoveCell = inspectLive && led,
+                        AnnounceStop = inspectLive && led,
                         ArmCell = !inspectLive && led,
                     };
             }

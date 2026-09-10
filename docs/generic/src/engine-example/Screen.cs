@@ -516,6 +516,11 @@ namespace ES2Access.Screens
         /// The re-seat still HAPPENS - the cursor has to stand somewhere real - and leaving the mode
         /// announces wherever the player is put down, which is the moment the news is worth having.
         /// Off the mode this is false everywhere, so a vanished row keeps its voice in the tree.
+        ///
+        /// An arrival that CROSSES INTO another panel is not silenced but TRIMMED (owner ruling
+        /// 2026-09-10): the panel entered names itself - under a mode that name is what tells the
+        /// player which keys they have - and the row seated under it is still left to the mode
+        /// (<see cref="ES2Access.Core.UI.Graph.GraphAnnouncer.ComposeCrossing"/>).
         /// </summary>
         public virtual bool SilentUnderMode
         {

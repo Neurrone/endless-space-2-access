@@ -458,6 +458,11 @@
         public const string GalaxyBookmarkFileHeader = "galaxy.bookmark.file-header";
 
         public const string GalaxyInspectEntered = "galaxy.inspect.entered";
+
+        // What the map widget is CALLED while the cell is up - the name a player arriving on the map
+        // hears instead of "Galactic Map", and the whole of that arrival (owner ruling 2026-09-10). No
+        // chord in it: the chord belongs to the map's own name.
+        public const string GalaxyInspectMapStop = "galaxy.inspect.map-stop";
         public const string GalaxyInspectExited = "galaxy.inspect.exited";
         public const string GalaxyInspectCursorSize = "galaxy.inspect.cursor-size";
         public const string GalaxyInspectEdge = "galaxy.inspect.edge";

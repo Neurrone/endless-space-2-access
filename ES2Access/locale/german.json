@@ -271,6 +271,7 @@
   "galaxy.bookmark.no-home": "Kein Heimatsystem",
   "galaxy.bookmark.file-header": "{0}, {1}, Zug {2}",
   "galaxy.inspect.entered": "Untersuchungsmodus",
+  "galaxy.inspect.map-stop": "Galaxiekarte wird untersucht",
   "galaxy.inspect.exited": "Untersuchungsmodus beendet",
   "galaxy.inspect.cursor-size": "Cursor {0} mal {1}",
   "galaxy.inspect.edge": "Kartenrand",

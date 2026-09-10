@@ -107,6 +107,28 @@ namespace ES2Access.Tests.ES2.UI
             }
         }
 
+        /// <summary>Owner ruling 2026-09-10 (second pass): a landing the GAME made with the cell up
+        /// puts the player back on the map widget, and that arrival is what speaks - the map names the
+        /// mode as they land on it, and the square follows from the mode's own resume. Nobody else's
+        /// landing says a word: the mod's own jumps keep their silent seat, and with the cell down the
+        /// row landed on is the announcement.</summary>
+        [Fact]
+        public void BeingLedSomewhereUnderTheCellSaysWhereThePlayerNowIs()
+        {
+            foreach (MapThing thing in new[] { MapThing.Place, MapThing.Point, MapThing.Nowhere })
+            {
+                Assert.True(MapLandings.Decide(thing, true, MapOrigin.GameLocate).AnnounceStop);
+                Assert.False(MapLandings.Decide(thing, true, MapOrigin.ModJump).AnnounceStop);
+                Assert.False(MapLandings.Decide(thing, false, MapOrigin.GameLocate).AnnounceStop);
+            }
+
+            // The one landing that takes the cell DOWN reads the row it lands on, so the map has
+            // nothing of its own to say.
+            Assert.False(
+                MapLandings.Decide(MapThing.PlanetBound, true, MapOrigin.GameLocate).AnnounceStop
+            );
+        }
+
         /// <summary>Who asked changes nothing at all with the cell DOWN: the tree is what the player
         /// is reading either way, so every gesture lands on the row and says it.</summary>
         [Fact]
@@ -245,6 +267,7 @@ namespace ES2Access.Tests.ES2.UI
                     Assert.Equal(far.AnnounceNode, near.AnnounceNode);
                     Assert.Equal(far.ExitInspect, near.ExitInspect);
                     Assert.Equal(far.RebaseEntry, near.RebaseEntry);
+                    Assert.Equal(far.AnnounceStop, near.AnnounceStop);
                 }
             }
         }

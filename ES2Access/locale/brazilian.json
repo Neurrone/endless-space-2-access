@@ -271,6 +271,7 @@
   "galaxy.bookmark.no-home": "Nenhum sistema natal",
   "galaxy.bookmark.file-header": "{0}, {1}, turno {2}",
   "galaxy.inspect.entered": "Modo de inspeção",
+  "galaxy.inspect.map-stop": "Inspecionando o mapa galáctico",
   "galaxy.inspect.exited": "Modo de inspeção encerrado",
   "galaxy.inspect.cursor-size": "Cursor {0} por {1}",
   "galaxy.inspect.edge": "Borda do mapa",

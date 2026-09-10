@@ -271,6 +271,7 @@
   "galaxy.bookmark.no-home": "無母星系",
   "galaxy.bookmark.file-header": "{0}，{1}，第 {2} 回合",
   "galaxy.inspect.entered": "視察模式",
+  "galaxy.inspect.map-stop": "正在視察銀河系地圖",
   "galaxy.inspect.exited": "已離開視察模式",
   "galaxy.inspect.cursor-size": "游標 {0} 乘 {1}",
   "galaxy.inspect.edge": "地圖邊緣",

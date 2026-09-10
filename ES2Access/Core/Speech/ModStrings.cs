@@ -661,6 +661,7 @@ namespace ES2Access.Core.Speech
             { GalaxyBookmarkNoHome, "No home system" },
             { GalaxyBookmarkFileHeader, "{0}, {1}, turn {2}" },
             { GalaxyInspectEntered, "Inspect mode" },
+            { GalaxyInspectMapStop, "Inspecting galactic map" },
             { GalaxyInspectExited, "Exited inspect mode" },
             { GalaxyInspectCursorSize, "Cursor {0} by {1}" },
             { GalaxyInspectEdge, "Map edge" },
