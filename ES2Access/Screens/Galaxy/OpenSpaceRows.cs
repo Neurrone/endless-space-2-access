@@ -149,13 +149,18 @@ namespace ES2Access.Screens
             return place && _showsDetail ? MarkerHome.System : MarkerHome.Open;
         }
 
-        /// <summary>Whether the tree is declaring a row for the fleet a pin is planted on. The two
-        /// lists asked are the two the rows themselves are built from - what the map parks at the star
-        /// (<see cref="FleetPresence.FleetsAt"/>) and what it draws crossing open space with no place
-        /// to hang under (<c>_adrift</c>) - so a pin is never hung under a fleet row that is not
-        /// there. A fleet under WAY on a lane has a row under the end it is arriving at and is not
-        /// asked for here: its pin keeps the open-sky row it has always had, which is the fallback for
-        /// every host the tree cannot find.</summary>
+        /// <summary>
+        /// Whether the tree is declaring a row for the fleet a pin is planted on.
+        ///
+        /// The three questions are the three the fleet rows themselves are built from, so a pin is
+        /// never hung under a fleet row that is not there and never left in the open sky while one
+        /// is: what the map parks at the star (<see cref="FleetPresence.FleetsAt"/>), what it draws
+        /// crossing open space with nowhere to hang (<c>_adrift</c>), and - for a fleet UNDER WAY,
+        /// which is at no star at all and so has no <see cref="QuestMarkers.Marker.System"/> - the
+        /// end it is ARRIVING at, which is the one fact its row's own key is built from
+        /// (<see cref="DestinationOf"/>, <c>Bound</c>). One lookup per marked fleet: the
+        /// fleet's own leg, never a walk of the galaxy's lanes.
+        /// </summary>
         private bool Berthed(QuestMarkers.Marker marker, bool place)
         {
             if (place)
@@ -178,7 +183,11 @@ namespace ES2Access.Screens
                 }
             }
 
-            return false;
+            // Under way: the row hangs under the system it is flying to, and only where the tree is
+            // declaring that system by name - a located star carries no fleets, and a destination the
+            // map has never named puts the fleet in <c>_adrift</c> above.
+            StarSystemNode goal = DestinationOf(marker.Fleet) as StarSystemNode;
+            return goal != null && _namedSet.Contains(goal);
         }
 
         /// <summary>

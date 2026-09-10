@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using ES2Access.Screens;
 
 namespace ES2Access.UI
 {
@@ -219,7 +220,17 @@ namespace ES2Access.UI
                     );
             }
 
-            if (marker.Planet != null && marker.Named)
+            // The world's own words, whenever the map has a NAME for the world - which is the
+            // survey and not the band (owner ruling 2026-09-10). Where the row hangs is a question
+            // about what this build is drawing and it changes with the camera; what the row SAYS is a
+            // question about what the player has been shown, and it does not. Below the survey the
+            // planet has no name to say - the card calls it unknown - so the pin falls through to the
+            // star it stands at, which the map is naming.
+            if (
+                marker.Planet != null
+                && marker.Named
+                && GalaxyHudScreen.Surveyed(marker.System, marker.Empire)
+            )
             {
                 string place = PlanetPlace.Of(marker.System, marker.Planet, marker.Empire);
                 if (!string.IsNullOrEmpty(place))
