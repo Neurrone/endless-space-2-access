@@ -103,6 +103,7 @@ namespace ES2Access.UI.ModOptions
             _taxonomy = null;
             _marker = null;
             _say = null;
+            _ask = null;
             _refill = false;
         }
 
@@ -156,7 +157,13 @@ namespace ES2Access.UI.ModOptions
 
             if (Working.NameTaken(wanted, slot, Taxonomy.Labels()))
             {
-                _say = ModStrings.Format(ModStrings.ScannerEditNameTaken, wanted);
+                // A CLASH IS A DIALOG, not a spoken line (owner ruling 2026-09-10). Two categories
+                // the scanner's cycle reads out with the same words are indistinguishable, so the
+                // refusal has to be acknowledged rather than heard in passing - and the box holds the
+                // player still while the page underneath is built again with the old name back in the
+                // box. Raised from the tick for the same reason the rebuild is: the field is
+                // mid-FocusLoss here.
+                _ask = wanted;
                 Rebuild();
                 return;
             }
@@ -377,6 +384,41 @@ namespace ES2Access.UI.ModOptions
             string say = _say;
             _say = null;
             Voice.Say(say, false);
+
+            string clash = _ask;
+            _ask = null;
+            if (clash != null)
+            {
+                NameTakenBox(clash);
+            }
+        }
+
+        /// <summary>
+        /// The game's own message box, saying the name is spoken for, with one button on it.
+        ///
+        /// The game has no INFORMATIVE title of its own - the four title keys it ships are the
+        /// confirmation heading and the three button captions - so the box wears the confirmation
+        /// heading and answers with Ok alone: an empty cancel caption is how the window hides its
+        /// second button (<c>MessageBoxWindow.cs</c> :96-98). There is nothing to do with the answer,
+        /// because the name was never taken: the page was built again before the box went up.
+        /// </summary>
+        private static void NameTakenBox(string wanted)
+        {
+            try
+            {
+                Gui.GuiService.ShowMessage(
+                    ModStrings.Format(ModStrings.ScannerEditNameTaken, wanted),
+                    MessageBoxType.INFORMATIVE,
+                    null,
+                    "%MessageBoxConfirmationTitle",
+                    "%MessageBoxOkTitle",
+                    string.Empty
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("mod options: the scanner's name-clash box would not open: " + e);
+            }
         }
 
         /// <summary>Ask for the page to be built again on the next tick, because what it holds has
@@ -425,6 +467,10 @@ namespace ES2Access.UI.ModOptions
 
         /// <summary>What the next tick says, once the rows have been built again.</summary>
         private static string _say;
+
+        /// <summary>The name the next tick raises the clash box about, once the rows have been built
+        /// again - null while nobody has asked for a name somebody else has.</summary>
+        private static string _ask;
 
         /// <summary>Whether the page has to be built again on the next tick.</summary>
         private static bool _refill;
