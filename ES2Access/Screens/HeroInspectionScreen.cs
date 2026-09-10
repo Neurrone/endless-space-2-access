@@ -388,10 +388,16 @@ namespace ES2Access.Screens
                     case HeroInspectionModalWindow.HeroHubMode.ShipDesign:
                         return Drawn(AgeWidgets.Transform(window.ShipDesignPanelTitle));
                     default:
-                        return WindowShape.TitleWidget(
+                        // Asked for by ITS OWN name rather than through the shared window-title
+                        // search: the names a window writes its title in - WindowTitle, TitleLabel,
+                        // TitleGroup - are asked first there, and inside this panel "TitleGroup" is
+                        // the caption group of the button that opens the SHIP page, so the overview
+                        // page was heading itself "Ship design" (measured 2026-09-10).
+                        return Drawn(AgeWidgets.ChildNamed(
                             window.OverviewPanel.AgeTransform,
-                            OverviewTitleNames
-                        );
+                            OverviewTitleName,
+                            OverviewTitleDepth
+                        ));
                 }
             }
             catch (Exception)
@@ -400,7 +406,11 @@ namespace ES2Access.Screens
             }
         }
 
-        private static readonly string[] OverviewTitleNames = { "OverviewTitle" };
+        /// <summary>The name the prefab gives the overview page's own heading label, and the depth it
+        /// sits at under the page's panel.</summary>
+        private const string OverviewTitleName = "OverviewTitle";
+
+        private const int OverviewTitleDepth = 4;
 
         // ---- the ship-design page ----
 
