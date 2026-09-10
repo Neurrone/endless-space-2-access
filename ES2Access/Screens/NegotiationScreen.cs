@@ -91,13 +91,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The basket, because that is the deal - the shelves are what it is filled from and are
-        /// one Tab away in either direction.</summary>
-        public override object InitialFocusStop
-        {
-            get { return ContractStop; }
-        }
-
         public override bool KeepStateOnPop
         {
             get { return true; }

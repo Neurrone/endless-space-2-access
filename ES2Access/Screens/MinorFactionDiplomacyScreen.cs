@@ -93,11 +93,6 @@ namespace ES2Access.Screens
             }
         }
 
-        public override object InitialFocusStop
-        {
-            get { return ActionsStop; }
-        }
-
         /// <summary>
         /// Escape's own job, done by the mod's Back so that one key leaves every window the same way.
         ///
