@@ -216,11 +216,11 @@ namespace ES2Access.UI
                     NodeSection.Buffer(() => ConstructibleFailures(it, drawn))
                 ),
                 OnActivate = () => QueueConstruction(it, owner, false),
-                OnAlternate = () => QueueConstruction(it, owner, true),
+                OnAltClick = () => QueueConstruction(it, owner, true),
             };
             // The tile draws nothing about the second gesture and the queue it changes is a panel
             // away, so the buffer says it.
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.AltClick);
             // The tile's tooltip is the renderer-assembled kind, so it is only indicated - and a tile the
             // game is refusing would then say "unavailable" and nothing else. The reason is read off the
             // wrapper the tooltip carries, as its failure panel does.

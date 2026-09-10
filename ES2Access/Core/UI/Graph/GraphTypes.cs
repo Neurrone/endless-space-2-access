@@ -300,8 +300,9 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Optional. Primary activation — the left-click equivalent (Enter).</summary>
         public Action OnActivate;
 
-        /// <summary>Optional. Secondary activation — the right-click equivalent.</summary>
-        public Action OnSecondary;
+        /// <summary>Optional. Take the cursor back where it came from — the return-to-previous-position
+        /// command (Backspace), not a click. The right click is <see cref="OnRightClick"/>.</summary>
+        public Action OnReturnToPrevious;
 
         /// <summary>
         /// Optional. This control NAMES A PLACE that already exists elsewhere in the graph, and Right
@@ -331,15 +332,15 @@ namespace ES2Access.Core.UI.Graph
 
         /// <summary>Optional. The control's OTHER activation — what the game's own modified click does
         /// (queue this at the head of the queue rather than the end). Distinct from
-        /// <see cref="OnSecondary"/>, which is the right-click.</summary>
-        public Action OnAlternate;
+        /// <see cref="OnRightClick"/>, which is the right click.</summary>
+        public Action OnAltClick;
 
         /// <summary>Optional. The command the game puts on a RIGHT-CLICK here - the one thing the
         /// control does when the player asks it to do its obvious thing without opening anything.
-        /// Distinct from <see cref="OnActivate"/> (the left click) and from <see cref="OnAlternate"/>
+        /// Distinct from <see cref="OnActivate"/> (the left click) and from <see cref="OnAltClick"/>
         /// (the modified left click); a control without one answers the key with a spoken cue rather
         /// than with silence.</summary>
-        public Action OnContextual;
+        public Action OnRightClick;
 
         /// <summary>Optional. GO TO WHERE THIS HAPPENED - the game's own show-location for this row,
         /// exactly as clicking the button its popup would draw. Distinct from every click above: it
@@ -361,17 +362,17 @@ namespace ES2Access.Core.UI.Graph
         /// command of their own (a fleet row shows that fleet on the map, a picked choice is
         /// confirmed, a module tile fits itself). Distinct from <see cref="OnActivate"/> (the single
         /// click, which such a control may answer with nothing at all), from
-        /// <see cref="OnAlternate"/> (the click with a modifier held) and from
-        /// <see cref="OnContextual"/> (the right click).</summary>
+        /// <see cref="OnAltClick"/> (the click with a modifier held) and from
+        /// <see cref="OnRightClick"/> (the right click).</summary>
         public Action OnDoubleClick;
 
         /// <summary>Optional. Add this control's item to the game's own selection, or take it out
         /// again, leaving the rest of the selection alone - what the game's Ctrl+click does.</summary>
-        public Action OnSelectToggle;
+        public Action OnCtrlClick;
 
         /// <summary>Optional. Extend the game's own selection from wherever it last was to here -
         /// what the game's Shift+click does.</summary>
-        public Action OnSelectRange;
+        public Action OnShiftClick;
 
         /// <summary>Optional. What this control offers to PICK UP and carry (a ship out of a fleet,
         /// a population unit off a planet). Returning null means it has nothing to give right now.

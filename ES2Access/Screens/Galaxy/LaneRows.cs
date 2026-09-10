@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Reflection;
@@ -221,14 +221,14 @@ namespace ES2Access.Screens
                     // only way to name a direction with no system at the end of it.
                     Link target = link;
                     GameNode aim = destination;
-                    vtable.OnContextual = () => LaneCommand(target);
+                    vtable.OnRightClick = () => LaneCommand(target);
                     MoveHints(vtable, target);
                     // ...and the one thing the map's LEFT click on a line does with a selection up:
                     // let go of it. Only here and on empty space - Enter on a system zooms instead.
                     NodeHints.Add(
                         vtable,
                         ModStrings.HintDeselectFleet,
-                        UiActions.Activate,
+                        UiActions.Click,
                         0,
                         FleetOrders.AnySelected
                     );

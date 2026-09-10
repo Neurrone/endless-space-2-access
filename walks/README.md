@@ -117,7 +117,7 @@ steps up onto it.
 start of the current *level*, not of the stop — so a counted arrow walk is not replayable.
 Every route lands with `POST /type` and clears with `ui.back`. `tland` returns non-zero on
 a 0-result search and does not move the cursor; never follow a failed landing with
-`ui.activate`.
+`ui.click`.
 
 **One tree shape, one cursor.** `cs/reset.cs` clears the mod's `GraphState` (`Expanded`,
 `StopMemory`, `CurKey`, `KeyOrder`, `NextSuggestedMove`) before each capture, so a dump does

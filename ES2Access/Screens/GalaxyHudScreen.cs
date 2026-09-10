@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
@@ -309,7 +309,7 @@ namespace ES2Access.Screens
         /// waiting for a target (<see cref="CursorTargeting.EscapeIsOurs"/>).</summary>
         public override bool Back()
         {
-            return CursorTargeting.EscapeIsOurs && CursorTargeting.Contextual();
+            return CursorTargeting.EscapeIsOurs && CursorTargeting.RightClick();
         }
 
         /// <summary>Asked before the key is pressed, and true only in that same one case - otherwise the
@@ -373,13 +373,13 @@ namespace ES2Access.Screens
         /// <summary>
         /// While the map is waiting for an order's target, backslash is the map's own right click and
         /// nothing else - the cancel for most of these modes, one waypoint back while a hacking operation
-        /// is being plotted (<see cref="CursorTargeting.Contextual"/>). The same displacement Enter lives
+        /// is being plotted (<see cref="CursorTargeting.RightClick"/>). The same displacement Enter lives
         /// with: for as long as the mode is up, sending the selected fleets and undoing a zoom
         /// (<see cref="SystemCommand"/>) wait, exactly as they do for the mouse.
         /// </summary>
-        public override bool Contextual()
+        public override bool RightClick()
         {
-            return CursorTargeting.Contextual();
+            return CursorTargeting.RightClick();
         }
 
         public override void OnPush()
@@ -1195,7 +1195,7 @@ namespace ES2Access.Screens
         /// journey is asking for something that is simply not there, and a cue for it on a key pressed
         /// speculatively is noise - the same rule the other gesture keys keep.
         /// </summary>
-        public override bool Secondary(GraphNode focused)
+        public override bool ReturnToPrevious(GraphNode focused)
         {
             if (focused == null || !Equals(focused.StopKey, SystemStop))
             {

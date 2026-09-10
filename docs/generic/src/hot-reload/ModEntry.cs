@@ -557,7 +557,7 @@ namespace ES2Access
         /// press the mod has already answered.</summary>
         private static bool SwallowedCarry(string actionKey)
         {
-            return actionKey == UiActions.Carry && SystemManagementScreen.SwallowsCarryKey();
+            return actionKey == UiActions.Drag && SystemManagementScreen.SwallowsCarryKey();
         }
 
         /// <summary>The claim half of Delete: only where the focused control is one that empties
@@ -592,7 +592,7 @@ namespace ES2Access
             input.Register(UiActions.Right).Bind(KeyCode.RightArrow).Repeating();
             input.Register(UiActions.Next).Bind(KeyCode.Tab).Repeating();
             input.Register(UiActions.Prev).Bind(KeyCode.Tab, shift: true).Repeating();
-            input.Register(UiActions.Activate).Bind(KeyCode.Return).Bind(KeyCode.KeypadEnter);
+            input.Register(UiActions.Click).Bind(KeyCode.Return).Bind(KeyCode.KeypadEnter);
             // The other thing Enter could have meant, on the controls that have one - the game's own
             // ALT-click (queue at the head of a queue, and every other modified click it reads Alt
             // for). It is NOT on Alt and Enter, which is what the gesture it stands for would want:
@@ -604,14 +604,14 @@ namespace ES2Access
             // modified click is still a modified Enter (owner ruling 2026-08-19).
             //
             // The cost of the move, and the reason the screens that HAVE an alt-click wire
-            // OnAlternate rather than leaning on the fall-back: the plain-click fall back replays the
+            // OnAltClick rather than leaning on the fall-back: the plain-click fall back replays the
             // click with whatever the player is physically holding, and what they are holding is now
             // Control and Shift, not Alt. A game handler reading Input.IsAltKeyDown() inside its own
             // click no longer sees it.
-            input.Register(UiActions.Alternate)
+            input.Register(UiActions.AltClick)
                 .Bind(KeyCode.Return, ctrl: true, shift: true)
                 .Bind(KeyCode.KeypadEnter, ctrl: true, shift: true);
-            input.Register(UiActions.Secondary).Bind(KeyCode.Backspace);
+            input.Register(UiActions.ReturnToPrevious).Bind(KeyCode.Backspace);
             // The right click, which in this game is a command in its own right rather than a menu.
             // Claimed on every screen of ours, because it always answers - with the control's command
             // where there is one, and with a cue where there is not.
@@ -623,7 +623,7 @@ namespace ES2Access
             // than wired - the physical Control is still held when the handler runs, which is how the
             // GAME's rule applies rather than a copy of it, exactly as the modified Enter chords do.
             // Everywhere the modifier means nothing to the game, the chord is the plain right click.
-            input.Register(UiActions.Contextual)
+            input.Register(UiActions.RightClick)
                 .Bind(KeyCode.Backslash)
                 .Bind(KeyCode.Backslash, ctrl: true);
             // The game's own DOUBLE click, on the one Enter chord the game itself never uses: no
@@ -638,15 +638,15 @@ namespace ES2Access
             // named with Enter, on the control that will take it. The one key here the game keeps a
             // share of: it is only taken where the cursor is standing on something that can be picked
             // up, or while something is already being carried - see CarryKeyClaimed.
-            input.Register(UiActions.Carry).Bind(KeyCode.Space).ClaimedWhile(CarryKeyClaimed);
+            input.Register(UiActions.Drag).Bind(KeyCode.Space).ClaimedWhile(CarryKeyClaimed);
             // The game's own two modified clicks on a list: Control adds one item to the selection or
             // takes it out, Shift takes everything from the last one to this one. The physical
             // modifier stays held while the control's own handler runs, which is how the game's own
             // selection rules - not a copy of them - decide what happens.
-            input.Register(UiActions.SelectToggle)
+            input.Register(UiActions.CtrlClick)
                 .Bind(KeyCode.Return, ctrl: true)
                 .Bind(KeyCode.KeypadEnter, ctrl: true);
-            input.Register(UiActions.SelectRange)
+            input.Register(UiActions.ShiftClick)
                 .Bind(KeyCode.Return, shift: true)
                 .Bind(KeyCode.KeypadEnter, shift: true);
             input.Register(UiActions.Back).Bind(KeyCode.Escape);
@@ -1022,8 +1022,8 @@ namespace ES2Access
 
             // The carry's own three gestures, named to Core so its pick-up announcement and its two
             // derived hints spell whatever chords those actions are bound to now.
-            CarryState.PickUpAction = UiActions.Carry;
-            CarryState.DropAction = UiActions.Activate;
+            CarryState.PickUpAction = UiActions.Drag;
+            CarryState.DropAction = UiActions.Click;
             CarryState.CancelAction = UiActions.Back;
 
             // And the game's own two drag noises, so the keyboard's carry sounds like the mouse's

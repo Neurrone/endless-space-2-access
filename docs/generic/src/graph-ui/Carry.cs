@@ -120,9 +120,9 @@ namespace ES2Access.Core.UI
         /// with nothing to keep in step. The defaults are the shipped action keys; the host may set
         /// them, and a test may point them anywhere.
         /// </summary>
-        public static string PickUpAction = "ui.carry";
+        public static string PickUpAction = "ui.drag";
 
-        public static string DropAction = "ui.activate";
+        public static string DropAction = "ui.click";
 
         public static string CancelAction = "ui.back";
 

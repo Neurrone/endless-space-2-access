@@ -21,13 +21,13 @@ snap "$TMP/gm.txt"
 MODSET=$(label_of "$TMP/gm.txt" 'gamemenu:mod-settings')
 if [ -n "$MODSET" ] && tland "$MODSET"; then
   echo "   discovered: pause-menu entry [$MODSET]"
-  inp ui.activate; pause 2500
-  inp ui.home; inp ui.activate; pause 1000          # force the FIRST tab
+  inp ui.click; pause 2500
+  inp ui.home; inp ui.click; pause 1000          # force the FIRST tab
   capture 02-mod-settings-tab-1 "mod settings, first tab"
-  inp ui.down; inp ui.activate; pause 1200
+  inp ui.down; inp ui.click; pause 1200
   capture 03-mod-settings-tab-2 "mod settings, second tab"
-  inp ui.up; inp ui.activate; pause 1000            # leave it on the first tab
-  inp ui.next; inp ui.next; inp ui.home; inp ui.activate; pause 2000   # Cancel
+  inp ui.up; inp ui.click; pause 1000            # leave it on the first tab
+  inp ui.next; inp ui.next; inp ui.home; inp ui.click; pause 2000   # Cancel
   at "after-mod-settings-cancel"
 else
   skip "the pause menu declares no mod-settings entry - both settings-tab dumps not captured"

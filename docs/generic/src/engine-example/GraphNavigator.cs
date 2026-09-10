@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
@@ -692,7 +692,7 @@ namespace ES2Access.UI
                 return false;
             }
 
-            if (actionKey == UiActions.Carry && _typeAhead.HasBuffer)
+            if (actionKey == UiActions.Drag && _typeAhead.HasBuffer)
             {
                 // A space typed into a search is TEXT, and the search takes it in TypeAheadTick.
                 // Claimed all the same, so the game does not also act on it.
@@ -738,25 +738,25 @@ namespace ES2Access.UI
                     return Adjust(1, true);
                 case UiActions.CoarseDecrease:
                     return Adjust(-1, true);
-                case UiActions.Activate:
+                case UiActions.Click:
                     return Activate();
-                case UiActions.Secondary:
-                    return Secondary();
-                case UiActions.Alternate:
-                    return Alternate();
-                case UiActions.Contextual:
-                    return Contextual();
+                case UiActions.ReturnToPrevious:
+                    return ReturnToPrevious();
+                case UiActions.AltClick:
+                    return AltClick();
+                case UiActions.RightClick:
+                    return RightClick();
                 case UiActions.DoubleClick:
                     return DoubleClick();
                 case UiActions.GoToLocation:
                     return GoToLocation();
                 case UiActions.Clear:
                     return ClearControl();
-                case UiActions.Carry:
+                case UiActions.Drag:
                     return CarryKey();
-                case UiActions.SelectToggle:
+                case UiActions.CtrlClick:
                     return SelectChord(false);
-                case UiActions.SelectRange:
+                case UiActions.ShiftClick:
                     return SelectChord(true);
                 case UiActions.Back:
                     // Putting down what is being held comes before anything the screen does with the
@@ -1378,7 +1378,7 @@ namespace ES2Access.UI
             return true;
         }
 
-        private bool Secondary()
+        private bool ReturnToPrevious()
         {
             GraphNode node = _graph.CurrentNode;
             if (node == null)
@@ -1386,20 +1386,20 @@ namespace ES2Access.UI
                 return false;
             }
 
-            // The SCREEN is offered the key first, the same way the contextual key is offered
-            // (<see cref="Screen.Secondary"/>): where a page has folded a second command onto this key
+            // The SCREEN is offered the key first, the same way the right-click key is offered
+            // (<see cref="Screen.ReturnToPrevious"/>): where a page has folded a second command onto this key
             // for a whole panel of its own - the galaxy's way back down the lanes it has been travelled -
             // that command belongs to the panel rather than to whichever node the cursor happens to be
-            // on, most of which wire no OnSecondary at all. A screen that declines leaves the focused
+            // on, most of which wire no OnReturnToPrevious at all. A screen that declines leaves the focused
             // control's own second command exactly as it was.
-            if (_screen.Secondary(node))
+            if (_screen.ReturnToPrevious(node))
             {
                 return true;
             }
 
-            if (node.Vtable.OnSecondary != null)
+            if (node.Vtable.OnReturnToPrevious != null)
             {
-                _graph.Secondary();
+                _graph.ReturnToPrevious();
                 SpeakStateAfterChange();
             }
 
@@ -1408,15 +1408,15 @@ namespace ES2Access.UI
 
         // The game's own Alt+click: the control's OTHER activation where it wires one, and otherwise its
         // plain click replayed while the player is still holding Alt, which is what lets the GAME's
-        // handler decide whether the modifier means anything here (<see cref="KeyGraph.Alternate"/>).
-        private bool Alternate()
+        // handler decide whether the modifier means anything here (<see cref="KeyGraph.AltClick"/>).
+        private bool AltClick()
         {
             if (_graph.CurrentNode == null)
             {
                 return false;
             }
 
-            if (_graph.Alternate())
+            if (_graph.AltClick())
             {
                 SpeakStateAfterChange();
             }
@@ -1430,18 +1430,18 @@ namespace ES2Access.UI
         // something else entirely to the game - and SILENT where the control has no such command: the
         // gesture keys are pressed speculatively all over a page, and a cue on every one of them is
         // noise rather than reassurance.
-        private bool Contextual()
+        private bool RightClick()
         {
             // A mode the game has put the page into gets the key first, because it has taken the right
-            // click from every control underneath (<see cref="Screen.Contextual"/>). Nothing is re-read
+            // click from every control underneath (<see cref="Screen.RightClick"/>). Nothing is re-read
             // after it: the control did not change, and what the mode's end sounds like is the one place
             // that watches it.
-            if (_screen.Contextual())
+            if (_screen.RightClick())
             {
                 return true;
             }
 
-            if (_graph.Contextual())
+            if (_graph.RightClick())
             {
                 SpeakStateAfterChange();
             }
@@ -1467,11 +1467,11 @@ namespace ES2Access.UI
         // The two selection chords, which are the game's own modified clicks: one item in or out of the
         // selection, and everything from the last one to this one. A control that is not part of a
         // selection gets its plain click replayed with the modifier still held, so the modified clicks
-        // the GAME understands and the mod never wired work anyway (KeyGraph.SelectToggle); a control
+        // the GAME understands and the mod never wired work anyway (KeyGraph.CtrlClick); a control
         // with no click either answers with silence rather than borrowing another control's command.
         private bool SelectChord(bool range)
         {
-            if (range ? _graph.SelectRange() : _graph.SelectToggle())
+            if (range ? _graph.ShiftClick() : _graph.CtrlClick())
             {
                 SpeakStateAfterChange();
             }

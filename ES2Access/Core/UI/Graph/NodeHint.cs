@@ -13,7 +13,7 @@ namespace ES2Access.Core.UI.Graph
     /// it and no screen holds a key name of its own.
     ///
     /// <see cref="BindingIndex"/> is which of that action's chords the sentence means, and it is not
-    /// always the first: the map's off-lane move is the SECOND binding of the very same Contextual
+    /// always the first: the map's off-lane move is the SECOND binding of the very same RightClick
     /// action as the ordinary move (Ctrl+Backslash beside Backslash - <c>docs/interaction.md</c>),
     /// because the game runs one handler for both clicks and reads the physical modifier inside it.
     /// A hint that named the action alone could not tell those two apart.
@@ -46,7 +46,7 @@ namespace ES2Access.Core.UI.Graph
         public readonly string TemplateKey;
 
         /// <summary>The action the chord belongs to, as the input manager knows it
-        /// ("ui.alternate").</summary>
+        /// ("ui.altClick").</summary>
         public readonly string ActionKey;
 
         /// <summary>Which of the action's bindings the sentence means; 0 - the usual case - is the

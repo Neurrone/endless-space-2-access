@@ -35,7 +35,7 @@ inp ui.next
 HULL=$(label_of "$TMP/design.txt" 'shipdesign/info/hull')
 if [ -n "$HULL" ] && tland "$HULL"; then
   echo "   discovered: hull combo [$HULL]"
-  inp ui.activate; pause 1500
+  inp ui.click; pause 1500
   capture 04-hull-drop-list "hull drop list"
   inp ui.back; pause 1000
 else

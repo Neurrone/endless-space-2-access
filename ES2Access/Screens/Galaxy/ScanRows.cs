@@ -653,7 +653,7 @@ namespace ES2Access.Screens
             // The two clicks the map itself puts on a system are unchanged in the mode: the lens is a
             // light over the same map, and the game answers a click on a star the same way under it.
             vtable.OnActivate = () => ZoomIn(it);
-            vtable.OnContextual = () => SystemCommand(it);
+            vtable.OnRightClick = () => SystemCommand(it);
 
             string place = SystemKey(node, empire);
             ControlId id = ControlId.For(it, place);

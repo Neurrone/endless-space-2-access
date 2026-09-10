@@ -113,7 +113,7 @@ nkeys() { n=$(grep -cE "\[$2" "$1" 2>/dev/null); echo "${n:-0}"; }
 
 # tland <text> -- land on a node by type-ahead and clear the search. Returns 0 when the
 # search had at least one result, 1 when it had none (and the cursor did NOT move --
-# never follow a failed tland with ui.activate).
+# never follow a failed tland with ui.click).
 tland() {
   curl -s -X POST --data-binary "$1" "$HOST/type" > "$TMP/ty.out" 2>&1
   pause 500

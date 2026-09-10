@@ -330,7 +330,7 @@ namespace ES2Access.UI
             if (answer != null)
             {
                 vtable.OnActivate = answer.OnActivate;
-                vtable.OnAlternate = answer.OnAlternate;
+                vtable.OnAltClick = answer.OnAltClick;
                 vtable.OnDoubleClick = answer.OnDoubleClick;
                 vtable.OnPickUp = answer.OnPickUp;
                 vtable.DropKind = answer.DropKind;

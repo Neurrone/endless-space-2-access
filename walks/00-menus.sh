@@ -79,7 +79,7 @@ optiontabs() {
   while [ "$ot_i" -le "$ot_n" ]; do
     ot_c=$(key_nth "$TMP/ot.txt" 'options:tab/[^]]*\]' "$ot_i" | sed 's|.*/||')
     if tkey "$TMP/ot.txt" 'options:tab/[^]]*\]' "$ot_i"; then
-      inp ui.activate; pause 1800
+      inp ui.click; pause 1800
       capture "$ot_pfx-$ot_c" "$ot_lbl, $ot_c"
     else
       skip "$ot_lbl tab $ot_c could not be landed on"
@@ -87,7 +87,7 @@ optiontabs() {
     ot_i=$((ot_i+1))
   done
   # left on the first tab: both windows remember the selected one across opens
-  if [ "$ot_n" -ge 1 ] && tkey "$TMP/ot.txt" 'options:tab/[^]]*\]' 1; then inp ui.activate; pause 1500; fi
+  if [ "$ot_n" -ge 1 ] && tkey "$TMP/ot.txt" 'options:tab/[^]]*\]' 1; then inp ui.click; pause 1500; fi
 }
 
 mprologue
@@ -101,7 +101,7 @@ echo "   discovered: $(nkeys "$TMP/mm.txt" 'mainmenu:[^]]*\]') main-menu entries
 MODSET=$(label_of "$TMP/mm.txt" 'mainmenu:mod-settings')
 if [ -n "$MODSET" ] && tland "$MODSET"; then
   echo "   discovered: menu entry [$MODSET]"
-  inp ui.activate
+  inp ui.click
   # The mod's window IS the game's options modal with the mod's content in it, so the screen it
   # focuses is the options screen; only the name it speaks says which of the two is up.
   if onscreen screen.options 20000; then
@@ -120,14 +120,14 @@ snap "$TMP/mm.txt"
 NEWGAME=$(label_of "$TMP/mm.txt" 'mainmenu:MainMenuNewGame')
 if [ -n "$NEWGAME" ] && tland "$NEWGAME"; then
   echo "   discovered: menu entry [$NEWGAME]"
-  inp ui.activate
+  inp ui.click
   if onscreen screen.new-game 60000; then
     pause 3000
     capture 04-new-game "new-game lobby"
     snap "$TMP/ng.txt"
 
     # faction choice -- the empire slot's own portrait button
-    if tkey "$TMP/ng.txt" 'newgame:empire/change\]' 1 && { inp ui.activate; onscreen screen.faction-choice 20000; }; then
+    if tkey "$TMP/ng.txt" 'newgame:empire/change\]' 1 && { inp ui.click; onscreen screen.faction-choice 20000; }; then
       pause 2500
       capture 05-faction-choice "faction choice"
       snap "$TMP/fc.txt"
@@ -135,7 +135,7 @@ if [ -n "$NEWGAME" ] && tland "$NEWGAME"; then
       # the custom-faction editor, only where a key route reaches it. The band's own first row
       # is Delete, so this asks for the create button by name rather than for "a row of the band".
       ADDFAC=$(label_of "$TMP/fc.txt" 'faction-choice:custom/AddFactionButton')
-      if [ -n "$ADDFAC" ] && findland "$ADDFAC" && { inp ui.activate; onscreen screen.custom-faction 20000; }; then
+      if [ -n "$ADDFAC" ] && findland "$ADDFAC" && { inp ui.click; onscreen screen.custom-faction 20000; }; then
         pause 2500
         capture 06-custom-faction "custom-faction editor"
       else
@@ -149,7 +149,7 @@ if [ -n "$NEWGAME" ] && tland "$NEWGAME"; then
 
     # advanced settings -- one button per game-setup category; the first the lobby offers
     snap "$TMP/ng.txt"
-    if tkey "$TMP/ng.txt" 'newgame:[^]]*/advanced\]' 1 && { inp ui.activate; onscreen screen.advanced-settings 20000; }; then
+    if tkey "$TMP/ng.txt" 'newgame:[^]]*/advanced\]' 1 && { inp ui.click; onscreen screen.advanced-settings 20000; }; then
       pause 2500
       capture 07-advanced-settings "advanced game settings"
       mdrain; onscreen screen.new-game 20000 || echo "   NOTE: the lobby did not come back after advanced settings"

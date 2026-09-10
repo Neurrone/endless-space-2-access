@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
@@ -763,13 +763,13 @@ namespace ES2Access.Screens
                     tooltip,
                     () => FleetRoute.CommittedLines(going)
                 );
-                vtable.OnSelectToggle = () => AgeWidgets.Toggle(it.SelectionToggle);
-                vtable.OnSelectRange = vtable.OnSelectToggle;
+                vtable.OnCtrlClick = () => AgeWidgets.Toggle(it.SelectionToggle);
+                vtable.OnShiftClick = vtable.OnCtrlClick;
                 // Both chords replay the line's own click and the GAME reads the modifier the player
                 // is still holding (<c>FleetsManagementPanel</c> :280), so the two do different things
                 // through one handler - and nothing on the list says either exists.
-                NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.SelectToggle);
-                NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.SelectRange);
+                NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.CtrlClick);
+                NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.ShiftClick);
                 // A part per COLUMN rather than one composed sentence, the shape the battle screens'
                 // figures already have: the announcer joins the parts into the one line the row
                 // always spoke, and the review buffer gives each column a line of its own to step

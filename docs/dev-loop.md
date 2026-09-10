@@ -250,9 +250,9 @@ a search up, all three read `claims:true` and `claimsBack:true`; after Escape cl
 back to the game (`claims:false`) while the letters stay claimed, because type-ahead is armed
 whenever a mod screen is focused. Each keystroke re-announces the landing, so `/type "res"` answers
 with three identical lines — that is the design, not a stutter. `POST /type` searches only the
-FOCUSED stop, and `ui.activate` while a search is live ends the search and then performs the
+FOCUSED stop, and `ui.click` while a search is live ends the search and then performs the
 landing's ordinary action — on a sort header that is a stray sort. Never follow a 0-result
-`/type` with `ui.activate`; clear with `ui.back` first — and re-read the cursor before
+`/type` with `ui.click`; clear with `ui.back` first — and re-read the cursor before
 activating: a 0-result search never moved it.
 
 **Tracing a transition frame by frame.** A screen change is frames long and polling from outside

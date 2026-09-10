@@ -38,9 +38,9 @@ namespace ES2Access.Tests.UI
         private static void InstallFakeFormatter()
         {
             NodeHints.Chord = (action, index) =>
-                action == "ui.contextual"
+                action == "ui.rightClick"
                     ? (index == 0 ? "Backslash" : index == 1 ? "Ctrl+Backslash" : null)
-                    : action == "ui.alternate" && index == 0
+                    : action == "ui.altClick" && index == 0
                         ? "Ctrl+Shift+Enter"
                         : null;
         }
@@ -65,7 +65,7 @@ namespace ES2Access.Tests.UI
         {
             InstallFakeFormatter();
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
 
             Assert.Equal(
                 new[] { "Dusay", "Two planets", "Backslash to move the fleet here" },
@@ -79,8 +79,8 @@ namespace ES2Access.Tests.UI
         {
             InstallFakeFormatter();
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
-            NodeHints.Add(vtable, ModStrings.HintFreeMovement, "ui.contextual", 1);
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
+            NodeHints.Add(vtable, ModStrings.HintFreeMovement, "ui.rightClick", 1);
 
             List<string> lines = Buffer(vtable);
             Assert.Equal("Two planets", lines[lines.Count - 3]);
@@ -97,8 +97,8 @@ namespace ES2Access.Tests.UI
         {
             InstallFakeFormatter();
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
-            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.altClick");
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
 
             Assert.Equal(
                 new[]
@@ -120,7 +120,7 @@ namespace ES2Access.Tests.UI
         {
             InstallFakeFormatter();
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.altClick");
 
             Assert.Equal(
                 new[] { "Dusay", "Two planets", "Ctrl+Shift+Enter to queue it first" },
@@ -134,7 +134,7 @@ namespace ES2Access.Tests.UI
         public void RebindingTheActionRewordsTheHint()
         {
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.altClick");
 
             InstallFakeFormatter();
             Assert.Contains("Ctrl+Shift+Enter to queue it first", Buffer(vtable));
@@ -151,11 +151,11 @@ namespace ES2Access.Tests.UI
             InstallFakeFormatter();
             bool possible = false;
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
             NodeHints.Add(
                 vtable,
                 ModStrings.HintFreeMovement,
-                "ui.contextual",
+                "ui.rightClick",
                 1,
                 () => possible
             );
@@ -174,7 +174,7 @@ namespace ES2Access.Tests.UI
         {
             InstallFakeFormatter();
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintDismiss, "ui.contextual", 7);
+            NodeHints.Add(vtable, ModStrings.HintDismiss, "ui.rightClick", 7);
 
             Assert.Equal(new[] { "Dusay", "Two planets" }, Buffer(vtable));
         }
@@ -185,7 +185,7 @@ namespace ES2Access.Tests.UI
         public void NoRendererMeansNoHints()
         {
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.altClick");
 
             Assert.Equal(new[] { "Dusay", "Two planets" }, Buffer(vtable));
         }
@@ -200,11 +200,11 @@ namespace ES2Access.Tests.UI
             NodeHints.Add(
                 vtable,
                 ModStrings.HintFreeMovement,
-                "ui.contextual",
+                "ui.rightClick",
                 1,
                 () => { throw new InvalidOperationException("no"); }
             );
-            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
 
             Assert.Equal(
                 new[] { "Dusay", "Two planets", "Backslash to move the fleet here" },
@@ -225,7 +225,7 @@ namespace ES2Access.Tests.UI
                 }
             );
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.altClick");
 
             Assert.Contains("en premier avec Ctrl+Shift+Enter", Buffer(vtable));
         }
@@ -238,9 +238,9 @@ namespace ES2Access.Tests.UI
         {
             string chord = "Backslash";
             NodeHints.Chord = (action, index) =>
-                action == "ui.contextual" && index == 0 ? chord : null;
+                action == "ui.rightClick" && index == 0 ? chord : null;
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.contextual");
+            NodeHints.Add(vtable, ModStrings.HintMoveFleetHere, "ui.rightClick");
             Assert.Contains("Backslash to move the fleet here", Buffer(vtable));
 
             chord = "Ctrl+Backslash";
@@ -255,7 +255,7 @@ namespace ES2Access.Tests.UI
         {
             InstallFakeFormatter();
             NodeVtable vtable = Control();
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.alternate");
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, "ui.altClick");
             Assert.Contains("Ctrl+Shift+Enter", Buffer(vtable)[Buffer(vtable).Count - 1]);
 
             ModStrings.Install(

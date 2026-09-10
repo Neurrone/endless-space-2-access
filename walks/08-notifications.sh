@@ -20,7 +20,7 @@ echo "   discovered: $NNOTIF pending notification(s)"
 if [ "${NNOTIF:-0}" -ge 1 ]; then
   inp ui.home
   at "on-notification-row"
-  inp ui.activate; pause 2000
+  inp ui.click; pause 2000
   at "popup-open"
   dump 01-notification-popup
   ghosts "notification popup"

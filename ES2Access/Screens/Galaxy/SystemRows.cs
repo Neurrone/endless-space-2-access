@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -84,7 +84,7 @@ namespace ES2Access.Screens
 
             // The game's own left click: the camera comes in, and nothing is selected or opened.
             vtable.OnActivate = () => ZoomIn(it);
-            vtable.OnContextual = () => ZoomOut(it);
+            vtable.OnRightClick = () => ZoomOut(it);
 
             string place = SystemKey(node, empire);
             ControlId id = ControlId.For(it, place);
@@ -273,7 +273,7 @@ namespace ES2Access.Screens
 
             // The two clicks the map itself puts on a system, and nothing invented on top of them.
             vtable.OnActivate = () => ZoomIn(it);
-            vtable.OnContextual = () => SystemCommand(it);
+            vtable.OnRightClick = () => SystemCommand(it);
             MoveHints(vtable);
 
             // The camera is not moved here: it follows the cursor by the page's one rule, which reads
@@ -1023,7 +1023,7 @@ namespace ES2Access.Screens
         /// What the move keys do on a place a fleet could be sent to, said at the end of the node's
         /// buffer while there is a selection to send.
         ///
-        /// Two lines and the same action twice: the map's move click is the Contextual action, and its
+        /// Two lines and the same action twice: the map's move click is the RightClick action, and its
         /// off-lane variant is that action's SECOND chord rather than a wiring of its own, because the
         /// game runs one handler for both clicks and reads the physical Control inside it
         /// (<see cref="ES2Access.UI.FleetOrders"/>). So the hints name the action and the chord index,
@@ -1054,14 +1054,14 @@ namespace ES2Access.Screens
             NodeHints.Add(
                 vtable,
                 ModStrings.HintMoveFleetHere,
-                UiActions.Contextual,
+                UiActions.RightClick,
                 0,
                 FleetOrders.AnySelected
             );
             NodeHints.Add(
                 vtable,
                 ModStrings.HintFreeMovement,
-                UiActions.Contextual,
+                UiActions.RightClick,
                 1,
                 canFreeMove
             );

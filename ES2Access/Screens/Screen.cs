@@ -263,14 +263,14 @@ namespace ES2Access.Screens
         /// answering a right click with a move. A screen with no such mode never overrides this, and the
         /// control's own right click is untouched.
         /// </summary>
-        public virtual bool Contextual()
+        public virtual bool RightClick()
         {
             return false;
         }
 
         /// <summary>
         /// The second-command key (Backspace) offered to the SCREEN before the focused control's own
-        /// <see cref="NodeVtable.OnSecondary"/>. Return true when the screen took it.
+        /// <see cref="NodeVtable.OnReturnToPrevious"/>. Return true when the screen took it.
         ///
         /// For a command that belongs to a PANEL rather than to a control: the galaxy's way back down
         /// the starlanes it has been travelled is about where the player has been, not about the lane or
@@ -282,7 +282,7 @@ namespace ES2Access.Screens
         /// A screen that never overrides this changes nothing: the control's own second command is
         /// reached exactly as before.
         /// </summary>
-        public virtual bool Secondary(GraphNode focused)
+        public virtual bool ReturnToPrevious(GraphNode focused)
         {
             return false;
         }

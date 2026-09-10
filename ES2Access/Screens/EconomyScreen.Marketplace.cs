@@ -319,8 +319,8 @@ namespace ES2Access.Screens
                     press();
                 }
             };
-            vtable.OnSelectToggle = guarded;
-            vtable.OnSelectRange = guarded;
+            vtable.OnCtrlClick = guarded;
+            vtable.OnShiftClick = guarded;
             vtable.StateText = () => can() ? landed() : null;
             MarketChordHints(vtable, can);
         }
@@ -332,8 +332,8 @@ namespace ES2Access.Screens
         /// </summary>
         private static void MarketChordHints(NodeVtable vtable, Func<bool> offered)
         {
-            NodeHints.Add(vtable, ModStrings.HintMarketFive, UiActions.SelectToggle, 0, offered);
-            NodeHints.Add(vtable, ModStrings.HintMarketAll, UiActions.SelectRange, 0, offered);
+            NodeHints.Add(vtable, ModStrings.HintMarketFive, UiActions.CtrlClick, 0, offered);
+            NodeHints.Add(vtable, ModStrings.HintMarketAll, UiActions.ShiftClick, 0, offered);
         }
 
         /// <summary>
@@ -611,8 +611,8 @@ namespace ES2Access.Screens
                     AgeWidgets.Press(it);
                 }
             };
-            vtable.OnSelectToggle = chord;
-            vtable.OnSelectRange = chord;
+            vtable.OnCtrlClick = chord;
+            vtable.OnShiftClick = chord;
             MarketChordHints(vtable, offered);
             AgeWidgets.Point(vtable, button, tooltip, at);
             Cells.Add(_cells, at, ControlId.For(at, key), vtable);

@@ -72,7 +72,7 @@ whenever `FocusedControl` is `IsKeyExclusive` and `StandardCancel` (`InputManage
   - **A field losing focus while it holds nothing only sometimes clears the binding.**
     `OnLoseFocusCb` (:80-98) commits the blank only when it differs from BOTH of the row's
     combinations: `ui.up` (no secondary) survived a focus-null round trip untouched, while
-    `ui.activate` (Return + KeypadEnter) came back as `ui.activate: , KeypadEnter`. The same
+    `ui.click` (Return + KeypadEnter) came back as `ui.click: , KeypadEnter`. The same
     equality check makes capturing a chord the row's OTHER slot already holds a silent no-op.
   - **Escape during a capture is that ending, and Escape can never be BOUND here**: `HandleInput`
     :1210-1226 runs in `Update` and nulls the focused control, while the field's own scan is in

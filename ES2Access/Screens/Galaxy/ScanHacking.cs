@@ -124,7 +124,7 @@ namespace ES2Access.Screens
                 );
                 // The whole body of the cell's own right-click handler (:50-53), called rather than
                 // simulated: the game exposes the act, so there is nothing to press.
-                vtable.OnContextual = () => it.AllocationProvider.Cancel();
+                vtable.OnRightClick = () => it.AllocationProvider.Cancel();
                 AgeWidgets.Point(vtable, it.Button, it.Tooltip, it.AgeTransform);
                 builder.AddItem(
                     Nodes.Drawn(

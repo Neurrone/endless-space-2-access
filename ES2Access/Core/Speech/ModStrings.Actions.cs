@@ -82,9 +82,9 @@ namespace ES2Access.Core.Speech
             // Working a control. Each of the four modified clicks is NAMED for the gesture it
             // performs, so the row says which mouse gesture the player is giving the game and the
             // sentence beside it says nothing else.
-            { "action.ui.activate.title", "Activate" },
+            { "action.ui.click.title", "Left click" },
             {
-                "action.ui.activate.description",
+                "action.ui.click.description",
                 "Do what a left click does here, or complete a drag and drop."
             },
             { "action.ui.back.title", "Back" },
@@ -92,11 +92,11 @@ namespace ES2Access.Core.Speech
                 "action.ui.back.description",
                 "Exits the current context such as an active drag, inspect mode or the current screen"
             },
-            { "action.ui.alternate.title", "Alt left click" },
-            { "action.ui.alternate.description", "Performs an Alt left-click" },
-            { "action.ui.contextual.title", "Right click" },
+            { "action.ui.altClick.title", "Alt left click" },
+            { "action.ui.altClick.description", "Performs an Alt left-click" },
+            { "action.ui.rightClick.title", "Right click" },
             {
-                "action.ui.contextual.description",
+                "action.ui.rightClick.description",
                 "Perform the game's right click here. Hold Control to perform a Control right click."
             },
             { "action.ui.doubleClick.title", "Double click" },
@@ -111,12 +111,12 @@ namespace ES2Access.Core.Speech
                 "action.ui.coarseIncrease.description",
                 "Moves a slider up by a tenth of its range, steps the zoom control up one level, or, while inspecting the map, moves to the next interesting tile east"
             },
-            { "action.ui.carry.title", "Start drag" },
-            { "action.ui.carry.description", "Start dragging" },
-            { "action.ui.selectToggle.title", "Control left click" },
-            { "action.ui.selectToggle.description", "Performs a Control left-click" },
-            { "action.ui.selectRange.title", "Shift left click" },
-            { "action.ui.selectRange.description", "Performs a Shift left-click" },
+            { "action.ui.drag.title", "Start drag" },
+            { "action.ui.drag.description", "Start dragging" },
+            { "action.ui.ctrlClick.title", "Control left click" },
+            { "action.ui.ctrlClick.description", "Performs a Control left-click" },
+            { "action.ui.shiftClick.title", "Shift left click" },
+            { "action.ui.shiftClick.description", "Performs a Shift left-click" },
 
             // Turning the page, and going straight somewhere.
             { "action.ui.pagePrev.title", "Move to previous page" },
@@ -151,9 +151,9 @@ namespace ES2Access.Core.Speech
                 "action.ui.goToLocation.description",
                 "Jump to location associated with the focused item such as a notification"
             },
-            { "action.ui.secondary.title", "Return to previous position" },
+            { "action.ui.returnToPrevious.title", "Return to previous position" },
             {
-                "action.ui.secondary.description",
+                "action.ui.returnToPrevious.description",
                 "Return to previous position after following a star lane, scanner or bookmark jump. Also works in inspect mode"
             },
             { "action.ui.clear.title", "Clear key binding" },

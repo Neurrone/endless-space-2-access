@@ -202,8 +202,8 @@ namespace ES2Access.UI
             // All three gestures are the tile's own click. Which of the game's three selection rules
             // runs is decided by the modifier the player is physically holding, which is the whole
             // point: the mouse and the keyboard then share one anchor and one set of rules.
-            vtable.OnSelectToggle = () => AgeWidgets.Toggle(it.SelectionToggle);
-            vtable.OnSelectRange = () =>
+            vtable.OnCtrlClick = () => AgeWidgets.Toggle(it.SelectionToggle);
+            vtable.OnShiftClick = () =>
             {
                 ranged = true;
                 AgeWidgets.Toggle(it.SelectionToggle);
@@ -218,8 +218,8 @@ namespace ES2Access.UI
 
             // The two selection chords, which the tile draws nothing about: both replay its click and
             // the GAME branches on the modifier still held (<c>ShipsManagementPanel</c> :713 and :738).
-            NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.SelectToggle);
-            NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.SelectRange);
+            NodeHints.Add(vtable, ModStrings.HintAddToSelection, UiActions.CtrlClick);
+            NodeHints.Add(vtable, ModStrings.HintSelectUpToHere, UiActions.ShiftClick);
 
             // The second click, said only where it will do something: the tile's own possibility
             // gate, read the way the handler reads it.

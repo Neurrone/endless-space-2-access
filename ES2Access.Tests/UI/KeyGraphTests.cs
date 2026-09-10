@@ -1291,19 +1291,19 @@ namespace ES2Access.Tests.UI
             int activated = 0, secondary = 0;
             NodeVtable rich = Vt("Rich");
             rich.OnActivate = () => activated++;
-            rich.OnSecondary = () => secondary++;
+            rich.OnReturnToPrevious = () => secondary++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
                 b.AddItem(new SyntheticNode(Id("a"), rich)).AddItem(new SyntheticNode(Id("b"), Vt("Plain")))), state);
             g.Rerender();
             Assert.True(g.Activate());
-            Assert.True(g.Secondary());
+            Assert.True(g.ReturnToPrevious());
             Assert.Equal(1, activated);
             Assert.Equal(1, secondary);
 
             g.Move(GraphDir.Down);
             Assert.False(g.Activate());
-            Assert.False(g.Secondary());
+            Assert.False(g.ReturnToPrevious());
         }
 
         /// <summary>
@@ -1318,19 +1318,19 @@ namespace ES2Access.Tests.UI
             int activated = 0, contextual = 0;
             NodeVtable row = Vt("Ship");
             row.OnActivate = () => activated++;
-            row.OnContextual = () => contextual++;
+            row.OnRightClick = () => contextual++;
             NodeVtable plain = Vt("Plain");
             plain.OnActivate = () => activated++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
                 b.AddItem(new SyntheticNode(Id("a"), row)).AddItem(new SyntheticNode(Id("b"), plain))), state);
             g.Rerender();
-            Assert.True(g.Contextual());
+            Assert.True(g.RightClick());
             Assert.Equal(0, activated);
             Assert.Equal(1, contextual);
 
             g.Move(GraphDir.Down);
-            Assert.False(g.Contextual());
+            Assert.False(g.RightClick());
             Assert.Equal(0, activated);
         }
 
@@ -1348,18 +1348,18 @@ namespace ES2Access.Tests.UI
             int activated = 0, alternate = 0, toggled = 0, ranged = 0;
             NodeVtable row = Vt("Ship");
             row.OnActivate = () => activated++;
-            row.OnAlternate = () => alternate++;
-            row.OnSelectToggle = () => toggled++;
-            row.OnSelectRange = () => ranged++;
+            row.OnAltClick = () => alternate++;
+            row.OnCtrlClick = () => toggled++;
+            row.OnShiftClick = () => ranged++;
             NodeVtable button = Vt("Behemoth");
             button.OnActivate = () => activated++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
                 b.AddItem(new SyntheticNode(Id("a"), row)).AddItem(new SyntheticNode(Id("b"), button)).AddItem(new SyntheticNode(Id("c"), Vt("Label")))), state);
             g.Rerender();
-            Assert.True(g.Alternate());
-            Assert.True(g.SelectToggle());
-            Assert.True(g.SelectRange());
+            Assert.True(g.AltClick());
+            Assert.True(g.CtrlClick());
+            Assert.True(g.ShiftClick());
             Assert.Equal(0, activated);
             Assert.Equal(1, alternate);
             Assert.Equal(1, toggled);
@@ -1367,9 +1367,9 @@ namespace ES2Access.Tests.UI
 
             // No slot, but a click: each chord replays the click, once.
             g.Move(GraphDir.Down);
-            Assert.True(g.Alternate());
-            Assert.True(g.SelectToggle());
-            Assert.True(g.SelectRange());
+            Assert.True(g.AltClick());
+            Assert.True(g.CtrlClick());
+            Assert.True(g.ShiftClick());
             Assert.Equal(3, activated);
             Assert.Equal(1, alternate);
             Assert.Equal(1, toggled);
@@ -1377,9 +1377,9 @@ namespace ES2Access.Tests.UI
 
             // Neither: nothing ran, and false is how the caller knows to stay silent.
             g.Move(GraphDir.Down);
-            Assert.False(g.Alternate());
-            Assert.False(g.SelectToggle());
-            Assert.False(g.SelectRange());
+            Assert.False(g.AltClick());
+            Assert.False(g.CtrlClick());
+            Assert.False(g.ShiftClick());
             Assert.Equal(3, activated);
         }
 
@@ -1400,7 +1400,7 @@ namespace ES2Access.Tests.UI
             tile.OnDoubleClick = () => doubled++;
             NodeVtable other = Vt("Fleet");
             other.OnActivate = () => activated++;
-            other.OnContextual = () => contextual++;
+            other.OnRightClick = () => contextual++;
 
             KeyGraph g = new KeyGraph(Renderer(b =>
                 b.AddItem(new SyntheticNode(Id("a"), tile)).AddItem(new SyntheticNode(Id("b"), other))), state);

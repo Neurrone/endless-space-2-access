@@ -111,17 +111,17 @@ namespace ES2Access.UI
         /// </summary>
         public static void WireHintGesture(NodeVtable vtable, AgeTransform widget)
         {
-            if (vtable == null || vtable.OnSelectToggle != null || !AgeWidgets.Hinted(widget))
+            if (vtable == null || vtable.OnCtrlClick != null || !AgeWidgets.Hinted(widget))
             {
                 return;
             }
 
             AgeTransform hint = widget;
-            vtable.OnSelectToggle = () => AgeWidgets.Locate(hint);
+            vtable.OnCtrlClick = () => AgeWidgets.Locate(hint);
             NodeHints.Add(
                 vtable,
                 ModStrings.HintMissingTechnology,
-                UiActions.SelectToggle,
+                UiActions.CtrlClick,
                 0,
                 () => AgeWidgets.Hinted(hint)
             );

@@ -135,7 +135,7 @@ fi
 if [ -n "$LANDED" ]; then
   echo "   discovered: fleet [$LANDED]"
   at "on-fleet"
-  inp ui.activate
+  inp ui.click
   pause 1200
   at "fleet-selected"
   dump 05-fleet-panel

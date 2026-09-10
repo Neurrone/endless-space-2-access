@@ -68,7 +68,7 @@ fi
 inp ui.next          # into the planets stop, where type-ahead can see the planet rows
 if [ -n "$PLANET2" ] && tland "$PLANET2"; then
   at "on-planet"
-  inp ui.activate; pause 3000; evq "$CS/tut.cs"; pause 600
+  inp ui.click; pause 3000; evq "$CS/tut.cs"; pause 600
   evq "$CS/reset.cs"; pause 600; inp ui.home
   at "planet-page"
   dump 04-planet-overview

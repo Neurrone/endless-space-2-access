@@ -238,7 +238,7 @@ namespace ES2Access.UI
                     _typeAhead.Last();
                     return true;
                 case UiActions.Back:
-                case UiActions.Secondary:
+                case UiActions.ReturnToPrevious:
                     // The two keys that put the keyboard back, and they go no further: the game must
                     // not also close the screen the player was searching, and Backspace must not also
                     // do the page's own second command on whatever the last match landed on. Backspace

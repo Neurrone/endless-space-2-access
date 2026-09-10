@@ -771,8 +771,8 @@ namespace ES2Access.UI
         /// and it is not a checkbox for the same reason: Enter cannot untick. What makes it different
         /// from <see cref="Radio"/> is that membership is the thing being read, so BOTH states are
         /// spoken - a row that says nothing when it is out of the selection leaves the player counting
-        /// silences. The chords that put one row in or out (<see cref="NodeVtable.OnSelectToggle"/>) and
-        /// that extend the selection to here (<see cref="NodeVtable.OnSelectRange"/>) are the screen's
+        /// silences. The chords that put one row in or out (<see cref="NodeVtable.OnCtrlClick"/>) and
+        /// that extend the selection to here (<see cref="NodeVtable.OnShiftClick"/>) are the screen's
         /// to wire, because only the screen knows what the game does with them.
         ///
         /// <paramref name="member"/> is asked live and so has to be a cheap state read; the screen

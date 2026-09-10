@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
@@ -711,7 +711,7 @@ namespace ES2Access.Screens
                 },
                 Sections = GraphNodes.Sections(GraphNodes.TooltipSection(item.Tooltip)),
                 OnActivate = () => Queue(it, false),
-                OnAlternate = () => Queue(it, true),
+                OnAltClick = () => Queue(it, true),
                 // A technology the game will not take says why, in its own words, and does nothing
                 // else. Anything it WOULD take reports itself through the state word instead, which
                 // changes under the cursor as the order comes back.
@@ -719,7 +719,7 @@ namespace ES2Access.Screens
             };
             // The one gesture on a dot that is not the plain click, said at the end of the buffer
             // because the wheel writes it nowhere and the queue it changes is a screen away.
-            NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
+            NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.AltClick);
             ShowDot(vtable, item);
             return vtable;
         }

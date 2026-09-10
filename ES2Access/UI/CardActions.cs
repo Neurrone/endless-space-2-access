@@ -300,12 +300,12 @@ namespace ES2Access.UI
                 // (<c>docs/interaction.md</c>). Asked of the WIDGET, so the galaxy's orbital card -
                 // where the same prefab means a fleet search with no queue behind it - is left alone.
                 PlanetCuriosityItem curiosity = CuriosityExpeditions.ColonyCuriosity(at);
-                if (curiosity != null && vtable.OnAlternate == null)
+                if (curiosity != null && vtable.OnAltClick == null)
                 {
                     PlanetCuriosityItem queueing = curiosity;
                     AgeTransform icon = at;
-                    vtable.OnAlternate = () => CuriosityExpeditions.QueueFirst(icon, queueing);
-                    NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.Alternate);
+                    vtable.OnAltClick = () => CuriosityExpeditions.QueueFirst(icon, queueing);
+                    NodeHints.Add(vtable, ModStrings.HintQueueFirst, UiActions.AltClick);
                 }
 
                 ScrollIntoView.Anchor(vtable, at);

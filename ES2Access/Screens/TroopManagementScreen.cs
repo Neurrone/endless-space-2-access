@@ -352,11 +352,11 @@ namespace ES2Access.Screens
                 // <see cref="Cells.Add"/>: the hint hangs off a button of its own drawn OVER the row, so
                 // the declared widget is not the one carrying it.
                 AgeTransform locate = hint;
-                vtable.OnSelectToggle = () => AgeWidgets.Locate(locate);
+                vtable.OnCtrlClick = () => AgeWidgets.Locate(locate);
                 NodeHints.Add(
                     vtable,
                     ModStrings.HintMissingTechnology,
-                    UiActions.SelectToggle,
+                    UiActions.CtrlClick,
                     0,
                     // Availability wording again: whether the hint sentence applies right now.
                 () => AgeWidgets.Visible(locate)

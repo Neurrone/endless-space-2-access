@@ -512,14 +512,14 @@ namespace ES2Access.Dev
             }
 
             return vtable.OnActivate != null
-                || vtable.OnSecondary != null
+                || vtable.OnReturnToPrevious != null
                 || vtable.OnDoubleClick != null
                 || vtable.OnAdjust != null
-                || vtable.OnSelectToggle != null
-                || vtable.OnSelectRange != null
+                || vtable.OnCtrlClick != null
+                || vtable.OnShiftClick != null
                 || vtable.OnFollow != null
-                || vtable.OnAlternate != null
-                || vtable.OnContextual != null
+                || vtable.OnAltClick != null
+                || vtable.OnRightClick != null
                 || vtable.OnGoTo != null
                 || vtable.OnExpand != null
                 || vtable.OnCollapse != null

@@ -71,11 +71,11 @@ namespace ES2Access.Screens
                         null,
                         null
                     );
-                    vtable.OnContextual = () => Dismiss(it);
+                    vtable.OnRightClick = () => Dismiss(it);
                     GoToLocation(vtable, it);
                     // The strip is bare icons: nothing on it says the row can be thrown away, and the
                     // game's own right click is the only way to do it without opening the popup first.
-                    NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
+                    NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.RightClick);
                     vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
                     // Synthesized from the game's own notification list, not read off a widget: the
                     // strip's icons are pooled and the walk holds the NOTIFICATION, so there is
@@ -232,9 +232,9 @@ namespace ES2Access.Screens
                                 () => AgeText.Clean(it.GetTitle()),
                                 () => Open(it)
                             );
-                            vtable.OnContextual = () => Dismiss(it);
+                            vtable.OnRightClick = () => Dismiss(it);
                             GoToLocation(vtable, it);
-                            NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.Contextual);
+                            NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.RightClick);
                             // Synthetic: the turn log is the mod's own record of notifications that have
                             // been and gone - the HUD draws nothing for a dismissed one.
                             builder.AddItem(Nodes.Synthetic(

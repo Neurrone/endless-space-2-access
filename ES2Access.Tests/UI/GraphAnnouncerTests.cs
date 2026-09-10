@@ -483,9 +483,9 @@ namespace ES2Access.Tests.UI
         private static void Chords()
         {
             NodeHints.Chord = (action, index) =>
-                action == "ui.alternate" && index == 0
+                action == "ui.altClick" && index == 0
                     ? "Ctrl+Shift+Enter"
-                    : action == "ui.contextual" && index == 0
+                    : action == "ui.rightClick" && index == 0
                         ? "Backslash"
                         : null;
         }
@@ -502,7 +502,7 @@ namespace ES2Access.Tests.UI
                 },
                 Sections = sections,
             };
-            NodeHints.Add(vt, ModStrings.HintQueueFirst, "ui.alternate");
+            NodeHints.Add(vt, ModStrings.HintQueueFirst, "ui.altClick");
             return vt;
         }
 
@@ -543,7 +543,7 @@ namespace ES2Access.Tests.UI
         {
             Chords();
             NodeVtable vt = Hinted();
-            NodeHints.Add(vt, ModStrings.HintMoveFleetHere, "ui.contextual");
+            NodeHints.Add(vt, ModStrings.HintMoveFleetHere, "ui.rightClick");
             Assert.Equal(
                 "The Analytical Engine, button, 2 of 3, Ctrl+Shift+Enter to queue it first, "
                     + "Backslash to move the fleet here",
@@ -563,7 +563,7 @@ namespace ES2Access.Tests.UI
                     Part("The Analytical Engine", AnnouncementKinds.Label),
                 },
             };
-            NodeHints.Add(vt, ModStrings.HintQueueFirst, "ui.alternate", 0, () => false);
+            NodeHints.Add(vt, ModStrings.HintQueueFirst, "ui.altClick", 0, () => false);
             Assert.Equal("The Analytical Engine, button, 2 of 3", HintedReadout(vt));
         }
 

@@ -994,34 +994,34 @@ namespace ES2Access.Core.UI.Graph
         }
 
         /// <summary>Run the focused control's secondary activation. False = it has none.</summary>
-        public bool Secondary()
+        public bool ReturnToPrevious()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnSecondary == null) return false;
-            node.Vtable.OnSecondary();
+            if (node == null || node.Vtable.OnReturnToPrevious == null) return false;
+            node.Vtable.OnReturnToPrevious();
             return true;
         }
 
         /// <summary>Run the focused control's other activation - the game's own Alt+click - or, where
         /// the control wires no handler of its own for it, replay its plain click
         /// (<see cref="ModifiedClick"/>). False = it has neither.</summary>
-        public bool Alternate()
+        public bool AltClick()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
             if (node == null) return false;
-            return ModifiedClick(node.Vtable.OnAlternate, node.Vtable.OnActivate);
+            return ModifiedClick(node.Vtable.OnAltClick, node.Vtable.OnActivate);
         }
 
         /// <summary>Run the focused control's contextual command - the game's right click. False =
         /// it has none, and the caller says so.</summary>
-        public bool Contextual()
+        public bool RightClick()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
-            if (node == null || node.Vtable.OnContextual == null) return false;
-            node.Vtable.OnContextual();
+            if (node == null || node.Vtable.OnRightClick == null) return false;
+            node.Vtable.OnRightClick();
             return true;
         }
 
@@ -1084,23 +1084,23 @@ namespace ES2Access.Core.UI.Graph
         /// <summary>Add the focused control's item to the game's selection, or take it out - and where
         /// the control is not part of a selection, replay its plain click instead
         /// (<see cref="ModifiedClick"/>). False = it has neither.</summary>
-        public bool SelectToggle()
+        public bool CtrlClick()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
             if (node == null) return false;
-            return ModifiedClick(node.Vtable.OnSelectToggle, node.Vtable.OnActivate);
+            return ModifiedClick(node.Vtable.OnCtrlClick, node.Vtable.OnActivate);
         }
 
         /// <summary>Extend the game's selection to the focused control's item - and where the control
         /// is not part of a selection, replay its plain click instead (<see cref="ModifiedClick"/>).
         /// False = it has neither.</summary>
-        public bool SelectRange()
+        public bool ShiftClick()
         {
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
             if (node == null) return false;
-            return ModifiedClick(node.Vtable.OnSelectRange, node.Vtable.OnActivate);
+            return ModifiedClick(node.Vtable.OnShiftClick, node.Vtable.OnActivate);
         }
 
         // A modified click a control does not wire a handler for is still a CLICK, and the player is

@@ -669,12 +669,12 @@ namespace ES2Access.Screens
                         return Move(-1, 0);
                     case UiActions.Right:
                         return Move(1, 0);
-                    case UiActions.Activate:
+                    case UiActions.Click:
                         return Activate();
                     case UiActions.Back:
                         Exit(false);
                         return true;
-                    case UiActions.Secondary:
+                    case UiActions.ReturnToPrevious:
                         return PopCell();
                     case MapActions.InspectGrow:
                         return Resize(InspectGrid.Grow(_size));

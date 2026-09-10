@@ -39,7 +39,7 @@ namespace ES2Access.UI
     ///   posts the same order they post, aimed at the node the player is on.
     ///
     /// The keyboard's way BACK out is backslash, because that is the map's own right click and the right
-    /// click is what these modes answer with (<see cref="Contextual"/>). It is not always a cancel - the
+    /// click is what these modes answer with (<see cref="RightClick"/>). It is not always a cancel - the
     /// game gives each cursor its own meaning for it - so the key is handed to the cursor rather than
     /// wired to a cancel of ours.
     ///
@@ -373,7 +373,7 @@ namespace ES2Access.UI
         /// No target is passed, because none of the nine right-click branches reads one (measured in all
         /// nine): a right click on the map means the same thing wherever the pointer is standing.
         /// </summary>
-        public static bool Contextual()
+        public static bool RightClick()
         {
             Cursor cursor;
             try
