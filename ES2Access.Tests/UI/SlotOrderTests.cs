@@ -8,8 +8,8 @@ namespace ES2Access.Tests.UI
     /// Reading a ship's slots by the type of module they take. Five rules, none of which a dump would
     /// catch: the list is alphabetical by type, a slot that takes several types sits with the first of
     /// them, what is FITTED never moves a slot, slots of one type that shoot the same way are read
-    /// together (broadsides, then front turrets, then no cone at all), and ties keep the order the ship
-    /// drew them in.
+    /// together (broadsides - both sides, then right, then left - then front turrets, then rear
+    /// turrets, then no cone at all), and ties keep the order the ship drew them in.
     /// </summary>
     public class SlotOrderTests
     {
@@ -132,6 +132,37 @@ namespace ES2Access.Tests.UI
             // The facings travel with the slots, so a second pass sorts the same list the same way.
             Assert.Equal(SlotFacing.Broadside, facings[0]);
             Assert.Equal(SlotFacing.None, facings[4]);
+        }
+
+        [Fact]
+        public void TheRarerFacingsSortBroadsidesFirstAndTheRearTurretLast()
+        {
+            List<string> slots = new List<string>
+            {
+                "coneless gun",
+                "tail gun",
+                "left gun",
+                "nose gun",
+                "right gun",
+                "beam guns",
+            };
+            List<string[]> keys = new List<string[]> { Weapon, Weapon, Weapon, Weapon, Weapon, Weapon };
+            List<SlotFacing> facings = new List<SlotFacing>
+            {
+                SlotFacing.None,
+                SlotFacing.RearTurret,
+                SlotFacing.LeftBroadside,
+                SlotFacing.FrontTurret,
+                SlotFacing.RightBroadside,
+                SlotFacing.Broadside,
+            };
+
+            SlotOrder.Arrange(slots, keys, facings);
+
+            Assert.Equal(
+                new[] { "beam guns", "right gun", "left gun", "nose gun", "tail gun", "coneless gun" },
+                slots
+            );
         }
 
         [Fact]

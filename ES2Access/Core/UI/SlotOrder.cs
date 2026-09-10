@@ -3,13 +3,17 @@ using System.Collections.Generic;
 
 namespace ES2Access.Core.UI
 {
-    /// <summary>Which way a weapon slot's guns can be brought to bear: at the sides, at the nose, or
-    /// neither, which is every slot the game gave no firing cone at all.</summary>
+    /// <summary>Which way a weapon slot's guns can be brought to bear: at both sides, at one side, at
+    /// the nose, at the tail, or nowhere nameable - the last being every slot the game gave no firing
+    /// cone at all, and every cone shape that is none of these.</summary>
     public enum SlotFacing
     {
         None,
         Broadside,
         FrontTurret,
+        RightBroadside,
+        LeftBroadside,
+        RearTurret,
     }
 
     /// <summary>
@@ -33,9 +37,9 @@ namespace ES2Access.Core.UI
     /// module categories - so the alphabet is the player's, not an internal enum's.
     ///
     /// Inside one type the slots that shoot the same way are read together: the broadsides, then the
-    /// front turrets, then whatever the game gave no firing cone (owner ruling, 2026-09-10). That is a
-    /// fact about the SLOT like its type is, and it is compared as a rank rather than as the words it
-    /// is spoken with, so translating the phrases cannot reshuffle the ship.
+    /// front turrets, then the rear turrets, then whatever the game gave no firing cone (owner ruling,
+    /// 2026-09-10). That is a fact about the SLOT like its type is, and it is compared as a rank rather
+    /// than as the words it is spoken with, so translating the phrases cannot reshuffle the ship.
     /// </summary>
     public static class SlotOrder
     {
@@ -89,8 +93,8 @@ namespace ES2Access.Core.UI
         }
 
         /// <summary>Which of two slots is read first when both take the same types: the one whose guns
-        /// cover the wider arc of the ship - broadside, then front turret, then a slot with no cone at
-        /// all.</summary>
+        /// cover the wider arc of the ship - broadside, then front turret, then rear turret, then a
+        /// slot with no cone at all.</summary>
         public static int Compare(
             string[] left,
             SlotFacing leftFacing,
@@ -159,12 +163,28 @@ namespace ES2Access.Core.UI
             return facings == null ? SlotFacing.None : facings[index];
         }
 
-        /// <summary>Where a facing sits in the reading order. Not the enum's own values: a slot nobody
+        /// <summary>Where a facing sits in the reading order: the broadsides first - both sides, then
+        /// the right one, then the left one - then the front turrets, then the rear turrets, and last
+        /// the slots with no cone the mod has a word for. Not the enum's own values: a slot nobody
         /// asked about the facing of is <see cref="SlotFacing.None"/>, and that answer is read last
         /// rather than first.</summary>
         private static int Rank(SlotFacing facing)
         {
-            return facing == SlotFacing.Broadside ? 0 : (facing == SlotFacing.FrontTurret ? 1 : 2);
+            switch (facing)
+            {
+                case SlotFacing.Broadside:
+                    return 0;
+                case SlotFacing.RightBroadside:
+                    return 1;
+                case SlotFacing.LeftBroadside:
+                    return 2;
+                case SlotFacing.FrontTurret:
+                    return 3;
+                case SlotFacing.RearTurret:
+                    return 4;
+                default:
+                    return 5;
+            }
         }
 
         /// <summary>How many of a slot's types the game gave a word to - the rest sort after them and

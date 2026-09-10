@@ -273,13 +273,15 @@ namespace ES2Access.UI
         ///
         /// A weapon fires only at a target inside one of its slot's cones and idles otherwise
         /// (<c>BattleSimulationModule_Weapon</c> :433-440), so where a hull's slot points is what a
-        /// module fitted in it will actually do in a battle. Every hull the game ships draws that with
-        /// two shapes: ONE cone down the nose (270 degrees wide), and a PAIR of cones out to port and
-        /// starboard (120 degrees each). The community calls them a front turret and a broadside; the
-        /// mod says the same, and any other shape is left unsaid rather than guessed at - which
-        /// covers the handful of hulls whose weapon slots carry two forward cones, two broadside
-        /// pairs, or one lone side cone. A slot no weapon can go in answers none whatever cones it
-        /// has (<see cref="TakesWeapons"/>).
+        /// module fitted in it will actually do in a battle. Nearly every hull the game ships draws
+        /// that with two shapes: ONE cone down the nose (270 degrees wide), and a PAIR of cones out to
+        /// port and starboard (120 degrees each). The community calls them a front turret and a
+        /// broadside; the mod says the same. Three rarer single-cone shapes are named the same way,
+        /// from the one direction they point: down the tail (a rear turret) and out to one side alone
+        /// (a right or a left broadside, the ship's own right and left - owner ruling, 2026-09-10).
+        /// Any other shape - forward and sideways cones mixed, two cones the same way - is left unsaid
+        /// rather than guessed at. A slot no weapon can go in answers none whatever cones it has
+        /// (<see cref="TakesWeapons"/>).
         ///
         /// Read from the cone data rather than from the slot's name or the hull's, because the names
         /// are a modder's free text while the cones are what the battle uses. Memoised on the
@@ -346,13 +348,30 @@ namespace ES2Access.UI
                 return SlotFacing.None;
             }
 
-            if (cones.Count == 1 && Forward(cones[0].Direction))
+            if (cones.Count == 1)
             {
-                return SlotFacing.FrontTurret;
+                UnityEngine.Vector3 only = cones[0].Direction;
+                if (Forward(only))
+                {
+                    return SlotFacing.FrontTurret;
+                }
+
+                if (Rearward(only))
+                {
+                    return SlotFacing.RearTurret;
+                }
+
+                // One cone out to a single side covers half of what a pair does, and which half is the
+                // whole of what the player needs: a gun there reaches nothing on the other beam.
+                if (Sideways(only))
+                {
+                    return only.x > 0f ? SlotFacing.RightBroadside : SlotFacing.LeftBroadside;
+                }
+
+                return SlotFacing.None;
             }
 
-            // Two cones facing OPPOSITE sides, which is the broadside: one cone out to a single side is
-            // a shape the game does not ship and the mod has no word for.
+            // Two cones facing OPPOSITE sides, which is the broadside.
             if (
                 cones.Count == 2
                 && Sideways(cones[0].Direction)
@@ -366,12 +385,18 @@ namespace ES2Access.UI
             return SlotFacing.None;
         }
 
-        // The hull data writes its directions as whole numbers on one axis (Z=1 for the nose, X=1 or
-        // X=-1 for the sides); the tolerance is there so a direction nudged off the axis is still read
-        // as the axis it is nearly on, and anything genuinely diagonal falls through to no facing.
+        // The hull data writes its directions as whole numbers on one axis (Z=1 for the nose, Z=-1 for
+        // the tail, X=1 for the ship's right and X=-1 for its left); the tolerance is there so a
+        // direction nudged off the axis is still read as the axis it is nearly on, and anything
+        // genuinely diagonal falls through to no facing.
         private static bool Forward(UnityEngine.Vector3 direction)
         {
             return direction.z > 0.9f && Math.Abs(direction.x) < 0.1f;
+        }
+
+        private static bool Rearward(UnityEngine.Vector3 direction)
+        {
+            return direction.z < -0.9f && Math.Abs(direction.x) < 0.1f;
         }
 
         private static bool Sideways(UnityEngine.Vector3 direction)
@@ -390,6 +415,12 @@ namespace ES2Access.UI
                     return ModStrings.Get(ModStrings.ShipDesignSlotBroadside);
                 case SlotFacing.FrontTurret:
                     return ModStrings.Get(ModStrings.ShipDesignSlotFrontTurret);
+                case SlotFacing.RightBroadside:
+                    return ModStrings.Get(ModStrings.ShipDesignSlotRightBroadside);
+                case SlotFacing.LeftBroadside:
+                    return ModStrings.Get(ModStrings.ShipDesignSlotLeftBroadside);
+                case SlotFacing.RearTurret:
+                    return ModStrings.Get(ModStrings.ShipDesignSlotRearTurret);
                 default:
                     return null;
             }
@@ -498,6 +529,12 @@ namespace ES2Access.UI
                     return ModStrings.Format(ModStrings.ShipDesignSlotBroadsideTakes, takes);
                 case SlotFacing.FrontTurret:
                     return ModStrings.Format(ModStrings.ShipDesignSlotFrontTurretTakes, takes);
+                case SlotFacing.RightBroadside:
+                    return ModStrings.Format(ModStrings.ShipDesignSlotRightBroadsideTakes, takes);
+                case SlotFacing.LeftBroadside:
+                    return ModStrings.Format(ModStrings.ShipDesignSlotLeftBroadsideTakes, takes);
+                case SlotFacing.RearTurret:
+                    return ModStrings.Format(ModStrings.ShipDesignSlotRearTurretTakes, takes);
                 default:
                     return takes;
             }
