@@ -70,6 +70,7 @@ namespace ES2Access.UI
         // the statistics band's four lists above.
         private static readonly List<Cell> _slotOrder = new List<Cell>(12);
         private static readonly List<string[]> _slotTypes = new List<string[]>(12);
+        private static readonly List<SlotFacing> _slotFacings = new List<SlotFacing>(12);
 
         /// <summary>The slots grouped by the type of module they take, keeping the drawn order inside
         /// one type - the walk a player can predict over a set the hull scattered round its
@@ -80,12 +81,14 @@ namespace ES2Access.UI
             {
                 Cells.Drawn(cells, _slotOrder);
                 _slotTypes.Clear();
+                _slotFacings.Clear();
                 for (int i = 0; i < _slotOrder.Count; i++)
                 {
                     _slotTypes.Add(_slotOrder[i].Order);
+                    _slotFacings.Add(_slotOrder[i].OrderFacing);
                 }
 
-                SlotOrder.Arrange(_slotOrder, _slotTypes);
+                SlotOrder.Arrange(_slotOrder, _slotTypes, _slotFacings);
                 EmitOrdered(builder, _slotOrder);
             }
             finally
@@ -93,6 +96,7 @@ namespace ES2Access.UI
                 // Nothing of the game's is held between builds, so a teardown has nothing to unhook.
                 _slotOrder.Clear();
                 _slotTypes.Clear();
+                _slotFacings.Clear();
             }
         }
 
@@ -162,7 +166,13 @@ namespace ES2Access.UI
                     // buffer below. Kept as a PART that answers null rather than a part that goes away:
                     // the live watch re-baselines when the part list changes shape, which is exactly the
                     // fill/unfill transition the watch above exists to announce.
-                    GraphNodes.ValuePart(() => Filled(it) ? null : SlotMarkers(it), false),
+                    // Filled, the one thing the module's own name and tooltip cannot say: which way the
+                    // slot lets it shoot. The player would otherwise have to take a module out to
+                    // learn where the gun under it points (owner ruling, 2026-09-10).
+                    GraphNodes.ValuePart(
+                        () => Filled(it) ? FacingWord(it) : SlotMarkers(it),
+                        false
+                    ),
                 },
                 Sections = GraphNodes.Sections(() => SlotDetails(it), tooltip),
                 DropKind = ModuleKind,
@@ -192,6 +202,7 @@ namespace ES2Access.UI
                 vtable
             );
             cells[cells.Count - 1].Order = SlotTypes(slot);
+            cells[cells.Count - 1].OrderFacing = Facing(slot);
         }
 
         /// <summary>
@@ -253,6 +264,134 @@ namespace ES2Access.UI
             catch (Exception)
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Which way the guns in this slot can be brought to bear, read off the firing cones the slot
+        /// carries - and off nothing else, because the game writes no word for the fact anywhere.
+        ///
+        /// A weapon fires only at a target inside one of its slot's cones and idles otherwise
+        /// (<c>BattleSimulationModule_Weapon</c> :433-440), so where a hull's slot points is what a
+        /// module fitted in it will actually do in a battle. Every hull the game ships draws that with
+        /// two shapes: ONE cone down the nose (270 degrees wide), and a PAIR of cones out to port and
+        /// starboard (120 degrees each). The community calls them a front turret and a broadside; the
+        /// mod says the same, and any other shape is left unsaid rather than guessed at - which
+        /// covers the handful of hulls whose weapon slots carry two forward cones, two broadside
+        /// pairs, or one lone side cone. A slot no weapon can go in answers none whatever cones it
+        /// has (<see cref="TakesWeapons"/>).
+        ///
+        /// Read from the cone data rather than from the slot's name or the hull's, because the names
+        /// are a modder's free text while the cones are what the battle uses. Memoised on the
+        /// definition like <see cref="SlotTypes"/>: the cones are static data, so the answer cannot
+        /// change within a session, and the build path only ever does a dictionary lookup.
+        /// </summary>
+        private static readonly Dictionary<SlotDefinition, SlotFacing> _facingByDefinition =
+            new Dictionary<SlotDefinition, SlotFacing>();
+
+        private static SlotFacing Facing(ShipDesignEditionSlotItem slot)
+        {
+            try
+            {
+                SlotDefinition definition = slot.GuiSlot.Slot.Definition;
+                if (definition == null)
+                {
+                    return SlotFacing.None;
+                }
+
+                SlotFacing known;
+                if (_facingByDefinition.TryGetValue(definition, out known))
+                {
+                    return known;
+                }
+
+                SlotFacing facing = TakesWeapons(definition)
+                    ? FromCones(definition.LinesOfSight)
+                    : SlotFacing.None;
+                _facingByDefinition[definition] = facing;
+                return facing;
+            }
+            catch (Exception)
+            {
+                return SlotFacing.None;
+            }
+        }
+
+        /// <summary>Whether a gun can go in this slot at all - the question the facing is an answer
+        /// about.
+        ///
+        /// The cones are NOT that question: hulls give firing cones to defence and support slots too
+        /// (the Zolya-class draws a forward cone on its defence slot and a rearward one on a support
+        /// slot), and a slot that will never hold a weapon has nothing to point at anything. A slot
+        /// with no restriction at all is not one either: it has no category word to say the facing in
+        /// front of, and nothing in the shipped hulls is both unrestricted and coned.</summary>
+        private static bool TakesWeapons(SlotDefinition definition)
+        {
+            ModuleCategory[] categories = definition.RestrictedModuleCategories;
+            for (int i = 0; categories != null && i < categories.Length; i++)
+            {
+                if (categories[i] == ModuleCategory.Weapon)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static SlotFacing FromCones(List<SlotDefinition.LineOfSight> cones)
+        {
+            if (cones == null)
+            {
+                return SlotFacing.None;
+            }
+
+            if (cones.Count == 1 && Forward(cones[0].Direction))
+            {
+                return SlotFacing.FrontTurret;
+            }
+
+            // Two cones facing OPPOSITE sides, which is the broadside: one cone out to a single side is
+            // a shape the game does not ship and the mod has no word for.
+            if (
+                cones.Count == 2
+                && Sideways(cones[0].Direction)
+                && Sideways(cones[1].Direction)
+                && cones[0].Direction.x * cones[1].Direction.x < 0f
+            )
+            {
+                return SlotFacing.Broadside;
+            }
+
+            return SlotFacing.None;
+        }
+
+        // The hull data writes its directions as whole numbers on one axis (Z=1 for the nose, X=1 or
+        // X=-1 for the sides); the tolerance is there so a direction nudged off the axis is still read
+        // as the axis it is nearly on, and anything genuinely diagonal falls through to no facing.
+        private static bool Forward(UnityEngine.Vector3 direction)
+        {
+            return direction.z > 0.9f && Math.Abs(direction.x) < 0.1f;
+        }
+
+        private static bool Sideways(UnityEngine.Vector3 direction)
+        {
+            return Math.Abs(direction.x) > 0.9f && Math.Abs(direction.z) < 0.1f;
+        }
+
+        /// <summary>The facing on its own, in the lower case a filled slot reads it in - straight after
+        /// the name of the module standing in it, where the categories the slot takes would be a
+        /// statement about the slot mistaken for one about the module.</summary>
+        private static string FacingWord(ShipDesignEditionSlotItem slot)
+        {
+            switch (Facing(slot))
+            {
+                case SlotFacing.Broadside:
+                    return ModStrings.Get(ModStrings.ShipDesignSlotBroadside);
+                case SlotFacing.FrontTurret:
+                    return ModStrings.Get(ModStrings.ShipDesignSlotFrontTurret);
+                default:
+                    return null;
             }
         }
 
@@ -325,7 +464,10 @@ namespace ES2Access.UI
         }
 
         /// <summary>The module categories the slot is restricted to, as the game's own titles for them,
-        /// and only while the game is drawing their icons.</summary>
+        /// and only while the game is drawing their icons - with the way the slot shoots in front of
+        /// them, because "a weapon slot" is two different slots on a hull and which one this is decides
+        /// what a gun put in it can reach (owner ruling, 2026-09-10). The category words stay the
+        /// game's own; only the phrase they are set in is the mod's.</summary>
         private static string SlotCategories(ShipDesignEditionSlotItem slot)
         {
             if (slot.SlotCategoriesTable == null || !slot.SlotCategoriesTable.Visible)
@@ -344,7 +486,21 @@ namespace ES2Access.UI
                 }
             }
 
-            return message.Build();
+            string takes = message.Build();
+            if (string.IsNullOrEmpty(takes))
+            {
+                return null;
+            }
+
+            switch (Facing(slot))
+            {
+                case SlotFacing.Broadside:
+                    return ModStrings.Format(ModStrings.ShipDesignSlotBroadsideTakes, takes);
+                case SlotFacing.FrontTurret:
+                    return ModStrings.Format(ModStrings.ShipDesignSlotFrontTurretTakes, takes);
+                default:
+                    return takes;
+            }
         }
 
         /// <summary>

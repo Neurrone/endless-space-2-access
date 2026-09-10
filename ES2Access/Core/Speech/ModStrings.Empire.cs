@@ -218,6 +218,21 @@ namespace ES2Access.Core.Speech
         /// the multiplication instead (owner ruling, 2026-08-19). A complete phrase, so a translator
         /// may put the number wherever the language needs it.</summary>
         public const string ShipDesignSlotMultiplier = "ship-design.slot-multiplier";
+
+        /// <summary>Which way the guns in a weapon slot can be brought to bear - the fact that decides
+        /// whether a module fitted there fires in a battle at all, drawn by the game as firing cones in
+        /// the hull data and named by it nowhere. The words are the ones the game's own players use for
+        /// the two shapes it ships, a single forward cone and a port-and-starboard pair.
+        ///
+        /// Four templates rather than two: an EMPTY slot says the facing in front of the game's own
+        /// title for the module category it takes ("Broadside, Weapon"), and a FILLED one says the
+        /// facing alone after the name of the module standing in it ("Kinetic Slug Turret 2,
+        /// broadside"). Each is a complete phrase, so a language that puts the category first, or
+        /// capitalises differently mid-sentence, can (owner ruling, 2026-09-10).</summary>
+        public const string ShipDesignSlotBroadsideTakes = "ship-design.slot-broadside-takes";
+        public const string ShipDesignSlotFrontTurretTakes = "ship-design.slot-front-turret-takes";
+        public const string ShipDesignSlotBroadside = "ship-design.slot-broadside";
+        public const string ShipDesignSlotFrontTurret = "ship-design.slot-front-turret";
         public const string ShipDesignRemoveTarget = "ship-design.remove-target";
 
         // The battle popups and the two cinematics. Everything a battle SAYS on screen is the game's

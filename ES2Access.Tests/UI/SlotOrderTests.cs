@@ -5,10 +5,11 @@ using Xunit;
 namespace ES2Access.Tests.UI
 {
     /// <summary>
-    /// Reading a ship's slots by the type of module they take. Four rules, none of which a dump would
+    /// Reading a ship's slots by the type of module they take. Five rules, none of which a dump would
     /// catch: the list is alphabetical by type, a slot that takes several types sits with the first of
-    /// them, what is FITTED never moves a slot, and same-type slots keep the order the ship drew them
-    /// in.
+    /// them, what is FITTED never moves a slot, slots of one type that shoot the same way are read
+    /// together (broadsides, then front turrets, then no cone at all), and ties keep the order the ship
+    /// drew them in.
     /// </summary>
     public class SlotOrderTests
     {
@@ -99,6 +100,52 @@ namespace ES2Access.Tests.UI
             SlotOrder.Arrange(slots, keys);
 
             Assert.Equal(new[] { "defence", "defence and support" }, slots);
+        }
+
+        [Fact]
+        public void WeaponSlotsAreReadBroadsidesFirstThenTurretsKeepingTheDrawnOrder()
+        {
+            List<string> slots = new List<string>
+            {
+                "nose gun",
+                "port gun",
+                "coneless gun",
+                "second nose gun",
+                "starboard gun",
+            };
+            List<string[]> keys = new List<string[]> { Weapon, Weapon, Weapon, Weapon, Weapon };
+            List<SlotFacing> facings = new List<SlotFacing>
+            {
+                SlotFacing.FrontTurret,
+                SlotFacing.Broadside,
+                SlotFacing.None,
+                SlotFacing.FrontTurret,
+                SlotFacing.Broadside,
+            };
+
+            SlotOrder.Arrange(slots, keys, facings);
+
+            Assert.Equal(
+                new[] { "port gun", "starboard gun", "nose gun", "second nose gun", "coneless gun" },
+                slots
+            );
+            // The facings travel with the slots, so a second pass sorts the same list the same way.
+            Assert.Equal(SlotFacing.Broadside, facings[0]);
+            Assert.Equal(SlotFacing.None, facings[4]);
+        }
+
+        [Fact]
+        public void TheTypeDecidesBeforeTheFacingDoes()
+        {
+            // A weapon slot with no cone still reads after every defence slot: the facing only ever
+            // breaks a tie INSIDE one type.
+            List<string> slots = new List<string> { "broadside gun", "plating" };
+            List<string[]> keys = new List<string[]> { Weapon, Defence };
+            List<SlotFacing> facings = new List<SlotFacing> { SlotFacing.Broadside, SlotFacing.None };
+
+            SlotOrder.Arrange(slots, keys, facings);
+
+            Assert.Equal(new[] { "plating", "broadside gun" }, slots);
         }
     }
 }

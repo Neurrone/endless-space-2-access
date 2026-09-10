@@ -22,6 +22,11 @@ namespace ES2Access.UI
         /// the drawn order is then the whole of the answer.</summary>
         public string[] Order;
 
+        /// <summary>The tie-break inside one <see cref="Order"/>: which way a ship slot's guns can be
+        /// brought to bear. <see cref="SlotFacing.None"/> everywhere else, which is
+        /// also what every slot the game gave no firing cone answers.</summary>
+        public SlotFacing OrderFacing;
+
         /// <summary>The dossiers this cell owns BEYOND its own tooltip. Where there are any the cell is
         /// declared as an expandable GROUP with a "Tooltips" region under it
         /// (<see cref="TooltipChildren"/>) instead of as a leaf - which is what lets a row read off a

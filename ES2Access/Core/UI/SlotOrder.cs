@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 namespace ES2Access.Core.UI
 {
+    /// <summary>Which way a weapon slot's guns can be brought to bear: at the sides, at the nose, or
+    /// neither, which is every slot the game gave no firing cone at all.</summary>
+    public enum SlotFacing
+    {
+        None,
+        Broadside,
+        FrontTurret,
+    }
+
     /// <summary>
     /// Putting a ship's module slots in an order the player can predict: alphabetically by the TYPE of
     /// module each slot takes.
@@ -22,6 +31,11 @@ namespace ES2Access.Core.UI
     ///
     /// The words compared are the ones the player HEARS - the game's own localized titles for its
     /// module categories - so the alphabet is the player's, not an internal enum's.
+    ///
+    /// Inside one type the slots that shoot the same way are read together: the broadsides, then the
+    /// front turrets, then whatever the game gave no firing cone (owner ruling, 2026-09-10). That is a
+    /// fact about the SLOT like its type is, and it is compared as a rank rather than as the words it
+    /// is spoken with, so translating the phrases cannot reshuffle the ship.
     /// </summary>
     public static class SlotOrder
     {
@@ -74,12 +88,41 @@ namespace ES2Access.Core.UI
             return mine - theirs;
         }
 
+        /// <summary>Which of two slots is read first when both take the same types: the one whose guns
+        /// cover the wider arc of the ship - broadside, then front turret, then a slot with no cone at
+        /// all.</summary>
+        public static int Compare(
+            string[] left,
+            SlotFacing leftFacing,
+            string[] right,
+            SlotFacing rightFacing
+        )
+        {
+            int order = Compare(left, right);
+            return order != 0 ? order : Rank(leftFacing) - Rank(rightFacing);
+        }
+
         /// <summary>Order <paramref name="items"/> by their parallel <paramref name="keys"/>, keeping
         /// the order they came in wherever two keys are equal - an insertion sort, which is stable and
         /// is walking a list of a hull's slots.</summary>
         public static void Arrange<T>(IList<T> items, IList<string[]> keys)
         {
-            if (items == null || keys == null || items.Count != keys.Count)
+            Arrange(items, keys, null);
+        }
+
+        /// <summary>The same, with the way each slot shoots as the tie-break inside one type.</summary>
+        public static void Arrange<T>(
+            IList<T> items,
+            IList<string[]> keys,
+            IList<SlotFacing> facings
+        )
+        {
+            if (
+                items == null
+                || keys == null
+                || items.Count != keys.Count
+                || (facings != null && facings.Count != items.Count)
+            )
             {
                 return;
             }
@@ -88,17 +131,40 @@ namespace ES2Access.Core.UI
             {
                 T item = items[i];
                 string[] key = keys[i];
+                SlotFacing facing = At(facings, i);
                 int at = i - 1;
-                while (at >= 0 && Compare(keys[at], key) > 0)
+                while (at >= 0 && Compare(keys[at], At(facings, at), key, facing) > 0)
                 {
                     items[at + 1] = items[at];
                     keys[at + 1] = keys[at];
+                    if (facings != null)
+                    {
+                        facings[at + 1] = facings[at];
+                    }
+
                     at--;
                 }
 
                 items[at + 1] = item;
                 keys[at + 1] = key;
+                if (facings != null)
+                {
+                    facings[at + 1] = facing;
+                }
             }
+        }
+
+        private static SlotFacing At(IList<SlotFacing> facings, int index)
+        {
+            return facings == null ? SlotFacing.None : facings[index];
+        }
+
+        /// <summary>Where a facing sits in the reading order. Not the enum's own values: a slot nobody
+        /// asked about the facing of is <see cref="SlotFacing.None"/>, and that answer is read last
+        /// rather than first.</summary>
+        private static int Rank(SlotFacing facing)
+        {
+            return facing == SlotFacing.Broadside ? 0 : (facing == SlotFacing.FrontTurret ? 1 : 2);
         }
 
         /// <summary>How many of a slot's types the game gave a word to - the rest sort after them and
