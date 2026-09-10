@@ -63,8 +63,23 @@ namespace ES2Access.UI.ModOptions
             panel.OptionsTable.ChildrenComparer = null;
         }
 
-        /// <summary>Throw away every row the panel is holding - what a rebuild starts with when the
-        /// SHAPE of the page has changed (a keyword added, a slot named).</summary>
+        /// <summary>
+        /// Throw away the rows the MOD built - what a rebuild starts with when the SHAPE of the page
+        /// has changed (a keyword added, a slot named).
+        ///
+        /// THE ROWS THE GAME DECLARED STAY, and every rebuilt row is handed back the backup its
+        /// predecessor carried. Both are the same fact about the window: it keeps the whole of
+        /// Apply/Cancel on the <c>Option</c> objects the rows carry, and reaches an option only by
+        /// walking <c>OptionsTable.Children</c> (<c>OptionsTabPanel.BackupSettings</c>,
+        /// <c>CheckWhetherSomeApplicationSettingHasChanged</c>, <c>CommitSettings</c>,
+        /// <c>RestoreSettings</c>). So a rebuild that emptied the table did two things, both measured
+        /// 2026-09-10: it destroyed the Scanner tab's declared row - the ONE row carrying the option
+        /// Cancel discards the scanner's edits through (<see cref="IModScannerService"/>), and gone
+        /// from the first show onwards, because only the game's own panel load ever builds it - and
+        /// it re-minted every other row's option, whose constructor stores a backup, so Cancel put
+        /// back the values as they stood at the REBUILD. An edit that rebuilt the page therefore
+        /// survived Cancel, and the restore of a name box could write the discarded name back in.
+        /// </summary>
         public static void Clear(OptionsTabPanel panel)
         {
             if (panel == null || panel.OptionsTable == null)
@@ -80,7 +95,28 @@ namespace ES2Access.UI.ModOptions
                 // settings window left the last open's rows in all four and they grew for the life of
                 // the session, holding destroyed widgets and dead delegates the whole time.
                 Drop(panel);
-                panel.OptionsTable.DestroyAllChildren();
+                Baselines.Clear();
+                _rebuilding = panel;
+                AgeTransform table = panel.OptionsTable;
+                for (int i = table.Children.Count - 1; i >= 0; i--)
+                {
+                    AgeTransform row = table.Children[i];
+                    OptionItem item = row == null ? null : row.GetComponent<OptionItem>();
+                    Option option = item == null ? null : item.Option;
+                    if (option != null && !Made.Contains(option))
+                    {
+                        continue;
+                    }
+
+                    if (option != null)
+                    {
+                        Baselines[row.name] = BackupOf(option);
+                        Made.Remove(option);
+                    }
+
+                    UnityEngine.Object.Destroy(row.gameObject);
+                    table.Children.RemoveAt(i);
+                }
             }
             catch (Exception e)
             {
@@ -135,6 +171,7 @@ namespace ES2Access.UI.ModOptions
                 }
 
                 setter.Invoke(panel, new object[] { options.ToArray() });
+                Rebase(panel);
                 panel.OptionsTable.Sort();
             }
             catch (Exception e)
@@ -520,6 +557,9 @@ namespace ES2Access.UI.ModOptions
             Captions.Clear();
             Groups.Clear();
             Ours.Clear();
+            Made.Clear();
+            Baselines.Clear();
+            _rebuilding = null;
         }
 
         // ---- the machinery ----
@@ -587,7 +627,57 @@ namespace ES2Access.UI.ModOptions
                 return null;
             }
 
+            Made.Add(minted[0]);
             return minted[0];
+        }
+
+        /// <summary>Give every rebuilt row back the backup the row of that name carried before the
+        /// rebuild, so Cancel puts back what the page held when the window OPENED rather than what it
+        /// held when an edit rebuilt it. A row the rebuild invented has no predecessor and keeps the
+        /// backup its own option was minted with - which is the value the player has just typed, and
+        /// which the restore of a row for a category Cancel has already discarded cannot act on.
+        /// </summary>
+        private static void Rebase(OptionsTabPanel panel)
+        {
+            if (_rebuilding != panel || panel.OptionsTable == null)
+            {
+                return;
+            }
+
+            _rebuilding = null;
+            AgeTransform table = panel.OptionsTable;
+            for (int i = 0; i < table.Children.Count; i++)
+            {
+                AgeTransform row = table.Children[i];
+                OptionItem item = row == null ? null : row.GetComponent<OptionItem>();
+                object backup;
+                if (
+                    item != null
+                    && item.Option != null
+                    && Baselines.TryGetValue(row.name, out backup)
+                )
+                {
+                    SetBackup(item.Option, backup);
+                }
+            }
+
+            Baselines.Clear();
+        }
+
+        /// <summary>What an option would be restored to. The field is private and there is no other
+        /// way to ask or to say: <c>Store</c> only ever takes the value as it stands now, so moving
+        /// the value to take a backup over it would run the row's own setter twice.</summary>
+        private static object BackupOf(Option option)
+        {
+            return Backup == null ? null : Backup.GetValue(option);
+        }
+
+        private static void SetBackup(Option option, object backup)
+        {
+            if (Backup != null)
+            {
+                Backup.SetValue(option, backup);
+            }
         }
 
         /// <summary>Give a row an option without going through <c>Load</c> - for the cloned button,
@@ -655,6 +745,24 @@ namespace ES2Access.UI.ModOptions
         /// commit asks whether an option is one of ours on every focus loss, which a list answered by
         /// walking itself.</summary>
         private static readonly HashSet<Option> Ours = new HashSet<Option>();
+
+        /// <summary>Every option the mod minted, whatever kind of row carries it - which is how a
+        /// rebuild tells its own rows from the ones the game's own panel load declared.</summary>
+        private static readonly HashSet<Option> Made = new HashSet<Option>();
+
+        /// <summary>What each destroyed row's option would have been restored to, by row name, held
+        /// between a rebuild's <see cref="Clear"/> and its <see cref="Publish"/>.</summary>
+        private static readonly Dictionary<string, object> Baselines =
+            new Dictionary<string, object>();
+
+        /// <summary>The panel a rebuild is in the middle of, so a baseline can only land back on the
+        /// page it was taken from.</summary>
+        private static OptionsTabPanel _rebuilding;
+
+        private static readonly FieldInfo Backup = typeof(Option).GetField(
+            "backupValue",
+            BindingFlags.Instance | BindingFlags.NonPublic
+        );
     }
 
     /// <summary>
