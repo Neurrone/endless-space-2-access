@@ -154,6 +154,8 @@ namespace ES2Access.UI
         /// names are the fleet's own rather than a ship's: command points are what the fleet list
         /// already calls them, and the four counts by hull size are named by the sizes themselves.
         /// The size counts are drawn as a strip of items, so the names have to reach inside one.
+        /// A fleet carrying squadrons draws the same fighter and bomber pair a carrier does, named
+        /// the same way.
         ///
         /// <c>PanelFeatureGarrisonInfoEmbedded</c> is this feature plus the two military power
         /// figures, so it is read as this feature plus two more names.
@@ -164,6 +166,8 @@ namespace ES2Access.UI
         {
             Dictionary<AgeTransform, Naming> named = new Dictionary<AgeTransform, Naming>();
             CommandPoints(named, garrison.CommandValue);
+            Name(named, garrison.FighterLabel, AgeText.Title(SquadronFighterTitle));
+            Name(named, garrison.BomberLabel, AgeText.Title(SquadronBomberTitle));
             Name(named, garrison.HealthLabel, GuiShipDesign.ShipStatHealth);
             Name(named, garrison.MovementLabel, GuiShipDesign.ShipStatMovement);
             Name(named, garrison.ActionPointLabel, DepartmentOfTheTreasury.Resources.ActionPoint);
