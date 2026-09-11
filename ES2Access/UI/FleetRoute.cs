@@ -422,8 +422,13 @@ namespace ES2Access.UI
         /// Every turn count the map's fleet rows say rides this gate, because they all reach a route
         /// through <see cref="Current"/>: a foreign fleet whose path the game will not draw gets the
         /// countless phrase and nothing about where it is going (owner ruling 2026-09-02).
+        ///
+        /// Internal because the DESTINATION rides it too, and not only the turn counts: a fleet's
+        /// whole route lives in <c>Fleet.Path</c>, whose far end is the one thing the map draws
+        /// nowhere for a foreign fleet, so the row that says where a fleet is going asks this first
+        /// (<c>GalaxyHudScreen.FleetState</c>).
         /// </summary>
-        private static bool RouteShown(Fleet fleet)
+        internal static bool RouteShown(Fleet fleet)
         {
             try
             {

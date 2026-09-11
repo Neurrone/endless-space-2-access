@@ -1140,6 +1140,18 @@ namespace ES2Access.Screens
         /// A node the map has not named is not named here either, exactly as a starlane running into
         /// the dark is not.
         ///
+        /// WHICH node is the one being flown to is a second question, and a narrower one for somebody
+        /// else's fleet. A fleet's whole plan lives in <c>Fleet.Path</c>, and the map draws that path
+        /// for nobody but its owner unless the empire has bought the sight of it and is at war with
+        /// the owner (<c>GalaxyGarrisonCursor.RenderPath</c> :518-527 refuses outright), while the
+        /// only panel that writes a destination down hides the line for a fleet that is not the
+        /// player's (<c>PanelFeatureGarrisonInfoAutomatedFleet</c> :77-85). So the far end of the
+        /// route is asked for only behind that permission
+        /// (<see cref="FleetRoute.RouteShown"/>, the same gate every turn count on these rows rides);
+        /// below it what is left is the leg the fleet is being ANIMATED along, which is geometry on
+        /// the screen rather than a plan read out of the simulation (<see cref="DestinationOf"/>) -
+        /// and the destination-less phrase where even that is not under way.
+        ///
         /// Shared with the scanner, whose fleet results carry the same two words
         /// (<c>GalaxyScanner.Fleets</c>) so a fleet found by the scanner and the same fleet met on the
         /// map say the same thing about where it is.
@@ -1155,7 +1167,9 @@ namespace ES2Access.Screens
                     : ModStrings.Get(ModStrings.GalaxyFleetDocked);
             }
 
-            GameNode heading = FleetOrders.Heading(fleet);
+            GameNode heading = FleetRoute.RouteShown(fleet)
+                ? FleetOrders.Heading(fleet)
+                : DestinationOf(fleet);
             if (heading == null)
             {
                 return ModStrings.Get(ModStrings.GalaxyFleetMoving);
