@@ -87,6 +87,18 @@ namespace ES2Access.Screens
         /// words are the same either way because the tooltip window assembles them from the wrapper.
         /// A drawn item is matched to the definition it is BOUND to rather than taken by position,
         /// which is also what stops a stale binding on a culled-out label being read.
+        ///
+        /// And only where the label would build the strip at all. Its own gate is two tests, not one
+        /// (<c>StarSystemLabel.RefreshDepositsLine</c> :2192-2194): the node's visibility layer, and
+        /// PLANETS visibility, which is a separate per-empire flag a hidden home system switches off
+        /// for everybody but its owner (<c>ColonizedStarSystem.CreateVisibility</c> :1433-1439,
+        /// <c>OwnVisibility_OnLayerChanged</c> :4763-4768). A perceived system is therefore not
+        /// enough: an Umbral Choir home the player has met is a system with a name, a star and a
+        /// deposit strip the map refuses to draw, and reading its ground out of the model would say
+        /// what is buried under planets the picture will not even show are there. The second half is
+        /// the planets' own threshold (<see cref="PlanetsDeclared"/>), which the planet rows on this
+        /// same system already ride, so the ground and the worlds above it appear and disappear
+        /// together.
         /// </summary>
         private static void AddDeposits(
             List<TooltipChildren.Dossier> found,
@@ -95,6 +107,11 @@ namespace ES2Access.Screens
             StarSystemLabel label
         )
         {
+            if (empire == null || !PlanetsDeclared(node, empire))
+            {
+                return;
+            }
+
             ColonizedStarSystem colony = LabelColony(node, empire);
             Empire owner = colony == null ? null : colony.Empire;
             List<ResourceDepositDefinition> kinds = DepositKinds(node);
