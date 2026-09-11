@@ -509,9 +509,13 @@ own.
   (`GalaxyStarSystem.UpdateInfluenceRange` :1932) — mod policy: name and compare the empire the
   COLOUR is drawn for.
   **Fog obligation:** every one of those values is global simulation state, identical for every
-  player. The game's own disk is hidden on `Node.Visibility.IsInvisible(playerEmpire)` (:1926), so
-  the mod gates every influence reading on `MapVisibility.Perceived`: the sim carries radii for
-  systems the player has never seen, and the mod says nothing about any of them.
+  player. The game's own disk is NOT a fog gate — `UpdateInfluenceRange` :1926 hides it only on
+  `Node.Visibility.IsInvisible(playerEmpire)`, the per-empire "undiscoverable" flag written for
+  quest nodes and unmet visibility prerequisites (`GameNode.RefreshVisibility` :957, `Initialize`
+  :970-975), a different field from the fog LAYER — so every colony's disk is drawn whatever the
+  player has explored, and what it draws is a colour, never a name. The mod gates every influence
+  reading on `MapVisibility.Perceived` anyway, the map's own NAMING threshold: the sim carries
+  radii for systems the player has never seen, and the mod says nothing about any of them.
   System CONVERSION by influence is the game's own notification territory
   (`RefreshInfluenceConversion` :175-210 → `EventSystemUnderInfluence`); the mod reports the state,
   not the event.

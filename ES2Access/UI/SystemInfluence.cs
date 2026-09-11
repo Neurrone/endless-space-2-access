@@ -71,9 +71,15 @@ namespace ES2Access.UI
     ///
     /// EVERYTHING here is gated on the player perceiving the node (<see cref="MapVisibility.Perceived"/>).
     /// The influence values are the SIMULATION's, global and player-blind: reading them ungated hands
-    /// the player the position and reach of colonies they have never seen. The game's own disk asks
-    /// the same question before it draws (<c>GalaxyStarSystem.UpdateInfluenceRange</c> :1926 hides it
-    /// on <c>Node.Visibility.IsInvisible</c>).
+    /// the player the position and reach of colonies they have never seen. That gate is the map's
+    /// NAMING rule, not its disk rule: the disk is drawn for every colony whatever the player has
+    /// explored - the one gate <c>GalaxyStarSystem.UpdateInfluenceRange</c> :1926 puts on it is
+    /// <c>Node.Visibility.IsInvisible</c>, a per-empire "undiscoverable" flag written only for quest
+    /// nodes and nodes whose visibility prerequisites are unmet (<c>GameNode.RefreshVisibility</c>
+    /// :957, <c>Initialize</c> :970-975), which is a different field from the fog LAYER. And what the
+    /// disk carries is never a name: it is an empire COLOUR packed into a shader buffer (:1932,
+    /// <c>DiskRendererManager.FillDiskData</c> :774). Naming is what this reading does, so it takes
+    /// the naming gate, which is stricter than the drawn disk.
     ///
     /// Cost: <c>TryGetInfluenceRadius</c> is a dictionary lookup on the node's own position over the
     /// colonies standing THERE (<c>ColonizedStarSystemRepository</c> :132-161), not the galaxy-wide
@@ -202,13 +208,14 @@ namespace ES2Access.UI
         /// <c>InfluenceOwner</c>, which looks through an integrated minor faction to the empire that
         /// absorbed it and would name somebody whose colour is nowhere on the map.
         ///
-        /// And only where that colour IS on the map: the game draws each colony's disk from the
-        /// colony's own node and hides it while that node is invisible to the player
-        /// (<c>GalaxyStarSystem.UpdateInfluenceRange</c> :1926), so an influencer whose node the player
-        /// has not perceived says nothing here - the same rule the cell reading applies through
-        /// <see cref="Nameable"/>. Otherwise this row would hand the player an "Unknown Empire" that
-        /// the map is drawing nowhere near this node, the existence and rough position of an empire
-        /// they have not met yet.
+        /// And only where the player is allowed to NAME that empire. The disk itself is no gate: the
+        /// game draws each colony's disk from the colony's own node whatever the player has explored,
+        /// the only thing hiding it being the undiscoverable flag quest and prerequisite nodes carry
+        /// (<c>GalaxyStarSystem.UpdateInfluenceRange</c> :1926 on <c>Node.Visibility.IsInvisible</c>) -
+        /// and it paints a colour, never a name. So an influencer whose node the player has not
+        /// perceived says nothing here - the same rule the cell reading applies through
+        /// <see cref="Nameable"/>. Otherwise this row would hand the player an "Unknown Empire" off a
+        /// disk that names nobody: the existence and rough position of an empire they have not met yet.
         ///
         /// The owners are every colony standing at the node that this empire can see - an outpost
         /// included, because holding a place is holding it whether or not it has grown up yet, and a
@@ -617,9 +624,10 @@ namespace ES2Access.UI
             into.Add(answer);
         }
 
-        /// <summary>The empire index the player may be TOLD about, or -1 - a colony whose node the map
-        /// is not showing is nobody as far as the reading is concerned, and its empire is remembered
-        /// only where it can be named. Shared with <see cref="InfluenceGround"/> rather than copied:
+        /// <summary>The empire index the player may be TOLD about, or -1 - a colony at a node the map
+        /// would not NAME (<see cref="MapVisibility.Perceived"/>) is nobody as far as the reading is
+        /// concerned, whatever colour its disk is painting there, and its empire is remembered only
+        /// where it can be named. Shared with <see cref="InfluenceGround"/> rather than copied:
         /// two readings of the same field that disagreed about who may be NAMED would be two different
         /// fog rules.</summary>
         internal static int Nameable(
