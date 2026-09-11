@@ -118,6 +118,16 @@ namespace ES2Access.Screens
         ///
         /// A constellation, the unexplored group, and anything else that is a heading rather than a
         /// place, are silently nothing: there is no point of galaxy under them to keep.
+        ///
+        /// A star the map is DRAWING and refusing to NAME is bookmarked like any other star - the
+        /// slot keeps the system, GUID and all, because the pin the player just planted is on a place
+        /// the picture really is showing them. What it is not is called by name: the label writes the
+        /// literal "???" below exploration 2 (<c>StarSystemLabel.RefreshEmpireNameLabel</c>
+        /// :1894-1921), which is the row the player set this from
+        /// (<c>GalaxyHudScreen.AddLocated</c>, the mod's unexplored words and the coordinates). So the line
+        /// says the pair instead, the same words the bare-point branch below says and the same words
+        /// the row itself says - a set and the row it was set on cannot describe one place
+        /// differently.
         /// </summary>
         private bool Set(char digit)
         {
@@ -143,7 +153,13 @@ namespace ES2Access.Screens
                     digit,
                     MapBookmark.OfSystem(system.GUID, at.X, at.Y)
                 );
-                Say(digit, system.LocalizedName, replaced);
+                Say(
+                    digit,
+                    MapVisibility.Perceived(system, GlobalHud.PlayerEmpire())
+                        ? system.LocalizedName
+                        : GalaxyCoordinates.Text(at),
+                    replaced
+                );
                 return true;
             }
 
