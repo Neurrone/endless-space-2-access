@@ -185,7 +185,17 @@ namespace ES2Access.Screens
 
             // Under way: the row hangs under the system it is flying to, and only where the tree is
             // declaring that system by name - a located star carries no fleets, and a destination the
-            // map has never named puts the fleet in <c>_adrift</c> above.
+            // map has never named puts the fleet in <c>_adrift</c> above. Asked of a fleet the map is
+            // DRAWING and no other, which is the gate the two lists above were filled through: the
+            // rows under a destination are made from the drawn fleets alone
+            // (<c>FreeMovingAt</c> and <c>EnRouteOn</c>, both off <see cref="FleetPresence.Drawing"/>),
+            // so a fleet the player may not see flying to a named star has no row there for a pin to
+            // hang under.
+            if (!FleetPresence.Drawn(marker.Fleet))
+            {
+                return false;
+            }
+
             StarSystemNode goal = DestinationOf(marker.Fleet) as StarSystemNode;
             return goal != null && _namedSet.Contains(goal);
         }

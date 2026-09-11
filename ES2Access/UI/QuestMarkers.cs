@@ -352,6 +352,18 @@ namespace ES2Access.UI
         /// a curiosity under the world the curiosity sits on, one on a fleet under that fleet's row.
         /// A fleet crossing a lane stands at no star at all, which is what <see cref="Marker.System"/>
         /// being null means.
+        ///
+        /// A fleet the map is not DRAWING is not one of the five. The pin itself is shown from the
+        /// quest's own empire list and nothing else (<c>GalaxyQuestMarker.UpdateVisibility</c>
+        /// :158-166), so a quest can plant one on somebody else's fleet the player has never been
+        /// shown; where that fleet has no label the game anchors the pin at the star's docking slot
+        /// and writes no name anywhere (<c>GalaxyQuestMarker.Update</c> :119-154, and the label
+        /// window draws a fleet's name only from visibility 2 up -
+        /// <c>FleetLabelsWindow.ShowAllLabels</c> :81, <c>GalaxyFleet.RefreshVisibility</c> :1431).
+        /// So the fleet is kept only where <see cref="FleetPresence.Drawn"/> holds, which leaves the
+        /// pin saying the star it stands at - the place the picture really does give away - and hangs
+        /// its row there too, since the tree declares a fleet row on that same gate
+        /// (<see cref="FleetPresence.FleetsAt"/>).
         /// </summary>
         private static void Resolve(QuestMarker marker, Empire empire, ref Marker made)
         {
@@ -382,7 +394,11 @@ namespace ES2Access.UI
             Fleet fleet = target as Fleet;
             if (fleet != null)
             {
-                made.Fleet = fleet;
+                if (FleetPresence.Drawn(fleet))
+                {
+                    made.Fleet = fleet;
+                }
+
                 system = FleetOrders.Orbit(fleet) as StarSystemNode;
             }
 

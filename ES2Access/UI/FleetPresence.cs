@@ -536,8 +536,14 @@ namespace ES2Access.UI
         /// visibility table at all, and a player who is not a major empire (a spectator, a loading
         /// frame), are both states the indexer throws in rather than answers. Unanswerable is treated
         /// as VISIBLE here, matching the sibling: the window's test is what withholds a label, and a
-        /// mod that cannot ask it must not withhold one on its own account.</summary>
-        private static bool Drawn(Fleet fleet)
+        /// mod that cannot ask it must not withhold one on its own account.
+        ///
+        /// Internal because a fleet's NAME rides it wherever it is said, and these rows are not the
+        /// only surface that says one: a quest pin planted on a fleet names it too
+        /// (<c>QuestMarkers.Name</c>), and the pin itself is drawn off the quest's empire list with
+        /// no visibility test of its own (<c>GalaxyQuestMarker.UpdateVisibility</c> :158-166).
+        /// </summary>
+        internal static bool Drawn(Fleet fleet)
         {
             MajorEmpire empire = Gui.PlayerEmpire as MajorEmpire;
             return fleet.Visibility == null
