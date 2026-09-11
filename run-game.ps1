@@ -122,10 +122,22 @@ if ($NoDev) {
 # launch to in-game. Done here, before the optional WaitForExit, because that call blocks until
 # the game quits. Two waits, both slow on purpose: booting to the main menu takes up to a
 # minute (curl retries the connection refusals and the 503s a busy frame answers with), and the
-# route itself reports "[not ready]" until the menu can actually start a load.
+# route itself reports "[not ready]" until the menu can actually start a load. Two other answers
+# are also just "too early": a 404 "no route" while the loader is up but the mod has not yet
+# registered its routes, and the main-thread queue's 503 "did not run the request" while the
+# game is still building its menu. Each of those ended the loop on the first try and left the
+# game at the menu, so all three are retried; only an answer that is none of them gives up.
 if ($LoadSave) {
     Write-Host "Waiting for the dev server, then loading '$LoadSave'..."
-    $status = curl.exe -s --connect-timeout 5 --retry 120 --retry-connrefused --retry-delay 1 "$devUrl/status"
+    # Polled by hand rather than with curl's --retry: the loader opens the port before the mod has
+    # registered its routes, and in that window /status is a 404, which --retry does not retry -
+    # the gate then reported "never answered" against a game that was still booting.
+    $status = ''
+    for ($i = 0; $i -lt 120; $i++) {
+        $status = curl.exe -s --connect-timeout 5 "$devUrl/status"
+        if ($status -match '"version"') { break }
+        Start-Sleep -Seconds 1
+    }
     if ($status -match '"version"') {
         $loaded = $false
         $answer = ''
@@ -134,7 +146,7 @@ if ($LoadSave) {
             # the name of a file to send.
             $answer = curl.exe -s -X POST --data-raw "$LoadSave" "$devUrl/loadsave"
             if ($answer -match '"result"\s*:\s*"loaded') { $loaded = $true; break }
-            if ($answer -notmatch '\[not ready\]') { break }
+            if ($answer -notmatch '\[not ready\]|no route for|did not run the request') { break }
             Start-Sleep -Seconds 1
         }
         if ($loaded) {
