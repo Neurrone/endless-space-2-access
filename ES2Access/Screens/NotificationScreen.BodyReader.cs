@@ -406,6 +406,7 @@ namespace ES2Access.Screens
 
             List<Line> lines = new List<Line>();
             Read(root, lines, null, 0);
+            AddBadges(window, lines);
 
             List<AgeTransform> title = TitleBar(window, controls);
             List<AgeTransform> buttons = ButtonBar(controls);
@@ -493,6 +494,31 @@ namespace ES2Access.Screens
             }
 
             return rows;
+        }
+
+        /// <summary>The lines the popup drew as PICTURES, added to the ones it wrote out.
+        ///
+        /// A picture holds no text, so the walk above never saw it, and the row it becomes says
+        /// nothing of its own: what it is a picture of is the game object behind it, read for its word
+        /// when the row is read (<see cref="EmpireDossier.RowText"/>). From here on it is a drawn line
+        /// like any other - dropped where the popup is not painting it, placed by its own rectangle,
+        /// and carrying the tooltip the game hung on the icon as the explanation of the state it just
+        /// named.</summary>
+        private static void AddBadges(NotificationWindow window, List<Line> lines)
+        {
+            IList<Badge> badges = Badges(window);
+            for (int i = 0; i < badges.Count; i++)
+            {
+                Badge badge = badges[i];
+                lines.Add(
+                    new Line
+                    {
+                        Widget = badge.Widget,
+                        Tooltip = badge.Widget.AgeTooltip,
+                        Relation = badge.Data,
+                    }
+                );
+            }
         }
 
         /// <summary>The dossier the popup has open beside itself, where it has one open. Its lines are a

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
@@ -77,6 +78,16 @@ namespace ES2Access.Screens
         /// of the thing, which is the branch it came from and which is the price - so it says so, and
         /// hands back a finished control.
         ///
+        /// <see cref="Badges"/>: a fact the popup states with a PICTURE and no words at all - the disk
+        /// the three diplomacy popups paint for how the two empires stand. The popup sets its texture
+        /// from the relation state's name and hangs that state's DESCRIPTION on the tooltip
+        /// (<c>RefreshMoodCircle</c>), and writes the state's own TITLE nowhere: a picture is not text,
+        /// so the drawn reading passes over it, and the player is told what the relation means without
+        /// ever being told which relation it is. Measuring cannot find the missing word - there is
+        /// nothing on the popup to measure - and only the popup's code says which game object the
+        /// picture stands for, so it says so, and the row reads the state in the game's own title for
+        /// it: the same words the diplomacy page writes out in full on a leader card.
+        ///
         /// A popup with no entry here is read entirely by the shared rules, which is the case for most
         /// of them. A stage adding a popup adds one entry and touches nothing else.
         /// </summary>
@@ -87,6 +98,7 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
             public Func<NotificationWindow, IList<Control>> Cards;
             public Func<NotificationWindow, IList<Expander>> Expanders;
+            public Func<NotificationWindow, IList<Badge>> Badges;
             public Func<NotificationWindow, AgeControl> Confirm;
             public Func<NotificationWindow, IList<Gateway>> Gateways;
             public Func<NotificationWindow, Countdown> Timer;
@@ -117,6 +129,16 @@ namespace ES2Access.Screens
         {
             public AgeControlToggle Toggle;
             public string NameKey;
+        }
+
+        /// <summary>One fact a popup drew as a bare picture: the icon it painted, and the game object
+        /// whose state that picture stands for. The object rather than the word, because the word is a
+        /// localized title and the body is rebuilt every frame - it is composed when the row is read
+        /// (<see cref="EmpireDossier.DrawnLine.Relation"/>).</summary>
+        private struct Badge
+        {
+            public AgeTransform Widget;
+            public object Data;
         }
 
         private static readonly Dictionary<Type, Variant> Variants = Register();
@@ -498,6 +520,11 @@ namespace ES2Access.Screens
                 {
                     Words = w => ((DiplomaticInteractionNotificationWindow)w).MoodMessageLabel,
                     Tables = w => Terms((DiplomaticInteractionNotificationWindow)w),
+                    Badges = w =>
+                        StandsFor(
+                            ((DiplomaticInteractionNotificationWindow)w).DiplomaticStatusIcon,
+                            Relation(w)
+                        ),
                     Expanders = w =>
                         Unfolds(
                             ((DiplomaticInteractionNotificationWindow)w).EmpireInfoToggle,
@@ -585,6 +612,12 @@ namespace ES2Access.Screens
                 {
                     Choices = w =>
                         Some(((ContextualDiplomaticExchangeUpdateNotificationWindow)w).ChoiceTable),
+                    Badges = w =>
+                        StandsFor(
+                            ((ContextualDiplomaticExchangeUpdateNotificationWindow)w)
+                                .DiplomaticStatusIcon,
+                            Relation(w)
+                        ),
                     Expanders = w =>
                         Unfolds(
                             ((ContextualDiplomaticExchangeUpdateNotificationWindow)w).EmpireInfoToggle,
@@ -607,6 +640,12 @@ namespace ES2Access.Screens
                     Confirm = w =>
                         ((ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w).ValidateButton,
                     Tables = w => Roles((ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w),
+                    Badges = w =>
+                        StandsFor(
+                            ((ContextualAcademyDiplomaticExchangeUpdateNotificationWindow)w)
+                                .DiplomaticStatusIcon,
+                            Relation(w)
+                        ),
                     Gateways = w =>
                         Out(
                             To(
@@ -1228,6 +1267,81 @@ namespace ES2Access.Screens
         }
 
         private static readonly Expander[] NoExpanders = new Expander[0];
+
+        /// <summary>The facts this popup stated as bare pictures, where it stated any.</summary>
+        private static IList<Badge> Badges(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Badges == null)
+            {
+                return NoBadges;
+            }
+
+            try
+            {
+                return variant.Badges(window) ?? NoBadges;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a popup's badges threw: " + e);
+                return NoBadges;
+            }
+        }
+
+        private static readonly Badge[] NoBadges = new Badge[0];
+
+        /// <summary>One picture a popup painted in place of words, and what it is a picture OF - and
+        /// nothing at all where the popup drew no icon or has no relation to draw one for, which is a
+        /// popup mid-rebind rather than a popup that means something by it.</summary>
+        private static IList<Badge> StandsFor(AgePrimitiveImage icon, object data)
+        {
+            AgeTransform widget = icon == null ? null : icon.AgeTransform;
+            return widget == null || data == null
+                ? NoBadges
+                : new Badge[] { new Badge { Widget = widget, Data = data } };
+        }
+
+        /// <summary>The relation a diplomacy popup is showing, off the private property it keeps it
+        /// in. Three windows keep one each under the same name, and the property is what the popup
+        /// itself asks when it paints the disk - so the badge and the picture can never be about
+        /// different empires. Resolved once per window kind: the lookup is reflection and the body is
+        /// rebuilt every frame.</summary>
+        private static object Relation(NotificationWindow window)
+        {
+            Type type = window.GetType();
+            PropertyInfo property;
+            if (!RelationOf.TryGetValue(type, out property))
+            {
+                property = GameHandlers.Property(type, RelationProperty);
+                RelationOf.Add(type, property);
+            }
+
+            return property == null ? null : property.GetValue(window, null);
+        }
+
+        private static readonly Dictionary<Type, PropertyInfo> RelationOf =
+            new Dictionary<Type, PropertyInfo>();
+
+        private const string RelationProperty = "DiplomaticRelation";
+
+        /// <summary>What this popup's bare pictures stand for, in words - for the parity audit, which
+        /// accounts every spoken phrase to something the popup draws and has no other way to know that
+        /// a PICTURE is what draws this one.</summary>
+        internal static IList<string> BadgeWords(NotificationWindow window)
+        {
+            List<string> said = new List<string>();
+            IList<Badge> badges = Badges(window);
+            for (int i = 0; i < badges.Count; i++)
+            {
+                string word = EmpireDossier.StateWord(badges[i].Data);
+                if (!string.IsNullOrEmpty(word))
+                {
+                    said.Add(word);
+                }
+            }
+
+            return said;
+        }
 
         private static IList<Expander> Unfolds(params AgeControlToggle[] toggles)
         {

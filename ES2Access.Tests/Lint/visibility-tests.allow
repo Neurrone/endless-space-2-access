@@ -60,9 +60,12 @@ ES2Access/Screens/DLCScreen.cs | 1 | if (toggle == null || !AgeWidgets.Visible(w
 ES2Access/Screens/DLCScreen.cs | 1 | return AgeWidgets.Visible(AgeWidgets.Transform(item.BuyButton))
 
 ES2Access/Screens/DiplomacyScreen.cs | 1 | && AgeWidgets.Visible(sector.ContextualAlertMarker)
-ES2Access/Screens/DiplomacyScreen.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/DiplomacyScreen.cs | 3 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/Screens/DiplomacyScreen.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
 ES2Access/Screens/DiplomacyScreen.cs | 1 | if (panel == null || !AgeWidgets.Visible(panel))
+ES2Access/Screens/DiplomacyScreen.cs | 1 | return AgeWidgets.Visible(AgeWidgets.Transform(sector.PositiveGaugeSector))
 ES2Access/Screens/DiplomacyScreen.cs | 1 | || !AgeWidgets.Visible(card.DiplomaticAbilitiesGroup)
+ES2Access/Screens/DiplomacyScreen.cs | 1 | || AgeWidgets.Visible(AgeWidgets.Transform(sector.NegativeGaugeSector));
 
 ES2Access/Screens/DropListScreen.cs | 1 | if (!AgeWidgets.Visible(request.List.AgeTransform))
 

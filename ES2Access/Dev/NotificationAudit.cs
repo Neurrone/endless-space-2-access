@@ -288,6 +288,7 @@ namespace ES2Access.Dev
             Painted painted = new Painted();
             Walk(root, painted, 0, new int[1]);
             AddDrawnTooltipWords(painted);
+            AddBadgeWords(window, painted);
             result.PaintedTexts = painted.Texts.Count;
             result.PaintedControls = painted.Controls;
             result.PaintedTooltips = painted.Tips.Count;
@@ -989,6 +990,29 @@ namespace ES2Access.Dev
             catch (Exception e)
             {
                 Core.Util.Log.Warn("notification parity: reading the drawn tooltip threw: " + e);
+            }
+        }
+
+        /// <summary>The words this popup's bare PICTURES stand for.
+        ///
+        /// The walk above accounts a spoken phrase to painted text or to a drawn tooltip, and a
+        /// picture is neither - so a popup that paints its relation as a disk and nothing else draws
+        /// the state's name at all. The picture IS what draws it, which is exactly why the row says
+        /// it (<see cref="NotificationScreen"/>'s badges), and the audit is told the same words the
+        /// row composes rather than being taught to let an unaccounted phrase through.</summary>
+        private static void AddBadgeWords(NotificationWindow window, Painted painted)
+        {
+            try
+            {
+                IList<string> words = NotificationScreen.BadgeWords(window);
+                for (int i = 0; i < words.Count; i++)
+                {
+                    AddPhrase(painted.Phrases, words[i]);
+                }
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("notification parity: reading the popup's badges threw: " + e);
             }
         }
 

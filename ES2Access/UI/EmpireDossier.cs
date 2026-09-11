@@ -196,10 +196,18 @@ namespace ES2Access.UI
             }
         }
 
-        /// <summary>The game's own word for the state one relation entry holds, composed when the row
-        /// is read rather than when it is declared: it is a localized title, and a sheet that is
-        /// rebuilt every frame would otherwise pay for one per relation row per frame.</summary>
-        private static string StateWord(object data)
+        /// <summary>
+        /// The game's own word for the state one relation entry holds, composed when the row is read
+        /// rather than when it is declared: it is a localized title, and a sheet that is rebuilt every
+        /// frame would otherwise pay for one per relation row per frame.
+        ///
+        /// Two kinds of entry answer here, because two surfaces say a relation with a picture. The
+        /// sheet's own rows carry the panel's private data object, whose TYPE is private with it, so
+        /// the state is taken off a property by name. A diplomacy popup's badge carries the game's own
+        /// <c>DiplomaticRelation</c>, which holds the same state in the open - and answering that one
+        /// first is also what keeps the cached property from being resolved against the wrong type.
+        /// </summary>
+        internal static string StateWord(object data)
         {
             if (data == null)
             {
@@ -208,13 +216,8 @@ namespace ES2Access.UI
 
             try
             {
-                if (_state == null)
-                {
-                    _state = data.GetType().GetProperty("DiplomaticRelationState");
-                }
-
-                DiplomaticRelationState state =
-                    _state == null ? null : _state.GetValue(data, null) as DiplomaticRelationState;
+                DiplomaticRelation relation = data as DiplomaticRelation;
+                DiplomaticRelationState state = relation == null ? Stated(data) : relation.State;
                 return state == null ? null : AgeText.Clean(Gui.GetLocalizedTitle(state.Name));
             }
             catch (Exception e)
@@ -222,6 +225,20 @@ namespace ES2Access.UI
                 Log.Warn("dossier: reading a relation row's state threw: " + e);
                 return null;
             }
+        }
+
+        /// <summary>The state off one of the panel's own entries, whose type is private to it.
+        /// </summary>
+        private static DiplomaticRelationState Stated(object data)
+        {
+            if (_state == null)
+            {
+                _state = data.GetType().GetProperty("DiplomaticRelationState");
+            }
+
+            return _state == null
+                ? null
+                : _state.GetValue(data, null) as DiplomaticRelationState;
         }
 
         /// <summary>The dossier panel a window carries, wherever it keeps it - the same panel serves the
