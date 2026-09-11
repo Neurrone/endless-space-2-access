@@ -48,9 +48,9 @@ And the words are the game's words. Where the game shows something for a state �
 tooltips, captions, placeholders — surface that text, never a mod paraphrase. Only words
 the game finished writing count: text still holding an unfilled template slot ("… {0}") or
 a key the localizer hands back unchanged ("%SomeKey") is parked, not shown — treat it as
-absent, never speak it. The same trap has a prefab form: a widget HIDDEN today may already
+absent, never speak it. The same trap has a prefab form: a widget hidden today may already
 carry its text from the prefab, so a tooltip-fed readout gated on anything but the game's own
-drawn flag ships a false statement about every healthy object. Ask drawn-ness of the CHAIN
+drawn flag ships a false statement about every healthy object. Ask drawn-ness of the chain
 with the engine's own child test — a container retires without touching what it holds — and
 start the walk below the screen's root, because the root itself may animate. Preserve it
 exactly: no mod separators or punctuation inserted ([localization.md](localization.md) has
@@ -85,11 +85,11 @@ world model answers questions the renderer refuses to — adjacency APIs return
 never-discovered entities' names, and name lookups resolve for anything. Find the
 renderer's own visibility predicate and route every name and fact through it; never read
 the model directly for anything the player could not see. The *filter* is what needs the
-test, not the model. And the predicate is per FACT, not per entity: partial-information
+test, not the model. And the predicate is per *fact*, not per entity: partial-information
 games commonly gate facets of one thing separately (as one example, ES2 draws a fleet at
 one detection tier, its ship count a tier higher, and its path only on a diplomatic
 ability), so passing an entity's existence gate discharges nothing about its other facts —
-ask "who draws THIS number" once per fact you speak. And the filter governs names and facts, not OFFERS: a game can hide a
+ask "who draws this number" once per fact you speak. And the filter governs names and facts, not offers: a game can hide a
 thing's identity while still letting the mouse act on its position, and withdrawing an
 affordance the mouse has is a separate, louder decision than withholding a name.
 
@@ -104,7 +104,7 @@ affordance the mouse has is a separate, louder decision than withholding a name.
   what makes it exist at all — and in a 3D-world game half the UI is gated on camera/view
   state. A window measured correctly while its existence-gate goes unread is how a whole
   feature gets missed. There is often one central method listing every window's gate; find
-  it first. And a panel prefab the game instantiates once per HOST window needs the
+  it first. And a panel prefab the game instantiates once per host window needs the
   screen's predicate to ask every host that owns a copy, preferring the one being drawn —
   keyed to one instance, the screen goes silently blind on the others.
 - **When a report reads "X happens after Y", measure X without Y first.** Half of
@@ -115,7 +115,7 @@ affordance the mouse has is a separate, louder decision than withholding a name.
   zoom step draws the full label") can be true and still wrong as a limit. When a numeric
   threshold matters, find the game code that *compares* against it and read the limit from
   there; never freeze a number measured from one observation.
-- **Take a state test from the code that DRAWS the state.** The model's best-named
+- **Take a state test from the code that draws the state.** The model's best-named
   property can be wrong (a fleet's `IsMoving`, public and named exactly right, reads false
   the moment it spends its movement mid-route); the status column, icon switch or colour
   swap the game renders the state from is the test the player's screen agrees with — and
@@ -163,24 +163,24 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
 ([performance.md](performance.md)). Two implementation rules that recur:
 
 - **A page assembled from several independent windows**: the cursor seats on whichever half
-  arrived first and, once placed, never moves. That gate protects the SEATING, so hold back
+  arrived first and, once placed, never moves. That gate protects the seating, so hold back
   only while the cursor is what is at stake: a page whose early half is already usable
   declares it in drawn order and lets the late half join a later rebuild. A page-wide gate on
   one piece turns a half the game drops — a show it defers and then loses — into permanent
   silence.
 - **Reading a panel you haven't modelled in detail** (read-only side panels,
   out-of-fixture state variants): descend only into children that are themselves
-  containers; a group whose children are all primitives is ONE line. This models whole
+  containers; a group whose children are all primitives is one line. This models whole
   panels cheaply without per-widget work — and completely only where the panel's tooltips
   are content-backed ([tooltips.md](tooltips.md)).
 - **A gate is the game's own answer, asked at the promise's own strength.** Wherever the
-  mod decides whether to OFFER a gesture — a pickup, a drop, an action — ask the game's
+  mod decides whether to offer a gesture — a pickup, a drop, an action — ask the game's
   own predicate or enumeration, never a hand-written summary of its rule: a summary
   drifts the day the game's rule grows a branch (ES2Access refused population pickups in
   one-colony systems because its summary counted destination planets and forgot the
   spaceport the game's own target list included). Two refinements the same bug family
   taught. First, **one question, one home**: two screens each summarizing "is there
-  anywhere to put this down?" WILL diverge — one shared helper both call makes divergence
+  anywhere to put this down?" will diverge — one shared helper both call makes divergence
   impossible rather than unlikely. Second, **match the game's check to the mod's
   promise**: the game's gesture-time check is only sufficient when it answers the same
   question your indication makes. A mouse UI can afford a weaker check — it posts the
@@ -201,7 +201,7 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   screenshot cropped to the claimed region (with its rect) beside the spoken/buffer lines.
   Cropping is also what keeps image costs sane — never read full frames. And the pair's
   spoken half is judged **as a listener hears it**, not as a match: a number without its
-  caption in the same line, or a tooltip feature answered by the fallback reader, FAILS the
+  caption in the same line, or a tooltip feature answered by the fallback reader, fails the
   check even though it matches the pixels perfectly — "1500/1500" beside an unnamed icon
   satisfies spoken-equals-drawn and tells the player nothing. Matching is necessary;
   comprehensible is the bar.
@@ -216,16 +216,16 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
   data and only measurement can validate them. Validate each of its buckets against one
   known-good node before trusting a count; and a mis-seated cursor early in a regression
   route amplifies into N screens of unrelated diff — normalise first. Record what the audit
-  structurally CANNOT see next to the audit itself: a blind spot reads as a confident defect
+  structurally cannot see next to the audit itself: a blind spot reads as a confident defect
   list (or a clean bill) on exactly the surfaces it skips, and an audit whose scope nobody
   wrote down gets re-warned by hand in every stage brief until someone writes it down.
-- **A fix whose whole effect is an ABSENCE has no pair until you build one.** Silence on a
+- **A fix whose whole effect is an absence has no pair until you build one.** Silence on a
   clean run is not evidence, and these repro windows are narrow by nature. Revert the one
   guard, rebuild, reload, re-run the same probes: the failing half costs a couple of minutes
   and is the only thing that shows the fix does anything at all.
 - **Verify with player-available gestures only.** Reaching the state under test by an engine
   call — opening the window from the REPL, arming a mode by setting its flag — proves the
-  READING and never the reachability, and a screen whose only route in is a method no key
+  *reading* and never the reachability, and a screen whose only route in is a method no key
   reaches passes every evidence pair while being unusable (it shipped that way twice). The
   route in belongs in the evidence too: injected actions that correspond to real keys,
   pressed from where the player actually stands.
@@ -246,7 +246,7 @@ reload-safe ([hot-reload.md](hot-reload.md)) and per-frame cheap — `Build` run
 **The unreachable-screen tier.** When a screen cannot be reached in the fixture at all (a
 cutscene needing game progress, a panel behind an unbuildable unit), verification has a
 named fallback shape — do all of it, not some: prove the screen registers (the by-key graph
-dump route); prove its predicate is FALSE at every reachable neighbouring state; walk the
+dump route); prove its predicate is false at every reachable neighbouring state; walk the
 opener's event/code chain with file:line cites recorded in the screen's own doc comment;
 unit-test whatever logic was extracted into the engine-free core; and hand the entire
 perceptual run to the human as a named blocked item. Never ship a plausible-but-unmeasured
@@ -272,6 +272,6 @@ cadence, interrupt feel, whether focus visibly follows) is only ever confirmed t
 
 ## 6. Keep the docs alive
 
-A finished screen updates the PROJECT's living docs in the same change — any new
+A finished screen updates the project's living docs in the same change — any new
 game-mechanism fact or owner ruling the code does not itself state. A screen is not done
 while its lessons exist only in the diff.

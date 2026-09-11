@@ -2,7 +2,7 @@
 
 Which saves exist on this machine: `DevProbe.Saves()` (never written down). Screen-by-screen
 status: `docs/roadmap.md`. Regression proof: `walks/`. This file is
-ONLY the loop: the dev server, the REPL, and the screen-agnostic verification patterns.
+only the loop: the dev server, the REPL, and the screen-agnostic verification patterns.
 
 | Task | Read first |
 |---|---|
@@ -25,51 +25,50 @@ Gates: off by default — `devServer = true` under `[Dev]` in
 `ES2ACCESS_NO_DEV=1` forces off; `ES2ACCESS_DEV_PORT` overrides; `ES2ACCESS_NO_SPEECH=1`
 mutes voicing but `/speech` still captures.
 
-- `GET /status` — mod state, `modAssemblyName`, the `keyStandDown` patch tripwire (SIX
-  prefixes now: the three key scans, `AgeControlTextField.KeyDown`,
-  `InGameChatPanel.HandleInput`, and `AgeManager.set_FocusedControl`)
+- `GET /status` — mod state, `modAssemblyName`, the `keyStandDown` patch tripwire (it lists the
+  patched prefixes; the count is the tripwire)
 - `GET /speech?since=N&wait=MS` — spoken ring buffer (resets on reload); `wait` long-polls
 - `GET /gui/graph?edges=1&buffers=1` — the focused screen's whole accessible tree
-- `GET /gui/graph?screen=KEY` — what an UNFOCUSED registered screen would offer, built without
-  focusing it, GATED like the player's own render (`ungated=1` answers the raw declared tree
+- `GET /gui/graph?screen=KEY` — what an unfocused registered screen would offer, built without
+  focusing it, gated like the player's own render (`ungated=1` answers the raw declared tree
   instead); an inactive one answers `screen inactive: …`, a bogus key 400s with the key list
 - `POST /input` — body = one action key (`ui.down`, `buffer.lineDown`…); its key-claim counterpart is
   `/eval ES2Access.Dev.DevProbe.Claims("Escape")` — the latch only lives for the frame an injection
   is consumed (no key was held), so catch it with `POST /wait` on the probe's own text, never a
   second request. `DevProbe.Chord("<chord>")` answers per key code too (`LeavesToGame` is its
   extra) — a chord-level claim needs `POST /key` with `hold=250&gap=150`; `Claims` also reports `leftToGame`
-- `POST /type` — body = characters to TYPE at the focused screen (the type-ahead search), through the
+- `POST /type` — body = characters to type at the focused screen (the type-ahead search), through the
   same gates a keypress passes; answers `taken`/`searching`/`search`/`results`/`focus` plus the speech
   it caused. `/input` cannot carry it: that queue is actions, and typing is text. Neither reaches a
-  field the GAME owns — the letters queue against the mod's own type-ahead and fire as a search the
+  field the game owns — the letters queue against the mod's own type-ahead and fire as a search the
   moment the field lets go, so a game-owned edit is driven by writing its text from `/eval`
 - `GET /gui/age`: `window=` matches a registered window, a shown panel, then any named AgeTransform under them;
   `depth=`/`visibleOnly=`/`fields=` apply from there; an empty answer carries an `error`/`note`
-  line; a node cut off by `depth=` is kept (`more:true`). The dump PRUNES any node with no
+  line; a node cut off by `depth=` is kept (`more:true`). The dump prunes any node with no
   control, text, value or readable tooltip (`AgeDump.Node.Speaks`), and "readable" means
-  class-free — a CLASS-backed tooltip does not save a textless icon from the prune. Icon-only
+  class-free — a Class-backed tooltip does not save a textless icon from the prune. Icon-only
   controls are found with an `/eval` walk of `.Children`, never with a tree dump
 - `POST /eval?settle=MS&speech=0` — C# REPL (gotchas below); response carries caused speech.
-  `settle` is honoured ONLY while speech capture is on — with `speech=0` there is no wait at
+  `settle` is honoured only while speech capture is on — with `speech=0` there is no wait at
   all; substitute `POST /wait` with body `false` and a timeout
 - `POST /wait?timeout=MS` — body = bool expression, evaluated every frame; the wait is capped at
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
 - `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
-  except from a LOBBY, where not-ready is the answer until the lobby is left, never a retry.
-  Issued while the PLANET-OVERVIEW page or a NOTIFICATION POPUP is up it can wedge the loading
+  except from a lobby, where not-ready is the answer until the lobby is left, never a retry.
+  Issued while the planet-overview page or a notification popup is up it can wedge the loading
   window at "Game launched and ready" indefinitely (`wait-game.ps1 ingame` then times out silently
   with exit 0); re-issuing the same `POST /loadsave` recovers in ~8 s — measured for both, and for
-  nothing else. NEVER issue it while the end-turn button reads "Pending": into a wedged turn it
+  nothing else. Never issue it while the end-turn button reads "Pending": into a wedged turn it
   kills the process (why: `install.md`, "The Mono runtime under the REPL")
-- `POST /key?hold=MS&gap=MS&text=1` — body = a key SEQUENCE pressed as real OS key events at
+- `POST /key?hold=MS&gap=MS&text=1` — body = a key sequence pressed as real OS key events at
   the game's window (`Return`, `Ctrl+I`, `Shift+Tab`; `+Name` holds, `-Name` releases;
   `text=1` types the body; arrows are `UpArrow`/`DownArrow`/…). The only route where a key is
-  physically DOWN (the consumed-key latch, `anyKeyDown`, engine KeyDown delivery, "was Return
-  still down when the focus left"). REFUSES (409, nothing sent) unless the foreground window is
+  physically down (the consumed-key latch, `anyKeyDown`, engine KeyDown delivery, "was Return
+  still down when the focus left"). Refuses (409, nothing sent) unless the foreground window is
   the game's, re-checked every step; 400 for an unknown key name (the answer lists the vocabulary)
 - `GET /log?since=N&grep=TEXT` — no `since` answers only the last 100 entries (`capped:true`);
   `grep` still searches the whole ring; `GET /screenshot`; `POST /quit` — shutdown takes
-  20–100 s: poll the PROCESS (not the port) every 2 s and only conclude a hang past 120 s
+  20–100 s: poll the process (not the port) every 2 s and only conclude a hang past 120 s
 - `POST /reload` (needs `Content-Length`). Empty-body POSTs (`/reload`, `/quit`): under the
   PowerShell tool `curl.exe --data-raw ''` silently drops the argument — use
   `Invoke-WebRequest -Method Post -Body "" -UseBasicParsing` (without `-UseBasicParsing` it
@@ -85,7 +84,7 @@ During boot/loading, main-thread routes 503 — retry; `/speech` and `/log` keep
 stack probes, per-frame traces for `POST /wait`, key-claim probes, the tooltip pipeline, and
 the four audits — tooltip parity, notification parity, coverage, ghosts). `NodeGate.Enabled`
 is the existence lever: flip via `/eval`, dump, flip, dump, diff — no baseline needed, but it
-proves ONLY surfaces actually opened.
+proves only surfaces actually opened.
 
 `POST /input` is `ModInput.Inject` — actions at the production dispatch point; it touches no
 physical key state, so game-also-sees-the-key bugs need link-by-link probes (`DevProbe.Claims`
@@ -112,12 +111,12 @@ the change is a shared helper), and the numbers in the commit body.
 
 ### REPL gotchas (`POST /eval`)
 
-- Multi-statement bodies ARE accepted, and top-level `var` declarations PERSIST across
+- Multi-statement bodies are accepted, and top-level `var` declarations persist across
   requests (a handle bank set once serves a whole sweep) — the poisons below still apply
   to every statement. No `using` directives — fully qualify everything.
 - Never declare a local whose type is a constructed generic over a game type; **a `foreach`
   over `AgeTransform.Children`, `GetPlayerEmpireGuiNotifications()` or any `List<GameType>`
-  declares one implicitly**, and it poisons the WHOLE session — every later request answers
+  declares one implicitly**, and it poisons the whole session — every later request answers
   with a `MakeGenericType` InternalErrorException. Iterate by index or bind as
   `System.Collections.IList` — some collections reject that cast outright; fall back to
   `((IEnumerable)x).GetEnumerator()`. Recover with `POST /reload`. (REPL-only crutch: in shipped
@@ -133,12 +132,12 @@ the change is a shared helper), and the numbers in the commit body.
 - No captured delegates inside that lambda: assigning a captured `Action`/`Func` local (or
   passing one to a method) answers with an `InternalErrorException`. Keep eval bodies
   delegate-free — inline the code or call a static.
-- The IIFE-lambda crutch does NOT work as a `POST /wait` predicate — it silently evaluates
+- The IIFE-lambda crutch does not work as a `POST /wait` predicate — it silently evaluates
   false every frame. A wait body must be a plain expression; side effects are fine
   (`DevProbe.TooltipTrace(...)` is one), lambdas are not.
 - Descriptor-driven simulation properties may shrug off `SetPropertyBaseValue` + `Refresh`
   (`Fleet.FreeMovementSpeed` stayed 0; `Empire.CanUseStrategicForRecipe` stuck): write with a
-  read-back probe first; if it reverts, grant the DESCRIPTOR's source or call it fixture-blocked.
+  read-back probe first; if it reverts, grant the descriptor's source or call it fixture-blocked.
 - An order the game posts only from inside a specific turn phase must never be posted from the
   REPL — grant the precondition instead, or spend the turns (what it costs:
   `install.md`, "The Mono runtime under the REPL").
@@ -149,14 +148,14 @@ the change is a shared helper), and the numbers in the commit body.
 **Stage hygiene** (cost scales with tool-call count — ~1.5–2k tokens and ~18 s per call):
 fewer, bigger calls. Scope every grep to a named subtree (unscoped greps over
 `decompiled/` time out). Grep-before-read for any file > 800 lines; Read only the method
-bodies you need via offset. `/gui/age` or `/gui/graph` dump FIRST — it answers layout and
+bodies you need via offset. `/gui/age` or `/gui/graph` dump first — it answers layout and
 text; decompiled classes only for action paths; re-read the dump already in hand before
 probing or walking. Scope `/eval` probes to the one entity in question; bound `/log` with
 `since=`; print counts, not enumerations. Helpers are `.sh`/`.ps1` script files in the
 scratchpad; `crop-shot.ps1` via the PowerShell tool. Build from the repo root only; after every reload confirm `modAssemblyName` incremented
 before interpreting live results. Repeated-node `ControlId` keys: index-in-parent, never
-widget names. Interim narration one line — findings go in the final report; never re-Read
-an image.
+widget names. Every finding goes in the final report — interim text does not reach the
+owner; never re-Read an image.
 
 **Session loop.** `.\run-game.ps1 -NoSpeech -NoWait -LoadSave "<a save DevProbe.Saves() lists>"` —
 cold launch to in-game in one command; `.\wait-game.ps1 <menu|ingame|loading|dialog>` blocks
@@ -166,16 +165,16 @@ from `/eval`) — expanded, it eats every injection as `unconsumed`. If a launch
 process alive, `tasklist /FI "PID eq <pid>"` shows whether it is orphaned into another session.
 `POST /quit` can leave the process hung and non-responding: poll it and terminate it after two
 minutes (measured 2026-09-09, seven minutes at 2.6 GB after the dev server had stopped answering).
-The whole quit sequence now traces itself under a `quit trace:` prefix into both logs, so read
+The quit sequence traces itself under a `quit trace:` prefix into both logs, so read
 `<GameDir>\EndlessSpace2_Data\output_log.txt` first — the player log is the one that survived a hang —
 and the BepInEx log second.
 
 **Reload loop.** `dotnet build ES2Access/ES2Access.csproj` → `POST /reload` →
 `GET /loader/status` (`staleBuild:false`, `modAssemblyName` incremented). It can answer
-BEFORE a queued reload has run (`staleBuild:true`, old name) — poll again, don't rebuild. Reload
-before a regression walk after a save load (`GraphState` survives the load) — but NEVER when the
-behaviour under test is something a patch captures DURING the load, because the reload installs the
-patch after the moment it was watching for and the case reads as unfixed; there, reload FIRST and
+before a queued reload has run (`staleBuild:true`, old name) — poll again, don't rebuild. Reload
+before a regression walk after a save load (`GraphState` survives the load) — but never when the
+behaviour under test is something a patch captures during the load, because the reload installs the
+patch after the moment it was watching for and the case reads as unfixed; there, reload first and
 leave the load alone. `POST /loadsave` as
 soon as a walk's state is suspect; time a transition with a boolean `/wait` predicate, never a
 logging probe. A build of another commit for a walk pair goes in a scratch worktree with
@@ -183,11 +182,11 @@ logging probe. A build of another commit for a walk pair goes in a scratch workt
 deployed copy, and only a matching timestamp lets MSBuild skip it.
 
 **Classifying a walk diff.** A non-zero `diffwalks` total is not yet a change: re-walk the
-differing family on the SAME build first. The game's tutorial sequence advancing mid-walk and
+differing family on the same build first. The game's tutorial sequence advancing mid-walk and
 a leftover tooltip window at a station both produced self-diffs on 2026-09-09; a difference that
 survives the re-walk is bisected by deploying intermediate commits.
 
-**Evidence crop.** A Class-backed tooltip's review buffer reads EMPTY in `/gui/graph?buffers=1`
+**Evidence crop.** A Class-backed tooltip's review buffer reads empty in `/gui/graph?buffers=1`
 unless the node is focused first (its words only exist once the tooltip window draws them — see
 "Auditing a tooltip" below). `.\crop-shot.ps1 -Rect x,y,w,h [-Out path]` — never Read a full-frame
 screenshot into context. Invoke via the PowerShell tool or
@@ -195,7 +194,7 @@ screenshot into context. Invoke via the PowerShell tool or
 `-Rect` array argument, and the Bash tool's quoting breaks it too.
 **On a pooled table the crop is the oracle, not the dump.** A retired row parked at alpha 0 draws
 no text, so `/gui/age` prunes it and the dump agrees with whatever the mod declared — parity that
-is really a blind spot. `DevProbe.Ghosts()` names one the mod DECLARED; for anything else, print
+is really a blind spot. `DevProbe.Ghosts()` names one the mod *declared*; for anything else, print
 `Alpha` beside `Visible` in an `/eval` walk and check it against a `crop-shot.ps1` of the same rect.
 A ghost FIX is then proved from both sides without touching game state: set the retired child's
 `Alpha` to 1, dump (the real row must declare and announce), set it back to 0 and diff against the
@@ -203,42 +202,42 @@ post-fix dump. Where no "before" dump exists, one `/eval` comparing the OLD read
 per widget over the whole window, printing the divergence count, is a regression check that needed
 no baseline.
 
-**An un-watched announcement part is still ASKED every frame** (`watch: false` means "not
+**An un-watched announcement part is still asked every frame** (`watch: false` means "not
 compared") — an expensive part needs an input-keyed memo, and only a call counter read across
 ~100 frames proves it; no transcript or dump shows the waste.
 
-**The renderer-field oracle.** When the mod recomputes something the game only DRAWS, drive the
+**The renderer-field oracle.** When the mod recomputes something the game only draws, drive the
 game's renderer from `/eval`, read its private display list by reflection
 (`PathRenderer.pathDatasToDisplay` after `ClearPathDataAndRenderPath`), and compare classifications,
-not pixels. That proves parity with the DRAWING; a drawn PREDICTION needs the second oracle —
+not pixels. That proves parity with the *drawing*; a drawn *prediction* needs the second oracle —
 let the game run and watch (the map's turn markers were one low; end-turning caught it).
 
 **Auditing a tooltip.** `DevProbe.TooltipDelay(0)`, focus via `/input`, then all three:
 `/screenshot`, `DevProbe.Tooltip()` (class, the reader that answered, the lines, the measured
-rows/rects), `/gui/graph?buffers=1`. Caveat: delay 0 changes WHICH frame the request resolves on —
+rows/rects), `/gui/graph?buffers=1`. Caveat: delay 0 changes which frame the request resolves on —
 a stalled request is `DevProbe.TooltipPipe()`'s `timer` near 999, invisible to every drawn-window
 probe. A feature on `"default"` whose lines divorce a value from its caption is the defect to look
-for (but read the DRAWN feature first — the prefab may caption it with sibling labels). `shown:false`
+for (but read the drawn feature first — the prefab may caption it with sibling labels). `shown:false`
 on a focused node whose buffer stays empty despite a declared tooltip = a mis-aimed pointer; confirm
 with `DevProbe.Tooltip()` before touching any pointing call. `/gui/graph` alone misleads: it moves
 no pointer, so a renderer-drawn tooltip reads empty on a control that is fine live. Re-probing a
 still-focused node after mutating its state answers the PRE-mutation content — leave and return.
-A LIST ENTRY's tooltip: open the list, step onto the entry, THEN probe. `TooltipDelay(-1)` after.
+A list entry's tooltip: open the list, step onto the entry, then probe. `TooltipDelay(-1)` after.
 
-**The mechanical tooltip check.** `DevProbe.TooltipParity()` on whichever screen is FOCUSED; the
+**The mechanical tooltip check.** `DevProbe.TooltipParity()` on whichever screen is focused; the
 buckets and what each means are in `ES2Access/Dev/TooltipAudit.cs`. Reading a run: the painted half needs
 `Screen.RootTransform`, so `"root": null` means declaration-side buckets only, not a clean screen;
-COUNTS on a culling surface depend on camera position, so compare buckets, not totals; and a run
-taken while a MODAL is focused inherits the screen BEHIND it — subtract findings by root path
-before judging, or a clean modal reads as a disaster. A COLLAPSED branch reads as `unread` (the blind
+counts on a culling surface depend on camera position, so compare buckets, not totals; and a run
+taken while a modal is focused inherits the screen behind it — subtract findings by root path
+before judging, or a clean modal reads as a disaster. A collapsed branch reads as `unread` (the blind
 spot `Coverage` shares) — expand and re-run before believing one. A Class-backed tooltip whose
-Content is a bare NUMBER files under `decoration`, so a chip family reads as clean — find those with an `/eval` walk. `unraised` is the only bucket about
-the OTHER promise: a tooltip is DECLARED (`PointsAt`) and RAISED (`OnFocusVisual` moving the
+Content is a bare number files under `decoration`, so a chip family reads as clean — find those with an `/eval` walk. `unraised` is the only bucket about
+the other promise: a tooltip is *declared* (`PointsAt`) and *raised* (`OnFocusVisual` moving the
 pointer), and one without the other reviews perfectly and never draws — contract at
-`GraphNodes.SectionsFor`, which now makes both.
+`GraphNodes.SectionsFor`, which makes both.
 
 **A card's tooltip is rarely on the card.** Aim at `tooltip.AgeTransform`, never at the row that
-contains it, and READ the component's own Tooltip field, never `widget.AgeTooltip` — both fail
+contains it, and read the component's own Tooltip field, never `widget.AgeTooltip` — both fail
 silently, and `DevProbe.Tooltip()` is the only probe that catches either.
 
 **A tooltip family's evidence pair.** Focus the control, `DevProbe.Tooltip()` for the typed
@@ -253,42 +252,42 @@ a search up, all three read `claims:true` and `claimsBack:true`; after Escape cl
 back to the game (`claims:false`) while the letters stay claimed, because type-ahead is armed
 whenever a mod screen is focused. Each keystroke re-announces the landing, so `/type "res"` answers
 with three identical lines — that is the design, not a stutter. `POST /type` searches only the
-FOCUSED stop, and `ui.click` while a search is live ends the search and then performs the
+focused stop, and `ui.click` while a search is live ends the search and then performs the
 landing's ordinary action — on a sort header that is a stray sort. Never follow a 0-result
 `/type` with `ui.click`; clear with `ui.back` first — and re-read the cursor before
 activating: a 0-result search never moved it.
 
 **Tracing a transition frame by frame.** A screen change is frames long and polling from outside
 samples between them, so the frame that moved the cursor is invisible. `POST /wait` evaluates its
-predicate EVERY frame and does not block `/eval`, so a predicate that LOGS and returns false is a
+predicate every frame and does not block `/eval`, so a predicate that logs and returns false is a
 per-frame recorder: start `POST /wait?timeout=30000` with body
 `ES2Access.Dev.DevProbe.Trace("tag")` in the background, drive the transition with `/eval`, then read
 `GET /log?since=0&grep=trace` (collapse runs of identical lines — a 30 s trace is ~1800 of them).
 Each line is the stack, the focused screen, the cursor, the node count that screen declared, and the
 tutorial/window state. A single-digit node count on an active page is a page declaring somebody
-else's content. For CUSTOM fields, `var td = new System.Collections.ArrayList();` and wait on
+else's content. For custom fields, `var td = new System.Collections.ArrayList();` and wait on
 `td.Add(<string>) >= 0 && <defect>` — `Add` returns an index, so one plain expression records every
 frame AND stops on the defect; `td` persists for an IIFE to read back deduped. One recording wait,
 never two chained around a window — the round trip between them loses frames. That same per-frame
-evaluation makes a PLAIN boolean predicate an existence test over a whole transition:
+evaluation makes a plain boolean predicate an existence test over a whole transition:
 `satisfied:false` after N frames proves no frame had the property — but only once a weaker predicate
-that DOES fire, or a recorded transition, proves the window was really sampled.
+that does fire, or a recorded transition, proves the window was really sampled.
 
 **Injecting a sequence of keys.** `POST /input` one action key per request, ~0.4 s apart —
-a no-delay loop does not fail loudly, it reports a plausible WRONG route (rows appearing
+a no-delay loop does not fail loudly, it reports a plausible wrong route (rows appearing
 unreachable by Down) — then
 read `/speech?since=N` — `next` from a `since=0` read before the sequence is the baseline. Keep
 the route in a `.sh` script in the scratchpad so the same walk is replayable. A turn-advance
 helper must dismiss the game's own end-turn blockers (empty-queue prompts eat the first press);
 "state didn't change" is not "the injection failed".
 
-**Holding a PHYSICAL modifier while a key is pressed** — the only way to reach a modified click's
+**Holding a physical modifier while a key is pressed** — the only way to reach a modified click's
 game branch (Ctrl+click to locate, Alt+click to queue at the head). From a PowerShell script:
 bring the game up with `SwitchToThisWindow` plus `AttachThreadInput` + `SetFocus`, then drive the
-keys with `keybd_event`. `SetForegroundWindow` ALONE fails silently — the window comes up but Unity
+keys with `keybd_event`. `SetForegroundWindow` alone fails silently — the window comes up but Unity
 still reads the key as released, so the chord runs unmodified and looks like a wiring bug. Re-focus
-before EVERY run, not once per session. And where the surface under test is a game screen shown
-UNDER a modal, it never reaches the mod's own stack: probe `Gui.GuiService.GetWindow<T>().Shown`,
+before every run, not once per session. And where the surface under test is a game screen shown
+under a modal, it never reaches the mod's own stack: probe `Gui.GuiService.GetWindow<T>().Shown`,
 not `DevProbe.Stack()`, or a screen that is working reads as absent.
 
 **World position → screen pixel** (checking a spoken direction against the picture; world axes are
@@ -298,11 +297,11 @@ The galaxy camera hangs off the controller's `Camera` property — `Camera.main`
 and the controller's own GameObject carries no `Camera` component, so both of those routes answer
 nothing. Screen y is Unity's (bottom-origin); `crop-shot.ps1` takes TOP-origin pixels.
 
-**A behaviour that branches on a key BEING DOWN cannot be tested with `/input`.** An injected
+**A behaviour that branches on a key being down cannot be tested with `/input`.** An injected
 action presses nothing, so `Input.anyKeyDown`, `GetKey`, the consumed-key latch and every
 engine dispatch gated on them read as if the keyboard were idle — a green injected run is
 silent about the whole press. Use `POST /key`; if it answers 409 the desktop is locked or the
-game is not focused, and the claim stays UNPROVEN rather than becoming a manual-test line by
+game is not focused, and the claim stays unproven rather than becoming a manual-test line by
 default.
 
 **Silence in `/speech` is only evidence for controls that would have spoken.** An enabled
@@ -310,7 +309,7 @@ button's activation is also silent, so a transcript cannot distinguish "refused"
 "acted" for buttons — prove a button refusal with a state probe (queue count, graph dump),
 never by absence of speech. Checkbox/slider/combo refusals are provable by silence.
 
-**Proving a two-step mode's confirm when the fixture cannot let the order land.** Watch the MODE
+**Proving a two-step mode's confirm when the fixture cannot let the order land.** Watch the mode
 end — the cursor swapped back, the banner gone — not the order's effect, and pair it with the same
 key on the same node with no mode up, which must still do the node's own thing.
 
@@ -319,28 +318,28 @@ first: the full walk (~30 min of the live game) is for a change that alters read
 screens; an option that defaults off, or an addition to one screen, is one `/gui/graph`
 dump of that screen before and after, diffed. The scripted walk lives in `walks/`
 (`walk-all.sh <dir>` twice — before and after — then `diffwalks.sh`; `walks/README.md` is the
-manual, fixture-agnostic by runtime discovery). Unfocused Class-backed tooltips read EMPTY on
-both sides, so they cancel and are UNPROVEN by the diff: a change touching them needs the
-walk's FOCUSED tooltip pass. A "before" needed afterwards: `git stash push
+manual, fixture-agnostic by runtime discovery). Unfocused Class-backed tooltips read empty on
+both sides, so they cancel and are unproven by the diff: a change touching them needs the
+walk's focused tooltip pass. A "before" needed afterwards: `git stash push
 -u -- ES2Access ES2Access.Tests` → build → `/reload` → capture → `git stash pop` → build →
-`/reload` (~3 min). A **sheet** baseline must come from ONE session — `GraphSheet` row keys
+`/reload` (~3 min). A **sheet** baseline must come from one session — `GraphSheet` row keys
 derive from `GetHashCode()`, which survives a hot reload but not a restart — so the stash loop,
-never two launches; the loop is UNSAFE while another stage edits the same trees. For a purely
-ADDITIVE announcement change, null the injected dependency that produces the new part
+never two launches; the loop is unsafe while another stage edits the same trees. For a purely
+additive announcement change, null the injected dependency that produces the new part
 (`GraphAnnouncer.Carry = null`) and dump instead of stashing.
 `GET /gui/graph?screen=KEY&buffers=1` reaches screens whose window exists without a game
-(`screen.game-menu`, `screen.rename`); the dump is GATED, so an inactive screen's own content is
+(`screen.game-menu`, `screen.rename`); the dump is gated, so an inactive screen's own content is
 withheld, leaving the shared HUD stops — or, for a window the game is not drawing at all,
-`declared no controls`, which `ungated=1` does NOT lift (measured on `screen.main-menu`). Open it first.
+`declared no controls`, which `ungated=1` does not lift (measured on `screen.main-menu`). Open it first.
 
 **Sighting a surface the save never draws**, cheapest first: read the prefab's fields off the
-UNSHOWN window (`GetWindow<T>(false)`, nothing to restore; beware `%key` content the game
+unshown window (`GetWindow<T>(false)`, nothing to restore; beware `%key` content the game
 rewrites at bind); `Show()` the game's pooled widget, read, `Hide()`; set the game's own
 `Visible` flags or private fields from `/eval`, dump, restore, re-diff against the untouched
-dump; `Bind` + `Show` a window with data, read, `Unbind` + hide (proves STRUCTURE, never
+dump; `Bind` + `Show` a window with data, read, `Unbind` + hide (proves *structure*, never
 content; restore monotonic setters through their backing field; `POST /loadsave` if it
 wedges; never force-show a DLC modal without its data); where a widget is generic over an
-INTERFACE, lend it another implementor's data (`Bind(otherOwner, client)` + `RefreshNow()`) —
+interface, lend it another implementor's data (`Bind(otherOwner, client)` + `RefreshNow()`) —
 only lent data proves content, and never commit an action while a binding is lent.
 
 **Which expansions this session can reach is probed, never written down** (owner ruling
@@ -360,29 +359,28 @@ reload, delete the file.
 elapsed. Because the wait caps at ~60 s, a claim of "silent for minutes" is several polls.
 
 **Splitting one buffer section into two loses `AddLine`'s cross-list dedupe** — nothing
-de-duplicates ACROSS sections; after moving a tooltip between sections, re-read the node's
-buffer FOCUSED (the repeat is invisible in the unfocused dump).
+de-duplicates across sections; after moving a tooltip between sections, re-read the node's
+buffer focused (the repeat is invisible in the unfocused dump).
 
 **Opening a game modal from `/eval`**: set what its opener sets, then show it; close it with
-`Gui.GuiService.HideWindow(w)` or the mod's own keys — NEVER `w.HandleInput(InputAction.Exit)`, which
+`Gui.GuiService.HideWindow(w)` or the mod's own keys — never `w.HandleInput(InputAction.Exit)`, which
 wedged the screen stack. `walks/cs/drain.cs` is the drain that works (`ModalOnTop` can name a
 window whose `Shown` is false: re-`Show` it, then `Exit`, up to six passes), and `walks/lib.sh`'s
-`openwin`/`hidewin` are the per-window routes. `HideWindow` does NOT close `StarSystemScreen`;
+`openwin`/`hidewin` are the per-window routes. `HideWindow` does not close `StarSystemScreen`;
 leave it with `RequestGalaxyOverviewViewLevel(pos)`. Reaching a mod internal from `/eval` needs
 the loaded-from-bytes assembly: scan `AppDomain.CurrentDomain.GetAssemblies()` for the
 `modAssemblyName` that `/status` reports, then `GetType` off it.
 
-**State restoration etiquette.** Leave the fixture as found: tutorial popup MINIMIZED, no
+**State restoration etiquette.** Leave the fixture as found: tutorial popup minimized, no
 notifications pending, camera at home (`DevProbe.Camera()` before and after), no text field
 holding game focus (`AgeManager.Instance.FocusedControl = null`), `DevProbe.TooltipDelay(-1)`
-(a set delay survives reloads on purpose — and so does the restore cache being LOST by a
+(a set delay survives reloads on purpose — and so does the restore cache being lost by a
 reload, which makes one `-1` put back whatever was set at the time of the last reload; check
 `now` against `registry` in the reply and call it twice if they differ).
 
 ## 3. Keeping this file honest
 
-Only a change to the LOOP itself — a route, a REPL gotcha, a screen-agnostic verification
-pattern — lands here, and the file stays under ~350 lines: over that, a stage moves something
-out before adding. Every other output has a chartered home; the charters are in `CLAUDE.md`.
+Only a change to the loop itself — a route, a REPL gotcha, a screen-agnostic verification
+pattern — lands here; the table at the top of this file says where everything else goes.
 When content moves or a design is reversed, grep the whole docs tree for the old name and for
 inbound references before calling the change done.

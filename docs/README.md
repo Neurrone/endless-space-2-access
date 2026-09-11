@@ -1,6 +1,6 @@
 # ES2 docs — index
 
-One line per file. Charters (what lands where) are in the repo's `CLAUDE.md`.
+One line per file, and the line says what lands there.
 
 ## The loop
 

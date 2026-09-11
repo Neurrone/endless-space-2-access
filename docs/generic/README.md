@@ -10,11 +10,10 @@ Prose lives in the docs; working code lives in [`src/`](src/) beside them, group
 subsystem — snapshots taken from the ES2 Access implementation, designed to be copied into a
 new game's mod nearly verbatim (rename the `ES2Access` namespaces on copy). When the living
 implementation that a snapshot came from improves, refresh the snapshot as part of the
-doc-update workflow: [`src/`](src/) is a **mirror** of the engine-side originals and must be
-re-synced when they change — five files once drifted by a whole API shape before anyone
-checked, so the mapping now lives in [`src/sync-manifest.txt`](src/sync-manifest.txt) and is
-enforced by `sync-generic-src.ps1 -Check` and the test suite (`sync-generic-src.ps1` with no
-switch does the refresh). The one deliberate exception is the localization pair
+doc-update workflow: [`src/`](src/) is a **mirror** of the engine-side originals, re-synced
+when they change. The mapping is [`src/sync-manifest.txt`](src/sync-manifest.txt), enforced by
+`sync-generic-src.ps1 -Check` and the test suite (`sync-generic-src.ps1` with no switch does
+the refresh). The one deliberate exception is the localization pair
 ([`ModStrings.cs`](src/localization/ModStrings.cs) and
 [`english.json`](src/localization/english.json)), which is an **example**, not a mirror: its
 mechanism is verbatim, its keys are the floor the other snapshots compile against plus one
