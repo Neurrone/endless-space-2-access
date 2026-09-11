@@ -72,9 +72,8 @@ namespace ES2Access.Screens
     /// it came to - is the table's footer and reads as the full-width row it is drawn as.
     ///
     /// A line of a table is one thing to the player, so text drawn inside one is that line's row rather
-    /// than a row of its own - unless the line drew a single thing, in which case it already is one and
-    /// the empires of an alliance, a line each drawn side by side, still read as the one row they look
-    /// like.
+    /// than a row of its own - and a line that drew a single thing, an empire's name and nothing else,
+    /// is one row too, however many of them the table lays out abreast.
     ///
     /// Exclusivity is likewise something the screen cannot show. Some popups let the player pick one of
     /// several and keep that exclusive by hand - unticking the others in their own code - rather than with

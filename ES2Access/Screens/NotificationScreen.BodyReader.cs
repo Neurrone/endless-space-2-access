@@ -70,6 +70,14 @@ namespace ES2Access.Screens
                 return;
             }
 
+            AgeTransform root = Root(window);
+            for (int i = 0; i < items.Count; i++)
+            {
+                Item item = items[i];
+                item.Chain = Chain(item.Widget, root);
+                items[i] = item;
+            }
+
             items.Sort(DownThePage);
             List<AgeTransform> cards = Cards(items);
             MinorFactionCard met = FirstContactCard(window);
@@ -442,21 +450,10 @@ namespace ES2Access.Screens
                 pieces.Add(line);
             }
 
-            // A line that drew ONE thing is one thing wherever it sits: the empires in an alliance are
-            // a line each and are drawn side by side, and reading them a line at a time would say
-            // "Sophons" three rows running. Only a line that drew SEVERAL pieces is a row of its own,
-            // because those pieces are one fact between them.
-            for (int i = banded.Count - 1; i >= 0; i--)
-            {
-                List<Line> pieces = byLine[banded[i]];
-                if (pieces.Count < 2)
-                {
-                    rest.AddRange(pieces);
-                    byLine.Remove(banded[i]);
-                    banded.RemoveAt(i);
-                }
-            }
-
+            // A line that drew ONE thing is still a line: the empires taking part in a quest are a
+            // line each, laid out two abreast in a box that scrolls, and banding them by rectangle
+            // read two empires as one row and paired them by where the box happened to wrap. One
+            // empire, one row - which is also what the alliance popups' member lines read as.
             foreach (Line line in rest)
             {
                 if (line.Tooltip == null)
@@ -525,11 +522,10 @@ namespace ES2Access.Screens
 
         /// <summary>The table line a whole row was read out of - all of its pieces and nothing else's.
         ///
-        /// A row of one piece is normally not a line: see the reading in <see cref="DrawnRows"/>. The
-        /// exception is a line the game WIRED A CLICK to - the systems whose construction queue has run
-        /// dry, each drawn as its name and nothing else and each a button that opens that system. Such a
-        /// line is the control the row is, so the row has to know which widget it came out of whether the
-        /// game wrote one word on it or four.</summary>
+        /// A line of one piece is a line like any other (see <see cref="DrawnRows"/>), and the row has
+        /// to know which widget it came out of whether the game wrote one word on it or four: the
+        /// systems whose construction queue has run dry are each drawn as a name and nothing else, and
+        /// each line is the button that opens that system.</summary>
         private static AgeTransform GroupOf(List<Line> row, List<AgeTransform> lines)
         {
             AgeTransform group = In(row[0].Widget, lines);
@@ -541,7 +537,7 @@ namespace ES2Access.Screens
                 }
             }
 
-            return row.Count > 1 || (group != null && Wired(group)) ? group : null;
+            return group;
         }
 
         /// <summary>One thing drawn in the content area: a control the popup added there, or a row of
@@ -555,10 +551,61 @@ namespace ES2Access.Screens
 
             /// <summary>The table line this row was read out of, where the popup drew one.</summary>
             public AgeTransform Group;
+
+            /// <summary>The boxes the popup drew this inside, outermost first, down to the widget
+            /// itself (<see cref="Chain"/>).</summary>
+            public List<AgeTransform> Chain;
         }
 
+        /// <summary>The boxes from just under the popup's root down to the widget, outermost first.
+        /// </summary>
+        private static List<AgeTransform> Chain(AgeTransform widget, AgeTransform root)
+        {
+            List<AgeTransform> chain = new List<AgeTransform>();
+            AgeTransform at = widget;
+            for (
+                int depth = 0;
+                at != null && !ReferenceEquals(at, root) && depth < MaxAncestors;
+                depth++
+            )
+            {
+                chain.Add(at);
+                at = at.Parent;
+            }
+
+            chain.Reverse();
+            return chain;
+        }
+
+        /// <summary>
+        /// Down the page, box by box. Two things drawn in DIFFERENT boxes are ordered by the boxes -
+        /// the outermost pair that the popup laid out apart - and only two things in the same box by
+        /// their own rectangles. A box that scrolls lays its lines out past its own bottom edge: the
+        /// quest popup's participants, two abreast in a list three lines tall, run on under the reward
+        /// group drawn below the list, and ordering the lines by rectangle alone put the fourth pair of
+        /// empires among the podium.
+        /// </summary>
         private static readonly Comparison<Item> DownThePage = delegate(Item a, Item b)
         {
+            int depth = 0;
+            while (
+                depth < a.Chain.Count
+                && depth < b.Chain.Count
+                && ReferenceEquals(a.Chain[depth], b.Chain[depth])
+            )
+            {
+                depth++;
+            }
+
+            if (depth < a.Chain.Count && depth < b.Chain.Count)
+            {
+                int order = AgeLayout.TopThenLeft(a.Chain[depth], b.Chain[depth]);
+                if (order != 0)
+                {
+                    return order;
+                }
+            }
+
             return AgeLayout.TopThenLeft(a.Widget, b.Widget);
         };
 
