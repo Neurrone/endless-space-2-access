@@ -320,7 +320,13 @@ namespace ES2Access.Screens
                     builder.BeginStop(Keys + "side/" + panel.GetType().Name);
                     builder.PushContext(SidePanels.Name(panel));
                     _cells.Clear();
-                    SidePanels.Readouts(_cells, panel, Keys + "side/" + i + "/", null, null);
+                    SidePanels.Readouts(
+                        _cells,
+                        panel,
+                        Keys + "side/" + i + "/",
+                        EffectLines,
+                        null
+                    );
                     Cells.EmitLinear(builder, _cells);
                     builder.PopContext();
                 }
@@ -329,6 +335,73 @@ namespace ES2Access.Screens
             {
                 Log.Warn("diplomacy: reading the side panels threw: " + e);
             }
+        }
+
+        /// <summary>
+        /// The table of effect lines a diplomacy side panel draws, which the shape of the tree cannot
+        /// name.
+        ///
+        /// Each line is a bare label with no children of its own, so the walk's own rule - a group whose
+        /// children are all primitives is ONE drawn line - glued every contextual effect the empire is
+        /// under into a single sentence. The game draws that table through a scroll viewport a third its
+        /// height (<c>EffectsScrollView</c>), so the one line also said more than was on the screen and
+        /// there was no way to step down to the effects below the fold. One line per effect instead, in
+        /// the order the table lays them out, each pointing at its own label so the navigator scrolls it
+        /// into view on arrival.
+        ///
+        /// Matched by REFERENCE against the field the panel itself holds the table in, never by widget
+        /// name: the name is the prefab's and the reference is the panel's own answer.
+        /// </summary>
+        private static bool EffectLines(
+            List<Cell> cells,
+            AgeTransform widget,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            AgeTransform table = EffectsTable(panel);
+            if (table == null || !ReferenceEquals(widget, table))
+            {
+                return false;
+            }
+
+            IList<AgeTransform> lines = widget.Children;
+            for (int i = 0; lines != null && i < lines.Count; i++)
+            {
+                // The table is POOLED - a rebind with fewer effects retires the surplus lines by FADING
+                // them, which leaves them Visible and still holding the previous binding's words - so the
+                // gate is the engine's own drawing test and not the visibility flag, and the key is the
+                // caller's index so a line keeps it whether or not a ghost is parked beside it.
+                AgeTransform line = AgeWidgets.DrawnChild(lines, i);
+                if (line == null || string.IsNullOrEmpty(AgeWidgets.TextOf(line)))
+                {
+                    continue;
+                }
+
+                cells.Add(Cells.Readout(line, AgeWidgets.Raw(line), keyPrefix + "effect/" + i));
+            }
+
+            return true;
+        }
+
+        /// <summary>Where each of the two panels keeps its table of effect lines: the contextual-effects
+        /// box holds one directly (<c>DiplomacyContextualEffectsSidePanel.EffectsTable</c>), and the
+        /// alliance box holds one through the mapper that fills it with the faction pact's effects
+        /// (<c>DiplomacyAllianceSidePanel.FactionPactEffectMapper</c>, whose
+        /// <c>EffectLinesTable</c> is filled the same pooled way by <c>GuiEffectMapper.LoadEffects</c>).
+        /// </summary>
+        private static AgeTransform EffectsTable(SidePanel panel)
+        {
+            DiplomacyContextualEffectsSidePanel contextual =
+                panel as DiplomacyContextualEffectsSidePanel;
+            if (contextual != null)
+            {
+                return contextual.EffectsTable;
+            }
+
+            DiplomacyAllianceSidePanel alliance = panel as DiplomacyAllianceSidePanel;
+            GuiEffectMapper mapper = alliance == null ? null : alliance.FactionPactEffectMapper;
+            return mapper == null ? null : mapper.EffectLinesTable;
         }
 
         // ---- the ring ----
