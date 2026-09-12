@@ -71,6 +71,11 @@ namespace ES2Access.UI
         private ControlId _liveKey;
         private readonly List<string> _liveValues = new List<string>();
 
+        /// <summary>Whether the live watch's next reading is to be skipped: set by an action the
+        /// player just took, whose handler may leave the game mid-change for the rest of the frame
+        /// (<see cref="SpeakStateAfterChange"/>).</summary>
+        private bool _liveSettling;
+
         // What the UI review buffer currently holds: the control it was filled from, the readout it was
         // filled at, and the lines themselves. A rebuild that produces the same readout for the same
         // control leaves the player's place in the buffer alone, and so does one whose lines come out
@@ -1609,6 +1614,12 @@ namespace ES2Access.UI
         // live watch included: nothing changed, so there is nothing to re-baseline.
         private void SpeakStateAfterChange()
         {
+            // The game is mid-action for the rest of this frame: a handler that posts an order
+            // switches its panel off until the order is answered, and the answer comes after the
+            // watch has read the frame (measured on the contextual diplomacy popup, 2026-09-12:
+            // "selected" then "unavailable" on every pick). The watch's next reading is held back one
+            // call, which delays a lasting change by a frame and drops only the flicker.
+            _liveSettling = true;
             GraphNode node = _graph.CurrentNode;
             Func<string> state = node == null ? null : node.Vtable.StateText;
             if (state == null)
@@ -1714,7 +1725,13 @@ namespace ES2Access.UI
                 _liveKey = node.Id;
                 _liveValues.Clear();
             }
+            else if (_liveSettling)
+            {
+                _liveSettling = false;
+                return;
+            }
 
+            _liveSettling = false;
             for (int i = 0; i < parts.Count; i++)
             {
                 NodeAnnouncement part = parts[i];

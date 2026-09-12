@@ -250,6 +250,19 @@ namespace ES2Access.Screens
         /// block: a pixel of rounding, not a row of anything.</summary>
         private const float Slack = 2f;
 
+        /// <summary>The card's effects as one spoken part, each its own list item: a pause between
+        /// two effects, not the space a paragraph's wrapped lines get.</summary>
+        private static string Listed(IList<string> lines)
+        {
+            MessageBuilder said = new MessageBuilder();
+            for (int i = 0; lines != null && i < lines.Count; i++)
+            {
+                said.ListItem(lines[i]);
+            }
+
+            return said.Build();
+        }
+
         private static void Add(GraphBuilder builder, Control control)
         {
             Control it = control;
@@ -302,6 +315,25 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(it.Widget),
                     explains,
                     it.Drawn
+                );
+            }
+
+            // A choice card's drawn words are the choice - what accepting costs, what refusing
+            // risks - so they are said as the card is read, after its name and state. As a part of
+            // the card's own rather than a spoken section: the sections all land in the one derived
+            // tooltip part, whose lines join as prose and which is re-spoken whole when the game's
+            // tooltip draws late, and these are separate effects with a game tooltip after them.
+            // Kinded as a tooltip so the buffer does not copy the joined line - the section under it
+            // already holds the effects one per line, which is how they are reviewed.
+            if (it.Card != null && it.Drawn != null)
+            {
+                Func<IList<string>> drawn = it.Drawn;
+                vtable.Announcements.Add(
+                    new NodeAnnouncement(
+                        () => Listed(drawn()),
+                        live: false,
+                        kind: AnnouncementKinds.Tooltip
+                    )
                 );
             }
 

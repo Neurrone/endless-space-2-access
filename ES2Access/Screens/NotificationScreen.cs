@@ -728,12 +728,20 @@ namespace ES2Access.Screens
         /// </summary>
         private static List<string> CaptionLines(AgeTransform widget)
         {
+            return CaptionLines(widget, AcrossTheControl);
+        }
+
+        private static List<string> CaptionLines(
+            AgeTransform widget,
+            Comparison<AgePrimitiveLabel> order
+        )
+        {
             List<string> written = new List<string>();
             try
             {
                 List<AgePrimitiveLabel> labels = new List<AgePrimitiveLabel>();
                 Labels(widget, labels, 0);
-                labels.Sort(AcrossTheControl);
+                labels.Sort(order);
 
                 foreach (AgePrimitiveLabel label in labels)
                 {
@@ -755,24 +763,29 @@ namespace ES2Access.Screens
         /// <summary>The words a choice card is read from: the ones the game wrote on the SWITCH where it
         /// put them there, else the ones on the card around it - the same preference the shared naming
         /// has always had, asked once so the name and the buffer can never come from different
-        /// readings.</summary>
+        /// readings.
+        ///
+        /// Read DOWN the card, not across it: the card stacks its title over its consequences, and the
+        /// title is drawn centred in a narrower box than the description under it, so the across order
+        /// a button's caption is read in (left edge first) puts the description ahead of the title
+        /// and names the choice by its consequences.</summary>
         private static List<string> ChoiceCaptions(AgeTransform widget, AgeTransform card)
         {
-            List<string> written = CaptionLines(widget);
+            List<string> written = CaptionLines(widget, DownTheCard);
             return written.Count > 0 || card == null || ReferenceEquals(card, widget)
                 ? written
-                : CaptionLines(card);
+                : CaptionLines(card, DownTheCard);
         }
 
         /// <summary>
         /// What a choice card is CALLED: the first thing written on it.
         ///
         /// A card is a title over its consequences - "Pillage", then six lines of what pillaging costs -
-        /// and naming it with all of them makes every walk past it read the whole card, makes the
-        /// "selected" word arrive a paragraph late, and gives the buffer one line to review. The title
-        /// names it, the rest is content (<see cref="ChoiceDetail"/>); the buffer holds all of it either
-        /// way, so nothing the card says is lost. A card with one label is unchanged: its one label is
-        /// its title.
+        /// and naming it with all of them makes the "selected" word arrive a paragraph late and gives
+        /// the buffer one line to review. The title names it; the rest is the card's own words
+        /// (<see cref="ChoiceDetail"/>), spoken after the name and state and held in the buffer a line
+        /// at a time - the owner's ruling is that a choice is read whole, consequences included, on
+        /// focus. A card with one label is unchanged: its one label is its title.
         /// </summary>
         private static string ChoiceName(Control control)
         {
@@ -780,14 +793,16 @@ namespace ES2Access.Screens
             return written.Count == 0 ? null : written[0];
         }
 
-        /// <summary>Everything a choice card says, a line at a time: each label it draws, split where the
-        /// game wrapped it - the consequences are written as one label of six lines, and a buffer holding
-        /// them as one line is the blob again under another name.</summary>
+        /// <summary>Everything a choice card says after its title, a line at a time: each label it
+        /// draws, split where the game wrapped it - the consequences are written as one label of six
+        /// lines, and a buffer holding them as one line is the blob again under another name. The
+        /// title is left out because it is the name (<see cref="ChoiceName"/>), and these lines are
+        /// spoken right after it.</summary>
         private static IList<string> ChoiceDetail(AgeTransform widget, AgeTransform card)
         {
             List<string> lines = new List<string>();
             List<string> written = ChoiceCaptions(widget, card);
-            for (int i = 0; i < written.Count; i++)
+            for (int i = 1; i < written.Count; i++)
             {
                 IList<string> split = AgeText.Lines(written[i]);
                 for (int j = 0; j < split.Count; j++)
@@ -894,6 +909,14 @@ namespace ES2Access.Screens
         )
         {
             return AgeLayout.ReadingOrder(a.AgeTransform, b.AgeTransform);
+        };
+
+        private static readonly Comparison<AgePrimitiveLabel> DownTheCard = delegate(
+            AgePrimitiveLabel a,
+            AgePrimitiveLabel b
+        )
+        {
+            return AgeLayout.TopThenLeft(a.AgeTransform, b.AgeTransform);
         };
 
         /// <summary>
