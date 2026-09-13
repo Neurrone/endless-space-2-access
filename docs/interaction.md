@@ -19,9 +19,24 @@ own exclusive modal stack voids any layer constraint against its stack-mates.
 
 **Each of the mod's chords means the game's own gesture and nothing else** — the right click, the
 Alt-click, the Ctrl-click, the second click. The Alt-click is the one chord whose keys are not its
-gesture's (Alt+Enter is Unity's own fullscreen toggle, below every managed layer), and the cost of
-that move is that a game handler reading a physically held Alt no longer sees it: any such click
-must be WIRED, never left to the plain-click fall-back.
+gesture's (Alt+Enter is Unity's own fullscreen toggle, below every managed layer; the Mac player
+has no such toggle — Option+Enter reaches the mod untouched, owner's hands 2026-08-31 — so the
+macOS chords carry no equivalent constraint), and the cost of that move is that a game handler
+reading a physically held Alt no longer sees it: any such click must be WIRED, never left to the
+plain-click fall-back.
+
+**Ctrl and Alt in the mod's docs name its FIRST and SECOND chord modifiers, not two fixed keys.**
+On Windows they are Control and Alt; on macOS they are held as Option and Command (every
+`Ctrl+X` is `Option+X` there, every `Alt+X` is `Cmd+X`, letters unchanged), because Control+arrows
+belong to the macOS desktop and Control+Option is VoiceOver's own modifier. The one place the
+choice is made is `KeyboardBinding` (its doc comment carries the full reasoning; the conflict scan
+and the player-facing spelling are `macos/README.md`). The game's own Control bindings stay on real
+Control on both systems.
+
+**Any key going down silences in-flight speech** before the press is handled (screen reader
+convention, copied from the Say the Spire port; `ModEntry.Update`, ahead of `Input.Tick`).
+There is no dedicated silence binding — bare Control works because every key does; mouse
+buttons count too (`anyKeyDown`), injected dev actions do not.
 
 **There is no reorder chord**: moving an item within its list is a drag like any other.
 

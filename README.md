@@ -5,7 +5,8 @@ A screen reader accessibility mod for [Endless Space 2](https://store.steampower
 ## Features
 
 - Full narration of menus, text, tooltips and other game UI elements
-- Support for the Windows version of the game with a keyboard
+- Support for the Windows and macOS versions of the game with a keyboard (macOS: see
+  [`macos/README.md`](macos/README.md))
 - Keyboard-based drag-and-drop
 - Buffer system for review of tooltips, lengthy text elements and event notifications
 

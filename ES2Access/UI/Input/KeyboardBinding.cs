@@ -1,4 +1,6 @@
 using System.Text;
+using ES2Access.Core.Speech;
+using ES2Access.Core.Util;
 using UnityEngine;
 
 namespace ES2Access.UI.Input
@@ -13,6 +15,15 @@ namespace ES2Access.UI.Input
     ///
     /// Left and right variants of each modifier are one logical flag; there is no Windows-key
     /// modifier, which no binding in this mod wants.
+    ///
+    /// <see cref="Ctrl"/> and <see cref="Alt"/> name the mod's FIRST and SECOND chord modifiers, not
+    /// two particular keys: Control and Alt on Windows, Option and Command on macOS, where
+    /// Control+arrows belong to the desktop (Spaces, Mission Control) and Control+Option is
+    /// VoiceOver's own modifier. A binding declared <c>ctrl: true</c> is therefore Option+key on a
+    /// Mac, and every chord keeps its letter on both. The declaration block below is the one
+    /// place the choice is made - the physical keys each modifier stands for and both spellings
+    /// of its name - and the polling here, <see cref="KeyChords"/> and <see cref="ChordNames"/>
+    /// all read it.
     /// </summary>
     public sealed class KeyboardBinding : InputBinding
     {
@@ -29,6 +40,34 @@ namespace ES2Access.UI.Input
             Alt = alt;
         }
 
+        /// <summary>Whether the game runs on macOS, where the chord modifiers are Option and Command.</summary>
+        internal static readonly bool Mac = Platform.IsMacOS;
+
+        // THE ONE DECLARATION of what the two chord modifiers ARE on this platform. Everything
+        // else derives from these four key codes and two word pairs: the polling below, the
+        // game-form translation (KeyChords reads the key codes), and the names - English for
+        // DisplayName's log form, ModStrings keys for the spoken form (ChordNames).
+        internal static readonly KeyCode FirstModifierLeft = Mac
+            ? KeyCode.LeftAlt
+            : KeyCode.LeftControl;
+        internal static readonly KeyCode FirstModifierRight = Mac
+            ? KeyCode.RightAlt
+            : KeyCode.RightControl;
+        internal static readonly KeyCode SecondModifierLeft = Mac
+            ? KeyCode.LeftCommand
+            : KeyCode.LeftAlt;
+        internal static readonly KeyCode SecondModifierRight = Mac
+            ? KeyCode.RightCommand
+            : KeyCode.RightAlt;
+        internal static readonly string FirstModifierEnglish = Mac ? "Option" : "Ctrl";
+        internal static readonly string SecondModifierEnglish = Mac ? "Cmd" : "Alt";
+        internal static readonly string FirstModifierWord = Mac
+            ? ModStrings.KeyOption
+            : ModStrings.KeyCtrl;
+        internal static readonly string SecondModifierWord = Mac
+            ? ModStrings.KeyCmd
+            : ModStrings.KeyAlt;
+
         public override string DisplayName
         {
             get
@@ -36,7 +75,7 @@ namespace ES2Access.UI.Input
                 StringBuilder name = new StringBuilder();
                 if (Ctrl)
                 {
-                    name.Append("Ctrl+");
+                    name.Append(FirstModifierEnglish).Append('+');
                 }
 
                 if (Shift)
@@ -46,7 +85,7 @@ namespace ES2Access.UI.Input
 
                 if (Alt)
                 {
-                    name.Append("Alt+");
+                    name.Append(SecondModifierEnglish).Append('+');
                 }
 
                 return name.Append(Key).ToString();
@@ -88,8 +127,8 @@ namespace ES2Access.UI.Input
         {
             get
             {
-                return UnityEngine.Input.GetKey(KeyCode.LeftControl)
-                    || UnityEngine.Input.GetKey(KeyCode.RightControl);
+                return UnityEngine.Input.GetKey(FirstModifierLeft)
+                    || UnityEngine.Input.GetKey(FirstModifierRight);
             }
         }
 
@@ -106,8 +145,8 @@ namespace ES2Access.UI.Input
         {
             get
             {
-                return UnityEngine.Input.GetKey(KeyCode.LeftAlt)
-                    || UnityEngine.Input.GetKey(KeyCode.RightAlt);
+                return UnityEngine.Input.GetKey(SecondModifierLeft)
+                    || UnityEngine.Input.GetKey(SecondModifierRight);
             }
         }
     }

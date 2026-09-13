@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\GamePaths.props" Condition="Exists('..\GamePaths.props')" />
+  <Import Project="../GamePaths.props" Condition="Exists('../GamePaths.props')" />
 
   <PropertyGroup>
     <!-- ES2 runs Unity 5.5 / Mono with the .NET 2.0/3.5 API profile; the plugin must target net35. -->
@@ -14,7 +14,9 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DebugType>full</DebugType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <PluginDir>$(GameDir)\BepInEx\plugins\ES2Access</PluginDir>
+    <PluginDir>$(GameDir)/BepInEx/plugins/ES2Access</PluginDir>
+    <!-- Beside obj/mac (Directory.Build.props): a macOS build never shares an output folder with a Windows one. -->
+    <OutputPath Condition="$([MSBuild]::IsOSPlatform('OSX'))">bin/mac/$(Configuration)/</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,32 +25,32 @@
 
   <ItemGroup>
     <Reference Include="UnityEngine">
-      <HintPath>$(Managed)\UnityEngine.dll</HintPath>
+      <HintPath>$(Managed)/UnityEngine.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>$(Managed)\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(Managed)/UnityEngine.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>$(Managed)\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(Managed)/Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>$(Managed)\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>$(Managed)/Assembly-CSharp-firstpass.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <!-- The dev server writes JSON with the copy of Newtonsoft.Json the game already loads. -->
     <Reference Include="Newtonsoft.Json">
-      <HintPath>$(Managed)\Newtonsoft.Json.dll</HintPath>
+      <HintPath>$(Managed)/Newtonsoft.Json.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Amplitude">
-      <HintPath>$(Managed)\Amplitude.dll</HintPath>
+      <HintPath>$(Managed)/Amplitude.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>$(BepInExCore)\0Harmony.dll</HintPath>
+      <HintPath>$(BepInExCore)/0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
@@ -56,7 +58,7 @@
   <ItemGroup>
     <!-- The loader is the BepInEx plugin and deploys itself; this project only compiles against
          its ModHost contract, so nothing of it is copied here. -->
-    <ProjectReference Include="..\ES2Access.Loader\ES2Access.Loader.csproj">
+    <ProjectReference Include="../ES2Access.Loader/ES2Access.Loader.csproj">
       <Private>false</Private>
     </ProjectReference>
   </ItemGroup>
@@ -64,17 +66,44 @@
   <Target Name="DeployToGame" AfterTargets="Build" Condition="Exists('$(GameDir)')">
     <ItemGroup>
       <!-- Translation tables, named after the game's own language names (locale\french.json). -->
-      <LocaleFile Include="$(MSBuildThisFileDirectory)locale\*.json" />
+      <LocaleFile Include="$(MSBuildThisFileDirectory)locale/*.json" />
       <!-- Cutscene audio descriptions, named the same way and built from the authoring folder by
            build-descriptions.ps1. Unlike the translations, english.json is not optional: there are
            no built-in descriptions for it to fall back to. -->
-      <DescriptionFile Include="$(MSBuildThisFileDirectory)descriptions\*.json" />
+      <DescriptionFile Include="$(MSBuildThisFileDirectory)descriptions/*.json" />
     </ItemGroup>
     <!-- Overwritten while the game is running: the loader holds no lock on it, so POST /reload
          picks up whatever this last copied. -->
     <Copy SourceFiles="$(TargetPath);$(TargetDir)$(AssemblyName).pdb" DestinationFolder="$(PluginDir)" />
-    <Copy SourceFiles="@(LocaleFile)" DestinationFolder="$(PluginDir)\locale" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="@(DescriptionFile)" DestinationFolder="$(PluginDir)\descriptions" SkipUnchangedFiles="true" />
-    <Copy SourceFiles="$(MSBuildThisFileDirectory)..\vendor\prism\prism.dll" DestinationFiles="$(GameDir)\prism.dll" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(LocaleFile)" DestinationFolder="$(PluginDir)/locale" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(DescriptionFile)" DestinationFolder="$(PluginDir)/descriptions" SkipUnchangedFiles="true" />
+    <!-- Windows speaks through the vendored prism.dll; on macOS the system voice (Core/Speech/Mac)
+         is the primary and the fetched libprism.dylib is deployed as the fallback backend. -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)../vendor/prism/prism.dll" DestinationFiles="$(GameDir)/prism.dll" SkipUnchangedFiles="true" Condition="!$([MSBuild]::IsOSPlatform('OSX'))" />
+    <Copy SourceFiles="$(PrismBuildDir)/libprism.dylib" DestinationFiles="$(GameDir)/libprism.dylib" SkipUnchangedFiles="true" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
+    <!-- macOS only: the launcher players point Steam at (macos/README.md); Exec keeps it executable, Copy would not. -->
+    <Exec Command="install -m 755 &quot;$(MSBuildThisFileDirectory)../macos/run-modded.sh&quot; &quot;$(GameDir)/run-modded.sh&quot;" Condition="$([MSBuild]::IsOSPlatform('OSX'))" />
   </Target>
+
+  <!-- macOS only: a PR should not carry a second 1.5 MB Prism binary, so libprism.dylib comes
+       from the pinned GitHub release (the same version as the vendored prism.dll and the enums
+       in Core/Speech/PrismNative.cs, vendor/prism/prism_version.h) into the gitignored
+       prism-build/, once; only a version bump or a deleted folder re-downloads. -->
+  <PropertyGroup>
+    <PrismVersion>v0.18.1</PrismVersion>
+    <PrismBuildDir>$(MSBuildThisFileDirectory)../prism-build</PrismBuildDir>
+    <PrismStampFile>$(PrismBuildDir)/version.txt</PrismStampFile>
+    <PrismFetchedVersion Condition="Exists('$(PrismStampFile)')">$([System.IO.File]::ReadAllText('$(PrismStampFile)').Trim())</PrismFetchedVersion>
+  </PropertyGroup>
+  <!-- FetchPrism is also invoked on its own by build_release.sh (dotnet msbuild -t:FetchPrism),
+       which is why the deploy gating lives on the wrapper target below and not here: the release
+       build of a machine that has never deployed to a game folder needs the same fetch. -->
+  <Target Name="FetchPrism" Condition="$([MSBuild]::IsOSPlatform('OSX')) And ('$(PrismFetchedVersion)' != '$(PrismVersion)' Or !Exists('$(PrismBuildDir)/libprism.dylib'))">
+    <DownloadFile SourceUrl="https://github.com/ethindp/prism/releases/download/$(PrismVersion)/prism-macos-universal.zip" DestinationFolder="$(PrismBuildDir)/download" DestinationFileName="$(PrismVersion)-prism-macos-universal.zip" SkipUnchangedFiles="true" />
+    <Unzip SourceFiles="$(PrismBuildDir)/download/$(PrismVersion)-prism-macos-universal.zip" DestinationFolder="$(PrismBuildDir)/download/$(PrismVersion)" OverwriteReadOnlyFiles="true" />
+    <Copy SourceFiles="$(PrismBuildDir)/download/$(PrismVersion)/dynamic/release/lib/libprism.dylib" DestinationFolder="$(PrismBuildDir)" />
+    <WriteLinesToFile File="$(PrismStampFile)" Lines="$(PrismVersion)" Overwrite="true" />
+    <Message Text="Prism $(PrismVersion) fetched into $(PrismBuildDir)" Importance="high" />
+  </Target>
+  <Target Name="FetchPrismForDeploy" BeforeTargets="DeployToGame" DependsOnTargets="FetchPrism" Condition="$([MSBuild]::IsOSPlatform('OSX')) And Exists('$(GameDir)')" />
 </Project>

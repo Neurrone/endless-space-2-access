@@ -49,6 +49,13 @@ namespace ES2Access.Core.Speech
         // make it the chosen one, and the box the player would expect to untick does not exist.
         public const string ControlRadioButton = "control.radio-button";
 
+        // The spoken names of the two platform chord modifiers KeyboardBinding declares: Ctrl and
+        // Alt everywhere but a Mac, where they are Option and Command.
+        public const string KeyCtrl = "key.ctrl";
+        public const string KeyAlt = "key.alt";
+        public const string KeyOption = "key.option";
+        public const string KeyCmd = "key.cmd";
+
         // What navigation says about a control beyond its own text. Each is a whole phrase: a
         // language that negates with more than a leading word has somewhere to put it. The absence
         // of a state gets a key of its own only where the absence is the fact the player needs -
