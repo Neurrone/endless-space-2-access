@@ -19,6 +19,7 @@ Endless Space 2 Access is a screen reader accessibility mod for Endless Space 2,
 - Support for multiple zoom levels and the game's scan overlay
 - A turn log raises notifications for events that the game does not notify for because they are obvious to sighted players. For example, sightings of enemy fleets and colonies or sieges
 - AI written descriptions for all 69 cut scene videos. Descriptions are read in the gaps between spoken dialog
+- AI written translations for other languages the game supports: French, German, Spanish - Spain, Korean, Polish, Portuguese - Brazil, Russian, Simplified Chinese and Traditional Chinese
 
 ## Status
 
@@ -29,13 +30,11 @@ The game is 95% playable with the United Empire faction. Any remaining gaps are 
 
 There are also almost 100 notification types and the only way to ensure they work is to have encountered them.
 
-Support for other factions is planned once I've completed a playthrough with United Empire.
+Support for other factions is planned once I've completed a playthrough with the United Empire.
 
 All DLCs that add minor factions, quests or heroes are supported. Expansion packs that add new major factions or game mechanics are not yet supported.
 
 If you have bought the DLCs, expansion packs can be disabled from the main menu. The usual advice for new players is to disable the major expansion packs first till you're familiar with the base game mechanics.
-
-The mod has the required infrastructure to support the rest of the game's languages: French, German, Spanish - Spain, Korean, Polish, Portuguese - Brazil, Russian, Simplified Chinese and Traditional Chinese. This is just pending adding string translations.
 
 ## Links
 
