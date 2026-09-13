@@ -4,19 +4,38 @@ Endless Space 2 Access is a screen reader accessibility mod for Endless Space 2,
 
 ## Features
 
-- Full narration of menus, text, tooltips and other game UI elements
+- Full narration of menus, text, tooltips and other game UI elements through any screen reader supported by Prism
 - Support for the Windows version of the game with a keyboard
 - Keyboard-based drag-and-drop
-- Buffer system for review of tooltips, lengthy text elements and event notifications
+- Buffer system for review of tooltips and lengthy text elements
+- Extensive support for the galactic map:
+  - a hierarchical tree describes the relationships between constellations, systems, planets and their associated contents and actions
+  - Traversal of star lanes and wormholes
+  - An inspect mode for exploring the geometry of the map
+  - A scanner tool finds systems, fleets, curiosities or other places of interest based on what you have already explored
+  - Bookmarks to efficiently move focus to systems of interest
+- Additional hotkeys for moving focus to frequently used controls
+- Rebinding for all keyboard commands
+- Support for multiple zoom levels and the game's scan overlay
+- A turn log raises notifications for events that the game does not notify for because they are obvious to sighted players. For example, sightings of enemy fleets and colonies or sieges
+- AI written descriptions for all 69 cut scene videos. Descriptions are read in the gaps between spoken dialog
 
 ## Status
 
-This is version 0.1.0, the first public test release. Treat it as a test build: it has been developed against the base game in single player, and that is where it has been used.
+The game is 95% playable with the United Empire faction. Any remaining gaps are due to me not having finished a complete playthrough. The following mechanics still need to be tested:
 
-- Base game, single player: covered. All the screens listed in this book are navigable.
-- Multiplayer: untested. The mod does not know about the mode, and the chat surfaces it adds are only exercised in single player, so multiplayer-only states (ready flags, kicks, alliance chat) have not been played through.
-- DLC: partly covered. Content that ships with the expansions is not all modelled — the Penumbra hacking dashboard is not, Supremacy's Behemoth mechanics are barely tested, and some faction-specific surfaces have never been seen by the mod's author.
-- English only. The mod's own phrases exist in English; text the game itself writes arrives in whatever language the game is set to.
+- Trade companies
+- Victory / defeat screens
+
+There are also almost 100 notification types and the only way to ensure they work is to have encountered them.
+
+Support for other factions is planned once I've completed a playthrough with United Empire.
+
+All DLCs that add minor factions, quests or heroes are supported. Expansion packs that add new major factions or game mechanics are not yet supported.
+
+If you have bought the DLCs, expansion packs can be disabled from the main menu. The usual advice for new players is to disable the major expansion packs first till you're familiar with the base game mechanics.
+
+The mod has the required infrastructure to support the rest of the game's languages: French, German, Spanish - Spain, Korean, Polish, Portuguese - Brazil, Russian, Simplified Chinese and Traditional Chinese. This is just pending adding string translations.
 
 ## Links
 
