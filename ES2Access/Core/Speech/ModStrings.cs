@@ -959,6 +959,7 @@ namespace ES2Access.Core.Speech
             { SystemPopulationSlot, "Slot {0} of {1}" },
             { SystemPopulationSlotEmpty, "Empty slot {0} of {1}" },
             { SystemPopulationSlotVacant, "Empty slot" },
+            { SystemPopulationPeople, "{0} {1}" },
             { SystemImprovements, "System improvements" },
             { SystemLevel, "System level {0}" },
             { SystemSupplyingOutpost, "Supplying {0} outpost" },

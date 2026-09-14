@@ -604,6 +604,7 @@
   "system.population-slot": "Ячейка {0} из {1}",
   "system.population-slot-empty": "Пустая ячейка {0} из {1}",
   "system.population-slot-vacant": "Пустая ячейка",
+  "system.population-people": "{0} {1}",
   "system.improvements": "Улучшения системы",
   "system.level": "Уровень системы {0}",
   "system.supplying-outpost": "Снабжает {0} аванпост",

@@ -569,6 +569,7 @@
   "system.population-slot": "欄位 {0}，共 {1}",
   "system.population-slot-empty": "空白欄位 {0}，共 {1}",
   "system.population-slot-vacant": "空白欄位",
+  "system.population-people": "{0} {1}",
   "system.improvements": "行星系改良設施",
   "system.level": "行星系等級 {0}",
   "system.supplying-outpost": "正在供應 {0} 座前哨",

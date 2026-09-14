@@ -72,6 +72,11 @@ namespace ES2Access.Screens
                 Announcements = new List<NodeAnnouncement>
                 {
                     GraphNodes.LabelPart(() => AgeText.Label(it.PlanetNameLabel)),
+                    // What has become of the world, in the position the star system page's card says
+                    // it in - between the name and the kind of world. This card says it NOWHERE: it
+                    // tints the name instead (<see cref="PlanetStatusText"/>), and a colour is not
+                    // text to read.
+                    GraphNodes.ValuePart(() => PlanetStatusText.Title(it.Planet)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetTypeLabel)),
                     // The same sentence the map's planet rows say, for the same reason: the game keeps
                     // a mining probe in the planet's dossier, where only a hover finds it.
@@ -92,7 +97,8 @@ namespace ES2Access.Screens
             List<CardActions.CardAction> buttons = CardButtons(card);
             List<Population> units = new List<Population>(4);
             List<PopulationSlots.Slot> slots = CardSlots(card, units);
-            if (buttons.Count == 0 && slots.Count == 0)
+            List<TooltipChildren.Dossier> dossiers = CardDossiers(card);
+            if (buttons.Count == 0 && slots.Count == 0 && dossiers.Count == 0)
             {
                 // Synthetic: the card stands for the PLANET, and the walk that found the planet is
                 // what vouches for it.
@@ -105,11 +111,64 @@ namespace ES2Access.Screens
             builder.BeginGroup(Nodes.Synthetic(id, vtable));
             if (builder.IsExpanded(id))
             {
+                object outer = builder.Region;
                 AddPopulations(builder, key, card, units, slots, CanCarry(card));
                 CardActions.Emit(builder, key, buttons);
+                TooltipChildren.Emit(builder, key, dossiers, outer);
             }
 
             builder.EndGroup();
+        }
+
+        /// <summary>
+        /// The pages the card draws no words for at all: the planet's own dossier, which it hangs on
+        /// the picture in the middle (<c>PlanetCard.RefreshPlanetImage</c> :417 points it at the
+        /// planet wrapper), and the specialization improvement's, which it draws as a small picture in
+        /// the corner and keeps on a tooltip FIELD of its own rather than on that picture
+        /// (<c>RefreshPlanetImprovement</c> :531-547) - so nothing hanging off the card could have
+        /// found it. The same two the star system page's card offers
+        /// (<c>SystemManagementScreen.PlanetDossiers</c>), which is why they are collected the same
+        /// way.
+        ///
+        /// The improvement's is gated on the game DRAWING the picture, which it does only for a colony
+        /// that has chosen one: a world with no specialization draws nothing there, and this card -
+        /// unlike the star system page's, which writes "No Specialization" into a label of its own -
+        /// has nothing to say about it.
+        /// </summary>
+        private static List<TooltipChildren.Dossier> CardDossiers(PlanetCard card)
+        {
+            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(2);
+            try
+            {
+                TooltipChildren.Add(
+                    found,
+                    card.PlanetImageTooltip,
+                    card.PlanetImage == null ? null : card.PlanetImage.AgeTransform
+                );
+                AgeTransform improvement = ImprovementImage(card);
+                // Content: which dossiers the card offers. These become a region of the card's own
+                // node, not nodes the gate ever sees.
+                if (improvement != null && AgeWidgets.Visible(improvement))
+                {
+                    TooltipChildren.Add(found, card.PlanetImprovementTooltip, improvement);
+                    TooltipChildren.AddPlain(found, card.PlanetImprovementTooltip, improvement);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("empire: reading a planet card's dossiers threw: " + e);
+            }
+
+            return found;
+        }
+
+        /// <summary>The picture the card draws the world's specialization improvement as, or null
+        /// where the prefab has none.</summary>
+        private static AgeTransform ImprovementImage(PlanetCard card)
+        {
+            return card == null || card.PlanetImprovementImage == null
+                ? null
+                : card.PlanetImprovementImage.AgeTransform;
         }
 
         /// <summary>Which of the card's own buttons the game is drawing. Only colonizing has a word of
@@ -161,18 +220,29 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Everything else the card draws, in the order it draws it: what kind of world it is,
-        /// what has been found on it, and its five outputs.</summary>
+        /// <summary>Everything else the card draws, in the order it draws it: what has become of the
+        /// world, what kind of world it is, what has been found on it, which specialization it has
+        /// been given, its five outputs, and who lives there.
+        ///
+        /// The state's SENTENCE opens the buffer, which is where the star system page's card puts it
+        /// too - a tooltip section on its status label, read before the rest of the card. Here it is
+        /// plain buffer lines rather than a tooltip: the words are a string the mod already holds
+        /// (<see cref="PlanetStatusText"/>) and not a dossier a renderer has to assemble, so there is
+        /// nothing for a carrier (<see cref="ScratchTooltips"/>) to make exist and nothing on the card
+        /// for a pointer to indicate.</summary>
         private static IList<string> CardDetails(PlanetCard card)
         {
             List<string> lines = new List<string>();
             try
             {
+                AddLines(lines, PlanetStatusText.Description(card.Planet));
                 AddWidgetLines(lines, card.PlanetTypeGroup);
                 AddWidgetLines(lines, card.PlanetGameplayTypesTable);
                 AddWidgetLines(lines, card.ResourceDepositItemsTable);
                 AddWidgetLines(lines, card.AnomalyItemsTable);
+                AddImprovement(lines, card);
                 AddFidsi(lines, card);
+                PopulationSummary.Add(lines, card.ColonizedPlanet);
             }
             catch (Exception e)
             {
@@ -180,6 +250,37 @@ namespace ES2Access.Screens
             }
 
             return lines;
+        }
+
+        /// <summary>Every line of a block the card says in one go - the state's sentence, which the
+        /// game writes as one string with its reason and its hint on lines of their own.</summary>
+        private static void AddLines(List<string> lines, IList<string> from)
+        {
+            for (int i = 0; from != null && i < from.Count; i++)
+            {
+                PlanetCardLines.AddLine(lines, from[i]);
+            }
+        }
+
+        /// <summary>Which specialization improvement the world has been given, named off the wrapper
+        /// the card hangs on its own tooltip field - the picture itself carries no words
+        /// (<c>PlanetCard.RefreshPlanetImprovement</c> :531-547). Drawn only for a colony that has
+        /// chosen one, so being drawn is the gate: where the card draws nothing there is nothing to
+        /// say, which is the one place this card reads shorter than the star system page's (that one
+        /// writes "No Specialization" into a label of its own).</summary>
+        private static void AddImprovement(List<string> lines, PlanetCard card)
+        {
+            AgeTransform image = ImprovementImage(card);
+            // Content: whether the improvement is one of the card's lines.
+            if (image == null || !AgeWidgets.Visible(image))
+            {
+                return;
+            }
+
+            PlanetCardLines.AddLine(
+                lines,
+                AgeWidgets.TooltipTitle(card.PlanetImprovementTooltip)
+            );
         }
 
         /// <summary>The planet's five outputs, named by the game's own property titles, in the two

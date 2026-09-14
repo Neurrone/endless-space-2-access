@@ -569,6 +569,7 @@
   "system.population-slot": "Emplacement {0} sur {1}",
   "system.population-slot-empty": "Emplacement vide {0} sur {1}",
   "system.population-slot-vacant": "Emplacement vide",
+  "system.population-people": "{0} {1}",
   "system.improvements": "Améliorations de système",
   "system.level": "Niveau du système {0}",
   "system.supplying-outpost": "Alimente {0} avant-poste",

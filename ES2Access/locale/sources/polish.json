@@ -590,6 +590,7 @@
   "system.population-slot": "Slot {0} of {1}",
   "system.population-slot-empty": "Empty slot {0} of {1}",
   "system.population-slot-vacant": "Empty slot",
+  "system.population-people": "{0} {1}",
   "system.improvements": "System improvements",
   "system.level": "System level {0}",
   "system.supplying-outpost": "Supplying {0} outpost",

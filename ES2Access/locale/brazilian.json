@@ -569,6 +569,7 @@
   "system.population-slot": "Espaço {0} de {1}",
   "system.population-slot-empty": "Espaço vazio {0} de {1}",
   "system.population-slot-vacant": "Espaço vazio",
+  "system.population-people": "{0} {1}",
   "system.improvements": "Aprimoramentos de sistema",
   "system.level": "Nível do sistema {0}",
   "system.supplying-outpost": "Abastecendo {0} posto avançado",

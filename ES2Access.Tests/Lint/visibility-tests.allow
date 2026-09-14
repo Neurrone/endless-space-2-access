@@ -117,6 +117,8 @@ ES2Access/Screens/EmpireScreen.DetailPanels.cs | 1 | if (queue != null && AgeWid
 
 ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | && AgeWidgets.Visible(item)
 ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | if (all[i] != null && AgeWidgets.Visible(all[i].AgeTransform) && all[i].Planet != null)
+ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | if (image == null || !AgeWidgets.Visible(image))
+ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | if (improvement != null && AgeWidgets.Visible(improvement))
 
 ES2Access/Screens/EmpireScreen.SystemsTable.cs | 1 | if (table == null || !AgeWidgets.Visible(panel.AgeTransform))
 

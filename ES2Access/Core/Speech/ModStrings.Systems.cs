@@ -76,6 +76,12 @@ namespace ES2Access.Core.Speech
         /// says the position once instead of twice.</summary>
         public const string SystemPopulationSlotVacant = "system.population-slot-vacant";
 
+        /// <summary>How many people of one kind live on a colony, as one item of the card's
+        /// "who lives here" line. A complete phrase rather than a number with a name glued after it:
+        /// the count and the noun agree in half the languages this mod ships, and a translation needs
+        /// both in one template to inflect either.</summary>
+        public const string SystemPopulationPeople = "system.population-people";
+
         public const string SystemImprovements = "system.improvements";
         public const string SystemLevel = "system.level";
 

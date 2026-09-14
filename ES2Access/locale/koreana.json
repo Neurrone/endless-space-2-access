@@ -569,6 +569,7 @@
   "system.population-slot": "슬롯 {1} 중 {0}",
   "system.population-slot-empty": "빈 슬롯 {1} 중 {0}",
   "system.population-slot-vacant": "빈 슬롯",
+  "system.population-people": "{1} {0}",
   "system.improvements": "성계 보조시설",
   "system.level": "성계 레벨 {0}",
   "system.supplying-outpost": "전초기지 {0}곳 지원 중",

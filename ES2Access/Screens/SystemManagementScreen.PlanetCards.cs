@@ -114,6 +114,16 @@ namespace ES2Access.Screens
             // the people are going. A full planet then offers only its swaps, and a planet with room
             // offers its free places.
             AgeWidgets.PointAt(vtable, status ?? label.AgeTransform);
+            // The one thing a card in the Inhospitable state still DOES: the game puts a hint on the
+            // status button naming the technology that would change the answer, and a Ctrl+click on it
+            // jumps to that technology in the research tree (<c>PlanetLabel</c> :296-310 fills the hint
+            // in that branch alone, <c>PlanetLabel_SystemManagement.OnClickPlanetStatusCb</c> :1626-1633
+            // activates it). Without this the card's Ctrl+Enter fell back to replaying the plain click,
+            // which zooms into the planet, and nothing on the card said the jump existed - while the
+            // colonize button beside it had said so all along, because every card ACTION goes through
+            // the same wiring (<see cref="Cells.WireHintGesture"/>). Gated on the hint being live, so
+            // it goes away with the technology the player has just researched.
+            Cells.WireHintGesture(vtable, status);
 
             string key = "system:planet/" + planet.GUID;
             ControlId id = ControlId.For(planet, key);
@@ -284,7 +294,7 @@ namespace ES2Access.Screens
                             ModStrings.FractionUnit,
                             ghost.PopulationCount,
                             ghost.MaxPopulation,
-                            AgeText.Clean(PopulationIcon)
+                            AgeText.Clean(PopulationSummary.PopulationIcon)
                         )
                     );
                 }
@@ -321,10 +331,6 @@ namespace ES2Access.Screens
 
             return lines;
         }
-
-        /// <summary>The symbol the game ends its Sanctuary population count with, which is the only
-        /// word it writes for that figure.</summary>
-        private const string PopulationIcon = "[population]";
 
         /// <summary>
         /// The dossiers a planet card carries beyond the sentence on its status button: the planet's
@@ -665,6 +671,7 @@ namespace ES2Access.Screens
                 AddWidgetLines(lines, label.ImprovementStatus);
                 AddFidsi(lines, label);
                 AddOutpost(lines, label);
+                PopulationSummary.Add(lines, label.ColonizedPlanet);
             }
             catch (Exception e)
             {

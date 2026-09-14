@@ -76,6 +76,14 @@ namespace ES2Access.UI
         /// that have one, keeping the resource's name on the wrapper it hangs on its own tooltip. So
         /// the name is taken from the drawn title where there is one and from that wrapper where there
         /// is not, and bound to the figure beside it.
+        ///
+        /// AND THE FIGURE IS ONLY THERE WHERE THE PREFAB HAS ONE. Both labels are optional fields the
+        /// refresh writes only when they are wired, and the empire page's deposit prefab wires
+        /// NEITHER (measured 2026-09-14 on the einstein cards: both fields null, the item drawn as a
+        /// bare icon) - so that card said "Antimatter: " with nothing after the colon while the star
+        /// system page's said "Antimatter: 2". A deposit the game draws no number for is its name
+        /// alone: the amount is in the model, but inventing it here would put a figure on the
+        /// player's card that nobody else can see.
         /// </summary>
         private static string ItemLine(AgeTransform child)
         {
@@ -92,8 +100,13 @@ namespace ES2Access.UI
             }
 
             string amount = AgeWidgets.DrawnLabel(deposit.AmountLabel);
-            return string.IsNullOrEmpty(name)
-                ? amount
+            if (string.IsNullOrEmpty(name))
+            {
+                return amount;
+            }
+
+            return string.IsNullOrEmpty(amount)
+                ? name
                 : ModStrings.Format(ModStrings.CaptionedColon, name, amount);
         }
 
