@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.UI.Graph;
 
@@ -143,6 +143,21 @@ namespace ES2Access.UI
                     () => Details(lines)
                 );
                 AgeWidgets.Point(vtable, button, tooltip, at);
+                // The one thing a refused action still DOES: all three prefabs in this family put the
+                // missing-technology hint on the BUTTON inside the row (<c>AcademyDiplomacyActionItem</c>
+                // :116, <c>EmpireActionButtonMinorDiplomacy</c> :152, <c>PirateDiplomacyActionItem</c>
+                // :88), so the node - which stands on the row - carried no hint at all and the shared
+                // wiring had nothing to aim at. The separate <c>HintButton</c> the game draws in the
+                // button's place is still not a node: it carries no hint component either, and its whole
+                // job is to forward the click the row now offers.
+                //
+                // Gated on the sentence the game DREW, not on the component: these windows pool their
+                // items, and the game's clearing call is the only thing that ever nulls a technology.
+                // The sentence lands on the button's own tooltip, which is the same object the row is
+                // already reading (measured: <c>Button.AgeTransform.AgeTooltip</c> is the item's
+                // <c>Tooltip</c> field).
+                AgeTransform hinted = AgeWidgets.Transform(button);
+                Cells.WireHintGesture(vtable, hinted, () => TechnologyHints.Drawn(hinted));
                 builder.AddItem(Nodes.Drawn(ControlId.For(at, keyPrefix + "/action/" + i), vtable, at));
 
                 AgeTransform extra = AgeWidgets.Transform(row.Extra);

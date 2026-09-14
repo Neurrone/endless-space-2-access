@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ES2Access.Core.Speech;
@@ -411,6 +411,28 @@ namespace ES2Access.Screens
             }
 
             AddSeatPhrase(vtable, seat);
+            // The missing-technology jump, aimed at whichever control the game hinted. The item holds
+            // both a button and a toggle and <c>FleetActionItem.SetEnable</c> :86/:90 hints the VISIBLE
+            // one; the node stands on the item, which carries no hint component, so the shared wiring
+            // found nothing to offer.
+            //
+            // Two things make this site its own case. The game writes the hint's sentence into the
+            // ITEM's tooltip rather than the control's (the <c>customTooltip</c> argument - these
+            // controls carry no <c>AgeTooltip</c> at all, measured), which is what the second argument
+            // of <see cref="TechnologyHints.Drawn"/> is for. And <c>SetEnable</c> reaches the clearing
+            // call in its failures branch ALONE, while this panel pools its items across fleets - so
+            // the drawn sentence, not the component, is what says the hint is this fleet's.
+            // Different widget: WHICH of the item's two controls the game hinted, not whether either
+            // exists - <c>SetEnable</c> hints the visible one, and the gesture has to aim at that one.
+            AgeTransform hinted = item.Button != null && item.Button.Visible
+                ? AgeWidgets.Transform(item.Button)
+                : AgeWidgets.Transform(item.Toggle);
+            AgeTooltip hintDrawnOn = tooltip;
+            Cells.WireHintGesture(
+                vtable,
+                hinted,
+                () => TechnologyHints.Drawn(hinted, hintDrawnOn)
+            );
             Cell cell = Cells.Add(
                 cells,
                 item.AgeTransform,

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Amplitude;
@@ -187,6 +187,12 @@ namespace ES2Access.Screens
                 CardActions.AddRefusableNamedByTooltip(found, card.BuildInfrastructureButton);
                 CardActions.AddRefusableNamedByTooltip(found, card.ReduceAnomalyButton);
                 CardActions.AddRefusableNamedByTooltip(found, card.TerraformButton);
+                // The anomalies, which this card draws as the same wired rows the star system page's
+                // does and which were read here as buffer LINES alone - so the jump to the technology
+                // that would let one be reduced was a mouse-only gesture on this page (owner ruling
+                // 2026-09-14, parity with the system page). The lines stay: the card goes on naming
+                // them (<see cref="CardDetails"/>), and the rows add the dossier and the gesture.
+                CardActions.AddAnomalies(found, card.AnomalyItemsTable);
                 AddCuriosities(found, card);
             }
             catch (Exception e)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace ES2Access.UI
 {
@@ -28,6 +28,23 @@ namespace ES2Access.UI
         /// where the hint component lives and whose tooltip the sentence was appended to.</summary>
         public static bool Drawn(AgeTransform widget)
         {
+            return Drawn(widget, null);
+        }
+
+        /// <summary>
+        /// The same question where the game wrote the sentence somewhere OTHER than on the hinted
+        /// widget - the <c>customTooltip</c> argument of <c>Gui.FormatButtonHint</c>, which three
+        /// prefabs in this game pass (<c>FleetActionItem.SetEnable</c> :86/:90 hands it the ITEM's
+        /// tooltip while hinting the button or the toggle inside it; <c>HackingProgramLine.Refresh</c>
+        /// :50 hands it the line's own <c>Tooltip</c> field while hinting the little hint button).
+        /// Those buttons carry no <c>AgeTooltip</c> of their own (measured), so the one-argument form
+        /// answers false at all three even while the hint is live.
+        ///
+        /// <paramref name="drawnOn"/> null is every other caller and asks the widget for its own,
+        /// which is what <see cref="Drawn(AgeTransform)"/> does.
+        /// </summary>
+        public static bool Drawn(AgeTransform widget, AgeTooltip drawnOn)
+        {
             try
             {
                 if (!AgeWidgets.Hinted(widget))
@@ -35,7 +52,7 @@ namespace ES2Access.UI
                     return false;
                 }
 
-                AgeTooltip tooltip = AgeWidgets.Raw(widget);
+                AgeTooltip tooltip = drawnOn ?? AgeWidgets.Raw(widget);
                 // The RAW content, deliberately: nothing here is read to the player - this is the
                 // same string comparison the game makes before appending the sentence, and the
                 // sentence it appends carries colour markup, so cleaning either side would stop the

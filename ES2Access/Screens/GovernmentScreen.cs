@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -405,7 +405,22 @@ namespace ES2Access.Screens
             IList<AgeTransform> children = band == null ? null : band.Children;
             for (int i = 0; children != null && i < children.Count; i++)
             {
-                Cells.AddControl(_cells, children[i], "government:button/" + i);
+                AgeTransform child = children[i];
+                Cell cell = Cells.AddControl(_cells, child, "government:button/" + i);
+                // The window's Validate carries the missing-technology hint itself
+                // (<c>GovernmentModalWindow.Refresh</c> :234 hints <c>ValidateControlButton</c>, whose
+                // transform IS the <c>ValidateButton</c> this band walk lands on - measured), and the
+                // jump has always worked here through the shared fall back to the button's own click,
+                // which is what <c>Cells.AddControl</c> deliberately leaves in place: the game's
+                // handler (:379-395) activates the hint AND closes the window when Control is down,
+                // and only the replayed click gets both. What was missing was anything telling the
+                // player the gesture exists, so the LINE goes on alone
+                // (<see cref="Cells.HintLine"/>). Offered to every child of the band because only the
+                // hinted one takes it, and gated on the sentence the game drew.
+                if (cell != null)
+                {
+                    Cells.HintLine(cell.Vtable, child, () => TechnologyHints.Drawn(child));
+                }
             }
 
             Cells.EmitLinear(builder, _cells);

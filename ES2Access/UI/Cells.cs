@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
@@ -148,6 +148,38 @@ namespace ES2Access.UI
             }
 
             vtable.OnCtrlClick = () => AgeWidgets.Locate(hint);
+            NodeHints.Add(vtable, ModStrings.HintMissingTechnology, UiActions.CtrlClick, 0, lit);
+        }
+
+        /// <summary>
+        /// The hint LINE without the gesture, for the node whose Ctrl+click must stay the shared fall
+        /// back to its own click.
+        ///
+        /// One control in this game wants exactly that: the government window's Validate, whose own
+        /// handler (<c>GovernmentModalWindow.OnValidateCb</c> :379-395) activates the hint AND closes
+        /// the window when Control is down, so the replayed click does more than the jump and
+        /// <see cref="AddControl"/> deliberately wires nothing (<see cref="Add"/> says why). The jump
+        /// therefore already worked there - through <c>KeyGraph</c>'s
+        /// <c>OnCtrlClick ?? OnActivate</c>, since Ctrl+Enter means the player IS holding Control -
+        /// and the only thing missing was anything telling the player so.
+        ///
+        /// Same gate as the gesture's: asked per node per rebuild, and silent on a widget carrying no
+        /// hint at all, so a whole band can be offered this and only the hinted member takes it.
+        /// </summary>
+        public static void HintLine(NodeVtable vtable, AgeTransform widget, Func<bool> live = null)
+        {
+            if (vtable == null || !AgeWidgets.Hinted(widget))
+            {
+                return;
+            }
+
+            AgeTransform hint = widget;
+            Func<bool> lit = live ?? (() => AgeWidgets.Hinted(hint));
+            if (!lit())
+            {
+                return;
+            }
+
             NodeHints.Add(vtable, ModStrings.HintMissingTechnology, UiActions.CtrlClick, 0, lit);
         }
 

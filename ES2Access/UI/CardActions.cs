@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
@@ -46,6 +46,26 @@ namespace ES2Access.UI
             /// <c>AgeTooltip</c> is null and the node would carry no dossier and point at nothing.
             /// Null asks the widget for its own, which is every other case.</summary>
             public AgeTooltip Tooltip;
+
+            /// <summary>
+            /// The widget carrying the missing-technology hint, where it is NOT the widget the node
+            /// stands on - a row whose little hint button is a CHILD of it (the anomaly rows on all
+            /// three planet cards: <c>PlanetAnomalyItem.Bind</c> :66 hints <c>HintButton</c> while the
+            /// node is the row, which is what the player walks onto). <see cref="Emit"/> aims the
+            /// gesture here, so the jump reaches the technology the child is holding instead of
+            /// no-opping on a row that carries no hint component at all.
+            ///
+            /// Null is every other button, and the gesture then aims at <see cref="Widget"/> - which
+            /// is what it always did.
+            /// </summary>
+            public AgeTransform Hint;
+
+            /// <summary>The narrower gate for that gesture, for the caller that has one: whether the
+            /// game is DRAWING the hint rather than merely carrying it
+            /// (<see cref="TechnologyHints.Drawn"/>, which owns the reasoning). Null asks the shared
+            /// question, which is right wherever the prefab's refresh clears the hint on every branch
+            /// that leaves the widget drawn.</summary>
+            public Func<bool> HintDrawn;
 
             /// <summary>Set where the surface FADES this button out at some camera distances while going
             /// on offering what it does - the node is then declared while the button is only Visible
@@ -176,6 +196,66 @@ namespace ES2Access.UI
             );
         }
 
+        /// <summary>
+        /// The anomalies on a planet card, as the CONTROLS the game made them.
+        ///
+        /// All three planet cards in this game hang the same <c>PlanetAnomalyItem</c> off the same kind
+        /// of pooled table, and the item's own click is <c>OnHintCb</c> - the jump to the technology
+        /// that would let the anomaly be reduced. The hint itself lives on the item's little
+        /// <c>HintButton</c> child (<c>PlanetAnomalyItem.Bind</c> :66), which is why the node stands on
+        /// the ROW - that is the thing the player walks onto and the thing the game named - and
+        /// <see cref="CardAction.Hint"/> aims the gesture at the child.
+        ///
+        /// The row is UNAVAILABLE whatever state it is in, because its own click is one the game
+        /// answers only while a Control key is physically held (<c>GuiButtonHint.ActivateHint</c>
+        /// :18-34): a plain Enter on it has never done anything and never will, and saying so is the
+        /// truthful reading. Ctrl+Enter is the gesture, and its line is offered while the hint is
+        /// there.
+        ///
+        /// The gate on that gesture is the hint COMPONENT and deliberately not
+        /// <see cref="TechnologyHints.Drawn"/>: this prefab hands <c>Gui.FormatButtonHint</c> a button
+        /// carrying no <c>AgeTooltip</c> of its own on the system page and on the map's orbital card
+        /// (measured 2026-09-14 - <c>HintButton.AgeTransform.AgeTooltip</c> is null on both), so the
+        /// game writes its sentence NOWHERE and the drawn test could never answer true. What makes the
+        /// component honest here is that <c>Bind</c> reaches the clearing call on every bind of an item
+        /// the card is drawing, which is the condition the toolkit's clearing policy asks for.
+        ///
+        /// The anomaly's own dossier - the paragraph, the effects and what reducing it would take -
+        /// rides along as the node's tooltip; the card's buffer goes on naming the anomalies as it did.
+        /// Every entry goes through <see cref="Add"/>, because this list is NUMBERED and the table is
+        /// pooled: a retired item must never enter the count.
+        /// </summary>
+        public static void AddAnomalies(List<CardAction> found, AgeTransform table)
+        {
+            IList<AgeTransform> items = AgeWidgets.DrawnChildren(table);
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                AgeTransform row = items[i];
+                PlanetAnomalyItem item = row == null ? null : row.GetComponent<PlanetAnomalyItem>();
+                if (item == null || item.HintButton == null)
+                {
+                    continue;
+                }
+
+                PlanetAnomalyItem it = item;
+                Add(
+                    found,
+                    new CardAction
+                    {
+                        Widget = row,
+                        Label = () => AgeWidgets.TooltipTitle(it.Tooltip),
+                        Tooltip = it.Tooltip,
+                        Offered = Never,
+                        Hint = item.HintButton.AgeTransform,
+                    }
+                );
+            }
+        }
+
+        /// <summary>A control whose own click the game answers in no state - said once rather than
+        /// allocated per row per frame.</summary>
+        private static readonly Func<bool> Never = () => false;
+
         /// <summary>The words the game keeps for a control on the WRAPPER hung on its tooltip - the
         /// only place an outpost action is named, since the item itself draws nothing but a cost.
         /// </summary>
@@ -193,14 +273,31 @@ namespace ES2Access.UI
             return () => AgeWidgets.TooltipTitle(tooltip);
         }
 
-        /// <summary>A button the game names only in the sentence its own tooltip opens with.</summary>
-        public static void AddNamedByTooltip(List<CardAction> found, AgeControl control)
+        /// <summary>A button the game names only in the sentence its own tooltip opens with.
+        ///
+        /// <paramref name="hintDrawn"/> is <see cref="CardAction.HintDrawn"/>, for the one button in
+        /// this family whose prefab sets the hint in a single branch and hides nothing in the other
+        /// (<c>PlanetLabel_SystemOrbital.RefreshVodyaniHintButton</c> :1297-1298 - unlike its two
+        /// siblings it never takes the button away, so a rebound label can keep both the drawn button
+        /// and a dead technology). Null is every other caller.</summary>
+        public static void AddNamedByTooltip(
+            List<CardAction> found,
+            AgeControl control,
+            Func<bool> hintDrawn = null
+        )
         {
             AgeTransform at = Drawn(AgeWidgets.Transform(control));
             if (at != null)
             {
                 AgeTooltip tooltip = AgeWidgets.Raw(at);
-                found.Add(new CardAction { Widget = at, Label = () => FirstLine(tooltip) });
+                found.Add(
+                    new CardAction
+                    {
+                        Widget = at,
+                        Label = () => FirstLine(tooltip),
+                        HintDrawn = hintDrawn,
+                    }
+                );
             }
         }
 
@@ -292,7 +389,9 @@ namespace ES2Access.UI
                 // really ON, which is what this used to say - for a row whose dossier hangs on an icon
                 // inside it, pointing at the row draws nothing at all.
 
-                Cells.WireHintGesture(vtable, at);
+                // The HINTED widget, which is the button itself for every card button and a CHILD of
+                // it for an anomaly row (<see cref="CardAction.Hint"/>).
+                Cells.WireHintGesture(vtable, action.Hint ?? at, action.HintDrawn);
 
                 // A CURIOSITY, either card's: both of them hang the same prefab off the card, and
                 // both owe the padlock in words. What only ONE of them owes is below.

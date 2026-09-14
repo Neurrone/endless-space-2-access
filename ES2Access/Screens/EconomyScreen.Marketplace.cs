@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
@@ -241,6 +241,18 @@ namespace ES2Access.Screens
                 );
 
                 AgeWidgets.Point(vtable, radio.Toggle, tooltip, widget);
+                // The missing-technology jump, which the game hangs on the TOGGLE
+                // (<c>MarketTabRadio.Bind</c> :29) while the node stands on the row - so the shared
+                // wiring in <c>Cells.Add</c> below had nothing to aim at and the section the empire
+                // may not trade in said nothing about the technology that would open it. Wired here,
+                // which is why <c>Add</c> then leaves the slot alone.
+                //
+                // On the DRAWN sentence, because the clearing call sits in the blocked branch alone
+                // and these radios are a pool the panel never unbinds. The single-<c>FailureInfo</c>
+                // overload writes it onto the toggle's own tooltip, which is the same object as the
+                // prefab's <c>Tooltip</c> field (measured), so the words the player reads and the
+                // words this test looks for are one and the same.
+                Cells.WireHintGesture(vtable, at, () => TechnologyHints.Drawn(at));
                 Cells.Add(
                     _cells,
                     widget,

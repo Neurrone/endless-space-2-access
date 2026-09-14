@@ -75,7 +75,8 @@ namespace ES2Access.Screens
                             system,
                             planet,
                             card,
-                            looking
+                            looking,
+                            actions
                         );
                         NodeVtable readout = OrbitalReadout(card, system, looking);
                         if (actions.Count == 0 && dossiers.Count == 0 && !pinned)
@@ -151,7 +152,8 @@ namespace ES2Access.Screens
                         system,
                         planet,
                         null,
-                        looking
+                        looking,
+                        null
                     );
                     if (pages.Count == 0 && !pinned)
                     {
@@ -397,7 +399,8 @@ namespace ES2Access.Screens
             StarSystemNode system,
             Planet planet,
             PlanetLabel_SystemOrbital card,
-            Empire empire
+            Empire empire,
+            List<CardActions.CardAction> declared
         )
         {
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
@@ -411,7 +414,7 @@ namespace ES2Access.Screens
                 // In the order the card draws them, which is the order its own buffer reads
                 // (<see cref="OrbitalDetails"/>): what was found on the world, then what is in its
                 // ground.
-                AddAnomalyDossiers(found, planet, card);
+                AddAnomalyDossiers(found, planet, card, declared);
                 AddDepositDossiers(found, planet, card, empire);
             }
             catch (Exception e)
@@ -429,11 +432,18 @@ namespace ES2Access.Screens
         /// The item hangs its tooltip on its ICON rather than on itself
         /// (<c>PlanetAnomalyItem.Bind</c>), so the component's own field is what is read and what is
         /// aimed at: pointing at the row draws nothing at all.
+        ///
+        /// <paramref name="declared"/> is what the card has already made a ROW of
+        /// (<c>CardActions.AddAnomalies</c>, which carries the same tooltip on the node): those are
+        /// skipped here, so the dossier is reached where the player walks onto the anomaly rather than
+        /// twice over. What is left is the fall back - an anomaly the card is drawing no item for,
+        /// whose page only a carrier of the mod's can make exist.
         /// </summary>
         private static void AddAnomalyDossiers(
             List<TooltipChildren.Dossier> found,
             Planet planet,
-            PlanetLabel_SystemOrbital card
+            PlanetLabel_SystemOrbital card,
+            List<CardActions.CardAction> declared
         )
         {
             AgeTransform table = card == null ? null : card.PlanetAnomaliesTable;
@@ -445,9 +455,31 @@ namespace ES2Access.Screens
             {
                 Anomaly anomaly = planet.Anomalies[i];
                 AgeTooltip drawn = DrawnAnomaly(items, i);
+                // Flow control: the anomaly is a row of its own, and the row is where its page is.
+                if (drawn != null && Carries(declared, drawn))
+                {
+                    continue;
+                }
+
                 AgeTooltip tooltip = drawn ?? AnomalyCarrier(planet, anomaly, i);
                 TooltipChildren.Add(found, tooltip);
             }
+        }
+
+        /// <summary>Whether one of the card's declared rows is already carrying this dossier - matched
+        /// on the tooltip OBJECT, which is the one thing a row and a dossier of the same anomaly
+        /// certainly share whatever gate each of them passed.</summary>
+        private static bool Carries(List<CardActions.CardAction> declared, AgeTooltip tooltip)
+        {
+            for (int i = 0; declared != null && i < declared.Count; i++)
+            {
+                if (declared[i].Tooltip == tooltip)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>The card's own icon for the Nth anomaly, where it is drawing one. The table is
@@ -761,7 +793,18 @@ namespace ES2Access.Screens
                 // The two faction-specific ways of settling a world, drawn in place of Colonize for the
                 // empires that have them. The game gives them no caption, so they are named by the
                 // sentence their own tooltip opens with.
-                CardActions.AddNamedByTooltip(found, card.VodyaniHintButton);
+                // The Vodyani one gets the narrower gate: its refresh sets the hint in one branch
+                // (<c>PlanetLabel_SystemOrbital.RefreshVodyaniHintButton</c> :1297-1298) and - unlike
+                // its two siblings - never hides the button in the other, so a rebound label can draw
+                // the button and carry a technology that has nothing to do with the world under it.
+                // The game writes its sentence onto this button's own tooltip, so the drawn test is
+                // the right one (measured: <c>VodyaniHintButton.AgeTransform.AgeTooltip</c> exists).
+                AgeTransform vodyani = AgeWidgets.Transform(card.VodyaniHintButton);
+                CardActions.AddNamedByTooltip(
+                    found,
+                    card.VodyaniHintButton,
+                    () => TechnologyHints.Drawn(vodyani)
+                );
                 CardActions.AddNamedByTooltip(found, card.UmbralChoirHintButton);
                 CardActions.AddNamedByTooltip(found, card.BuyOutpostButton);
                 // The way into a minor civilization's diplomacy, drawn on a world one of them holds.
@@ -771,6 +814,14 @@ namespace ES2Access.Screens
                 // back null and the button spoke unnamed. It opens the same screen the system label's
                 // diplomacy button does, so it takes the same name.
                 CardActions.AddNamedByMod(found, card.MinorFactionButton, ModStrings.GalaxySystemDiplomacy);
+
+                // The anomalies, as the rows the game made them rather than as dossiers alone: each
+                // one's own click is the jump to the technology that would let it be reduced, which
+                // the mouse has had here all along and no node stood on (owner ruling 2026-09-14,
+                // parity with the star system page). The dossier that used to hang under the card's
+                // "Tooltips" region rides on the row instead - <see cref="AddAnomalyDossiers"/> drops
+                // the one a row is already carrying, so nothing is said twice.
+                CardActions.AddAnomalies(found, card.PlanetAnomaliesTable);
 
                 // The row of small round buttons under the card. The game draws them as bare icons and
                 // hangs an assembled stat block on each, so there is no caption and no first line of

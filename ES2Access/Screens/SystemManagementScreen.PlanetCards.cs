@@ -466,7 +466,7 @@ namespace ES2Access.Screens
                 CardActions.AddRefusableNamedByTooltip(found, label.BuildInfrastructureButton);
                 CardActions.AddRefusableNamedByTooltip(found, label.ReduceAnomalyButton);
                 CardActions.AddRefusableNamedByTooltip(found, label.TerraformButton);
-                AddAnomalyHints(found, label);
+                CardActions.AddAnomalies(found, label.PlanetAnomaliesTable);
                 AddCuriosities(found, label);
             }
             catch (Exception e)
@@ -475,55 +475,6 @@ namespace ES2Access.Screens
             }
 
             return found;
-        }
-
-        /// <summary>
-        /// The anomalies on the card, as the CONTROLS the game made them: each row's own click jumps to
-        /// the technology that would let the anomaly be reduced (<c>PlanetAnomalyItem.OnHintCb</c>),
-        /// which the mouse has and no node stood on. The click is wired on the ROW, not on the little
-        /// hint button beside it - that one only carries the hint's state - so the row is what is
-        /// declared and the button is what decides whether it would do anything.
-        ///
-        /// Kept declared while the row is drawn and OFFERED only while the hint is live, the same
-        /// treatment every other blocked control on these cards gets: the game only fills the hint in
-        /// for a world of yours whose reduction is blocked, and a row that answers "unavailable" is the
-        /// truthful reading of a click that would do nothing. The anomaly's own dossier - the paragraph
-        /// and the reduction prerequisites - rides along as the node's tooltip; the card's buffer keeps
-        /// naming the anomalies as it always did.
-        ///
-        /// The table pools its items, so admission is what keeps a retired row out of the numbering.
-        /// </summary>
-        private static void AddAnomalyHints(
-            List<CardActions.CardAction> found,
-            PlanetLabel_SystemManagement label
-        )
-        {
-            IList<AgeTransform> items = AgeWidgets.DrawnChildren(label.PlanetAnomaliesTable);
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                AgeTransform row = items[i];
-                PlanetAnomalyItem item = row == null ? null : row.GetComponent<PlanetAnomalyItem>();
-                if (item == null || item.HintButton == null)
-                {
-                    continue;
-                }
-
-                PlanetAnomalyItem it = item;
-                AgeTransform hint = item.HintButton.AgeTransform;
-                // Through the collector's admission filter like every other entry: this list is
-                // NUMBERED, and the table below is pooled, so a hand-built row cannot be allowed to
-                // skip the one test that keeps a retired one out of the count.
-                CardActions.Add(
-                    found,
-                    new CardActions.CardAction
-                    {
-                        Widget = row,
-                        Label = () => AgeWidgets.TooltipTitle(it.Tooltip),
-                        Tooltip = it.Tooltip,
-                        Offered = () => AgeWidgets.Hinted(hint),
-                    }
-                );
-            }
         }
 
         /// <summary>

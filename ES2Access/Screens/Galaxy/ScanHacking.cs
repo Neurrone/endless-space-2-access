@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.UI.Graph;
@@ -380,13 +380,30 @@ namespace ES2Access.Screens
                 }
 
                 HackingProgramLine it = line;
+                // The refusal is written on the BUTTON, not on the row: <c>HackingProgramLine.Refresh</c>
+                // :40-52 sets <c>Button.Enable</c> from the program's own validity and leaves the row's
+                // enable alone, so asking the row called every program available (or every one
+                // unavailable) whatever the game had decided about it.
+                AgeTransform press = AgeWidgets.Transform(it.Button);
                 NodeVtable vtable = GraphNodes.Button(
                     () => AgeText.Label(it.Label),
                     () => AgeWidgets.Press(it.Button),
-                    () => AgeWidgets.Operable(it.AgeTransform),
+                    () => AgeWidgets.Operable(press),
                     AgeWidgets.Raw(it.AgeTransform)
                 );
                 AgeWidgets.Point(vtable, it.Button, AgeWidgets.Raw(it.AgeTransform), it.AgeTransform);
+                // The jump to the technology the program is missing, which the game hangs on the row's
+                // little hint button (:50) and the node stood on the row, so the shared wiring no-opped.
+                // The sentence goes to the line's own <c>Tooltip</c> field - the call's
+                // <c>customTooltip</c> - and the hint button carries no tooltip of its own (measured),
+                // which is what the second argument of <see cref="TechnologyHints.Drawn"/> is for.
+                AgeTransform hinted = AgeWidgets.Transform(it.HintButton);
+                AgeTooltip hintDrawnOn = it.Tooltip;
+                Cells.WireHintGesture(
+                    vtable,
+                    hinted,
+                    () => TechnologyHints.Drawn(hinted, hintDrawnOn)
+                );
                 builder.AddItem(Nodes.Drawn(ControlId.For(line, head + i), vtable, line));
             }
         }

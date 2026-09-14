@@ -129,6 +129,7 @@ ES2Access/Screens/EmpireScreen.cs | 1 | && AgeWidgets.Visible(window.VictoryAndP
 ES2Access/Screens/EmpireScreen.cs | 1 | AgeWidgets.Visible(slot.RemoveRelicsImage)
 ES2Access/Screens/EmpireScreen.cs | 1 | if (button == null || !AgeWidgets.Visible(button))
 
+ES2Access/Screens/FleetPanel.cs | 1 | AgeTransform hinted = item.Button != null && item.Button.Visible
 ES2Access/Screens/FleetPanel.cs | 1 | if (group == null || !group.Visible)
 ES2Access/Screens/FleetPanel.cs | 1 | if (item == null || !AgeWidgets.Paints(item.AgeTransform))
 ES2Access/Screens/FleetPanel.cs | 1 | if (item.Toggle != null && item.Toggle.Visible)
