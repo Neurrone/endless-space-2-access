@@ -631,6 +631,7 @@
   "senate.government-panel": "Regierung",
   "senate.election-panel": "Nächste Wahl",
   "senate.support-panel": "Unterstützungsverlauf",
+  "senate.support-history-turn": "Zug {0}",
   "senate.empty-law-slot": "Leerer Gesetzesplatz",
   "senate.locked-law-slot": "Gesperrter Gesetzesplatz",
   "senate.empty-senator-slot": "Leerer Senatorenplatz",

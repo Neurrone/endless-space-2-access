@@ -655,6 +655,7 @@
   "senate.government-panel": "Rząd",
   "senate.election-panel": "Następne wybory",
   "senate.support-panel": "Historia poparcia",
+  "senate.support-history-turn": "Tura {0}",
   "senate.empty-law-slot": "Puste miejsce na prawo",
   "senate.locked-law-slot": "Zablokowane miejsce na prawo",
   "senate.empty-senator-slot": "Puste miejsce na senatora",

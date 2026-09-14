@@ -631,6 +631,7 @@
   "senate.government-panel": "정부",
   "senate.election-panel": "다음 선거",
   "senate.support-panel": "지지 기록",
+  "senate.support-history-turn": "{0}턴",
   "senate.empty-law-slot": "빈 법 슬롯",
   "senate.locked-law-slot": "잠긴 법 슬롯",
   "senate.empty-senator-slot": "빈 의원 슬롯",

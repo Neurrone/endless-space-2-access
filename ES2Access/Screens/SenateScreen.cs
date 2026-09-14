@@ -36,16 +36,19 @@ namespace ES2Access.Screens
     ///   window. The game draws either "Population details" or the gene hunter's own button, never
     ///   both (<c>PopulationCensusPanel.Bind</c> :62-63), so whichever is drawn is what is declared.
     ///
-    /// The side panels - the government, the next election and the support history - are read by the
-    /// shared side-panel reader (<see cref="SidePanels"/>), which is also what gives the government
-    /// panel's Change Government button and the election panel's Survey button their refusals in the
-    /// game's own words.
+    /// The side panels - the government and the next election - are read by the shared side-panel
+    /// reader (<see cref="SidePanels"/>), which is also what gives the government panel's Change
+    /// Government button and the election panel's Survey button their refusals in the game's own
+    /// words. The third, the support history, is a picture with no words in it and is read as the
+    /// table it is a picture of (<see cref="BuildSupportHistory"/>) - except while the game says it
+    /// has too little data to draw one, which is a sentence and reads through the shared reader like
+    /// everything else.
     ///
     /// Escape and F2 stay the game's: the screen is the game's own and its own close paths work. The
     /// page is one of the icon strip's, which the engine draws in an exclusive window stack - opening
     /// any other one hides this instantly (measured), which is why they all share a layer.
     /// </summary>
-    public sealed class SenateScreen : Screen
+    public sealed partial class SenateScreen : Screen
     {
         private static readonly object AssemblyStop = "senate:assembly";
         private static readonly object SenatorsStop = "senate:senators";
@@ -179,6 +182,15 @@ namespace ES2Access.Screens
                 {
                     SidePanel panel = _panels[i];
                     builder.BeginStop("senate:side/" + panel.GetType().Name);
+                    // The support history is the one panel here whose content is a drawing rather
+                    // than text. Where the game is drawing the curves it is read as the table they
+                    // plot; where it is drawing its own "not enough data" sentence instead, that
+                    // sentence is text like any other and falls through to the shared reader.
+                    if (BuildSupportHistory(builder, panel))
+                    {
+                        continue;
+                    }
+
                     builder.PushContext(PanelName(panel));
                     _cells.Clear();
                     SidePanels.Readouts(

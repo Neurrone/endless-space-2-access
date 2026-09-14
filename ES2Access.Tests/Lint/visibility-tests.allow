@@ -468,6 +468,9 @@ ES2Access/Screens/ScanViewScreen.cs | 1 | || !AgeWidgets.Visible(label.AgeTransf
 
 ES2Access/Screens/Screen.cs | 1 | if (button == null || !AgeWidgets.Visible(button))
 
+ES2Access/Screens/SenateScreen.SupportHistory.cs | 1 | || !AgeWidgets.Visible(curve.PoliticsGroup)
+ES2Access/Screens/SenateScreen.SupportHistory.cs | 1 | || !AgeWidgets.Visible(panel.SupportHistoryContainer)
+
 ES2Access/Screens/SenateScreen.cs | 1 | if (arc == null || arc.GuiPopulation == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SenateScreen.cs | 1 | if (card == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SenateScreen.cs | 1 | if (count == null || !AgeWidgets.Visible(count))

@@ -667,6 +667,7 @@
   "senate.government-panel": "Government",
   "senate.election-panel": "Next election",
   "senate.support-panel": "Support history",
+  "senate.support-history-turn": "Turn {0}",
   "senate.empty-law-slot": "Empty law slot",
   "senate.locked-law-slot": "Locked law slot",
   "senate.empty-senator-slot": "Empty senator slot",

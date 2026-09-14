@@ -631,6 +631,7 @@
   "senate.government-panel": "政府",
   "senate.election-panel": "下次選舉",
   "senate.support-panel": "支持度紀錄",
+  "senate.support-history-turn": "第 {0} 回合",
   "senate.empty-law-slot": "空白法條欄位",
   "senate.locked-law-slot": "鎖定的法條欄位",
   "senate.empty-senator-slot": "空白國會代表欄位",

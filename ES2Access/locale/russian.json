@@ -668,6 +668,7 @@
   "senate.government-panel": "Правительство",
   "senate.election-panel": "Следующие выборы",
   "senate.support-panel": "История поддержки",
+  "senate.support-history-turn": "Ход {0}",
   "senate.empty-law-slot": "Пустая ячейка закона",
   "senate.locked-law-slot": "Закрытая ячейка закона",
   "senate.empty-senator-slot": "Пустая ячейка сенатора",

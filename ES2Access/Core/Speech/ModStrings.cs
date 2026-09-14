@@ -1032,6 +1032,7 @@ namespace ES2Access.Core.Speech
             { SenateGovernmentPanel, "Government" },
             { SenateElectionPanel, "Next election" },
             { SenateSupportPanel, "Support history" },
+            { SenateSupportHistoryTurn, "Turn {0}" },
             { SenateEmptyLawSlot, "Empty law slot" },
             { SenateLockedLawSlot, "Locked law slot" },
             { SenateEmptySenatorSlot, "Empty senator slot" },

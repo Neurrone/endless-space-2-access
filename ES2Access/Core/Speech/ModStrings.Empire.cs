@@ -46,6 +46,13 @@ namespace ES2Access.Core.Speech
         public const string SenateGovernmentPanel = "senate.government-panel";
         public const string SenateElectionPanel = "senate.election-panel";
         public const string SenateSupportPanel = "senate.support-panel";
+        /// <summary>What one column of the support-history table is called: the turn that record's
+        /// support was taken at. A key of its own rather than the price graph's
+        /// <see cref="EconomyPriceHistoryTurn"/>, which happens to read the same in English: the two
+        /// caption different tables, and a language that inflects one of them differently must be
+        /// free to say so.</summary>
+        public const string SenateSupportHistoryTurn = "senate.support-history-turn";
+
         public const string SenateEmptyLawSlot = "senate.empty-law-slot";
         public const string SenateLockedLawSlot = "senate.locked-law-slot";
         public const string SenateEmptySenatorSlot = "senate.empty-senator-slot";

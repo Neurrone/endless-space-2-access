@@ -631,6 +631,7 @@
   "senate.government-panel": "Governo",
   "senate.election-panel": "Próxima eleição",
   "senate.support-panel": "Histórico de apoio",
+  "senate.support-history-turn": "Turno {0}",
   "senate.empty-law-slot": "Espaço de lei vazio",
   "senate.locked-law-slot": "Espaço de lei bloqueado",
   "senate.empty-senator-slot": "Espaço de senador vazio",
