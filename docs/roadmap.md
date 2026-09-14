@@ -8,6 +8,17 @@ belong in the files above.
 
 ## To build
 
+- **Empire screen build cost (shelved 2026-09-14, owner ruling).** One production build of
+  the F1 page is ~6.4 ms first-in-frame (the systems table 4.7 ms of it; the stopwatch recipe's
+  back-to-back builds read ~2.1 ms because 199 of 200 hit the frame-keyed sweeps warm). The cost
+  is structural: 264 nodes rebuilt every frame at ~4 us and 1.5 KB each, spread over node
+  construction, the four edges per cell and the AGE reads. `GraphSheet.RowAt` is 0.9 ms / 310 KB
+  of it and its vertical wiring is quadratic in a row's cell count. Local cuts in `TableSheet`
+  were measured neutral (commit d49f804 kept only the allocation win). Meeting the bar needs a
+  Core change: a snapshot of the built rows keyed on the line list and each line's bound object,
+  re-emitted until the game rebinds; or a cheaper node (hoist the row key out of the per-cell
+  path, index the vertical wiring). Proof for either is the empire screen's dump byte for byte,
+  no full walk (owner ruling).
 - **Zoom bands and scan lenses — what the plan left open.** The plan itself shipped whole
   2026-09-01 (six stages; the spec is `scan-modes-design-proposal.md`, the pointer row is in
   Shipped). What is left:
