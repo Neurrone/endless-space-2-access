@@ -504,6 +504,31 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
+        /// What this page is currently SHOWING, for the purpose of a carry (see
+        /// <see cref="ES2Access.Core.UI.CarryState"/>): the value that a thing picked up here was
+        /// picked up out of.
+        ///
+        /// A carry belongs to the page it started on, and leaving that page ends it silently. But a
+        /// page can stay the same screen and still put something else in front of the player - the
+        /// star system page turned to the next system, the empire page's table swapping the panel it
+        /// has slid out, or sliding out the same panel for another system - and the thing being
+        /// carried has nowhere to land there, because the game allows no drop across that boundary.
+        /// So a carry picked up while this answered one value LAPSES, as silently as leaving, the
+        /// moment it answers a different one (compared with <c>Equals</c>).
+        ///
+        /// Null means the page never narrows this way: whatever is carried here can be put down
+        /// anywhere on it, for as long as the player stays. That is the answer for every screen but
+        /// the two with a page of their own inside them.
+        ///
+        /// Read once a frame while something is held and not at all otherwise, so it must be a field
+        /// or a flag already kept - never a walk.
+        /// </summary>
+        public virtual object CarryScope
+        {
+            get { return null; }
+        }
+
+        /// <summary>
         /// A MODE of this screen owns the player's attention, so a cursor that moves underneath it
         /// says nothing (owner ruling 2026-08-31; the galaxy's inspect cell is the only one).
         ///

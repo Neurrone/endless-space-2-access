@@ -95,6 +95,12 @@ namespace ES2Access.UI
         // picked up and what will take a drop.
         private readonly CarryState _carry = new CarryState();
 
+        // What the owner's page was SHOWING when the carry was picked up (Screen.CarryScope), so that
+        // the page turning to another system - or the empire table sliding out a different panel -
+        // ends a carry whose drop targets went with it. Only meaningful while something is held;
+        // rewritten by every pick-up and dropped by every ending.
+        private object _carryScope;
+
         public GraphNavigator(BufferController buffers = null)
         {
             _buffers = buffers;
@@ -286,6 +292,7 @@ namespace ES2Access.UI
             // menu opened over that page is still that page, so a player can pick something up, open
             // an action menu and come back still holding it.
             _carry.ScreenChanged(SameFamily(screen, _carry.Owner as Screen));
+            NoteCarryScope();
 
             _screen = screen;
             ClearSearch();
@@ -778,6 +785,7 @@ namespace ES2Access.UI
         /// </summary>
         public void EnsureFocus()
         {
+            LapseCarryIfPageMoved();
             if (_screen == null || _graph == null)
             {
                 return;
@@ -1364,6 +1372,9 @@ namespace ES2Access.UI
                 );
                 if (drop.Handled)
                 {
+                    // A drop that landed ended the carry; one the game refused did not, and the page
+                    // it was refused on is still the page it was picked up from.
+                    NoteCarryScope();
                     Voice.Say(drop.Speech, true);
                     return true;
                 }
@@ -1516,8 +1527,58 @@ namespace ES2Access.UI
                 return false;
             }
 
+            // Whatever the press did - took something up, swapped what was held, or found nothing to
+            // give - the record now matches what is being carried, if anything.
+            NoteCarryScope();
             Voice.Say(outcome.Speech, true);
             return true;
+        }
+
+        /// <summary>
+        /// Remember what the owner's page was showing at the moment a carry began - or forget it,
+        /// when that press left nothing held. Called after every press that could have changed what
+        /// is carried, so the record and the carry are never out of step.
+        /// </summary>
+        private void NoteCarryScope()
+        {
+            Screen owner = _carry.Owner as Screen;
+            _carryScope = _carry.IsCarrying && owner != null ? owner.CarryScope : null;
+        }
+
+        /// <summary>
+        /// End of frame: a carry whose page has moved on beneath it lapses, silently.
+        ///
+        /// The screen is the same screen - the star system page turned to the next system, the empire
+        /// page slid out another panel or the same panel for another system - so
+        /// <see cref="CarryState.ScreenChanged"/> never fires, but the thing being held came out of
+        /// what that page WAS showing and the game allows no drop across the change. It is the same
+        /// ending as walking off the page, so it says the same thing: nothing. The player is told by
+        /// the new page, which is already announcing itself.
+        ///
+        /// One virtual property read per frame while something is held, and not a single call
+        /// otherwise - the screens that answer it answer from a field they already keep.
+        /// </summary>
+        private void LapseCarryIfPageMoved()
+        {
+            if (!_carry.IsCarrying)
+            {
+                return;
+            }
+
+            Screen owner = _carry.Owner as Screen;
+            if (owner == null)
+            {
+                return;
+            }
+
+            object now = owner.CarryScope;
+            if (now == null ? _carryScope == null : now.Equals(_carryScope))
+            {
+                return;
+            }
+
+            _carry.Clear();
+            _carryScope = null;
         }
 
         // The back key while something is held: put it down, and go no further - the screen the
@@ -1530,6 +1591,7 @@ namespace ES2Access.UI
                 return false;
             }
 
+            NoteCarryScope();
             Voice.Say(outcome.Speech, true);
             return true;
         }
