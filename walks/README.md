@@ -13,10 +13,12 @@ sh walks/diffwalks.sh /tmp/before /tmp/after /tmp/diff.txt
 `diffwalks.sh` prints `total differing lines: N`. **N must be 0** for "nothing changed".
 Anything else is a real change to classify (§5).
 
-The walk drives nine families of screens with `POST /input`, saves the mod's whole
+The walk drives ten families of screens with `POST /input`, saves the mod's whole
 accessible tree (`GET /gui/graph?buffers=1`) at ~110 stations, and adds a focused pass over
 the Class-backed tooltip carriers, whose text does not exist in an unfocused dump. It works
-because the dump is text and stable.
+because the dump is text and stable. The tenth family is different in kind: it reads a
+pooled surface, rebinds the pool, reads it again and diffs the two readings inside one run
+(§9).
 
 Nothing in the walk is written down about *this* save. The systems, planets, starlanes,
 fleets, technologies, heroes, minor empires, notifications and registered screen keys are
@@ -27,7 +29,7 @@ save, another faction or another galaxy and it walks that one.
 
 | File | Purpose |
 |---|---|
-| `walk-all.sh` | Runs the nine families into one output dir, `--reset` optionally loads a save first, prints the dump count and the skip list |
+| `walk-all.sh` | Runs the ten families into one output dir, `--reset` optionally loads a save first, prints the dump count and the skip list |
 | `00-menus.sh` | The screens that exist before any save is loaded: the main menu, the mod's settings, the new-game lobby and the faction choice, custom-faction editor and advanced settings it opens, load/save, the game options tab by tab, the DLC browser, the credits, the disclaimer, and every registered screen key. Standalone — `walk-all.sh` does not run it |
 | `01-galaxy.sh` | Galaxy HUD, map tree (two systems expanded, first revisited — the pooled-row shrink leg), selected-fleet panel, scan view, map + HUD tooltip pass |
 | `02-system.sh` | Star-system page for the first owned system, the second, the first again (pool shrink); planet overview; improvements and system-politics modals |
@@ -38,8 +40,9 @@ save, another faction or another galaxy and it walks that one.
 | `07-dialogs.sh` | Pause menu, the mod's settings window (both tabs), game options, load/save, rename, journal, recipe creation, non-blocking box |
 | `08-notifications.sh` | The notification popup a pending notification raises, and the HUD after the turn-log key |
 | `09-bykey.sh` | Every registered mod screen dumped by key — the safety net for everything the fixture cannot open |
+| `10-rebind.sh` | The A-B-A rebind pass over the surfaces the game pools: star-system and map orbital planet cards, the selected fleet's actions, empire-page planet cards, marketplace section radios, diplomacy ring wedges, and the notification popup's body (§9) |
 | `lib.sh` | Shared helpers: pausing, injecting, dumping, tooltip capture, window open/hide, discovery, type-ahead landing, skip recording |
-| `cs/*.cs` | The `/eval` bodies: `tut` (minimise the tutorial), `drain` (close everything), `reset` (normalise the mod's graph state), `sysopen`, `home`, `minor`, `restore`, and out of game `menudrain` (close what is on top) and `menuhome` (leave the lobby and put the menu back) |
+| `cs/*.cs` | The `/eval` bodies: `tut` (minimise the tutorial), `drain` (close everything), `reset` (normalise the mod's graph state), `sysopen`, `home`, `minor`, `restore`, the two `rebind-*` templates §9 substitutes a target into, and out of game `menudrain` (close what is on top) and `menuhome` (leave the lobby and put the menu back) |
 | `fixture.env` | The three knobs — see §2 |
 | `diffwalks.sh` | Normalised diff of two walk outputs |
 | `normalize.sed` | The normalisation rules (§4) |
@@ -202,15 +205,22 @@ they do not.
 | The HUD strip holds no pending notification | The notification popup |
 | `hud:turn-log` is not declared | Nothing — recorded as a finding about the fixture |
 | The screen registry cannot be read out of a bogus-key refusal | The whole by-key walk |
+| The empire owns one colonized system | The star-system and empire-page planet-card rebinds |
+| Fewer than two map systems, or neither of the first two draws an orbital card | The orbital planet-card rebind |
+| Fewer than two of this empire's fleets are reachable on the map tree | The fleet-action rebind |
+| No economy tab offers two or more marketplace sections, or fewer than two are selectable | The marketplace radio rebind |
+| Fewer than three empires on the diplomacy ring | The ring-sector rebind |
+| The HUD strip holds fewer than two pending notifications | The popup-body rebind |
 
 ## 7. What the walk will not do
 
 It never advances a turn, loads a save (outside `--reset`), writes a save, dismisses a
 notification, or presses Load / Save / Delete / Confirm / Apply / Create / Retrofit /
 Exit Game. The negotiation modal is never opened — closing an unsigned negotiation posts an
-order. The notification popup is closed by hiding its window, never through the dismiss key,
-so the strip is left exactly as found. Each family's epilogue drains modals, re-minimises
-the tutorial and returns the camera to galaxy overview.
+order, which is also why a diplomacy wedge is never activated. The notification popup is
+closed by hiding its window, never through the dismiss key, and the `AlreadyRead` flags that
+browsing it sets are put back, so the strip is left exactly as found. Each family's epilogue
+drains modals, re-minimises the tutorial and returns the camera to galaxy overview.
 
 After a walk, restore what a walk deliberately leaves set:
 `sh -c 'curl -s -X POST --data-binary @walks/cs/restore.cs $WALK_HOST/eval'` — it nulls the
@@ -234,3 +244,42 @@ purpose, and the restore cache is lost by one).
 * **A capture that opens a game modal from `/eval`** sets what its opener sets, then shows
   it. Never close one with `w.HandleInput(InputAction.Exit)` on a window that was never
   properly bound — that wedges the screen stack.
+
+## 9. The A-B-A rebind pass
+
+`10-rebind.sh` answers a question the other nine cannot ask. A widget the game pools keeps
+whatever the previous binding left on its components, so a capture taken on a fresh binding
+shows only the fresh case — and a before/after pair of such captures agrees with itself
+while both sides are wrong. This family therefore reads a surface (**A**), performs the
+game's own rebinding action onto a second subject (**B**), performs it back, reads the
+surface again (**A'**), and diffs A against A'. The diff is inside one run, so the family is
+a finding on its own and needs no second build to compare against. Anything that survives
+the normaliser is the previous subject's state being read off a rebound widget.
+
+Two rules make each leg mechanical rather than judgement:
+
+* **B must shrink the bound list** before it grows back — surplus is what a pool retires
+  and leaves behind. So B is the system with fewer planets, the fleet with fewer actions,
+  the market section with fewer rows, each found by reading the candidates' counts at
+  runtime.
+* **Every capture prints `Alpha` beside `Visible`** for the pool's own children. A retired
+  child parked at alpha 0 draws no text, so a graph dump prunes it and then agrees with
+  whatever the mod declared — parity that is really a blind spot.
+
+Captures go through an `/eval` walk of the render (`cs/rebind-walk.cs`), not
+`GET /gui/graph`: these screens run past the dump's 800-line cap, and a capture that
+truncates differently on the two sides of a pair proves nothing. The pool listing
+(`cs/rebind-pool.cs`) is sorted by bound subject and reads only labels the game is drawing,
+because the game reshuffles which pooled child holds which subject, and an undrawn label
+keeps its old text for good — neither is the surface.
+
+The normaliser for an A-vs-A' diff is `normalize.sed` and nothing else (§4): within one run
+nothing else legitimately moves. Alpha is printed to one decimal for the same reason the
+clock is normalised — a child caught part-way through its retirement fade lands on a
+slightly different alpha every run, and the third decimal of a fade is not the surface.
+
+Four surfaces from the same audit are **not covered**, each because its rebind needs a state
+the walk may not produce: the economy tab bar wants the marketplace technology researched
+with the screen open; the negotiation shelf and basket want the negotiation modal; the
+senate and election candidate cards want the election stepped through its phases; the
+hacking program menus want a hacking target selected in scan view.

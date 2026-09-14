@@ -1,7 +1,7 @@
 #!/bin/sh
 # walk-all.sh [--reset] <output-dir>
 #
-# Runs the nine family walks into <output-dir>, one after another. ~18-20 minutes.
+# Runs the ten family walks into <output-dir>, one after another. ~25 minutes.
 # Each family's console output lands in <output-dir>/logs/<family>.log; a family that
 # fails is reported and the walk carries on, so one broken screen never costs the run.
 #
@@ -41,7 +41,7 @@ if [ "$RESET" -eq 1 ]; then
 fi
 
 START=$(date +%s)
-for s in 01-galaxy 02-system 03-empire 04-military 05-diplomacy 06-heroes 07-dialogs 08-notifications 09-bykey; do
+for s in 01-galaxy 02-system 03-empire 04-military 05-diplomacy 06-heroes 07-dialogs 08-notifications 09-bykey 10-rebind; do
   printf '=== %s ' "$s"
   t0=$(date +%s)
   if sh "$WALKS_DIR/$s.sh" "$OUTROOT" > "$OUTROOT/logs/$s.log" 2>&1; then
