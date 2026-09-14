@@ -8,6 +8,15 @@ belong in the files above.
 
 ## To build
 
+- **Left unverified by the 2026-09-14/15 audits (each one live probe; the audit files were
+  deleted once their defects shipped):** whether a FOREIGN probe's and a citadel/guard's
+  class-rendered tooltips name the owner with the faction (content is GUI-element data; dump one
+  live); whether `ScanViewWindowHackingDashboard.RefreshProgramMenu`'s `Animate` on every child
+  restores a retired pooled `HackingProgramLine` to alpha 1 (open a menu shorter than its pool,
+  print Visible/Alpha per child against a crop); whether `AcademyScreen.HeroSellButton` is the
+  `HeroButtonsGroup` child the band walk lands on and carries the `GuiButtonHint` (the hint
+  gesture's coverage there rests on it); the negotiation `TermTypeFilter` alert marker if its
+  contextual service fails to resolve (never reproduced).
 - **End Turn corner, multiplayer-only gaps (2026-09-14 audit; fixture-blocked on a single-player
   save):** the attack/defend request toggles in `EndTurnWindow.RequestsListPanel` (shown only when
   the Alliance requests toggle is on, i.e. in an alliance), each of which starts a cursor-targeting
