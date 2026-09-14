@@ -202,6 +202,16 @@ post-fix dump. Where no "before" dump exists, one `/eval` comparing the OLD read
 per widget over the whole window, printing the divergence count, is a regression check that needed
 no baseline.
 
+**An evidence pair on a pooled prefab must include a REBIND.** A card, table line or popup row the
+game pools keeps whatever a previous binding left on its components, and a proof taken on a fresh
+binding shows only the fresh case: the system page's planet-status hint (`GuiButtonHint`, cleared by
+the game in its hostile branch only) read clean on the system just opened and stale on every colonized
+card after one page-turn away and back (2026-09-14, shipped and met by the owner at once). So gate a
+pooled widget's reading on what the game DRAWS this refresh (a sentence written into the tooltip, a
+flag set on every refresh), never on a component the game writes in one branch, and take the after-dump
+only after rebinding the pool - page to another system and back, select another row, open another
+notification - so the retired binding's state is in the picture.
+
 **An un-watched announcement part is still asked every frame** (`watch: false` means "not
 compared") — an expensive part needs an input-keyed memo, and only a call counter read across
 ~100 frames proves it; no transcript or dump shows the waste.
