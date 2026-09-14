@@ -273,7 +273,10 @@ namespace ES2Access.Screens
                 vtable.Announcements[1] = GraphNodes.ValuePart(() => RowText(it));
             }
 
-            vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip));
+            vtable.Sections = GraphNodes.Sections(
+                NodeSection.Buffer(() => RowLines(it)),
+                GraphNodes.TooltipSection(tooltip)
+            );
             vtable.OnFocusVisual =
                 hover == null
                     ? AgeWidgets.ReleasePointer
@@ -845,6 +848,37 @@ namespace ES2Access.Screens
         private static string RowText(List<Line> row)
         {
             return EmpireDossier.RowText(row);
+        }
+
+        /// <summary>The row's own words as the review buffer walks them - one line per line the game
+        /// wrote, which is what the readout joined into prose.
+        ///
+        /// The rule <see cref="Content"/> applies to the popup's lead words, applied to a drawn row:
+        /// a description written as a bullet list is one buffer line per bullet, so the player can
+        /// step them, and a report's lines stay the lines it was written as. A row of ONE line
+        /// answers with nothing at all - the buffer already opens with the readout, which for such a
+        /// row IS that line, and listing it again would say it twice.
+        ///
+        /// Asked when the row is READ, never per frame: the split and the list are the work the row's
+        /// words were kept out of a build for.</summary>
+        private static IList<string> RowLines(List<Line> row)
+        {
+            List<string> lines = new List<string>();
+            for (int i = 0; i < row.Count; i++)
+            {
+                IList<string> written = AgeText.Lines(row[i].Text);
+                for (int j = 0; j < written.Count; j++)
+                {
+                    lines.Add(written[j]);
+                }
+            }
+
+            if (lines.Count < 2)
+            {
+                lines.Clear();
+            }
+
+            return lines;
         }
 
         /// <summary>
