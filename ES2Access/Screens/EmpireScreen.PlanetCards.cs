@@ -121,9 +121,11 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The pages the card draws no words for at all: the planet's own dossier, which it hangs on
-        /// the picture in the middle (<c>PlanetCard.RefreshPlanetImage</c> :417 points it at the
-        /// planet wrapper), and the specialization improvement's, which it draws as a small picture in
+        /// The pages the card draws no words for at all: the planet's own dossier, which the game hangs
+        /// on the FRAME around the picture in the middle and not on the picture itself
+        /// (<c>PlanetCard.RefreshPlanetImage</c> :417 points it at the planet wrapper) - so the
+        /// pointer goes to the tooltip's own widget, which is the only widget the game would draw it
+        /// for - and the specialization improvement's, which it draws as a small picture in
         /// the corner and keeps on a tooltip FIELD of its own rather than on that picture
         /// (<c>RefreshPlanetImprovement</c> :531-547) - so nothing hanging off the card could have
         /// found it. The same two the star system page's card offers
@@ -143,7 +145,7 @@ namespace ES2Access.Screens
                 TooltipChildren.Add(
                     found,
                     card.PlanetImageTooltip,
-                    card.PlanetImage == null ? null : card.PlanetImage.AgeTransform
+                    AgeWidgets.TooltipOwner(card.PlanetImageTooltip)
                 );
                 AgeTransform improvement = ImprovementImage(card);
                 // Content: which dossiers the card offers. These become a region of the card's own

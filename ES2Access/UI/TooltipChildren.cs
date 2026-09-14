@@ -538,7 +538,10 @@ namespace ES2Access.UI
         }
 
         /// <summary>The same for a tooltip the caller has already resolved.
-        /// <paramref name="anchor"/> is what the tooltip is drawn under,
+        /// <paramref name="anchor"/> is what the tooltip is drawn under - the tooltip's OWN widget
+        /// (<see cref="AgeWidgets.TooltipOwner"/>), never a neighbour or a child that merely sits
+        /// beside it, because the game draws the page for that widget alone and a pointer aimed
+        /// anywhere else raises nothing and leaves the node's buffer empty,
         /// <paramref name="lines"/> the caller's own reader where it has one, and
         /// <paramref name="live"/> the caller's answer to "which widget carries this NOW" where the
         /// game moves the dossier between widgets (<see cref="Dossier.LiveAim"/>). The tooltip passed
