@@ -21,10 +21,13 @@ namespace ES2Access.UI
     /// inspect cursor and the probe bearings with; only the MIDDLE differs, and there the shape's
     /// balance point is the honest answer, since the middle of the box can be empty sky.
     ///
-    /// Nothing at all is the answer whenever a part is missing: a game with no home system yet, or a
-    /// galaxy whose middle rounds onto home. The sentence ends on where the middle lies FROM home,
-    /// and no wording has been chosen for either case, so the gesture stays silent rather than
-    /// speaking half of one.
+    /// The sentence ends on where the middle lies FROM home, and both ways of having no such offset
+    /// end on where the middle is AT instead. A galaxy whose middle rounds onto home says home's own
+    /// name. An empire with no home system yet - a Vaulters ark still under way - has nothing to
+    /// measure from, so the middle is said as the coordinate pair
+    /// (<see cref="GalaxyCoordinates.Text"/>), which in that state is measured from the game's own
+    /// origin and is therefore the same pair every system on the map is being said in. Silence is
+    /// left for a galaxy with no outline at all.
     /// </summary>
     internal static class GalaxyOverview
     {
@@ -47,14 +50,26 @@ namespace ES2Access.UI
             {
                 StarSystemNode home = HomeSystemNode();
                 ConvexHull galaxy = GalaxyFrame.Shape();
-                if (home == null || galaxy == null || galaxy.Count == 0)
+                if (galaxy == null || galaxy.Count == 0)
                 {
                     return null;
                 }
 
+                string shape = Setting(ShapeSetting, ShapeTitle);
+                string size = Setting(SizeSetting, SizeTitle);
+                if (home == null)
+                {
+                    string pair = GalaxyCoordinates.Text(
+                        new GalaxyPosition((float)galaxy.Centroid.X, (float)galaxy.Centroid.Y)
+                    );
+                    return string.IsNullOrEmpty(pair)
+                        ? null
+                        : GalaxyMapText.SummaryAtPair(shape, size, galaxy, pair);
+                }
+
                 return GalaxyMapText.Summary(
-                    Setting(ShapeSetting, ShapeTitle),
-                    Setting(SizeSetting, SizeTitle),
+                    shape,
+                    size,
                     galaxy,
                     new MapPoint(home.GalaxyPosition.X, home.GalaxyPosition.Y),
                     AgeText.Clean(home.LocalizedName)

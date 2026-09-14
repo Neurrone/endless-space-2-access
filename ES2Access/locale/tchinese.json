@@ -267,6 +267,8 @@
   "offset.west-short": "{0}西",
   "galaxy.coordinates": "{0}，{1}",
   "galaxy.map-summary": "{0} 銀河系，{1} 大小，{2} 乘 {3} 單位；銀河中心位於 {5} 的 {4}。",
+  "galaxy.map-summary-at-home": "{0} 銀河系，{1} 大小，{2} 乘 {3} 單位；銀河中心位於 {4}。",
+  "galaxy.map-summary-at-pair": "{0} 銀河系，{1} 大小，{2} 乘 {3} 單位；銀河中心位於 {4}。",
   "galaxy.bookmark.set": "書籤 {0} 已設在 {1}",
   "galaxy.bookmark.set-replacing": "書籤 {0} 已設在 {1}，取代書籤 {2}",
   "galaxy.bookmark.empty": "沒有書籤 {0}",

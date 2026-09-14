@@ -19,6 +19,13 @@ namespace ES2Access.ES2.Speech
     /// (<see cref="ConvexHull.Centroid"/>), said as an offset from home the way every other offset in
     /// the mod is said - the east/west component first
     /// (<see cref="CompassDirections.Offsets"/>).
+    ///
+    /// Where there is no offset to say, the middle is said as the place it is AT instead, and the
+    /// sentence is still spoken: <see cref="Summary(string, string, ConvexHull, MapPoint, string)"/>
+    /// names home when the middle rounds onto it, and
+    /// <see cref="SummaryAtPair(string, string, ConvexHull, string)"/> gives the coordinate pair when
+    /// there is no home to measure from at all. Each is its own template, because "at a place" and
+    /// "at a pair of numbers" are not one phrase in every language.
     /// </summary>
     public static class GalaxyMapText
     {
@@ -26,11 +33,9 @@ namespace ES2Access.ES2.Speech
         /// The sentence for a galaxy whose systems make this outline, with home at
         /// <paramref name="home"/>.
         ///
-        /// Nothing at all when there is no offset left to say - a home system standing on the
-        /// galactic centre, to within the whole unit the offset is spoken in. The sentence ends on
-        /// where the middle lies from home, and with that clause empty it would trail off into a
-        /// blank; no wording has been chosen for a galaxy centred on home, so this says nothing
-        /// rather than inventing one.
+        /// A home system standing on the galactic centre - to within the whole unit the offset is
+        /// spoken in - leaves no offset to say, and that case ends on home's own name instead: the
+        /// middle is AT the home system rather than some way off it.
         /// </summary>
         public static string Summary(
             string shape,
@@ -46,7 +51,14 @@ namespace ES2Access.ES2.Speech
             );
             if (string.IsNullOrEmpty(offsets))
             {
-                return null;
+                return ModStrings.Format(
+                    ModStrings.GalaxyMapSummaryAtHome,
+                    shape,
+                    size,
+                    MapCoordinates.Round(galaxy.Width),
+                    MapCoordinates.Round(galaxy.Height),
+                    homeName
+                );
             }
 
             return Summary(
@@ -81,6 +93,28 @@ namespace ES2Access.ES2.Speech
                 height,
                 offsets,
                 homeName
+            );
+        }
+
+        /// <summary>The sentence for a galaxy nobody lives in yet - an empire with no home system, so
+        /// there is nothing for the middle to be an offset FROM. <paramref name="pair"/> is the
+        /// coordinate pair the map is already speaking every place in while that is true
+        /// (<c>GalaxyCoordinates</c> measures it from the game's own origin), taken as an
+        /// already-spoken string so this sentence can be checked with no game present.</summary>
+        public static string SummaryAtPair(
+            string shape,
+            string size,
+            ConvexHull galaxy,
+            string pair
+        )
+        {
+            return ModStrings.Format(
+                ModStrings.GalaxyMapSummaryAtPair,
+                shape,
+                size,
+                MapCoordinates.Round(galaxy.Width),
+                MapCoordinates.Round(galaxy.Height),
+                pair
             );
         }
     }

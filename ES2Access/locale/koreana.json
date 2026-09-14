@@ -267,6 +267,8 @@
   "offset.west-short": "{0}서",
   "galaxy.coordinates": "{0}, {1}",
   "galaxy.map-summary": "{0} 은하, 크기 {1}, 가로 {2} 세로 {3} 유닛, 은하 중심은 {5} 기준 {4}.",
+  "galaxy.map-summary-at-home": "{0} 은하, 크기 {1}, 가로 {2} 세로 {3} 유닛, 은하 중심은 {4}에 위치.",
+  "galaxy.map-summary-at-pair": "{0} 은하, 크기 {1}, 가로 {2} 세로 {3} 유닛, 은하 중심은 {4}에 위치.",
   "galaxy.bookmark.set": "{1}에 북마크 {0} 설정됨",
   "galaxy.bookmark.set-replacing": "{1}에 북마크 {0} 설정됨, 북마크 {2} 대체",
   "galaxy.bookmark.empty": "북마크 {0} 없음",

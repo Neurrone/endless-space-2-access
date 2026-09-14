@@ -279,6 +279,8 @@
   "offset.west-short": "{0}z",
   "galaxy.coordinates": "{0}, {1}",
   "galaxy.map-summary": "Galaktyka {0}, rozmiar {1}, {2} na {3} jednostek; centrum galaktyki {4} od systemu {5}.",
+  "galaxy.map-summary-at-home": "Galaktyka {0}, rozmiar {1}, {2} na {3} jednostek; centrum galaktyki w systemie {4}.",
+  "galaxy.map-summary-at-pair": "Galaktyka {0}, rozmiar {1}, {2} na {3} jednostek; centrum galaktyki w punkcie {4}.",
   "galaxy.bookmark.set": "Ustawiono zakładkę {0}: {1}",
   "galaxy.bookmark.set-replacing": "Ustawiono zakładkę {0}: {1}, zastępując zakładkę {2}",
   "galaxy.bookmark.empty": "Brak zakładki {0}",

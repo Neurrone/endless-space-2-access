@@ -267,6 +267,8 @@
   "offset.west-short": "{0}西",
   "galaxy.coordinates": "{0}，{1}",
   "galaxy.map-summary": "{0}银河系，{1}尺寸，{2}乘{3}单位；银河系中心位于{5}中的{4}。",
+  "galaxy.map-summary-at-home": "{0}银河系，{1}尺寸，{2}乘{3}单位；银河系中心位于{4}。",
+  "galaxy.map-summary-at-pair": "{0}银河系，{1}尺寸，{2}乘{3}单位；银河系中心位于{4}。",
   "galaxy.bookmark.set": "书签{0}已设在{1}",
   "galaxy.bookmark.set-replacing": "书签{0}已设在{1}，替换了书签{2}",
   "galaxy.bookmark.empty": "没有书签{0}",

@@ -423,6 +423,20 @@
         /// the shape and size words are the GAME's own, dropped in whole.</summary>
         public const string GalaxyMapSummary = "galaxy.map-summary";
 
+        /// <summary>The same sentence for a galaxy whose middle rounds onto the empire's home system,
+        /// where there is no offset left to say and the middle is named by the place it stands on.
+        /// Its own key rather than a reuse of the pair one below, because naming a PLACE something
+        /// sits at and naming a PAIR OF NUMBERS it sits at need not be the same words in every
+        /// language.</summary>
+        public const string GalaxyMapSummaryAtHome = "galaxy.map-summary-at-home";
+
+        /// <summary>The same sentence for an empire with no home system to measure from - a Vaulters
+        /// ark still under way, or a game before a home exists. The middle is said as the coordinate
+        /// pair (<see cref="GalaxyCoordinatePair"/>) the map is speaking in that state, which is
+        /// measured from the game's own origin, so it is the same pair every system on the map says.
+        /// </summary>
+        public const string GalaxyMapSummaryAtPair = "galaxy.map-summary-at-pair";
+
         // The map's inspect cursor - a mode of the mod's own, so every word in it is the mod's. The
         // cursor's size is said as a whole phrase rather than a number glued to a symbol, because "3
         // by 3" is a shape and "3x3" is a sum. The lane phrases name the lane's ends the same way

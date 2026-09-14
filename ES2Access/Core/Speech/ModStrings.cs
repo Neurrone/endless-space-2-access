@@ -679,6 +679,14 @@ namespace ES2Access.Core.Speech
                 GalaxyMapSummary,
                 "{0} galaxy, {1} size, {2} by {3} units; galactic center {4} of {5}."
             },
+            {
+                GalaxyMapSummaryAtHome,
+                "{0} galaxy, {1} size, {2} by {3} units; galactic center at {4}."
+            },
+            {
+                GalaxyMapSummaryAtPair,
+                "{0} galaxy, {1} size, {2} by {3} units; galactic center at {4}."
+            },
             { GalaxyBookmarkSet, "Bookmark {0} set on {1}" },
             { GalaxyBookmarkSetReplacing, "Bookmark {0} set on {1}, replacing bookmark {2}" },
             { GalaxyBookmarkEmpty, "No bookmark {0}" },

@@ -77,11 +77,10 @@ namespace ES2Access.Tests.ES2.Speech
         }
 
         [Fact]
-        public void AHomeSystemStandingOnTheGalacticCentreIsNotSaidAtAll()
+        public void AHomeSystemStandingOnTheGalacticCentreIsSaidAsTheMiddleBeingAtHome()
         {
-            // Both components round to zero, so there is no offset left to say and the sentence would
-            // end on a blank. No wording has been chosen for a galaxy centred on home, so the whole
-            // sentence is withheld rather than half of one being spoken.
+            // Both components round to zero, so there is no offset left to say; the sentence ends on
+            // the place the middle is AT instead of trailing off into a blank.
             ConvexHull galaxy = ConvexHull.Build(
                 new[]
                 {
@@ -92,8 +91,31 @@ namespace ES2Access.Tests.ES2.Speech
                 }
             );
 
-            Assert.Null(
+            Assert.Equal(
+                "Spiral 2 galaxy, small size, 20 by 20 units; galactic center at Dusay.",
                 GalaxyMapText.Summary("Spiral 2", "small", galaxy, new MapPoint(0, 0), "Dusay")
+            );
+        }
+
+        [Fact]
+        public void WithNoHomeToMeasureFromTheMiddleIsSaidAsItsCoordinatePair()
+        {
+            // A Vaulters empire before it settles has no home system, so there is nothing for the
+            // middle to be an offset from. The pair the map is already speaking every place in is
+            // handed in whole.
+            ConvexHull galaxy = ConvexHull.Build(
+                new[]
+                {
+                    new MapPoint(0, 0),
+                    new MapPoint(187, 0),
+                    new MapPoint(187, 130),
+                    new MapPoint(0, 130),
+                }
+            );
+
+            Assert.Equal(
+                "Spiral 2 galaxy, normal size, 187 by 130 units; galactic center at 94, 65.",
+                GalaxyMapText.SummaryAtPair("Spiral 2", "normal", galaxy, "94, 65")
             );
         }
     }

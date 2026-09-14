@@ -267,6 +267,8 @@
   "offset.west-short": "{0}w",
   "galaxy.coordinates": "{0}, {1}",
   "galaxy.map-summary": "Galaxie {0}, Größe {1}, {2} mal {3} Einheiten; galaktisches Zentrum {4} von {5}.",
+  "galaxy.map-summary-at-home": "Galaxie {0}, Größe {1}, {2} mal {3} Einheiten; galaktisches Zentrum bei {4}.",
+  "galaxy.map-summary-at-pair": "Galaxie {0}, Größe {1}, {2} mal {3} Einheiten; galaktisches Zentrum bei {4}.",
   "galaxy.bookmark.set": "Lesezeichen {0} auf {1} gesetzt",
   "galaxy.bookmark.set-replacing": "Lesezeichen {0} auf {1} gesetzt, ersetzt Lesezeichen {2}",
   "galaxy.bookmark.empty": "Kein Lesezeichen {0}",
