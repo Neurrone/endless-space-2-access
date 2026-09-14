@@ -134,6 +134,8 @@
   "galaxy.players-playing": "還有 {0} 名玩家在進行中",
   "galaxy.player-standing-with-relation": "{0}，得分 {1}，{2}，{3}。",
   "galaxy.player-standing": "{0}，得分 {1}，{2}。",
+  "galaxy.player-waited-on": "所有人都在等待該玩家。",
+  "galaxy.whisper-to": "私訊 {0}",
   "galaxy.global-timer": "遊戲剩餘時間",
   "galaxy.turn-timer": "回合剩餘時間",
   "galaxy.overtime-timer": "加時剩餘時間",

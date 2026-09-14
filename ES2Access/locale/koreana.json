@@ -134,6 +134,8 @@
   "galaxy.players-playing": "{0}명이 아직 플레이 중입니다",
   "galaxy.player-standing-with-relation": "{0}, 점수 {1}, {2}, {3}.",
   "galaxy.player-standing": "{0}, 점수 {1}, {2}.",
+  "galaxy.player-waited-on": "모두가 이 플레이어를 기다리고 있습니다.",
+  "galaxy.whisper-to": "{0}에게 귀속말",
   "galaxy.global-timer": "게임 잔여 시간",
   "galaxy.turn-timer": "턴 잔여 시간",
   "galaxy.overtime-timer": "잔여 추가 시간",

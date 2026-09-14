@@ -44,6 +44,14 @@ namespace ES2Access.UI
     /// </summary>
     public static class PlayersList
     {
+        private static readonly CompetitorOrbitalSlot[] NoSlots = new CompetitorOrbitalSlot[0];
+
+        /// <summary>The ready ring's slots, walked at most once a frame - the same
+        /// <c>GetChildren&lt;CompetitorOrbitalSlot&gt;()</c> the window's own refresh makes
+        /// (<c>EndTurnWindow.Refresh</c> :861), and the ring is at most one slot per player.</summary>
+        private static readonly FrameSweep<CompetitorOrbitalSlot> RingSlots =
+            new FrameSweep<CompetitorOrbitalSlot>("players list");
+
         private static PlayersListPanel _held;
         private static AgeModifierSet _modifiers;
 
@@ -64,7 +72,8 @@ namespace ES2Access.UI
         /// <summary>
         /// A line per empire, in the panel's own row order: the name, the score, how the two empires
         /// stand (nothing for your own empire, which the game draws no relation icon for either) and
-        /// where that player is in their turn.
+        /// where that player is in their turn - plus, on the one player the ring is blinking at, that
+        /// the whole game is waiting on them (<see cref="WaitedOn"/>).
         ///
         /// Read when the row is read, never per frame.
         /// </summary>
@@ -77,6 +86,7 @@ namespace ES2Access.UI
                 AgeTransform table = panel == null ? null : panel.PlayersTable;
                 IList<AgeTransform> rows = table == null ? null : table.Children;
                 Empire looking = Gui.PlayerEmpire;
+                Empire waited = WaitedOn(window);
                 DepartmentOfForeignAffairs foreign =
                     looking == null ? null : looking.GetAgency<DepartmentOfForeignAffairs>();
                 for (int i = 0; rows != null && i < rows.Count; i++)
@@ -90,7 +100,12 @@ namespace ES2Access.UI
                         continue;
                     }
 
-                    string line = Line(row.GetComponent<PlayerStatusLine>(), looking, foreign);
+                    string line = Line(
+                        row.GetComponent<PlayerStatusLine>(),
+                        looking,
+                        foreign,
+                        waited
+                    );
                     if (!string.IsNullOrEmpty(line))
                     {
                         lines.Add(line);
@@ -108,7 +123,8 @@ namespace ES2Access.UI
         private static string Line(
             PlayerStatusLine row,
             Empire looking,
-            DepartmentOfForeignAffairs foreign
+            DepartmentOfForeignAffairs foreign,
+            Empire waited
         )
         {
             GuiEmpire empire = row == null ? null : row.GuiEmpire;
@@ -117,11 +133,11 @@ namespace ES2Access.UI
                 return null;
             }
 
-            string name = AgeText.Clean(empire.GetLeaderName(looking, false, true, false));
+            string name = Name(empire, looking);
             string score = FloatExtensions.ToString(empire.GetScore());
             string state = StateWord(row.Player);
             string relation = Relation(empire.Empire, looking, foreign);
-            return string.IsNullOrEmpty(relation)
+            string line = string.IsNullOrEmpty(relation)
                 ? ModStrings.Format(ModStrings.GalaxyPlayerStanding, name, score, state)
                 : ModStrings.Format(
                     ModStrings.GalaxyPlayerStandingWithRelation,
@@ -130,6 +146,125 @@ namespace ES2Access.UI
                     relation,
                     state
                 );
+            return waited != null && ReferenceEquals(empire.Empire, waited)
+                ? line + " " + ModStrings.Get(ModStrings.GalaxyPlayerWaitedOn)
+                : line;
+        }
+
+        /// <summary>
+        /// What to call an empire here: the leader AND the faction, which is the game's own
+        /// <c>GetLeaderAndFaction</c> - "Kappa (AI) (Riftborn)", the same string the ready ring hangs on
+        /// its slots and <c>DiplomacyScreen</c> (:1326-1343) writes across its headers.
+        ///
+        /// The row itself draws the faction as a SYMBOL beside a leader-only name
+        /// (<c>PlayerStatusLine.Refresh</c> writes <c>GetSymbolString</c>, or "?" for a faction with no
+        /// symbol), and a symbol is a picture: the words for it are only in this call. An empire this
+        /// one has not met answers the game's own unknown title, with no faction in it at all - there is
+        /// no "(?)" to say - and your own empire answers its own name and faction, because the "you"
+        /// form is asked for only where the sentence is addressed to the player.
+        /// </summary>
+        public static string Name(GuiEmpire empire, Empire looking)
+        {
+            try
+            {
+                return empire == null
+                    ? null
+                    : AgeText.Clean(empire.GetLeaderAndFaction(looking, false, false));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The one empire the game is telling everybody it is waiting on, or null when it is waiting on
+        /// nobody in particular - which is every single-player game, where there is no ring to blink.
+        ///
+        /// This is READ off the ring rather than recomputed: <c>EndTurnWindow.Refresh</c> (:859-878)
+        /// counts the slots still drawing their unready icon and, when exactly one is left in the two
+        /// turn states, starts that slot's blink and resets every other. So a running blink IS the
+        /// game's own answer, and a second one running means the game has not settled on anybody.
+        /// </summary>
+        private static Empire WaitedOn(EndTurnWindow window)
+        {
+            try
+            {
+                CompetitorOrbitalSlot[] slots = Slots(window);
+                Empire found = null;
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    CompetitorOrbitalSlot slot = slots[i];
+                    AgeModifierSet blink = slot == null ? null : slot.BlinkingModifierSet;
+                    if (blink == null || !blink.ModifiersRunning || slot.GuiEmpire == null)
+                    {
+                        continue;
+                    }
+
+                    if (found != null)
+                    {
+                        return null;
+                    }
+
+                    found = slot.GuiEmpire.Empire;
+                }
+
+                return found;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: reading the ready ring threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The ring slots the game is offering a whisper on, in the order it drew them.
+        ///
+        /// Each slot carries a radial button the game switches on for exactly one case - a human player
+        /// who is not you (<c>CompetitorOrbitalSlot.Refresh</c>) - and clicking it focuses the chat
+        /// panel with a whisper to that player already typed into it. It is the one thing on the ring a
+        /// mouse can do and a keyboard could not, and in a single-player game there is no ring at all,
+        /// so this answers empty and the scoreboard row stays a leaf.
+        /// </summary>
+        public static IList<CompetitorOrbitalSlot> Whisperers(EndTurnWindow window)
+        {
+            List<CompetitorOrbitalSlot> offered = new List<CompetitorOrbitalSlot>();
+            try
+            {
+                CompetitorOrbitalSlot[] slots = Slots(window);
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    CompetitorOrbitalSlot slot = slots[i];
+                    if (slot == null || slot.GuiEmpire == null || slot.Player == null)
+                    {
+                        continue;
+                    }
+
+                    if (AgeWidgets.Operable(AgeWidgets.Transform(slot.SlotButton)))
+                    {
+                        offered.Add(slot);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("hud: reading the ready ring's whisper buttons threw: " + e);
+            }
+
+            return offered;
+        }
+
+        /// <summary>The ready ring's slots, or none where the game is not drawing the ring - which is
+        /// every single-player game (<c>EndTurnWindow.cs</c> :735 makes the table visible only outside
+        /// <c>SessionMode.Single</c>, and only then binds a slot per player).</summary>
+        private static CompetitorOrbitalSlot[] Slots(EndTurnWindow window)
+        {
+            AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
+            // Content read: the slots carry their last binding whether the table is drawn or not, so a
+            // solo game would otherwise be read off whatever a previous multiplayer session left on
+            // them - and this is also what keeps the sweep out of the frame in the solo case entirely.
+            return AgeWidgets.Visible(ring) ? RingSlots.Under(ring) : NoSlots;
         }
 
         /// <summary>How the two empires stand, in the game's own word for it - and nothing for your

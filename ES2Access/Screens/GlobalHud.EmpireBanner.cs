@@ -309,6 +309,11 @@ namespace ES2Access.Screens
             /// on every rebuild and the name is a localized one. Null where nothing has named it
             /// (<see cref="RowRegion"/>).</summary>
             public string Region;
+
+            /// <summary>What this cell owns UNDER it, where it owns anything: filled, the cell is
+            /// declared as an expandable group and this runs inside it while it is expanded. Null
+            /// everywhere else, and the cell is the leaf it looks like.</summary>
+            public Action<GraphBuilder> Children;
         }
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;

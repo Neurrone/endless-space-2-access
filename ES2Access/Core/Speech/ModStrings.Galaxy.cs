@@ -52,6 +52,15 @@ namespace ES2Access.Core.Speech
         /// no relation icon on.</summary>
         public const string GalaxyPlayerStandingWithRelation = "galaxy.player-standing-with-relation";
         public const string GalaxyPlayerStanding = "galaxy.player-standing";
+
+        /// <summary>Said after one player's standing, on the player the whole game is waiting on - the
+        /// signal the game itself gives by blinking that player's slot on the ready ring, which is a
+        /// picture and is drawn only in multiplayer.</summary>
+        public const string GalaxyPlayerWaitedOn = "galaxy.player-waited-on";
+
+        /// <summary>The ready ring's own button on another human player's slot: it puts the keyboard in
+        /// the chat box with a whisper to that player already typed. {0} is the player.</summary>
+        public const string GalaxyWhisperTo = "galaxy.whisper-to";
         public const string GalaxyGlobalTimer = "galaxy.global-timer";
         public const string GalaxyTurnTimer = "galaxy.turn-timer";
         public const string GalaxyOvertimeTimer = "galaxy.overtime-timer";

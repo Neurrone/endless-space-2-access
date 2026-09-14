@@ -596,6 +596,7 @@ ES2Access/UI/NotificationStrip.cs | 1 | bool shown = strict ? child.Visible : ch
 ES2Access/UI/PlanetCardLines.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
 
 ES2Access/UI/PlayersList.cs | 1 | if (row == null || !row.Visible)
+ES2Access/UI/PlayersList.cs | 1 | return AgeWidgets.Visible(ring) ? RingSlots.Under(ring) : NoSlots;
 ES2Access/UI/PlayersList.cs | 1 | row == null || !row.Visible ? null : row.GetComponent<PlayerStatusLine>();
 
 ES2Access/UI/PoliticsExperience.cs | 1 | return AgeWidgets.Paints(marker) ? marker : null;

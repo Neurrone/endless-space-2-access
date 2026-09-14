@@ -83,7 +83,21 @@ namespace ES2Access.Screens
             builder.BeginStop(TurnStop);
             for (int i = 0; i < found.Count; i++)
             {
-                builder.AddItem(Nodes.Drawn(found[i].Id, found[i].Vtable, found[i].Widget));
+                Cell cell = found[i];
+                if (cell.Children == null)
+                {
+                    builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
+                    continue;
+                }
+
+                cell.Vtable.ControlType = ControlTypes.Group;
+                builder.BeginGroup(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
+                if (builder.IsExpanded(cell.Id))
+                {
+                    cell.Children(builder);
+                }
+
+                builder.EndGroup();
             }
         }
 
@@ -309,6 +323,11 @@ namespace ES2Access.Screens
         /// One row rather than one per player: the cluster is a handful of buttons in the corner of the
         /// screen, and eight more stops in it would be walked past on every pass. The per-player lines
         /// are the row's reviewable content.
+        ///
+        /// The row grows CHILDREN for the one thing the ring lets a mouse do that the lines cannot say:
+        /// whispering to another human player (<see cref="AddWhispers"/>). Where the game draws no such
+        /// slot - every single-player game, and a multiplayer one whose other players are all AI - there
+        /// are none, and the row is the leaf it has always been.
         /// </summary>
         private void AddPlayers(List<Cell> found, EndTurnWindow window)
         {
@@ -345,14 +364,69 @@ namespace ES2Access.Screens
                 PlayersList.Hold(it);
             };
             vtable.OnBlurVisual = PlayersList.Release;
+            IList<CompetitorOrbitalSlot> whisper = PlayersList.Whisperers(window);
+            Action<GraphBuilder> children = null;
+            if (whisper.Count > 0)
+            {
+                children = b => AddWhispers(b, whisper);
+            }
+
             found.Add(
                 new Cell
                 {
                     Widget = anchor,
                     Id = ControlId.For(panel.AgeTransform, "hud:players"),
                     Vtable = vtable,
+                    Children = children,
                 }
             );
+        }
+
+        /// <summary>
+        /// One button per player the game is offering a whisper to, in the ring's own slot order.
+        ///
+        /// The ring draws a radial button on each slot and switches it on for a human player who is not
+        /// you; clicking it puts the keyboard in the chat box with "/w &lt;that empire&gt; " already
+        /// typed (<c>CompetitorOrbitalSlot.OnSlotCb</c>). That is the game's own click, so that is what
+        /// the key does - the pre-filled chat box is the game's work, not a thing worth reproducing.
+        ///
+        /// The name is the mod's, because the button carries no caption at all: the slot is an icon
+        /// tinted with the empire's colour. Its tooltip is the game's, and it is declared rather than
+        /// dropped - the state word in it is current at the moment the child is read, which the parent
+        /// row's snapshot of the standings is not.
+        ///
+        /// Keyed on the empire rather than on the slot's place in the ring, so the key a player expands
+        /// stays theirs when a competitor leaves and the ring re-binds one slot shorter.
+        /// </summary>
+        private static void AddWhispers(GraphBuilder builder, IList<CompetitorOrbitalSlot> slots)
+        {
+            for (int i = 0; i < slots.Count; i++)
+            {
+                CompetitorOrbitalSlot slot = slots[i];
+                AgeControlButton button = slot.SlotButton;
+                AgeTransform widget = AgeWidgets.Transform(button);
+                GuiEmpire empire = slot.GuiEmpire;
+                NodeVtable vtable = GraphNodes.Button(
+                    () =>
+                        ModStrings.Format(
+                            ModStrings.GalaxyWhisperTo,
+                            PlayersList.Name(empire, Gui.PlayerEmpire)
+                        ),
+                    () => AgeWidgets.Press(button),
+                    () => AgeWidgets.Operable(widget),
+                    slot.Tooltip
+                );
+                builder.AddItem(
+                    Nodes.Drawn(
+                        ControlId.For(
+                            widget,
+                            "hud:players/whisper/" + empire.Empire.EmpireIndex
+                        ),
+                        vtable,
+                        widget
+                    )
+                );
+            }
         }
 
         /// <summary>

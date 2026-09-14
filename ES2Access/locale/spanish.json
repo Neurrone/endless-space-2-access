@@ -134,6 +134,8 @@
   "galaxy.players-playing": "{0} jugadores siguen jugando",
   "galaxy.player-standing-with-relation": "{0}, puntuación {1}, {2}, {3}.",
   "galaxy.player-standing": "{0}, puntuación {1}, {2}.",
+  "galaxy.player-waited-on": "Todos están esperando a este jugador.",
+  "galaxy.whisper-to": "Susurrar a {0}",
   "galaxy.global-timer": "Tiempo de partida restante",
   "galaxy.turn-timer": "Tiempo de turno restante",
   "galaxy.overtime-timer": "Tiempo extra restante",

@@ -135,6 +135,8 @@
   "galaxy.players-playing.few": "{0} players are still playing",
   "galaxy.player-standing-with-relation": "{0}, score {1}, {2}, {3}.",
   "galaxy.player-standing": "{0}, score {1}, {2}.",
+  "galaxy.player-waited-on": "Everyone is waiting on this player.",
+  "galaxy.whisper-to": "Whisper to {0}",
   "galaxy.global-timer": "Game time remaining",
   "galaxy.turn-timer": "Turn time remaining",
   "galaxy.overtime-timer": "Overtime remaining",
