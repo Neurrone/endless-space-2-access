@@ -246,18 +246,21 @@ namespace ES2Access.Screens
             // a popup whose captions let the same lines read as a sheet (<see cref="RowNode"/>) - so it
             // says so and Enter is the game's own click, whichever reading the popup's captions bought.
             AgeTransform clicked = group != null && Wired(group) ? group : null;
+            // A row the game wrote as several lines SAYS several lines - one part each, in drawn
+            // order (<see cref="RowLines"/>), which is what puts each of them on its own line of the
+            // review buffer and nowhere twice. Null for the ordinary row of one line, which keeps
+            // saying the one thing it always said.
+            List<string> said = RowLines(it);
+            Func<string> head = said == null ? (Func<string>)(() => RowText(it)) : () => said[0];
             NodeVtable vtable = clicked == null
                 ? new NodeVtable
                 {
                     // No role word and no state: this is something the game wrote down for the player to
                     // read, not a control they work.
-                    Announcements = new List<NodeAnnouncement>
-                    {
-                        GraphNodes.LabelPart(() => RowText(it)),
-                    },
+                    Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(head) },
                 }
                 : GraphNodes.Button(
-                    () => RowText(it),
+                    head,
                     () => AgeWidgets.Press(clicked),
                     () => AgeWidgets.Operable(clicked)
                 );
@@ -270,13 +273,20 @@ namespace ES2Access.Screens
                 // rule over every popup - the pairing is a fact about this prefab.
                 string word = caption;
                 vtable.Announcements.Insert(0, GraphNodes.LabelPart(() => word));
-                vtable.Announcements[1] = GraphNodes.ValuePart(() => RowText(it));
+                vtable.Announcements[1] = GraphNodes.ValuePart(head);
             }
 
-            vtable.Sections = GraphNodes.Sections(
-                NodeSection.Buffer(() => RowLines(it)),
-                GraphNodes.TooltipSection(tooltip)
-            );
+            // The rest of the row's lines, after whichever part is leading: not watched, because these
+            // are the words the game WROTE on the row rather than a state that settles under the
+            // cursor, and a row whose words changed is a row this build made again.
+            for (int i = 1; said != null && i < said.Count; i++)
+            {
+                int at = i;
+                List<string> lines = said;
+                vtable.Announcements.Add(GraphNodes.ValuePart(() => lines[at], false));
+            }
+
+            vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipSection(tooltip));
             vtable.OnFocusVisual =
                 hover == null
                     ? AgeWidgets.ReleasePointer
@@ -850,19 +860,24 @@ namespace ES2Access.Screens
             return EmpireDossier.RowText(row);
         }
 
-        /// <summary>The row's own words as the review buffer walks them - one line per line the game
-        /// wrote, which is what the readout joined into prose.
+        /// <summary>The lines the game wrote this row as, where it wrote more than one - the rule
+        /// <see cref="Content"/> applies to the popup's lead words, applied to a drawn row. A
+        /// description written as a bullet list is one line per bullet and a report is the lines it
+        /// was written as, so the row SAYS them one at a time and the review buffer walks them one at
+        /// a time, each of them once.
         ///
-        /// The rule <see cref="Content"/> applies to the popup's lead words, applied to a drawn row:
-        /// a description written as a bullet list is one buffer line per bullet, so the player can
-        /// step them, and a report's lines stay the lines it was written as. A row of ONE line
-        /// answers with nothing at all - the buffer already opens with the readout, which for such a
-        /// row IS that line, and listing it again would say it twice.
+        /// Null for a row of one line, which is the shape every such row has always had: its readout
+        /// is that line already, and a second copy of it is the thing the player has to skip past.
         ///
-        /// Asked when the row is READ, never per frame: the split and the list are the work the row's
-        /// words were kept out of a build for.</summary>
-        private static IList<string> RowLines(List<Line> row)
+        /// The split is what the row's words were kept out of a build for, so the common row - one
+        /// label, no wrapping the game put there itself - answers before any of it happens.</summary>
+        private static List<string> RowLines(List<Line> row)
         {
+            if (row.Count == 1 && !Written(row[0].Text))
+            {
+                return null;
+            }
+
             List<string> lines = new List<string>();
             for (int i = 0; i < row.Count; i++)
             {
@@ -873,12 +888,15 @@ namespace ES2Access.Screens
                 }
             }
 
-            if (lines.Count < 2)
-            {
-                lines.Clear();
-            }
+            return lines.Count > 1 ? lines : null;
+        }
 
-            return lines;
+        /// <summary>Whether the game put a line break in this label's text itself - the cheap question
+        /// that keeps <see cref="RowLines"/> from splitting every single-label row in the popup.
+        /// </summary>
+        private static bool Written(string text)
+        {
+            return text != null && text.IndexOf('\n') >= 0;
         }
 
         /// <summary>
