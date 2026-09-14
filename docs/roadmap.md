@@ -8,6 +8,20 @@ belong in the files above.
 
 ## To build
 
+- **End Turn corner, multiplayer-only gaps (2026-09-14 audit; fixture-blocked on a single-player
+  save):** the attack/defend request toggles in `EndTurnWindow.RequestsListPanel` (shown only when
+  the Alliance requests toggle is on, i.e. in an alliance), each of which starts a cursor-targeting
+  mode to drop a coordination request on the map - the mod reads placed request pins but has no way
+  to place one; and the competitor ring's slot click (`CompetitorOrbitalSlot.OnSlotCb`), which on a
+  human player's slot focuses the chat box pre-filled with "/w <empire> " - the mod reads the
+  whisper instruction line but offers no route to that click (the chat box accepts the command typed
+  by hand). Everything else the corner draws is modelled; the players list beside the button was
+  added the same day.
+- **Notification popups raised from the REPL:** the worklist is `notifications-catalogue.md` at the
+  repo root (self-contained; its section 0 says how to resume). Group A there is twelve windows with
+  no variant and a body beyond title and description. The generic arrival race it records (the
+  popup screen pushes on the ready frame, before some popups' own labels exist) awaits an owner
+  decision.
 - **Empire screen build cost (shelved 2026-09-14, owner ruling).** One production build of
   the F1 page is ~6.4 ms first-in-frame (the systems table 4.7 ms of it; the stopwatch recipe's
   back-to-back builds read ~2.1 ms because 199 of 200 hit the frame-keyed sweeps warm). The cost
