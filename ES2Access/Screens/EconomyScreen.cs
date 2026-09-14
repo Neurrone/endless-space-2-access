@@ -384,24 +384,39 @@ namespace ES2Access.Screens
             AgeControlToggle it = toggle;
             AgeTransform at = AgeWidgets.Transform(toggle);
             AgeTooltip tooltip = AgeWidgets.Raw(at);
-            // The marketplace tab is one the game blocks for a missing technology, which it does by
-            // leaving the toggle switched on to carry a "why not?" link, so availability is the shared
-            // test rather than the enable flag (AgeWidgets.Offered).
+            // The marketplace tab is one the game blocks for a missing technology - and unlike the
+            // prefabs that leave a blocked control switched ON to carry the "why not?" link, this one
+            // is switched OFF: <c>EconomyScreen.Refresh</c> (:152-168) sets Enable = false right after
+            // the hint call, and its accessible branch returns at :156 without going near
+            // <c>Gui.FormatButtonHint</c>. Only that call ever clears a hint, so the technology stays on
+            // the toggle once the player researches it, and asking AgeWidgets.Offered here said
+            // "unavailable" - and refused Enter - on a tab the game had switched back on (measured, and
+            // the marketplace was then unreachable by keyboard). The enable flag is the whole answer.
             NodeVtable vtable = GraphNodes.Tab(
                 () => AgeWidgets.TextOf(at),
                 () => it.State,
-                () => AgeWidgets.Offered(at),
+                () => AgeWidgets.Operable(at),
                 tooltip
             );
             vtable.OnActivate = () =>
             {
-                if (AgeWidgets.Offered(at))
+                if (AgeWidgets.Operable(at))
                 {
                     AgeWidgets.Toggle(it);
                 }
             };
             AgeWidgets.Point(vtable, it, tooltip, at);
-            Cells.Add(cells, at, ControlId.For(toggle, "economy:tab/" + index), vtable);
+            // The Ctrl+Enter jump goes on under the same DRAWN test, so a tab carrying a dead hint no
+            // longer offers a jump to a technology the player already has. The test goes to the ADD,
+            // because the declared widget IS the hinted one here and Add would otherwise wire the
+            // gesture back on under the plain hint.
+            Cells.Add(
+                cells,
+                at,
+                ControlId.For(toggle, "economy:tab/" + index),
+                vtable,
+                () => TechnologyHints.Drawn(at)
+            );
         }
 
         /// <summary>A tab widget's toggles, swept once per tab per frame: the strip is rebuilt on every

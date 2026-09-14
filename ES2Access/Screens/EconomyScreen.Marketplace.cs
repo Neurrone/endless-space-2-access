@@ -222,10 +222,15 @@ namespace ES2Access.Screens
                 MarketTabRadio it = radio;
                 AgeTransform at = AgeWidgets.Transform(radio.Toggle);
                 AgeTooltip tooltip = radio.Tooltip ?? AgeWidgets.Raw(widget);
-                // A section the empire may not trade in is blocked the same way the marketplace tab is
-                // (<c>MarketTabRadio.Bind</c> :19-31), so the shared availability test rather than the
-                // enable flag alone.
-                Func<bool> offered = () => AgeWidgets.Offered(at);
+                // A section the empire may not trade in is switched OFF, not left on to carry the
+                // "why not?" link: <c>MarketTabRadio.Bind</c> (:14-32) sets Toggle.Enable = false right
+                // after the hint call, and its valid branch returns at :21 without going near
+                // <c>Gui.FormatButtonHint</c> - the only thing that ever clears a hint. These radios are
+                // a pool the panel never unbinds (<c>MarketplaceTradableItemsPanel</c> :222-223), so a
+                // radio rebound from a blocked section to an open one keeps the dead technology, and
+                // asking AgeWidgets.Offered here called an open section unavailable and refused Enter on
+                // it (measured). The enable flag is the whole answer.
+                Func<bool> offered = () => AgeWidgets.Operable(at);
                 NodeVtable vtable = GraphNodes.Radio(
                     () => AgeText.LabelWithoutLeadingIcon(it.Label),
                     () => it.Toggle.State,

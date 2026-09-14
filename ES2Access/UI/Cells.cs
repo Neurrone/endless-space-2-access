@@ -80,15 +80,20 @@ namespace ES2Access.UI
         /// Answers the cell it appended, for the caller that has more to say about it than the four
         /// arguments carry - a card handing over the <see cref="Cell.Dossiers"/> that turn it into a
         /// group. Ignoring the answer is the normal case.
+        ///
+        /// <paramref name="live"/> is <see cref="WireHintGesture"/>'s narrower question, for the caller
+        /// whose DECLARED widget is the hinted one - passing it there and not here would be no gate at
+        /// all, because this call would then wire the gesture the narrower one had just declined.
         /// </summary>
         public static Cell Add(
             List<Cell> cells,
             AgeTransform widget,
             ControlId id,
-            NodeVtable vtable
+            NodeVtable vtable,
+            Func<bool> live = null
         )
         {
-            WireHintGesture(vtable, widget);
+            WireHintGesture(vtable, widget, live);
             ScrollIntoView.Anchor(vtable, widget);
             Cell cell = new Cell { Widget = widget, Id = id, Vtable = vtable };
             cells.Add(cell);
@@ -118,7 +123,7 @@ namespace ES2Access.UI
         /// carrying a hint the game is not DRAWING, which the toolkit allows because only
         /// <c>Gui.FormatButtonHint</c> ever clears one and a pooled widget can be rebound to a subject
         /// whose refresh never reaches that call (the star system page's planet card is the measured
-        /// one - <c>SystemManagementScreen.StatusHintDrawn</c> owns the measurement). Where it is
+        /// one - <see cref="TechnologyHints.Drawn"/> owns the test). Where it is
         /// passed, BOTH the gesture and the line go on under it rather than under the plain hint, so a
         /// control the player is told nothing about keeps the shared fall back to its own click. Its
         /// absence is the default and every other caller's answer: a widget whose refresh clears the

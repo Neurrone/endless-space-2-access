@@ -19,8 +19,6 @@ ES2Access/Screens/SenateScreen.cs | 1 | string raw = label.Text ?? string.Empty;
 
 ES2Access/Screens/SettingRows.cs | 1 | : AgeText.Clean(field.Label.Text);
 
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
-
 ES2Access/Screens/SystemManagementScreen.Spaceport.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/Screens/TextFieldEditor.cs | 1 | : (field.Label.Text ?? string.Empty);
@@ -33,6 +31,8 @@ ES2Access/UI/AgeTooltips.cs | 1 | return label != null && !string.IsNullOrEmpty(
 ES2Access/UI/BattleRosters.cs | 1 | : AgeText.Clean(tooltip.Content);
 
 ES2Access/UI/ModOptions/OptionTextFieldCommit.cs | 1 | : AgeText.Clean(__instance.TextFieldLabel.Text) ?? string.Empty;
+
+ES2Access/UI/TechnologyHints.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/UI/TooltipFeatures.Readers.cs | 1 | if (label != null && label.Text == key)
 ES2Access/UI/TooltipFeatures.Readers.cs | 1 | string raw = label.Text;

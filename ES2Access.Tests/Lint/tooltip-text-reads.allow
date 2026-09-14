@@ -79,7 +79,6 @@ ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidg
 ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostBottomCaption)));
 ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostOwnerLabel)));
 ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | CardActions.FirstLine(kind)
 ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
@@ -130,5 +129,7 @@ ES2Access/UI/SystemPanels.cs | 1 | Func<IList<string>> drawn = GraphNodes.Toolti
 ES2Access/UI/TableSheet.Pieces.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
 
 ES2Access/UI/TableSheet.Text.cs | 1 | IList<string> lines = AgeText.Lines(AgeText.Tooltip(tooltip));
+
+ES2Access/UI/TechnologyHints.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/UI/WindowShape.cs | 1 | if (!captioned && string.IsNullOrEmpty(CardActions.FirstLine(tooltip)))
