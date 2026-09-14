@@ -19,6 +19,8 @@ ES2Access/Screens/SenateScreen.cs | 1 | string raw = label.Text ?? string.Empty;
 
 ES2Access/Screens/SettingRows.cs | 1 | : AgeText.Clean(field.Label.Text);
 
+ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
+
 ES2Access/Screens/SystemManagementScreen.Spaceport.cs | 1 | string content = tooltip == null ? null : tooltip.Content;
 
 ES2Access/Screens/TextFieldEditor.cs | 1 | : (field.Label.Text ?? string.Empty);

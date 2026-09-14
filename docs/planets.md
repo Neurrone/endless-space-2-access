@@ -20,6 +20,18 @@ colonizability and the four kind databases. The map itself is in `galaxy-map.md`
   makes. The card's `PlanetRenameButton.Enable` IS the game's `CanRename` predicate
   (`RefreshPlanetBasicInfo` :1271 — client ready, not `IsUnique`, a colony of the player's), and the
   button carries an EMPTY tooltip while it refuses, so it needs the mod's own name.
+- **The status label's missing-technology hint is set in one branch and cleared in no other, and a
+  pooled card keeps a stale one.** `PlanetLabel.RefreshPlanetStatus` (:232-331) calls
+  `Gui.FormatButtonHint` in the Hostile branch alone (:296-310), and that call (`Gui.cs` :1150-1203) is
+  the only thing that ever nulls `GuiButtonHint.GuiTechnology` — so a pooled card rebound from a
+  hostile world to a colonized one names the old planet's technology for good (measured 2026-09-14: two
+  colonized cards of one system both carrying the hostile pair's `Wave Function Control`). Nothing
+  DRAWS it (`manualFade: false`, and the colonized branch rewrites the tooltip without the
+  `%MissingTechnologyClickDescription` sentence), but the game's own Ctrl+click on the label
+  (`PlanetLabel_SystemManagement.OnClickPlanetStatusCb` :1626-1633) jumps to that stale technology.
+  Mod policy: the card offers the gesture and its hint line only while the tooltip still carries that
+  sentence. The card's BUTTONS are not affected — `RefreshColonizeButton` (:790) and
+  `RefreshReduceAnomalyButton` (:869, :876) make the hint call on every refresh, in every branch.
 - **A `PlanetLabel`'s show is camera-gated and can be dropped for good.** `PlanetLabel.OnBeginShow`
   (PlanetLabel.cs:423-428) does not show anything: it sets `AgeTransform.Visible = false` and hands
   the reveal to `ShowWhenTransitionFinished` (:443-473), which waits for the planet's screen position

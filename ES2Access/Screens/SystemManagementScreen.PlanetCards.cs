@@ -121,9 +121,17 @@ namespace ES2Access.Screens
             // activates it). Without this the card's Ctrl+Enter fell back to replaying the plain click,
             // which zooms into the planet, and nothing on the card said the jump existed - while the
             // colonize button beside it had said so all along, because every card ACTION goes through
-            // the same wiring (<see cref="Cells.WireHintGesture"/>). Gated on the hint being live, so
-            // it goes away with the technology the player has just researched.
-            Cells.WireHintGesture(vtable, status);
+            // the same wiring (<see cref="Cells.WireHintGesture"/>).
+            //
+            // Gated on what the game is DRAWING (<see cref="StatusHintDrawn"/>) rather than on the
+            // hint being present, because :296-310 is also the only branch that CLEARS it and this
+            // window pools its cards: a card rebound from a hostile world to a colonized one keeps the
+            // old technology on the component for good, and the game's own Ctrl+click then jumps to a
+            // technology that has nothing to do with the planet on the card (measured 2026-09-14 on
+            // two colonized cards of one system, both naming the hostile pair's technology). The card
+            // offers the gesture while the game offers it, and a colonized card's Ctrl+Enter falls
+            // back to the card's own click - the planet's page - the way it always did.
+            Cells.WireHintGesture(vtable, status, () => StatusHintDrawn(status));
 
             string key = "system:planet/" + planet.GUID;
             ControlId id = ControlId.For(planet, key);
@@ -1180,6 +1188,65 @@ namespace ES2Access.Screens
         {
             AgePrimitiveLabel status = label.PlanetStatus;
             return status == null ? null : status.AgeTransform;
+        }
+
+        /// <summary>
+        /// Whether the game is DRAWING the status label's missing-technology hint, which is a narrower
+        /// question than the hint being THERE (<see cref="AgeWidgets.Hinted"/>).
+        ///
+        /// <c>Gui.FormatButtonHint</c> (<c>Gui.cs</c> :1150-1203) is the only thing that ever clears a
+        /// widget's technology, and <c>PlanetLabel.RefreshPlanetStatus</c> (:232-331) calls it in the
+        /// Hostile branch alone (:296-310) - so a card this window has rebound from a hostile world to
+        /// a colonized one keeps the old planet's technology on the component for good. The player is
+        /// told nothing about it: the call asks for no fade, and the colonized branch rewrites the
+        /// tooltip from scratch.
+        ///
+        /// So the test is the game's own: the hint call appends its
+        /// <c>%MissingTechnologyClickDescription</c> sentence to the tooltip it hinted, which is this
+        /// label's own, and a label whose tooltip no longer carries that sentence is one the game has
+        /// stopped offering the jump on. The same comparison the game makes before appending it -
+        /// markup and all, since that is what sits in <c>Content</c>.
+        /// </summary>
+        private static bool StatusHintDrawn(AgeTransform status)
+        {
+            try
+            {
+                if (!AgeWidgets.Hinted(status))
+                {
+                    return false;
+                }
+
+                AgeTooltip tooltip = AgeWidgets.Raw(status);
+                // The RAW content, deliberately: nothing here is read to the player - this is the
+                // same string comparison the game makes before appending the sentence, and the
+                // sentence it appends carries colour markup, so cleaning either side would stop the
+                // two matching. The words of this tooltip reach the player through the door, on the
+                // card's own tooltip section.
+                string content = tooltip == null ? null : tooltip.Content;
+                return !string.IsNullOrEmpty(content) && content.Contains(HintSentence());
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static string _hintSentence;
+        private static string _hintSentenceLanguage;
+
+        /// <summary>The game's "Hold Control+Click…" sentence, localized once per language rather than
+        /// once per card per frame - <see cref="StatusHintDrawn"/> is asked on a build path. Keyed on
+        /// the language, which is what every memo over a composed phrase is keyed on.</summary>
+        private static string HintSentence()
+        {
+            string language = ES2Access.Localization.ModLocale.Language;
+            if (_hintSentence == null || _hintSentenceLanguage != language)
+            {
+                _hintSentence = Gui.Localize("%MissingTechnologyClickDescription");
+                _hintSentenceLanguage = language;
+            }
+
+            return _hintSentence;
         }
 
         /// <summary>The label window's cards, swept once per frame. The window POOLS them - it keeps a

@@ -113,8 +113,22 @@ namespace ES2Access.UI
         /// live, so it goes away with the technology the player has just researched. Asked per node
         /// per rebuild, because that is when a hint appears and disappears; it is one
         /// <c>GetComponent</c> on a widget the screen has already read.
+        ///
+        /// <paramref name="live"/> is the NARROWER question, for the caller that has one: a widget
+        /// carrying a hint the game is not DRAWING, which the toolkit allows because only
+        /// <c>Gui.FormatButtonHint</c> ever clears one and a pooled widget can be rebound to a subject
+        /// whose refresh never reaches that call (the star system page's planet card is the measured
+        /// one - <c>SystemManagementScreen.StatusHintDrawn</c> owns the measurement). Where it is
+        /// passed, BOTH the gesture and the line go on under it rather than under the plain hint, so a
+        /// control the player is told nothing about keeps the shared fall back to its own click. Its
+        /// absence is the default and every other caller's answer: a widget whose refresh clears the
+        /// hint the way the toolkit intends needs no second question.
         /// </summary>
-        public static void WireHintGesture(NodeVtable vtable, AgeTransform widget)
+        public static void WireHintGesture(
+            NodeVtable vtable,
+            AgeTransform widget,
+            Func<bool> live = null
+        )
         {
             if (vtable == null || vtable.OnCtrlClick != null || !AgeWidgets.Hinted(widget))
             {
@@ -122,14 +136,14 @@ namespace ES2Access.UI
             }
 
             AgeTransform hint = widget;
+            Func<bool> lit = live ?? (() => AgeWidgets.Hinted(hint));
+            if (!lit())
+            {
+                return;
+            }
+
             vtable.OnCtrlClick = () => AgeWidgets.Locate(hint);
-            NodeHints.Add(
-                vtable,
-                ModStrings.HintMissingTechnology,
-                UiActions.CtrlClick,
-                0,
-                () => AgeWidgets.Hinted(hint)
-            );
+            NodeHints.Add(vtable, ModStrings.HintMissingTechnology, UiActions.CtrlClick, 0, lit);
         }
 
         /// <summary>
