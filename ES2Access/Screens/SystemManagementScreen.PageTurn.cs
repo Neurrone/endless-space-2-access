@@ -207,6 +207,18 @@ namespace ES2Access.Screens
             get { return _turnSettle > 0 || _turnSeats > 0; }
         }
 
+        /// <summary>
+        /// Which system the page has adopted - the one thing this screen shows that can change while
+        /// the screen itself never leaves (<see cref="Turned"/>). A ship taken off a spaceport line, a
+        /// queue line, a constructible or a population marker belongs to this system's panels, so a
+        /// page turn ends the carry; every other rebuild leaves the adoption alone and the carry with
+        /// it, which is what makes a same-system redraw safe.
+        /// </summary>
+        public override object CarryScope
+        {
+            get { return _showing; }
+        }
+
         /// <summary>Escape is the game's: from here it takes the camera back out to the galaxy, which
         /// is the same route the page's own close button takes.</summary>
         public override bool Back()

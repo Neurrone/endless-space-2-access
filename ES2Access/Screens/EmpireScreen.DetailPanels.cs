@@ -170,7 +170,15 @@ namespace ES2Access.Screens
                 if (cards != null && AgeWidgets.Visible(cards.AgeTransform))
                 {
                     builder.BeginStop(PlanetsStop);
-                    builder.PushContext(ModStrings.Get(ModStrings.SystemPlanetsPanel));
+                    // The same panel in its two modes is two different things to the player, so the
+                    // context word says which one this is - the stop is one stop either way.
+                    builder.PushContext(
+                        ModStrings.Get(
+                            cards.Mode == PlanetCard.DisplayMode.Actions
+                                ? ModStrings.SystemPlanetsPanel
+                                : ModStrings.SystemPopulationPanel
+                        )
+                    );
                     BuildCards(builder, cards);
                     builder.PopContext();
                 }

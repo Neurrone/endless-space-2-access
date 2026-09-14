@@ -131,6 +131,25 @@ namespace ES2Access.Screens
             get { return true; }
         }
 
+        /// <summary>
+        /// The page never changes, but what is on it does: the tab bar swaps the whole tab, and a
+        /// table cell slides out one of four panels - for one system at a time. A population unit
+        /// picked up off a planet's ring is picked up out of THAT panel for THAT system, and the game
+        /// moves population within a system only, so none of those three changes leaves anywhere to
+        /// put it down. Composed from the three things the panel watch already keeps
+        /// (<see cref="WatchDetails"/>), which <c>OnUpdate</c> refreshes before the navigator asks -
+        /// so the answer is this frame's.
+        /// </summary>
+        public override object CarryScope
+        {
+            get
+            {
+                return VictoryDrawn(Window())
+                    ? "victory"
+                    : "systems/" + _detail + "/" + _detailSystem;
+            }
+        }
+
         /// <summary>Escape is the game's: it closes the screen, which is what the page's own exit does
         /// too.</summary>
         public override bool ConsumesBack
