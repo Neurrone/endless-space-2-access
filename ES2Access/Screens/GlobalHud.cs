@@ -58,11 +58,9 @@ namespace ES2Access.Screens
         private int _turn = -1;
 
         /// <summary>The multiplayer wait: whether the player's turn is over and the game is still on the
-        /// others, and how many of them were still playing when that was last said. Instance state, like
-        /// the turn watch, so each page keeps its own and a reload starts the watch over.</summary>
+        /// others. Instance state, like the turn watch, so each page keeps its own and a reload starts
+        /// the watch over.</summary>
         private bool _waiting;
-
-        private int _playing = -1;
 
         /// <summary>The two private fields of <c>EndTurnWindow</c> the turn timer is only readable from,
         /// looked up once per load rather than per frame.</summary>
@@ -96,7 +94,6 @@ namespace ES2Access.Screens
             _questChanged = false;
             _instruction = Instruction();
             _waiting = WaitingForOthers();
-            _playing = PlayersPlaying(TurnWindow());
             WatchQuests();
         }
 
@@ -109,7 +106,6 @@ namespace ES2Access.Screens
             _questChanged = false;
             _instruction = null;
             _waiting = false;
-            _playing = -1;
             // The scoreboard the mod was holding drawn belongs to the page that is going away.
             PlayersList.Release();
             ForgetQuests();
@@ -161,9 +157,9 @@ namespace ES2Access.Screens
         /// The game shows it by rewriting the End Turn caption to "Pending"
         /// (<c>EndTurnWindow.RefreshEndTurnLabel</c> :1123-1160) and by unlit slots on the ready ring,
         /// and nothing announces either: the turn NUMBER does not change while the wait lasts, so the
-        /// turn watch above sees nothing until it is over. So the wait says itself when it starts, and
-        /// each time one more player finishes - which is the only progress there is to report while the
-        /// player can do nothing but listen.
+        /// turn watch above sees nothing until it is over, and the caption is the End Turn node's LABEL,
+        /// which is read when that node is read and never on its own. So the wait says itself when it
+        /// starts, wherever the player is standing, and says nothing more until the turn number moves.
         ///
         /// Gated on the ready ring, which the game draws outside single player only (:735): in a solo
         /// game the same client states are passed through on every turn and none of them is a wait.
@@ -172,12 +168,9 @@ namespace ES2Access.Screens
         {
             try
             {
-                EndTurnWindow window = TurnWindow();
-                int playing = PlayersPlaying(window);
-                if (playing < 0)
+                if (!RingDrawn(TurnWindow()))
                 {
                     _waiting = false;
-                    _playing = -1;
                     return;
                 }
 
@@ -186,13 +179,8 @@ namespace ES2Access.Screens
                 {
                     Voice.Say(ModStrings.Get(ModStrings.GalaxyTurnWaiting), false);
                 }
-                else if (waiting && playing > 0 && _playing > playing)
-                {
-                    Voice.Say(PlayersText(window), false);
-                }
 
                 _waiting = waiting;
-                _playing = playing;
             }
             catch (Exception e)
             {

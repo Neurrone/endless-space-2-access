@@ -261,9 +261,8 @@ ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (AgeWidgets.Visible(AgeWidgets.Tran
 ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (AgeWidgets.Visible(global))
 ES2Access/Screens/GlobalHud.Turn.cs | 2 | if (button == null || !AgeWidgets.Visible(button))
 ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (panel == null || !AgeWidgets.Visible(anchor))
-ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (ring == null || !ring.Visible)
-ES2Access/Screens/GlobalHud.Turn.cs | 1 | if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
 ES2Access/Screens/GlobalHud.Turn.cs | 4 | if (window == null || !AgeWidgets.Visible(window.AgeTransform))
+ES2Access/Screens/GlobalHud.Turn.cs | 1 | return ring != null && ring.Visible;
 
 ES2Access/Screens/GovernmentScreen.cs | 1 | band = band || AgeWidgets.Visible(grandchildren[j]);
 ES2Access/Screens/GovernmentScreen.cs | 1 | child == null || !AgeWidgets.Visible(child) ? null : child.Children;
@@ -597,7 +596,6 @@ ES2Access/UI/PlanetCardLines.cs | 1 | if (table == null || !AgeWidgets.Visible(t
 
 ES2Access/UI/PlayersList.cs | 1 | if (row == null || !row.Visible)
 ES2Access/UI/PlayersList.cs | 1 | return AgeWidgets.Visible(ring) ? RingSlots.Under(ring) : NoSlots;
-ES2Access/UI/PlayersList.cs | 1 | row == null || !row.Visible ? null : row.GetComponent<PlayerStatusLine>();
 
 ES2Access/UI/PoliticsExperience.cs | 1 | return AgeWidgets.Paints(marker) ? marker : null;
 ES2Access/UI/PoliticsExperience.cs | 1 | || !AgeWidgets.Paints(group)

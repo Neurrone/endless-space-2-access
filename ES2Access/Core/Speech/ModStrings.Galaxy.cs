@@ -42,9 +42,6 @@ namespace ES2Access.Core.Speech
         public const string GalaxySyncState = "galaxy.sync-state";
         public const string GalaxyReturnToLobby = "galaxy.return-to-lobby";
         public const string GalaxyPlayers = "galaxy.players";
-        public const string GalaxyPlayersAllReady = "galaxy.players-all-ready";
-        public const string GalaxyPlayerPlaying = "galaxy.player-playing";
-        public const string GalaxyPlayersPlaying = "galaxy.players-playing";
 
         /// <summary>One empire's standing as the scoreboard beside End Turn draws it: what it is
         /// called, what it is worth, how it stands with this empire, and where it is in its turn.

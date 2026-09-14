@@ -342,14 +342,15 @@ namespace ES2Access.Screens
             }
 
             EndTurnWindow it = window;
+            // A name and then the lines: there is no VALUE here to hold. The game draws no count of
+            // who is still playing - it draws a state icon per ring slot, a state word per scoreboard
+            // row, and its own Pending title on the End Turn button - so a figure here would be the
+            // mod's invention standing where the game's own words belong (owner ruling 2026-09-14).
             NodeVtable vtable = GraphNodes.Readout(
                 () => ModStrings.Get(ModStrings.GalaxyPlayers),
-                () => PlayersText(it),
                 null,
                 null,
-                // The count changes as players end their turn, and the watch below is what announces
-                // that wherever the player is standing; a watched value would say it twice here.
-                false
+                null
             );
             // Said as the row is read AND kept in the buffer: the standings are words the game has in
             // the model and writes onto a panel no keyboard can raise, which is exactly what a
@@ -532,84 +533,22 @@ namespace ES2Access.Screens
             );
         }
 
-        /// <summary>
-        /// How many players have not ended their turn.
-        ///
-        /// RE-DERIVES a private list: the game counts exactly this into <c>EndTurnWindow.unreadySlots</c>
-        /// on every refresh (:859-873) and keeps it to itself, so the only way to have the figure is to
-        /// count the same slots the same way - the ring's children whose unready icon is showing, under
-        /// the same gate the game puts the whole count behind (<c>CompetitorsCircularTable.Visible</c>,
-        /// which the game sets false for a single-player session at :735). The gate is the widget's own
-        /// flag rather than whether it is really on screen, because that is the flag the game's own test
-        /// reads: asking a stricter question would make the two counts disagree in exactly the frames a
-        /// wait is being announced. -1 is no ring at all, which is every single-player game.
-        /// </summary>
-        private static int PlayersPlaying(EndTurnWindow window)
+        /// <summary>Whether the game is drawing the ready ring, which it does outside single player
+        /// only (<c>EndTurnWindow</c> :735) - and so whether this is a session where the turn can be
+        /// waiting on somebody else at all. The widget's own flag rather than whether it is really on
+        /// screen, because that is the flag the game's own test reads.</summary>
+        private static bool RingDrawn(EndTurnWindow window)
         {
             try
             {
                 AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
-                // Spoken count: this figure is said as "N still playing", and -1 is how the caller
-                // hears that there is no ring to count - which is every single-player game.
-                if (ring == null || !ring.Visible)
-                {
-                    return -1;
-                }
-
-                IList<AgeTransform> slots = ring.Children;
-                int playing = 0;
-                for (int i = 0; slots != null && i < slots.Count; i++)
-                {
-                    CompetitorOrbitalSlot slot = Slot(slots[i]);
-                    // Spoken count: the icon IS the fact counted - how many empires have not ended their turn.
-                    if (slot != null && slot.UnreadyIcon != null && slot.UnreadyIcon.Visible)
-                    {
-                        playing++;
-                    }
-                }
-
-                return playing;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("hud: counting the players still playing threw: " + e);
-                return -1;
-            }
-        }
-
-        private static string PlayersText(EndTurnWindow window)
-        {
-            int playing = PlayersPlaying(window);
-            // The ring is the game's own waiting figure and exists outside single player only (:735);
-            // where it does not, the same count comes off the scoreboard's own player states.
-            if (playing < 0)
-            {
-                playing = PlayersList.StillPlaying(window);
-            }
-
-            if (playing < 0)
-            {
-                return null;
-            }
-
-            return playing == 0
-                ? ModStrings.Get(ModStrings.GalaxyPlayersAllReady)
-                : ModStrings.Plural(
-                    ModStrings.GalaxyPlayerPlaying,
-                    ModStrings.GalaxyPlayersPlaying,
-                    playing
-                );
-        }
-
-        private static CompetitorOrbitalSlot Slot(AgeTransform widget)
-        {
-            try
-            {
-                return widget == null ? null : widget.GetComponent<CompetitorOrbitalSlot>();
+                // Flow control: the ring is what makes a session multiplayer, and a solo game passes
+                // through the same client states every turn without any of them being a wait.
+                return ring != null && ring.Visible;
             }
             catch (Exception)
             {
-                return null;
+                return false;
             }
         }
 

@@ -311,60 +311,6 @@ namespace ES2Access.UI
             return AgeText.Clean(key);
         }
 
-        /// <summary>How many empires other than your own have not ended their turn, or -1 where there
-        /// is no game to count. The solo game's answer to the figure the multiplayer ring gives, off
-        /// the same states the rows are read from.</summary>
-        public static int StillPlaying(EndTurnWindow window)
-        {
-            try
-            {
-                PlayersListPanel panel = Panel(window);
-                AgeTransform table = panel == null ? null : panel.PlayersTable;
-                IList<AgeTransform> rows = table == null ? null : table.Children;
-                if (rows == null || rows.Count == 0)
-                {
-                    return -1;
-                }
-
-                Empire looking = Gui.PlayerEmpire;
-                int playing = 0;
-                for (int i = 0; i < rows.Count; i++)
-                {
-                    AgeTransform row = rows[i];
-                    // Spoken count: the rows the panel is drawing are the empires this figure is
-                    // about, and a spare row parked invisible still carries its last binding.
-                    PlayerStatusLine line =
-                        row == null || !row.Visible ? null : row.GetComponent<PlayerStatusLine>();
-                    if (line == null || line.Player == null || line.GuiEmpire == null)
-                    {
-                        continue;
-                    }
-
-                    if (ReferenceEquals(line.GuiEmpire.Empire, looking))
-                    {
-                        continue;
-                    }
-
-                    PlayerState state = line.Player.State;
-                    if (
-                        state == PlayerState.Playing
-                        || state == PlayerState.PlayingButInEncounter
-                        || state == PlayerState.InTalks
-                    )
-                    {
-                        playing++;
-                    }
-                }
-
-                return playing;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("hud: counting the players still playing threw: " + e);
-                return -1;
-            }
-        }
-
         /// <summary>
         /// Draw the panel, and keep drawing it, until <see cref="Release"/>.
         ///
