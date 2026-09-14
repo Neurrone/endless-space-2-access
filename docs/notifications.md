@@ -233,6 +233,22 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   and the parity check a moment later is clean. No settled popup of the sixty-four paints fewer
   than four strings, so "paints nothing" is an early frame rather than a finding, and the auto-check
   defers on it (bounded, with a give-up line).
+- **A popup is READY several frames before it has written the shared description — and the cursor has
+  already landed by then.** Measured 2026-09-14 with a per-frame recorder over a
+  `NotificationNewDownloadableContent` arrival: the screen pushed on the ready frame with **7 nodes**
+  declared and the rest of the body, the description row among them, appeared **9 frames later**;
+  nothing moves the cursor afterwards, so the landing is decided by whatever the popup had drawn at
+  the push, and on the session's first arrival that was the browse arrow in the top strip. The split
+  is `OnBeginShow`, which writes a popup's OWN labels, against `Refresh`, which writes the shared
+  description. **Mod policy** (`NotificationScreen.Variants`, the new-content popup): where a popup
+  writes its identity into a label of its own, that label is its `Words` — it is the row drawn first
+  AND the one that exists when the cursor lands, so naming it settles reading order and landing at
+  once.
+- **A popup can state a whole sentence with a PICTURE whose only words are its tooltip** — the
+  new-content popup's tutorial badge, drawn beside Minimize, reading "The Expert tutorial has been
+  enabled to help with the new features." The prefab leaves `Set by code` on that tooltip's content
+  and the window overwrites it only while it means to show the badge, so the words and the
+  visibility are one question (`NotificationScreen.Variants`, `Notes`).
 - **`NotificationItem.Bind` sets the icon tooltip's content to `GetTitle()`** — a tooltip
   section on any notification row is always the row's own title again.
 - **The Laws Cancelled prefab hangs TWO tooltips per line** — the real `Law` dossier on

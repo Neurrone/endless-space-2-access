@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -407,6 +408,7 @@ namespace ES2Access.Screens
             List<Line> lines = new List<Line>();
             Read(root, lines, null, 0);
             AddBadges(window, lines);
+            AddNotes(window, lines);
 
             List<AgeTransform> title = TitleBar(window, controls);
             List<AgeTransform> buttons = ButtonBar(controls);
@@ -519,6 +521,62 @@ namespace ES2Access.Screens
                     }
                 );
             }
+        }
+
+        /// <summary>The lines the popup drew as a picture with the whole of what it means written on
+        /// the picture's TOOLTIP, added to the ones it wrote out.
+        ///
+        /// The walk above never saw them for the same reason it never saw a badge - a picture holds no
+        /// text - and a badge's own answer is no use here: there is no game object behind the picture
+        /// to be read for a word, only the sentence the game hung on it. So the sentence IS the line,
+        /// and the tooltip travels with it; the row then finds the tooltip says exactly what the row
+        /// says and drops it (<see cref="AddRow"/>), which is what keeps the sentence from being read
+        /// twice. From there it is a drawn line like any other - dropped where the popup is not
+        /// painting it, placed by its own rectangle.</summary>
+        private static void AddNotes(NotificationWindow window, List<Line> lines)
+        {
+            IList<AgeTransform> notes = Notes(window);
+            for (int i = 0; i < notes.Count; i++)
+            {
+                AgeTransform note = notes[i];
+                string said = note == null ? null : Sentence(AgeWidgets.DrawnTooltipLines(note));
+                if (string.IsNullOrEmpty(said))
+                {
+                    continue;
+                }
+
+                lines.Add(
+                    new Line
+                    {
+                        Widget = note,
+                        Tooltip = AgeWidgets.Raw(note),
+                        Text = said,
+                    }
+                );
+            }
+        }
+
+        /// <summary>A tooltip's lines as one piece of text, written the way a label with the same
+        /// words in it would hold them - the row reads it back a line at a time.</summary>
+        private static string Sentence(IList<string> lines)
+        {
+            StringBuilder said = new StringBuilder();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (string.IsNullOrEmpty(lines[i]))
+                {
+                    continue;
+                }
+
+                if (said.Length > 0)
+                {
+                    said.Append('\n');
+                }
+
+                said.Append(lines[i]);
+            }
+
+            return said.ToString();
         }
 
         /// <summary>The dossier the popup has open beside itself, where it has one open. Its lines are a

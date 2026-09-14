@@ -88,6 +88,15 @@ namespace ES2Access.Screens
         /// picture stands for, so it says so, and the row reads the state in the game's own title for
         /// it: the same words the diplomacy page writes out in full on a leader card.
         ///
+        /// <see cref="Notes"/>: the same thing said with a picture that stands for NOTHING - the whole
+        /// of what the popup means by it is the sentence the game hung on the picture's tooltip. The
+        /// new-content popup's tutorial badge is the case: the game turns the Expert tutorial on by
+        /// itself when an expansion is new, and says so with a small icon beside the Minimize button
+        /// whose tooltip reads "The Expert tutorial has been enabled to help with the new features."
+        /// A badge cannot answer it - there is no game object to read a word off - and the drawn
+        /// reading passes over it, because a picture holds no text; so the sentence is declared as the
+        /// row, and a player is told the game has just changed how it will talk to them.
+        ///
         /// A popup with no entry here is read entirely by the shared rules, which is the case for most
         /// of them. A stage adding a popup adds one entry and touches nothing else.
         /// </summary>
@@ -99,6 +108,7 @@ namespace ES2Access.Screens
             public Func<NotificationWindow, IList<Control>> Cards;
             public Func<NotificationWindow, IList<Expander>> Expanders;
             public Func<NotificationWindow, IList<Badge>> Badges;
+            public Func<NotificationWindow, IList<AgeTransform>> Notes;
             public Func<NotificationWindow, AgeControl> Confirm;
             public Func<NotificationWindow, IList<Gateway>> Gateways;
             public Func<NotificationWindow, Countdown> Timer;
@@ -699,6 +709,25 @@ namespace ES2Access.Screens
                 }
             );
 
+            // An expansion the player owns, announced once at the start of the first game after it was
+            // turned on. The popup draws two captioned blocks down its right-hand side - the
+            // expansion's NAME over its lore, then "Content Description" over the list of what it adds
+            // - and the shared description label is the second of those. What the player was
+            // interrupted to hear is which expansion it is, and the popup writes that in a heading of
+            // its own; naming that label leaves the feature list to be read where it is drawn, under
+            // the caption that names it, rather than hoisted over the two blocks above it. It is also
+            // the only one of the three the popup has written by the time the mod arrives - the title
+            // is set in OnBeginShow and the description in Refresh, several frames after the popup
+            // calls itself ready - so it is the only one the cursor can land on.
+            variants.Add(
+                typeof(NewDownloadableContentNotificationWindow),
+                new Variant
+                {
+                    Words = w => ((NewDownloadableContentNotificationWindow)w).TitleLabel,
+                    Notes = w => Some(((NewDownloadableContentNotificationWindow)w).TutorialGroup),
+                }
+            );
+
             // The academy having granted a role: the same roles panel the exchange popup above draws,
             // in a popup of its own, so the same cloned lines read the same way.
             variants.Add(
@@ -1289,6 +1318,29 @@ namespace ES2Access.Screens
         }
 
         private static readonly Badge[] NoBadges = new Badge[0];
+
+        /// <summary>The pictures this popup drew whose whole meaning is on their own tooltip, where it
+        /// drew any.</summary>
+        private static IList<AgeTransform> Notes(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Notes == null)
+            {
+                return NoNotes;
+            }
+
+            try
+            {
+                return variant.Notes(window) ?? NoNotes;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a popup's notes threw: " + e);
+                return NoNotes;
+            }
+        }
+
+        private static readonly AgeTransform[] NoNotes = new AgeTransform[0];
 
         /// <summary>One picture a popup painted in place of words, and what it is a picture OF - and
         /// nothing at all where the popup drew no icon or has no relation to draw one for, which is a
