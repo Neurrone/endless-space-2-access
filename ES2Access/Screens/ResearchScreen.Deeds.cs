@@ -220,10 +220,15 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    GuiEmpire empire = Gui.GuiWrapperProviderService.GetGuiEmpire(
-                        racing[i].EmpireIndex
+                    // Leader AND faction. The marker identifies the winner by faction LOGO and
+                    // nothing else (<c>DeedItem2</c> :176-182 sets OtherWinningFactionLogo and draws
+                    // no name label at all), so the faction is the half a listener is missing, and
+                    // this is a card rather than a map row, where the game's own "(AI)" belongs
+                    // (owner ruling 2026-09-14).
+                    return EmpireNames.LeaderAndFaction(
+                        Gui.GuiWrapperProviderService.GetGuiEmpire(racing[i].EmpireIndex),
+                        Gui.PlayerEmpire
                     );
-                    return empire == null ? null : AgeText.Clean(empire.Title);
                 }
             }
             catch (Exception e)

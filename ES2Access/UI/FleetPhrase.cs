@@ -20,9 +20,14 @@ namespace ES2Access.UI
     /// theirs and say nothing. Whose it is is the game's own disguise rule
     /// (<see cref="DisplayedOwner"/>) and which way the player stands to them is the mod's one
     /// standing ladder (<see cref="FleetPresence.SideOf(Empire)"/>) - so a cold-war neighbour's
-    /// fleets read "enemy", in the game's own word. What that owner is CALLED is the mod's one
-    /// naming answer (<see cref="EmpireNames.Named"/>), so a pirate fleet reads "enemy Pirates" and
-    /// an unmet major's "enemy Unknown Empire".</item>
+    /// fleets read "enemy", in the game's own word. What that owner is CALLED is the leader and the
+    /// faction (<see cref="EmpireNames.LeaderAndFaction(Amplitude.Unity.Game.Empire)"/>), scoped to
+    /// this fleet, because that is the form the game itself uses wherever it puts fleet ownership
+    /// into words - a stack's tooltip category (<c>GuiFleetGroup</c> :32, the same claim-scoped call)
+    /// and the fleets panel (<c>FleetsManagementPanel</c> :144,149) - so a foreign fleet reads
+    /// "enemy Kappa (AI) (Riftborn)" (owner ruling 2026-09-14). A pirate fleet still reads "enemy
+    /// Pirates" and an unmet major's "enemy Unknown Empire": neither title has a faction in
+    /// it.</item>
     /// <item>HERO is any fleet's, own or foreign: the game's own fleet dossier draws a foreign
     /// hero's name with no ownership gate on it at all
     /// (<c>PanelFeatureGarrisonInfo.RefreshFleetInformation</c> :150-156). The name only - the level
@@ -105,44 +110,66 @@ namespace ES2Access.UI
         /// Null for the player's own, which are theirs and need no saying.</summary>
         public static string Owned(Fleet fleet)
         {
-            return Owned(DisplayedOwner(fleet));
-        }
-
-        /// <summary>The same for an empire named directly - what the turn log has when the fleet
-        /// itself has gone out of sight and only the remembered owner is left to speak of.</summary>
-        public static string Owned(Amplitude.Unity.Game.Empire owner)
-        {
             try
             {
-                Empire named = owner as Empire;
-                if (named == null)
-                {
-                    return null;
-                }
-
-                string key;
-                switch (FleetPresence.SideOf(named))
-                {
-                    case FleetPresence.Side.Player:
-                        return null;
-                    case FleetPresence.Side.Enemy:
-                        key = ModStrings.FleetOwnedEnemy;
-                        break;
-                    case FleetPresence.Side.Friendly:
-                        key = ModStrings.FleetOwnedFriendly;
-                        break;
-                    default:
-                        key = ModStrings.FleetOwnedNeutral;
-                        break;
-                }
-
-                string name = EmpireNames.Named(named);
-                return string.IsNullOrEmpty(name) ? null : ModStrings.Format(key, name);
+                Empire owner = fleet == null ? null : DisplayedOwner(fleet);
+                string key = Side(owner);
+                return key == null
+                    ? null
+                    : Phrase(
+                        key,
+                        EmpireNames.LeaderAndFaction(owner, fleet.GUID, Gui.PlayerEmpire)
+                    );
             }
             catch (Exception)
             {
                 return null;
             }
+        }
+
+        /// <summary>The same for an empire named directly - what the turn log has when the fleet
+        /// itself has gone out of sight and only the remembered owner is left to speak of. No claim
+        /// to scope the name by, so a minor civilization answers with its faction's one word.</summary>
+        public static string Owned(Amplitude.Unity.Game.Empire owner)
+        {
+            try
+            {
+                string key = Side(owner);
+                return key == null ? null : Phrase(key, EmpireNames.LeaderAndFaction(owner));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>Which way the player stands to this owner, as the template that says so. Null for
+        /// the player's own and for no owner at all - asked BEFORE the name is composed, so the
+        /// common case (a fleet of the player's own) costs no naming at all.</summary>
+        private static string Side(Amplitude.Unity.Game.Empire owner)
+        {
+            Empire named = owner as Empire;
+            if (named == null)
+            {
+                return null;
+            }
+
+            switch (FleetPresence.SideOf(named))
+            {
+                case FleetPresence.Side.Player:
+                    return null;
+                case FleetPresence.Side.Enemy:
+                    return ModStrings.FleetOwnedEnemy;
+                case FleetPresence.Side.Friendly:
+                    return ModStrings.FleetOwnedFriendly;
+                default:
+                    return ModStrings.FleetOwnedNeutral;
+            }
+        }
+
+        private static string Phrase(string key, string name)
+        {
+            return string.IsNullOrEmpty(name) ? null : ModStrings.Format(key, name);
         }
 
         /// <summary>The hero riding with this fleet, named - "hero Hadri Lenko". Null where there is

@@ -349,14 +349,23 @@ namespace ES2Access.Screens
             };
         }
 
-        /// <summary>The empire whose fleets this card holds, in the game's own name for it.</summary>
+        /// <summary>The empire whose fleets this card holds, in the game's own name for it: the
+        /// symbol-prefixed leader name the card's own title label carries
+        /// (<c>EmpireFleetCard.BindEmpire</c> :78, at the ladder's defaults), scoped to the defender
+        /// the card leads with so a minor civilization is named per fleet. The card also draws the
+        /// faction's portrait beside it, and a portrait is a picture.</summary>
         private static string EmpireName(AgeTransform widget)
         {
             try
             {
                 EmpireFleetCard card = Card(widget);
-                GuiEmpire empire = card == null ? null : card.GuiEmpire;
-                return empire == null ? null : AgeText.Clean(empire.Title);
+                return card == null
+                    ? null
+                    : EmpireNames.WithFaction(
+                        card.GuiEmpire,
+                        card.FirstDefenderGUID,
+                        Gui.PlayerEmpire
+                    );
             }
             catch (Exception)
             {

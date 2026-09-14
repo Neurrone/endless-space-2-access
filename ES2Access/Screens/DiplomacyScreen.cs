@@ -1339,12 +1339,9 @@ namespace ES2Access.Screens
         {
             try
             {
-                string named = AgeText.Clean(
-                    sector.InspectedGuiEmpire.GetLeaderAndFaction(
-                        sector.WatchingGuiEmpire.Empire,
-                        false,
-                        false
-                    )
+                string named = EmpireNames.LeaderAndFaction(
+                    sector.InspectedGuiEmpire,
+                    sector.WatchingGuiEmpire.Empire
                 );
                 if (!string.IsNullOrEmpty(named))
                 {

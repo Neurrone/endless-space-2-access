@@ -77,7 +77,7 @@ namespace ES2Access.UI
                     AgeText.Clean(
                         Gui.Localize(
                             "%PanelFeatureMiningProbeDescription",
-                            owner.GetLeaderName(Gui.PlayerEmpire)
+                            EmpireNames.WithFaction(owner, Gui.PlayerEmpire)
                         )
                     )
                 );

@@ -165,16 +165,7 @@ namespace ES2Access.UI
         /// </summary>
         public static string Name(GuiEmpire empire, Empire looking)
         {
-            try
-            {
-                return empire == null
-                    ? null
-                    : AgeText.Clean(empire.GetLeaderAndFaction(looking, false, false));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return EmpireNames.LeaderAndFaction(empire, looking);
         }
 
         /// <summary>

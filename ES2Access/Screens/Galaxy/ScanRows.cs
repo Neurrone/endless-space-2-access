@@ -373,13 +373,7 @@ namespace ES2Access.Screens
                         return AgeText.Clean(Gui.Localize(NoOwnerKey));
                 }
 
-                GuiEmpire wrapper =
-                    group.Empire == null
-                        ? null
-                        : Gui.GuiWrapperProviderService.GetGuiEmpire(group.Empire);
-                return wrapper == null
-                    ? null
-                    : AgeText.Clean(wrapper.GetLeaderName(empire));
+                return EmpireNames.WithFaction(group.Empire, empire);
             }
             catch (Exception e)
             {

@@ -253,12 +253,24 @@ namespace ES2Access.UI
                     return null;
                 }
 
-                return ReferenceEquals(influencer, Gui.PlayerEmpire)
-                    ? ModStrings.Get(ModStrings.GalaxySystemInfluencedByYou)
-                    : ModStrings.Format(
-                        ModStrings.GalaxySystemInfluencedBy,
-                        EmpireNames.Named(influencer)
-                    );
+                // Named as the place itself is titled. A star system's influence is painted in colour
+                // and named nowhere, so its influencer is named the way the rest of the map names an
+                // empire - the leader alone. A SPECIAL node's dossier header does name its influencer,
+                // with the faction symbol in front and scoped to the node (<c>GuiSpecialNode.Title</c>
+                // :36, <c>SubCategory</c> :52), so there the faction is said too (owner ruling
+                // 2026-09-14).
+                if (ReferenceEquals(influencer, Gui.PlayerEmpire))
+                {
+                    return ModStrings.Get(ModStrings.GalaxySystemInfluencedByYou);
+                }
+
+                SpecialNode special = node as SpecialNode;
+                return ModStrings.Format(
+                    ModStrings.GalaxySystemInfluencedBy,
+                    special == null
+                        ? EmpireNames.Named(influencer)
+                        : EmpireNames.WithFaction(influencer, special.GUID, empire)
+                );
             }
             catch (Exception e)
             {

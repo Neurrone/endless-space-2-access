@@ -468,9 +468,10 @@ namespace ES2Access.Screens
 
                 string who = ad.IsAnonymous
                     ? AgeText.Clean(Gui.Localize(AdItem.AnonymousEmpireLoc.ToString()))
-                    : Gui.GuiWrapperProviderService
-                        .GetGuiEmpire(ad.EmpireIndex)
-                        .GetLeaderName(Gui.PlayerEmpire);
+                    : EmpireNames.WithFaction(
+                        Gui.GuiWrapperProviderService.GetGuiEmpire(ad.EmpireIndex),
+                        Gui.PlayerEmpire
+                    );
                 string what = CatalogueTitle(ItemTitles, ad.ItemName, extended: true);
                 if (string.IsNullOrEmpty(what))
                 {

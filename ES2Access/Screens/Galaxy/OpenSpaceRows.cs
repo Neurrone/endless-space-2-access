@@ -1542,13 +1542,9 @@ namespace ES2Access.Screens
                     return lines;
                 }
 
-                GuiEmpire sender =
-                    Gui.GuiWrapperProviderService.GetGuiEmpire(request.OwnerEmpire);
-                string named = sender.LocalizedName
-                    + " ("
-                    + sender.GuiFaction.GetSymbolString(false)
-                    + sender.GuiFaction.LocalizedName
-                    + ")";
+                string named = EmpireNames.RawNameAndFaction(
+                    Gui.GuiWrapperProviderService.GetGuiEmpire(request.OwnerEmpire)
+                );
                 AddLine(
                     lines,
                     AgeText.Clean(

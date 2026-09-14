@@ -249,18 +249,7 @@ namespace ES2Access.Screens
         /// is said.</summary>
         private static string LeaderName(Empire empire, Empire looking)
         {
-            try
-            {
-                GuiEmpire wrapper =
-                    empire == null
-                        ? null
-                        : Gui.GuiWrapperProviderService.GetGuiEmpire(empire);
-                return wrapper == null ? null : AgeText.Clean(wrapper.GetLeaderName(looking));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return EmpireNames.WithFaction(empire, looking);
         }
 
         /// <summary>How the empire the lens is watching stands with this one, in the game's own word for

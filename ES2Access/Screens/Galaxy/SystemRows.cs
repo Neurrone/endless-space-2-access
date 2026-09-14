@@ -786,13 +786,16 @@ namespace ES2Access.Screens
 
         /// <summary>What this row calls an empire, per CLAIM rather than per empire: the dossier
         /// header's own <c>GuiEmpire.GetLeaderName</c>, which answers "Unknown Empire" for one the
-        /// player has not met and names a minor civilization by the system it lives on.</summary>
+        /// player has not met and names a minor civilization by the system it lives on.
+        ///
+        /// With the faction in front of it, because that header draws it there:
+        /// <c>GuiStarSystem.Title</c> :70 and <c>GuiColonizedStarSystem.Owner</c> :286-289 both ask at
+        /// the ladder's defaults, so the symbol is in the label a sighted player reads (owner ruling
+        /// 2026-09-14). A minor civilization has no symbol, so its per-system name is unchanged.
+        /// </summary>
         private static string EmpireWord(ColonizedStarSystem colony, Empire empire)
         {
-            GuiEmpire wrapper = Gui.GuiWrapperProviderService.GetGuiEmpire(colony.Empire);
-            return wrapper == null
-                ? null
-                : AgeText.Clean(wrapper.GetLeaderName(colony.GUID, empire, false, false, false));
+            return EmpireNames.WithFaction(colony.Empire, colony.GUID, empire);
         }
 
         /// <summary>
@@ -1295,7 +1298,17 @@ namespace ES2Access.Screens
                     Amplitude.Unity.Framework.Services.GetService<IGroundBattleRepositoryService>();
                 GroundBattle battle =
                     battles == null ? null : battles.GetGroundBattleOnNode(node.NodePosition);
-                string attacker = battle == null ? null : Owner(battle.DisplayedAttackerEmpire);
+                // Named with the faction and scoped to the attacking FLEET, which is how the icon's
+                // own opponent row asks it (<c>GroundBattleOpponentItem</c> :40, at the ladder's
+                // defaults, with the battle's AttackerFleetGUID).
+                string attacker =
+                    battle == null
+                        ? null
+                        : EmpireNames.WithFaction(
+                            battle.DisplayedAttackerEmpire,
+                            battle.AttackerFleetGUID,
+                            empire
+                        );
                 return string.IsNullOrEmpty(attacker)
                     ? ModStrings.Get(ModStrings.GalaxySystemInvaded)
                     : ModStrings.Format(ModStrings.GalaxySystemInvadedBy, attacker);

@@ -272,22 +272,14 @@ namespace ES2Access.Screens
                 : Localize("%PlanetStatusGhostByDescription", LeaderName(ghost.Empire));
         }
 
-        /// <summary>An empire as the game names it to this player - the same leader name its own
-        /// in-progress sentences are built with.</summary>
+        /// <summary>An empire as the game names it to this player in this sentence - the leader name
+        /// with NO faction, because the three places that draw "%PlanetStatusGhostByDescription" all
+        /// build it with <c>iconPrefix:false</c> (<c>PlanetLabel_SystemManagement</c> :1209,
+        /// <c>PlanetLabel_SystemOrbital</c> :469, <c>HauntCircleItem</c> :17). The mod follows the
+        /// game (owner ruling 2026-09-14).</summary>
         private static string LeaderName(Empire empire)
         {
-            try
-            {
-                GuiEmpire wrapper =
-                    empire == null
-                        ? null
-                        : Gui.GuiWrapperProviderService.GetGuiEmpire(empire);
-                return wrapper == null ? null : AgeText.Clean(wrapper.GetLeaderName(PlayerEmpire()));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return EmpireNames.Named(empire, PlayerEmpire());
         }
 
         /// <summary>A state sentence with the turns left after it, in the game's own caption - the same
