@@ -1,4 +1,4 @@
-﻿namespace ES2Access.Core.Speech
+namespace ES2Access.Core.Speech
 {
     /// <summary>
     /// The GALAXY MAP's own words: what the map draws around a star, which way a
@@ -45,6 +45,13 @@
         public const string GalaxyPlayersAllReady = "galaxy.players-all-ready";
         public const string GalaxyPlayerPlaying = "galaxy.player-playing";
         public const string GalaxyPlayersPlaying = "galaxy.players-playing";
+
+        /// <summary>One empire's standing as the scoreboard beside End Turn draws it: what it is
+        /// called, what it is worth, how it stands with this empire, and where it is in its turn.
+        /// The relation is left out of the line for your OWN empire, which is the row the game draws
+        /// no relation icon on.</summary>
+        public const string GalaxyPlayerStandingWithRelation = "galaxy.player-standing-with-relation";
+        public const string GalaxyPlayerStanding = "galaxy.player-standing";
         public const string GalaxyGlobalTimer = "galaxy.global-timer";
         public const string GalaxyTurnTimer = "galaxy.turn-timer";
         public const string GalaxyOvertimeTimer = "galaxy.overtime-timer";

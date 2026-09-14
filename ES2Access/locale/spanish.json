@@ -132,6 +132,8 @@
   "galaxy.players-all-ready": "todos los jugadores han terminado su turno",
   "galaxy.player-playing": "{0} jugador sigue jugando",
   "galaxy.players-playing": "{0} jugadores siguen jugando",
+  "galaxy.player-standing-with-relation": "{0}, puntuación {1}, {2}, {3}.",
+  "galaxy.player-standing": "{0}, puntuación {1}, {2}.",
   "galaxy.global-timer": "Tiempo de partida restante",
   "galaxy.turn-timer": "Tiempo de turno restante",
   "galaxy.overtime-timer": "Tiempo extra restante",

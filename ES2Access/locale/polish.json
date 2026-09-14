@@ -133,6 +133,8 @@
   "galaxy.player-playing": "{0} gracz nadal gra",
   "galaxy.players-playing": "{0} graczy nadal gra",
   "galaxy.players-playing.few": "{0} gracze nadal grają",
+  "galaxy.player-standing-with-relation": "{0}, wynik {1}, {2}, {3}.",
+  "galaxy.player-standing": "{0}, wynik {1}, {2}.",
   "galaxy.global-timer": "Pozostały czas gry",
   "galaxy.turn-timer": "Pozostały czas tury",
   "galaxy.overtime-timer": "Pozostała nadwyżka czasu",

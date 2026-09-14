@@ -132,6 +132,8 @@
   "galaxy.players-all-ready": "所有玩家都已结束回合",
   "galaxy.player-playing": "还有{0}名玩家在游戏中",
   "galaxy.players-playing": "还有{0}名玩家在游戏中",
+  "galaxy.player-standing-with-relation": "{0}，得分 {1}，{2}，{3}。",
+  "galaxy.player-standing": "{0}，得分 {1}，{2}。",
   "galaxy.global-timer": "游戏剩余时间",
   "galaxy.turn-timer": "回合剩余时间",
   "galaxy.overtime-timer": "续时剩余时间",

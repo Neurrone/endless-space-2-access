@@ -133,6 +133,8 @@
   "galaxy.player-playing": "{0} игрок ещё играет",
   "galaxy.players-playing": "{0} игроков ещё играют",
   "galaxy.players-playing.few": "{0} игрока ещё играют",
+  "galaxy.player-standing-with-relation": "{0}, счёт {1}, {2}, {3}.",
+  "galaxy.player-standing": "{0}, счёт {1}, {2}.",
   "galaxy.global-timer": "Осталось времени игры",
   "galaxy.turn-timer": "Осталось времени хода",
   "galaxy.overtime-timer": "Осталось дополнительного времени",

@@ -132,6 +132,8 @@
   "galaxy.players-all-ready": "alle Spieler haben ihren Zug beendet",
   "galaxy.player-playing": "{0} Spieler spielt noch",
   "galaxy.players-playing": "{0} Spieler spielen noch",
+  "galaxy.player-standing-with-relation": "{0}, Punktzahl {1}, {2}, {3}.",
+  "galaxy.player-standing": "{0}, Punktzahl {1}, {2}.",
   "galaxy.global-timer": "Verbleibende Spielzeit",
   "galaxy.turn-timer": "Verbleibende Zugzeit",
   "galaxy.overtime-timer": "Verbleibendes Zeitkonto",

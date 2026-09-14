@@ -132,6 +132,8 @@
   "galaxy.players-all-ready": "tous les joueurs ont terminé leur tour",
   "galaxy.player-playing": "{0} joueur joue encore",
   "galaxy.players-playing": "{0} joueurs jouent encore",
+  "galaxy.player-standing-with-relation": "{0}, score {1}, {2}, {3}.",
+  "galaxy.player-standing": "{0}, score {1}, {2}.",
   "galaxy.global-timer": "Temps de partie restant",
   "galaxy.turn-timer": "Temps de tour restant",
   "galaxy.overtime-timer": "Temps additionnel restant",

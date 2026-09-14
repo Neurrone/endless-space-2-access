@@ -502,6 +502,8 @@ namespace ES2Access.Core.Speech
             { GalaxyPlayersAllReady, "every player has ended their turn" },
             { GalaxyPlayerPlaying, "{0} player is still playing" },
             { GalaxyPlayersPlaying, "{0} players are still playing" },
+            { GalaxyPlayerStandingWithRelation, "{0}, score {1}, {2}, {3}." },
+            { GalaxyPlayerStanding, "{0}, score {1}, {2}." },
             { GalaxyGlobalTimer, "Game time remaining" },
             { GalaxyTurnTimer, "Turn time remaining" },
             { GalaxyOvertimeTimer, "Overtime remaining" },

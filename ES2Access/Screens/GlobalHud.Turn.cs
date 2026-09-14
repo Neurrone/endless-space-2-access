@@ -291,15 +291,20 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// Where the other players are in their turn: how many are still playing, and a line each for
-        /// what the game says about them.
+        /// Where every empire in the game stands: how many are still playing, and the scoreboard the
+        /// game draws beside End Turn.
         ///
-        /// Read off the ring of slots the game draws around the End Turn button - which is drawn in
-        /// multiplayer only (:735) and, unlike the players list, is NOT gated on where the mouse is
-        /// (<c>EndTurnWindow.SpecificUpdate</c> :906-921 shows that list only while the physical cursor
-        /// is inside the button, and the mod moves no cursor). Each slot already carries the game's own
-        /// sentence about its player - leader and faction, then the state word
-        /// (<c>CompetitorOrbitalSlot.Refresh</c> :45-68) - so nothing here recomputes a player state.
+        /// The scoreboard (<see cref="PlayersList"/>) is what this row SAYS: words the game HAS and
+        /// draws nowhere a keyboard can reach, so they are composed and said as the row is read, and
+        /// held in the review buffer once. Landing here also DRAWS the game's own panel, which it
+        /// otherwise shows only while the mouse rests on the End Turn button - and nothing else is put
+        /// on the screen, because the game hangs no tooltip here for the mod to raise.
+        ///
+        /// Declared wherever the End Turn button is, which includes a solo game: the panel is bound
+        /// for every player in the game at game creation, and it was only the ready ring - drawn
+        /// outside single player alone (:735) - that made this row multiplayer-only. The spoken figure
+        /// is still the ring's where the ring exists, because that is the count the game itself keeps
+        /// while a turn is waiting on somebody.
         ///
         /// One row rather than one per player: the cluster is a handful of buttons in the corner of the
         /// screen, and eight more stops in it would be walked past on every pass. The per-player lines
@@ -307,10 +312,12 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddPlayers(List<Cell> found, EndTurnWindow window)
         {
-            AgeTransform ring = window.CompetitorsCircularTable;
-            // Banding input, and a different widget: the ring is what a single-player game does not
-            // draw, while the one cell below stands on it and is read for every player's line.
-            if (!AgeWidgets.Visible(ring))
+            AgeTransform anchor = AgeWidgets.Transform(window.EndTurnButton);
+            PlayersListPanel panel = PlayersList.Panel(window);
+            // Banding input: AddCell appends without the gate's question, and the scoreboard is the
+            // End Turn button's own hover panel - where the game draws no button there is no panel to
+            // stand on either.
+            if (panel == null || !AgeWidgets.Visible(anchor))
             {
                 return;
             }
@@ -319,17 +326,30 @@ namespace ES2Access.Screens
             NodeVtable vtable = GraphNodes.Readout(
                 () => ModStrings.Get(ModStrings.GalaxyPlayers),
                 () => PlayersText(it),
-                () => PlayerLines(it),
+                null,
                 null,
                 // The count changes as players end their turn, and the watch below is what announces
                 // that wherever the player is standing; a watched value would say it twice here.
                 false
             );
+            // Said as the row is read AND kept in the buffer: the standings are words the game has in
+            // the model and writes onto a panel no keyboard can raise, which is exactly what a
+            // composed section is for.
+            vtable.Sections = GraphNodes.SpokenSections(() => PlayersList.Lines(it), null);
+            // The pointer goes down rather than anywhere else - there is no tooltip here to draw, and
+            // a control left looking hovered from the row above would be a lie about where the
+            // keyboard is.
+            vtable.OnFocusVisual = () =>
+            {
+                AgeWidgets.ReleasePointer();
+                PlayersList.Hold(it);
+            };
+            vtable.OnBlurVisual = PlayersList.Release;
             found.Add(
                 new Cell
                 {
-                    Widget = ring,
-                    Id = ControlId.For(ring, "hud:players"),
+                    Widget = anchor,
+                    Id = ControlId.For(panel.AgeTransform, "hud:players"),
                     Vtable = vtable,
                 }
             );
@@ -486,6 +506,13 @@ namespace ES2Access.Screens
         private static string PlayersText(EndTurnWindow window)
         {
             int playing = PlayersPlaying(window);
+            // The ring is the game's own waiting figure and exists outside single player only (:735);
+            // where it does not, the same count comes off the scoreboard's own player states.
+            if (playing < 0)
+            {
+                playing = PlayersList.StillPlaying(window);
+            }
+
             if (playing < 0)
             {
                 return null;
@@ -498,45 +525,6 @@ namespace ES2Access.Screens
                     ModStrings.GalaxyPlayersPlaying,
                     playing
                 );
-        }
-
-        /// <summary>A line per player, in the game's own words: leader and faction, then where they are
-        /// in their turn - and, for a human who is not the local player, the whisper instruction the
-        /// game appends to the same tooltip, which is reviewable rather than spoken.</summary>
-        private static IList<string> PlayerLines(EndTurnWindow window)
-        {
-            List<string> lines = new List<string>();
-            try
-            {
-                AgeTransform ring = window == null ? null : window.CompetitorsCircularTable;
-                // Content: which lines the players' row is reviewed with. Lines, not nodes - the ring
-                // declares one cell and these are what it says.
-                if (!AgeWidgets.Visible(ring))
-                {
-                    return lines;
-                }
-
-                IList<AgeTransform> slots = ring.Children;
-                for (int i = 0; slots != null && i < slots.Count; i++)
-                {
-                    CompetitorOrbitalSlot slot = Slot(slots[i]);
-                    if (slot == null)
-                    {
-                        continue;
-                    }
-
-                    foreach (string line in AgeText.Lines(AgeText.Tooltip(slot.Tooltip)))
-                    {
-                        lines.Add(line);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("hud: reading the player states threw: " + e);
-            }
-
-            return lines;
         }
 
         private static CompetitorOrbitalSlot Slot(AgeTransform widget)

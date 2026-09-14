@@ -110,6 +110,8 @@ namespace ES2Access.Screens
             _instruction = null;
             _waiting = false;
             _playing = -1;
+            // The scoreboard the mod was holding drawn belongs to the page that is going away.
+            PlayersList.Release();
             ForgetQuests();
         }
 
@@ -124,6 +126,9 @@ namespace ES2Access.Screens
             AnnounceTurnWait();
             AnnounceQuest();
             AnnounceCursorMode();
+            // Re-asserted rather than done once: the End Turn window hides the players' scoreboard on
+            // every frame the physical cursor is not on its button.
+            PlayersList.Tick();
         }
 
         private void AnnounceTurn()

@@ -37,7 +37,6 @@ ES2Access/Screens/GlobalHud.Notifications.cs | 1 | vtable.Sections = GraphNodes.
 
 ES2Access/Screens/GlobalHud.Quest.cs | 1 | GraphNodes.TooltipDetails(AgeWidgets.Raw(panel.AgeTransform)),
 
-ES2Access/Screens/GlobalHud.Turn.cs | 1 | foreach (string line in AgeText.Lines(AgeText.Tooltip(slot.Tooltip)))
 ES2Access/Screens/GlobalHud.Turn.cs | 1 | foreach (string line in AgeText.Lines(AgeText.Tooltip(tooltip)))
 
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | () => CardActions.FirstLine(tooltip),
