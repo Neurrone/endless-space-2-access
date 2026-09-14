@@ -73,6 +73,20 @@ namespace ES2Access.UI
             /// <see cref="Nodes.Synthetic"/>, because there is no widget being drawn for the gate to ask
             /// about. The walk that set it is what vouches for the node.</summary>
             public bool KeptWhileFaded;
+
+            /// <summary>
+            /// Set where the row is a CONTROL only while the game is hinting it - the anomaly rows on
+            /// all three planet cards, whose one click is the jump to the missing technology
+            /// (<see cref="AddAnomalies"/>). With the hint there the node is a button offering
+            /// Ctrl+Enter; without it the row does nothing in any state, so it is declared a plain
+            /// READOUT - its name and its dossier, no role word and no "unavailable" (owner ruling
+            /// 2026-09-15: a dead control announced on every anomaly of every planet is worse than no
+            /// control).
+            ///
+            /// The test is <see cref="Cells.Hinting"/>, the same one <see cref="Cells.WireHintGesture"/>
+            /// gates the gesture on, so the role word and the gesture can never disagree.
+            /// </summary>
+            public bool HintedOnly;
         }
 
         /// <summary>A button named by a phrase of this mod's - for a control the game draws as a
@@ -206,13 +220,19 @@ namespace ES2Access.UI
         /// the ROW - that is the thing the player walks onto and the thing the game named - and
         /// <see cref="CardAction.Hint"/> aims the gesture at the child.
         ///
-        /// The row is UNAVAILABLE whatever state it is in, because its own click is one the game
-        /// answers only while a Control key is physically held (<c>GuiButtonHint.ActivateHint</c>
-        /// :18-34): a plain Enter on it has never done anything and never will, and saying so is the
-        /// truthful reading. Ctrl+Enter is the gesture, and its line is offered while the hint is
-        /// there.
+        /// The row is a CONTROL only while the game is hinting it (<see cref="CardAction.HintedOnly"/>).
+        /// <c>Bind</c> :66 fills the hint for one case alone - the player's own colony whose reduction
+        /// is blocked by a technology nobody has researched - and the row's only click is that jump, so
+        /// on every other planet the row can do nothing in any state. There it is a plain READOUT: the
+        /// anomaly's name off the wrapper and its dossier, with no role word and no "unavailable"
+        /// (owner ruling 2026-09-15 - "button, unavailable" on a row that can never act is a dead
+        /// control announced on every anomaly of every planet). Where the hint IS there, the row is a
+        /// button whose one gesture is Ctrl+Enter with its line, and it reads unavailable because a
+        /// plain Enter really does nothing: the game answers that click only while a Control key is
+        /// physically held (<c>GuiButtonHint.ActivateHint</c> :18-34).
         ///
-        /// The gate on that gesture is the hint COMPONENT and deliberately not
+        /// The gate on both - the gesture and the role word, through the one test
+        /// (<see cref="Cells.Hinting"/>) - is the hint COMPONENT and deliberately not
         /// <see cref="TechnologyHints.Drawn"/>: this prefab hands <c>Gui.FormatButtonHint</c> a button
         /// carrying no <c>AgeTooltip</c> of its own on the system page and on the map's orbital card
         /// (measured 2026-09-14 - <c>HintButton.AgeTransform.AgeTooltip</c> is null on both), so the
@@ -247,6 +267,7 @@ namespace ES2Access.UI
                         Tooltip = it.Tooltip,
                         Offered = Never,
                         Hint = item.HintButton.AgeTransform,
+                        HintedOnly = true,
                     }
                 );
             }
@@ -255,6 +276,10 @@ namespace ES2Access.UI
         /// <summary>A control whose own click the game answers in no state - said once rather than
         /// allocated per row per frame.</summary>
         private static readonly Func<bool> Never = () => false;
+
+        /// <summary>The value of a row that writes no number beside its name - said once, for the same
+        /// reason.</summary>
+        private static readonly Func<string> Nothing = () => null;
 
         /// <summary>The words the game keeps for a control on the WRAPPER hung on its tooltip - the
         /// only place an outpost action is named, since the item itself draws nothing but a cost.
@@ -354,7 +379,14 @@ namespace ES2Access.UI
                 // collected while the game was drawing it can be switched off between rebuilds, and the
                 // player standing on it should hear that.
                 Func<bool> offered = action.Offered ?? (() => AgeWidgets.Offered(at));
-                NodeVtable vtable = toggle != null
+                // The HINTED widget, which is the button itself for every card button and a CHILD of
+                // it for an anomaly row (<see cref="CardAction.Hint"/>) - asked here as well as below,
+                // because for one shape it decides whether there is a control here at all.
+                AgeTransform hinted = action.Hint ?? at;
+                bool readout = action.HintedOnly && !Cells.Hinting(hinted, action.HintDrawn);
+                NodeVtable vtable = readout
+                    ? GraphNodes.Readout(action.Label, action.Value ?? Nothing, null, tooltip)
+                    : toggle != null
                     ? GraphNodes.Checkbox(
                         action.Label,
                         () => toggle.State,
@@ -370,7 +402,7 @@ namespace ES2Access.UI
                         offered,
                         tooltip
                     );
-                if (toggle == null && action.Value != null)
+                if (!readout && toggle == null && action.Value != null)
                 {
                     vtable.Announcements.Add(GraphNodes.ValuePart(action.Value));
                 }
@@ -389,9 +421,7 @@ namespace ES2Access.UI
                 // really ON, which is what this used to say - for a row whose dossier hangs on an icon
                 // inside it, pointing at the row draws nothing at all.
 
-                // The HINTED widget, which is the button itself for every card button and a CHILD of
-                // it for an anomaly row (<see cref="CardAction.Hint"/>).
-                Cells.WireHintGesture(vtable, action.Hint ?? at, action.HintDrawn);
+                Cells.WireHintGesture(vtable, hinted, action.HintDrawn);
 
                 // A CURIOSITY, either card's: both of them hang the same prefab off the card, and
                 // both owe the padlock in words. What only ONE of them owes is below.

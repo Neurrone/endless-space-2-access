@@ -135,20 +135,25 @@ namespace ES2Access.UI
             Func<bool> live = null
         )
         {
-            if (vtable == null || vtable.OnCtrlClick != null || !AgeWidgets.Hinted(widget))
+            if (vtable == null || vtable.OnCtrlClick != null || !Hinting(widget, live))
             {
                 return;
             }
 
             AgeTransform hint = widget;
             Func<bool> lit = live ?? (() => AgeWidgets.Hinted(hint));
-            if (!lit())
-            {
-                return;
-            }
-
             vtable.OnCtrlClick = () => AgeWidgets.Locate(hint);
             NodeHints.Add(vtable, ModStrings.HintMissingTechnology, UiActions.CtrlClick, 0, lit);
+        }
+
+        /// <summary>Whether the jump <see cref="WireHintGesture"/> wires is live on this widget right
+        /// now - the hint is there AND the caller's narrower drawn test, where it has one, agrees. Asked
+        /// as a question of its own by the caller whose widget is a CONTROL only while this is true
+        /// (<see cref="CardActions.CardAction.HintedOnly"/>): the gesture and the role word have to
+        /// answer to the same test, or a row reads as a button with nothing to activate.</summary>
+        public static bool Hinting(AgeTransform widget, Func<bool> live = null)
+        {
+            return AgeWidgets.Hinted(widget) && (live == null || live());
         }
 
         /// <summary>
