@@ -336,15 +336,147 @@ namespace ES2Access.UI
             return !RowsAreLines && Selectable(table);
         }
 
-        /// <summary>Whether the game would act on this row: the line's own flag - which is where a
+        /// <summary>
+        /// Whether the game would act on this row: the line's own flag - which is where a
         /// refused row is marked - and everything ABOVE <c>LinesTable</c>, whose own flag is the
-        /// <c>canSelect</c> the table was bound with and says something else entirely.</summary>
-        private static Func<bool> Operable(GuiTable table, GuiTableLine line)
+        /// <c>canSelect</c> the table was bound with and says something else entirely.
+        ///
+        /// One delegate per ROW, not one per ASK - see <see cref="Picked"/> for why.
+        /// </summary>
+        private Func<bool> Operable(GuiTable table, GuiTableLine line)
         {
+            if (Same(_enabledTable, table, _enabledLine, line) && _enabled != null)
+            {
+                return _enabled;
+            }
+
             GuiTable owner = table;
             GuiTableLine row = line;
-            return () => AgeWidgets.Enabled(Widget(row)) && AgeWidgets.Operable(Above(owner));
+            _enabledTable = table;
+            _enabledLine = line;
+            _enabled = () => AgeWidgets.Enabled(Widget(row)) && AgeWidgets.Operable(Above(owner));
+            return _enabled;
         }
+
+        /// <summary>
+        /// Whether this row is the one taken - and the door the row's other five shared delegates are
+        /// written beside.
+        ///
+        /// Everything in this group is a fact about the ROW that every CELL of it has to carry: whether
+        /// the game would act on the row, whether it is selected, the word it says for that, what
+        /// picking it does, what its second click does, and what a typed letter matches. The sheet was
+        /// minting each of them afresh every time it was asked - and it is asked once per cell for the
+        /// split hook, once for the cell itself, once for each of its pieces, once for the row's
+        /// adornments and once for the name - so a table thirteen columns wide allocated a closure and
+        /// a delegate several hundred times over per frame, sixty times a second, for a handful of
+        /// distinct answers. Measured on the Empire page's systems table (eight rows of thirteen
+        /// columns, 208 declared nodes): 888 KB of garbage per build, of which 155 KB was this.
+        ///
+        /// Each memo is keyed on the objects its closure is made of and nothing else - the table and
+        /// the line - so a different row, or the same row under a re-bound table, mints its own. One
+        /// entry each is enough because the build reads a table a row at a time. Nothing is remembered
+        /// ABOUT the row: every delegate reads the game live when it is called, so a row switched off
+        /// later in the frame still answers for now, and a pooled line re-bound to another system is a
+        /// different line object and gets a delegate of its own.
+        /// </summary>
+        private Func<bool> Picked(GuiTable table, GuiTableLine line)
+        {
+            if (Same(_pickedTable, table, _pickedLine, line) && _picked != null)
+            {
+                return _picked;
+            }
+
+            GuiTable owner = table;
+            GuiTableLine row = line;
+            _pickedTable = table;
+            _pickedLine = line;
+            _picked = () => Selected(owner, row);
+            return _picked;
+        }
+
+        /// <summary>Picking this row: Enter on any column of a table the player is choosing from is the
+        /// row's own click.</summary>
+        private Action Picks(GuiTable table, GuiTableLine line)
+        {
+            if (Same(_picksTable, table, _picksLine, line) && _picks != null)
+            {
+                return _picks;
+            }
+
+            GuiTableLine row = line;
+            Func<bool> enabled = Operable(table, line);
+            _picksTable = table;
+            _picksLine = line;
+            _picks = () =>
+            {
+                if (enabled())
+                {
+                    AgeWidgets.Toggle(row.SelectionToggle);
+                }
+            };
+            return _picks;
+        }
+
+        /// <summary>The membership word this row says.</summary>
+        private Func<string> SelectedText(GuiTable table, GuiTableLine line)
+        {
+            if (Same(_selectedTable, table, _selectedLine, line) && _selectedText != null)
+            {
+                return _selectedText;
+            }
+
+            Func<bool> picked = Picked(table, line);
+            _selectedTable = table;
+            _selectedLine = line;
+            _selectedText = () => picked() ? ModStrings.Get(ModStrings.NavSelected) : null;
+            return _selectedText;
+        }
+
+        /// <summary>What a typed letter matches on this row.</summary>
+        private Func<string> Searches(GuiTableLine line)
+        {
+            if (ReferenceEquals(line, _searchesLine) && _searches != null)
+            {
+                return _searches;
+            }
+
+            GuiTableLine row = line;
+            _searchesLine = line;
+            _searches = () => RowText(row, null);
+            return _searches;
+        }
+
+        private static bool Same(
+            GuiTable table,
+            GuiTable other,
+            GuiTableLine line,
+            GuiTableLine otherLine
+        )
+        {
+            return ReferenceEquals(table, other) && ReferenceEquals(line, otherLine);
+        }
+
+        private GuiTable _enabledTable;
+        private GuiTableLine _enabledLine;
+        private Func<bool> _enabled;
+
+        private GuiTable _pickedTable;
+        private GuiTableLine _pickedLine;
+        private Func<bool> _picked;
+
+        private GuiTable _picksTable;
+        private GuiTableLine _picksLine;
+        private Action _picks;
+
+        private GuiTable _selectedTable;
+        private GuiTableLine _selectedLine;
+        private Func<string> _selectedText;
+
+        private GuiTableLine _clicksLine;
+        private Action _clicks;
+
+        private GuiTableLine _searchesLine;
+        private Func<string> _searches;
 
         private static AgeTransform Widget(GuiTableLine line)
         {

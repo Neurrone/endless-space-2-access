@@ -184,7 +184,6 @@ namespace ES2Access.UI
         /// </summary>
         private NodeVtable PrimaryVtable(GuiTable table, GuiTableLine line, AgeTransform cell)
         {
-            GuiTable owner = table;
             GuiTableLine row = line;
             AgeTransform widget = line.AgeTransform;
             AgeTransform name = cell;
@@ -195,7 +194,7 @@ namespace ES2Access.UI
             {
                 vtable = GraphNodes.SelectionItem(
                     () => RowText(row, name),
-                    () => Selected(owner, row),
+                    Picked(table, line),
                     null,
                     () => AgeWidgets.Toggle(row.SelectionToggle),
                     enabled,
@@ -303,14 +302,27 @@ namespace ES2Access.UI
         /// </summary>
         private void ShowOnMap(GuiTableLine line, NodeVtable vtable)
         {
-            GuiTableLine row = line;
-            if (row.DoubleClickButton == null || vtable.OnDoubleClick != null)
+            if (line.DoubleClickButton == null || vtable.OnDoubleClick != null)
             {
                 return;
             }
 
+            vtable.OnDoubleClick = DoubleClicks(line);
+        }
 
-            vtable.OnDoubleClick = () =>
+        /// <summary>The row's second click, as the one handler every cell of it shares (see
+        /// <see cref="Picked"/>): what the gesture does is a fact about the ROW, so there is one of it
+        /// however many columns offer it.</summary>
+        private Action DoubleClicks(GuiTableLine line)
+        {
+            if (ReferenceEquals(line, _clicksLine) && _clicks != null)
+            {
+                return _clicks;
+            }
+
+            GuiTableLine row = line;
+            _clicksLine = line;
+            _clicks = () =>
             {
                 try
                 {
@@ -331,6 +343,7 @@ namespace ES2Access.UI
                     Log.Warn("table: replaying a row's double click threw: " + e);
                 }
             };
+            return _clicks;
         }
 
         /// <summary>
@@ -371,11 +384,9 @@ namespace ES2Access.UI
             AgeTooltip rowTip
         )
         {
-            GuiTable owner = table;
             GuiTableLine row = line;
             AgeTransform it = cell;
             GuiTableHeader heading = header;
-            Func<bool> selected = () => Selected(owner, row);
             Func<bool> enabled = Operable(table, line);
             _saysRowRefusal = null;
             NodeVtable vtable = ReadCell == null ? null : ReadCell(row, it, heading, enabled);
@@ -442,19 +453,12 @@ namespace ES2Access.UI
                 }
                 else if (Choosable(table))
                 {
-                    vtable.OnActivate = () =>
-                    {
-                        if (enabled())
-                        {
-                            AgeWidgets.Toggle(row.SelectionToggle);
-                        }
-                    };
+                    vtable.OnActivate = Picks(table, line);
                 }
 
                 if (Choosable(table))
                 {
-                    vtable.StateText = () =>
-                        selected() ? ModStrings.Get(ModStrings.NavSelected) : null;
+                    vtable.StateText = SelectedText(table, line);
                 }
             }
 
@@ -462,10 +466,15 @@ namespace ES2Access.UI
             // player crossed, so its buffer is the one surface that has to carry the pair itself.
             vtable.BufferHead = () => CellHead(heading, it);
             Adorn(table, line, vtable, !saysRefusal);
-            AgeWidgets.PointAt(vtable, it);
+            // Aimed ONCE: the dossier aim rewrites every field the bare aim writes, so making both
+            // was a closure and three delegates per cell per frame, thrown away by the next line.
             if (aim != null)
             {
                 AgeWidgets.PointAt(vtable, it, aim);
+            }
+            else
+            {
+                AgeWidgets.PointAt(vtable, it);
             }
 
             return vtable;
@@ -512,11 +521,10 @@ namespace ES2Access.UI
             bool availability
         )
         {
-            GuiTable owner = table;
             GuiTableLine row = line;
             if (Choosable(table))
             {
-                vtable.Announcements.Add(GraphNodes.SelectedPart(() => Selected(owner, row)));
+                vtable.Announcements.Add(GraphNodes.SelectedPart(Picked(table, line)));
             }
 
             if (availability)
@@ -528,7 +536,7 @@ namespace ES2Access.UI
             // row's click: a player who arrowed across to compare a figure should not have to arrow
             // back to act on the row they just compared.
             ShowOnMap(row, vtable);
-            vtable.SearchText = () => RowText(row, null);
+            vtable.SearchText = Searches(line);
         }
 
         /// <summary>The name cell for the review buffer: the lines the screen adds for the row

@@ -305,13 +305,11 @@ namespace ES2Access.UI
             Piece piece
         )
         {
-            GuiTable owner = table;
-            GuiTableLine row = line;
             AgeTransform it = cell;
             GuiTableHeader heading = header;
             Piece part = piece;
             Func<bool> enabled = Operable(table, line);
-            NodeVtable answer = Answer(row, cell, header, enabled);
+            NodeVtable answer = Answer(line, cell, header, enabled);
             bool saysRefusal = answer != null && ReferenceEquals(answer, _answeredRefusal);
             NodeVtable vtable = new NodeVtable
             {
@@ -345,15 +343,8 @@ namespace ES2Access.UI
             }
             else if (Choosable(table))
             {
-                vtable.OnActivate = () =>
-                {
-                    if (enabled())
-                    {
-                        AgeWidgets.Toggle(row.SelectionToggle);
-                    }
-                };
-                vtable.StateText = () =>
-                    Selected(owner, row) ? ModStrings.Get(ModStrings.NavSelected) : null;
+                vtable.OnActivate = Picks(table, line);
+                vtable.StateText = SelectedText(table, line);
             }
 
             // A piece the game drew as a BUTTON is pressed by Enter, whatever the cell around it does:
@@ -378,10 +369,14 @@ namespace ES2Access.UI
             }
 
             Adorn(table, line, vtable, answer == null || !saysRefusal);
-            AgeWidgets.PointAt(vtable, it);
+            // Aimed ONCE, for the reason a whole cell is (CellVtable).
             if (piece.Tooltip != null)
             {
                 AgeWidgets.PointAt(vtable, it, piece.Tooltip);
+            }
+            else
+            {
+                AgeWidgets.PointAt(vtable, it);
             }
 
             return vtable;
