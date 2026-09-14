@@ -373,6 +373,28 @@ namespace ES2Access.Tests.UI
             Assert.Equal("c2", DestKey(Node(r, "h2"), GraphDir.Down));
         }
 
+        /// <summary>A cell read as several pieces stamps every piece with the cell's own column, so a
+        /// column can appear twice on the raw side. The seam still pairs by column, and it lands on the
+        /// first node of the column — the cell's own words, not a fragment of it.</summary>
+        [Fact]
+        public void ARepeatedColumnStillPairsAndLandsOnTheCellItself()
+        {
+            GraphBuilder b = new GraphBuilder();
+            b.StartRow(positions: false)
+                .AddItem(new SyntheticNode(Id("h0"), Col("Name", 0)))
+                .AddItem(new SyntheticNode(Id("h1"), Col("Status", 1)))
+                .AddItem(new SyntheticNode(Id("h2"), Col("Population", 2)))
+                .EndRow();
+            b.AddNode(new SyntheticNode(Id("c0"), Col("Corvus", 0)))
+                .AddNode(new SyntheticNode(Id("c1"), Col("Colonized", 1)))
+                .AddNode(new SyntheticNode(Id("c1b"), Col("Corvus I, barren", 1)))
+                .AddNode(new SyntheticNode(Id("c2"), Col("3", 2)));
+            GraphRender r = b.Build();
+            Assert.Equal("c0", DestKey(Node(r, "h0"), GraphDir.Down));
+            Assert.Equal("c1", DestKey(Node(r, "h1"), GraphDir.Down));
+            Assert.Equal("c2", DestKey(Node(r, "h2"), GraphDir.Down));
+        }
+
         /// <summary>Sparse rows exist: a column the first row does not draw has no cell to land on, and
         /// that heading falls back to the row's primary rather than dead-ending.</summary>
         [Fact]
