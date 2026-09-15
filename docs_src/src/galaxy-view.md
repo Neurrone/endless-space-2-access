@@ -6,6 +6,10 @@ Coordinates are spoken with your home system as the origin. For major factions t
 
 Coordinates are in the form `(x, y)` where x is east and `y` is north.
 
+## Summarize Map
+
+Press `Ctrl+M` for information on the galaxy's dimensions and how far away your capital system is to galactic centre.
+
 ## The Systems Tree
 
 The map is exposed as a hierarchical tree.
@@ -40,7 +44,7 @@ Press `Escape` or `Space` to leave.
 
 ## Inspect Mode
 
-Use inspect mode to understand geometry. This is critical as systems can require off-lane travel (i.e, travel through open space). Inspect mode is also required to understand spheres of influence around systems.
+Use inspect mode to understand geometry. This is critical as systems can require off-lane travel (i.e, travel through open space). Inspect mode is also how you understand spheres of influence around systems.
 
 Press `Ctrl+I` on the map to enter inspect mode. In this mode, the cursor announces the contents of a 1 by 1 square of the map. Use `+` and `-` to grow and shrink the size of the cursor. Use the arrow keys to navigate and `Shift` with the arrow keys to move to the next interesting tile in that direction.
 
@@ -73,6 +77,6 @@ Bookmarks let you save locations of interest and return to them later. There are
 - `Ctrl+number`: jump to that bookmark slot. Note that this does not require the map to be focused
 - `Backspace`: return the cursor to the previous location before the jump
 
-## Jump To Capital System
+### Jump To Capital System
 
 Use `Ctrl+C` to jump to your capital system. This acts like any other bookmark without taking up a slot.

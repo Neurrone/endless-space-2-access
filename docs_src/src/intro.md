@@ -28,13 +28,15 @@ The game is 95% playable with the United Empire faction. Any remaining gaps are 
 - Trade companies
 - Victory / defeat screens
 
-There are also almost 100 notification types and the only way to ensure they work is to have encountered them.
+It will also take time to support all the 160+ notification types in the game.
 
 Support for other factions is planned once I've completed a playthrough with the United Empire.
 
-All DLCs that add minor factions, quests or heroes are supported. Expansion packs that add new major factions or game mechanics are not yet supported.
+All DLCs that add minor factions, quests or heroes are supported. The 4 expansion packs that add new major factions or game mechanics are not yet supported.
 
 If you have bought the DLCs, expansion packs can be disabled from the main menu. The usual advice for new players is to disable the major expansion packs first till you're familiar with the base game mechanics.
+
+Multiplayer support is planned.
 
 ## Links
 
