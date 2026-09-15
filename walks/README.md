@@ -1,84 +1,78 @@
 # `walks/` — the regression walk
 
-Two commands prove a change altered **no spoken or buffer line** anywhere the fixture can
-reach:
+A walk records what the mod would say for a screen — the whole accessible tree it declares,
+every node's spoken line and review-buffer lines — as text, so two builds can be compared by
+diff. It does not press every control or test behavior; it proves that a change altered no
+spoken or buffer line except the ones it meant to.
 
 ```sh
-sh walks/walk-all.sh /tmp/before      # with the old build loaded
+sh walks/run.sh /tmp/before senate/laws-modal.sh   # one scenario, with the old build loaded
 # ... build, POST /reload ...
-sh walks/walk-all.sh /tmp/after       # same game process, new build
+sh walks/run.sh /tmp/after senate/laws-modal.sh    # same game process, new build
 sh walks/diffwalks.sh /tmp/before /tmp/after /tmp/diff.txt
 ```
 
 `diffwalks.sh` prints `total differing lines: N`. **N must be 0** for "nothing changed".
 Anything else is a real change to classify (§5).
 
-The walk drives ten families of screens with `POST /input`, saves the mod's whole
-accessible tree (`GET /gui/graph?buffers=1`) at ~110 stations, and adds a focused pass over
-the Class-backed tooltip carriers, whose text does not exist in an unfocused dump. It works
-because the dump is text and stable. The tenth family is different in kind: it reads a
-pooled surface, rebinds the pool, reads it again and diffs the two readings inside one run
-(§9).
+A walk is **sized to the change**: a target is one scenario file, a folder (every scenario of
+that screen), or several of either. `walk-all.sh` is the one entry point that walks
+everything, and CLAUDE.md gates running it on the owner's approval. Nothing here is written
+down about *this* save: systems, planets, fleets, technologies, heroes, minor empires,
+notifications and screen keys are all read back from the live game at the moment the walk
+needs them.
 
-Nothing in the walk is written down about *this* save. The systems, planets, starlanes,
-fleets, technologies, heroes, minor empires, notifications and registered screen keys are
-all read back from the live game at the moment the walk needs them. Point it at another
-save, another faction or another galaxy and it walks that one.
+## Layout
 
-## Files
+One folder per major screen; one script per screen or modal. A scenario over a surface the
+game pools also runs that surface's A-B-A rebind check (§9), so the check cannot be forgotten.
 
-| File | Purpose |
+| Folder | Scenarios |
 |---|---|
-| `walk-all.sh` | Runs the ten families into one output dir, `--reset` optionally loads a save first, prints the dump count and the skip list |
-| `00-menus.sh` | The screens that exist before any save is loaded: the main menu, the mod's settings, the new-game lobby and the faction choice, custom-faction editor and advanced settings it opens, load/save, the game options tab by tab, the DLC browser, the credits, the disclaimer, and every registered screen key. Standalone — `walk-all.sh` does not run it |
-| `01-galaxy.sh` | Galaxy HUD, map tree (two systems expanded, first revisited — the pooled-row shrink leg), selected-fleet panel, scan view, map + HUD tooltip pass |
-| `02-system.sh` | Star-system page for the first owned system, the second, the first again (pool shrink); planet overview; improvements and system-politics modals |
-| `03-empire.sh` | Technology wheel, quest journal, empire page, economy, senate, and the government / laws / population modals |
-| `04-military.sh` | Military page, fleet-selection modal, ship designer in creation mode, its hull drop list, ground-troop management, battle-tactics deck |
-| `05-diplomacy.sh` | Diplomacy page and the minor-civilization window |
-| `06-heroes.sh` | Academy page, hero complete list, and hero selection when the empire owns a hero |
-| `07-dialogs.sh` | Pause menu, the mod's settings window (both tabs), game options, load/save, rename, journal, recipe creation, non-blocking box |
-| `08-notifications.sh` | The notification popup a pending notification raises, and the HUD after the turn-log key |
-| `09-bykey.sh` | Every registered mod screen dumped by key — the safety net for everything the fixture cannot open |
-| `10-rebind.sh` | The A-B-A rebind pass over the surfaces the game pools: star-system and map orbital planet cards, the selected fleet's actions, empire-page planet cards, marketplace section radios, diplomacy ring wedges, and the notification popup's body (§9) |
-| `lib.sh` | Shared helpers: pausing, injecting, dumping, tooltip capture, window open/hide, discovery, type-ahead landing, skip recording |
-| `cs/*.cs` | The `/eval` bodies: `tut` (minimise the tutorial), `drain` (close everything), `reset` (normalise the mod's graph state), `sysopen`, `home`, `minor`, `restore`, the two `rebind-*` templates §9 substitutes a target into, and out of game `menudrain` (close what is on top) and `menuhome` (leave the lobby and put the menu back) |
-| `fixture.env` | The three knobs — see §2 |
-| `diffwalks.sh` | Normalised diff of two walk outputs |
-| `normalize.sed` | The normalisation rules (§4) |
+| `galaxy/` | `hud` (overview dump, two HUD tooltip probes); `map-tree` (a system expanded, its tooltip probes, a second expanded, the first revisited; orbital planet-card rebind); `fleet-panel` (selected-fleet panel; fleet-action rebind); `scan-view` |
+| `system-management/` | `screen` (the largest owned system's page, two planet-card tooltip probes, the page turned to the smallest and back; planet-card rebind); `planet-overview` (Enter on a planet row); `improvements-modal`; `politics-modal` |
+| `research/` | `screen` (the wheel, a suggested-technology tooltip) |
+| `quests/` | `screen` |
+| `empire/` | `screen` (a systems-table cell tooltip); `planet-cards` (the cards panel in Actions and Population mode; empire planet-card rebind) |
+| `economy/` | `screen`; `marketplace` (section radios and items; radio rebind); `recipe-creation-modal` |
+| `senate/` | `screen`; `government-modal`; `laws-modal`; `population-modal` |
+| `military/` | `screen` (a fleet-row tooltip); `fleet-selection-modal`; `ship-designer` (creation mode, then its hull drop list); `troop-management-modal`; `battle-tactics-modal` |
+| `diplomacy/` | `screen` (a card tooltip; ring-wedge rebind by hover selection); `minor-civilization-modal` |
+| `heroes/` | `academy`; `hero-list-modal`; `hero-selection-modal` (only with a hero) |
+| `notifications/` | `popup` (only with a pending notification; parity probe; popup-body rebind); `turn-log` |
+| `game-menu/` | `pause-menu`; `mod-settings` (both tabs, through the menu entry); `game-options-modal`; `load-save-modal` |
+| `end-game/` | `journal-modal` (the end-game summary the score and victory screens open) |
+| `dialogs/` | `rename-box`; `message-box-non-blocking` — windows shared by several screens |
+| `main-menu/` | out of game only, run against a freshly launched game at the menu: `menu`; `mod-settings`; `new-game` (the lobby, faction choice, custom-faction editor, advanced settings); `load-save`; `game-options`; `dlc`; `credits`; `disclaimer`. `menulib.sh` holds their drain helpers |
+
+Root files: `run.sh` (the runner), `walk-all.sh` (the explicit full list, in game), `by-key.sh`
+(every registered screen key dumped unfocused, or just the keys named — the baseline for
+screens no scenario can open), `lib.sh` (shared helpers), `cs/*.cs` (the `/eval` bodies:
+`tut`, `drain`, `reset`, `restore`, `minor`, the two `rebind-*` walker templates, and out of
+game `menudrain`, `menuhome`), `fixture.env` (§2), `diffwalks.sh`, `normalize.sed` (§4).
 
 ## 1. Preconditions
 
 * **The game is running with the dev server on** (`devServer = true` under `[Dev]`, or
-  `run-game.ps1` without `-NoDev`). `walk-all.sh` refuses to start without it.
-* **In game**, on whatever save you mean to walk. The harness never loads one: `--reset` is
-  the only path that does, and it is for setting up *before* a pair, never between the two
-  halves of one.
-  `00-menus.sh` is the one family this does not apply to: it walks what the game draws
-  *before* a save is loaded, so it is run on its own against a freshly launched game sitting
-  at the main menu.
-* **The tutorial popup is minimised.** Expanded, it eats every injection as `unconsumed`.
-  Every family script's prologue checks and does it, so this is automatic — the check is
-  `cs/tut.cs`, which minimises any bound, shown `TutorialPopupPanel` whose minimize toggle
-  is off and answers `tutorial already minimized` otherwise.
+  `run-game.ps1` without `-NoDev`). `run.sh` refuses to start without it.
+* **In game**, on whatever save you mean to walk. The harness never loads one: `walk-all.sh
+  --reset` is the only path that does, and it is for setting up *before* a pair, never
+  between the two halves of one. `main-menu/` is the exception: it walks what the game draws
+  before a save is loaded.
 * **The build under test is loaded**: `dotnet build` → `POST /reload` →
   `GET /loader/status` shows `staleBuild:false` and an incremented `modAssemblyName`.
 * **The game's own options modal is left on its Video tab.** It remembers its selected tab
-  across opens and the walk never touches its tabs, so both halves of a pair dump whatever
-  a human last selected. Only the pair matters, but Video is the state these routes were
-  built in.
-
-### The same-process constraint
+  across opens and the in-game scenario never touches its tabs, so both halves of a pair dump
+  whatever a human last selected.
+* The tutorial popup is minimised by every `ensure_*` arrival (`cs/tut.cs`); expanded, it
+  eats every injection as `unconsumed`.
 
 **Both halves of a pair must come from the same game process.** `GraphSheet` row keys derive
 from `GetHashCode()`; they survive a hot reload but not a restart, and a restart also
-re-instantiates every domain object and can reshuffle hash-keyed rows. So the loop is
-build → `/reload` → walk, never build → relaunch → walk.
-
-Capturing a "before" you did not think to take: `git stash push -u -- ES2Access
+re-instantiates every domain object. So the loop is build → `/reload` → walk, never build →
+relaunch → walk. A "before" you did not think to take: `git stash push -u -- ES2Access
 ES2Access.Tests` → build → `/reload` → walk → `git stash pop` → build → `/reload` → walk.
-About 3 minutes of the ~20 the pair costs. Unsafe while another stage is editing the same
-trees.
+Unsafe while another stage is editing the same trees.
 
 ## 2. Configuration (`fixture.env`)
 
@@ -87,45 +81,48 @@ Three knobs, and they are the whole configuration surface. Everything else is di
 | Knob | Default | Why it cannot be discovered |
 |---|---|---|
 | `WALK_HOST` | `http://127.0.0.1:8771` | It is the thing we ask. `ES2ACCESS_DEV_PORT` moves the server; a second instance needs a second port. |
-| `WALK_PACE` | `100` (percent) | Scales every settle. How long a star-system page takes to draw is a property of the machine, not of any state the game can be asked for. Raise it on a slow box; too-fast shows up as a self-diff, never as an error. |
-| `WALK_SAVE` | empty | `walk-all.sh --reset` only. Empty means the dev server's own default: `POST /loadsave` with an empty body loads the newest save. "Which save is the fixture" is the caller's intent, not a fact of the running game. |
+| `WALK_PACE` | `100` (percent) | Scales `pause`, the rare fixed wait a step uses when it has nothing to wait on. |
+| `WALK_SAVE` | empty | `walk-all.sh --reset` only. Empty means the newest save. "Which save is the fixture" is the caller's intent. |
 
-Each is overridable from the environment (`WALK_PACE=150 sh walks/walk-all.sh out/`).
+## 3. How a scenario runs
 
-## 3. How discovery replaces names
+**Arrival is idempotent.** A scenario starts with an `ensure_*` helper (`ensure_screen`,
+`ensure_modal`, `ensure_galaxy`, `ensure_system`) that proceeds at once when the screen it
+wants is already focused with nothing modal over it, and otherwise drains and opens it. A
+scenario never closes the screen it walked, so a folder pays for opening its screen once, and
+one scenario run alone opens what it needs. `run.sh` drains once at the very end of a run —
+in game, every modal and screen closed and the camera at galaxy overview; out of game, back
+to the main menu — so the fixture is left as found.
 
-Node **keys** are mod-authored and stable across saves (`hud:empire/resource/Strategic2`,
-`gamemenu:mod-settings`, `system:planet/…`). Node **labels** are localized and
-fixture-dependent. So the walk addresses by key and reads the label back:
+**Waits are predicates.** Every wait is a `POST /wait` the dev server evaluates each frame:
+the mod's focused screen key (`onscreen`), a window shown or hidden (`shown`, `hidden`), no
+modal on top, or the mod's own dump holding an expected row (`waitdump` — for a surface the
+game builds over several frames after its window shows, such as planet cards binding to their
+labels). The one fixed interval is the 0.4 s of speech silence the `/input` and `/type`
+routes themselves wait for before answering, which the dev loop measured as the necessary
+key spacing: a faster loop reports a plausible wrong route rather than failing. The library
+adds no sleep of its own on top.
 
-```sh
-snap "$TMP/hud.txt"                                   # dump where we're standing
-txt=$(label_nth "$TMP/hud.txt" 'hud:empire/resource/[A-Za-z0-9]*\]' 2)
-tland "$txt"                                          # land on it by type-ahead
-```
-
-`lib.sh` provides `snap`, `label_of`, `label_nth`, `key_nth`, `nkeys`, `tland` and `fact`
-(an `/eval` whose result is echoed, for things no dump shows — how many systems the empire
-owns, what its fleets are called).
+**Discovery replaces names.** Node **keys** are mod-authored and stable across saves
+(`hud:empire/resource/Strategic2`, `system:planet/…`); node **labels** are localized and
+fixture-dependent. So a route addresses by key and reads the label back (`snap`, `label_of`,
+`label_nth`, `key_nth`, `nkeys`), lands on it by type-ahead (`findland`, which walks the
+screen's stops because a search reads the focused stop only) and clears with `ui.back`. A
+failed landing does not move the cursor: never follow one with `ui.click`.
 
 **The caption rule.** A region's drawn caption is spoken as part of its *first* row
-(`Strategic Resources, Titanium, 5, …`), but the type-ahead matches a node's **own** text
-only — so the first field of a region's first row is a string type-ahead will never find.
-Ask for **row 2** whenever "any row of this table" will do. Nothing in the dump marks a
-field as a caption, so this is a discipline, not a parser. Where a region's first row *is*
-the target (the galaxy system dossier, `…/tooltip/0`), the route lands on row 2 by text and
-steps up onto it.
+(`Planets, Leo I, …`), but type-ahead matches a node's **own** text only — so the first field
+of a region's first row is a string type-ahead will never find. Ask for **row 2** whenever
+"any row of this table" will do, or read the first row's second field.
 
-**Landings, not counted steps.** `ui.home` is context-relative on a tree — it goes to the
-start of the current *level*, not of the stop — so a counted arrow walk is not replayable.
-Every route lands with `POST /type` and clears with `ui.back`. `tland` returns non-zero on
-a 0-result search and does not move the cursor; never follow a failed landing with
-`ui.click`.
+**One tree shape, one cursor.** `capture` runs `cs/reset.cs` first, clearing the mod's
+`GraphState` (expansions, stop memory, cursor) so a dump does not depend on what an earlier
+step left open. Use `dump` instead where the route *depends* on an expansion it just made
+(the galaxy tree).
 
-**One tree shape, one cursor.** `cs/reset.cs` clears the mod's `GraphState` (`Expanded`,
-`StopMemory`, `CurKey`, `KeyOrder`, `NextSuggestedMove`) before each capture, so a dump does
-not depend on which branches an earlier walk left open. The galaxy legs use `dump` rather
-than `capture` precisely because they *depend* on an expansion they just made.
+**Tooltip probes.** A renderer-assembled tooltip has no text until its window draws, so the
+unfocused dump cannot see it. `tip` saves the dump and `DevProbe.Tooltip()` for whatever the
+cursor is on, with the tooltip delay set to zero for the pass and restored after.
 
 ## 4. Normalisation and the volatile classes
 
@@ -133,153 +130,116 @@ than `capture` precisely because they *depend* on an expansion they just made.
 the same route and would otherwise read as a disaster:
 
 1. **Instance-hash node ids.** `GraphSheet` row keys and drop-list ids derive from
-   `GetHashCode()`: `droplist:-191878/2`, `military:row-1360461824c0`,
-   `empire:row-359792640c0`, `loadsave:row-1761308160c0`. Rules: `[droplist:<n>/` →
-   `[droplist:#/`, `row<5+ digits>` → `row#`.
+   `GetHashCode()`: `droplist:-191878/2`, `military:row-1360461824c0`. Rules:
+   `[droplist:<n>/` → `[droplist:#/`, `row<5+ digits>` → `row#`.
 2. **The HUD wall clock** (`hud:real-time-clock`) — it changes every minute of real time.
 3. **`DevProbe.Tooltip()`'s `defaultRead` array**, which *accumulates* class names for the
-   life of the session: the same probe run twice can list one more class. Normalised to
-   `[#]`.
-4. **The studio's news banner** (`mainmenu:news`) — the main menu's banner turns its story over
-   every few seconds and is absent between stories, so on two runs minutes apart the headline
-   differs, and the row itself exists on one side and not the other, which moves the total in
-   every menu entry's ordinal ("1 of 10" against "1 of 9"). The news row and its buffer line are
-   deleted, and the total of every `[mainmenu:` ordinal is normalised to `#`; the news row is the
-   menu's last, so no entry's own position moves with it.
-5. **The focus marker `> `** — not normalised. Instead every `capture` reseats the cursor
-   deterministically. A diff showing only `> ` moving means the route lost the cursor;
-   read `routelog.txt`, do not blame the change.
+   life of the session. Normalised to `[#]`.
+4. **The studio's news banner** (`mainmenu:news`) turns its story over every few seconds and
+   is absent between stories, which moves every menu entry's ordinal. The news row and its
+   buffer line are deleted and the total of every `[mainmenu:` ordinal is normalised.
+5. **The focus marker `> `** — not normalised. Every `capture` reseats the cursor
+   deterministically; a diff showing only `> ` moving means the route lost the cursor.
 
-Diagnostics are **not** diffed: `ghosts.txt` (`DevProbe.Screen()` + `Ghosts()` per screen,
+Diagnostics are **not** diffed: `ghosts.txt` (`DevProbe.Screen()` + `Ghosts()` per capture,
 plus `NotificationParity()` on the popup), `routelog.txt` (`DevProbe.Screen()` at every
-labelled waypoint), `index.txt`, `skipped.txt`, `status.json`, `logs/`. They are how you
-explain a diff, not part of the regression surface.
+labelled waypoint), `index.txt`, `skipped.txt`, `status.json`, `logs/`, `*.aba.txt`. They
+are how you explain a diff, not part of the regression surface.
 
 ## 5. Reading a nonzero diff
 
 Work in this order.
 
-1. **`skipped.txt` differs between the two runs?** The fixture changed under you (a
-   notification got dismissed, a save got loaded). Fix that first — `diffwalks.sh` says so
-   when it happens. `MISSING IN A/B` lines mean the same thing.
-2. **`routelog.txt` for the family that differs.** If the route landed on a different node,
+1. **`skipped.txt` differs between the two runs?** The fixture changed under you. Fix that
+   first; `MISSING IN A/B` lines mean the same thing.
+2. **`routelog.txt` for the scenario that differs.** If the route landed on a different node,
    everything downstream is noise, not signal.
 3. **Only `> ` moved** — cursor loss, see (2). **Only ids differ** — the normaliser missed a
    hash class; add the rule.
 4. **A node vanished from one side and nothing replaced it** — a *gate drop*: the mod stopped
-   declaring something. Check the same screen's `ghosts.txt` on both sides; a node that moved
-   from declared to unpainted shows up there.
+   declaring something. Check the same capture's `ghosts.txt` on both sides.
 5. **A node's text changed** — a *speech change*. That is the class the walk exists to catch:
    read the line pair and decide whether it is the change you intended.
-6. **Tooltip captures differ but the screen dumps do not** — a Class-backed tooltip changed.
-   The unfocused dump cannot see those (empty on both sides, so they cancel), which is why
-   the focused pass exists; equally, any carrier the focused pass does *not* visit is
-   **unproven** by a clean diff, not proven.
-7. **The camera.** The galaxy system row's "Open system" child comes and goes with camera
-   distance. Both walks sample the same cursor, so it is stable — but a differ seeing it
-   appear or vanish should suspect the camera, not the change.
+6. **Tooltip captures differ but the dumps do not** — a Class-backed tooltip changed. Any
+   carrier the focused pass does *not* visit is **unproven** by a clean diff, not proven.
+7. **The camera.** On the galaxy, planet rows are leaves until the map draws a card for
+   them, and it draws cards for the one system the camera is in on. A differ seeing rows turn
+   from leaves to groups should suspect the camera, not the change.
 
 ## 6. Graceful degradation
 
 No route fails because the fixture lacks something. It detects, skips that capture, records
-the reason in `<out>/skipped.txt`, and carries on. The contract: **a skip is data, not an
-error**, and the two halves of a pair must skip the *same* things — `diffwalks.sh` warns when
-they do not.
+the reason in `<out>/skipped.txt`, and carries on. **A skip is data, not an error**, and the
+two halves of a pair must skip the *same* things.
 
 | Trigger | What is skipped |
 |---|---|
-| No star system in the map tree | The whole galaxy map leg |
-| Type-ahead cannot land on the first system | Its expansion dump and tooltip pass |
-| The first system has fewer than two tooltip rows / no planet row / no starlane row | That tooltip capture |
-| Fewer than two systems in the map tree | Second-system and pool-shrink map dumps |
-| A HUD region has no second row | That HUD tooltip capture |
-| No fleet of this empire is reachable on the map tree | The selected-fleet panel |
-| The empire owns no colonized system | The whole star-system family |
-| The page has no planet row *n* | That planet-card tooltip; and with no row 2, the planet-overview page |
-| The empire owns one system | Second-system and pool-shrink page dumps |
-| No suggested-technology row / fewer than two systems-table rows / fewer than two fleet rows | That page's tooltip capture |
+| No star system in the map tree | The whole `galaxy/map-tree` scenario |
+| System A has no deposit / planet / lane row | That tooltip probe |
+| Fewer than two systems in the map tree | The second-system dump and the orbital rebind |
+| A HUD region has no second row | That HUD tooltip probe |
+| No fleet reachable on the map tree; only one | The fleet panel; the fleet-action rebind |
+| The empire owns no colonized system | `system-management/screen`, `planet-overview`, `empire/planet-cards` |
+| The page has no planet row 2 or 3 | That planet-card tooltip probe; with no row 2, the planet overview |
+| The empire owns one colonized system | The page turn and both planet-card rebinds |
+| No suggested technology / fewer than two systems-table or fleet rows | That page's tooltip probe |
 | The ship designer declares no hull combo | The hull drop list |
 | No minor empire with a system | The minor-civilization window |
-| The empire owns no hero | Hero selection and hero inspection |
+| The empire owns no hero | Hero selection |
 | The pause menu has no mod-settings entry | Both settings-tab dumps |
-| The HUD strip holds no pending notification | The notification popup |
+| No pending notification; fewer than two | The popup; the popup-body rebind |
 | `hud:turn-log` is not declared | Nothing — recorded as a finding about the fixture |
-| The screen registry cannot be read out of a bogus-key refusal | The whole by-key walk |
-| The empire owns one colonized system | The star-system and empire-page planet-card rebinds |
-| Fewer than two map systems, or neither of the first two draws an orbital card | The orbital planet-card rebind |
-| Fewer than two of this empire's fleets are reachable on the map tree | The fleet-action rebind |
-| No economy tab offers two or more marketplace sections, or fewer than two are selectable | The marketplace radio rebind |
-| Fewer than three empires on the diplomacy ring | The ring-sector rebind |
-| The HUD strip holds fewer than two pending notifications | The popup-body rebind |
+| No economy tab with two selectable marketplace sections | The marketplace scenario's rebind |
+| Fewer than three empires on the diplomacy ring | The wedge rebind |
+| The screen registry cannot be read out of a bogus-key refusal | `by-key.sh` |
 
 ## 7. What the walk will not do
 
 It never advances a turn, loads a save (outside `--reset`), writes a save, dismisses a
-notification, or presses Load / Save / Delete / Confirm / Apply / Create / Retrofit /
-Exit Game. The negotiation modal is never opened — closing an unsigned negotiation posts an
-order, which is also why a diplomacy wedge is never activated. The notification popup is
-closed by hiding its window, never through the dismiss key, and the `AlreadyRead` flags that
-browsing it sets are put back, so the strip is left exactly as found. Each family's epilogue
-drains modals, re-minimises the tutorial and returns the camera to galaxy overview.
-
-After a walk, restore what a walk deliberately leaves set:
-`sh -c 'curl -s -X POST --data-binary @walks/cs/restore.cs $WALK_HOST/eval'` — it nulls the
-focused control and calls `DevProbe.TooltipDelay(-1)` twice (a set delay survives reloads on
-purpose, and the restore cache is lost by one).
+notification, or presses Load / Save / Delete / Confirm / Apply / Create / Retrofit / Exit
+Game. The negotiation modal is never opened — closing an unsigned negotiation posts an order,
+which is also why a diplomacy wedge is never activated. The notification popup is closed by
+hiding its window, never through the dismiss key, and the `AlreadyRead` flags that browsing it
+sets are put back. `run.sh` ends by draining and running `cs/restore.cs`, which nulls the
+focused control and restores the tooltip delay.
 
 ## 8. Quirks worth knowing
 
-* **`exitwin` is not enough for every modal.** `HandleInput(InputAction.Exit)` does not
-  reliably hide `LawsManagementModalWindow` or `GovernmentModalWindow`; every `exitwin` is
-  paired with a `hidewin`, and `cs/drain.cs` sweeps a 39-name list as a backstop.
+* **`HandleInput(Exit)` does not reliably hide every modal** (`LawsManagementModalWindow`,
+  `GovernmentModalWindow`); `cs/drain.cs` sweeps a 39-name list as a backstop.
 * **The mod's settings window remembers its tab across opens**, and a cleared `StopMemory`
   seats the cursor on the *selected* tab — so the route selects the first tab explicitly
   before dumping it, and leaves it there.
 * **`POST /eval` bodies that touch `List<GameType>` poison the REPL session** for good. Every
   eval here binds game collections as `System.Collections.IList` and indexes them.
-* **`pause` is a `POST /wait` with a `false` body**, not `sleep`: the Bash tool blocks
-  foreground `sleep`, and the wait is evaluated per frame, which is the unit that matters.
+* **Right on an already-expanded map row steps into it and flies nowhere**; `map-tree`
+  collapses a row before expanding it, and waits for the focused system to be the target.
+* **Landing on rows elsewhere in the map tree pans the camera**, so `map-tree` takes its A
+  reading before its tooltip probes, not after.
 * **Type-ahead swallows the first character of a digit-leading string** in the `search` echo
   (`1st Patriots Navy` searches as `st Patriots Navy`) — the landing is still right.
-* **A capture that opens a game modal from `/eval`** sets what its opener sets, then shows
-  it. Never close one with `w.HandleInput(InputAction.Exit)` on a window that was never
-  properly bound — that wedges the screen stack.
+* **A modal opened from `/eval`** sets what its opener sets, then shows it. Never close one
+  with `HandleInput(Exit)` on a window that was never properly bound — that wedges the stack.
 
-## 9. The A-B-A rebind pass
+## 9. The A-B-A rebind check
 
-`10-rebind.sh` answers a question the other nine cannot ask. A widget the game pools keeps
-whatever the previous binding left on its components, so a capture taken on a fresh binding
-shows only the fresh case — and a before/after pair of such captures agrees with itself
-while both sides are wrong. This family therefore reads a surface (**A**), performs the
-game's own rebinding action onto a second subject (**B**), performs it back, reads the
-surface again (**A'**), and diffs A against A'. The diff is inside one run, so the family is
-a finding on its own and needs no second build to compare against. Anything that survives
-the normaliser is the previous subject's state being read off a rebound widget.
+A widget the game pools keeps whatever the previous binding left on its components, so a
+capture taken on a fresh binding shows only the fresh case — and a before/after pair of such
+captures agrees with itself while both sides are wrong. A scenario over a pooled surface
+therefore reads it (**A**), performs the game's own rebinding action onto a second subject
+(**B**), performs it back, reads the surface again (**A'**), and diffs A against A' inside
+the run (`<scenario>.aba.txt`; the runner prints the line count). Anything that survives the
+normaliser is the previous subject's state being read off a rebound widget.
 
-Two rules make each leg mechanical rather than judgement:
+Two rules make each check mechanical rather than judgement: **B must shrink the bound list**
+before it grows back (the system with fewer planets, the fleet with fewer actions, the
+market section with fewer rows, each found by reading the counts at runtime), and **every
+capture prints `Alpha` beside `Visible`** for the pool's own children (`cs/rebind-pool.cs`),
+because a retired child parked at alpha 0 draws no text, so a graph dump prunes it and then
+agrees with whatever the mod declared. Captures go through an `/eval` walk of the render
+(`cs/rebind-walk.cs`), not `GET /gui/graph`: these surfaces run past the dump's 800-line cap.
 
-* **B must shrink the bound list** before it grows back — surplus is what a pool retires
-  and leaves behind. So B is the system with fewer planets, the fleet with fewer actions,
-  the market section with fewer rows, each found by reading the candidates' counts at
-  runtime.
-* **Every capture prints `Alpha` beside `Visible`** for the pool's own children. A retired
-  child parked at alpha 0 draws no text, so a graph dump prunes it and then agrees with
-  whatever the mod declared — parity that is really a blind spot.
-
-Captures go through an `/eval` walk of the render (`cs/rebind-walk.cs`), not
-`GET /gui/graph`: these screens run past the dump's 800-line cap, and a capture that
-truncates differently on the two sides of a pair proves nothing. The pool listing
-(`cs/rebind-pool.cs`) is sorted by bound subject and reads only labels the game is drawing,
-because the game reshuffles which pooled child holds which subject, and an undrawn label
-keeps its old text for good — neither is the surface.
-
-The normaliser for an A-vs-A' diff is `normalize.sed` and nothing else (§4): within one run
-nothing else legitimately moves. Alpha is printed to one decimal for the same reason the
-clock is normalised — a child caught part-way through its retirement fade lands on a
-slightly different alpha every run, and the third decimal of a fade is not the surface.
-
-Four surfaces from the same audit are **not covered**, each because its rebind needs a state
-the walk may not produce: the economy tab bar wants the marketplace technology researched
-with the screen open; the negotiation shelf and basket want the negotiation modal; the
-senate and election candidate cards want the election stepped through its phases; the
-hacking program menus want a hacking target selected in scan view.
+Pooled surfaces with no check, each because its rebind needs a state the walk may not
+produce: the economy tab bar (researching the marketplace technology), the negotiation shelf
+and basket (the negotiation modal), the senate and election candidate cards (stepping the
+election), the hacking program menus (a hacking target in scan view).

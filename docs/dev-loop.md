@@ -12,7 +12,7 @@ only the loop: the dev server, the REPL, and the screen-agnostic verification pa
 | Anything keys: bindings, repeat, stand-down, game collisions | `docs/generic/input.md`, then `docs/interaction.md` |
 | ES2 layers, key map, claim rules (building a screen) | `docs/interaction.md` |
 | Which helper already exists for X | grep `ES2Access/` — a helper's contract is its own doc comment; the dev/verification ones are in §1 below |
-| Working a specific screen against the live game | the family script in `walks/` that reaches it (its route is the recipe) |
+| Working a specific screen against the live game | the scenario script in `walks/<screen>/` that reaches it (its route is the recipe) |
 | Widget kinds, roles, announcements, gesture parity and activation idioms, popups, the confirmation dialog | `docs/generic/widgets.md` |
 | Game-mechanism findings | the topic file that fits (`docs/README.md` indexes them) |
 | Any other generic concern (speech, buffers, tooltips, icons, localization, hot reload, performance, dev server, decompiled research, bootstrap) | `docs/generic/README.md` indexes the chapters |
@@ -327,7 +327,7 @@ key on the same node with no mode up, which must still do the node's own thing.
 first: the full walk (~30 min of the live game) is for a change that alters readouts across
 screens; an option that defaults off, or an addition to one screen, is one `/gui/graph`
 dump of that screen before and after, diffed. The scripted walk lives in `walks/`
-(`walk-all.sh <dir>` twice — before and after — then `diffwalks.sh`; `walks/README.md` is the
+(`run.sh <dir> <folder or scenario>` twice — before and after — then `diffwalks.sh`; `walk-all.sh` is the full walk; `walks/README.md` is the
 manual, fixture-agnostic by runtime discovery). Unfocused Class-backed tooltips read empty on
 both sides, so they cancel and are unproven by the diff: a change touching them needs the
 walk's focused tooltip pass. A "before" needed afterwards: `git stash push
