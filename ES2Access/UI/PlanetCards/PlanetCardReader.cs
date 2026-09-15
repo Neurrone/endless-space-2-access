@@ -138,6 +138,7 @@ namespace ES2Access.UI.PlanetCards
             AddIconPart(parts, card.DecayIcon, DecayLabel);
             AddIconPart(parts, card.OutpostCancelIcon, OutpostAtRiskLabel);
             AddIconPart(parts, card.HauntIcon, () => SanctuaryLabel(it));
+            parts.Add(GraphNodes.ValuePart(() => UnmarkedSanctuary(it)));
             // An outpost's card ends in the game's own sentence about how it is getting on ("Colony in
             // 24 Turn"), which is drawn on the card and so is spoken, not buffered.
             parts.Add(GraphNodes.ValuePart(() => Drawn(it.OutpostBottomCaption)));
@@ -169,10 +170,11 @@ namespace ES2Access.UI.PlanetCards
 
             // Where the card's own dossier is the ROW's tooltip, the pointer goes to the widget that
             // dossier hangs on - the game draws it for that widget alone and a pointer resting
-            // anywhere else raises something else or nothing. Otherwise it goes where the card's state
-            // is drawn, falling back to the card itself, which is what puts a mouse inside the card's
-            // rectangle - the thing its hover-only widgets (the detailed population ring, the
-            // Sanctuary's) are waiting for.
+            // anywhere else raises something else or nothing. Otherwise it goes to the CARD, which is
+            // what puts a mouse inside the card's rectangle - the thing its hover-only widgets (the
+            // detailed population ring, the Sanctuary's) are waiting for, and the window the card's
+            // own declaration matches. Never at the status label: that label's sentence is the state
+            // CHILD's tooltip and is read there (owner ruling 2026-09-15).
             AgeWidgets.PointAt(vtable, CardPointer(card));
             return vtable;
         }
@@ -182,7 +184,7 @@ namespace ES2Access.UI.PlanetCards
         {
             AgeTooltip own = card.PlanetTooltipIsCardSection ? card.PlanetTooltip : null;
             AgeTransform anchor = own == null ? null : own.AgeTransform;
-            return anchor ?? StatusWidget(card) ?? card.Root;
+            return anchor ?? card.Root;
         }
 
         /// <summary>One of the card's wordless warning icons, called what the game calls the STATE it
@@ -232,6 +234,30 @@ namespace ES2Access.UI.PlanetCards
                     ? "%PlanetStatusGhostTitle"
                     : "%PlanetStatusGhostByTitle"
             )();
+        }
+
+        private static readonly Func<string> SanctuaryTitle = CardActions.GameText(
+            "%PlanetStatusGhostTitle"
+        );
+
+        /// <summary>The player's own Sanctuary standing on this world where the card shows NO sign of
+        /// one - neither the band the system card grows along its bottom (<c>GhostGroup</c>) nor the
+        /// haunt icon the map's card wears. The empire page's card is the one: its five outputs are
+        /// the GHOST colony's (<c>PlanetCard.PlayerGhostColonizedPlanet</c> :148) and the prefab draws
+        /// nothing at all to say so, so the world's numbers came from a colony the reading never
+        /// mentioned (owner ruling 2026-09-15).
+        ///
+        /// Said in the game's own title for the state, and said only here: a prefab that draws the
+        /// band or the icon already says it, and the two readings would collide.</summary>
+        private static string UnmarkedSanctuary(PlanetCardAdapter card)
+        {
+            if (card.GhostGroup != null || card.HauntIcon != null)
+            {
+                return null;
+            }
+
+            ColonizedPlanet ghost = card.GhostColony;
+            return ghost != null && ghost.Empire == Gui.PlayerEmpire ? SanctuaryTitle() : null;
         }
 
         /// <summary>What has become of the world: the drawn status label where the prefab has one -
@@ -363,10 +389,11 @@ namespace ES2Access.UI.PlanetCards
                     Add(lines, PlanetStatusText.Description(card.Planet));
                 }
 
-                if (card.MapLines != null)
-                {
-                    Add(lines, card.MapLines());
-                }
+                // What the game is signalling about the world in colour alone - a juggernaut at
+                // work on it, a Sanctuary on it, a world there is only one of. No widget on any of
+                // the three prefabs writes a word of it, so it is read off the planet and carried by
+                // every card alike (owner ruling 2026-09-15).
+                PlanetSignals.Add(lines, card.Planet, Gui.PlayerEmpire);
 
                 AddDepletion(lines, card);
                 AddFidsi(lines, card);

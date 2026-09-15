@@ -48,6 +48,15 @@ namespace ES2Access.UI.PlanetCards
             get { return PopulationRings.Settled(_card.ColonizedPlanet); }
         }
 
+        /// <summary>The Sanctuary sitting on this world, which on this prefab is the PLAYER's or none
+        /// at all (<c>PlanetCard.PlayerGhostColonizedPlanet</c> :148). The card draws no band and no
+        /// icon for it and takes its five outputs from it, so the reader is the only thing that says
+        /// it is there.</summary>
+        public override ColonizedPlanet GhostColony
+        {
+            get { return _card.PlayerGhostColonizedPlanet; }
+        }
+
         public override AgeTransform Root
         {
             get { return _card.AgeTransform; }

@@ -302,9 +302,12 @@ namespace ES2Access.UI.PlanetCards
             get { return _card.PlanetRenameButton; }
         }
 
-        /// <summary>The prefab wires one in-progress juggernaut button, which no reader has ever
-        /// declared; whether the system card should offer the cancel the map's card offers is an open
-        /// question for the owner, so it is named here and composed nowhere.</summary>
+        /// <summary>The one in-progress juggernaut button this prefab wires
+        /// (<c>PlanetLabel_SystemManagement.InProgressTerraformationButton</c> :116, shown by
+        /// <c>RefreshTerraformationStatus</c> :903-942). Declared, and so composed with the card's
+        /// other bottom buttons and named by WHAT IS BEING DONE, exactly as the map's card offers it
+        /// (owner ruling 2026-09-15). A rival's is drawn switched off, which the shared collector
+        /// already drops.</summary>
         public override AgeControlButton InProgressTerraformation
         {
             get { return _card.InProgressTerraformationButton; }

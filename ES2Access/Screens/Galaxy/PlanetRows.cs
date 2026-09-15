@@ -257,18 +257,19 @@ namespace ES2Access.Screens
         private static string UniqueMark(StarSystemNode system, Planet planet, Empire empire)
         {
             return planet != null && planet.IsUnique && Surveyed(system, empire)
-                ? Localize("%PlanetScreenUniquePlanetTitle")
+                ? PlanetSignals.UniqueTitle()
                 : null;
         }
 
         /// <summary>The mark the circle wears for a Sanctuary standing on the world
         /// (<c>PlanetCircleItem.GhostFeedback</c>, tinted with the ghost empire's colour), said in the
-        /// game's own sentence for one - the same <see cref="GhostWord"/> the full reading uses.
+        /// game's own sentence for one - the same <see cref="PlanetSignals.GhostWord"/> the full
+        /// reading uses.
         /// Fixture-blocked: no save in this project has ever held a ghost colony, so this path is
         /// code-verified only.</summary>
         private static string GhostMark(StarSystemNode system, Planet planet, Empire empire)
         {
-            return Surveyed(system, empire) ? GhostWord(planet, empire) : null;
+            return Surveyed(system, empire) ? PlanetSignals.GhostWord(planet, empire) : null;
         }
 
         // ---- the orbital cards ----
@@ -527,12 +528,16 @@ namespace ES2Access.Screens
         /// what it offers and what pages hang off it.
         ///
         /// What is the PAGE's is what the map has and the other two surfaces do not: the id namespace
-        /// the cursor rides on, a carrier for a deposit dossier the card is drawing no icon for, the
-        /// signals the map draws as pure colour and no widget writes (<see cref="AddSignals"/>), and
-        /// the quest pins planted on the world.
+        /// the cursor rides on, a carrier for a deposit dossier the card is drawing no icon for, and
+        /// the quest pins planted on the world. What the map signals in colour alone is no longer the
+        /// map's: every planet card carries it (<see cref="PlanetSignals"/>).
         ///
-        /// THE CARD IS HANDED NO CLICK: Enter on a planet row does nothing on the map today, and a
-        /// button that answers nothing is worse than a group that never claimed to be one.
+        /// THE CARD IS HANDED NO CLICK, because the GAME offers none here: the map's own click on a
+        /// planet opens the planet page only while the view level is system management
+        /// (<c>GalaxyPlanetCursorTarget.OnCursorClick</c> :30-53), and the orbital card itself wires
+        /// clicks on its BUTTONS alone - the prefab hands the card no handler of its own
+        /// (<c>PlanetLabel_SystemOrbital</c>; measured 2026-09-15). A button that answers nothing is
+        /// worse than a group that never claimed to be one.
         ///
         /// The pins are hung only where there ARE pins, because the reader makes a card with children
         /// a level of the tree: handing it a pin emitter unconditionally would turn every planet with
@@ -548,7 +553,6 @@ namespace ES2Access.Screens
             bool pinned
         )
         {
-            StarSystemNode place = system;
             Planet world = planet;
             Empire looking = empire;
             OrbitalCardAdapter reading = new OrbitalCardAdapter(card);
@@ -566,7 +570,6 @@ namespace ES2Access.Screens
             bool mine = ours;
             reading.DepositCarrier = index =>
                 index < deposits ? DepositItemCarrier(world, settled, mine, index, looking) : null;
-            reading.MapLines = () => SignalLines(place, world, looking);
             if (pinned)
             {
                 string place2 = key;

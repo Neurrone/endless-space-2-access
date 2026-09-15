@@ -530,11 +530,6 @@ namespace ES2Access.UI.PlanetCards
         /// answer.</summary>
         public Func<int, AgeTooltip> DepositCarrier;
 
-        /// <summary>Lines the PAGE reads off the model for things it draws as pure decoration - the
-        /// map's coloured rings, which a keyboard player could reach no other way. Null on a page that
-        /// draws no such signal.</summary>
-        public Func<System.Collections.Generic.IList<string>> MapLines;
-
         /// <summary>Anything the page hangs off the card that is the PAGE's rather than the card's -
         /// the map's quest pins. Emitted last, inside the card's own group.</summary>
         public Action<GraphBuilder> AppendChildren;
