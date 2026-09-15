@@ -24,10 +24,6 @@ ES2Access/Screens/ElectionScreen.cs | 1 | ? AgeWidgets.TooltipTitle(tooltip) ?? 
 
 ES2Access/Screens/EmpireScreen.cs | 1 | string described = CardActions.FirstLine(slot.FIDSIGroupTooltip);
 
-ES2Access/Screens/Galaxy/PlanetCardLines.cs | 1 | Func<IList<string>> sentence = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
-
-ES2Access/Screens/Galaxy/PlanetRows.cs | 1 | Func<IList<string>> lines = AgeWidgets.TooltipLines(card.OutpostTooltip);
-
 ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | Func<IList<string>> lines = AgeWidgets.TooltipLines(tooltip);
 
 ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | return string.IsNullOrEmpty(named) ? CardActions.FirstLine(tip) : named;
@@ -103,7 +99,6 @@ ES2Access/UI/Cells.cs | 1 | string caption = named ? text : CardActions.FirstLin
 
 ES2Access/UI/HeroCards.cs | 1 | Func<IList<string>> read = AgeWidgets.TooltipLines(tooltip);
 
-ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | () => AgeWidgets.Painted(it) ? CardActions.FirstLine(AgeWidgets.Raw(it)) : null
 ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(card.OutpostBottomCaption)));
 ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(card.OutpostOwnerLabel)));
 ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));

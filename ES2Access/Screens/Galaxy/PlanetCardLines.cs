@@ -11,94 +11,19 @@ namespace ES2Access.Screens
     /// game-string reading those sentences are built out of.</summary>
     public sealed partial class GalaxyHudScreen
     {
-        /// <summary>
-        /// What the card shows that its written lines do not carry, and NOTHING ELSE: the outputs it
-        /// writes as numbers, the anomalies, curiosities and deposits it draws as icons, and last the
-        /// long panel it shows when the card itself is hovered. In the order the card draws them.
-        ///
-        /// The rule this obeys is that the buffer is the card's FACE. Anything read off the game's
-        /// model rather than off the card put words in the player's ear that no one looking at the
-        /// screen could see: the five outputs a colony has are drawn as numbers and belong here, and
-        /// the same five on a world nobody has settled are drawn as rows of pips standing for a
-        /// rating, so reading the simulation's raw values for them described a card that does not
-        /// exist. The game's refusal to colonize is not here either - it belongs to the BUTTON the
-        /// game is refusing on, which is a child node of this card and carries it in the game's own
-        /// words.
-        /// </summary>
-        private static IList<string> OrbitalDetails(
-            PlanetLabel_SystemOrbital card,
+        /// <summary>What the map is saying about this world in colour alone, as the lines a planet
+        /// card's review buffer carries (<see cref="AddSignals"/>) - the one reading on that card
+        /// taken off the model rather than off the widgets, because no widget writes any of it and a
+        /// keyboard player could reach none of it.</summary>
+        private static IList<string> SignalLines(
             StarSystemNode system,
+            Planet planet,
             Empire empire
         )
         {
-            List<string> lines = new List<string>();
-            try
-            {
-                // The three warning icons the card draws in a row beside the status line, each one a
-                // picture with its sentence in its own tooltip and nothing written on the card.
-                AddIconSentence(lines, card.HuntingGroundsIcon, "decay marker");
-                AddIconSentence(lines, card.OutpostCancelIcon, "outpost warning");
-                AddIconSentence(
-                    lines,
-                    card.HauntIcon == null ? null : card.HauntIcon.AgeTransform,
-                    "ghost marker"
-                );
-                AddFidsi(lines, card);
-                AddAnomalies(lines, card, system, empire);
-                // The curiosities are NOT read here: each one is a button of the card's and is a child
-                // node of its own (<see cref="AddCuriosities"/>). They were a line here only while the
-                // line was silent - the items draw no words - and naming them off their wrappers would
-                // have made the card say every curiosity twice.
-                AddWidgetLines(lines, card.ResourceDepositsGroup);
-                // Last, what the map says about this world that no widget on the card writes at all
-                // (<see cref="AddSignals"/>). The ghost sentence can also arrive from the icon above,
-                // and <see cref="AddLine"/> drops the second copy.
-                AddSignals(lines, system, card.Planet, empire);
-                // The dossier is NOT read here: it is the card's tooltip section, declared beside
-                // this one, and reading it twice is what happens when two places both remember it.
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading an orbital card threw: " + e);
-            }
-
+            List<string> lines = new List<string>(4);
+            AddSignals(lines, system, planet, empire);
             return lines;
-        }
-
-        /// <summary>
-        /// One of the card's wordless warning pictures, as the sentence the game keeps in its tooltip:
-        /// that the planet is DECAYING (a world colonized and lost, which colonizing the system again
-        /// would restore - a different sentence per cause, and hidden outright for the Vodyani player
-        /// whose own ark is the cause, <c>PlanetLabel_SystemOrbital</c> :353-381); that an OUTPOST here
-        /// is shrinking, starving or already scheduled for decolonization (:498-533); and that the
-        /// planet hosts somebody's GHOST colony (:462-480).
-        ///
-        /// PAINTED is the gate, and it has to be: every one of these carries its sentence from the
-        /// PREFAB whether or not the card is showing it (measured: an untouched card answers
-        /// "%OutpostBeingLostDescription" and "%PlanetIsDecayingDescription" while both icons are
-        /// hidden), so anything reading the tooltip alone would tell every player that every healthy
-        /// planet was dying.
-        /// </summary>
-        private static void AddIconSentence(List<string> lines, AgeTransform icon, string what)
-        {
-            try
-            {
-                if (!AgeWidgets.Painted(icon))
-                {
-                    return;
-                }
-
-                Func<IList<string>> sentence = AgeWidgets.TooltipLines(AgeWidgets.Raw(icon));
-                IList<string> said = sentence == null ? null : sentence();
-                for (int i = 0; said != null && i < said.Count; i++)
-                {
-                    AddLine(lines, said[i]);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading an orbital card's " + what + " threw: " + e);
-            }
         }
 
         /// <summary>
@@ -361,24 +286,6 @@ namespace ES2Access.Screens
             return lines;
         }
 
-        /// <summary>What has been found on the planet. The card draws each anomaly as a coloured icon
-        /// with no words on it at all, so the names come from the game's own wrapper for the same
-        /// anomaly - the one whose title it writes wherever it does have room. Only while the card is
-        /// drawing the row: the planet knows its anomalies whether or not they are on screen.</summary>
-        private static void AddAnomalies(
-            List<string> lines,
-            PlanetLabel_SystemOrbital card,
-            StarSystemNode system,
-            Empire empire
-        )
-        {
-            IList<string> found = AnomalyLines(system, card.Planet, empire);
-            for (int i = 0; found != null && i < found.Count; i++)
-            {
-                AddLine(lines, found[i]);
-            }
-        }
-
         /// <summary>
         /// What has been found on a world, from the planet rather than from the card.
         ///
@@ -420,91 +327,5 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>
-        /// The five outputs the card draws for a world, named by the game's own property titles and
-        /// read off the same simulation object the card reads them from.
-        ///
-        /// The card draws them in two shapes and both are read, each in its own: a colony's are
-        /// WRITTEN as numbers, and on a world nobody has settled the game hides that row and draws a
-        /// table of rating pips instead (<c>PlanetLabel_SystemOrbital.RefreshFIDSI</c>), which is
-        /// what <see cref="AddFidsiRatings"/> reads. Both shapes are composed in
-        /// <see cref="PlanetOutputs"/>, shared with the two other cards that draw them; what is this
-        /// screen's is the gate and the simulation object - the numbers come off the COLONY, and the
-        /// planet's own values behind them are all zero.
-        /// </summary>
-        private static void AddFidsi(List<string> lines, PlanetLabel_SystemOrbital card)
-        {
-            try
-            {
-                FidsiEnumerator fidsi = card.FidsiEnumerator;
-                if (fidsi == null || fidsi.FidsiProperties == null)
-                {
-                    return;
-                }
-
-                ColonizedPlanet colony = card.ColonizedPlanet;
-                if (colony == null)
-                {
-                    AddFidsiRatings(lines, card, fidsi);
-                    return;
-                }
-
-                // Flow control: which of the two the card is drawing - the colony's figures, or the ratings above.
-                if (!AgeWidgets.Visible(fidsi.AgeTransform))
-                {
-                    return;
-                }
-
-                Amplitude.Unity.Simulation.SimulationObject simulation = colony.SimulationObject;
-                if (simulation == null)
-                {
-                    return;
-                }
-
-                IList<string> numbers = PlanetOutputs.Numbers(simulation, fidsi);
-                for (int i = 0; i < numbers.Count; i++)
-                {
-                    AddLine(lines, numbers[i]);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading an orbital card's outputs threw: " + e);
-            }
-        }
-
-        /// <summary>
-        /// The same five outputs on a world nobody has settled, where the card rates them instead of
-        /// writing them: a row of five cells per output, as many lit as the value earns
-        /// (<c>PlanetLabel_SystemOrbital.RefreshScoreLine</c>). The management page's card rates them
-        /// the same way, so the lines themselves are composed in <see cref="PlanetOutputs.Ratings"/>
-        /// and only the gate is this screen's.
-        ///
-        /// A world the empire has not surveyed gets nothing: the game hides the whole table for one
-        /// (<c>RefreshAsUnrevealedNode</c>), and its own test - <c>IsNodeRevealed</c> - is the gate,
-        /// alongside the card's own "am I drawing this" flag that answers for the colony case too.
-        /// </summary>
-        private static void AddFidsiRatings(
-            List<string> lines,
-            PlanetLabel_SystemOrbital card,
-            FidsiEnumerator fidsi
-        )
-        {
-            Planet planet = card.Planet;
-            if (planet == null || !card.IsNodeRevealed || !AgeWidgets.Visible(card.FidsiScoreTable))
-            {
-                return;
-            }
-
-            IList<string> ratings = PlanetOutputs.Ratings(
-                planet,
-                fidsi,
-                card.FidsiParametersGuiElement
-            );
-            for (int i = 0; i < ratings.Count; i++)
-            {
-                AddLine(lines, ratings[i]);
-            }
-        }
     }
 }

@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
+using ES2Access.UI.PlanetCards;
 using UnityEngine;
 
 namespace ES2Access.Screens
@@ -610,7 +611,7 @@ namespace ES2Access.Screens
         /// until the game has drawn it.
         ///
         /// The index is worked out from the very list the tree builds the row from
-        /// (<see cref="OrbitalActions"/>), never guessed from the order the card's buttons are
+        /// (<see cref="PlanetCardReader.Buttons"/>), never guessed from the order the card's buttons are
         /// declared in: which of them are drawn changes with the planet, so a fixed index would name a
         /// different button on the next world.
         /// </summary>
@@ -643,7 +644,9 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                List<CardActions.CardAction> actions = OrbitalActions(card);
+                List<CardActions.CardAction> actions = PlanetCardReader.Buttons(
+                    new OrbitalCardAdapter(card)
+                );
                 for (int j = 0; j < actions.Count; j++)
                 {
                     if (!ReferenceEquals(actions[j].Widget, want))

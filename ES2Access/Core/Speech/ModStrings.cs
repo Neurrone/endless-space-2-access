@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using ES2Access.Core.Util;
 
@@ -649,6 +649,7 @@ namespace ES2Access.Core.Speech
             { GalaxySystemInfluenceContestedYou, "Influence contested by your empire" },
             { GalaxySystemCitadel, "Citadel, {0}" },
             { GalaxySystemGuarded, "Guarded by {0}" },
+            { GalaxyOutpostAtRisk, "Outpost at risk" },
             { GalaxyPlanetCuriosityOne, "{0} curiosity" },
             { GalaxyPlanetCuriosities, "{0} curiosities" },
             { DirectionNorth, "north" },

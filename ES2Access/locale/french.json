@@ -240,6 +240,7 @@
   "galaxy.system-influence-contested-you": "Influence contestée par votre empire",
   "galaxy.system-citadel": "Citadelle, {0}",
   "galaxy.system-guarded": "Gardé par {0}",
+  "galaxy.outpost-at-risk": "Avant-poste en danger",
   "galaxy.planet-curiosity-one": "{0} curiosité",
   "galaxy.planet-curiosities": "{0} curiosités",
   "direction.north": "nord",

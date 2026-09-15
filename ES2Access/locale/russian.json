@@ -257,6 +257,7 @@
   "galaxy.system-influence-contested-you": "Влияние оспаривает ваша империя",
   "galaxy.system-citadel": "Цитадель, {0}",
   "galaxy.system-guarded": "Охраняется: {0}",
+  "galaxy.outpost-at-risk": "Аванпост под угрозой",
   "galaxy.planet-curiosity-one": "{0} феномен",
   "galaxy.planet-curiosities": "{0} феноменов",
   "galaxy.planet-curiosities.few": "{0} феномена",

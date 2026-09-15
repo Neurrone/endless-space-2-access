@@ -240,6 +240,7 @@
   "galaxy.system-influence-contested-you": "당신의 제국과 영향력 경합 중",
   "galaxy.system-citadel": "성채, {0}",
   "galaxy.system-guarded": "방어 중: {0}",
+  "galaxy.outpost-at-risk": "전초기지 위험",
   "galaxy.planet-curiosity-one": "특이사항 {0}개",
   "galaxy.planet-curiosities": "특이사항 {0}개",
   "direction.north": "북쪽",

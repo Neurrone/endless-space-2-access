@@ -135,9 +135,9 @@ namespace ES2Access.UI.PlanetCards
             parts.Add(GraphNodes.LabelPart(() => AgeText.Label(it.NameLabel)));
             parts.Add(GraphNodes.ValuePart(() => SizeAndTypeOf(it)));
             parts.Add(GraphNodes.ValuePart(() => StateOf(it)));
-            AddIconPart(parts, card.DecayIcon);
-            AddIconPart(parts, card.OutpostCancelIcon);
-            AddIconPart(parts, card.HauntIcon);
+            AddIconPart(parts, card.DecayIcon, DecayLabel);
+            AddIconPart(parts, card.OutpostCancelIcon, OutpostAtRiskLabel);
+            AddIconPart(parts, card.HauntIcon, () => SanctuaryLabel(it));
             // An outpost's card ends in the game's own sentence about how it is getting on ("Colony in
             // 24 Turn"), which is drawn on the card and so is spoken, not buffered.
             parts.Add(GraphNodes.ValuePart(() => Drawn(it.OutpostBottomCaption)));
@@ -167,18 +167,37 @@ namespace ES2Access.UI.PlanetCards
                 vtable.ControlType = ControlTypes.Button;
             }
 
-            // The pointer goes where the card's own state is drawn, falling back to the card itself -
-            // which is what puts a mouse inside the card's rectangle, the thing its hover-only widgets
-            // (the detailed population ring, the Sanctuary's) are waiting for.
-            AgeWidgets.PointAt(vtable, StatusWidget(card) ?? card.Root);
+            // Where the card's own dossier is the ROW's tooltip, the pointer goes to the widget that
+            // dossier hangs on - the game draws it for that widget alone and a pointer resting
+            // anywhere else raises something else or nothing. Otherwise it goes where the card's state
+            // is drawn, falling back to the card itself, which is what puts a mouse inside the card's
+            // rectangle - the thing its hover-only widgets (the detailed population ring, the
+            // Sanctuary's) are waiting for.
+            AgeWidgets.PointAt(vtable, CardPointer(card));
             return vtable;
         }
 
-        /// <summary>One of the card's wordless warning icons, in the sentence the game wrote behind
-        /// it. PAINTED is the gate and it has to be: every one of these carries its sentence from the
+        /// <summary>Where a mouse would rest to see what the card's own readout says it has.</summary>
+        private static AgeTransform CardPointer(PlanetCardAdapter card)
+        {
+            AgeTooltip own = card.PlanetTooltipIsCardSection ? card.PlanetTooltip : null;
+            AgeTransform anchor = own == null ? null : own.AgeTransform;
+            return anchor ?? StatusWidget(card) ?? card.Root;
+        }
+
+        /// <summary>One of the card's wordless warning icons, called what the game calls the STATE it
+        /// is warning about (owner ruling 2026-09-15) - the sentence behind it is the icon's own
+        /// dossier, read where the player walks onto it (<see cref="AddWarningDossier"/>), because a
+        /// paragraph in the middle of a readout is not something a card says at a glance.
+        ///
+        /// PAINTED is the gate and it has to be: every one of these carries its sentence from the
         /// PREFAB whether or not the card is showing it, so anything reading the tooltip alone would
         /// tell every player that every healthy planet was dying.</summary>
-        private static void AddIconPart(List<NodeAnnouncement> parts, AgeTransform icon)
+        private static void AddIconPart(
+            List<NodeAnnouncement> parts,
+            AgeTransform icon,
+            Func<string> label
+        )
         {
             if (icon == null)
             {
@@ -187,15 +206,32 @@ namespace ES2Access.UI.PlanetCards
 
             AgeTransform it = icon;
             parts.Add(
-                GraphNodes.ValuePart(
-                    // Content, and a DIFFERENT widget than the node stands on: the icon's sentence is
-                    // a word of the CARD's readout, so nothing else would stop a healthy world's card
-                    // reading out the warning its prefab came with. Re-composed reader: the sentence
-                    // is the only words the game gives this icon and the card has no other way to say
-                    // it, so it is read here and spoken as the card's own state.
-                    () => AgeWidgets.Painted(it) ? CardActions.FirstLine(AgeWidgets.Raw(it)) : null
-                )
+                // Content, and a DIFFERENT widget than the node stands on: the icon's label is a word
+                // of the CARD's readout, so nothing else would stop a healthy world's card reading out
+                // the warning its prefab came with.
+                GraphNodes.ValuePart(() => AgeWidgets.Painted(it) ? label() : null)
             );
+        }
+
+        /// <summary>A world colonized and lost, in the game's own title for that.</summary>
+        private static readonly Func<string> DecayLabel = CardActions.GameText("%PlanetLostTitle");
+
+        /// <summary>An outpost the game is warning about - shrinking, starving, or already scheduled
+        /// for decolonization. The game writes those three states as three sentences and gives the
+        /// icon no title of its own, so the word is the mod's.</summary>
+        private static readonly Func<string> OutpostAtRiskLabel = () =>
+            ModStrings.Get(ModStrings.GalaxyOutpostAtRisk);
+
+        /// <summary>Whose Sanctuary the haunt icon is warning about, in the game's own title for each
+        /// - which is the pair of titles beside the pair of sentences the icon carries.</summary>
+        private static string SanctuaryLabel(PlanetCardAdapter card)
+        {
+            ColonizedPlanet ghost = card.GhostColony;
+            return CardActions.GameText(
+                ghost != null && ghost.Empire == Gui.PlayerEmpire
+                    ? "%PlanetStatusGhostTitle"
+                    : "%PlanetStatusGhostByTitle"
+            )();
         }
 
         /// <summary>What has become of the world: the drawn status label where the prefab has one -
@@ -398,6 +434,13 @@ namespace ES2Access.UI.PlanetCards
 
             if (!card.FidsiDrawsNumbers)
             {
+                // Flow control: which of the two strips is read - and a card can be drawing neither,
+                // which is what a world nobody has surveyed looks like on the map.
+                if (!card.FidsiDrawsRatings)
+                {
+                    return;
+                }
+
                 IList<string> ratings = PlanetOutputs.Ratings(
                     card.Planet,
                     fidsi,
@@ -512,6 +555,15 @@ namespace ES2Access.UI.PlanetCards
                 return found;
             }
 
+            // And a state line with nothing behind it is not a child either: where the prefab hangs no
+            // sentence on the label and wires no technology hint on it - the map's orbital card,
+            // measured 2026-09-15 - the only thing the child could say is the word the row has just
+            // said, which is the empty group wearing a child.
+            if (card.StatusTooltip == null && card.StatusHintWidget == null)
+            {
+                return found;
+            }
+
             AgePrimitiveLabel label = card.StatusLabel;
             AgeTransform hint = card.StatusHintWidget;
             CardActions.Add(
@@ -538,24 +590,107 @@ namespace ES2Access.UI.PlanetCards
         /// Which of the card's own buttons the game is drawing, in the order the card draws them.
         ///
         /// Colonize is named by a phrase of this mod's because the game draws it as a wordless icon;
-        /// the three for a world that is already yours - pick a specialization improvement, reduce an
-        /// anomaly, terraform - each name themselves in the sentence their own tooltip explains them
-        /// with. Each is kept while DRAWN, because the game switches them off with the reason appended
-        /// to that tooltip and a blocked one should refuse rather than vanish.
+        /// the two faction-specific ways of settling a world beside it, the offer to buy an outpost
+        /// outright, and the three for a world that is already yours - pick a specialization
+        /// improvement, reduce an anomaly, terraform - each name themselves in the sentence their own
+        /// tooltip explains them with. Each is kept while DRAWN, because the game switches them off
+        /// with the reason appended to that tooltip and a blocked one should refuse rather than vanish.
+        ///
+        /// Then the row of FLEET actions the map's card draws under the world - a juggernaut sent to
+        /// terraform it, restore it, reduce an anomaly, stake it with a mining probe, destroy it -
+        /// each named after the fleet action it carries out, because the game draws them as bare icons
+        /// with an assembled stat block behind them and names them nowhere else; the button it swaps
+        /// in while one of those is already RUNNING, named after what is being done
+        /// (<see cref="InProgressName"/>); and the way into a pirate lair's diplomacy.
+        ///
+        /// THE TWO HALVES NEVER COEXIST ON ONE PREFAB: the colony buttons are the star system and
+        /// empire cards', the fleet row and the in-progress buttons the map's. So the sequence below
+        /// is each prefab's own drawn order, and the other prefab's members are simply null.
         ///
         /// The anomalies and the curiosities are rows of the card's tables that the game wired as
         /// controls, so they are children like the buttons rather than lines of the buffer.
+        ///
+        /// PUBLIC because the map's camera-seat wait has to name the row it is waiting for by its
+        /// INDEX in this very list (<c>GalaxyHudScreen.SeatRow</c>): which buttons a card draws changes
+        /// with the world, so a second list written there would name a different button on the next
+        /// planet. One question, one home.
         /// </summary>
-        private static List<CardActions.CardAction> Buttons(PlanetCardAdapter card)
+        public static List<CardActions.CardAction> Buttons(PlanetCardAdapter card)
         {
-            List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
+            List<CardActions.CardAction> found = new List<CardActions.CardAction>(8);
             try
             {
                 CardActions.AddNamedByMod(found, card.ColonizeButton, ModStrings.SystemColonize);
+                // The Vodyani one gets the narrower gate: its refresh sets the hint in one branch
+                // (<c>PlanetLabel_SystemOrbital.RefreshVodyaniHintButton</c> :1297-1298) and - unlike
+                // its two siblings - never hides the button in the other, so a rebound label can draw
+                // the button and carry a technology that has nothing to do with the world under it.
+                // The game writes its sentence onto this button's own tooltip, so the drawn test is
+                // the right one.
+                AgeTransform vodyani = AgeWidgets.Transform(card.VodyaniHintButton);
+                CardActions.AddNamedByTooltip(
+                    found,
+                    card.VodyaniHintButton,
+                    vodyani == null ? null : (Func<bool>)(() => TechnologyHints.Drawn(vodyani))
+                );
+                CardActions.AddNamedByTooltip(found, card.UmbralChoirHintButton);
+                CardActions.AddNamedByTooltip(found, card.BuyOutpostButton);
+                // The way into a minor civilization's diplomacy, drawn on a world one of them holds.
+                // Its own tooltip cannot name it however real the sentence in it: the game gives that
+                // one a renderer CLASS (MinorFaction, drawing the faction's panel from the tooltip's
+                // Target), and a class-backed tooltip is not the readable kind, so the first line came
+                // back null and the button spoke unnamed. It opens the same screen the system label's
+                // diplomacy button does, so it takes the same name.
+                CardActions.AddNamedByMod(
+                    found,
+                    card.MinorFactionButton,
+                    ModStrings.GalaxySystemDiplomacy
+                );
                 CardActions.AddRefusableNamedByTooltip(found, card.SpecializationButton);
                 CardActions.AddRefusableNamedByTooltip(found, card.ReduceAnomalyButton);
                 CardActions.AddRefusableNamedByTooltip(found, card.TerraformButton);
                 CardActions.AddAnomalies(found, card.AnomaliesTable);
+                CardActions.AddNamedByGame(
+                    found,
+                    card.TerraformationButton,
+                    "%InitiateTerraformPlanetFleetActionTitle"
+                );
+                CardActions.AddNamedByGame(
+                    found,
+                    card.RestorationButton,
+                    "%InitiateRestorePlanetFleetActionTitle"
+                );
+                CardActions.AddNamedByGame(
+                    found,
+                    card.AnomalyReductionButton,
+                    "%InitiateReduceAnomalyFleetActionTitle"
+                );
+                CardActions.AddNamedByGame(
+                    found,
+                    card.MiningProbeButton,
+                    "%LaunchMiningProbeFleetActionTitle"
+                );
+                CardActions.AddNamedByGame(
+                    found,
+                    card.DestroyButton,
+                    "%DestroyPlanetFleetActionTitle"
+                );
+                AddInProgress(found, card.InProgressTerraformation);
+                AddInProgress(found, card.InProgressRestoration);
+                AddInProgress(found, card.InProgressAnomalyReduction);
+                // The way into pirate diplomacy, drawn on a world whose system holds a pirate lair
+                // (DLC9). The game declares the field as a plain transform and hangs a radial button
+                // on it, and keeps the widget drawn while refusing a pirate-hating empire, with the
+                // reason written into the same tooltip its name comes from - the refusable treatment.
+                if (card.PirateLairGroup != null)
+                {
+                    CardActions.AddRefusable(
+                        found,
+                        card.PirateLairGroup,
+                        CardActions.NameFromTooltip(card.PirateLairGroup)
+                    );
+                }
+
                 AddCuriosities(found, card);
             }
             catch (Exception e)
@@ -564,6 +699,55 @@ namespace ES2Access.UI.PlanetCards
             }
 
             return found;
+        }
+
+        /// <summary>The game's own sentence for every one of the three in-progress buttons - the same
+        /// one on all three because the game itself writes the same one on all three
+        /// (<c>PlanetLabel_SystemOrbital</c> :818, :898, :970). It is the LAST resort for their names
+        /// now (<see cref="InProgressName"/>) and stays in every one of their dossiers.</summary>
+        private const string CancelJuggernautAction =
+            "%PlanetCancelJuggernautActionButtonDescription";
+
+        private static readonly Func<string> CancelJuggernautWords = CardActions.GameText(
+            CancelJuggernautAction
+        );
+
+        private static void AddInProgress(
+            List<CardActions.CardAction> found,
+            AgeControlButton button
+        )
+        {
+            if (button != null)
+            {
+                CardActions.AddNamed(found, button, InProgressName(button));
+            }
+        }
+
+        /// <summary>
+        /// What one of the three in-progress buttons is called: WHAT IS BEING DONE, not the fact that
+        /// pressing cancels it (owner ruling 2026-08-23).
+        ///
+        /// A planet being terraformed while one of its anomalies is reduced draws two of these buttons
+        /// at once, and the game writes the one sentence (<see cref="CancelJuggernautAction"/>) onto
+        /// both - so the card offered two entries the player could not tell apart. The game does name
+        /// each action, on the wrapper its own tooltip is pointing at: the terraformation's and the
+        /// anomaly reduction's constructible, the restoration's fleet action
+        /// (<c>PlanetLabel_SystemOrbital</c> :806-830, :885-900, :960-975 - the player-empire branch,
+        /// which is the only one the collector keeps, since a rival's button is drawn switched off).
+        ///
+        /// Asked at SPEAK time off the tooltip the button is carrying now: the game rebinds that
+        /// tooltip every refresh, and a juggernaut that finishes one action and starts another keeps
+        /// the same widget. A wrapper that cannot name itself falls back to the shared sentence, which
+        /// is what the button said before this rule - never to silence.
+        /// </summary>
+        private static Func<string> InProgressName(AgeControlButton button)
+        {
+            AgeTransform widget = AgeWidgets.Transform(button);
+            return () =>
+            {
+                string title = AgeWidgets.TooltipTitle(AgeWidgets.Raw(widget));
+                return string.IsNullOrEmpty(title) ? CancelJuggernautWords() : title;
+            };
         }
 
         /// <summary>
@@ -681,9 +865,10 @@ namespace ES2Access.UI.PlanetCards
 
         /// <summary>
         /// THE TOOLTIPS REGION, in the canonical order: the planet's own dossier, one per output
-        /// figure where the surface declares them, one per deposit the world is sitting on, the
-        /// specialization's, and last the reference pages behind the words the card draws for what
-        /// kind of world it is.
+        /// figure where the surface declares them, one per warning the card is showing, one per
+        /// deposit the world is sitting on, the specialization's, and last the reference pages behind
+        /// the words the card draws for what kind of world it is. The warnings come early because they
+        /// are the card's STATE - what is happening to this world now.
         ///
         /// A card draws each of these as a picture or a bare figure and keeps everything about what it
         /// MEANS behind a hover, so the buffer carries the captioned figures and this is the page
@@ -712,6 +897,7 @@ namespace ES2Access.UI.PlanetCards
                     );
                 }
 
+                AddWarningDossiers(found, card);
                 AddDepositDossiers(found, card);
                 // Content: which dossiers the card offers. These become a region of the card's own
                 // node, not nodes the gate ever sees.
@@ -737,6 +923,41 @@ namespace ES2Access.UI.PlanetCards
             }
 
             return found;
+        }
+
+        /// <summary>
+        /// The page behind each of the card's wordless warning icons - which is where the sentence the
+        /// game wrote for it is read, now that the readout says the STATE's own name and not the
+        /// paragraph (owner ruling 2026-09-15). Named by that same word, so the ear meets on the icon
+        /// what the readout already said the world has.
+        ///
+        /// PAINTED is the gate, the readout's own: every one of these carries its sentence from the
+        /// PREFAB whether or not the card is showing it, so a card that declared them unasked would
+        /// offer every healthy world a page about dying.
+        /// </summary>
+        private static void AddWarningDossiers(
+            List<TooltipChildren.Dossier> found,
+            PlanetCardAdapter card
+        )
+        {
+            PlanetCardAdapter it = card;
+            AddWarningDossier(found, card.DecayIcon, DecayLabel);
+            AddWarningDossier(found, card.OutpostCancelIcon, OutpostAtRiskLabel);
+            AddWarningDossier(found, card.HauntIcon, () => SanctuaryLabel(it));
+        }
+
+        private static void AddWarningDossier(
+            List<TooltipChildren.Dossier> found,
+            AgeTransform icon,
+            Func<string> label
+        )
+        {
+            // Content: whether this warning is one of the card's pages. A dossier is a region of the
+            // card's own node, not a node the gate ever sees.
+            if (icon != null && AgeWidgets.Painted(icon))
+            {
+                TooltipChildren.AddPlain(found, AgeWidgets.Raw(icon), icon, label);
+            }
         }
 
         /// <summary>

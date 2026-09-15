@@ -1362,33 +1362,6 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>A table of things - anomalies, curiosities, deposits - reads one line per thing,
-        /// which is how it is drawn and how it is reviewed. Each line is what the item SAYS
-        /// (<see cref="AgeWidgets.ItemText"/>), which for a table of bare icons is the name off its own
-        /// wrapper: reading such a table as text read nothing at all.</summary>
-        private static void AddWidgetLines(List<string> lines, AgeTransform widget)
-        {
-            if (widget == null || !AgeWidgets.Visible(widget))
-            {
-                return;
-            }
-
-            IList<AgeTransform> children = widget.Children;
-            if (children == null || children.Count == 0)
-            {
-                AddLine(lines, AgeWidgets.ItemText(widget));
-                return;
-            }
-
-            for (int i = 0; i < children.Count; i++)
-            {
-                // Content: one buffer line per child the game is drawing, which is not a node and has no gate.
-                if (AgeWidgets.Visible(children[i]))
-                {
-                    AddLine(lines, AgeWidgets.ItemText(children[i]));
-                }
-            }
-        }
 
         private static Empire PlayerEmpire()
         {

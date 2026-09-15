@@ -370,6 +370,12 @@ namespace ES2Access.Core.Speech
         public const string GalaxySystemCitadel = "galaxy.system-citadel";
         public const string GalaxySystemGuarded = "galaxy.system-guarded";
 
+        /// <summary>What the map's planet card is warning about with its outpost icon: an outpost
+        /// shrinking, starving, or already scheduled for decolonization. The game writes one sentence
+        /// per cause onto the icon's own tooltip and gives the icon no title anywhere, so the word for
+        /// the state itself is the mod's.</summary>
+        public const string GalaxyOutpostAtRisk = "galaxy.outpost-at-risk";
+
         /// <summary>How many curiosities a planet's orbital card is drawing in the ring around it. The
         /// card says it with one wordless icon per curiosity and writes no number anywhere, so the
         /// phrase is the mod's - and it is a COUNTED phrase, hence a form per number (see

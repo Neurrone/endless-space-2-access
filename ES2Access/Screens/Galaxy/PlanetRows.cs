@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Amplitude;
 using ES2Access.Core.Speech;
@@ -66,39 +66,7 @@ namespace ES2Access.Screens
                     bool pinned = MarksPlanet(planet, looking);
                     if (card != null)
                     {
-                        // The card carries a row of buttons the game draws under it, so where the game
-                        // is drawing any the planet is a level of the tree rather than a leaf: it reads
-                        // as itself, and what could be done to it is one step in. Enter on the card is
-                        // the card's own click - the planet's page - and nothing else, because
-                        // everything else the old menu held is now drawn where the game draws it.
-                        List<CardActions.CardAction> actions = OrbitalActions(card);
-                        List<TooltipChildren.Dossier> dossiers = PlanetDossiers(
-                            system,
-                            planet,
-                            card,
-                            looking,
-                            actions
-                        );
-                        NodeVtable readout = OrbitalReadout(card, system, looking);
-                        if (actions.Count == 0 && dossiers.Count == 0 && !pinned)
-                        {
-                            // Synthetic: an orbital is read out of the system's model; the card is only what the reading came from.
-                            builder.AddItem(Nodes.Synthetic(id, readout));
-                            continue;
-                        }
-
-                        readout.ControlType = ControlTypes.Group;
-                            // Synthetic for the same reason as the leaf above.
-                        builder.BeginGroup(Nodes.Synthetic(id, readout));
-                        if (builder.IsExpanded(id))
-                        {
-                            object outerRegion = TooltipChildren.Actions(builder, key);
-                            CardActions.Emit(builder, key, actions);
-                            TooltipChildren.Emit(builder, key, dossiers, outerRegion);
-                            AddPlanetMarkers(builder, key, planet, looking);
-                        }
-
-                        builder.EndGroup();
+                        AddCard(builder, key, system, planet, looking, card, pinned);
                         continue;
                     }
 
@@ -155,13 +123,7 @@ namespace ES2Access.Screens
                         AgeWidgets.PointAt(vtable, dossier.AgeTransform);
                     }
 
-                    List<TooltipChildren.Dossier> pages = PlanetDossiers(
-                        system,
-                        planet,
-                        null,
-                        looking,
-                        null
-                    );
+                    List<TooltipChildren.Dossier> pages = PlanetDossiers(system, planet, looking);
                     if (pages.Count == 0 && !pinned)
                     {
                         // Synthetic: a page of a system's data sheet is a level the mod invented over the game's own panels.
@@ -370,33 +332,26 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// The dossiers a world carries beyond its own: one per anomaly found on it, one per deposit
-        /// in its ground. The card writes NAMES for these and keeps everything they mean - what an
-        /// anomaly does and what would reduce it, what a deposit is worth and why it cannot be
-        /// exploited - in a panel only a hover reaches.
+        /// The dossiers a world carries WITH NO CARD ON THE SCREEN: one per anomaly found on it, one
+        /// per deposit in its ground - what an anomaly does and what would reduce it, what a deposit
+        /// is worth and why it cannot be exploited. Where the map IS drawing the card, every one of
+        /// these comes off the card's own icons through the shared reader
+        /// (<see cref="PlanetCardReader"/>) and the page hands it only a carrier for a deposit the
+        /// card is drawing no icon for (<see cref="AddCard"/>).
         ///
         /// NOT the five output figures the card also draws (Planet Food production and kin), though it
         /// hangs a dossier off every one of them: those pages explain what FIDSI IS, the same five
         /// paragraphs repeated on every world in the galaxy, and the star system's own management card
-        /// already declares them where a player who wants them is looking
-        /// (<c>SystemManagementScreen.PlanetDossiers</c>). Owner ruling 2026-08-24 - the strip stays
-        /// undeclared HERE, and the coverage audit is told so rather than reporting it
+        /// already declares them where a player who wants them is looking. Owner ruling 2026-08-24 -
+        /// the strip stays undeclared HERE, and the coverage audit is told so rather than reporting it
         /// (<c>CoverageAudit</c>). The figures themselves are unaffected: they are drawn numbers and
         /// the row reads them as it always did.
         ///
         /// WHICH of them exist is the PLANET's question, not the card's: the map draws a card for one
         /// system at one camera step, and what is in a world's ground is not a thing it hides at any
-        /// other. Whether the game is DRAWING an icon for one decides only WHERE the panel appears -
-        /// at the game's own icon while it is on the screen, at a carrier of the mod's
-        /// (<see cref="ScratchTooltips"/>) where it is not, bound exactly as the game's own item binds
-        /// so the window assembles the same words either way (owner ruling 2026-08-23).
-        ///
-        /// The drawn-icon test is PAINTED, never Visible. These tables pool their items and retire the
-        /// leftovers by FADING them, so a planet with no deposits at all keeps the previous planet's
-        /// items answering the engine's can-draw test with the previous planet's deposits - measured
-        /// on Osulo III, which has none and still offered Hyperium and Titanium. Membership from the
-        /// model is the other half of that guard: the loop only ever asks about an item the game has
-        /// just bound.
+        /// other. With no card there is no icon to hang the panel on, so each is bound onto a carrier
+        /// of the mod's (<see cref="ScratchTooltips"/>) exactly as the game's own item binds, and the
+        /// window assembles the same words either way (owner ruling 2026-08-23).
         ///
         /// Behind the survey gate, which is the card's own: an unrevealed node hides the deposit
         /// group, the anomaly table and both output strips wholesale
@@ -405,9 +360,7 @@ namespace ES2Access.Screens
         private static List<TooltipChildren.Dossier> PlanetDossiers(
             StarSystemNode system,
             Planet planet,
-            PlanetLabel_SystemOrbital card,
-            Empire empire,
-            List<CardActions.CardAction> declared
+            Empire empire
         )
         {
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
@@ -418,11 +371,10 @@ namespace ES2Access.Screens
                     return found;
                 }
 
-                // In the order the card draws them, which is the order its own buffer reads
-                // (<see cref="OrbitalDetails"/>): what was found on the world, then what is in its
+                // In the order the card draws them: what was found on the world, then what is in its
                 // ground.
-                AddAnomalyDossiers(found, planet, card, declared);
-                AddDepositDossiers(found, planet, card, empire);
+                AddAnomalyDossiers(found, planet);
+                AddDepositDossiers(found, planet, empire);
             }
             catch (Exception e)
             {
@@ -432,84 +384,17 @@ namespace ES2Access.Screens
             return found;
         }
 
-        /// <summary>
-        /// One dossier per anomaly on the world - the paragraph, the effects and what reducing it
-        /// would take, none of which the card writes anywhere.
-        ///
-        /// The item hangs its tooltip on its ICON rather than on itself
-        /// (<c>PlanetAnomalyItem.Bind</c>), so the component's own field is what is read and what is
-        /// aimed at: pointing at the row draws nothing at all.
-        ///
-        /// <paramref name="declared"/> is what the card has already made a ROW of
-        /// (<c>CardActions.AddAnomalies</c>, which carries the same tooltip on the node): those are
-        /// skipped here, so the dossier is reached where the player walks onto the anomaly rather than
-        /// twice over. What is left is the fall back - an anomaly the card is drawing no item for,
-        /// whose page only a carrier of the mod's can make exist.
-        /// </summary>
-        private static void AddAnomalyDossiers(
-            List<TooltipChildren.Dossier> found,
-            Planet planet,
-            PlanetLabel_SystemOrbital card,
-            List<CardActions.CardAction> declared
-        )
+        /// <summary>One dossier per anomaly on the world - the paragraph, the effects and what
+        /// reducing it would take, none of which the map writes anywhere with no card on the screen.
+        /// Each goes on a carrier of the mod's, because the icon that would have carried it is drawn
+        /// one camera step in; there, the anomaly is a ROW of the card's own
+        /// (<c>CardActions.AddAnomalies</c>) and its page rides on that row.</summary>
+        private static void AddAnomalyDossiers(List<TooltipChildren.Dossier> found, Planet planet)
         {
-            AgeTransform table = card == null ? null : card.PlanetAnomaliesTable;
-            // Content: whether the card's own icons can carry these dossiers, or whether every one of
-            // them falls back to a carrier of the mod's. The table pools its items and fades a retired
-            // one, so PAINTED rather than the visibility flag.
-            IList<AgeTransform> items = AgeWidgets.Painted(table) ? table.Children : null;
             for (int i = 0; i < planet.Anomalies.Count; i++)
             {
-                Anomaly anomaly = planet.Anomalies[i];
-                AgeTooltip drawn = DrawnAnomaly(items, i);
-                // Flow control: the anomaly is a row of its own, and the row is where its page is.
-                if (drawn != null && Carries(declared, drawn))
-                {
-                    continue;
-                }
-
-                AgeTooltip tooltip = drawn ?? AnomalyCarrier(planet, anomaly, i);
-                TooltipChildren.Add(found, tooltip);
+                TooltipChildren.Add(found, AnomalyCarrier(planet, planet.Anomalies[i], i));
             }
-        }
-
-        /// <summary>Whether one of the card's declared rows is already carrying this dossier - matched
-        /// on the tooltip OBJECT, which is the one thing a row and a dossier of the same anomaly
-        /// certainly share whatever gate each of them passed.</summary>
-        private static bool Carries(List<CardActions.CardAction> declared, AgeTooltip tooltip)
-        {
-            for (int i = 0; declared != null && i < declared.Count; i++)
-            {
-                if (declared[i].Tooltip == tooltip)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>The card's own icon for the Nth anomaly, where it is drawing one. The table is
-        /// filled from the same list in the same order (<c>RefreshPlanetAnomalies</c>), so the Nth item
-        /// is the Nth anomaly - and a retired one is dropped before it can answer for a planet that no
-        /// longer has it.</summary>
-        private static AgeTooltip DrawnAnomaly(IList<AgeTransform> items, int index)
-        {
-            if (items == null || index >= items.Count)
-            {
-                return null;
-            }
-
-            AgeTransform item = items[index];
-            // Content: whether the Nth anomaly's dossier comes off the card's own icon. A retired item
-            // is faded rather than hidden and still holds the previous world's anomaly.
-            if (!AgeWidgets.Painted(item))
-            {
-                return null;
-            }
-
-            PlanetAnomalyItem component = item.GetComponent<PlanetAnomalyItem>();
-            return component == null ? AgeWidgets.Raw(item) : component.Tooltip;
         }
 
         private static AgeTooltip AnomalyCarrier(Planet planet, Anomaly anomaly, int index)
@@ -548,19 +433,14 @@ namespace ES2Access.Screens
         ///
         /// The list is the card's own - the colony's OWN deposits where this empire has settled the
         /// world, the planet's raw ones otherwise (<c>RefreshResourceDeposits</c>) - so the nodes and
-        /// the icons agree about how many there are, and the Nth icon is the Nth deposit.
+        /// the icons agree about how many there are, and the Nth carrier is the Nth deposit.
         /// </summary>
         private static void AddDepositDossiers(
             List<TooltipChildren.Dossier> found,
             Planet planet,
-            PlanetLabel_SystemOrbital card,
             Empire empire
         )
         {
-            AgeTransform group = card == null ? null : card.ResourceDepositsGroup;
-            // Content, as at the anomalies: whether the card's own icons can carry these dossiers at
-            // all, PAINTED because the group pools its items and fades the surplus.
-            IList<AgeTransform> items = AgeWidgets.Painted(group) ? group.Children : null;
             ColonizedPlanet colony = planet.ColonizedPlanet;
             bool ours = colony != null && colony.Empire == empire;
             int count = ours
@@ -568,29 +448,8 @@ namespace ES2Access.Screens
                 : planet.ResourceDeposits.Count;
             for (int i = 0; i < count; i++)
             {
-                AgeTooltip drawn = DrawnDepositItem(items, i);
-                AgeTooltip tooltip = drawn ?? DepositItemCarrier(planet, colony, ours, i, empire);
-                TooltipChildren.Add(found, tooltip);
+                TooltipChildren.Add(found, DepositItemCarrier(planet, colony, ours, i, empire));
             }
-        }
-
-        private static AgeTooltip DrawnDepositItem(IList<AgeTransform> items, int index)
-        {
-            if (items == null || index >= items.Count)
-            {
-                return null;
-            }
-
-            AgeTransform item = items[index];
-            // Content: whether the Nth deposit's dossier comes off the card's own icon, same pooling
-            // and same reason as the anomalies above.
-            if (!AgeWidgets.Painted(item))
-            {
-                return null;
-            }
-
-            ResourceDepositItem component = item.GetComponent<ResourceDepositItem>();
-            return component == null ? AgeWidgets.Raw(item) : component.Tooltip;
         }
 
         /// <summary>A carrier bound exactly as <c>ResourceDepositItem.Refresh</c> binds the game's own
@@ -663,269 +522,58 @@ namespace ES2Access.Screens
         }
 
         /// <summary>
-        /// A planet as its orbital card reads it: the three lines the card writes - what it is called,
-        /// what kind of world it is, and what the game says about colonizing it - with everything the
-        /// card draws as icons and gauges in the review buffer, and its buttons one step in.
+        /// A planet as its orbital card reads it - through the reader every surface that draws a
+        /// planet card shares (<see cref="PlanetCardReader"/>), which is what says what a card SAYS,
+        /// what it offers and what pages hang off it.
         ///
-        /// And how many curiosities are waiting in orbit, which the card draws as a ring of icons
-        /// beside it: they are buttons and so live one step in with the rest, but a player walking the
-        /// map would have to open every planet to find out that any exist at all. The count is what a
-        /// sighted player takes off the card at a glance, so the card's own line carries it.
+        /// What is the PAGE's is what the map has and the other two surfaces do not: the id namespace
+        /// the cursor rides on, a carrier for a deposit dossier the card is drawing no icon for, the
+        /// signals the map draws as pure colour and no widget writes (<see cref="AddSignals"/>), and
+        /// the quest pins planted on the world.
+        ///
+        /// THE CARD IS HANDED NO CLICK: Enter on a planet row does nothing on the map today, and a
+        /// button that answers nothing is worse than a group that never claimed to be one.
+        ///
+        /// The pins are hung only where there ARE pins, because the reader makes a card with children
+        /// a level of the tree: handing it a pin emitter unconditionally would turn every planet with
+        /// nothing under it into a branch that opens onto nothing.
         /// </summary>
-        private static NodeVtable OrbitalReadout(
-            PlanetLabel_SystemOrbital card,
+        private static void AddCard(
+            GraphBuilder builder,
+            string key,
             StarSystemNode system,
-            Empire empire
+            Planet planet,
+            Empire empire,
+            PlanetLabel_SystemOrbital card,
+            bool pinned
         )
         {
-            PlanetLabel_SystemOrbital it = card;
             StarSystemNode place = system;
+            Planet world = planet;
             Empire looking = empire;
-            AgeTooltip dossier = it.PlanetInfoTooltip;
-            NodeVtable vtable = new NodeVtable
+            OrbitalCardAdapter reading = new OrbitalCardAdapter(card);
+            reading.Key = key;
+            // The Nth deposit the card is drawing no item for - which is how the world's ground stays
+            // readable while the table is still pooling up to the planet it was just rebound to. Bound
+            // to the same list the card's own items are bound from, and never past its end: an index
+            // the model does not have is not a deposit at all.
+            ColonizedPlanet colony = planet.ColonizedPlanet;
+            bool ours = colony != null && colony.Empire == empire;
+            int deposits = ours
+                ? colony.ColonizedResourceDeposits.Count
+                : planet.ResourceDeposits.Count;
+            ColonizedPlanet settled = colony;
+            bool mine = ours;
+            reading.DepositCarrier = index =>
+                index < deposits ? DepositItemCarrier(world, settled, mine, index, looking) : null;
+            reading.MapLines = () => SignalLines(place, world, looking);
+            if (pinned)
             {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Label(it.PlanetName)),
-                    GraphNodes.ValuePart(() => AgeText.Label(it.PlanetSizeAndType)),
-                    GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
-                    GraphNodes.ValuePart(() => OutpostTimer(it)),
-                    GraphNodes.ValuePart(() => PlanetCardReader.CuriosityCount(it.Planet, looking)),
-                    // A mining probe is a thing somebody has DONE to this planet, and the game keeps
-                    // it in the dossier where only a hover finds it. Said on the row so that a rival
-                    // staking a world in your own system is heard while walking past it.
-                    GraphNodes.ValuePart(() => MiningProbes.Line(it.Planet), false),
-                },
-            };
-            // What the card DRAWS first, then its dossier - the paragraph the game writes about a
-            // world of this kind, its size, its type. The dossier is the long panel behind the card,
-            // so the readout indicates it and the buffer is where it is read.
-            vtable.Sections = GraphNodes.Sections(
-                NodeSection.Buffer(() => OrbitalDetails(it, place, looking)),
-                // The timer says a number and nothing else; the sentence the game explains it with is
-                // reviewable rather than spoken, because the card already speaks the number and
-                // hearing the paragraph again on every pass is what a buffer exists to avoid.
-                NodeSection.Buffer(() => OutpostTimerHelp(it)),
-                GraphNodes.TooltipSection(dossier)
-            );
-            AgeWidgets.PointAt(vtable, it.PlanetOrbitalCardContainer ?? it.AgeTransform);
-            return vtable;
-        }
-
-        /// <summary>How long an outpost of ours has left before it becomes a colony - drawn on the card
-        /// only while there is one.</summary>
-        private static string OutpostTimer(PlanetLabel_SystemOrbital card)
-        {
-            try
-            {
-                return card.OutpostTimer != null
-                    && AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
-                    ? AgeText.Label(card.OutpostTimer)
-                    : null;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>What the game says the outpost timer means - written into the timer's own tooltip
-        /// while it is running, and emptied by the card's refresh when it is not.</summary>
-        private static IList<string> OutpostTimerHelp(PlanetLabel_SystemOrbital card)
-        {
-            try
-            {
-                if (
-                    card.OutpostTimer == null
-                    || !AgeWidgets.Visible(card.OutpostTimer.AgeTransform)
-                )
-                {
-                    return null;
-                }
-
-                Func<IList<string>> lines = AgeWidgets.TooltipLines(card.OutpostTooltip);
-                return lines == null ? null : lines();
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>The game's own sentence for every one of the three in-progress buttons - the same
-        /// one on all three because the game itself writes the same one on all three
-        /// (<c>PlanetLabel_SystemOrbital</c> :818, :898, :970). It is the LAST resort for their names
-        /// now (<see cref="InProgressName"/>) and stays in every one of their dossiers.</summary>
-        private const string CancelJuggernautAction =
-            "%PlanetCancelJuggernautActionButtonDescription";
-
-        /// <summary>
-        /// What one of the three in-progress buttons is called: WHAT IS BEING DONE, not the fact that
-        /// pressing cancels it (owner ruling 2026-08-23).
-        ///
-        /// A planet being terraformed while one of its anomalies is reduced draws two of these buttons
-        /// at once, and the game writes the one sentence
-        /// (<see cref="CancelJuggernautAction"/>) onto both - so the card offered two entries the
-        /// player could not tell apart. The game does name each action, on the wrapper its own tooltip
-        /// is pointing at: the terraformation's and the anomaly reduction's constructible, the
-        /// restoration's fleet action (<c>PlanetLabel_SystemOrbital</c> :806-830, :885-900, :960-975 -
-        /// the player-empire branch, which is the only one the collector keeps, since a rival's button
-        /// is drawn switched off).
-        ///
-        /// Asked at SPEAK time off the tooltip the button is carrying now: the game rebinds that
-        /// tooltip every refresh, and a juggernaut that finishes one action and starts another keeps
-        /// the same widget. A wrapper that cannot name itself falls back to the shared sentence, which
-        /// is what the button said before this rule - never to silence.
-        /// </summary>
-        private static Func<string> InProgressName(AgeControlButton button)
-        {
-            AgeTransform widget = AgeWidgets.Transform(button);
-            return () =>
-            {
-                string title = AgeWidgets.TooltipTitle(AgeWidgets.Raw(widget));
-                return string.IsNullOrEmpty(title) ? Localize(CancelJuggernautAction) : title;
-            };
-        }
-
-        /// <summary>Which of the card's buttons the game is drawing, in drawn order. Empty for a card
-        /// the game is offering nothing on, which is what keeps such a planet a leaf of the tree rather
-        /// than a branch that opens onto nothing. The treatment each one gets is
-        /// <see cref="CardActions"/>'s, shared with the management page's card.</summary>
-        private static List<CardActions.CardAction> OrbitalActions(PlanetLabel_SystemOrbital card)
-        {
-            List<CardActions.CardAction> found = new List<CardActions.CardAction>(4);
-            try
-            {
-                CardActions.AddNamedByMod(found, card.ColonizeButton, ModStrings.SystemColonize);
-                // The two faction-specific ways of settling a world, drawn in place of Colonize for the
-                // empires that have them. The game gives them no caption, so they are named by the
-                // sentence their own tooltip opens with.
-                // The Vodyani one gets the narrower gate: its refresh sets the hint in one branch
-                // (<c>PlanetLabel_SystemOrbital.RefreshVodyaniHintButton</c> :1297-1298) and - unlike
-                // its two siblings - never hides the button in the other, so a rebound label can draw
-                // the button and carry a technology that has nothing to do with the world under it.
-                // The game writes its sentence onto this button's own tooltip, so the drawn test is
-                // the right one (measured: <c>VodyaniHintButton.AgeTransform.AgeTooltip</c> exists).
-                AgeTransform vodyani = AgeWidgets.Transform(card.VodyaniHintButton);
-                CardActions.AddNamedByTooltip(
-                    found,
-                    card.VodyaniHintButton,
-                    () => TechnologyHints.Drawn(vodyani)
-                );
-                CardActions.AddNamedByTooltip(found, card.UmbralChoirHintButton);
-                CardActions.AddNamedByTooltip(found, card.BuyOutpostButton);
-                // The way into a minor civilization's diplomacy, drawn on a world one of them holds.
-                // Its own tooltip cannot name it however real the sentence in it: the game gives that
-                // one a renderer CLASS (MinorFaction, drawing the faction's panel from the tooltip's
-                // Target), and a class-backed tooltip is not the readable kind, so the first line comes
-                // back null and the button spoke unnamed. It opens the same screen the system label's
-                // diplomacy button does, so it takes the same name.
-                CardActions.AddNamedByMod(found, card.MinorFactionButton, ModStrings.GalaxySystemDiplomacy);
-
-                // The anomalies, as the rows the game made them rather than as dossiers alone: each
-                // one's own click is the jump to the technology that would let it be reduced, which
-                // the mouse has had here all along and no node stood on (owner ruling 2026-09-14,
-                // parity with the star system page). The dossier that used to hang under the card's
-                // "Tooltips" region rides on the row instead - <see cref="AddAnomalyDossiers"/> drops
-                // the one a row is already carrying, so nothing is said twice.
-                CardActions.AddAnomalies(found, card.PlanetAnomaliesTable);
-
-                // The row of small round buttons under the card. The game draws them as bare icons and
-                // hangs an assembled stat block on each, so there is no caption and no first line of
-                // tooltip to name them by - but the game DOES name every one of them, on the fleet
-                // action each carries out, and those are the words a player reading the manual would
-                // meet. In the order the card draws them.
-                CardActions.AddNamedByGame(found, card.TerraformationButton, "%InitiateTerraformPlanetFleetActionTitle");
-                CardActions.AddNamedByGame(found, card.RestorationButton, "%InitiateRestorePlanetFleetActionTitle");
-                CardActions.AddNamedByGame(found, card.AnomalyReductionButton, "%InitiateReduceAnomalyFleetActionTitle");
-                CardActions.AddNamedByGame(found, card.MiningProbeButton, "%LaunchMiningProbeFleetActionTitle");
-                CardActions.AddNamedByGame(found, card.DestroyButton, "%DestroyPlanetFleetActionTitle");
-
-                // And the same row's OTHER half: the button the game swaps in for a start button while
-                // that action is already running. It is the only way to CANCEL a juggernaut's work and
-                // the only place the map says how long is left, and the mod declared none of the three.
-                // Named by WHAT IS BEING DONE (<see cref="InProgressName"/>); the turns left and the
-                // cancel sentence ride in the node's own dossier, and the row's buffer says what is
-                // happening (<see cref="AddSignals"/>). A RIVAL's is drawn switched OFF, which is
-                // exactly when the shared collector drops it - a button that cannot be pressed is not
-                // an action, and the row's line has already said what it would have said.
-                CardActions.AddNamed(
-                    found,
-                    card.InProgressTerraformationButton,
-                    InProgressName(card.InProgressTerraformationButton)
-                );
-                CardActions.AddNamed(
-                    found,
-                    card.InProgressRestorationButton,
-                    InProgressName(card.InProgressRestorationButton)
-                );
-                CardActions.AddNamed(
-                    found,
-                    card.InProgressAnomalyReductionButton,
-                    InProgressName(card.InProgressAnomalyReductionButton)
-                );
-
-                // The way into pirate diplomacy, drawn on a world whose system holds a pirate lair
-                // (DLC9). The game declares the field as a plain transform and hangs a radial button on
-                // it, which is why a walk of the card's BUTTON fields never found it - and it keeps the
-                // widget drawn while refusing a pirate-hating empire, with the reason written into the
-                // same tooltip its name comes from, which is the refusable treatment.
-                CardActions.AddRefusable(
-                    found,
-                    card.PirateLairGroup,
-                    CardActions.NameFromTooltip(card.PirateLairGroup)
-                );
-
-                // What has been found in orbit and not yet looked into. Each one is a button of the
-                // card's like any other, drawn in a ring around it rather than in the row, so they come
-                // after the row.
-                AddCuriosities(found, card);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("galaxy: reading an orbital card's buttons threw: " + e);
+                string place2 = key;
+                reading.AppendChildren = into => AddPlanetMarkers(into, place2, world, looking);
             }
 
-            return found;
-        }
-
-        /// <summary>
-        /// The curiosities the card is drawing - each one a button that starts an expedition on it.
-        ///
-        /// The game draws one wordless icon per curiosity still to be looked into, keeps it CLICKABLE
-        /// while refusing, and writes the reason into its own tooltip
-        /// (<c>PlanetCuriosityItem.Refresh</c>: no fleet in orbit, one already queued, not enough
-        /// expedition power), which is the treatment <see cref="CardActions.AddRefusable"/> exists for -
-        /// what is in orbit and why it cannot be reached yet is exactly what the player opened the card
-        /// to ask. The icon has no caption at all, so the name comes off the wrapper the game hangs on
-        /// its tooltip, which is where it keeps the words it would have written.
-        ///
-        /// The table pools its items - a card that has run out of curiosities keeps the widgets and
-        /// FADES them, leaving them visible at alpha 0 - so what is PAINTED is the gate, which is the
-        /// same question the game's own <c>GetVisibleChildrenCount</c> asks of this very table when it
-        /// lays the ring out.
-        /// </summary>
-        private static void AddCuriosities(
-            List<CardActions.CardAction> found,
-            PlanetLabel_SystemOrbital card
-        )
-        {
-            AgeTransform table = card.PlanetCuriositiesTable;
-            if (table == null || !AgeWidgets.Visible(table))
-            {
-                return;
-            }
-
-            IList<AgeTransform> items = table.Children;
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                AgeTransform item = items[i];
-                // Spoken count: an item the table is not drawing contributes no action, and an action nobody collected is no node.
-                if (AgeWidgets.Painted(item))
-                {
-                    CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
-                }
-            }
+            PlanetCardReader.Add(builder, reading);
         }
 
         /// <summary>The planet's own dossier on a carrier of the mod's, bound exactly as the orbital

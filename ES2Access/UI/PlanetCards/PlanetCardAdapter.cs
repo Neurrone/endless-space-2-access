@@ -247,6 +247,16 @@ namespace ES2Access.UI.PlanetCards
             get { return false; }
         }
 
+        /// <summary>Whether the card is drawing the RATING pips - the other half of the same swap, and
+        /// a question of its own because a prefab can hide both strips at once: the map's card hides
+        /// everything on a world this empire has not surveyed, and pips read off one would rate a
+        /// world the picture is drawing as an unknown. True is what the two cards that always draw
+        /// their pip table answer.</summary>
+        public virtual bool FidsiDrawsRatings
+        {
+            get { return true; }
+        }
+
         /// <summary>The simulation object those numbers are read off, where they are drawn.</summary>
         public virtual Amplitude.Unity.Simulation.SimulationObject FidsiSource
         {
@@ -394,10 +404,10 @@ namespace ES2Access.UI.PlanetCards
 
         // ---- the map card's own row of fleet-action buttons ----
         //
-        // Declared here because they are a prefab difference like any other; the map's page is what
-        // NAMES them (each is called after the fleet action it carries out, which only that page
-        // resolves), so the reader does not compose them yet - the orbital card's own migration is
-        // where they are filled in and wired.
+        // A prefab difference like any other: what a FLEET in the system could do to the world, which
+        // only the map's card draws. Each is named after the fleet action it carries out
+        // (<see cref="PlanetCardReader"/> composes them in the order the card draws them), and the
+        // three in-progress ones after whatever is being done on the world right now.
 
         public virtual AgeControlButton VodyaniHintButton
         {
@@ -519,9 +529,6 @@ namespace ES2Access.UI.PlanetCards
         /// for, where the page keeps one. Null everywhere the card's own table is the whole
         /// answer.</summary>
         public Func<int, AgeTooltip> DepositCarrier;
-
-        /// <summary>The same for the Nth anomaly.</summary>
-        public Func<int, AgeTooltip> AnomalyCarrier;
 
         /// <summary>Lines the PAGE reads off the model for things it draws as pure decoration - the
         /// map's coloured rings, which a keyboard player could reach no other way. Null on a page that
