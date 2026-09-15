@@ -49,12 +49,16 @@ namespace ES2Access.UI.PlanetCards
                 List<CardActions.CardAction> rename = new List<CardActions.CardAction>(1);
                 CardActions.AddNamedByMod(rename, card.RenameButton, ModStrings.SystemRenamePlanet);
                 List<CardActions.CardAction> state = StateAction(card);
-                List<CardActions.CardAction> buttons = Buttons(card);
+                // The anomalies the game is drawing no technology hint on. One walk of the pooled
+                // table decides which side each row falls on, so the actions and the dossiers can
+                // never disagree about a row (<see cref="CardActions.AddAnomalies"/>).
+                List<CardActions.CardAction> anomalies = new List<CardActions.CardAction>(4);
+                List<CardActions.CardAction> buttons = Buttons(card, anomalies);
                 List<CardActions.CardAction> outpost = OutpostActions(card);
                 List<Population> units = new List<Population>(4);
                 PopulationRings.Ring ring = WorldRing(card);
                 List<PopulationSlots.Slot> slots = Slots(card, ring, units);
-                List<TooltipChildren.Dossier> dossiers = Dossiers(card);
+                List<TooltipChildren.Dossier> dossiers = Dossiers(card, anomalies);
                 // Flow control: whether the card is a leaf or a group. A card whose ONLY content is a
                 // Sanctuary band would otherwise be declared as a leaf and the band never walked into.
                 bool ghost = AgeWidgets.Visible(card.GhostGroup);
@@ -366,12 +370,16 @@ namespace ES2Access.UI.PlanetCards
         /// THE REVIEW BUFFER, in the canonical order: what the game says about the state where it
         /// says it nowhere on the card, whatever the page reads off the model for things it only
         /// draws as decoration, how worn out the world is, what it makes, what has been found on it,
-        /// what it is sitting on, what kind of world it is and what living there is like, how an
-        /// outpost on it is getting on, and who lives there.
+        /// what it is sitting on, how an outpost on it is getting on, and who lives there.
         ///
         /// Anomalies and deposits are ONE line each rather than a line per item: they are a row of
         /// small icons on the card, read at a glance, and a line apiece turned a world with four
         /// anomalies into four trips down the buffer.
+        ///
+        /// WHAT KIND OF WORLD IT IS IS NOT A LINE - not its type, not its size, not what living there
+        /// is like (owner ruling 2026-09-15). The card's own announcement already says "Large Arid",
+        /// and what any of those words MEANS is the reference page behind it, which the card goes on
+        /// offering as a dossier (<see cref="Dossiers"/>).
         ///
         /// Everything goes through <see cref="PlanetCardLines.AddLine"/>, so the same words twice -
         /// the game drawing one fact in two of these tables - are said once.
@@ -402,14 +410,6 @@ namespace ES2Access.UI.PlanetCards
                     lines,
                     PlanetCardLines.Joined(card.DepositsGroup, card.DepositsDrawAmount)
                 );
-                PlanetCardLines.Add(lines, card.TypeGroup);
-                // The SIZE off the model, because no prefab reliably draws it in words: the system
-                // card hides its size group at bind (<c>BindPlanet</c> :348, and the only refresh that
-                // would fill the label is gated on that group being visible), and the empire card
-                // draws size as a PICTURE, scaling the planet image by it. The game's own title for
-                // the element is what a player reads everywhere else.
-                PlanetCardLines.AddLine(lines, ElementTitle(card.Planet.Size));
-                PlanetCardLines.Add(lines, card.GameplayTypeTable);
                 AddImprovement(lines, card);
                 AddOutpost(lines, card);
                 PopulationSummary.Add(lines, card.Colony);
@@ -637,12 +637,20 @@ namespace ES2Access.UI.PlanetCards
         /// The anomalies and the curiosities are rows of the card's tables that the game wired as
         /// controls, so they are children like the buttons rather than lines of the buffer.
         ///
+        /// <paramref name="anomalyReadouts"/> takes the anomaly rows the game is drawing no
+        /// technology hint on, which the card reads among its dossiers instead of among its actions
+        /// (<see cref="CardActions.AddAnomalies"/>). A caller that passes none gets the same list
+        /// minus those rows, which is the list their indices are counted in either way.
+        ///
         /// PUBLIC because the map's camera-seat wait has to name the row it is waiting for by its
         /// INDEX in this very list (<c>GalaxyHudScreen.SeatRow</c>): which buttons a card draws changes
         /// with the world, so a second list written there would name a different button on the next
         /// planet. One question, one home.
         /// </summary>
-        public static List<CardActions.CardAction> Buttons(PlanetCardAdapter card)
+        public static List<CardActions.CardAction> Buttons(
+            PlanetCardAdapter card,
+            List<CardActions.CardAction> anomalyReadouts = null
+        )
         {
             List<CardActions.CardAction> found = new List<CardActions.CardAction>(8);
             try
@@ -676,7 +684,7 @@ namespace ES2Access.UI.PlanetCards
                 CardActions.AddRefusableNamedByTooltip(found, card.SpecializationButton);
                 CardActions.AddRefusableNamedByTooltip(found, card.ReduceAnomalyButton);
                 CardActions.AddRefusableNamedByTooltip(found, card.TerraformButton);
-                CardActions.AddAnomalies(found, card.AnomaliesTable);
+                CardActions.AddAnomalies(found, card.AnomaliesTable, anomalyReadouts);
                 CardActions.AddNamedByGame(
                     found,
                     card.TerraformationButton,
@@ -893,6 +901,7 @@ namespace ES2Access.UI.PlanetCards
         /// <summary>
         /// THE TOOLTIPS REGION, in the canonical order: the planet's own dossier, one per output
         /// figure where the surface declares them, one per warning the card is showing, one per
+        /// anomaly the game offers nothing to do about, one per
         /// deposit the world is sitting on, the specialization's, and last the reference pages behind
         /// the words the card draws for what kind of world it is. The warnings come early because they
         /// are the card's STATE - what is happening to this world now.
@@ -905,7 +914,10 @@ namespace ES2Access.UI.PlanetCards
         /// it last showed, so the strip is taken from whichever is DRAWN and the resolver drops the
         /// pips of the hidden one.
         /// </summary>
-        private static List<TooltipChildren.Dossier> Dossiers(PlanetCardAdapter card)
+        private static List<TooltipChildren.Dossier> Dossiers(
+            PlanetCardAdapter card,
+            List<CardActions.CardAction> anomalies
+        )
         {
             List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(8);
             try
@@ -925,6 +937,7 @@ namespace ES2Access.UI.PlanetCards
                 }
 
                 AddWarningDossiers(found, card);
+                AddAnomalyDossiers(found, anomalies);
                 AddDepositDossiers(found, card);
                 // Content: which dossiers the card offers. These become a region of the card's own
                 // node, not nodes the gate ever sees.
@@ -984,6 +997,28 @@ namespace ES2Access.UI.PlanetCards
             if (icon != null && AgeWidgets.Painted(icon))
             {
                 TooltipChildren.AddPlain(found, AgeWidgets.Raw(icon), icon, label);
+            }
+        }
+
+        /// <summary>The page behind each anomaly the game is drawing no technology hint on - the
+        /// paragraph, the effects and what reducing it would take. The row carries that page and
+        /// nothing else there (<see cref="CardActions.AddAnomalies"/>), so it is a dossier of the
+        /// card's rather than a control that would announce a role it cannot play; the map's own
+        /// planet rows say the same thing the same way where no card is drawn at all
+        /// (<c>PlanetRows.AddAnomalyDossiers</c>).
+        ///
+        /// The pointer goes to the tooltip's OWN widget, which is what the row's node aimed at while
+        /// it was an action, and the node's existence is gated on the ROW the walk was holding - a
+        /// pooled table retires an item by fading it, and only the widget the walk held answers.</summary>
+        private static void AddAnomalyDossiers(
+            List<TooltipChildren.Dossier> found,
+            List<CardActions.CardAction> anomalies
+        )
+        {
+            for (int i = 0; anomalies != null && i < anomalies.Count; i++)
+            {
+                CardActions.CardAction anomaly = anomalies[i];
+                TooltipChildren.Add(found, anomaly.Tooltip, null, null, null, anomaly.Widget);
             }
         }
 

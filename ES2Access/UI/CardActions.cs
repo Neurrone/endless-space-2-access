@@ -77,11 +77,12 @@ namespace ES2Access.UI
             /// <summary>
             /// Set where the row is a CONTROL only while the game is hinting it - the anomaly rows on
             /// all three planet cards, whose one click is the jump to the missing technology
-            /// (<see cref="AddAnomalies"/>). With the hint there the node is a button offering
-            /// Ctrl+Enter; without it the row does nothing in any state, so it is declared a plain
-            /// READOUT - its name and its dossier, no role word and no "unavailable" (owner ruling
-            /// 2026-09-15: a dead control announced on every anomaly of every planet is worse than no
-            /// control).
+            /// (<see cref="AddAnomalies"/>, which now keeps the unhinted rows out of the actions
+            /// altogether, and the card's state line, which the game draws whether or not it hints it).
+            /// With the hint there the node is a button offering Ctrl+Enter; without it the row does
+            /// nothing in any state, so it is declared a plain READOUT - its name and its dossier, no
+            /// role word and no "unavailable" (owner ruling 2026-09-15: a dead control announced on
+            /// every anomaly of every planet is worse than no control).
             ///
             /// The test is <see cref="Cells.Hinting"/>, the same one <see cref="Cells.WireHintGesture"/>
             /// gates the gesture on, so the role word and the gesture can never disagree.
@@ -220,18 +221,22 @@ namespace ES2Access.UI
         /// the ROW - that is the thing the player walks onto and the thing the game named - and
         /// <see cref="CardAction.Hint"/> aims the gesture at the child.
         ///
-        /// The row is a CONTROL only while the game is hinting it (<see cref="CardAction.HintedOnly"/>).
-        /// <c>Bind</c> :66 fills the hint for one case alone - the player's own colony whose reduction
-        /// is blocked by a technology nobody has researched - and the row's only click is that jump, so
-        /// on every other planet the row can do nothing in any state. There it is a plain READOUT: the
-        /// anomaly's name off the wrapper and its dossier, with no role word and no "unavailable"
-        /// (owner ruling 2026-09-15 - "button, unavailable" on a row that can never act is a dead
-        /// control announced on every anomaly of every planet). Where the hint IS there, the row is a
-        /// button whose one gesture is Ctrl+Enter with its line, and it reads unavailable because a
-        /// plain Enter really does nothing: the game answers that click only while a Control key is
-        /// physically held (<c>GuiButtonHint.ActivateHint</c> :18-34).
+        /// The row is a CONTROL only while the game is hinting it, and THE HINT DECIDES WHICH LIST IT
+        /// GOES IN (owner ruling 2026-09-15). <c>Bind</c> :66 fills the hint for one case alone - the
+        /// player's own colony whose reduction is blocked by a technology nobody has researched - and
+        /// the row's only click is that jump, so on every other planet the row can do nothing in any
+        /// state and has no business among the card's actions. A hinted row stays an action here: a
+        /// button whose one gesture is Ctrl+Enter with its line, reading unavailable because a plain
+        /// Enter really does nothing (the game answers that click only while a Control key is
+        /// physically held - <c>GuiButtonHint.ActivateHint</c> :18-34). An unhinted row goes to
+        /// <paramref name="readouts"/>, which the card reads among its dossiers instead - the same
+        /// page on the same widget, under "Tooltips" with the deposits rather than among things to do.
+        /// Asked per item per refresh, so a pooled row that gains or loses its hint moves between the
+        /// two lists on the next build; a caller with no dossiers to fill (the map's camera seat, which
+        /// wants the ACTION indices and nothing else) passes none and the unhinted rows are simply not
+        /// in the list - which is what keeps that index and this one the same list.
         ///
-        /// The gate on both - the gesture and the role word, through the one test
+        /// The gate - the list, the gesture and the role word, through the one test
         /// (<see cref="Cells.Hinting"/>) - is the hint COMPONENT and deliberately not
         /// <see cref="TechnologyHints.Drawn"/>: this prefab hands <c>Gui.FormatButtonHint</c> a button
         /// carrying no <c>AgeTooltip</c> of its own on the system page and on the map's orbital card
@@ -245,7 +250,11 @@ namespace ES2Access.UI
         /// Every entry goes through <see cref="Add"/>, because this list is NUMBERED and the table is
         /// pooled: a retired item must never enter the count.
         /// </summary>
-        public static void AddAnomalies(List<CardAction> found, AgeTransform table)
+        public static void AddAnomalies(
+            List<CardAction> found,
+            AgeTransform table,
+            List<CardAction> readouts = null
+        )
         {
             IList<AgeTransform> items = AgeWidgets.DrawnChildren(table);
             for (int i = 0; items != null && i < items.Count; i++)
@@ -258,18 +267,23 @@ namespace ES2Access.UI
                 }
 
                 PlanetAnomalyItem it = item;
-                Add(
-                    found,
-                    new CardAction
-                    {
-                        Widget = row,
-                        Label = () => AgeWidgets.TooltipTitle(it.Tooltip),
-                        Tooltip = it.Tooltip,
-                        Offered = Never,
-                        Hint = item.HintButton.AgeTransform,
-                        HintedOnly = true,
-                    }
-                );
+                CardAction made = new CardAction
+                {
+                    Widget = row,
+                    Label = () => AgeWidgets.TooltipTitle(it.Tooltip),
+                    Tooltip = it.Tooltip,
+                    Offered = Never,
+                    Hint = item.HintButton.AgeTransform,
+                    HintedOnly = true,
+                };
+                if (Cells.Hinting(made.Hint))
+                {
+                    Add(found, made);
+                }
+                else if (readouts != null)
+                {
+                    Add(readouts, made);
+                }
             }
         }
 
