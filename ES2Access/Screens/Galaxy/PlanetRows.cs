@@ -7,6 +7,7 @@ using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.ES2.UI;
 using ES2Access.UI;
+using ES2Access.UI.PlanetCards;
 
 namespace ES2Access.Screens
 {
@@ -129,9 +130,15 @@ namespace ES2Access.Screens
                         Announcements = new List<NodeAnnouncement>
                         {
                             GraphNodes.LabelPart(() => PlanetName(system, planet, looking)),
-                            GraphNodes.ValuePart(() => PlanetSizeAndType(system, planet, looking)),
+                            GraphNodes.ValuePart(
+                                () =>
+                                    PlanetCardReader.SizeAndType(
+                                        planet,
+                                        Surveyed(system, looking)
+                                    )
+                            ),
                             GraphNodes.ValuePart(() => PlanetStatus(system, planet, looking)),
-                            GraphNodes.ValuePart(() => CuriosityCount(planet, looking)),
+                            GraphNodes.ValuePart(() => PlanetCardReader.CuriosityCount(planet, looking)),
                             GraphNodes.ValuePart(() => MiningProbes.Line(planet), false),
                         },
                         Sections = GraphNodes.Sections(
@@ -247,7 +254,7 @@ namespace ES2Access.Screens
                     // are all NULL - the lens's dot cannot draw a curiosity ring or a probe mark at
                     // all. So the row stops claiming them under a lens, exactly as the scan
                     // Curiosities scanner category was dropped for the same measurement.
-                    GraphNodes.ValuePart(() => Scanning ? null : CuriosityCount(planet, empire)),
+                    GraphNodes.ValuePart(() => Scanning ? null : PlanetCardReader.CuriosityCount(planet, empire)),
                     GraphNodes.ValuePart(() => Scanning ? null : MiningProbes.Line(planet), false),
                 },
             };
@@ -683,7 +690,7 @@ namespace ES2Access.Screens
                     GraphNodes.ValuePart(() => AgeText.Label(it.PlanetSizeAndType)),
                     GraphNodes.ValuePart(() => AgeText.Label(it.ColonizeStatus)),
                     GraphNodes.ValuePart(() => OutpostTimer(it)),
-                    GraphNodes.ValuePart(() => CuriosityCount(it.Planet, looking)),
+                    GraphNodes.ValuePart(() => PlanetCardReader.CuriosityCount(it.Planet, looking)),
                     // A mining probe is a thing somebody has DONE to this planet, and the game keeps
                     // it in the dossier where only a hover finds it. Said on the row so that a rival
                     // staking a world in your own system is heard while walking past it.
@@ -918,89 +925,6 @@ namespace ES2Access.Screens
                 {
                     CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
                 }
-            }
-        }
-
-        /// <summary>
-        /// How many curiosities are still standing in orbit, said on the planet's own line so that
-        /// finding one does not mean opening every planet on the map.
-        ///
-        /// Counted from the PLANET, not from the ring of icons: the ring is only drawn once the camera
-        /// is in on the system, so a count taken off it told the player about a world at one zoom and
-        /// nothing at another. The question the count asks is exactly the one the game asks when it
-        /// fills the ring (<c>GuiPlanet.GetRemainingCuriosities</c>: every curiosity this empire's
-        /// detection lets it SEE), so the number and the buttons agree - and where they briefly do
-        /// not, it is because the pooled ring has not caught up with the planet yet.
-        /// </summary>
-        private static string CuriosityCount(Planet planet, Empire empire)
-        {
-            try
-            {
-                int count = 0;
-                for (int i = 0; planet != null && i < planet.Curiosities.Count; i++)
-                {
-                    Curiosity curiosity = planet.Curiosities[i];
-                    if (curiosity != null && curiosity.CanBeSeen(empire))
-                    {
-                        count++;
-                    }
-                }
-
-                return count == 0
-                    ? null
-                    : ModStrings.Plural(
-                        ModStrings.GalaxyPlanetCuriosityOne,
-                        ModStrings.GalaxyPlanetCuriosities,
-                        count
-                    );
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>How big a world is and what kind it is, in the game's own template - the second
-        /// line the orbital card writes (<c>PlanetLabel_SystemOrbital.RefreshPlanetInformation</c>),
-        /// said here for a planet whose card is not drawn. An unsurveyed system's planets keep the
-        /// game's own "unknown" word for the type, the way the card does.</summary>
-        private static string PlanetSizeAndType(
-            StarSystemNode system,
-            Planet planet,
-            Empire empire
-        )
-        {
-            try
-            {
-                string size = ElementTitle(planet.Size);
-                string type = Surveyed(system, empire)
-                    ? ElementTitle(planet.Type)
-                    : Gui.Localize("%PlanetTypeUnknownTitle");
-                return string.IsNullOrEmpty(size) || string.IsNullOrEmpty(type)
-                    ? null
-                    : AgeText.Clean(Gui.Localize("%PlaneSizeAndTypeFormat", size, type));
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        /// <summary>A gui element's title without the engine's "cannot find" warning: <c>Gui.GetTitle</c>
-        /// logs one for a missing element and the game forwards its logs to telemetry, which is not a
-        /// price a readout should pay for asking.</summary>
-        private static string ElementTitle(StaticString name)
-        {
-            try
-            {
-                Amplitude.Unity.Gui.GuiElement element = Gui.GetGuiElement(name);
-                return element == null || string.IsNullOrEmpty(element.Title)
-                    ? null
-                    : Gui.Localize(element.Title);
-            }
-            catch (Exception)
-            {
-                return null;
             }
         }
 

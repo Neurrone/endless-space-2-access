@@ -74,12 +74,6 @@ ES2Access/Screens/SettingRows.cs | 1 | return string.IsNullOrEmpty(text) ? CardA
 
 ES2Access/Screens/SystemManagementScreen.ColonyPanel.cs | 1 | GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
 
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostBottomCaption)));
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(label.OutpostOwnerLabel)));
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
-
 ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | CardActions.FirstLine(kind)
 ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | GraphNodes.LabelPart(() => CardActions.FirstLine(tooltip)),
 
@@ -108,6 +102,14 @@ ES2Access/UI/Cells.cs | 1 | string caption = named ? text : CardActions.FirstLin
 ES2Access/UI/Cells.cs | 1 | string caption = named ? text : CardActions.FirstLine(tooltip);
 
 ES2Access/UI/HeroCards.cs | 1 | Func<IList<string>> read = AgeWidgets.TooltipLines(tooltip);
+
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | () => AgeWidgets.Painted(it) ? CardActions.FirstLine(AgeWidgets.Raw(it)) : null
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(card.OutpostBottomCaption)));
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(card.OutpostOwnerLabel)));
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.NextPopulationIcon)));
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(Tooltip(growth.TurnsBeforeNextPop)));
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(card.OutpostTooltip));
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | Add(lines, AgeWidgets.TooltipLines(item.Tooltip));
 
 ES2Access/UI/PoliticsExperience.cs | 1 | string note = AgeText.Tooltip(Note(feature));
 

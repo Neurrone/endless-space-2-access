@@ -530,54 +530,6 @@ namespace ES2Access.Screens
             Add(cells, widget, ControlId.For(widget, key), vtable);
         }
 
-        /// <summary>One line per thing a card's table is drawing, the way both pages that draw a planet
-        /// card read one (<see cref="PlanetCardLines.Add"/>).</summary>
-        private static void AddWidgetLines(
-            List<string> lines,
-            AgeTransform widget,
-            Func<AgeTransform, bool> skip = null
-        )
-        {
-            PlanetCardLines.Add(lines, widget, skip);
-        }
-
-        /// <summary>A table item the card offers as a button of its own, and so is not a line of the
-        /// card's - the curiosities the game mixes into the findings table.</summary>
-        private static bool SkipCuriosities(AgeTransform item)
-        {
-            try
-            {
-                return item != null && item.GetComponent<PlanetCuriosityItem>() != null;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        private static void AddLine(List<string> lines, string line)
-        {
-            PlanetCardLines.AddLine(lines, line);
-        }
-
-        private static void Add(List<string> lines, Func<IList<string>> source)
-        {
-            if (source == null)
-            {
-                return;
-            }
-
-            try
-            {
-                IList<string> from = source();
-                for (int i = 0; from != null && i < from.Count; i++)
-                {
-                    AddLine(lines, from[i]);
-                }
-            }
-            catch (Exception) { }
-        }
-
         /// <summary>The labels of a control's group, swept once per group per frame: the page asks the
         /// same group for its caption on every build, and the caption cannot move within a frame.
         /// </summary>

@@ -497,15 +497,7 @@ ES2Access/Screens/SystemManagementScreen.ColonyPanel.cs | 1 | if (table == null 
 ES2Access/Screens/SystemManagementScreen.ColonyPanel.cs | 3 | if (widget == null || !AgeWidgets.Visible(widget))
 ES2Access/Screens/SystemManagementScreen.ColonyPanel.cs | 1 | || !AgeWidgets.Visible(panel.MothershipGroup)
 
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | bool ghost = AgeWidgets.Visible(label.GhostGroup);
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | if (!AgeWidgets.Visible(label.GhostGroup))
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | if (AgeWidgets.Visible(label.ImprovementStatus))
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | if (count != null && AgeWidgets.Visible(count.AgeTransform))
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 2 | if (label.OutpostGroup == null || !AgeWidgets.Visible(label.OutpostGroup))
 ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | if (labels[i] != null && AgeWidgets.Visible(labels[i].AgeTransform))
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | return item.DurationGroup != null && item.DurationGroup.Visible
 
 ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | && AgeWidgets.Visible(panel.ExperienceGauge.AgeTransform)
 ES2Access/Screens/SystemManagementScreen.SidePanels.cs | 1 | if (children[i] != null && AgeWidgets.Visible(children[i]))
@@ -593,7 +585,21 @@ ES2Access/UI/NegotiationTerms.cs | 1 | || !AgeWidgets.Visible(line.QuantityGroup
 
 ES2Access/UI/NotificationStrip.cs | 1 | bool shown = strict ? child.Visible : child.Alpha > 0f;
 
-ES2Access/UI/PlanetCardLines.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/UI/PlanetCardLines.cs | 2 | if (table == null || !AgeWidgets.Visible(table))
+
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | () => AgeWidgets.Painted(it) ? CardActions.FirstLine(AgeWidgets.Raw(it)) : null
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | bool ghost = AgeWidgets.Visible(card.GhostGroup);
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (!AgeWidgets.Visible(card.GhostGroup))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (!AgeWidgets.Visible(card.OutpostGroup))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (AgeWidgets.Visible(card.OutpostGroup))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (AgeWidgets.Visible(improvement))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (card.OutpostTimer != null && AgeWidgets.Visible(card.OutpostTimer.AgeTransform))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (count != null && AgeWidgets.Visible(count.AgeTransform))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (group == null || !AgeWidgets.Visible(group))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (item == null || !AgeWidgets.Visible(item.AgeTransform))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (table == null || !AgeWidgets.Visible(table))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | if (widget == null || !AgeWidgets.Visible(widget))
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | return item.DurationGroup != null && item.DurationGroup.Visible
 
 ES2Access/UI/PlayersList.cs | 1 | if (row == null || !row.Visible)
 ES2Access/UI/PlayersList.cs | 1 | return AgeWidgets.Visible(ring) ? RingSlots.Under(ring) : NoSlots;

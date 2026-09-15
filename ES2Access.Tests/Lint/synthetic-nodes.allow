@@ -92,14 +92,14 @@ ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(Contro
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural("scan:remains/" + i), vtable));
 ES2Access/Screens/ScanViewScreen.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key + "/" + i), vtable));
 
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
-ES2Access/Screens/SystemManagementScreen.PlanetCards.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
-
 ES2Access/UI/BattleBalance.cs | 2 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 
 ES2Access/UI/BattlePlans.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
 
 ES2Access/UI/CardActions.cs | 1 | ? (NodeDeclaration)Nodes.Synthetic(id, vtable)
+
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
+ES2Access/UI/PlanetCards/PlanetCardReader.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
 
 ES2Access/UI/PopulationRings.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
 ES2Access/UI/PopulationRings.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));

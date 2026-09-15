@@ -64,8 +64,59 @@ namespace ES2Access.UI
                     continue;
                 }
 
-                AddLine(lines, ItemLine(child));
+                AddLine(lines, ItemLine(child, true));
             }
+        }
+
+        /// <summary>
+        /// The same table as ONE line, its items joined with the mod's own list separator
+        /// ("Dustciduous Trees: 2, Hyperium: 1").
+        ///
+        /// For the tables a card draws as a ROW of small icons - the anomalies found on a world and
+        /// the deposits it is sitting on - which a sighted player takes in at a glance and which, read
+        /// a line apiece, turned a world with four anomalies into four trips down the review buffer.
+        /// Same entry gate and same per-item drawing test as <see cref="Add"/>; answers null where the
+        /// table draws nothing.
+        ///
+        /// <paramref name="drawAmount"/> is whether this prefab's deposit item draws its figure at
+        /// all (<c>PlanetCardAdapter.DepositsDrawAmount</c>).
+        /// </summary>
+        public static string Joined(
+            AgeTransform table,
+            bool drawAmount = true,
+            Func<AgeTransform, bool> skip = null
+        )
+        {
+            // Content: whether the card is read with this line at all. Lines, not nodes - nothing
+            // here is declared, so no gate has asked anything about this table.
+            if (table == null || !AgeWidgets.Visible(table))
+            {
+                return null;
+            }
+
+            IList<AgeTransform> children = table.Children;
+            if (children == null || children.Count == 0)
+            {
+                return AgeWidgets.ItemText(table);
+            }
+
+            MessageBuilder said = new MessageBuilder();
+            for (int i = 0; i < children.Count; i++)
+            {
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                if (child == null || (skip != null && skip(child)))
+                {
+                    continue;
+                }
+
+                string line = ItemLine(child, drawAmount);
+                if (!string.IsNullOrEmpty(line))
+                {
+                    said.ListItem(line);
+                }
+            }
+
+            return said.IsEmpty ? null : said.Build();
         }
 
         /// <summary>
@@ -85,7 +136,7 @@ namespace ES2Access.UI
         /// alone: the amount is in the model, but inventing it here would put a figure on the
         /// player's card that nobody else can see.
         /// </summary>
-        private static string ItemLine(AgeTransform child)
+        private static string ItemLine(AgeTransform child, bool drawAmount)
         {
             ResourceDepositItem deposit = Deposit(child);
             if (deposit == null)
@@ -99,7 +150,7 @@ namespace ES2Access.UI
                 name = AgeWidgets.TooltipTitle(deposit.Tooltip);
             }
 
-            string amount = AgeWidgets.DrawnLabel(deposit.AmountLabel);
+            string amount = drawAmount ? AgeWidgets.DrawnLabel(deposit.AmountLabel) : null;
             if (string.IsNullOrEmpty(name))
             {
                 return amount;
