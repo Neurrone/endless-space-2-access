@@ -1,35 +1,31 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Amplitude;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
-using ES2Access.ES2.UI;
 using ES2Access.UI;
+using ES2Access.UI.PlanetCards;
 
 namespace ES2Access.Screens
 {
-    /// <summary>The planet cards a system row slides out, and the carrying of a population unit
-    /// between them and to another system.</summary>
+    /// <summary>The planet cards a system row slides out - which cards the panel is drawing, and what
+    /// is the PAGE's about each of them: the population drops between them and the shipment to another
+    /// system. What a planet card SAYS is <see cref="PlanetCardReader"/>'s, shared with every other
+    /// surface that draws one.</summary>
     public sealed partial class EmpireScreen
     {
-        /// <summary>
-        /// The planets of the selected system, left to right - which is NOT the order the panel holds
-        /// them in: it lays its cards out from the right, so the system's first planet is the rightmost
-        /// card. Measured rather than assumed.
-        ///
-        /// The card is a readout with its own buttons as child nodes, the same shape the star system
-        /// page's cards have, and its population ring is a row per SLOT that a unit can be carried off
-        /// or dropped onto - the same gesture and the same shared arithmetic the star system page's
-        /// ring uses, through this panel's own drop client.
-        /// </summary>
         /// <summary>The walk the panel's cards are found by, made once per panel per frame. The cards
         /// are POOLED by the panel and rebound as the table's selection moves, so the answer is only
         /// good for the frame it was walked in.</summary>
         private static readonly FrameSweep<PlanetCard> CardsIn = new FrameSweep<PlanetCard>("empire");
 
+        /// <summary>
+        /// The planets of the selected system, left to right - which is NOT the order the panel holds
+        /// them in: it lays its cards out from the right, so the system's first planet is the rightmost
+        /// card. Measured rather than assumed.
+        /// </summary>
         private void BuildCards(GraphBuilder builder, StarSystemPlanetCardsPanel panel)
         {
             _cards.Clear();
@@ -64,362 +60,38 @@ namespace ES2Access.Screens
                 right.AgeTransform.GetGlobalPosition().x
             );
 
-        private void AddCard(GraphBuilder builder, PlanetCard card)
-        {
-            PlanetCard it = card;
-            NodeVtable vtable = new NodeVtable
-            {
-                Announcements = new List<NodeAnnouncement>
-                {
-                    GraphNodes.LabelPart(() => AgeText.Label(it.PlanetNameLabel)),
-                    // What has become of the world, in the position the star system page's card says
-                    // it in - between the name and the kind of world. This card says it NOWHERE: it
-                    // tints the name instead (<see cref="PlanetStatusText"/>), and a colour is not
-                    // text to read.
-                    GraphNodes.ValuePart(() => PlanetStatusText.Title(it.Planet)),
-                    GraphNodes.ValuePart(() => AgeText.Label(it.PlanetTypeLabel)),
-                    // The same sentence the map's planet rows say, for the same reason: the game keeps
-                    // a mining probe in the planet's dossier, where only a hover finds it.
-                    GraphNodes.ValuePart(() => MiningProbes.Line(it.Planet), false),
-                },
-                Sections = GraphNodes.Sections(
-                    () => CardDetails(it),
-                    AgeWidgets.Raw(it.AgeTransform)
-                ),
-            };
-            // The card itself takes NO drop: the drop lives on its SLOTS, for the reason the star
-            // system page's cards do (owner ruling 2026-08-29) - a header that also swallowed drops
-            // made two rows out of one gesture.
-            AgeWidgets.PointAt(vtable, card.AgeTransform);
-
-            string key = "empire:planet/" + card.Planet.GUID;
-            ControlId id = ControlId.For(card.Planet, key);
-            List<CardActions.CardAction> buttons = CardButtons(card);
-            List<Population> units = new List<Population>(4);
-            List<PopulationSlots.Slot> slots = CardSlots(card, units);
-            List<TooltipChildren.Dossier> dossiers = CardDossiers(card);
-            if (buttons.Count == 0 && slots.Count == 0 && dossiers.Count == 0)
-            {
-                // Synthetic: the card stands for the PLANET, and the walk that found the planet is
-                // what vouches for it.
-                builder.AddItem(Nodes.Synthetic(id, vtable));
-                return;
-            }
-
-            vtable.ControlType = ControlTypes.Group;
-            // Synthetic for the same reason as the leaf above: the card stands for the planet.
-            builder.BeginGroup(Nodes.Synthetic(id, vtable));
-            if (builder.IsExpanded(id))
-            {
-                object outer = builder.Region;
-                AddPopulations(builder, key, card, units, slots, CanCarry(card));
-                CardActions.Emit(builder, key, buttons);
-                TooltipChildren.Emit(builder, key, dossiers, outer);
-            }
-
-            builder.EndGroup();
-        }
-
         /// <summary>
-        /// The pages the card draws no words for at all: the planet's own dossier, which the game hangs
-        /// on the FRAME around the picture in the middle and not on the picture itself
-        /// (<c>PlanetCard.RefreshPlanetImage</c> :417 points it at the planet wrapper) - so the
-        /// pointer goes to the tooltip's own widget, which is the only widget the game would draw it
-        /// for - and the specialization improvement's, which it draws as a small picture in
-        /// the corner and keeps on a tooltip FIELD of its own rather than on that picture
-        /// (<c>RefreshPlanetImprovement</c> :531-547) - so nothing hanging off the card could have
-        /// found it. The same two the star system page's card offers
-        /// (<c>SystemManagementScreen.PlanetDossiers</c>), which is why they are collected the same
-        /// way.
+        /// One planet card - what this page supplies, over the shared reader.
         ///
-        /// The improvement's is gated on the game DRAWING the picture, which it does only for a colony
-        /// that has chosen one: a world with no specialization draws nothing there, and this card -
-        /// unlike the star system page's, which writes "No Specialization" into a label of its own -
-        /// has nothing to say about it.
-        /// </summary>
-        private static List<TooltipChildren.Dossier> CardDossiers(PlanetCard card)
-        {
-            List<TooltipChildren.Dossier> found = new List<TooltipChildren.Dossier>(2);
-            try
-            {
-                TooltipChildren.Add(
-                    found,
-                    card.PlanetImageTooltip,
-                    AgeWidgets.TooltipOwner(card.PlanetImageTooltip)
-                );
-                AgeTransform improvement = ImprovementImage(card);
-                // Content: which dossiers the card offers. These become a region of the card's own
-                // node, not nodes the gate ever sees.
-                if (improvement != null && AgeWidgets.Visible(improvement))
-                {
-                    TooltipChildren.Add(found, card.PlanetImprovementTooltip, improvement);
-                    TooltipChildren.AddPlain(found, card.PlanetImprovementTooltip, improvement);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("empire: reading a planet card's dossiers threw: " + e);
-            }
-
-            return found;
-        }
-
-        /// <summary>The picture the card draws the world's specialization improvement as, or null
-        /// where the prefab has none.</summary>
-        private static AgeTransform ImprovementImage(PlanetCard card)
-        {
-            return card == null || card.PlanetImprovementImage == null
-                ? null
-                : card.PlanetImprovementImage.AgeTransform;
-        }
-
-        /// <summary>Which of the card's own buttons the game is drawing. Only colonizing has a word of
-        /// the mod's - it is the same wordless button the star system page draws and the same word is
-        /// used for it; the other three name themselves in the sentence they explain themselves with.
-        /// </summary>
-        private static List<CardActions.CardAction> CardButtons(PlanetCard card)
-        {
-            List<CardActions.CardAction> found = new List<CardActions.CardAction>(2);
-            try
-            {
-                CardActions.AddNamedByMod(found, card.ColonizeButton, ModStrings.SystemColonize);
-                // Refusable, not merely named: the game keeps these three drawn while switched off,
-                // with the reason appended to the naming tooltip, so a blocked one is declared
-                // refusing rather than vanishing.
-                CardActions.AddRefusableNamedByTooltip(found, card.BuildInfrastructureButton);
-                CardActions.AddRefusableNamedByTooltip(found, card.ReduceAnomalyButton);
-                CardActions.AddRefusableNamedByTooltip(found, card.TerraformButton);
-                // The anomalies, which this card draws as the same wired rows the star system page's
-                // does and which were read here as buffer LINES alone - so the jump to the technology
-                // that would let one be reduced was a mouse-only gesture on this page (owner ruling
-                // 2026-09-14, parity with the system page). The lines stay: the card goes on naming
-                // them (<see cref="CardDetails"/>), and the rows add the dossier and the gesture.
-                CardActions.AddAnomalies(found, card.AnomalyItemsTable);
-                AddCuriosities(found, card);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("empire: reading a planet card's buttons threw: " + e);
-            }
-
-            return found;
-        }
-
-        /// <summary>The curiosities the card is drawing, each a wordless icon kept CLICKABLE while
-        /// refused with the reason in its own tooltip, named off the wrapper the game hangs there.
-        /// </summary>
-        private static void AddCuriosities(List<CardActions.CardAction> found, PlanetCard card)
-        {
-            IList<AgeTransform> items = AgeWidgets.DrawnChildren(card.CuriosityItemsTable);
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                AgeTransform item = items[i];
-                // The collected actions are NUMBERED by their place in the list CardActions.Emit
-                // builds, and the number is each node's structural key - so an item the card is not
-                // drawing must never enter it.
-                if (
-                    item != null
-                    && AgeWidgets.Visible(item)
-                    && item.GetComponent<PlanetCuriosityItem>() != null
-                )
-                {
-                    CardActions.AddRefusable(found, item, CardActions.TitleOf(item));
-                }
-            }
-        }
-
-        /// <summary>Everything else the card draws, in the order it draws it: what has become of the
-        /// world, what kind of world it is, what has been found on it, which specialization it has
-        /// been given, its five outputs, and who lives there.
+        /// THERE IS NO CLICK. The card is a panel of widgets rather than a control, and this page has
+        /// no page of its own to open behind it, so the card is a plain group.
         ///
-        /// The state's SENTENCE opens the buffer, which is where the star system page's card puts it
-        /// too - a tooltip section on its status label, read before the rest of the card. Here it is
-        /// plain buffer lines rather than a tooltip: the words are a string the mod already holds
-        /// (<see cref="PlanetStatusText"/>) and not a dossier a renderer has to assemble, so there is
-        /// nothing for a carrier (<see cref="ScratchTooltips"/>) to make exist and nothing on the card
-        /// for a pointer to indicate.</summary>
-        private static IList<string> CardDetails(PlanetCard card)
+        /// THE CARD ITSELF TAKES NO DROP (owner ruling 2026-08-29). The game's mouse accepts one
+        /// anywhere on the card's rectangle, but a keyboard player is walking rows, and a card header
+        /// that also swallowed drops made two rows out of one gesture: the header and the free slot
+        /// under it both said "drop target" and did different things. So the drop lives on the SLOTS
+        /// alone.
+        ///
+        /// The scratch namespace is this page's own: the star system page parks a carrier per slot of
+        /// the same world's ring, and one key for both pages would hand this card's slot 1 whatever
+        /// that page's slot 1 was last bound with.
+        /// </summary>
+        private void AddCard(GraphBuilder builder, PlanetCard label)
         {
-            List<string> lines = new List<string>();
-            try
-            {
-                AddLines(lines, PlanetStatusText.Description(card.Planet));
-                AddWidgetLines(lines, card.PlanetTypeGroup);
-                AddWidgetLines(lines, card.PlanetGameplayTypesTable);
-                AddWidgetLines(lines, card.ResourceDepositItemsTable);
-                AddWidgetLines(lines, card.AnomalyItemsTable);
-                AddImprovement(lines, card);
-                AddFidsi(lines, card);
-                PopulationSummary.Add(lines, card.ColonizedPlanet);
-            }
-            catch (Exception e)
-            {
-                Log.Warn("empire: reading a planet card's details threw: " + e);
-            }
-
-            return lines;
-        }
-
-        /// <summary>Every line of a block the card says in one go - the state's sentence, which the
-        /// game writes as one string with its reason and its hint on lines of their own.</summary>
-        private static void AddLines(List<string> lines, IList<string> from)
-        {
-            for (int i = 0; from != null && i < from.Count; i++)
-            {
-                PlanetCardLines.AddLine(lines, from[i]);
-            }
-        }
-
-        /// <summary>Which specialization improvement the world has been given, named off the wrapper
-        /// the card hangs on its own tooltip field - the picture itself carries no words
-        /// (<c>PlanetCard.RefreshPlanetImprovement</c> :531-547). Drawn only for a colony that has
-        /// chosen one, so being drawn is the gate: where the card draws nothing there is nothing to
-        /// say, which is the one place this card reads shorter than the star system page's (that one
-        /// writes "No Specialization" into a label of its own).</summary>
-        private static void AddImprovement(List<string> lines, PlanetCard card)
-        {
-            AgeTransform image = ImprovementImage(card);
-            // Content: whether the improvement is one of the card's lines.
-            if (image == null || !AgeWidgets.Visible(image))
+            Planet planet = label.Planet;
+            if (planet == null)
             {
                 return;
             }
 
-            PlanetCardLines.AddLine(
-                lines,
-                AgeWidgets.TooltipTitle(card.PlanetImprovementTooltip)
-            );
-        }
-
-        /// <summary>The planet's five outputs, named by the game's own property titles, in the two
-        /// shapes the card draws them in. A COLONY's are written as numbers and read as numbers, off
-        /// the same simulation object the card reads them from. A world nobody has settled gets no
-        /// numbers at all: the card hides that row and draws a table of rating pips instead
-        /// (<c>PlanetCard.Bind</c> :231-242, <c>RefreshScoreLine</c> :395-402), which the map's card
-        /// and the management page's do too, so the lines of both shapes are composed for all three
-        /// in <see cref="PlanetOutputs"/>. Which shape is drawn is the game's own bind-time test -
-        /// settled, or a colonization the player has already ordered - so it is the test here rather
-        /// than the card's own <c>ColonizedPlanet</c>: a world with a colonization pending is drawn
-        /// with the numbers of the colony it is about to be, and that field is still null for it.
-        /// </summary>
-        private static void AddFidsi(List<string> lines, PlanetCard card)
-        {
-            FidsiEnumerator fidsi = card.FidsiEnumerator;
-            if (fidsi == null || fidsi.FidsiProperties == null || card.Planet == null)
-            {
-                return;
-            }
-
-            if (card.Planet.ColonizedPlanet == null && card.PlayerGhostColonizedPlanet == null)
-            {
-                IList<string> ratings = PlanetOutputs.Ratings(
-                    card.Planet,
-                    fidsi,
-                    card.FidsiParametersGuiElement
-                );
-                for (int i = 0; i < ratings.Count; i++)
-                {
-                    lines.Add(ratings[i]);
-                }
-
-                return;
-            }
-
-            ColonizedPlanet colony = card.ColonizedPlanet;
-            Amplitude.Unity.Simulation.SimulationObject simulation =
-                colony != null ? colony.SimulationObject : card.Planet.SimulationObject;
-            if (simulation == null)
-            {
-                return;
-            }
-
-            IList<string> numbers = PlanetOutputs.Numbers(simulation, fidsi);
-            for (int i = 0; i < numbers.Count; i++)
-            {
-                lines.Add(numbers[i]);
-            }
-        }
-
-        /// <summary>The SLOTS of the ring the card draws in its population mode - contents from the
-        /// colony, existence from the drawing, off the arithmetic both pages share
-        /// (<see cref="PopulationMoves.Slots"/>).</summary>
-        private static List<PopulationSlots.Slot> CardSlots(PlanetCard card, List<Population> units)
-        {
-            try
-            {
-                return PopulationMoves.Slots(
-                    card.Planet,
-                    card.ColonizedPlanet,
-                    card.PlanetCardPopulationEnumerator,
-                    AgeWidgets.DrawnCount(MarkerContainer(card)),
-                    units
-                );
-            }
-            catch (Exception e)
-            {
-                Log.Warn("empire: reading a planet card's population slots threw: " + e);
-                return new List<PopulationSlots.Slot>();
-            }
-        }
-
-        /// <summary>The container the card draws its population ring in - the card has a single ring,
-        /// unlike the star system page's card, which swaps between a simple one and a detailed one.
-        /// Whether the game is drawing it at all is not asked here: the readers this is handed to ask
-        /// it of the container themselves (<see cref="AgeWidgets.DrawnCount"/>,
-        /// <see cref="AgeWidgets.DrawnChildren"/>).</summary>
-        private static AgeTransform MarkerContainer(PlanetCard card)
-        {
-            PlanetPopulationEnumerator enumerator =
-                card == null ? null : card.PlanetCardPopulationEnumerator;
-            return enumerator == null
-                ? null
-                : enumerator.PopMarkersContainer ?? enumerator.AgeTransform;
-        }
-
-        /// <summary>
-        /// A row per SLOT of the ring the card draws, in the three bands it draws them in
-        /// (<see cref="PopulationRings.Add"/>) - the same rows the star system page's cards offer,
-        /// off the same walk, so a ring reads the same way wherever the game draws it. This page
-        /// supplies only what is its own: which container the ring is drawn in, whose people fill it,
-        /// where a drop lands, and what its own drop does.
-        ///
-        /// It was a row per AFFINITY until 2026-08-29, which said who lived on the world and nothing
-        /// about how much room there was - the question the ring is on the card to answer - and gave a
-        /// player no way to hear that the first marker of a run carries five people and the last one.
-        ///
-        /// <paramref name="canCarry"/> is where the game would let a drag start off this card AND this
-        /// page has somewhere to put the unit down.
-        /// </summary>
-        private static void AddPopulations(
-            GraphBuilder builder,
-            string keyPrefix,
-            PlanetCard card,
-            List<Population> units,
-            List<PopulationSlots.Slot> slots,
-            bool canCarry
-        )
-        {
-            PlanetCard it = card;
-            PopulationRings.Add(
-                builder,
-                new PopulationRings.Ring
-                {
-                    Planet = card == null ? null : card.Planet,
-                    Colony = card == null ? null : card.ColonizedPlanet,
-                    Destination = Settled(card),
-                    Markers = MarkerContainer(card),
-                    Key = keyPrefix + "/population",
-                    // A namespace of this page's own: the star system page parks a carrier per slot
-                    // of the same world's ring, and one key for both pages would hand this card's
-                    // slot 1 whatever that page's slot 1 was last bound with.
-                    Scratch = "empire/",
-                    Accepts = cargo => Accepts(it, cargo),
-                    Drop = (cargo, replaced) => DropOnCard(it, cargo, replaced),
-                },
-                units,
-                slots,
-                canCarry
-            );
+            PlanetCard it = label;
+            EmpireCardAdapter card = new EmpireCardAdapter(label);
+            card.Key = "empire:planet/" + planet.GUID;
+            card.RingScratch = "empire/";
+            card.CanCarry = () => CanCarry(it);
+            card.Accepts = cargo => Accepts(it, cargo);
+            card.Drop = (cargo, replaced) => DropOnCard(it, cargo, replaced);
+            PlanetCardReader.Add(builder, card);
         }
 
         // ---- moving a population unit ----

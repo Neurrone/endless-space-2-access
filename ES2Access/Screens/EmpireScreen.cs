@@ -570,16 +570,6 @@ namespace ES2Access.Screens
 
         private static readonly string[] PanelTitleNames = { "Title" };
 
-        /// <summary>One line per thing a card's table is drawing, the way both pages that draw a planet
-        /// card read one (<see cref="PlanetCardLines.Add"/>). This page read the whole subtree's text
-        /// instead until stage 6a, which announced a pooled table's retired items and read a deposit as
-        /// a bare number.</summary>
-        private static void AddWidgetLines(List<string> lines, AgeTransform widget)
-        {
-            // Content: which drawn lines are gathered into a reading.
-            PlanetCardLines.Add(lines, widget);
-        }
-
         /// <summary>The system a row stands for. The wrapper the table binds is rebuilt on every
         /// refresh, so it is the system underneath it that identifies the row.</summary>
         private static readonly TableSheet.RowObject SystemOf =

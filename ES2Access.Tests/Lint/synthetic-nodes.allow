@@ -16,9 +16,6 @@ ES2Access/Screens/DropListScreen.cs | 1 | : Nodes.Synthetic(ControlId.Structural
 
 ES2Access/Screens/EconomyScreen.Taxes.cs | 2 | builder.AddItem(Nodes.Synthetic(
 
-ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | builder.AddItem(Nodes.Synthetic(id, vtable));
-ES2Access/Screens/EmpireScreen.PlanetCards.cs | 1 | builder.BeginGroup(Nodes.Synthetic(id, vtable));
-
 ES2Access/Screens/Galaxy/ConstellationRows.cs | 2 | builder.BeginGroup(Nodes.Synthetic(id, vtable), expanded: open);
 
 ES2Access/Screens/Galaxy/FleetRows.cs | 1 | builder.AddItem(Nodes.Synthetic(
