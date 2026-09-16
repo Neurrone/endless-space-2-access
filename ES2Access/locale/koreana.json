@@ -775,6 +775,7 @@
   "screen.cutscene": "컷신",
   "cursor.mode-ended": "대상 선택 종료",
   "screen.victory": "점수 화면",
+  "victory.history-turn": "{0}턴",
   "screen.journal": "일지",
   "screen.dlc": "다운로드 가능 콘텐츠",
   "screen.credits": "크레딧",

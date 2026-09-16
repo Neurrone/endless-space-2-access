@@ -827,6 +827,7 @@
   "screen.cutscene": "Ролик",
   "cursor.mode-ended": "Выбор цели завершён",
   "screen.victory": "Экран очков",
+  "victory.history-turn": "Ход {0}",
   "screen.journal": "Журнал",
   "screen.dlc": "Загружаемый контент",
   "screen.credits": "Авторы",

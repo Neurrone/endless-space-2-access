@@ -775,6 +775,7 @@
   "screen.cutscene": "Cinématique",
   "cursor.mode-ended": "Sélection de cible terminée",
   "screen.victory": "Écran de score",
+  "victory.history-turn": "Tour {0}",
   "screen.journal": "Journal",
   "screen.dlc": "Contenu téléchargeable",
   "screen.credits": "Crédits",

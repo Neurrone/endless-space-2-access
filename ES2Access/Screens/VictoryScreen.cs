@@ -15,38 +15,55 @@ namespace ES2Access.Screens
     /// The score screen a finished game ends on - and the same screen the journal opens for a game that
     /// finished long ago (<c>VictoryScreen</c>, bound with <c>fromJournal</c> either way).
     ///
-    /// It is a tab bar over a stack of panels: pick a page across the top, and one panel at a time is
-    /// shown (<c>OnScreenSelectedCb</c> hides the old and shows the new). So the tabs are a one-of-N and
-    /// the visible panel's contents follow underneath, which is what the eye does with it.
+    /// The prefab is a tab bar over a stack of panels, and neither half of that is what the player
+    /// meets: the tab bar (<c>ScreenSelection.TogglesTable</c>) is drawn invisible and only
+    /// <c>Panels[1]</c>, the scores panel, exists at all - the other two entries are null. So this
+    /// reads the one panel, in the six blocks it draws, and the tab bar is one of the three toggle
+    /// tables the bottom-button reading is told to skip. (It had to be told: two of the tables name
+    /// their first child <c>Item000</c>, and the shared reading's name-plus-index key made them one
+    /// control - which threw <c>Duplicate control id</c> out of every build and left the whole page
+    /// declaring nothing.)
     ///
-    /// What a panel HOLDS is not modelled here, and that is a deliberate stopping point: the score panels
-    /// are graphs of every empire's score per turn, podiums, and trivia items, each a picture with its
-    /// numbers in the sentences the game writes beside them. Reading them properly is a screen's worth of
-    /// work for a page a player sees once per game, after the game is over. What is here instead is every
-    /// LINE the panel drew, in the rows it drew them (<see cref="WindowShape.Readouts"/>) - which is the
-    /// empire names, the scores and the trivia, and is enough to hear how the game went. A real model of
-    /// the graphs is future work and is marked as such.
+    /// Six stops, in the order the panel draws them:
+    ///  1. the outcome - the window's own heading where the game hung a sentence on it, then the
+    ///     paragraph of lore and the four label/value rows, under the header that says how the game
+    ///     ended;
+    ///  2. Game Details - the caption, which carries an explanation and so is a row as well as the
+    ///     name of the block, and the four trivia tiles;
+    ///  3. the empires, as the one-of-N the game made them;
+    ///  4. the figures, likewise;
+    ///  5. the graph, as the table it is a picture of (<see cref="BuildHistory"/>);
+    ///  6. the buttons along the bottom.
     ///
-    /// Which way OUT is drawn depends on where the player came from: a game that just ended offers "back
-    /// to menu" and a route into the journal, and a game opened FROM the journal offers a way back to it
-    /// (<c>Bind</c> sets the three buttons' visibility). All of them are read off what is drawn, so the
-    /// screen does not have to know which case it is in.
+    /// The game's model is select-then-act and is kept: picking an empire or a figure switches the
+    /// game's own toggle, and everything else on the page - the score, the rank, the trivia, the
+    /// figure list, the plotted curves - follows from the game's own rebind
+    /// (<c>VictoryScreenScoresPanel.HighlightEmpire</c> :119-148, <c>SetFigure</c> :167-179). Nothing
+    /// here re-derives any of it.
     ///
-    /// Layer 0, with the main menu and the new-game lobby: this is another out-of-game page that REPLACES
-    /// the menu rather than floating over it - the menu is hidden while it is up and shown again when it
-    /// closes (<c>BackToPreviousMenu</c>), so the two are never both live.
+    /// Which way OUT is drawn depends on where the player came from: a game that just ended offers
+    /// "back to menu" and a route into the journal, and a game opened FROM the journal offers a way
+    /// back to it (<c>Bind</c> :71-89 sets the three buttons' visibility). All of them are read off
+    /// what is drawn, so the screen does not have to know which case it is in.
+    ///
+    /// Layer 0, with the main menu and the new-game lobby: this is another out-of-game page that
+    /// REPLACES the menu rather than floating over it - the menu is hidden while it is up and shown
+    /// again when it closes (<c>BackToPreviousMenu</c>), so the two are never both live.
     ///
     /// Escape is the game's: the window answers it by going back where the player came from, menu or
     /// journal, which is a different destination in each case and one only the game knows.
     /// </summary>
-    public sealed class VictoryScreen : Screen
+    public sealed partial class VictoryScreen : Screen
     {
-        private static readonly object TabsStop = "victory:tabs";
-        private static readonly object PanelStop = "victory:panel";
+        private static readonly object OutcomeStop = "victory:outcome";
+        private static readonly object TriviaStop = "victory:trivia";
+        private static readonly object EmpiresStop = "victory:empires";
+        private static readonly object FiguresStop = "victory:figures";
+        private static readonly object HistoryStop = "victory:history";
         private static readonly object ActionsStop = "victory:actions";
 
-        /// <summary>The mod's own name for the page, since it writes no heading of its own - the outcome
-        /// is drawn as artwork. Optional: a build without the phrase says nothing rather than reading the
+        /// <summary>The mod's own name for the page, for the frames before the window has written its
+        /// heading. Optional: a build without the phrase says nothing rather than reading the
         /// key.</summary>
         private const string ScreenNameKey = ModStrings.ScreenVictory;
 
@@ -73,11 +90,10 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>The tabs, because they are drawn first and decide what the rest of the page is.
-        /// </summary>
+        /// <summary>The outcome, which is what the page is about and what the eye reads first.</summary>
         public override object InitialFocusStop
         {
-            get { return TabsStop; }
+            get { return OutcomeStop; }
         }
 
         public override bool IsActive()
@@ -107,92 +123,342 @@ namespace ES2Access.Screens
                 return;
             }
 
-            builder.BeginStop(TabsStop);
-            Tabs(builder, window);
+            VictoryScreenScoresPanel panel = Scores(window);
 
-            builder.BeginStop(PanelStop);
-            Panel(builder, window);
+            builder.BeginStop(OutcomeStop);
+            Outcome(builder, window, panel);
+
+            builder.BeginStop(TriviaStop);
+            Trivia(builder, panel);
+
+            builder.BeginStop(EmpiresStop);
+            Empires(builder, panel);
+
+            builder.BeginStop(FiguresStop);
+            Figures(builder, panel);
+
+            builder.BeginStop(HistoryStop);
+            BuildHistory(builder, window, panel);
 
             builder.BeginStop(ActionsStop);
-            _cells.Clear();
-            WindowShape.Controls(_cells, window, "victory", Tables(window));
-            Cells.EmitLinear(builder, _cells);
+            Actions(builder, window, panel);
         }
 
-        /// <summary>The pages across the top, as the one-of-N the game made them.</summary>
-        private void Tabs(GraphBuilder builder, GameVictoryScreen window)
-        {
-            _cells.Clear();
-            try
-            {
-                AgeTransform table = Tables(window);
-                IList<AgeTransform> children = table == null ? null : table.Children;
-                for (int i = 0; children != null && i < children.Count; i++)
-                {
-                    Tab(children[i], i);
-                }
-            }
-            catch (Exception e)
-            {
-                Log.Warn("victory: reading the tabs threw: " + e);
-            }
+        // ---- 1. the outcome ----
 
-            Cells.EmitLinear(builder, _cells);
-        }
-
-        private void Tab(AgeTransform widget, int index)
+        /// <summary>
+        /// How the game ended: the header that says so, the paragraph of lore under it, and the four
+        /// facts the game lists beside them.
+        ///
+        /// The window's own heading comes first because it is drawn first, and it is declared only
+        /// where the game hung a sentence on it - the ordinary caption rule, which is also why the
+        /// heading being the screen's spoken name costs nothing: the announcer drops a level whose
+        /// words the node below repeats, and the stop lands past it on the paragraph.
+        /// </summary>
+        private void Outcome(
+            GraphBuilder builder,
+            GameVictoryScreen window,
+            VictoryScreenScoresPanel panel
+        )
         {
-            AgeControlToggle toggle = Toggle(widget);
-            if (toggle == null)
+            Captions.Row(builder, WindowShape.TitleWidget(window), "victory:title");
+            if (panel == null)
             {
                 return;
             }
 
-            AgeControlToggle it = toggle;
-            AgeTransform at = widget;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
-            NodeVtable vtable = GraphNodes.Tab(
-                () => Name(at, tooltip),
-                () => it.State,
-                () => AgeWidgets.Offered(at),
-                tooltip
-            );
-            vtable.OnActivate = () => AgeWidgets.Toggle(it);
-            AgeWidgets.Point(vtable, it, tooltip, at);
-            Cells.Add(_cells, widget, ControlId.Structural("victory:tab/" + index), vtable);
+            // The header is the game's own sentence about the ending, and it is the name of everything
+            // under it rather than a row: nothing hangs off it. Where the game has handed back its own
+            // key unresolved - the %VictoryScreenPlayingPlayerTitle case, which this page has been
+            // heard reading aloud once before - there is no word, so no level is opened.
+            string header = Written(AgeWidgets.TextOf(AgeWidgets.Transform(panel.ScoresScreenTitle)));
+            bool named = !string.IsNullOrEmpty(header);
+            if (named)
+            {
+                builder.PushContext(header);
+            }
+
+            try
+            {
+                _cells.Clear();
+                Lore(panel);
+                ControlId landing = _cells.Count == 0 ? null : _cells[0].Id;
+                DataRow(panel.VictoryTypeLabel, "victory:data/victory-type");
+                DataRow(panel.DifficultyLabel, "victory:data/difficulty");
+                DataRow(panel.RankLabel, "victory:data/rank");
+                DataRow(panel.ScoreLabel, "victory:data/score");
+                Cells.EmitLinear(builder, _cells);
+                if (landing != null)
+                {
+                    // Arrival lands on the prose rather than on the heading above it: the heading's
+                    // words are already the screen's spoken name.
+                    builder.LandStopOn(landing);
+                    builder.SetStart(landing);
+                }
+            }
+            finally
+            {
+                if (named)
+                {
+                    builder.PopContext();
+                }
+            }
         }
 
-        /// <summary>Everything the shown panel has written, in the rows it drew. The game shows exactly
-        /// one panel, so what is here follows the tab the player picked without this having to know which
-        /// panel is which.</summary>
-        private void Panel(GraphBuilder builder, GameVictoryScreen window)
+        /// <summary>The paragraph the game writes about how it ended - one node holding its own
+        /// wrapping, and nothing at all while a game is still in progress, where the panel leaves the
+        /// label empty (<c>ShowVictoryStatus</c> :171-178).</summary>
+        private void Lore(VictoryScreenScoresPanel panel)
+        {
+            AgeTransform at = AgeWidgets.Transform(panel.LoreResumeLabel);
+            if (at != null && !string.IsNullOrEmpty(Written(AgeWidgets.TextOf(at))))
+            {
+                Cells.AddReadout(_cells, at, "victory:lore");
+            }
+        }
+
+        /// <summary>
+        /// One of the four facts down the left: a caption and the value beside it, as one line.
+        ///
+        /// The panel exposes only the VALUE labels as fields; the caption is the label drawn beside it
+        /// in the same little group, which is where the prefab puts it. The explanation - the victory
+        /// condition's own description, the only one of the four the game writes one for - hangs on the
+        /// value label itself (<c>BindGlobalInformation</c> :77-83), so that is what the row points at
+        /// and reviews.
+        /// </summary>
+        private void DataRow(AgePrimitiveLabel value, string key)
+        {
+            AgeTransform at = AgeWidgets.Transform(value);
+            if (at == null)
+            {
+                return;
+            }
+
+            AgeTransform row = AgeWidgets.Parent(at);
+            AgeTransform caption = Beside(row, at);
+            AgeTooltip tooltip = AgeWidgets.Raw(at);
+            NodeVtable vtable = GraphNodes.Readout(
+                caption == null ? (Func<string>)(() => null) : (() => AgeWidgets.TextOf(caption)),
+                () => AgeWidgets.TextOf(at),
+                null,
+                tooltip
+            );
+            Cells.Add(_cells, row ?? at, ControlId.For(at, key), vtable);
+        }
+
+        /// <summary>The label the game drew beside <paramref name="value"/> in the same group, which is
+        /// what captions it. One step over the group's own children - not a search - because the two
+        /// are siblings by construction.</summary>
+        private static AgeTransform Beside(AgeTransform row, AgeTransform value)
+        {
+            try
+            {
+                IList<AgeTransform> children = row == null ? null : row.Children;
+                for (int i = 0; children != null && i < children.Count; i++)
+                {
+                    AgeTransform child = children[i];
+                    if (child != null && !ReferenceEquals(child, value) && AgeWidgets.Says(child))
+                    {
+                        return child;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("victory: reading a fact's caption threw: " + e);
+            }
+
+            return null;
+        }
+
+        // ---- 2. Game Details ----
+
+        /// <summary>The four tiles the game calls Game Details, under the caption it draws over them -
+        /// which is a row of its own as well as the block's name, because the game hung a sentence on
+        /// it and a name has no buffer to hold one.</summary>
+        private void Trivia(GraphBuilder builder, VictoryScreenScoresPanel panel)
+        {
+            if (panel == null)
+            {
+                return;
+            }
+
+            AgeTransform group = panel.TriviasGroup;
+            // Flow control, on a wired prefab field that is always there: this is the BRANCH the panel
+            // chooses on whether the selected empire kept any trivia at all (<c>HighlightEmpire</c>
+            // :135-146 shows the block or puts it away), and it decides whether the caption and the
+            // level under it are opened - not whether one tile exists.
+            if (group == null || !AgeWidgets.Visible(group))
+            {
+                return;
+            }
+
+            bool named = Captions.Push(
+                builder,
+                AgeWidgets.ChildNamed(group, "Title", 1),
+                "victory:trivia/caption"
+            );
+            try
+            {
+                _cells.Clear();
+                IList<AgeTransform> tiles = AgeWidgets.DrawnChildren(panel.TriviasTable);
+                for (int i = 0; tiles != null && i < tiles.Count; i++)
+                {
+                    Tile(AgeWidgets.DrawnChild(tiles, i), i);
+                }
+
+                Cells.EmitLinear(builder, _cells);
+            }
+            finally
+            {
+                Captions.Pop(builder, named);
+            }
+        }
+
+        /// <summary>One trivia tile: what it counts and the number, with the sentence the game hangs on
+        /// the tile in the buffer. Both words come off the tile's own component rather than off the
+        /// widget names, which the prefab has the wrong way round - the field called
+        /// <c>TitleLabel</c> is drawn in a widget named DescriptionLabel.</summary>
+        private void Tile(AgeTransform tile, int index)
+        {
+            if (tile == null)
+            {
+                return;
+            }
+
+            VictoryScreenTriviaItem item = tile.GetComponent<VictoryScreenTriviaItem>();
+            if (item == null)
+            {
+                return;
+            }
+
+            AgeTransform title = AgeWidgets.Transform(item.TitleLabel);
+            AgeTransform number = AgeWidgets.Transform(item.DescriptionLabel);
+            AgeTooltip tooltip = AgeWidgets.Raw(tile);
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeWidgets.TextOf(title),
+                () => AgeWidgets.TextOf(number),
+                null,
+                tooltip
+            );
+            Cells.Add(_cells, tile, ControlId.For(tile, "victory:trivia/" + index), vtable);
+        }
+
+        // ---- 3 and 4. the two selectors ----
+
+        /// <summary>The empires, as the game's own one-of-N: picking one is what rebinds the whole left
+        /// column and re-plots the graph.</summary>
+        private void Empires(GraphBuilder builder, VictoryScreenScoresPanel panel)
+        {
+            GuiRadioGroup group = panel == null ? null : panel.EmpireRadioGroup;
+            Toggles(builder, group == null ? null : group.TogglesTable, "victory:empire/");
+        }
+
+        /// <summary>The figures the graph can plot, likewise. The list is the game's, filtered per
+        /// empire (<c>VictoryScreenGraphSection.BindFigures</c> :123-147), and each one carries the
+        /// game's own sentence about what it measures.</summary>
+        private void Figures(GraphBuilder builder, VictoryScreenScoresPanel panel)
+        {
+            VictoryScreenGraphSection graphs = panel == null ? null : panel.Graphs;
+            Toggles(builder, graphs == null ? null : graphs.FigureTogglesTable, "victory:figure/");
+        }
+
+        /// <summary>One table of radio toggles, read as the set the game picks exactly one of. Both
+        /// tables reserve more children than they bind and retire the surplus, so what is walked is
+        /// what the game is drawing.</summary>
+        private void Toggles(GraphBuilder builder, AgeTransform table, string prefix)
         {
             _cells.Clear();
+            IList<AgeTransform> children = AgeWidgets.DrawnChildren(table);
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                AgeTransform child = AgeWidgets.DrawnChild(children, i);
+                AgeControlToggle toggle =
+                    child == null ? null : AgeWidgets.Control(child) as AgeControlToggle;
+                if (toggle == null)
+                {
+                    continue;
+                }
+
+                AgeControlToggle it = toggle;
+                AgeTransform at = child;
+                AgeTooltip tooltip = AgeWidgets.Raw(child);
+                NodeVtable vtable = GraphNodes.Radio(
+                    () => AgeWidgets.TextOf(at),
+                    () => it.State,
+                    // A pick, not a flip: the group's handler only ever records which member is in
+                    // force, and clicking the one already on would untick it for the frames until the
+                    // group writes it back (<c>GuiRadioGroup.OnToggleSwitchCb</c> :101-116).
+                    () => AgeWidgets.Select(it),
+                    () => AgeWidgets.Offered(at),
+                    null,
+                    tooltip
+                );
+                AgeWidgets.Point(vtable, it);
+                Cells.Add(_cells, child, ControlId.For(it, prefix + i), vtable);
+            }
+
+            Cells.EmitLinear(builder, _cells);
+        }
+
+        // ---- 6. the way out ----
+
+        /// <summary>The buttons along the bottom - which of them is drawn depends on where the player
+        /// came from. The three toggle tables are excluded because they are this page's own content and
+        /// are declared above as the one-of-Ns they are; the hidden tab bar is excluded because the
+        /// game never shows it.</summary>
+        private void Actions(
+            GraphBuilder builder,
+            GameVictoryScreen window,
+            VictoryScreenScoresPanel panel
+        )
+        {
+            _cells.Clear();
+            VictoryScreenGraphSection graphs = panel == null ? null : panel.Graphs;
+            GuiRadioGroup empires = panel == null ? null : panel.EmpireRadioGroup;
+            WindowShape.Controls(
+                _cells,
+                window,
+                "victory",
+                empires == null ? null : empires.TogglesTable,
+                graphs == null ? null : graphs.FigureTogglesTable,
+                Tabs(window)
+            );
+            Cells.EmitLinear(builder, _cells);
+        }
+
+        // ---- the page's own parts ----
+
+        /// <summary>The panel the game is showing. The prefab holds three slots and fills one: the
+        /// other two are null, so this asks what is DRAWN rather than which index the tab bar - itself
+        /// invisible - claims to be on.</summary>
+        private static VictoryScreenScoresPanel Scores(GameVictoryScreen window)
+        {
             try
             {
                 VictoryScreenPanel[] panels = window.Panels;
                 for (int i = 0; panels != null && i < panels.Length; i++)
                 {
-                    WindowShape.Readouts(_cells, Transform(panels[i]), "victory:panel/" + i);
+                    VictoryScreenScoresPanel scores = panels[i] as VictoryScreenScoresPanel;
+                    // Flow control: WHICH of the window's panel slots is the page being read. The slots
+                    // are shown and hidden one at a time (<c>SetPanelVisible</c> :203-221) and a panel
+                    // put away keeps every word it last wrote, so this is the question of which panel
+                    // the whole screen is built from rather than whether any node exists.
+                    if (scores != null && AgeWidgets.Visible(AgeWidgets.Transform(scores)))
+                    {
+                        return scores;
+                    }
                 }
             }
             catch (Exception e)
             {
-                Log.Warn("victory: reading the shown panel threw: " + e);
+                Log.Warn("victory: finding the shown panel threw: " + e);
             }
 
-            Cells.EmitLinear(builder, _cells);
+            return null;
         }
 
-        /// <summary>What a tab is called: the words the game drew on it, else the sentence its tooltip
-        /// opens with - these are drawn as icons on some pages.</summary>
-        private static string Name(AgeTransform widget, AgeTooltip tooltip)
-        {
-            string drawn = AgeWidgets.TextOf(widget);
-            return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
-        }
-
-        private static AgeTransform Tables(GameVictoryScreen window)
+        private static AgeTransform Tabs(GameVictoryScreen window)
         {
             try
             {
@@ -205,36 +471,12 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>A tab widget's toggles, swept once per tab per frame: the tabs are read on every
-        /// build and a tab's own control cannot move within a frame.</summary>
-        private static readonly FrameSweep<AgeControlToggle> Toggles =
-            new FrameSweep<AgeControlToggle>("victory");
-
-        /// <summary>The toggle a tab is: the first the sweep names, which is the first a search of its
-        /// subtree would have stopped at.</summary>
-        private static AgeControlToggle Toggle(AgeTransform widget)
+        /// <summary>The words, or nothing where what came back is a localization key the game handed
+        /// over unresolved: a page that speaks "%VictoryScreenPlayingPlayerTitle" is reading the
+        /// game's own plumbing aloud, and this screen has done it before.</summary>
+        private static string Written(string text)
         {
-            try
-            {
-                AgeControlToggle[] inside = Toggles.Under(widget);
-                return inside.Length == 0 ? null : inside[0];
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        private static AgeTransform Transform(VictoryScreenPanel panel)
-        {
-            try
-            {
-                return panel == null ? null : panel.AgeTransform;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
+            return string.IsNullOrEmpty(text) || text[0] == '%' ? null : text;
         }
 
         private static GameVictoryScreen Window()

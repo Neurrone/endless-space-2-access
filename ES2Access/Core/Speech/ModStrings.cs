@@ -1193,6 +1193,7 @@ namespace ES2Access.Core.Speech
             { ScreenCutscene, "Cutscene" },
             { CursorModeEnded, "Target selection ended" },
             { ScreenVictory, "Score screen" },
+            { VictoryHistoryTurn, "Turn {0}" },
             { ScreenJournal, "Journal" },
             { ScreenDlc, "Downloadable content" },
             { ScreenCredits, "Credits" },

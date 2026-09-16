@@ -77,7 +77,6 @@ ES2Access/Screens/SystemPoliticsScreen.cs | 1 | Func<IList<string>> words = AgeW
 
 ES2Access/Screens/TroopManagementScreen.cs | 1 | () => named ? name : CardActions.FirstLine(tooltip),
 
-ES2Access/Screens/VictoryScreen.cs | 1 | return string.IsNullOrEmpty(drawn) ? CardActions.FirstLine(tooltip) : drawn;
 
 ES2Access/UI/AgeTooltips.cs | 1 | && (!string.IsNullOrEmpty(tooltip.Content) || tooltip.Target != null);
 ES2Access/UI/AgeTooltips.cs | 1 | && string.IsNullOrEmpty(tooltip.Content)

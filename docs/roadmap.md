@@ -376,9 +376,12 @@ belong in the files above.
   is a guarded guess. On the first real election turn: check the bars arrive under the
   word, and walk the wizard's flattened bands (step 0 remains code-verified only; step 1
   sighted 2026-08-16).
-- `screen.victory` announces the raw key `%VictoryScreenPlayingPlayerTitle` — the mod's
+- `screen.victory` announced the raw key `%VictoryScreenPlayingPlayerTitle` — the mod's
   lookup does not resolve it even though the drawn label localizes (the AGE
-  draw-time-localization trap, live-caught).
+  draw-time-localization trap, live-caught). The page now refuses to speak a reading that
+  comes back as a key (`VictoryScreen.Written`), so the heading and the lore paragraph are
+  silent rather than wrong there; the trap itself is untouched, and the in-progress state
+  that produces that key was not reachable in the 2026-09-16 fixture.
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
 - The star-system page declares nothing while it is BETWEEN systems, so the cursor migrates

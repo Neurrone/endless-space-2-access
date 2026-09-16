@@ -29,6 +29,14 @@ namespace ES2Access.Core.Speech
         public const string ScreenJoinGame = "screen.join-game";
         public const string ScreenDisclaimer = "screen.disclaimer";
 
+        /// <summary>What one column of the score screen's history table is called: the turn its
+        /// readings were taken on. A key of its own rather than the price graph's
+        /// <see cref="EconomyPriceHistoryTurn"/>, which happens to read the same in English: the two
+        /// caption different tables, and a language that inflects one of them differently must be free
+        /// to say so. The table's first column needs no key - the game writes its own word for the
+        /// empire column of an end-game summary table.</summary>
+        public const string VictoryHistoryTurn = "victory.history-turn";
+
         /// <summary>The two buttons the journal draws at the end of every finished game's row, as bare
         /// icons with no caption: the one that opens that game's victory screen, and the one that
         /// deletes the row. The only words the game has for either are a whole sentence of explanation,

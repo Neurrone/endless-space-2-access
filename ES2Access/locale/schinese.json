@@ -775,6 +775,7 @@
   "screen.cutscene": "过场动画",
   "cursor.mode-ended": "目标选择已结束",
   "screen.victory": "分数界面",
+  "victory.history-turn": "第{0}回合",
   "screen.journal": "帝国编年史",
   "screen.dlc": "可下载内容",
   "screen.credits": "制作团队",

@@ -775,6 +775,7 @@
   "screen.cutscene": "Zwischensequenz",
   "cursor.mode-ended": "Zielauswahl beendet",
   "screen.victory": "Wertungsbildschirm",
+  "victory.history-turn": "Zug {0}",
   "screen.journal": "Chroniken des Imperiums",
   "screen.dlc": "Herunterladbare Inhalte",
   "screen.credits": "Mitwirkende",

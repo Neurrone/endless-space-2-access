@@ -775,6 +775,7 @@
   "screen.cutscene": "Cinemática",
   "cursor.mode-ended": "Seleção de alvo encerrada",
   "screen.victory": "Tela de pontuação",
+  "victory.history-turn": "Turno {0}",
   "screen.journal": "Diário",
   "screen.dlc": "Conteúdo adicional",
   "screen.credits": "Créditos",

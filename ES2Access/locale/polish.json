@@ -807,6 +807,7 @@
   "screen.cutscene": "Przerywnik filmowy",
   "cursor.mode-ended": "Koniec wyboru celu",
   "screen.victory": "Ekran punktacji",
+  "victory.history-turn": "Tura {0}",
   "screen.journal": "Dziennik",
   "screen.dlc": "Zawartość do pobrania",
   "screen.credits": "Autorzy",

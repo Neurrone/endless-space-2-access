@@ -807,6 +807,7 @@
   "screen.cutscene": "Cutscene",
   "cursor.mode-ended": "Target selection ended",
   "screen.victory": "Score screen",
+  "victory.history-turn": "Turn {0}",
   "screen.journal": "Journal",
   "screen.dlc": "Downloadable content",
   "screen.credits": "Credits",

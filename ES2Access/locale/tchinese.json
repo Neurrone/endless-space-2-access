@@ -775,6 +775,7 @@
   "screen.cutscene": "過場動畫",
   "cursor.mode-ended": "目標選擇已結束",
   "screen.victory": "分數介面",
+  "victory.history-turn": "第 {0} 回合",
   "screen.journal": "帝國編年史",
   "screen.dlc": "可下載內容",
   "screen.credits": "製作團隊",
