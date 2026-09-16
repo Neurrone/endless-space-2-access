@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## V0.2.1
 
 - Fix column positions being lost when moving down from column headers if the table has a column with multiple icons
 - Standardize how planets are read in the galactic map, empire and system management screens. This should fix various inconsistencies where a piece of information was read out in one screen but not another even when visible
@@ -10,7 +10,8 @@
 - Documented `Ctrl+M` hotkey in the galactic map. This reads the dimensions of the galaxy and describes where your home system is relative to galactic centre
 - Expose the players popup in end turn controls
 - The names of major factions are now consistently used where the game draws faction icons. For example, "Kappa (AI) (Riftborn)" instead of "Kappa (AI)"
-- Fixed content reading order in Notifications about purchased DLC content
+- Notifications now animate instantly when opened so the mod can read them immediately. This also fixes initial focus when expanding a notification landing on the action buttons instead of the notification's content
+- Added support for the forced truce, metaplot conclusion, new unlocked content, metaplot finished and displacement report notifications
 
 ## V0.2.0
 
