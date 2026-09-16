@@ -128,18 +128,33 @@ restore_fixture() {
   return 1
 }
 
-# stepright <key ERE> [limit] -- walk right along the row the cursor is on until the focused
-# node's key matches. A table row's non-primary cells cannot be landed on by type-ahead - the
-# search contributes one result per row and filters the other columns out by their column
-# stamp - so a button the game draws as a table CELL is reached the way a player reaches it,
-# by stepping across the row it is in.
-stepright() {
-  sr_i=0
-  while [ "$sr_i" -lt "${2:-16}" ]; do
-    snap "$TMP/sr.txt"
-    grep '^ *> ' "$TMP/sr.txt" | grep -qE "\[$1" && return 0
-    inp ui.right
-    sr_i=$((sr_i+1))
+# stepto <key ERE> [action] [limit] -- press one action until the FOCUSED node's key matches.
+#
+# These routes address every control by key and reach it with arrow and Tab presses, never by
+# type-ahead. Two reasons, and either alone would settle it. A table row's non-primary cells
+# cannot be searched for at all - the search contributes one result per row and filters the
+# other columns out by their column stamp - so the journal's own row buttons are only
+# reachable by stepping across the row. And a search sent at a stop that cannot match it is
+# heard by a player watching: "no match for ..." per stop, which is the harness talking to
+# itself (owner, 2026-09-17).
+stepto() {
+  st_i=0
+  while [ "$st_i" -lt "${3:-16}" ]; do
+    snap "$TMP/st.txt"
+    grep '^ *> ' "$TMP/st.txt" | grep -qE "\[$1" && return 0
+    inp "${2:-ui.right}"
+    st_i=$((st_i+1))
   done
   return 1
+}
+
+stepright() { stepto "$1" ui.right "${2:-16}"; }
+
+# goto <any-node-of-the-stop ERE> <node key ERE> -- Tab to the stop that node belongs to, then
+# walk down it to the node. The Tab landing is the stop's REMEMBERED position, which is why the
+# first pattern matches any of the stop's nodes and the walk down starts from its first.
+goto() {
+  stepto "$1" ui.next 9 || return 1
+  inp ui.home
+  stepto "$2" ui.down 14
 }

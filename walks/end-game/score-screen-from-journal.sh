@@ -22,9 +22,10 @@ if [ "${NROWS:-0}" -lt 1 ]; then
   exit 0
 fi
 
-# The row first, by the words its own cell reads back, and then across it: the button is a
-# table CELL, which type-ahead never offers on its own.
-if ! tkey "$TMP/journal.txt" 'journal:row[^]]*c0\]' 1 || ! stepright 'journal:row[^]]*c8\]'; then
+# The row first, then across it: the button is a table CELL, which no search offers on its own.
+ROWKEY=$(key_nth "$TMP/journal.txt" 'journal:row[^]]*c0\]' 1)
+ROW=$(printf '%s' "$ROWKEY" | sed 's/c0$//')
+if [ -z "$ROWKEY" ] || ! stepto "$ROWKEY" ui.down 12 || ! stepright "${ROW}c8\]"; then
   skip "the journal's score-screen button could not be reached"
   hidewin JournalModalWindow
   done_
@@ -39,8 +40,7 @@ capture score-screen "score screen, from the journal"
 # Back the way the page offers, which for this variant is the only button it draws -- and
 # proving it is there is half of what this route is for; the journal is then hidden so the
 # folder's other scenarios start with nothing modal up.
-snap "$TMP/scores.txt"
-if tkey "$TMP/scores.txt" 'victory/BackToJournalButton[^]]*\]' 1; then
+if goto 'victory/' 'victory/BackToJournalButton'; then
   inp ui.click
 else
   skip "the score screen drew no way back to the journal"

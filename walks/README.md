@@ -41,7 +41,7 @@ game pools also runs that surface's A-B-A rebind check (§9), so the check canno
 | `heroes/` | `academy`; `hero-list-modal`; `hero-selection-modal` (only with a hero) |
 | `notifications/` | `popup` (only with a pending notification; parity probe; popup-body rebind); `turn-log` |
 | `game-menu/` | `pause-menu`; `mod-settings` (both tabs, through the menu entry); `game-options-modal`; `load-save-modal` |
-| `end-game/` | `defeat-and-score-screen` (an AI given the score victory; the defeat modal, then the score screen its button opens, read again with a second empire picked and a second figure plotted); `elimination` (the player's own empire put out of the game); `journal-modal` (the end-game summary the score and victory screens open); `score-screen-from-journal` (the same page as a stored game, which draws its way back to the journal); `victory-modal` (the player given the score victory). The three that finish the game reload the save themselves — `endlib.sh` |
+| `end-game/` | `defeat-and-score-screen` (an AI given the score victory; the defeat modal, then the score screen its button opens, read again with a second empire picked and a second figure plotted, then Empire Chronicles into the journal and the journal's Back to the main menu); `elimination` (the player's own empire put out of the game); `journal-modal` (every row, and a row's delete-entry confirmation opened and cancelled); `score-screen-from-journal` (the same page as a stored game, which draws its way back to the journal); `victory-and-cutscene` (the player given the score victory; the won page, whose third button replays the outro cutscene). The three that finish the game reload the save themselves — `endlib.sh` |
 | `dialogs/` | `rename-box`; `message-box-non-blocking` — windows shared by several screens |
 | `main-menu/` | out of game only, run against a freshly launched game at the menu: `menu`; `mod-settings`; `new-game` (the lobby, faction choice, custom-faction editor, advanced settings); `load-save`; `game-options`; `dlc`; `credits`; `disclaimer`. `menulib.sh` holds their drain helpers |
 
@@ -198,6 +198,9 @@ two halves of a pair must skip the *same* things.
 | The score screen lists fewer than two empires, or fewer than two figures | That second reading of it |
 | The journal holds no finished game, or its row button cannot be reached | The score screen, from the journal |
 | The score screen drew no way back to the journal | Pressing it |
+| The score screen declared no Empire Chronicles button, or the journal no Back | That leg of the way out |
+| Delete entry raised no confirmation, or the confirmation declared no Cancel | That box (the box is left through the game's own Exit) |
+| Replay cutscene raised no cutscene screen | The replayed cutscene |
 
 ## 7. What the walk will not do
 
