@@ -1200,6 +1200,8 @@ namespace ES2Access.Core.Speech
             { ScreenResourcesExport, "Export resources" },
             { ScreenJoinGame, "Join game" },
             { ScreenDisclaimer, "Disclaimer" },
+            { JournalVictoryScreen, "Victory screen" },
+            { JournalDeleteEntry, "Delete entry" },
             { CreditsRoll, "Credit roll" },
             { CreditsLine, "{0} line" },
             { CreditsLines, "{0} lines" },

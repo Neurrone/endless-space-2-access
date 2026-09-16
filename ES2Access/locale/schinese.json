@@ -782,6 +782,8 @@
   "screen.resources-export": "导出资源",
   "screen.join-game": "加入游戏",
   "screen.disclaimer": "免责声明",
+  "journal.victory-screen": "胜利界面",
+  "journal.delete-entry": "删除条目",
   "credits.roll": "制作人员名单",
   "credits.line": "{0}行",
   "credits.lines": "{0}行",

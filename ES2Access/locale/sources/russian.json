@@ -834,6 +834,8 @@
   "screen.resources-export": "Export resources",
   "screen.join-game": "Join game",
   "screen.disclaimer": "Disclaimer",
+  "journal.victory-screen": "Victory screen",
+  "journal.delete-entry": "Delete entry",
   "credits.roll": "Credit roll",
   "credits.line": "{0} line",
   "credits.lines": "{0} lines",

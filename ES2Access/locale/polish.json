@@ -814,6 +814,8 @@
   "screen.resources-export": "Eksport zasobów",
   "screen.join-game": "Dołącz do gry",
   "screen.disclaimer": "Zastrzeżenie prawne",
+  "journal.victory-screen": "Ekran zwycięstwa",
+  "journal.delete-entry": "Usuń wpis",
   "credits.roll": "Napisy końcowe",
   "credits.line": "{0} linijka",
   "credits.lines": "{0} linijek",

@@ -782,6 +782,8 @@
   "screen.resources-export": "Exporter les ressources",
   "screen.join-game": "Rejoindre une partie",
   "screen.disclaimer": "Avertissement",
+  "journal.victory-screen": "Écran de victoire",
+  "journal.delete-entry": "Effacer l'entrée",
   "credits.roll": "Générique",
   "credits.line": "{0} ligne",
   "credits.lines": "{0} lignes",

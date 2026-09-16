@@ -782,6 +782,8 @@
   "screen.resources-export": "Ressourcen exportieren",
   "screen.join-game": "Spiel beitreten",
   "screen.disclaimer": "Haftungsausschluss",
+  "journal.victory-screen": "Siegesbildschirm",
+  "journal.delete-entry": "Eintrag löschen",
   "credits.roll": "Abspann",
   "credits.line": "{0} Zeile",
   "credits.lines": "{0} Zeilen",

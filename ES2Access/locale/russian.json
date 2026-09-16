@@ -834,6 +834,8 @@
   "screen.resources-export": "Экспорт ресурсов",
   "screen.join-game": "Присоединиться к игре",
   "screen.disclaimer": "Отказ от ответственности",
+  "journal.victory-screen": "Экран победы",
+  "journal.delete-entry": "Удалить запись",
   "credits.roll": "Список авторов",
   "credits.line": "{0} строка",
   "credits.lines": "{0} строк",

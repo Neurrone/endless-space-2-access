@@ -782,6 +782,8 @@
   "screen.resources-export": "애셋 추출",
   "screen.join-game": "게임 참여",
   "screen.disclaimer": "고지 사항",
+  "journal.victory-screen": "승리 화면",
+  "journal.delete-entry": "항목 삭제",
   "credits.roll": "크레딧 롤",
   "credits.line": "{0}줄",
   "credits.lines": "{0}줄",

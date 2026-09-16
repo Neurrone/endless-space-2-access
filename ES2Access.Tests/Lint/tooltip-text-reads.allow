@@ -38,8 +38,6 @@ ES2Access/Screens/GlobalHud.Turn.cs | 1 | foreach (string line in AgeText.Lines(
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | () => CardActions.FirstLine(tooltip),
 ES2Access/Screens/GroundBattleViewScreen.cs | 1 | () => named ?? CardActions.FirstLine(tooltip),
 
-ES2Access/Screens/JournalScreen.cs | 1 | string described = CardActions.FirstLine(tooltip);
-
 ES2Access/Screens/LoadSaveScreen.cs | 1 | ? CardActions.FirstLine(AgeWidgets.Raw(AgeWidgets.Transform(button)))
 
 ES2Access/Screens/MenuDestinationScreens.cs | 1 | string.IsNullOrEmpty(name) ? AgeText.Clean(drawn.Tooltip.Content) : name

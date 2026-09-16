@@ -187,11 +187,13 @@ namespace ES2Access.Screens
         /// (<c>GuiTableCellScoreScreenButton.OnDeleteEntryCb</c> :39-45), which is what asks the
         /// question.
         ///
-        /// The game wrote no caption on either button, so each is named by the sentence its own tooltip
-        /// says - the whole of it, since both are one line
-        /// (<c>%VictoryScreenScoreScreenButtonDescription</c>,
-        /// <c>%JournalModalWindowDeleteEntryDescription</c>) - and each cell's review buffer holds its
-        /// own button's line and not the other's.
+        /// The game wrote no caption on either button, and the only words it has for them are a whole
+        /// sentence each (<c>%VictoryScreenScoreScreenButtonDescription</c>,
+        /// <c>%JournalModalWindowDeleteEntryDescription</c>) - too long to be a name heard on every pass
+        /// over the row. So each is named by a short mod-authored label saying where the press goes
+        /// (<see cref="ModStrings.JournalVictoryScreen"/>, <see cref="ModStrings.JournalDeleteEntry"/>,
+        /// owner ruling), and the game's own sentence stays the reviewable text behind it - each cell's
+        /// review buffer holding its own button's line and not the other's.
         ///
         /// The buttons are found by the handler the game wired to them rather than by their names in the
         /// prefab: what a button DOES is the thing being declared here.
@@ -220,18 +222,21 @@ namespace ES2Access.Screens
             }
 
             List<NodeVtable> controls = new List<NodeVtable>(2);
-            Add(controls, open, cell, enabled);
-            Add(controls, remove, cell, enabled);
+            Add(controls, open, cell, enabled, ModStrings.JournalVictoryScreen);
+            Add(controls, remove, cell, enabled, ModStrings.JournalDeleteEntry);
             return controls;
         }
 
-        /// <summary>One of the cell's buttons as a column of its own: named by its own tooltip, pressed
-        /// by Enter, and refusing in the game's own words.</summary>
+        /// <summary>One of the cell's buttons as a column of its own: named by the mod's own short label
+        /// for what it does, pressed by Enter, and refusing in the game's own words. The name is asked
+        /// for optionally, so a build whose language lacks the phrase leaves the button reading as the
+        /// game's sentence alone rather than reading a key aloud.</summary>
         private void Add(
             List<NodeVtable> controls,
             AgeControlButton button,
             AgeTransform cell,
-            Func<bool> enabled
+            Func<bool> enabled,
+            string nameKey
         )
         {
             if (button == null)
@@ -252,14 +257,14 @@ namespace ES2Access.Screens
                 ControlType = ControlTypes.Button,
                 Announcements = new List<NodeAnnouncement>
                 {
-                    GraphNodes.ValuePart(() => CellName(tooltip, press.AgeTransform)),
+                    GraphNodes.LabelPart(() => OptionalText.Phrase(nameKey)),
                     GraphNodes.DisabledPart(operable),
                 },
 
-                // The button's OWN tooltip, and only it: its opening line is already the name, which the
-                // readout then drops from what it announces, and the rest of the sentence is handed over
-                // and reviewable instead of unreachable. A cell-wide fact line here would read the OTHER
-                // button's sentence as well, which is why the cell's tooltips are not gathered.
+                // The button's OWN tooltip, and only it: the sentence the name is short for, spoken
+                // after the name and reviewable line by line instead of unreachable. A cell-wide fact
+                // line here would read the OTHER button's sentence as well, which is why the cell's
+                // tooltips are not gathered.
                 Sections = GraphNodes.Sections(null, tooltip),
                 OnActivate = () =>
                 {
@@ -272,14 +277,6 @@ namespace ES2Access.Screens
 
             AgeWidgets.Point(vtable, press);
             controls.Add(vtable);
-        }
-
-        /// <summary>What one of the buttons is called: the sentence it explains itself with, else
-        /// whatever it is drawing - the game writes no caption on either.</summary>
-        private string CellName(AgeTooltip tooltip, AgeTransform button)
-        {
-            string described = CardActions.FirstLine(tooltip);
-            return string.IsNullOrEmpty(described) ? _table.CellText(button) : described;
         }
 
         /// <summary>The button inside a cell that the game wired to one named handler - which is what the

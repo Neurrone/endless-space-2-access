@@ -782,6 +782,8 @@
   "screen.resources-export": "Exportar recursos",
   "screen.join-game": "Unirse a una partida",
   "screen.disclaimer": "Aviso legal",
+  "journal.victory-screen": "Pantalla de victoria",
+  "journal.delete-entry": "Eliminar entrada",
   "credits.roll": "Lista de créditos",
   "credits.line": "{0} línea",
   "credits.lines": "{0} líneas",

@@ -782,6 +782,8 @@
   "screen.resources-export": "匯出資源",
   "screen.join-game": "加入遊戲",
   "screen.disclaimer": "免責聲明",
+  "journal.victory-screen": "勝利介面",
+  "journal.delete-entry": "刪除紀錄",
   "credits.roll": "製作人員名單",
   "credits.line": "{0} 行",
   "credits.lines": "{0} 行",

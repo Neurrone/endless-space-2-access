@@ -29,6 +29,15 @@ namespace ES2Access.Core.Speech
         public const string ScreenJoinGame = "screen.join-game";
         public const string ScreenDisclaimer = "screen.disclaimer";
 
+        /// <summary>The two buttons the journal draws at the end of every finished game's row, as bare
+        /// icons with no caption: the one that opens that game's victory screen, and the one that
+        /// deletes the row. The only words the game has for either are a whole sentence of explanation,
+        /// which is what the tooltip reviews and too long to hear on every pass over the row, so these
+        /// are the short names (owner ruling). Asked for optionally, so a language that lacks one leaves
+        /// that button reading as the game's sentence rather than as a key.</summary>
+        public const string JournalVictoryScreen = "journal.victory-screen";
+        public const string JournalDeleteEntry = "journal.delete-entry";
+
         /// <summary>The credit roll: a name for the one thing on the page, and how much of it there is.
         /// The page itself writes neither - it is six hundred lines of prose and nothing else.</summary>
         public const string CreditsRoll = "credits.roll";
