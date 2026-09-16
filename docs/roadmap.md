@@ -140,7 +140,7 @@ belong in the files above.
   popups/screens (all code-only; incl. whether the battle popup speaks its title twice);
   the election wizard incl. the Political Trends label; a hangar with ships; a populated
   Active Events panel; multi-slot recipe projects; the strategics grid; diplomacy side
-  panels/metaplot and the three diplomacy modals; the victory family; DLC modals;
+  panels/metaplot and the three diplomacy modals; DLC modals;
   join-game rows; a mod-manager library with a
   mod installed. On the marketplace, focusing a history row also scrolls the
   buy table to that resource's line — implemented, and NEVER ONCE FIRED: no save reached has a buy
