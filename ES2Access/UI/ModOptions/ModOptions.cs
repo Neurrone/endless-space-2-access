@@ -134,6 +134,21 @@ namespace ES2Access.UI.ModOptions
                             KeybindRows.Fill
                         )
                     );
+                    // macOS only: the Speech tab configures the mod's own speaking (backend,
+                    // voice, rate, volume). On Windows the screen reader owns all of that.
+                    if (Platform.IsMacOS)
+                    {
+                        _categories.Add(
+                            new ModCategory(
+                                "Speech",
+                                typeof(IModSpeechService),
+                                new ModSpeechService(),
+                                () => ModStrings.Get(ModStrings.ModSettingsSpeech),
+                                () => ModStrings.Get(ModStrings.ModSettingsSpeechDescription),
+                                SpeechRows.Fill
+                            )
+                        );
+                    }
                 }
 
                 return _categories;
@@ -271,6 +286,7 @@ namespace ES2Access.UI.ModOptions
             ScannerRows.Forget();
             GeneralRows.Forget();
             BookmarkRows.Forget();
+            SpeechRows.Forget();
             ModRows.Forget();
             RemoveServices();
             DestroyLeftovers();

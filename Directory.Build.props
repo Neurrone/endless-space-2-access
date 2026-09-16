@@ -1,0 +1,8 @@
+<Project>
+  <!-- A macOS build keeps its intermediate files apart from a Windows build's: obj/ records
+       absolute paths and a checkout shared between the two (a VM, a dual boot) would otherwise
+       hand each side the other's. The output folder is picked per project for the same reason. -->
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <BaseIntermediateOutputPath>obj/mac/</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
