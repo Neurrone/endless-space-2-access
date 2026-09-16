@@ -41,7 +41,7 @@ game pools also runs that surface's A-B-A rebind check (§9), so the check canno
 | `heroes/` | `academy`; `hero-list-modal`; `hero-selection-modal` (only with a hero) |
 | `notifications/` | `popup` (only with a pending notification; parity probe; popup-body rebind); `turn-log` |
 | `game-menu/` | `pause-menu`; `mod-settings` (both tabs, through the menu entry); `game-options-modal`; `load-save-modal` |
-| `end-game/` | `journal-modal` (the end-game summary the score and victory screens open) |
+| `end-game/` | `defeat-and-score-screen` (an AI given the score victory; the defeat modal, then the score screen its button opens, read again with a second empire picked and a second figure plotted); `elimination` (the player's own empire put out of the game); `journal-modal` (the end-game summary the score and victory screens open); `score-screen-from-journal` (the same page as a stored game, which draws its way back to the journal); `victory-modal` (the player given the score victory). The three that finish the game reload the save themselves — `endlib.sh` |
 | `dialogs/` | `rename-box`; `message-box-non-blocking` — windows shared by several screens |
 | `main-menu/` | out of game only, run against a freshly launched game at the menu: `menu`; `mod-settings`; `new-game` (the lobby, faction choice, custom-faction editor, advanced settings); `load-save`; `game-options`; `dlc`; `credits`; `disclaimer`. `menulib.sh` holds their drain helpers |
 
@@ -55,9 +55,10 @@ game `menudrain`, `menuhome`), `fixture.env` (§2), `diffwalks.sh`, `normalize.s
 
 * **The game is running with the dev server on** (`devServer = true` under `[Dev]`, or
   `run-game.ps1` without `-NoDev`). `run.sh` refuses to start without it.
-* **In game**, on whatever save you mean to walk. The harness never loads one: `walk-all.sh
-  --reset` is the only path that does, and it is for setting up *before* a pair, never
-  between the two halves of one. `main-menu/` is the exception: it walks what the game draws
+* **In game**, on whatever save you mean to walk. The harness loads one in two places only:
+  `walk-all.sh --reset`, which is for setting up *before* a pair and never between the two
+  halves of one, and the `end-game/` scenarios that finish the game, which reload the newest
+  save as their own undo (§7). `main-menu/` is the exception: it walks what the game draws
   before a save is loaded.
 * **The build under test is loaded**: `dotnet build` → `POST /reload` →
   `GET /loader/status` shows `staleBuild:false` and an incremented `modAssemblyName`.
@@ -192,15 +193,27 @@ two halves of a pair must skip the *same* things.
 | No economy tab with two selectable marketplace sections | The marketplace scenario's rebind |
 | Fewer than three empires on the diplomacy ring | The wedge rebind |
 | The screen registry cannot be read out of a bogus-key refusal | `by-key.sh` |
+| No major empire but the player's is left in the game | The defeat modal and the score screen it opens |
+| The defeat modal draws no score-screen button | The score screen, from the modal |
+| The score screen lists fewer than two empires, or fewer than two figures | That second reading of it |
+| The journal holds no finished game, or its row button cannot be reached | The score screen, from the journal |
+| The score screen drew no way back to the journal | Pressing it |
 
 ## 7. What the walk will not do
 
-It never advances a turn, loads a save (outside `--reset`), writes a save, dismisses a
-notification, or presses Load / Save / Delete / Confirm / Apply / Create / Retrofit / Exit
-Game. The negotiation modal is never opened — closing an unsigned negotiation posts an order,
-which is also why a diplomacy wedge is never activated. The notification popup is closed by
-hiding its window, never through the dismiss key, and the `AlreadyRead` flags that browsing it
-sets are put back. `run.sh` ends by draining and running `cs/restore.cs`, which nulls the
+It never advances a turn, writes a save, dismisses a notification, or presses Load / Save /
+Confirm / Apply / Create / Retrofit / Exit Game. It deletes nothing the player made: the
+`end-game/` routes delete the end-game summaries their own finished games wrote, matched by
+name against what the journal held before they ran, because finishing a game is a journal
+row for good and `journal-modal` dumps every row. It loads a save in two places only:
+`walk-all.sh --reset`, and the three `end-game/` scenarios that finish the game — there the
+load is not a fixture choice but the one available undo, because a finished game leaves
+`run.sh`'s drain nothing to close. The negotiation modal is never opened — closing an
+unsigned negotiation posts an order, which is also why a diplomacy wedge is never
+activated. The notification popup is closed by hiding its window, never through the
+dismiss key, and the `AlreadyRead` flags that browsing it sets are put back — which the
+`end-game/` routes also do, because a save load re-raises the turn's popups over the page
+they are about to read. `run.sh` ends by draining and running `cs/restore.cs`, which nulls the
 focused control and restores the tooltip delay.
 
 ## 8. Quirks worth knowing
