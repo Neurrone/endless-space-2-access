@@ -309,6 +309,32 @@ tland() {
   return 0
 }
 
+# stop_holds <dumpfile> <text> -- does the stop the cursor is IN hold a node whose own words
+# are, or begin with, that text? The first two comma-separated fields of a node's line are
+# tested because a region's FIRST row reads its caption before its own words (the caption rule
+# above), so the row's own text is the second field there and the first everywhere else.
+#
+# This is what tells findland whether a search can possibly answer at the stop it is standing
+# in. It is a reading of the dump the walk already fetches, not a second question to the game.
+stop_holds() {
+  awk -v want="$2" '
+    function own(l,   p) { sub(/^[ >]+/, "", l); p = index(l, ","); return p > 0 ? substr(l, 1, p - 1) : l }
+    function second(l,   n, a) { sub(/^[ >]+/, "", l); n = split(l, a, ", "); return n >= 2 ? a[2] : "" }
+    BEGIN { w = tolower(want) }
+    /^screen: /            { next }
+    /^-- stop: /           { s++; next }
+    /^-- region: /         { next }
+    /^ *buf: /             { next }
+    /^ *\(no controls/     { next }
+    /^ *> /                { foc = s }
+    {
+      o = tolower(own($0)); t = tolower(second($0))
+      if (o == w || index(o, w) == 1 || t == w || index(t, w) == 1) hit[s] = 1
+    }
+    END { exit (foc in hit) ? 0 : 1 }
+  ' "$1"
+}
+
 # findland <text> [stops] [ui.next|ui.prev] -- land on a node by type-ahead, walking the
 # screen's stops in that direction until one of them holds it (a stop that is nearer walking
 # backward from the reset cursor is reached in fewer steps). A search reads the FOCUSED stop only. The search drops punctuation
@@ -317,8 +343,32 @@ tland() {
 # `Trade & Resources` as `Trade`, `High-Energy Magnetics` as `High` (measured 2026-09-15:
 # each such label cost a full stop circuit). Counters are prefixed: sh has no locals, and a
 # plain `i` rewrites the caller's counter.
+#
+# A search is only SENT at a stop whose dump holds the text (<see cref="stop_holds"/>). It used
+# to be sent at every stop until one answered, which means a live screen reader announces "no
+# match for Leo I" once per stop the walk steps through - noise a watching player hears as the
+# harness talking to itself (owner, 2026-09-17). Every caller reads its text out of a dump, so
+# the stop that holds it is knowable before a key is pressed.
+#
+# The second circuit is the safety net and prints why it ran: where no stop's dump answered -
+# a rebuild between the caller's dump and this one, or a label the engine matches only by fuzz -
+# the old behaviour is what finds the node, and a landing that used to work must not start
+# failing because the cheap test was too strict.
 findland() {
   fl_alt=$(printf '%s' "$1" | sed 's/ *[^A-Za-z0-9 ].*$//; s/ *$//')
+  fl_i=0
+  while [ "$fl_i" -lt "${2:-12}" ]; do
+    snap "$TMP/fl.txt"
+    if stop_holds "$TMP/fl.txt" "$1"; then
+      tland "$1" && return 0
+    elif [ -n "$fl_alt" ] && [ "$fl_alt" != "$1" ] && stop_holds "$TMP/fl.txt" "$fl_alt"; then
+      tland "$fl_alt" && return 0
+    fi
+    inp "${3:-ui.next}"
+    fl_i=$((fl_i+1))
+  done
+
+  echo "   NOTE: no stop's dump holds \"$1\" - searching every stop as a fallback"
   fl_i=0
   while [ "$fl_i" -lt "${2:-12}" ]; do
     tland "$1" && return 0
