@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
@@ -68,6 +69,13 @@ namespace ES2Access.Screens
         private const string ScreenNameKey = ModStrings.ScreenVictory;
 
         private readonly List<Cell> _cells = new List<Cell>();
+
+        /// <summary>Portrait path to the localization key of the name it belongs to - a null ENTRY for
+        /// a portrait nothing in the game's data owns, so a fruitless search is made once. Keyed on
+        /// the game's own asset path rather than on the fact holding it, so the table serves every
+        /// empire whose tile draws the same picture and holds nothing of a finished game alive.
+        /// <see cref="Owner"/> says what the search costs.</summary>
+        private readonly Dictionary<string, string> _named = new Dictionary<string, string>();
 
         public override string Key
         {
@@ -301,10 +309,11 @@ namespace ES2Access.Screens
             try
             {
                 _cells.Clear();
+                IList<OfflineEmpire.Trivia> facts = Facts(panel);
                 IList<AgeTransform> tiles = AgeWidgets.DrawnChildren(panel.TriviasTable);
                 for (int i = 0; tiles != null && i < tiles.Count; i++)
                 {
-                    Tile(AgeWidgets.DrawnChild(tiles, i), i);
+                    Tile(AgeWidgets.DrawnChild(tiles, i), i, facts);
                 }
 
                 Cells.EmitLinear(builder, _cells);
@@ -315,11 +324,21 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>One trivia tile: what it counts and the number, with the sentence the game hangs on
-        /// the tile in the buffer. Both words come off the tile's own component rather than off the
-        /// widget names, which the prefab has the wrong way round - the field called
-        /// <c>TitleLabel</c> is drawn in a widget named DescriptionLabel.</summary>
-        private void Tile(AgeTransform tile, int index)
+        /// <summary>
+        /// One trivia tile: what it counts, WHO or WHAT it counted where the tile says that in a
+        /// picture, and the number in the unit the tile draws beside it - with the sentence the game
+        /// hangs on the tile in the buffer. The drawn words come off the tile's own component rather
+        /// than off the widget names, which the prefab has the wrong way round - the field called
+        /// <c>TitleLabel</c> is drawn in a widget named DescriptionLabel.
+        ///
+        /// Two of the four tiles hide half of what they say in pictures, and both halves are put back
+        /// here: the portrait that names the party or the hero (<see cref="Pictured"/>) and the little
+        /// symbol the number is drawn against (<see cref="Counted"/>). The other two name what they
+        /// count in their own titles and draw a generic picture, so they read exactly as they always
+        /// did (owner ruling 2026-09-17). Nothing else the game knows about the party or the hero is
+        /// read: this page does not show it.
+        /// </summary>
+        private void Tile(AgeTransform tile, int index, IList<OfflineEmpire.Trivia> facts)
         {
             if (tile == null)
             {
@@ -335,13 +354,253 @@ namespace ES2Access.Screens
             AgeTransform title = AgeWidgets.Transform(item.TitleLabel);
             AgeTransform number = AgeWidgets.Transform(item.DescriptionLabel);
             AgeTooltip tooltip = AgeWidgets.Raw(tile);
-            NodeVtable vtable = GraphNodes.Readout(
-                () => AgeWidgets.TextOf(title),
-                () => AgeWidgets.TextOf(number),
-                null,
-                tooltip
-            );
+            OfflineEmpire.Trivia fact = Bound(facts, index);
+            NodeVtable vtable = new NodeVtable
+            {
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => AgeWidgets.TextOf(title)),
+                    // A second name-kind part, so it speaks beside the title and before the figure
+                    // whatever else the node grows.
+                    GraphNodes.LabelPart(() => Pictured(fact)),
+                    GraphNodes.ValuePart(() => Counted(fact, number)),
+                },
+            };
+            vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);
             Cells.Add(_cells, tile, ControlId.For(tile, "victory:trivia/" + index), vtable);
+        }
+
+        /// <summary>
+        /// The trivia the game bound to the tile in slot <paramref name="index"/>, or null where the
+        /// selected empire kept none of that kind.
+        ///
+        /// The slot IS the kind: the panel makes one tile per <c>TriviaType</c> in the enum's order
+        /// and binds each fact into <c>trivias[(int)trivia.Type]</c>
+        /// (<c>VictoryScreenScoresPanel.CreateTrivias</c> :185-201, <c>BindTrivia</c> :197-203), so the
+        /// slot is asked for the fact of its own kind rather than for the n-th fact the empire kept -
+        /// which is also what makes a tile the selected empire has no fact for answer nothing instead
+        /// of naming the previous empire's, since the panel leaves such a tile holding the words it
+        /// last bound.
+        /// </summary>
+        private static OfflineEmpire.Trivia Bound(IList<OfflineEmpire.Trivia> facts, int index)
+        {
+            for (int i = 0; facts != null && i < facts.Count; i++)
+            {
+                OfflineEmpire.Trivia fact = facts[i];
+                if (fact != null && (int)fact.Type == index)
+                {
+                    return fact;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>The facts the tiles are drawn from: the SELECTED empire's, because picking an
+        /// empire is what rebinds them (<c>HighlightEmpire</c> :119-148) and the page is read as it is
+        /// drawn.</summary>
+        private static IList<OfflineEmpire.Trivia> Facts(VictoryScreenScoresPanel panel)
+        {
+            try
+            {
+                GuiRadioGroup group = panel.EmpireRadioGroup;
+                IList<AgeTransform> toggles =
+                    group == null || group.TogglesTable == null ? null : group.TogglesTable.Children;
+                int at = group == null ? -1 : group.CurrentSelection;
+                if (toggles == null || at < 0 || at >= toggles.Count || toggles[at] == null)
+                {
+                    return null;
+                }
+
+                VictoryScreenEmpireToggle toggle =
+                    toggles[at].GetComponent<VictoryScreenEmpireToggle>();
+                OfflineEmpire empire = toggle == null ? null : toggle.Empire;
+                return empire == null ? null : empire.Trivias;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("victory: finding the selected empire's trivia threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// WHO or WHAT a tile is about, where the tile says it in a picture and nowhere in words: the
+        /// party the empire followed longest, and the hero it ended with. Null for the two tiles whose
+        /// title already names what they counted and whose picture is the same one for every empire.
+        ///
+        /// The game throws the name away - the fact it saved carries the portrait's path and the
+        /// portrait's model, never the name (<c>OfflineEmpire.CreateTrivias</c> :239-299) - so the name
+        /// is the one the game's own picture belongs to, looked up once per portrait and localized at
+        /// speak time so a language change is heard.
+        /// </summary>
+        private string Pictured(OfflineEmpire.Trivia fact)
+        {
+            bool hero;
+            if (!Portrait(fact, out hero))
+            {
+                return null;
+            }
+
+            string title;
+            if (!_named.TryGetValue(fact.ImagePath, out title))
+            {
+                title = Owner(fact, hero);
+                _named[fact.ImagePath] = title;
+            }
+
+            return title == null ? null : AgeText.Title(title);
+        }
+
+        /// <summary>Whether a fact's picture is a PORTRAIT - a party's or a hero's - rather than the
+        /// same generic symbol every empire's tile of that kind draws, and which of the two it is. Only
+        /// the two portrait kinds carry a picture the name can be recovered from: the other two store
+        /// the tile kind's own icon, which belongs to the tile and says nothing about the
+        /// empire.</summary>
+        private static bool Portrait(OfflineEmpire.Trivia fact, out bool hero)
+        {
+            hero = fact != null && fact.Type == OfflineEmpire.TriviaType.Hero;
+            return fact != null
+                && !string.IsNullOrEmpty(fact.ImagePath)
+                && (hero || fact.Type == OfflineEmpire.TriviaType.Politics);
+        }
+
+        /// <summary>
+        /// The localization key of the name the tile's portrait belongs to, or null where nothing in
+        /// the game's data owns it.
+        ///
+        /// The fact copied its portrait and its model straight off ONE gui element
+        /// (<c>CreateTrivias</c> :262-264 and :288-291), so the element that has them back is the one
+        /// the name is on. The model is what is matched on first: it is a prefab path naming one party
+        /// or one hero, and only the two portrait-bearing element kinds have one at all, where the
+        /// large icon is a texture other kinds of element share - the Explorations tile's picture
+        /// answers to two unrelated elements, which is why the search is confined to the element kind
+        /// the tile's own kind goes with and why the icon is only the fallback for a portrait whose
+        /// element was given no model.
+        ///
+        /// One scan of the gui-element database per portrait, and the answer is kept: the database is
+        /// ten thousand elements and this is asked while a tile is read.
+        /// </summary>
+        private static string Owner(OfflineEmpire.Trivia fact, bool hero)
+        {
+            try
+            {
+                Amplitude.Unity.Gui.GuiElement[] all =
+                    Gui.GuiElementsDatabase == null ? null : Gui.GuiElementsDatabase.GetValues();
+                Amplitude.Unity.Gui.GuiElement pictured = null;
+                for (int i = 0; all != null && i < all.Length; i++)
+                {
+                    string model;
+                    if (!Portrays(all[i], hero, out model))
+                    {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(fact.ModelPath) && model == fact.ModelPath)
+                    {
+                        return all[i].Title;
+                    }
+
+                    if (pictured == null && Large(all[i]) == fact.ImagePath)
+                    {
+                        pictured = all[i];
+                    }
+                }
+
+                return pictured == null ? null : pictured.Title;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("victory: naming a trivia tile's picture threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>Whether an element is of the kind that carries the portrait a hero or a party tile
+        /// draws, and the model it names if so.</summary>
+        private static bool Portrays(
+            Amplitude.Unity.Gui.GuiElement element,
+            bool hero,
+            out string model
+        )
+        {
+            model = null;
+            if (hero)
+            {
+                HeroGuiElement one = element as HeroGuiElement;
+                if (one == null)
+                {
+                    return false;
+                }
+
+                model = one.ModelPath;
+                return true;
+            }
+
+            PoliticsGuiElement party = element as PoliticsGuiElement;
+            if (party == null)
+            {
+                return false;
+            }
+
+            model = party.ModelPath;
+            return true;
+        }
+
+        /// <summary>The path of the big picture an element stands for, which is the size the two
+        /// portrait tiles are drawn at.</summary>
+        private static string Large(Amplitude.Unity.Gui.GuiElement element)
+        {
+            return element.Icons == null ? null : element.Icons[Gui.ImageSize.Large];
+        }
+
+        /// <summary>
+        /// The tile's number in the unit its little symbol says it is in, or the bare figure where the
+        /// symbol is the tile's own picture rather than a unit.
+        ///
+        /// Two of the four tiles draw a number whose unit is a picture: the party tile counts TURNS
+        /// and the hero tile gives a LEVEL. A count and its noun are one counted phrase in every
+        /// language the mod speaks (<see cref="ES2.Speech.IconCounts"/>), and the word for a hero's
+        /// level is the game's own, read from the one place the mod reads it
+        /// (<see cref="HeroCards.LevelCaption"/>). A figure that is not a whole non-negative number is
+        /// left exactly as it was drawn.
+        /// </summary>
+        private static string Counted(OfflineEmpire.Trivia fact, AgeTransform number)
+        {
+            string drawn = AgeWidgets.TextOf(number);
+            int value;
+            if (
+                fact == null
+                || string.IsNullOrEmpty(drawn)
+                || !int.TryParse(
+                    drawn.Trim(),
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out value
+                )
+            )
+            {
+                return drawn;
+            }
+
+            if (fact.Type == OfflineEmpire.TriviaType.Politics)
+            {
+                return ModStrings.Plural(
+                    ModStrings.IconTurnCount,
+                    ModStrings.IconTurnsCount,
+                    value
+                );
+            }
+
+            if (fact.Type != OfflineEmpire.TriviaType.Hero)
+            {
+                return drawn;
+            }
+
+            string caption = HeroCards.LevelCaption();
+            return caption == null
+                ? drawn
+                : new MessageBuilder().Fragment(caption).Fragment(drawn).Build();
         }
 
         // ---- 3 and 4. the two selectors ----
