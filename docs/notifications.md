@@ -251,16 +251,25 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   as running from the moment it is started, its start delay included, so the staggered child
   answers for itself from the first frame if the subtree is asked. A re-show takes the other
   branch — `ResetAllModifiers(toStart: false)` puts everything straight at its end state — and is
-  ready with nothing left to animate. **Mod policy**: the screen arrives when the popup has
-  SETTLED, not when it is ready (`NotificationScreen.Arrived`) — every named transform visible
-  with nothing still animating anywhere under it, or a cap of ready frames passed — so the cursor
-  lands on the words. Two measured traps in that walk. A transform the game has switched off is
-  skipped: the engine stops updating a hidden transform's modifiers entirely
+  ready with nothing left to animate. **Mod policy**: the mod FINISHES the fade the frame the game
+  starts it, so the ready frame is a drawn popup and the screen arrives on it as it always did — a
+  postfix on `OnEndShow` making the re-show branch's own call,
+  `ResetAllModifiers(toStart: false, recursive: true, applyValue: true)`, on each named transform
+  (`UI.NotificationArrival`). Two measured limits of that. A prefab that animates something it did
+  NOT name still fades that part in — the alliance-update window starts its rename and member
+  groups by hand after the base call. And a named transform whose animation is a TYPEWRITER is put
+  at an end the engine does not paint: `AgeModifier.ResetToEnd` applies no value, and only
+  `AgePrimitiveLabel.Awake` ever puts `CurrentLine` back to -1, so the label keeps the zero
+  character count the restart left on it and draws nothing at all (measured 2026-09-16 on the
+  new-unlocked-content popup's lore panel). Six of the sixty-nine carry a typewriter inside a
+  named transform: new unlocked content, new downloadable content, metaplot begun, technology
+  unlocked, empire introduction, diplomatic interaction. What the mod READS is untouched either
+  way — it reads the label's text, which is whole from the first frame. One more engine fact from
+  the same measurements: the engine stops updating a hidden transform's modifiers entirely
   (`AgeTransform.UpdateHierarchy` returns before `UpdateModifiers`), so one caught half way
   through when its branch was hidden reports itself running for the rest of the session — four of
   the sixty-nine carry one, each a scroll bar's thumb frozen mid colour-switch inside a panel the
-  window had hidden. And full opacity is never required: the downloadable-content popup's tutorial
-  wave is a named transform the prefab parks at alpha 0 and leaves there.
+  window had hidden.
 - **A popup can state a whole sentence with a PICTURE whose only words are its tooltip** — the
   new-content popup's tutorial badge, drawn beside Minimize, reading "The Expert tutorial has been
   enabled to help with the new features." The prefab leaves `Set by code` on that tooltip's content

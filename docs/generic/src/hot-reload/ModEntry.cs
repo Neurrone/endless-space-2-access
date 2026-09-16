@@ -323,6 +323,10 @@ namespace ES2Access
             // themselves are re-asserted from the pump, because the manager holding them is built
             // per game.
             NotificationStrip.Install();
+            // And the popup itself is drawn in full the moment it opens rather than fading its
+            // words in after (see NotificationArrival), so the frame the game calls it ready is the
+            // frame there is something on it to land on.
+            NotificationArrival.Install();
             // The two things the game notices and puts on no bus at all: a fleet of the player's
             // reaching where it was sent, and somebody else's fleet going out of sight or standing
             // somewhere else this turn. Both feed the same notification pipeline.
@@ -1217,6 +1221,7 @@ namespace ES2Access
             // assembly is about to stop knowing about.
             Step("notification serials", NotificationSerials.Clear);
             Step("notification strip", NotificationStrip.Remove);
+            Step("notification arrival", NotificationArrival.Remove);
             // And the two detection points that feed it, each giving back its patch, its
             // subscription and what it was remembering about the galaxy.
             Step("fleet arrivals", FleetArrivals.Remove);
