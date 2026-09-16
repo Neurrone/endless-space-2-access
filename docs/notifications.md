@@ -233,17 +233,34 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   and the parity check a moment later is clean. No settled popup of the sixty-four paints fewer
   than four strings, so "paints nothing" is an early frame rather than a finding, and the auto-check
   defers on it (bounded, with a give-up line).
-- **A popup is READY several frames before it has written the shared description — and the cursor has
-  already landed by then.** Measured 2026-09-14 with a per-frame recorder over a
-  `NotificationNewDownloadableContent` arrival: the screen pushed on the ready frame with **7 nodes**
-  declared and the rest of the body, the description row among them, appeared **9 frames later**;
-  nothing moves the cursor afterwards, so the landing is decided by whatever the popup had drawn at
-  the push, and on the session's first arrival that was the browse arrow in the top strip. The split
-  is `OnBeginShow`, which writes a popup's OWN labels, against `Refresh`, which writes the shared
-  description. **Mod policy** (`NotificationScreen.Variants`, the new-content popup): where a popup
-  writes its identity into a label of its own, that label is its `Words` — it is the row drawn first
-  AND the one that exists when the cursor lands, so naming it settles reading order and landing at
-  once.
+- **A popup is READY several frames before what it says is on the screen — and the cursor has
+  already landed by then.** The text was written; it was HIDDEN and then FADED in. A popup the
+  player has not read yet is a FIRST show (`GuiNotificationManager.ShowGuiNotification` sets
+  `NotificationWindow.FirstShow = !AlreadyRead`, so this is the ordinary arrival, not a rare one),
+  and `OnBeginShow` then hides every transform the prefab named in `AnimateOnEndShowTransforms` —
+  a description or content group, or a mixed set naming labels, a pie chart, a table; forty-two of
+  the sixty-nine name some, twenty-seven none at all. `OnEndShow` makes them visible again and
+  starts their modifiers, and `GuiWindow.IsReady` asks only the WINDOW's own transform, so the
+  ready frame is an empty frame with a title. The fades are STAGGERED: measured 2026-09-16 with a
+  per-frame recorder over an `EventOnFleetNotificationWindow` arrival, `DescriptionGroup` went 0 →
+  1 over five ready frames with the description label inside it at nothing throughout, and the
+  label only started moving on the frame the group's own modifiers reported finished, reaching
+  alpha 1 four frames later — nine ready frames in all (the fades are time-based, so about half a
+  second each whatever the frame rate). A check that read only the named transforms' own
+  `ModifiersRunning` would call the popup settled four frames early; the engine reports a modifier
+  as running from the moment it is started, its start delay included, so the staggered child
+  answers for itself from the first frame if the subtree is asked. A re-show takes the other
+  branch — `ResetAllModifiers(toStart: false)` puts everything straight at its end state — and is
+  ready with nothing left to animate. **Mod policy**: the screen arrives when the popup has
+  SETTLED, not when it is ready (`NotificationScreen.Arrived`) — every named transform visible
+  with nothing still animating anywhere under it, or a cap of ready frames passed — so the cursor
+  lands on the words. Two measured traps in that walk. A transform the game has switched off is
+  skipped: the engine stops updating a hidden transform's modifiers entirely
+  (`AgeTransform.UpdateHierarchy` returns before `UpdateModifiers`), so one caught half way
+  through when its branch was hidden reports itself running for the rest of the session — four of
+  the sixty-nine carry one, each a scroll bar's thumb frozen mid colour-switch inside a panel the
+  window had hidden. And full opacity is never required: the downloadable-content popup's tutorial
+  wave is a named transform the prefab parks at alpha 0 and leaves there.
 - **A popup can state a whole sentence with a PICTURE whose only words are its tooltip** — the
   new-content popup's tutorial badge, drawn beside Minimize, reading "The Expert tutorial has been
   enabled to help with the new features." The prefab leaves `Set by code` on that tooltip's content

@@ -147,10 +147,23 @@ namespace ES2Access.Screens
         private const string BodyRegion = "notification:body";
         internal const string BottomRegion = "notification:bottom";
 
+        /// <summary>How deep into the pieces a popup fades in to look for something still moving.
+        /// The deepest of the sixty-nine measured is nine levels (the battle report's); this is the
+        /// stop that keeps a malformed tree from being walked forever.</summary>
+        private const int MaxAnimationDepth = 32;
+
         private GuiManager _gui;
         private NotificationWindow[] _windows;
         private NotificationWindow _showing;
         private bool _up;
+
+        // The arrival gate's memo: which popup the game is calling ready, since when, and whether
+        // what it draws has finished moving. Keyed on the window the game is showing and on its own
+        // readiness - hiding a popup to browse to the next one drops readiness, and the next one is
+        // waited out from scratch.
+        private NotificationWindow _arriving;
+        private int _arrivingSince;
+        private bool _arrived;
         private string _title;
         private string _description;
 
@@ -197,9 +210,12 @@ namespace ES2Access.Screens
         /// Ours from the moment a notification popup has finished animating in until the last one is
         /// gone.
         ///
-        /// The two halves are deliberate. Arriving waits out the animation, because the popup's own
-        /// labels still hold the previous notification's words until the game refreshes them and a
-        /// screen that arrived a frame early would announce them. Standing down does not wait for
+        /// The two halves are deliberate. Arriving waits out the animation
+        /// (<see cref="Arrived"/>), because the popup's own labels still hold the previous
+        /// notification's words until the game refreshes them, and because the content the cursor is
+        /// to land on is still fading up - a screen that arrived early would announce the old words,
+        /// or seat the player on a browse arrow because the text is not on the screen yet. Standing
+        /// down does not wait for
         /// anything: browsing to the next notification hides one popup and shows another, which
         /// starts a fresh animation, and a screen that asked "has it finished animating" again would
         /// stand down for the length of that fade and let the galaxy underneath announce itself
@@ -216,7 +232,7 @@ namespace ES2Access.Screens
             try
             {
                 NotificationWindow window = Current();
-                _up = window != null && (_up || Ready(window));
+                _up = window != null && (_up || Arrived(window));
                 return _up;
             }
             catch (Exception)
@@ -327,9 +343,9 @@ namespace ES2Access.Screens
         /// never sees.</summary>
         private const int SettleFrames = 2;
 
-        /// <summary>How many ready frames the watcher may keep asking for before the screen stops
-        /// offering the popup: about two seconds of them, which is several times the longest arrival
-        /// animation measured.</summary>
+        /// <summary>How many ready frames a popup gets before it is taken as arrived whatever it is
+        /// doing - the cap on both waits, <see cref="Arrived"/>'s and the watcher's: about two
+        /// seconds of them, which is several times the longest arrival animation measured.</summary>
         private const int MaxSettleWaits = 120;
 
         private NotificationWindow _settling;
@@ -418,6 +434,7 @@ namespace ES2Access.Screens
             _description = null;
             _settling = null;
             _settleWaits = 0;
+            _arriving = null;
         }
 
         /// <summary>Walking to the next notification swaps the words inside the same popup - or
@@ -428,7 +445,7 @@ namespace ES2Access.Screens
             try
             {
                 NotificationWindow window = Current();
-                if (window != null && !Ready(window))
+                if (window != null && !Arrived(window))
                 {
                     // Mid-animation the popup's labels are the skeleton's rather than this
                     // notification's - the title still a template with its hole in it - and nothing is
@@ -1228,8 +1245,9 @@ namespace ES2Access.Screens
             }
         }
 
-        /// <summary>Showing and done animating, which is when its labels hold this notification's
-        /// words rather than the last one's.</summary>
+        /// <summary>Showing and done animating ITSELF, which is when its labels hold this
+        /// notification's words rather than the last one's. The window's own transform and nothing
+        /// else - what it is showing INSIDE that window is <see cref="Arrived"/>'s question.</summary>
         private static bool Ready(NotificationWindow window)
         {
             try
@@ -1240,6 +1258,154 @@ namespace ES2Access.Screens
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Showing, and everything it is showing is on the screen - which is when the popup can be
+        /// read and landed on.
+        ///
+        /// Ready is the window; this is its CONTENT. A popup the player has not read yet is shown for
+        /// the first time (<c>FirstShow</c> is the game's own <c>!AlreadyRead</c>), and a first show
+        /// hides the pieces the prefab named as its arrival animation and then fades them up after
+        /// the window itself is ready - so on the ready frame a popup can be an empty frame with a
+        /// title, and the cursor, which lands once and is never moved again, would land on the browse
+        /// arrow in the top strip instead of on what the notification says. A re-show has no such
+        /// animation: the game puts those same pieces straight at their end state, and this answers
+        /// yes on the ready frame exactly as before. So does a popup that named no pieces at all -
+        /// twenty-seven of the sixty-nine - which is why waiting costs them nothing.
+        ///
+        /// The cap is what a prefab whose animation never finishes gets: the popup is pushed anyway
+        /// after <see cref="MaxSettleWaits"/> ready frames, because a notification the player never
+        /// hears is worse than one they hear late.
+        ///
+        /// Cost: the walk below runs only on the ready frames BEFORE the answer is yes - a handful
+        /// per arrival - and never again while the popup is up, because the answer for a window is
+        /// remembered until the game stops calling it ready, which is what hiding it for a browse
+        /// does. A popup that named no pieces never walks anything at all.
+        /// </summary>
+        private bool Arrived(NotificationWindow window)
+        {
+            if (window == null || !Ready(window))
+            {
+                _arriving = null;
+                return false;
+            }
+
+            if (!ReferenceEquals(_arriving, window))
+            {
+                _arriving = window;
+                _arrivingSince = Time.frameCount;
+                _arrived = false;
+            }
+
+            if (_arrived)
+            {
+                return true;
+            }
+
+            _arrived =
+                !Animating(window) || Time.frameCount - _arrivingSince >= MaxSettleWaits;
+            return _arrived;
+        }
+
+        /// <summary>
+        /// Whether the popup is still fading in what it named as its arrival animation
+        /// (<c>AnimateOnEndShowTransforms</c>, which every prefab fills in for itself: a description
+        /// group, a lore group and an effects group, a header and a pie chart).
+        ///
+        /// A piece the game has not shown yet is the first half - a first show hides all of them
+        /// before the window is ready and only makes them visible again once it is. The second half
+        /// is asked of the piece's whole SUBTREE rather than of the piece, because the prefabs
+        /// STAGGER: measured on the fleet popup, the description stayed at nothing for the whole of
+        /// the description group's own five-frame fade and only started moving on the frame the
+        /// group's modifiers reported finished, four frames before the words were really there. A
+        /// check that read only the named pieces' own flags would have called the popup arrived with
+        /// its text still invisible. The engine reports a modifier as running from the moment it is
+        /// started, its start delay included, so the staggered child answers for itself from the
+        /// first frame.
+        ///
+        /// Alpha is deliberately not part of it. Requiring the pieces to reach full opacity reads
+        /// as never-arriving on a piece the prefab parks at nothing - the downloadable-content
+        /// popup's tutorial wave is visible at alpha 0 and stays there - and every frame the fades
+        /// are actually running is already covered by the modifiers themselves.
+        /// </summary>
+        private static bool Animating(NotificationWindow window)
+        {
+            try
+            {
+                AgeTransform[] animated = window.AnimateOnEndShowTransforms;
+                if (animated == null)
+                {
+                    return false;
+                }
+
+                for (int i = 0; i < animated.Length; i++)
+                {
+                    AgeTransform piece = animated[i];
+                    if (piece == null)
+                    {
+                        continue;
+                    }
+
+                    if (!AgeWidgets.SwitchedOn(piece) || Running(piece, 0))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: reading the arrival animation threw: " + e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Whether anything the player can see under this widget is still being animated - the
+        /// engine's own per-transform answer, asked all the way down. Bounded by the subtree the
+        /// prefab named: measured over all sixty-nine popups, the largest is the battle report's at
+        /// 217 transforms nine levels deep and the average is 27.
+        ///
+        /// A branch the game has switched OFF is not descended into, and that is not an optimisation.
+        /// The engine stops updating a hidden transform's modifiers altogether
+        /// (<c>AgeTransform.UpdateHierarchy</c> returns before <c>UpdateModifiers</c> when the
+        /// transform is not visible), so one caught half way through when its branch was hidden
+        /// reports itself running for the rest of the session: measured at rest on four of the
+        /// sixty-nine popups, each a scroll bar's thumb inside a panel the window had hidden, each
+        /// frozen half way through a tenth-of-a-second colour switch. Asking those would leave the
+        /// battle report waiting out the cap on every arrival it ever makes. Alpha, by contrast, is
+        /// deliberately not asked: a piece FADING in sits at alpha zero on the first frames, which
+        /// is exactly what this is here to wait for.
+        /// </summary>
+        private static bool Running(AgeTransform widget, int depth)
+        {
+            if (widget == null || depth > MaxAnimationDepth || !AgeWidgets.SwitchedOn(widget))
+            {
+                return false;
+            }
+
+            if (widget.ModifiersRunning)
+            {
+                return true;
+            }
+
+            List<AgeTransform> children = widget.Children;
+            if (children == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (Running(children[i], depth + 1))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Every notification popup there is. They are built with the rest of the interface

@@ -379,9 +379,6 @@ belong in the files above.
 - `screen.victory` announces the raw key `%VictoryScreenPlayingPlayerTitle` — the mod's
   lookup does not resolve it even though the drawn label localizes (the AGE
   draw-time-localization trap, live-caught).
-- Notification arrival-focus race: a popup's first build can run before its description
-  label is visible, landing arrival focus on the first control instead of the words (why
-  the elimination sentence had to ride the screen name).
 - Departing-fade stand-down: the spurious "unavailable" frame when a game confirmation
   opens over a mod screen (general fix).
 - The star-system page declares nothing while it is BETWEEN systems, so the cursor migrates
