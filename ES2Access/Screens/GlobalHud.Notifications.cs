@@ -70,7 +70,7 @@ namespace ES2Access.Screens
 
                     GuiNotification it = notification;
                     NodeVtable vtable = GraphNodes.Button(
-                        () => AgeText.Clean(it.GetTitle()),
+                        () => NotificationText.Title(it),
                         () => Open(it),
                         null,
                         null
@@ -235,7 +235,7 @@ namespace ES2Access.Screens
                             }
 
                             NodeVtable vtable = GraphNodes.Button(
-                                () => AgeText.Clean(it.GetTitle()),
+                                () => NotificationText.Title(it),
                                 () => Open(it)
                             );
                             vtable.OnRightClick = () => Dismiss(it);

@@ -129,6 +129,19 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   setter reporting that some popup just went up or down (:41-48). Mod policy: `Refresh` is never
   spoken; one would repeat the news and the other would read the title of every popup the player
   opens.
+- **A notification whose own `GetTitle()` throws leaves BOTH shared labels holding the PREVIOUS
+  notification's words.** A notification writes its text by formatting the entity it names into a
+  template (`NotificationCuriosityFailed.GetTitle` :65-68 reads `CuriosityController.LocalizedName`),
+  so once that entity is gone the game's own code throws; `NotificationWindow.Refresh` (:239-252)
+  writes the title first and the description second, and the throw takes the whole method with it, so
+  neither label is rewritten. Measured 2026-09-16: opening a `NotificationFleetActionReady` whose
+  fleet had gone showed - and the mod spoke - an outpost notification's title and sentence. The
+  game's strip throws in the same place (`NotificationItem.Bind`), leaving the pooled icon's tooltip
+  on the previous notification's title too. **Mod policy** (owner ruling 2026-09-16,
+  `ES2Access/UI/NotificationText.cs`): a part the game cannot write reads as the EMPTY STRING, never
+  as what is drawn - empty says plainly that something went wrong, where the drawn label says
+  something false. The two parts are caught separately, and the verdict is remembered per
+  notification instance so the game is entered once and the warning written once.
 
 ## What a notification popup draws
 

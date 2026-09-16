@@ -1220,6 +1220,8 @@ namespace ES2Access
             // The serials the two notification stops key their rows on name objects of a game this
             // assembly is about to stop knowing about.
             Step("notification serials", NotificationSerials.Clear);
+            // And so do the notifications remembered as unable to write their own words.
+            Step("notification text", NotificationText.Clear);
             Step("notification strip", NotificationStrip.Remove);
             Step("notification arrival", NotificationArrival.Remove);
             // And the two detection points that feed it, each giving back its patch, its

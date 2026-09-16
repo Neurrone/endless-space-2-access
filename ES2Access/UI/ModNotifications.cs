@@ -512,8 +512,10 @@ namespace ES2Access.UI
                 }
 
                 // The game's own titles are drawn strings and carry the markup drawn strings carry;
-                // the mod's own are already plain, and Clean leaves those alone.
-                string line = AgeText.Clean(arrived.GetTitle());
+                // the mod's own are already plain, and Clean leaves those alone. A notification whose
+                // own title the game cannot write answers nothing here, and an arrival with no line to
+                // say is not announced at all (below) - see <see cref="NotificationText"/>.
+                string line = NotificationText.Title(arrived);
                 if (!string.IsNullOrEmpty(line))
                 {
                     Arrival arrival = new Arrival();

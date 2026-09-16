@@ -1081,6 +1081,13 @@ namespace ES2Access.Screens
         /// notification would have written on one. The fallback is for a label the popup DRAWS and has
         /// not filled; a popup with nowhere to draw a description never showed the player that sentence
         /// under any circumstances, and reading it out is inventing a line the game left out.
+        ///
+        /// The one part the drawn label does NOT answer for is the part the game could not write at
+        /// all. <c>NotificationWindow.Refresh</c> (:239-252) writes the title into the shared label and
+        /// then the description, so a notification whose title throws leaves BOTH labels holding the
+        /// PREVIOUS notification's words - and the popup would open reading somebody else's sentence.
+        /// So the notification is asked first (<see cref="NotificationText"/>), and a part it cannot
+        /// write is empty here, never what is drawn.
         /// </summary>
         private static string Text(NotificationWindow window, PropertyInfo label, bool title)
         {
@@ -1091,6 +1098,16 @@ namespace ES2Access.Screens
 
             try
             {
+                // Asked before anything drawn is looked at, because the answer decides whether what is
+                // drawn is this notification's at all. A notification that has already thrown once
+                // answers from a memo without entering the game's code again.
+                bool failed;
+                string written = NotificationText.Read(window.GuiNotification, title, out failed);
+                if (failed)
+                {
+                    return string.Empty;
+                }
+
                 AgePrimitiveLabel drawn = title
                     ? Value(window, label) as AgePrimitiveLabel
                     : DescriptionLabel(window);
@@ -1109,15 +1126,11 @@ namespace ES2Access.Screens
                     return text;
                 }
 
-                GuiNotification notification = window.GuiNotification;
-                if (notification == null)
+                if (window.GuiNotification == null)
                 {
                     return null;
                 }
 
-                string written = AgeText.Clean(
-                    title ? notification.GetTitle() : notification.GetDescription()
-                );
                 return title || !Unwritten(written) ? written : null;
             }
             catch (Exception e)
