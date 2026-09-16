@@ -91,11 +91,8 @@ belong in the files above.
   Coverage() run. (1) The battle family — setup, cinematic (`SpaceBattleScreen`), report,
   target selection, ground battle — needs a scratch game engaged with a pirate/major fleet
   (a pirate fleet was one turn away when the 2026-08-24 scratch instance was lost; obey the
-  crash rules in `docs/dev-loop.md`). (2) The victory family — `VictoryAchievedScreen`, the
-  score screen, the outro cutscene — plus the journal's first finished-game row (which also
-  unlocks measuring the journal filter menu's effect on rows and the per-column filter
-  buttons with rows): one finished scratch game via the `OrderEliminateEmpire` route
-  closes all of it. (3) A cutscene sighting — no faction intro played on the
+  crash rules in `docs/dev-loop.md`). (2) A cutscene sighting — the outro was sighted
+  2026-09-17 through the `walks/end-game/` routes, but no faction intro played on the
   2026-08-24 scratch launch; the colonization-cutscene route (a colony ship settling) is the
   untried alternative. Pending-live checks riding these fixtures: the negotiation window's
   Close button (needs a diplomatic contact), the merged-fleet-lozenge aim re-commit (two
