@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 
 namespace ES2Access.UI
@@ -31,11 +32,18 @@ namespace ES2Access.UI
     /// does next - the academy portrait's lip sync among it (<c>DiplomaticInteractionNotification
     /// Window.OnEndShow</c> :382-398), which is left to play as it always did.
     ///
-    /// Two limits, both measured rather than guessed. A prefab that animates something it did NOT
-    /// name - the alliance update window starts its rename and member groups by hand after the base
-    /// call - still fades that part in. And a piece whose animation is a TYPEWRITER is reset to an
-    /// end the engine does not paint: <c>AgeModifier.ResetToEnd</c> applies no value, so the label
-    /// keeps the character count the restart left on it. Both are in the notification notes.
+    /// One limit, measured rather than guessed: a prefab that animates something it did NOT name -
+    /// the alliance update window starts its rename and member groups by hand after the base call -
+    /// still fades that part in. It is in the notification notes.
+    ///
+    /// The one animation that is NOT finished is the one that types its text out a letter at a time,
+    /// which is set going again after the reset. A typewriter does not fade a label in, it moves the
+    /// character counter the renderer draws up to, and <c>AgeModifier.ResetToEnd</c> stops a modifier
+    /// without applying its value - so a typewriter the game had just started is left stopped at zero
+    /// characters and its label draws nothing at all, for as long as the popup is up (measured on the
+    /// new-unlocked-content popup's lore panel). Six popups put one inside a named piece. Typing is
+    /// also the whole point of those six, so they are left typing exactly as the game starts them,
+    /// with everything around the text drawn in full from the first frame.
     /// </summary>
     internal static class NotificationArrival
     {
@@ -79,6 +87,7 @@ namespace ES2Access.UI
                     if (piece != null)
                     {
                         piece.ResetAllModifiers(toStart: false, recursive: true, applyValue: true);
+                        KeepTyping(piece);
                     }
                 }
             }
@@ -87,6 +96,39 @@ namespace ES2Access.UI
                 // Runs inside the window's own show: say so once rather than once a popup, and leave
                 // the arrival fading as the game drew it.
                 Patches.Report("notifications: finishing the popup's arrival threw", e);
+            }
+        }
+
+        /// <summary>
+        /// Starts the typewriters under one named piece over again, undoing the reset for them alone.
+        /// The game has just started every modifier under this piece
+        /// (<c>NotificationWindow.OnEndShow</c> :167-177), so a typewriter found here is one the
+        /// reset stopped a moment ago, and starting it puts it back exactly where that left it.
+        ///
+        /// Walks the piece's AGE children rather than the GameObject's, because that is the same
+        /// subtree - and the same order - the reset itself covered
+        /// (<c>AgeTransform.ResetAllModifiers</c>), and a modifier sits on the transform's own object
+        /// (<c>AgeTransform.Awake</c> reads them with <c>GetComponents</c>). Cost: once per popup that
+        /// is opening for the first time, over the handful of transforms its prefab named - never on a
+        /// frame that is not opening a popup. A prefab that names both a label and the group holding
+        /// it starts that one typewriter twice, in the same frame and before anything is drawn, which
+        /// leaves it exactly where starting it once would have (the new-unlocked-content popup does).
+        /// </summary>
+        private static void KeepTyping(AgeTransform piece)
+        {
+            AgeModifierTypewriter typewriter = piece.GetComponent<AgeModifierTypewriter>();
+            if (typewriter != null)
+            {
+                typewriter.StartAnimation();
+            }
+
+            List<AgeTransform> children = piece.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (children[i] != null)
+                {
+                    KeepTyping(children[i]);
+                }
             }
         }
     }

@@ -255,15 +255,18 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   starts it, so the ready frame is a drawn popup and the screen arrives on it as it always did — a
   postfix on `OnEndShow` making the re-show branch's own call,
   `ResetAllModifiers(toStart: false, recursive: true, applyValue: true)`, on each named transform
-  (`UI.NotificationArrival`). Two measured limits of that. A prefab that animates something it did
-  NOT name still fades that part in — the alliance-update window starts its rename and member
-  groups by hand after the base call. And a named transform whose animation is a TYPEWRITER is put
-  at an end the engine does not paint: `AgeModifier.ResetToEnd` applies no value, and only
-  `AgePrimitiveLabel.Awake` ever puts `CurrentLine` back to -1, so the label keeps the zero
-  character count the restart left on it and draws nothing at all (measured 2026-09-16 on the
-  new-unlocked-content popup's lore panel). Six of the sixty-nine carry a typewriter inside a
-  named transform: new unlocked content, new downloadable content, metaplot begun, technology
-  unlocked, empire introduction, diplomatic interaction. What the mod READS is untouched either
+  (`UI.NotificationArrival`). Two measured things the reset does not simply finish. A prefab that
+  animates something it did NOT name still fades that part in — the alliance-update window starts its rename and member
+  groups by hand after the base call. And a named transform whose animation TYPES its text out is
+  started over again after the reset instead of being finished by it: `AgeModifier.ResetToEnd`
+  applies no value, and a typewriter puts the label's `CurrentLine` back to -1 — the count that
+  draws every word — only when it COMPLETES, so a reset leaves the label stopped at the zero count
+  the start had just written and drawing nothing at all for as long as the popup is up (measured
+  2026-09-16, before the restart, on the new-unlocked-content popup's lore panel and on an academy
+  mood message). Six of the sixty-nine carry a typewriter inside a named transform: new unlocked
+  content, new downloadable content, metaplot begun, technology unlocked, empire introduction,
+  diplomatic interaction — all six left typing as the game starts them, with everything around the
+  text drawn in full from the first frame. What the mod READS is untouched either
   way — it reads the label's text, which is whole from the first frame. One more engine fact from
   the same measurements: the engine stops updating a hidden transform's modifiers entirely
   (`AgeTransform.UpdateHierarchy` returns before `UpdateModifiers`), so one caught half way
