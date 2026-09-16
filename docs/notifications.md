@@ -292,7 +292,13 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   and the window overwrites it only while it means to show the badge, so the words and the
   visibility are one question (`NotificationScreen.Variants`, `Notes`).
 - **`NotificationItem.Bind` sets the icon tooltip's content to `GetTitle()`** — a tooltip
-  section on any notification row is always the row's own title again.
+  section on any notification row is always the row's own title again, and when that `GetTitle()`
+  throws the bind never reaches the write, so the POOLED icon keeps the tooltip its slot's previous
+  occupant left (measured 2026-09-16: a `NotificationCuriosityFailed` row reviewed as "Another
+  empire colonized the system Dusay"). Mod policy, the same ruling as the row's name: a row whose
+  title the reader reports failed declares NO tooltip section — an empty buffer, never the stale
+  one (`GlobalHud.Notifications`, asked of `NotificationText.Failed` so the build enters no game
+  code).
 - **The Laws Cancelled prefab hangs TWO tooltips per line** — the real `Law` dossier on
   `CancelledLawLine000` itself and a completely empty one (no class, no content, no target)
   on `LawDetails/Icon` — and wraps the whole line in `LawDetails`, a group spanning both

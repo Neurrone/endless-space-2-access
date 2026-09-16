@@ -80,7 +80,19 @@ namespace ES2Access.Screens
                     // The strip is bare icons: nothing on it says the row can be thrown away, and the
                     // game's own right click is the only way to do it without opening the popup first.
                     NodeHints.Add(vtable, ModStrings.HintDismiss, UiActions.RightClick);
-                    vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
+                    // The icon's tooltip is the GAME's own, written in NotificationItem.Bind from
+                    // GetTitle() - so when that throws the bind never reaches the write and the
+                    // pooled icon is still carrying the tooltip the previous occupant of its slot
+                    // left (measured 2026-09-16: a curiosity row whose title the game could not
+                    // write reviewed as "Another empire colonized the system Dusay"). A title the
+                    // game cannot write therefore leaves nothing worth reading here either, so the
+                    // row declares no tooltip section at all rather than a stranger's sentence -
+                    // the same ruling as the row's own name. Asked of the memo, never of the
+                    // notification: this runs in a build, once a frame per row.
+                    AgeTooltip tooltip = NotificationText.Failed(it, true)
+                        ? null
+                        : IconTooltip(it, items);
+                    vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(tooltip), null);
                     // Synthesized from the game's own notification list, not read off a widget: the
                     // strip's icons are pooled and the walk holds the NOTIFICATION, so there is
                     // nothing here whose paint state could vouch for the row. The enumeration is

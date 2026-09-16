@@ -29,7 +29,7 @@ ES2Access/Screens/Galaxy/SystemDossiers.cs | 1 | Func<IList<string>> lines = Age
 ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | return string.IsNullOrEmpty(named) ? CardActions.FirstLine(tip) : named;
 ES2Access/Screens/GlobalHud.FactionPanels.cs | 1 | return string.IsNullOrEmpty(title) ? CardActions.FirstLine(tip) : title;
 
-ES2Access/Screens/GlobalHud.Notifications.cs | 1 | vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(IconTooltip(it, items)), null);
+ES2Access/Screens/GlobalHud.Notifications.cs | 1 | vtable.Sections = GraphNodes.Sections(GraphNodes.TooltipDetails(tooltip), null);
 
 ES2Access/Screens/GlobalHud.Quest.cs | 1 | GraphNodes.TooltipDetails(AgeWidgets.Raw(panel.AgeTransform)),
 

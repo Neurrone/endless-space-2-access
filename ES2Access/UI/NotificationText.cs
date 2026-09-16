@@ -104,6 +104,27 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>
+        /// Whether the game has ALREADY been caught unable to write this part of this notification.
+        ///
+        /// The question a BUILD is allowed to ask, because it never enters the game's code: a build
+        /// runs every frame, and asking the notification itself there would re-format the sentence -
+        /// and, for the very notifications this is about, throw - once a frame. It answers only for
+        /// what <see cref="Read"/> has already tried, so a part nobody has read yet is not yet known
+        /// to have failed, and the first build after the row is first read is where the verdict
+        /// arrives.
+        /// </summary>
+        public static bool Failed(GuiNotification notification, bool title)
+        {
+            int known;
+            if (notification == null || !Failures.TryGetValue(notification, out known))
+            {
+                return false;
+            }
+
+            return (known & (title ? TitleFailed : DescriptionFailed)) != 0;
+        }
+
         /// <summary>Forget every notification that could not write its own words: they belong to a game
         /// this assembly is about to stop knowing about.</summary>
         public static void Clear()
