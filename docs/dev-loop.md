@@ -55,6 +55,10 @@ mutes voicing but `/speech` still captures.
   ~60 s whatever is asked for, so a longer silence is proved by repeating the poll
 - `POST /loadsave` — body = save title (empty = newest); retryable `[not ready]` until it acts —
   except from a lobby, where not-ready is the answer until the lobby is left, never a retry.
+  A second never-a-retry: the main menu can come back shown but not ready after a won game is
+  left while its outro cutscene is still playing, and the route then answers `[not ready]`
+  forever - hide and re-show `MainMenuScreen` to recover (the end-game walk routes avoid it by
+  letting the cutscene finish).
   Issued while the planet-overview page or a notification popup is up it can wedge the loading
   window at "Game launched and ready" indefinitely (`wait-game.ps1 ingame` then times out silently
   with exit 0); re-issuing the same `POST /loadsave` recovers in ~8 s — measured for both, and for
