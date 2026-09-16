@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using ES2Access.Core.Speech;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 using ES2Access.UI;
@@ -49,7 +50,9 @@ namespace ES2Access.Screens
             List<Control> controls,
             List<Control> inside,
             AgeTransform words,
-            List<AgeTransform> lines = null
+            List<AgeTransform> lines,
+            Headings heads,
+            ref int open
         )
         {
             List<Item> items = new List<Item>();
@@ -58,7 +61,7 @@ namespace ES2Access.Screens
                 items.Add(new Item { Widget = control.Widget, Control = control, IsControl = true });
             }
 
-            foreach (List<Line> row in DrawnRows(window, controls, words, lines))
+            foreach (List<Line> row in DrawnRows(window, controls, words, lines, heads))
             {
                 AgeTransform group = GroupOf(row, lines);
                 items.Add(
@@ -66,12 +69,31 @@ namespace ES2Access.Screens
                 );
             }
 
+            // A block the popup drew nothing in is still a block: placed by its heading, which is the
+            // only part of it on screen, and given the one row there is to put in it. Only while the
+            // popup is DRAWING that heading - a report folded away keeps every word of its headings at
+            // alpha 0, and a block nobody can see is not a block the player is in.
+            AgeTransform root = Root(window);
+            List<int> empty = heads == null ? null : heads.Empty();
+            for (int i = 0; empty != null && i < empty.Count; i++)
+            {
+                AgeTransform heading = heads.Widget(empty[i]);
+                // Content: whether the popup is DRAWING this heading, which decides whether there is a
+                // block to be in at all. A report folded away keeps its headings Visible at alpha 0
+                // (docs/notifications.md, the fade), so the gate's visibility walk answers yes and a
+                // collapsed report would name two blocks and say "None" in both.
+                if (Painted(heading, root))
+                {
+                    items.Add(new Item { Widget = heading, IsEmpty = true, Which = empty[i] });
+                }
+            }
+
             if (items.Count == 0)
             {
+                Close(builder, ref open);
                 return;
             }
 
-            AgeTransform root = Root(window);
             for (int i = 0; i < items.Count; i++)
             {
                 Item item = items[i];
@@ -92,27 +114,308 @@ namespace ES2Access.Screens
             for (int index = 0; index < items.Count; index++)
             {
                 Item item = items[index];
-                object here = cards == null ? BodyRegion : RegionOf(cards, item.Widget);
+
+                // The block this row was drawn in, where the popup captioned one. A heading names what
+                // it heads: the rows under it are read inside a level of their own, announced as focus
+                // enters it, and jumped to as a region of its own - so the caption is heard once, where
+                // the player meets what it is about, rather than as a row in front of it.
+                int under = item.IsEmpty
+                    ? item.Which
+                    : heads == null ? -1 : heads.Over(item.Widget);
+                if (under != open)
+                {
+                    Close(builder, ref open);
+                    Open(builder, heads, under, ref open);
+                    region = builder.Region;
+                }
+
+                object here =
+                    open >= 0
+                        ? heads.Region(open)
+                        : cards == null ? BodyRegion : RegionOf(cards, item.Widget);
                 if (!Equals(here, region))
                 {
                     builder.SetRegion(here);
                     region = here;
                 }
 
-                ControlId id = item.IsControl
-                    ? Declare(builder, item.Control)
-                    : AddRow(builder, item.Lines, index, item.Group, met);
+                ControlId id = item.IsEmpty
+                    ? Nothing(builder, item.Widget, heads.Region(item.Which))
+                    : item.IsControl
+                        ? Declare(builder, item.Control)
+                        : AddRow(builder, item.Lines, index, item.Group, met, heads);
                 if (index == 0)
                 {
                     builder.SetStart(id);
                 }
             }
+
+            Close(builder, ref open);
         }
 
         private static ControlId Declare(GraphBuilder builder, Control control)
         {
             Add(builder, control);
             return IdOf(control);
+        }
+
+        /// <summary>The one row of a block the game filled with nothing, standing under the heading that
+        /// names it (owner ruling 2026-08-28, the same answer the battle report's empty wreckage blocks
+        /// give). "None" rather than the figure: the heading already carries it - "Improvements
+        /// destroyed: 0" - and a row repeating it reads the nought twice.</summary>
+        private static ControlId Nothing(GraphBuilder builder, AgeTransform heading, object key)
+        {
+            NodeVtable vtable = new NodeVtable
+            {
+                ControlType = ControlTypes.Text,
+                Announcements = new List<NodeAnnouncement>
+                {
+                    GraphNodes.LabelPart(() => ModStrings.Get(ModStrings.None)),
+                },
+            };
+            ControlId id = ControlId.For(heading, key + "/nothing");
+            builder.AddItem(Nodes.Drawn(id, vtable, heading));
+            return id;
+        }
+
+        /// <summary>
+        /// The headings a popup declared over its content, and what became of each.
+        ///
+        /// A heading over a BLOCK names the block and is no row of its own - the standing rule for
+        /// every drawn caption (<see cref="Captions"/>, which declares it and keeps its one exception:
+        /// a caption carrying an explanation stays a row as well, inside the block, because a level's
+        /// name has no review buffer behind it). A heading over a single VALUE names the row that
+        /// value reads as instead, which is the only thing a level would have in it.
+        ///
+        /// A block the game filled with NOTHING is not a third case (owner ruling 2026-08-28): the
+        /// heading still names it and the block gets the one row there is to put in it, so a player
+        /// steps into the same shape however the game's data came out (the battle report's wreckage
+        /// blocks, captioned "Improvements Destroyed: 0" exactly as this popup's are). A value whose
+        /// label the popup is NOT drawing is the one place a heading keeps its own row: there is no
+        /// row for it to name.
+        ///
+        /// Which is which is answered once per build, while the drawn lines are being read
+        /// (<see cref="Fill"/>), because both answers need the same list of what the popup painted.
+        /// </summary>
+        private sealed class Headings
+        {
+            private readonly IList<Heading> _declared;
+
+            private readonly bool[] _fills;
+
+            /// <summary>Labels a CONTROL took its name from - the title of the panel a fold unfolds.
+            /// The control says it, so the label is not a row as well.</summary>
+            private readonly List<AgeTransform> _named;
+
+            /// <summary>Tables whose lines the popup drew with no name on them.</summary>
+            private readonly IList<AgeTransform> _wordless;
+
+            public Headings(
+                IList<Heading> declared,
+                List<AgeTransform> named,
+                IList<AgeTransform> wordless
+            )
+            {
+                _declared = declared;
+                _fills = new bool[declared.Count];
+                _named = named;
+                _wordless = wordless;
+            }
+
+            /// <summary>The tooltip that says what a table line stands for, where the popup wrote it
+            /// nowhere on the line itself - the game object hung on the line is the only word for it.
+            /// </summary>
+            public AgeTooltip Stands(AgeTransform group)
+            {
+                for (int i = 0; group != null && i < _wordless.Count; i++)
+                {
+                    if (AgeWidgets.Under(group, _wordless[i]))
+                    {
+                        return AgeWidgets.Raw(group);
+                    }
+                }
+
+                return null;
+            }
+
+            /// <summary>Whether this drawn line is a heading or a name a control already says, and so
+            /// is not a row of the body: always for a heading over a block, which names the block, and
+            /// for one over a value only while that value is drawn for it to name.</summary>
+            public bool Silent(AgeTransform widget)
+            {
+                for (int i = 0; i < _named.Count; i++)
+                {
+                    if (ReferenceEquals(_named[i], widget))
+                    {
+                        return true;
+                    }
+                }
+
+                for (int i = 0; i < _declared.Count; i++)
+                {
+                    AgePrimitiveLabel heading = _declared[i].Label;
+                    if (heading != null && ReferenceEquals(heading.AgeTransform, widget))
+                    {
+                        return !_declared[i].Value || _fills[i];
+                    }
+                }
+
+                return false;
+            }
+
+            /// <summary>The headings whose block the popup drew nothing in, in declaration order: each
+            /// one still names its block, and the block is given its one row.</summary>
+            public List<int> Empty()
+            {
+                List<int> empty = new List<int>();
+                for (int i = 0; i < _declared.Count; i++)
+                {
+                    if (!_fills[i] && !_declared[i].Value && _declared[i].Label != null)
+                    {
+                        empty.Add(i);
+                    }
+                }
+
+                return empty;
+            }
+
+            /// <summary>The heading itself - what an empty block is placed by, since nothing else of it
+            /// is drawn.</summary>
+            public AgeTransform Widget(int index)
+            {
+                return _declared[index].Label.AgeTransform;
+            }
+
+            /// <summary>Whether a heading is one at all this build: something the popup is drawing under
+            /// it. Asked of every painted line and control before any of them is placed.</summary>
+            public bool Heading(AgeTransform widget)
+            {
+                for (int i = 0; i < _declared.Count; i++)
+                {
+                    AgePrimitiveLabel heading = _declared[i].Label;
+                    if (heading != null && ReferenceEquals(heading.AgeTransform, widget))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            public void Fill(AgeTransform widget)
+            {
+                if (Heading(widget))
+                {
+                    return;
+                }
+
+                for (int i = 0; i < _declared.Count; i++)
+                {
+                    if (!_fills[i] && AgeWidgets.Under(widget, _declared[i].Block))
+                    {
+                        _fills[i] = true;
+                    }
+                }
+            }
+
+            /// <summary>The heading whose BLOCK this was drawn in, or -1 - a heading over a single value
+            /// names the row itself (<see cref="Names"/>) rather than opening a level around it.
+            /// </summary>
+            public int Over(AgeTransform widget)
+            {
+                for (int i = 0; i < _declared.Count; i++)
+                {
+                    if (!_declared[i].Value && AgeWidgets.Under(widget, _declared[i].Block))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
+            /// <summary>The caption naming this row, for a heading drawn over one value.</summary>
+            public AgePrimitiveLabel Names(List<Line> row)
+            {
+                for (int i = 0; i < _declared.Count; i++)
+                {
+                    if (!_fills[i] || !_declared[i].Value)
+                    {
+                        continue;
+                    }
+
+                    for (int j = 0; j < row.Count; j++)
+                    {
+                        if (AgeWidgets.Under(row[j].Widget, _declared[i].Block))
+                        {
+                            return _declared[i].Label;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            public object Region(int index)
+            {
+                AgeTransform block = _declared[index].Block;
+                return "notification:body/under/" + (block == null ? index.ToString() : block.name);
+            }
+        }
+
+        /// <summary>The headings this popup declared, together with the labels its controls have taken
+        /// their names from - both of them things the drawn reading must not say a second time.</summary>
+        private static Headings Headed(NotificationWindow window, List<Control> controls)
+        {
+            IList<Heading> declared = DeclaredHeadings(window);
+            IList<AgeTransform> wordless = Wordless(window);
+            List<AgeTransform> named = new List<AgeTransform>();
+            IList<Expander> folds = Expanders(window);
+            for (int i = 0; i < folds.Count; i++)
+            {
+                AgePrimitiveLabel title = folds[i].Title;
+                AgeControlToggle toggle = folds[i].Toggle;
+                if (
+                    title != null
+                    && toggle != null
+                    && controls != null
+                    && Has(controls, toggle.AgeTransform)
+                )
+                {
+                    named.Add(title.AgeTransform);
+                }
+            }
+
+            return declared.Count == 0 && named.Count == 0 && wordless.Count == 0
+                ? null
+                : new Headings(declared, named, wordless);
+        }
+
+        /// <summary>Open the level a heading names, where what follows is drawn under one - through the
+        /// shared caption rule, so a heading carrying an explanation keeps its row inside the block it
+        /// names and every other one does not. The level is a region as well, opened before the push so
+        /// that such a row falls inside it.</summary>
+        private static void Open(GraphBuilder builder, Headings heads, int index, ref int open)
+        {
+            if (index < 0 || heads == null)
+            {
+                return;
+            }
+
+            object region = heads.Region(index);
+            builder.SetRegion(region);
+            if (Captions.Push(builder, heads.Widget(index), region))
+            {
+                open = index;
+            }
+        }
+
+        /// <summary>Close the level a heading opened, where one is open - on every path out of the body,
+        /// since a level left open adopts everything the popup declares after it.</summary>
+        private static void Close(GraphBuilder builder, ref int open)
+        {
+            Captions.Pop(builder, open >= 0);
+            open = -1;
         }
 
         /// <summary>
@@ -219,11 +522,17 @@ namespace ES2Access.Screens
             List<Line> row,
             int index,
             AgeTransform group = null,
-            MinorFactionCard card = null
+            MinorFactionCard card = null,
+            Headings heads = null
         )
         {
             List<Line> it = row;
             string caption = CardCaption(row, card);
+            // The heading the popup drew over this one value, and the name of the thing a table line
+            // stands for where the popup wrote none on it. Both are the same shape as the card caption
+            // below - a name for words that are only a value - and both are read when the row is read.
+            AgePrimitiveLabel headed = heads == null ? null : heads.Names(row);
+            AgeTooltip stands = heads == null ? null : heads.Stands(group);
             // The row's words are composed here only where a tooltip is actually going to be compared
             // against them. Explains answers null for a row with no tooltip without ever looking at
             // the text, and Explaining's loop never runs when the line carries none - and most drawn
@@ -265,14 +574,15 @@ namespace ES2Access.Screens
                     () => AgeWidgets.Operable(clicked)
                 );
 
-            if (caption != null)
+            // A figure drawn with its name somewhere else: on a bare ICON beside it (the minor-faction
+            // card), in the heading the popup drew over it ("Victors"), or on the line's own tooltip
+            // and nowhere on the line at all (the obliterator's dead). The words are read as the value
+            // and the name as the name, so the row says "Ally, None" rather than "None" - each of them
+            // declared for the rows that have it, never by a rule over every popup.
+            Func<string> names = Naming(caption, headed, stands);
+            if (names != null)
             {
-                // A figure the card draws with its caption on a bare ICON beside it: the words are
-                // read as the value and the game's own title for them as the name, so the row says
-                // "Ally, None" rather than "None". Declared for the two rows this card has, not by a
-                // rule over every popup - the pairing is a fact about this prefab.
-                string word = caption;
-                vtable.Announcements.Insert(0, GraphNodes.LabelPart(() => word));
+                vtable.Announcements.Insert(0, GraphNodes.LabelPart(names));
                 vtable.Announcements[1] = GraphNodes.ValuePart(head);
             }
 
@@ -304,6 +614,35 @@ namespace ES2Access.Screens
                 carried.Children
             );
             return id;
+        }
+
+        /// <summary>What a row of bare values is called, read when the row is read: whichever of the
+        /// three the popup gave it, or null for a row whose own words already name it.</summary>
+        private static Func<string> Naming(
+            string caption,
+            AgePrimitiveLabel heading,
+            AgeTooltip stands
+        )
+        {
+            if (!string.IsNullOrEmpty(caption))
+            {
+                string word = caption;
+                return () => word;
+            }
+
+            if (heading != null)
+            {
+                AgePrimitiveLabel said = heading;
+                return () => AgeText.Label(said);
+            }
+
+            if (stands != null)
+            {
+                AgeTooltip about = stands;
+                return () => AgeWidgets.TooltipTitle(about);
+            }
+
+            return null;
         }
 
         /// <summary>The card the "you have met a minor civilization" popup draws, or null on every
@@ -408,7 +747,8 @@ namespace ES2Access.Screens
             NotificationWindow window,
             List<Control> controls,
             AgeTransform words,
-            List<AgeTransform> tableLines = null
+            List<AgeTransform> tableLines = null,
+            Headings heads = null
         )
         {
             List<List<Line>> rows = new List<List<Line>>();
@@ -433,6 +773,7 @@ namespace ES2Access.Screens
             Dictionary<AgeTransform, List<Line>> byLine =
                 new Dictionary<AgeTransform, List<Line>>();
             List<Line> rest = new List<Line>();
+            List<Line> kept = new List<Line>();
             foreach (Line line in lines)
             {
                 if (
@@ -444,6 +785,35 @@ namespace ES2Access.Screens
                     || IsWords(line, words)
                     || AgeWidgets.Under(line.Widget, dossier)
                 )
+                {
+                    continue;
+                }
+
+                kept.Add(line);
+            }
+
+            // Which of the popup's headings head anything this build - asked of everything it is
+            // drawing before any of it is placed, and of the words as well, since a popup whose heading
+            // stands over the very text it SAYS ("Description" over the lore) is heading that.
+            if (heads != null)
+            {
+                heads.Fill(words);
+                for (int i = 0; i < kept.Count; i++)
+                {
+                    heads.Fill(kept[i].Widget);
+                }
+
+                for (int i = 0; i < controls.Count; i++)
+                {
+                    heads.Fill(controls[i].Widget);
+                }
+            }
+
+            foreach (Line line in kept)
+            {
+                // A heading the popup drew over something is that thing's name, said where the thing is
+                // read; a name a control has already taken is the control's. Neither is a row as well.
+                if (heads != null && heads.Silent(line.Widget))
                 {
                     continue;
                 }
@@ -649,6 +1019,12 @@ namespace ES2Access.Screens
             /// <summary>The table line this row was read out of, where the popup drew one.</summary>
             public AgeTransform Group;
 
+            /// <summary>A block the popup captioned and then drew nothing in, and which heading it is:
+            /// the block is read as its name and one row saying so.</summary>
+            public bool IsEmpty;
+
+            public int Which;
+
             /// <summary>The boxes the popup drew this inside, outermost first, down to the widget
             /// itself (<see cref="Chain"/>).</summary>
             public List<AgeTransform> Chain;
@@ -681,6 +1057,11 @@ namespace ES2Access.Screens
         /// quest popup's participants, two abreast in a list three lines tall, run on under the reward
         /// group drawn below the list, and ordering the lines by rectangle alone put the fourth pair of
         /// empires among the podium.
+        ///
+        /// Two boxes drawn SIDE BY SIDE are read left to right, whatever their top edges say. A band
+        /// laid out across the popup does not align its boxes: the truce's war-score disk hangs eight
+        /// pixels below the two empires it sits between, and by top edge alone it was read after both
+        /// of them - a figure about the pair, read past the second of them.
         /// </summary>
         private static readonly Comparison<Item> DownThePage = delegate(Item a, Item b)
         {
@@ -696,7 +1077,9 @@ namespace ES2Access.Screens
 
             if (depth < a.Chain.Count && depth < b.Chain.Count)
             {
-                int order = AgeLayout.TopThenLeft(a.Chain[depth], b.Chain[depth]);
+                int order = AgeLayout.SameRow(a.Chain[depth], b.Chain[depth])
+                    ? AgeLayout.LeftThenTop(a.Chain[depth], b.Chain[depth])
+                    : AgeLayout.TopThenLeft(a.Chain[depth], b.Chain[depth]);
                 if (order != 0)
                 {
                     return order;

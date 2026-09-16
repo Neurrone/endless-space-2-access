@@ -514,6 +514,13 @@ namespace ES2Access.Screens
 
             builder.SetRegion(BodyRegion);
 
+            // The headings the popup drew over its content, where it declared any. Worked out before
+            // anything is declared because the WORDS may be one of the things a heading heads - the
+            // academy's conclusion draws "Description" over the very lore the popup says - and the
+            // words are the first thing declared.
+            Headings heads = Headed(window, controls);
+            int open = -1;
+
             // What the popup SAYS leads what it DRAWS rather than standing in for it. A popup can do
             // both - an election survey writes a sentence over its chart of who is voting for whom -
             // and while the words answered for the whole body, everything such a popup drew was read
@@ -526,6 +533,18 @@ namespace ES2Access.Screens
                 // of a list, so it takes no place in a count. The builder wires whatever is drawn above
                 // and below it to it.
                 lead = WordsId(label);
+
+                // Under the heading the popup drew over it, where it drew one: the words are read in
+                // that level like any other row of the block, and the body below goes on filling it.
+                if (heads != null)
+                {
+                    heads.Fill(words);
+                    Open(builder, heads, heads.Over(words), ref open);
+                    if (open >= 0)
+                    {
+                        builder.SetRegion(heads.Region(open));
+                    }
+                }
 
                 // What the popup offers on hovering its words - the dossier of the resource an
                 // expedition turned up, which the game hangs on the block it drew the description in
@@ -586,6 +605,7 @@ namespace ES2Access.Screens
 
             if (body != null)
             {
+                Close(builder, ref open);
                 Write(body, builder, window, lead);
             }
             else
@@ -603,10 +623,22 @@ namespace ES2Access.Screens
 
                 if (sheet == null)
                 {
-                    BuildDrawnBody(builder, window, controls, inside, words, TableLines(window));
+                    BuildDrawnBody(
+                        builder,
+                        window,
+                        controls,
+                        inside,
+                        words,
+                        TableLines(window),
+                        heads,
+                        ref open
+                    );
                 }
                 else
                 {
+                    // A popup read as a table names its own columns, which is the same question a
+                    // heading answers and a different answer to it.
+                    Close(builder, ref open);
                     BuildSheet(builder, window, sheet, lead);
                 }
 

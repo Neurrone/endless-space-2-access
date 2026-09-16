@@ -286,6 +286,14 @@ button, quests and the journal, the tutorial popup, and the end of a game. Index
   through when its branch was hidden reports itself running for the rest of the session — four of
   the sixty-nine carry one, each a scroll bar's thumb frozen mid colour-switch inside a panel the
   window had hidden.
+- **Two popups draw a figure whose name is somewhere other than the figure.** The forced truce's
+  ring carries none of its own: `ForceTruceAnsweredNotificationWindow.Refresh` (:29-30) feeds
+  `WarScoreGauge.Refresh(100, winner's colour, 100 - TotalWarExhaustCompensation, loser's colour)` —
+  the same compensation the `WarScoreLabel` inside it prints, drawn a second time as a share. And
+  the obliterator's population line draws an icon, an "x" and a count, and puts what was killed on
+  the line's tooltip alone: `ObliteratorPopulationItem.Refresh` sets `AgeTooltip.Target` to a
+  `GuiPopulationDefinition` (Class `Population`) and writes the population's name nowhere on the
+  line.
 - **A popup can state a whole sentence with a PICTURE whose only words are its tooltip** — the
   new-content popup's tutorial badge, drawn beside Minimize, reading "The Expert tutorial has been
   enabled to help with the new features." The prefab leaves `Set by code` on that tooltip's content

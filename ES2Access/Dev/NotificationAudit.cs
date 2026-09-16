@@ -289,6 +289,7 @@ namespace ES2Access.Dev
             Walk(root, painted, 0, new int[1]);
             AddDrawnTooltipWords(painted);
             AddBadgeWords(window, painted);
+            AddFoldWords(window, painted);
             result.PaintedTexts = painted.Texts.Count;
             result.PaintedControls = painted.Controls;
             result.PaintedTooltips = painted.Tips.Count;
@@ -549,8 +550,24 @@ namespace ES2Access.Dev
         ///
         /// A clipped widget is measured at the box it is shown in (<see cref="AgeWidgets.Clipped"/>):
         /// a paragraph laid out taller than its viewport keeps a rectangle that runs off the popup
-        /// and would put every item after it out of order.
+        /// and would put every item after it out of order. And two things drawn SIDE BY SIDE are read
+        /// left to right, which is the order the body itself puts them in
+        /// (<c>NotificationScreen.DownThePage</c>) - a band across the popup does not align its boxes,
+        /// so by top edge alone every such band reads as jumping about.
         /// </summary>
+        /// <summary>Whether the second of two body items is drawn before the first - down the page, or
+        /// across where the two are drawn on the same line.</summary>
+        private static bool Backwards(AgeTransform first, AgeTransform second)
+        {
+            AgeTransform a = AgeWidgets.Clipped(first);
+            AgeTransform b = AgeWidgets.Clipped(second);
+            return (
+                    AgeLayout.SameRow(a, b)
+                        ? AgeLayout.LeftThenTop(a, b)
+                        : AgeLayout.TopThenLeft(a, b)
+                ) > 0;
+        }
+
         private static void CheckPlacement(
             AgeTransform root,
             List<Declared> declared,
@@ -628,13 +645,7 @@ namespace ES2Access.Dev
                     continue;
                 }
 
-                if (
-                    previous != null
-                    && AgeLayout.TopThenLeft(
-                        AgeWidgets.Clipped(previous.Widget),
-                        AgeWidgets.Clipped(node.Widget)
-                    ) > 0
-                )
+                if (previous != null && Backwards(previous.Widget, node.Widget))
                 {
                     result.Placement.Add(
                         AuditModel.Made(
@@ -1000,6 +1011,24 @@ namespace ES2Access.Dev
         /// the state's name at all. The picture IS what draws it, which is exactly why the row says
         /// it (<see cref="NotificationScreen"/>'s badges), and the audit is told the same words the
         /// row composes rather than being taught to let an unaccounted phrase through.</summary>
+        /// <summary>The names a popup's folds take from the panels they unfold, which the popup is not
+        /// drawing while they are folded (<c>NotificationScreen.FoldWords</c>).</summary>
+        private static void AddFoldWords(NotificationWindow window, Painted painted)
+        {
+            try
+            {
+                IList<string> words = NotificationScreen.FoldWords(window);
+                for (int i = 0; i < words.Count; i++)
+                {
+                    AddPhrase(painted.Phrases, words[i]);
+                }
+            }
+            catch (Exception e)
+            {
+                Core.Util.Log.Warn("notification parity: reading the popup's folds threw: " + e);
+            }
+        }
+
         private static void AddBadgeWords(NotificationWindow window, Painted painted)
         {
             try

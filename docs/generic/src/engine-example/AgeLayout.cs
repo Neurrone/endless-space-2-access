@@ -338,6 +338,31 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The same order across first: what two things drawn SIDE BY SIDE are read in, where
+        /// something else has already established that they are drawn side by side
+        /// (<see cref="SameRow"/>). A band laid out across a panel does not align its boxes - a disk
+        /// between two columns hangs lower than both - so their top edges say nothing about which comes
+        /// first and their left edges say everything.</summary>
+        public static int LeftThenTop(AgeTransform first, AgeTransform second)
+        {
+            try
+            {
+                Rect a = AgeWidgets.LaidOutAt(first);
+                Rect b = AgeWidgets.LaidOutAt(second);
+                if (Mathf.Abs(a.xMin - b.xMin) > SamePlace)
+                {
+                    return a.xMin < b.xMin ? -1 : 1;
+                }
+
+                return Mathf.Abs(a.yMin - b.yMin) > SamePlace ? (a.yMin < b.yMin ? -1 : 1) : 0;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("layout: ordering two widgets threw: " + e);
+                return 0;
+            }
+        }
+
         private static float Middle(Rect rect)
         {
             return rect.yMin + rect.height * 0.5f;

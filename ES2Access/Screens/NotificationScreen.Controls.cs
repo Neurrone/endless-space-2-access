@@ -648,7 +648,12 @@ namespace ES2Access.Screens
                         continue;
                     }
 
+                    // The panel's own drawn title where the popup wrote one, because what the tick is
+                    // called is what it unfolds ("Destruction Report") rather than the instruction the
+                    // game hung on the tick ("Click to display the details of the report"). Read when
+                    // the tick is read, and then the title is not a row of the body as well.
                     string unfolds = WordlessName(expander.AgeTransform, entry.NameKey);
+                    AgePrimitiveLabel title = entry.Title;
                     Add(
                         controls,
                         "expander/" + expander.name,
@@ -656,7 +661,9 @@ namespace ES2Access.Screens
                         expander,
                         null,
                         unfolds,
-                        false
+                        false,
+                        null,
+                        title == null ? null : (Func<string>)(() => AgeText.Label(title))
                     );
                 }
 

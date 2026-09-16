@@ -97,12 +97,30 @@ namespace ES2Access.Screens
         /// reading passes over it, because a picture holds no text; so the sentence is declared as the
         /// row, and a player is told the game has just changed how it will talk to them.
         ///
+        /// <see cref="Captions"/>: a heading the popup drew OVER something else - "Galactic Effects"
+        /// over the effects, "Victors" over the winner's name. A heading is a label like any other, so
+        /// the drawn reading made it a row of its own: the player walked onto a word that names what
+        /// the next row is about, and then onto a row whose name had already been spent. Which label
+        /// heads what cannot be measured - a caption and the first line of a paragraph are the same
+        /// shape - so the popup says so, and the heading then names what it heads instead of standing
+        /// in front of it: the region the block's rows are read in, or the row a single value reads as
+        /// (<see cref="Heading"/>). A heading over something the popup is drawing EMPTY keeps its own
+        /// row, because the words are on screen and a region with no rows in it is nowhere to say them.
+        ///
+        /// <see cref="Wordless"/>: a table whose lines the popup wrote no name on - the obliterator's
+        /// dead, drawn as a population icon, an "x" and a figure. What kind of population it was is in
+        /// the game object hung on the line's tooltip and nowhere else, so the line reads as "2" with
+        /// nothing saying two of what. Only the popup's code knows the lines are that shape, so it says
+        /// so, and each line is named by its tooltip's own title.
+        ///
         /// A popup with no entry here is read entirely by the shared rules, which is the case for most
         /// of them. A stage adding a popup adds one entry and touches nothing else.
         /// </summary>
         private sealed class Variant
         {
             public Func<NotificationWindow, AgePrimitiveLabel> Words;
+            public Func<NotificationWindow, IList<Heading>> Captions;
+            public Func<NotificationWindow, IList<AgeTransform>> Wordless;
             public Func<NotificationWindow, IList<AgeTransform>> Tables;
             public Func<NotificationWindow, IList<AgeTransform>> Choices;
             public Func<NotificationWindow, IList<Control>> Cards;
@@ -132,13 +150,31 @@ namespace ES2Access.Screens
             public string NameKey;
         }
 
-        /// <summary>One tick that folds a popup's detail panel out: the toggle, and the mod's own name
-        /// for what it unfolds, used only where the popup wrote nothing on it and hung no tooltip.
-        /// </summary>
+        /// <summary>One tick that folds a popup's detail panel out: the toggle, the panel's own drawn
+        /// title where the popup wrote one (which is what the tick is FOR, and better than the
+        /// instruction the game hung on the tick itself), and the mod's own name for what it unfolds,
+        /// used only where the popup wrote nothing on it and hung no tooltip. A title named here is the
+        /// tick's name and so is not a row as well.</summary>
         private struct Expander
         {
             public AgeControlToggle Toggle;
+            public AgePrimitiveLabel Title;
             public string NameKey;
+        }
+
+        /// <summary>
+        /// One heading the popup drew over something else.
+        ///
+        /// <see cref="Block"/> is what the heading heads: a container whose rows are read inside a
+        /// region the heading names, or - with <see cref="Value"/> set - the single label whose row the
+        /// heading names ("Victors, Imperials Neurrone" as the one thing the player walks onto, rather
+        /// than a caption row and a name row drawn apart from each other).
+        /// </summary>
+        private struct Heading
+        {
+            public AgePrimitiveLabel Label;
+            public AgeTransform Block;
+            public bool Value;
         }
 
         /// <summary>One fact a popup drew as a bare picture: the icon it painted, and the game object
@@ -326,7 +362,26 @@ namespace ES2Access.Screens
                             ((DisplacementReportNotificationWindow)w).ImprovementsTable,
                             ((DisplacementReportNotificationWindow)w).PopulationsTable
                         ),
-                    Expanders = w => Unfolds(((DisplacementReportNotificationWindow)w).ReportToggle),
+                    // Each table has the count the popup wrote over it as its heading, and the
+                    // populations are drawn as an icon, an "x" and a figure: what was killed is only
+                    // on the line's own tooltip.
+                    Captions = w =>
+                        Over(
+                            Heads(
+                                ((DisplacementReportNotificationWindow)w).ImprovementsLabel,
+                                ((DisplacementReportNotificationWindow)w).ImprovementsTable
+                            ),
+                            Heads(
+                                ((DisplacementReportNotificationWindow)w).PopulationsLabel,
+                                ((DisplacementReportNotificationWindow)w).PopulationsTable
+                            )
+                        ),
+                    Wordless = w => Some(((DisplacementReportNotificationWindow)w).PopulationsTable),
+                    Expanders = w =>
+                        Unfolds(
+                            ((DisplacementReportNotificationWindow)w).ReportToggle,
+                            Titled(((DisplacementReportNotificationWindow)w).ReportPanel, "Title")
+                        ),
                 }
             );
             variants.Add(
@@ -375,10 +430,20 @@ namespace ES2Access.Screens
                         Unfolds(((PirateMissionReportNotificationWindow)w).MissionReportToggle),
                 }
             );
+            // Both ends of a forced truce draw the same two captioned names with the war score between
+            // them, so the pairing is declared on the window they share. The lookup takes the first
+            // entry it meets walking up from the popup's own type, so this one answers for every
+            // sibling that has no entry of its own - and the proposal below, which has one, repeats
+            // the pairing rather than inheriting it.
+            variants.Add(
+                typeof(ForceTruceBaseNotificationWindow),
+                new Variant { Captions = w => Sides((ForceTruceBaseNotificationWindow)w) }
+            );
             variants.Add(
                 typeof(ForceTruceProposedNotificationWindow),
                 new Variant
                 {
+                    Captions = w => Sides((ForceTruceBaseNotificationWindow)w),
                     Tables = w =>
                         Some(
                             ((ForceTruceProposedNotificationWindow)w).WinnerBreakdownTable,
@@ -701,11 +766,14 @@ namespace ES2Access.Screens
                 typeof(MetaplotBegunNotificationWindow),
                 new Variant { Words = w => ((MetaplotBegunNotificationWindow)w).LoreDescriptionLabel }
             );
+            // The conclusion of an academy quest: the lore it ends with, and what it changed about the
+            // galaxy, each drawn in a box under a heading of its own.
             variants.Add(
                 typeof(MetaplotFinishedNotificationWindow),
                 new Variant
                 {
                     Words = w => ((MetaplotFinishedNotificationWindow)w).LoreDescriptionLabel,
+                    Captions = w => Chapters((MetaplotFinishedNotificationWindow)w),
                 }
             );
 
@@ -728,6 +796,21 @@ namespace ES2Access.Screens
                 }
             );
 
+            // Content the player has just unlocked - a hero, a ship, a whole expansion's worth of it -
+            // announced once. The popup draws the thing's NAME as the heading over its lore and a
+            // second heading over what it adds, and the shared description label is the second block:
+            // what the player was interrupted to hear is which thing it is, so the name is the words
+            // (the downloadable-content twin below is the same shape and was modelled first), and each
+            // heading then names the block drawn under it rather than standing in front of it.
+            variants.Add(
+                typeof(NewUnlockedContentNotificationWindow),
+                new Variant
+                {
+                    Words = w => ((NewUnlockedContentNotificationWindow)w).TitleLabel,
+                    Captions = w => Chapters((NewUnlockedContentNotificationWindow)w),
+                }
+            );
+
             // The academy having granted a role: the same roles panel the exchange popup above draws,
             // in a popup of its own, so the same cloned lines read the same way.
             variants.Add(
@@ -741,6 +824,58 @@ namespace ES2Access.Screens
         private static IList<AgeTransform> Some(params AgeTransform[] widgets)
         {
             return widgets;
+        }
+
+        /// <summary>The two blocks the academy's conclusion is drawn in - the lore, and what changed
+        /// about the galaxy - each with the heading the prefab drew over it. The headings are the
+        /// prefab's own labels, wired to nothing, so they are found by the names it gives them from the
+        /// box the window's code DOES name.</summary>
+        private static IList<Heading> Chapters(MetaplotFinishedNotificationWindow window)
+        {
+            AgeTransform lore =
+                window.LoreScrollView == null ? null : window.LoreScrollView.AgeTransform.Parent;
+            AgeTransform effects =
+                window.EffectsScrollView == null ? null : window.EffectsScrollView.AgeTransform.Parent;
+            if (lore == null || effects == null)
+            {
+                return NoCaptions;
+            }
+
+            return Over(
+                Heads(Titled(lore, "LoreTitle", "Label"), lore),
+                Heads(Titled(effects, "EffectsGroupeTitle", "EffectsTitle"), effects)
+            );
+        }
+
+        /// <summary>The two blocks of unlocked content: the thing's own name over its lore - the label
+        /// this popup also SAYS - and the prefab's caption over the list of what it adds.</summary>
+        private static IList<Heading> Chapters(NewUnlockedContentNotificationWindow window)
+        {
+            AgeTransform lore =
+                window.LoreScrollView == null ? null : window.LoreScrollView.AgeTransform.Parent;
+            AgeTransform described = lore == null ? null : Child(lore.Parent, "DescriptionGroup");
+            if (lore == null || described == null)
+            {
+                return NoCaptions;
+            }
+
+            return Over(
+                Heads(window.TitleLabel, lore),
+                Heads(Titled(described, "DescriptionGroupTitle", "Label"), described)
+            );
+        }
+
+        /// <summary>The two sides of a forced truce: each empire's name under the caption that says
+        /// which side it is, as the one row the player walks onto. The ring drawn between them carries
+        /// the same figure as the war-score label beside it, as a share of the whole
+        /// (<c>WarScoreGauge.Refresh(100, …, 100 - compensation, …)</c>), so it says nothing the label
+        /// does not and gets no row of its own.</summary>
+        private static IList<Heading> Sides(ForceTruceBaseNotificationWindow window)
+        {
+            return Over(
+                Names(window.WinnerTitle, window.WinnerLabel),
+                Names(window.LooserTitle, window.LooserLabel)
+            );
         }
 
         /// <summary>The roles the academy has handed out, which its popup draws as cloned lines inside a
@@ -839,9 +974,10 @@ namespace ES2Access.Screens
         }
 
         /// <summary>What this popup declares about itself, the popup's own kind first - a variant
-        /// registered against a base window would serve every popup built on it, which is what lets a
-        /// family drawing one prefab be registered once. Every entry here is on a concrete window, so
-        /// today a sibling's entry never answers for its neighbour.</summary>
+        /// registered against a base window serves every popup built on it, which is what lets a family
+        /// drawing one prefab be registered once (the two ends of a forced truce). The first entry met
+        /// walking up WINS, whole: a derived entry hides its base's rather than composing with it, so a
+        /// sibling that has an entry of its own repeats whatever the family declares.</summary>
         private static Variant VariantOf(NotificationWindow window)
         {
             if (window == null)
@@ -1395,6 +1531,124 @@ namespace ES2Access.Screens
             return said;
         }
 
+        /// <summary>What this popup's folds are called, in words - for the parity audit. A fold is named
+        /// by the title of the panel it unfolds, and while it is FOLDED that title is exactly what the
+        /// popup is not drawing: the tick is the only thing on screen, and a tick that would not say
+        /// what it opens until after it was opened is no use to anyone.</summary>
+        internal static IList<string> FoldWords(NotificationWindow window)
+        {
+            List<string> said = new List<string>();
+            IList<Expander> folds = Expanders(window);
+            for (int i = 0; i < folds.Count; i++)
+            {
+                string word = AgeText.Label(folds[i].Title);
+                if (!string.IsNullOrEmpty(word))
+                {
+                    said.Add(word);
+                }
+            }
+
+            return said;
+        }
+
+        /// <summary>The headings this popup drew over its content, where it declares any.</summary>
+        private static IList<Heading> DeclaredHeadings(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Captions == null)
+            {
+                return NoCaptions;
+            }
+
+            try
+            {
+                return variant.Captions(window) ?? NoCaptions;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a popup's headings threw: " + e);
+                return NoCaptions;
+            }
+        }
+
+        private static readonly Heading[] NoCaptions = new Heading[0];
+
+        /// <summary>The tables whose lines the popup drew with no name on them, where it declares any.
+        /// </summary>
+        private static IList<AgeTransform> Wordless(NotificationWindow window)
+        {
+            Variant variant = VariantOf(window);
+            if (variant == null || variant.Wordless == null)
+            {
+                return NoTables;
+            }
+
+            try
+            {
+                return variant.Wordless(window) ?? NoTables;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("notification: looking for a popup's unnamed lines threw: " + e);
+                return NoTables;
+            }
+        }
+
+        private static readonly AgeTransform[] NoTables = new AgeTransform[0];
+
+        /// <summary>The label the prefab drew at the head of a group whose CONTENT the popup's code
+        /// wired to a field and whose heading it wired to nothing: the label at the end of a path of
+        /// named children, each step one level of children, so the whole lookup is bounded by the path
+        /// and by a handful of children at each step.</summary>
+        private static AgePrimitiveLabel Titled(AgeTransform from, params string[] path)
+        {
+            AgeTransform at = from;
+            for (int i = 0; at != null && i < path.Length; i++)
+            {
+                at = Child(at, path[i]);
+            }
+
+            return at == null ? null : at.GetComponent<AgePrimitiveLabel>();
+        }
+
+        /// <summary>The child the prefab gave that name, or null where it drew none.</summary>
+        private static AgeTransform Child(AgeTransform parent, string name)
+        {
+            List<AgeTransform> children = parent == null ? null : parent.Children;
+            for (int i = 0; children != null && i < children.Count; i++)
+            {
+                if (children[i] != null && children[i].name == name)
+                {
+                    return children[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static IList<Heading> Over(params Heading[] headings)
+        {
+            return headings;
+        }
+
+        /// <summary>A heading drawn over a block of content: it names the region that block's rows are
+        /// read in.</summary>
+        private static Heading Heads(AgePrimitiveLabel heading, AgeTransform block)
+        {
+            return new Heading { Label = heading, Block = block };
+        }
+
+        /// <summary>A heading drawn over one value: it names the row that value reads as.</summary>
+        private static Heading Names(AgePrimitiveLabel heading, AgePrimitiveLabel value)
+        {
+            return new Heading
+            {
+                Label = heading,
+                Block = value == null ? null : value.AgeTransform,
+                Value = true,
+            };
+        }
+
         private static IList<Expander> Unfolds(params AgeControlToggle[] toggles)
         {
             Expander[] expanders = new Expander[toggles.Length];
@@ -1410,6 +1664,13 @@ namespace ES2Access.Screens
         private static IList<Expander> Unfolds(AgeControlToggle toggle, string nameKey)
         {
             return new Expander[] { new Expander { Toggle = toggle, NameKey = nameKey } };
+        }
+
+        /// <summary>One tick whose panel carries its own drawn title, which is what the tick unfolds and
+        /// so what the tick is called.</summary>
+        private static IList<Expander> Unfolds(AgeControlToggle toggle, AgePrimitiveLabel title)
+        {
+            return new Expander[] { new Expander { Toggle = toggle, Title = title } };
         }
 
         private static Gateway To(AgeTransform widget, string nameKey)
