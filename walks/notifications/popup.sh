@@ -5,8 +5,8 @@
 #
 # A pending notification is a fixture accident the walk may neither create nor destroy:
 # raising one costs a turn and dismissing one changes the save. So the strip is READ, the
-# popup is closed by HIDING its window, and the AlreadyRead flags that opening sets are put
-# back. If the strip is empty the popup is skipped and recorded.
+# popup is closed through the manager (a hide, not a dismiss), and the AlreadyRead flags that
+# opening sets are put back. If the strip is empty the popup is skipped and recorded.
 set -u
 . "$(dirname "$0")/../lib.sh" "$@"
 
@@ -42,7 +42,10 @@ else
     gpool pool  a2 "$NOTIFBODY"
     aba graph pool
   fi
-  evs '((System.Func<string>)(() => { var ws = UnityEngine.Object.FindObjectsOfType<NotificationWindow>(); var sb = new System.Text.StringBuilder(); for (int i=0;i<ws.Length;i++){ if (ws[i].Shown) { sb.Append(ws[i].Name).Append(","); Gui.GuiService.HideWindow(ws[i]); } } return sb.Length==0?"no popup shown":("hid "+sb.ToString()); }))()'
+  # Closed through the manager, not by hiding the window: the manager's hide is the same HideWindow
+  # plus CurrentGuiNotification = null, and a slot left set suppresses every later auto-open and the
+  # keyboard zoom (docs/notifications.md). Hiding dismisses nothing.
+  evs '((System.Func<string>)(() => { var mgr = Gui.GuiNotificationService; mgr.HideAllGuiNotifications(); return "hid all; current=" + (mgr.CurrentGuiNotification == null ? "null" : "SET"); }))()'
   onscreen screen.galaxy 10000 || echo "   NOTE: the galaxy HUD did not come back"
 fi
 # Put back the read flags that opening the popup set, so the strip is left as it was found.
