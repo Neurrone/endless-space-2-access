@@ -381,7 +381,8 @@ namespace ES2Access.Screens
             GraphBuilder builder,
             NotificationWindow window,
             Sheet sheet,
-            ControlId lead
+            ControlId lead,
+            ControlId above
         )
         {
             // Every caption the popup drew, the row column's included: the sheet says each of them as
@@ -395,7 +396,11 @@ namespace ES2Access.Screens
 
             GraphSheet table = new GraphSheet(builder, SheetKey);
             table.Region(Title(window), columns);
-            table.Follows(lead);
+            // Hung below whatever the popup put above the table - its words where it wrote any, else
+            // its title, which every popup has. A table that follows nothing is an island: the drawn
+            // body's rows are stitched to the row above them by the builder, but a sheet wires its own
+            // edges and the row above is only reachable if it is named here.
+            table.Follows(above);
             foreach (SheetRow row in sheet.Rows)
             {
                 List<KeyValuePair<int, NodeVtable>> cells =

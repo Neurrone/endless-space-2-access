@@ -86,8 +86,10 @@ namespace ES2Access.Screens
     /// (under the game's own word for it), and where a popup draws no such button the game's own second
     /// click on the choice is what confirms and takes the double-click chord (Ctrl+Alt+Enter).
     ///
-    /// The words are a control in their own right and the one focus starts on: what the notification
-    /// says is the reason it interrupted, so arriving reads its title and then lands on its text.
+    /// The popup's TITLE is its first row and its words are the next one, which is the order they are
+    /// drawn in. The words are what focus starts on: what the notification says is the reason it
+    /// interrupted, so arriving reads the title and then lands on the text, and the title is one Up
+    /// away for as long as the popup is there.
     /// Every other control speaks its own tooltip on focus and carries it as review-buffer content -
     /// the arrows say what browsing does, the box says what popping up automatically means, and each
     /// is one sentence the game wrote for exactly that purpose - while the text carries the whole
@@ -104,7 +106,10 @@ namespace ES2Access.Screens
     /// are drawn level with the content, so a popup that draws its own content leaves them out of it.
     ///
     /// Walking to the next notification keeps the same screen up with different words in it, so the
-    /// change is watched for and announced rather than being left silent.
+    /// change is watched for and announced rather than being left silent. Until it is, the popup is
+    /// not read at all: the graph rebuilds around the incoming popup while it is still arriving, and
+    /// the row the tree happens to re-seat the cursor on would be heard before the popup had said
+    /// which notification it is (<see cref="BetweenViews"/>).
     ///
     /// Escape belongs to the game: the window is an input handler and turns it into Minimize.
     /// </summary>
@@ -138,10 +143,12 @@ namespace ES2Access.Screens
         private static readonly object ContentStop = "notification:content";
         private static readonly object ControlsStop = "notification:controls";
 
-        // The four bands Alt+Up/Down jump between, top to bottom as the popup draws them: the first
-        // two belong to the content stop and the last two to the controls stop.
+        // The bands Alt+Up/Down jump between, top to bottom as the popup draws them: the heading, the
+        // panel a popup can open beside itself and the body belong to the content stop, the two strips
+        // to the controls stop.
         // Internal because the family's self-check sorts nodes by these (NotificationAudit): a band
         // renamed here and re-spelled there would leave the check reporting every popup clean.
+        private const string HeadingRegion = "notification:heading";
         internal const string TopRegion = "notification:top";
         internal const string InfoRegion = "notification:empire-info";
         private const string BodyRegion = "notification:body";
@@ -175,7 +182,8 @@ namespace ES2Access.Screens
         /// what it means - so the two together read as the popup reads, and neither says the other's
         /// half twice. The one popup that is the end of the player's game says so here
         /// (<see cref="OwnElimination"/>), because arriving is when that has to be heard and the
-        /// popup's own words do not say it.</summary>
+        /// popup's own words do not say it - and on the title row as well (<see cref="BuildTitle"/>),
+        /// which is where it can be found by a player who was not there when it arrived.</summary>
         public override string ScreenName
         {
             get
@@ -359,6 +367,134 @@ namespace ES2Access.Screens
             NotificationWindow window = Current();
             Remember(window);
             Settling(window);
+            Seating(false);
+        }
+
+        /// <summary>
+        /// Whether this popup's reading is still owed - the cursor has not been put where the popup
+        /// wants it, or the popup swapping in has not said what it is yet.
+        ///
+        /// A popup is dismissed and the next one takes the same screen: no arrival, no stand-down, and
+        /// the graph rebuilds at once while the new popup is still animating. The row the cursor was
+        /// standing on goes with the old popup, the tree re-seats onto whatever the new one declares
+        /// first, and the player heard that row - "Score screen, button" - before the popup had said
+        /// which notification it was (measured 2026-09-16, the elimination popup swapping in behind a
+        /// deed report). So nothing is read out over that window: the change watcher says the title and
+        /// the words the frame they become real, and the seat below puts the cursor back on the body
+        /// silently, which is where arriving would have put it.
+        ///
+        /// Held rather than stamped (<see cref="Screen.BetweenViews"/>), so a hold that runs out leaves
+        /// the player's own row read out late rather than not at all.
+        /// </summary>
+        public override bool BetweenViews
+        {
+            get { return _seating; }
+        }
+
+        /// <summary>How long the popup's reading may be held: about five seconds of frames, several
+        /// times the longest arrival animation measured. A window that never finishes arriving costs
+        /// the page that much silence rather than the rest of the game.</summary>
+        private const int SeatFrames = 300;
+
+        private bool _seating;
+        private int _seatFrames;
+        private int _seatNodes;
+        private bool _spoken;
+        private NotificationWindow _holding;
+
+        /// <summary>Owe the cursor a seat on this popup. <paramref name="spoken"/> says the change
+        /// watcher has already read the popup out, which is what makes the seat a silent one.</summary>
+        private void Seating(bool spoken)
+        {
+            if (spoken || !_seating)
+            {
+                _seatFrames = SeatFrames;
+            }
+
+            _seating = true;
+            _seatNodes = -1;
+            _spoken |= spoken;
+        }
+
+        private void Seated()
+        {
+            _seating = false;
+            _seatNodes = -1;
+            _spoken = false;
+        }
+
+        /// <summary>
+        /// Put the cursor where this popup wants it, once the popup has finished saying what it has.
+        ///
+        /// The graph is built at the END of a frame, so the render in hand here is the one the previous
+        /// frame left - somebody else's on the frame the screen arrives, and the outgoing popup's on
+        /// the frame one swaps in. And a popup that has just swapped in does not declare all of itself
+        /// at once: measured 2026-09-16 on the elimination popup arriving behind a deed report, its
+        /// content came in over three frames - its title, then its sentence, then the one button it
+        /// offers - so a landing aimed off the two-node frame put the cursor on the BUTTON. The cursor
+        /// is therefore seated on the first frame the popup declares no more than it did the frame
+        /// before, and the budget above is what stops a popup that never settles holding it for ever.
+        /// </summary>
+        private void Seat()
+        {
+            if (!_seating)
+            {
+                return;
+            }
+
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator == null || !ReferenceEquals(navigator.Screen, this))
+            {
+                return;
+            }
+
+            int nodes = navigator.RenderedNodeCount;
+            if (nodes < 0 || nodes != _seatNodes)
+            {
+                _seatNodes = nodes;
+                return;
+            }
+
+            ControlId seat = Landing(navigator.Render);
+            if (seat != null)
+            {
+                // Announced where the player has just arrived - the words are what they came for - and
+                // silent after a swap, where the watcher has said the whole of it already. Asked for
+                // even when the cursor is standing on it: a landing that announces nothing is also what
+                // writes the row down as read, which is what keeps the held line from arriving after it.
+                navigator.FocusNode(seat, !_spoken);
+            }
+
+            Seated();
+        }
+
+        /// <summary>Where the cursor belongs on the popup this render describes: what the notification
+        /// SAYS, else the first thing it draws, else its title - which is the order arriving has always
+        /// put them in, and the title row is the only one every popup has.</summary>
+        private static ControlId Landing(GraphRender render)
+        {
+            if (render == null)
+            {
+                return null;
+            }
+
+            GraphNode words = render.NodeAt(ControlId.Structural(WordsKey));
+            if (words != null)
+            {
+                return words.Id;
+            }
+
+            ControlId title = ControlId.Structural(TitleKey);
+            for (int i = 0; i < render.Order.Count; i++)
+            {
+                GraphNode node = render.Order[i];
+                if (Equals(node.StopKey, ContentStop) && !title.Equals(node.Id))
+                {
+                    return node.Id;
+                }
+            }
+
+            return render.NodeAt(title) == null ? null : title;
         }
 
         /// <summary>Start the countdown to telling <see cref="Shown"/> about this popup. Nothing
@@ -418,6 +554,8 @@ namespace ES2Access.Screens
             _description = null;
             _settling = null;
             _settleWaits = 0;
+            _holding = null;
+            Seated();
         }
 
         /// <summary>Walking to the next notification swaps the words inside the same popup - or
@@ -428,40 +566,63 @@ namespace ES2Access.Screens
             try
             {
                 NotificationWindow window = Current();
+
+                // The hold is spent a frame at a time whatever the popup is doing, so a window that
+                // never finishes arriving cannot keep the page quiet (<see cref="SeatFrames"/>).
+                if (_seating && --_seatFrames <= 0)
+                {
+                    Seated();
+                }
+
                 if (window != null && !Ready(window))
                 {
                     // Mid-animation the popup's labels are the skeleton's rather than this
                     // notification's - the title still a template with its hole in it - and nothing is
                     // remembered either, so the change is announced when the words are the real ones.
+                    // Nothing else is read out over that window either: the graph is already rebuilding
+                    // around the incoming popup, and a row of it read now would arrive ahead of the
+                    // popup's own title (<see cref="BetweenViews"/>). Armed once per window, so the
+                    // hold cannot renew itself for as long as a popup stays unready.
+                    if (!ReferenceEquals(window, _holding))
+                    {
+                        _holding = window;
+                        Seating(false);
+                    }
+
                     return;
                 }
 
+                _holding = null;
                 Settled();
 
                 string title = Title(window);
                 string description = Description(window);
-                if (title == _title && description == _description)
+                if (title != _title || description != _description)
                 {
-                    return;
+                    _title = title;
+                    _description = description;
+
+                    // A popup that draws its own content has no words but its title, and a title read
+                    // twice is a stutter rather than an emphasis. The popup that ends the player's game
+                    // says what that means here too: the screen's name carries it on arrival, and a
+                    // popup that swaps in behind another one never arrives.
+                    string words = Words(window);
+                    Voice.Say(
+                        new MessageBuilder()
+                            .ListItem(title)
+                            .ListItem(OwnElimination(window))
+                            .ListItem(string.Equals(words, title) ? null : words)
+                            .Build(),
+                        false
+                    );
+
+                    // Browsing to the next notification is a new popup as far as anything checking one
+                    // is concerned, and this is the frame its words became real.
+                    Settling(window);
+                    Seating(true);
                 }
 
-                _title = title;
-                _description = description;
-
-                // A popup that draws its own content has no words but its title, and a title read
-                // twice is a stutter rather than an emphasis.
-                string words = Words(window);
-                Voice.Say(
-                    new MessageBuilder()
-                        .ListItem(title)
-                        .ListItem(string.Equals(words, title) ? null : words)
-                        .Build(),
-                    false
-                );
-
-                // Browsing to the next notification is a new popup as far as anything checking one
-                // is concerned, and this is the frame its words became real.
-                Settling(window);
+                Seat();
             }
             catch (Exception e)
             {
@@ -510,7 +671,8 @@ namespace ES2Access.Screens
             // the portrait, above the description - and it is simply absent on a build where
             // BuildEmpireInfo finds nothing to say.
             builder.BeginStop(ContentStop);
-            BuildEmpireInfo(builder, window);
+            ControlId heading = BuildTitle(builder, window);
+            bool dossier = BuildEmpireInfo(builder, window);
 
             builder.SetRegion(BodyRegion);
 
@@ -601,6 +763,18 @@ namespace ES2Access.Screens
 
                     builder.EndGroup();
                 }
+
+                // Two blocks of text with nothing between them are two RAW nodes, and nothing in the
+                // builder wires one raw node to the next - a stop of menu rows chains itself and a
+                // seam between the two kinds is stitched, but a popup whose whole content is a title
+                // over a sentence has neither, and the heading was reachable only by Tabbing away and
+                // back. Left to the stitcher where the dossier panel is open between them, which is a
+                // seam it already answers.
+                if (heading != null && !dossier)
+                {
+                    builder.Connect(heading, GraphDir.Down, lead);
+                    builder.Connect(lead, GraphDir.Up, heading);
+                }
             }
 
             if (body != null)
@@ -639,7 +813,7 @@ namespace ES2Access.Screens
                     // A popup read as a table names its own columns, which is the same question a
                     // heading answers and a different answer to it.
                     Close(builder, ref open);
-                    BuildSheet(builder, window, sheet, lead);
+                    BuildSheet(builder, window, sheet, lead, lead ?? heading);
                 }
 
                 builder.SetRegion(BodyRegion);
@@ -660,6 +834,63 @@ namespace ES2Access.Screens
                 // starting place and would otherwise win.
                 builder.SetStart(lead);
             }
+        }
+
+        /// <summary>
+        /// WHAT HAPPENED, as the popup's first row.
+        ///
+        /// The words the popup announces itself by, declared as a row of their own so they can be gone
+        /// back to (owner ruling 2026-09-16). Arriving still reads the title and lands on what the
+        /// notification SAYS - the heading is above the body and the start node is set below it - so
+        /// the player reaches it with Up rather than by waiting for the next popup to say it again.
+        ///
+        /// The popup that is the end of the player's game carries the sentence the game has no words
+        /// for here as well (<see cref="OwnElimination"/>). The screen's name says it on arrival and
+        /// arriving happens once; a popup that swaps in behind another one never arrives at all, and
+        /// this row is where that sentence can be found either way.
+        ///
+        /// A band of its own, above the panel a popup can open beside itself and above the body, which
+        /// is the order the game draws the three in - so the region jump crosses the heading like any
+        /// other band instead of dying on the popup's first row.
+        /// </summary>
+        private ControlId BuildTitle(GraphBuilder builder, NotificationWindow window)
+        {
+            // Whether the popup is DRAWING that label is the gate's question, not this walk's: the node
+            // is declared on the label and dropped for it by the ancestry test every drawn node gets.
+            AgePrimitiveLabel heading = TitleLabel(window);
+            if (heading == null)
+            {
+                return null;
+            }
+
+            // A title the game could not write reads as nothing at all (NotificationText), and a row
+            // saying nothing is a row the player walks into for no reason.
+            if (string.IsNullOrEmpty(Title(window)) && string.IsNullOrEmpty(OwnElimination(window)))
+            {
+                return null;
+            }
+
+            ControlId id = TitleId(heading);
+            builder.SetRegion(HeadingRegion);
+            builder.AddNode(
+                Nodes.Drawn(
+                    id,
+                    new NodeVtable
+                    {
+                        // No role word, for the same reason the words below carry none: this is what
+                        // the player was interrupted to read, not a control they work.
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() => Title(Current())),
+                            GraphNodes.LabelPart(() => OwnElimination(Current())),
+                        },
+                        OnFocusVisual = AgeWidgets.ReleasePointer,
+                        OnBlurVisual = AgeWidgets.ReleasePointer,
+                    },
+                    heading
+                )
+            );
+            return id;
         }
 
         /// <summary>
@@ -1094,6 +1325,14 @@ namespace ES2Access.Screens
         private static string Description(NotificationWindow window)
         {
             return Text(window, NotificationDescription, false);
+        }
+
+        /// <summary>The label the popup draws its title in - the shared one every prefab of the family
+        /// holds (measured over all sixty-nine: none binds an orphan, the way forty-one of them do with
+        /// Show Location).</summary>
+        private static AgePrimitiveLabel TitleLabel(NotificationWindow window)
+        {
+            return Value(window, NotificationTitle) as AgePrimitiveLabel;
         }
 
         /// <summary>

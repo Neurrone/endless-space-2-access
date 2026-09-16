@@ -182,6 +182,18 @@ namespace ES2Access.Screens
             return ControlId.For(label, WordsKey);
         }
 
+        /// <summary>The node the popup's title is read as. One key for the whole family, so browsing
+        /// from one notification to the next finds the row already there rather than declaring a new
+        /// one and losing the cursor off the old one.</summary>
+        private const string TitleKey = "notification:title";
+
+        /// <summary>The title row's own id, and the one the seat compares against - keyed structurally
+        /// so an id built with no label in hand names the same row.</summary>
+        private static ControlId TitleId(AgePrimitiveLabel label)
+        {
+            return ControlId.For(label, TitleKey);
+        }
+
         /// <summary>
         /// What the popup offers on hovering its words.
         ///

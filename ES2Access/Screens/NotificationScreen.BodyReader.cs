@@ -1223,15 +1223,16 @@ namespace ES2Access.Screens
         /// having one rather than reading it outright, and carries the drawn tooltip as review-buffer
         /// content regardless.
         /// </summary>
-        private static void BuildEmpireInfo(GraphBuilder builder, NotificationWindow window)
+        private static bool BuildEmpireInfo(GraphBuilder builder, NotificationWindow window)
         {
             NegotiationEmpireInfoPanel panel = InfoPanel(window);
             if (!Open(panel))
             {
-                return;
+                return false;
             }
 
             EmpireDossier.Build(builder, panel, "notification:empire-info/", InfoRegion);
+            return true;
         }
 
         private static readonly Func<Line, AgeTransform> LineWidget = EmpireDossier.LineWidget;
