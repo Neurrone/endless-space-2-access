@@ -108,8 +108,8 @@ adds no sleep of its own on top.
 (`hud:empire/resource/Strategic2`, `system:planet/…`); node **labels** are localized and
 fixture-dependent. So a route addresses by key and reads the label back (`snap`, `label_of`,
 `label_nth`, `key_nth`, `nkeys`), lands on it by type-ahead (`findland`, which walks the
-screen's stops because a search reads the focused stop only) and clears with `ui.back`. A
-failed landing does not move the cursor: never follow one with `ui.click`.
+screen's stops and types only at the one whose dump holds the text) and clears with
+`ui.back`. A failed landing does not move the cursor: never follow one with `ui.click`.
 
 **The caption rule.** A region's drawn caption is spoken as part of its *first* row
 (`Planets, Leo I, …`), but type-ahead matches a node's **own** text only — so the first field
