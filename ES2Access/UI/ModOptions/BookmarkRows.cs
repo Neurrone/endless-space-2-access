@@ -46,8 +46,9 @@ namespace ES2Access.UI.ModOptions
     /// (<see cref="Refill"/>, called from <c>ModOptionsWindow.OnBeginShow</c> before the game takes
     /// its backup of every option, so nothing the rebuild adds is backed up already-changed):
     /// no game at all, a campaign the player has never saved, a saved campaign with no bookmarks
-    /// yet, and a campaign whose file is on disk. Each is one caption over the buttons that make
-    /// sense under it, and the first has no caption and no message at all (owner ruling
+    /// yet, and a campaign whose file is on disk. Each is one SENTENCE - a row of its own the cursor
+    /// stops on (owner ruling 2026-09-17), not a caption naming a section - over the buttons that
+    /// make sense under it, and the first has no sentence at all (owner ruling
     /// 2026-09-02): with a game open there is something to say about THIS campaign, and on the main
     /// menu there is not.
     ///
@@ -77,7 +78,7 @@ namespace ES2Access.UI.ModOptions
                 string caption = Caption();
                 if (caption != null)
                 {
-                    Add(options, ModRows.Caption(panel, "bookmarksState", caption));
+                    Add(options, ModRows.Sentence(panel, "bookmarksState", caption));
                 }
 
                 if (InGame() && MapBookmarkStore.Saved)

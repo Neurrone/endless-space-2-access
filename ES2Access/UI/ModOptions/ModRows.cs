@@ -140,6 +140,7 @@ namespace ES2Access.UI.ModOptions
 
                 Actions.Remove(row);
                 Captions.Remove(row);
+                Sentences.Remove(row);
                 Groups.Remove(row);
                 if (row.Option != null)
                 {
@@ -413,6 +414,39 @@ namespace ES2Access.UI.ModOptions
             return option;
         }
 
+        /// <summary>
+        /// A SENTENCE drawn as a row of the table and read as a row of its own - a place the cursor
+        /// stops, unlike a <see cref="Caption"/>, which only names the block under it. The same shape
+        /// on screen as a caption (the tick hidden, the words given the whole row); what differs is
+        /// what the options screen declares it as (owner ruling 2026-09-17: the Bookmarks tab's
+        /// status sentence is a row the player can navigate to).
+        /// </summary>
+        public static Option Sentence(OptionsTabPanel panel, string name, string text)
+        {
+            ModToggleRow provider = new ModToggleRow(Never, Ignore);
+            Option option = Mint(provider, typeof(IModToggleRow));
+            OptionCheckboxItem item = Add<OptionCheckboxItem>(
+                panel,
+                panel.OptionCheckboxPrefab,
+                name,
+                option,
+                text
+            );
+            if (item == null)
+            {
+                return null;
+            }
+
+            if (item.Toggle != null && item.Toggle.AgeTransform != null)
+            {
+                item.Toggle.AgeTransform.Visible = false;
+            }
+
+            Fit(item);
+            Sentences.Add(item);
+            return option;
+        }
+
         /// <summary>Say a caption again, after something under it changed the words it carries.
         /// </summary>
         public static void Recaption(OptionItem item, string title)
@@ -535,6 +569,13 @@ namespace ES2Access.UI.ModOptions
             return item != null && Captions.TryGetValue(item, out title) ? title : null;
         }
 
+        /// <summary>Whether this row is a sentence the cursor stops on (<see cref="Sentence"/>).
+        /// </summary>
+        public static bool IsSentence(OptionItem item)
+        {
+            return item != null && Sentences.Contains(item);
+        }
+
         /// <summary>The block this row is the header of, or null where the row heads nothing.
         /// </summary>
         public static ModGroupRow GroupOf(OptionItem item)
@@ -555,6 +596,7 @@ namespace ES2Access.UI.ModOptions
         {
             Actions.Clear();
             Captions.Clear();
+            Sentences.Clear();
             Groups.Clear();
             Ours.Clear();
             Made.Clear();
@@ -737,6 +779,7 @@ namespace ES2Access.UI.ModOptions
 
         private static readonly Dictionary<OptionItem, string> Captions =
             new Dictionary<OptionItem, string>();
+        private static readonly HashSet<OptionItem> Sentences = new HashSet<OptionItem>();
 
         private static readonly Dictionary<OptionItem, ModGroupRow> Groups =
             new Dictionary<OptionItem, ModGroupRow>();

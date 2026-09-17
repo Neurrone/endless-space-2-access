@@ -408,6 +408,18 @@ namespace ES2Access.Screens
                 return GraphNodes.Button(label, () => ModRows.Activate(item), enabled, tooltip);
             }
 
+            // A SENTENCE the mod drew as a row (ModRows.Sentence): read as text, never as the checkbox
+            // its prefab is, so it must be asked before the checkbox shape below it.
+            if (ModRows.IsSentence(item))
+            {
+                return new NodeVtable
+                {
+                    ControlType = ControlTypes.Text,
+                    Announcements = new List<NodeAnnouncement> { GraphNodes.LabelPart(label) },
+                    Sections = GraphNodes.Sections(null, tooltip),
+                };
+            }
+
             OptionCheckboxItem checkbox = item as OptionCheckboxItem;
             if (checkbox != null && checkbox.Toggle != null)
             {
