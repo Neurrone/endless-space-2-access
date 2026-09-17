@@ -1071,6 +1071,10 @@ namespace ES2Access
             // mode change. Landings read ancestry out of the key, so the page names that level here
             // (<c>GalaxyHudScreen.NoteGrouping</c>) and every landing opens it on the way in.
             KeyGraph.GroupingAncestor = GalaxyHudScreen.NoteGrouping;
+
+            // One render per frame: a key press asks for one where it acts and the screen tick asks
+            // for another as it seats the cursor, and nothing the game owns has moved between them.
+            KeyGraph.FrameCounter = () => UnityEngine.Time.frameCount;
         }
 
         /// <summary>

@@ -394,6 +394,10 @@ namespace ES2Access.UI
                     _state.Expanded.Add(branch.Id);
                 }
 
+                // The branch was opened OUTSIDE the graph, so the frame's standing render knows
+                // nothing of it and the landing below would be sought in a tree still shut.
+                if (_graph != null) _graph.Invalidate();
+
                 _searchOpened.Add(branch);
             }
 
@@ -430,6 +434,8 @@ namespace ES2Access.UI
                     {
                         _state.Expanded.Remove(opened.Id);
                     }
+
+                    if (_graph != null) _graph.Invalidate();
                 }
                 catch (Exception e)
                 {

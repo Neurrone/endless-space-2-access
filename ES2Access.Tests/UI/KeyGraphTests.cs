@@ -1584,5 +1584,47 @@ namespace ES2Access.Tests.UI
             Assert.False(g.FocusByReference(thing)); // already there: no change
             Assert.False(g.FocusByReference(new object()));
         }
+
+        // ---- one render per frame ----
+
+        [Fact]
+        public void TheRenderIsBuiltOncePerFrameAndAgainAfterAnActivation()
+        {
+            GraphState state = new GraphState();
+            int builds = 0;
+            int frame = 7;
+            List<string> clicked = new List<string>();
+            KeyGraph g = new KeyGraph(() =>
+            {
+                builds++;
+                GraphBuilder b = new GraphBuilder();
+                NodeVtable vt = Vt("A");
+                vt.OnActivate = () => clicked.Add("A");
+                b.AddItem(new SyntheticNode(Id("a"), vt));
+                return b.Build();
+            }, state);
+            KeyGraph.FrameCounter = () => frame;
+            try
+            {
+                Assert.True(g.Rerender());
+                Assert.True(g.Rerender());
+                Assert.Equal(1, builds); // the operation's render and the seating pass share one build
+
+                frame++;
+                Assert.True(g.Rerender());
+                Assert.Equal(2, builds);
+
+                Assert.True(g.Activate()); // reuses this frame's build...
+                Assert.Equal(2, builds);
+                Assert.Single(clicked);
+
+                Assert.True(g.Rerender()); // ...and what it did is seen by the next render
+                Assert.Equal(3, builds);
+            }
+            finally
+            {
+                KeyGraph.Reset();
+            }
+        }
     }
 }

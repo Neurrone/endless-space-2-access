@@ -517,6 +517,9 @@ namespace ES2Access.UI
         /// placement - only the line is left out.</summary>
         public bool FocusStop(object stopKey, bool announce = true)
         {
+            // The caller may have moved the game itself before asking to be taken somewhere (the
+            // galaxy's parked jump moves the camera first), so this build is never a reused one.
+            if (_graph != null) _graph.Invalidate();
             if (_screen == null || _graph == null || !_graph.Rerender())
             {
                 return false;
@@ -673,6 +676,9 @@ namespace ES2Access.UI
         /// shared text editor's "edited", followed by the field's new value).</summary>
         public void AnnounceCurrent(bool interrupt = true)
         {
+            // "Re-read it now" is asked by a caller that has just changed something by its own
+            // route, which no graph operation invalidated: this build is always a fresh one.
+            if (_graph != null) _graph.Invalidate();
             if (_graph == null || !_graph.Rerender())
             {
                 return;
@@ -1406,6 +1412,8 @@ namespace ES2Access.UI
                 );
                 if (drop.Handled)
                 {
+                    // The drop acted on the game outside the graph.
+                    _graph.Invalidate();
                     // A drop that landed ended the carry; one the game refused did not, and the page
                     // it was refused on is still the page it was picked up from.
                     NoteCarryScope();
@@ -1560,6 +1568,9 @@ namespace ES2Access.UI
             {
                 return false;
             }
+
+            // The press changed what is carried, and a carried thing changes what rows say.
+            _graph.Invalidate();
 
             // Whatever the press did - took something up, swapped what was held, or found nothing to
             // give - the record now matches what is being carried, if anything.

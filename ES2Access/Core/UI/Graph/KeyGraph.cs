@@ -43,9 +43,28 @@ namespace ES2Access.Core.UI.Graph
     /// </summary>
     public sealed class KeyGraph
     {
+        /// <summary>
+        /// The host's frame clock, for the ONE-RENDER-PER-FRAME memo in <see cref="Rerender"/>.
+        ///
+        /// A key press costs two renders on the same frame - the operation's own, and the seating pass
+        /// the screen tick runs afterwards - and on a big table that is the difference between a
+        /// responsive arrow key and a visible stutter. The second one is asked of a game that has not
+        /// moved since the first, so it can only build the same thing; the memo hands back what was
+        /// built and <see cref="Reconcile"/> still runs, so focus recovery is unchanged.
+        ///
+        /// Injected because this assembly has no engine to ask (the host wires
+        /// <c>UnityEngine.Time.frameCount</c>). Null = no memo at all, which is what the tests and the
+        /// dev server's inspection builds run under: every call builds, exactly as it always did.
+        /// Anything that MUTATES through the graph drops the memo (<see cref="Invalidate"/>), so an
+        /// action's own follow-up render sees what it did.
+        /// </summary>
+        public static Func<int> FrameCounter;
+
         private readonly Func<GraphRender> _renderCallback;
         private readonly GraphState _state;
         private GraphRender _current;
+        private int _renderedFrame;
+        private bool _memoized;
 
         public KeyGraph(Func<GraphRender> renderCallback, GraphState state)
         {
@@ -74,14 +93,33 @@ namespace ES2Access.Core.UI.Graph
         /// nothing (the caller should treat the graph as closed/empty).</summary>
         public bool Rerender()
         {
-            _current = _renderCallback();
+            Func<int> clock = FrameCounter;
+            int frame = clock != null ? clock() : 0;
+            if (!(clock != null && _memoized && _renderedFrame == frame && _current != null))
+            {
+                _current = _renderCallback();
+                _memoized = clock != null;
+                _renderedFrame = frame;
+            }
+
             if (_current == null || _current.Nodes.Count == 0)
             {
                 _current = null;
+                // An empty build is not remembered: a window animating in is asked again on the very
+                // next call, which is how the cursor gets seated the moment there is content.
+                _memoized = false;
                 return false;
             }
             Reconcile(_current, _state);
             return true;
+        }
+
+        /// <summary>Drop the one-render-per-frame memo, so the next <see cref="Rerender"/> builds
+        /// afresh. Every operation that acts through the graph calls it after acting; a CALLER that
+        /// changed the game by some other route and then asks the graph to re-read calls it too.</summary>
+        public void Invalidate()
+        {
+            _memoized = false;
         }
 
         /// <summary>
@@ -758,6 +796,7 @@ namespace ES2Access.Core.UI.Graph
             if (node.Vtable != null && node.Vtable.OnFollow != null)
             {
                 node.Vtable.OnFollow();
+                Invalidate();
                 result.Kind = TreeMove.Followed;
                 return result;
             }
@@ -1006,10 +1045,11 @@ namespace ES2Access.Core.UI.Graph
         /// </summary>
         public static Func<object, object> GroupingAncestor;
 
-        /// <summary>Drop the injected hook - mod teardown, and test isolation.</summary>
+        /// <summary>Drop the injected hooks - mod teardown, and test isolation.</summary>
         public static void Reset()
         {
             GroupingAncestor = null;
+            FrameCounter = null;
         }
 
         private static void AddGrouping(List<object> keys, object structuralKey)
@@ -1036,6 +1076,7 @@ namespace ES2Access.Core.UI.Graph
         // retained game-side container), else the persistent set.
         private void SetExpanded(GraphNode group, bool expanded)
         {
+            Invalidate();
             if (expanded && group.Vtable.OnExpand != null) { group.Vtable.OnExpand(); return; }
             if (!expanded && group.Vtable.OnCollapse != null) { group.Vtable.OnCollapse(); return; }
             if (expanded) _state.Expanded.Add(group.Id);
@@ -1077,6 +1118,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnActivate == null) return false;
             node.Vtable.OnActivate();
+            Invalidate();
             return true;
         }
 
@@ -1087,6 +1129,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnReturnToPrevious == null) return false;
             node.Vtable.OnReturnToPrevious();
+            Invalidate();
             return true;
         }
 
@@ -1098,7 +1141,9 @@ namespace ES2Access.Core.UI.Graph
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
             if (node == null) return false;
-            return ModifiedClick(node.Vtable.OnAltClick, node.Vtable.OnActivate);
+            bool ran = ModifiedClick(node.Vtable.OnAltClick, node.Vtable.OnActivate);
+            if (ran) Invalidate();
+            return ran;
         }
 
         /// <summary>Run the focused control's contextual command - the game's right click. False =
@@ -1109,6 +1154,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnRightClick == null) return false;
             node.Vtable.OnRightClick();
+            Invalidate();
             return true;
         }
 
@@ -1131,6 +1177,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnGoTo == null) return false;
             node.Vtable.OnGoTo();
+            Invalidate();
             return true;
         }
 
@@ -1153,6 +1200,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnClear == null) return false;
             node.Vtable.OnClear();
+            Invalidate();
             return true;
         }
 
@@ -1165,6 +1213,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnDoubleClick == null) return false;
             node.Vtable.OnDoubleClick();
+            Invalidate();
             return true;
         }
 
@@ -1176,7 +1225,9 @@ namespace ES2Access.Core.UI.Graph
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
             if (node == null) return false;
-            return ModifiedClick(node.Vtable.OnCtrlClick, node.Vtable.OnActivate);
+            bool ran = ModifiedClick(node.Vtable.OnCtrlClick, node.Vtable.OnActivate);
+            if (ran) Invalidate();
+            return ran;
         }
 
         /// <summary>Extend the game's selection to the focused control's item - and where the control
@@ -1187,7 +1238,9 @@ namespace ES2Access.Core.UI.Graph
             if (!Rerender()) return false;
             GraphNode node = CurrentNode;
             if (node == null) return false;
-            return ModifiedClick(node.Vtable.OnShiftClick, node.Vtable.OnActivate);
+            bool ran = ModifiedClick(node.Vtable.OnShiftClick, node.Vtable.OnActivate);
+            if (ran) Invalidate();
+            return ran;
         }
 
         // A modified click a control does not wire a handler for is still a CLICK, and the player is
@@ -1215,6 +1268,7 @@ namespace ES2Access.Core.UI.Graph
             GraphNode node = CurrentNode;
             if (node == null || node.Vtable.OnAdjust == null) return false;
             node.Vtable.OnAdjust(sign, large);
+            Invalidate();
             return true;
         }
     }
