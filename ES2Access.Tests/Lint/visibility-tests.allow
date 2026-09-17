@@ -655,6 +655,8 @@ ES2Access/UI/SystemPanels.cs | 1 | if (line.Progress != null && line.Progress.Vi
 ES2Access/UI/SystemPanels.cs | 1 | if (line.RemainingTurnLabel != null && line.RemainingTurnLabel.Visible)
 ES2Access/UI/SystemPanels.cs | 3 | if (panel == null || !AgeWidgets.Visible(panel.AgeTransform))
 
+ES2Access/UI/TableSheet.Cells.cs | 1 | (widget.Visible ? 1 : 0) | (widget.Alpha > 0f ? 2 : 0) | (count << 2)
+
 ES2Access/UI/TableSheet.Header.cs | 1 | if (header != null && AgeWidgets.Visible(child))
 
 ES2Access/UI/TableSheet.Pieces.cs | 1 | if (widget == null || depth > DeepCellDepth || !widget.Visible || widget.Alpha <= 0f)

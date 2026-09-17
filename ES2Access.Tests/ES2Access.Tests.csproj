@@ -36,5 +36,11 @@
     <Compile Include="..\ES2Access\UI\Input\MapActions.cs" LinkBase="Input" />
     <Compile Include="..\ES2Access\UI\Input\BufferActions.cs" LinkBase="Input" />
     <Compile Include="..\ES2Access\UI\Input\KeybindLayout.cs" LinkBase="Input" />
+    <!--
+      The arithmetic half of a table's repaint check. The walk that feeds it reads engine widgets
+      and stays out of here; the fold is plain integers, so "a flag flipped anywhere in the
+      sequence changes the signature" is answered with no game running.
+    -->
+    <Compile Include="..\ES2Access\UI\PaintFold.cs" LinkBase="UI" />
   </ItemGroup>
 </Project>

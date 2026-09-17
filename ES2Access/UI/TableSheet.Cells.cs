@@ -151,6 +151,10 @@ namespace ES2Access.UI
             public readonly object[] Bound;
             public readonly object[] Refs;
 
+            /// <summary>What the rows were DRAWING when they were read. See <see cref="PaintOf"/>.
+            /// </summary>
+            public readonly long Paint;
+
             public Kept(
                 GuiTable table,
                 string title,
@@ -171,6 +175,8 @@ namespace ES2Access.UI
                     Bound[i] = lines[i].Data;
                     Refs[i] = rowRef(lines[i]);
                 }
+
+                Paint = PaintOf(lines);
             }
         }
 
@@ -185,6 +191,9 @@ namespace ES2Access.UI
         /// caption to a column), the line widgets in the order they are drawn (a re-sort moves them),
         /// each line's own object, and the thing each row STANDS FOR. A rebind replaces a line's Data
         /// with a fresh wrapper, so it is the game's own signal that the row was repainted.
+        ///
+        /// And then what the rows are DRAWING (<see cref="PaintOf"/>), because the game also repaints a
+        /// line WITHOUT rebinding it, and that changes the answer.
         /// </summary>
         private bool Rebound(GuiTable table, string title, List<GuiTableLine> lines)
         {
@@ -224,13 +233,77 @@ namespace ES2Access.UI
                     }
                 }
 
-                return false;
+                return kept.Paint != PaintOf(lines);
             }
             catch (Exception e)
             {
                 Log.Warn("table: comparing the kept rows threw: " + e);
                 return true;
             }
+        }
+
+        /// <summary>
+        /// A fingerprint of what the table's rows are DRAWING, folded over every widget inside every
+        /// cell of every row: whether it is switched on, whether it is painted at all
+        /// (<c>Alpha &gt; 0</c>, which is what <see cref="AgeWidgets.Painted"/> reads), and how many
+        /// children it has. Three flag reads per widget, no lookup of any kind and no allocation -
+        /// the fold is arithmetic (<see cref="PaintFold"/>).
+        ///
+        /// It is walked EVERY frame, which is the price of noticing the other way a row changes.
+        /// A rebind - a fresh wrapper into <c>GuiTableLine.Bind</c> - is caught by identity
+        /// (<see cref="Rebound"/>), but the game also calls <c>GuiTableLine.Refresh()</c> on its own
+        /// (<c>StarSystemsManagementPanel.OnAssignmentOrderProcessed</c>, after a hero is assigned),
+        /// which repaints a row's cells while keeping its <c>Data</c>. That repaint flips Visible on
+        /// the fixed widgets inside the cells and, in four cell kinds, reserves pooled children - and
+        /// which widgets are painted inside a cell is exactly what decides how many PIECES the cell is
+        /// read as, and which surface each of them points at. A cell's words are read when the cell is
+        /// read and need none of this; its shape is minted at build time and does.
+        ///
+        /// The root is the row's cell table rather than its cells, so a cell appearing or leaving is a
+        /// change too; the depth budget is one level for the cells themselves plus the
+        /// <see cref="DeepCellDepth"/> the piece walk reaches inside each of them, so the signature
+        /// covers every widget that walk could find.
+        /// </summary>
+        private static long PaintOf(List<GuiTableLine> lines)
+        {
+            long hash = PaintFold.Seed;
+            for (int i = 0; i < lines.Count; i++)
+            {
+                GuiTableLine line = lines[i];
+                hash = Painting(line == null ? null : line.CellsTable, hash, 0);
+            }
+
+            return hash;
+        }
+
+        private static long Painting(AgeTransform widget, long hash, int depth)
+        {
+            if (widget == null)
+            {
+                return PaintFold.Fold(hash, -1);
+            }
+
+            List<AgeTransform> children = widget.Children;
+            int count = children == null ? 0 : children.Count;
+            // Not an existence test: nothing is declared or dropped here. The two flags are the
+            // CONTENT of the fingerprint - they are what a repaint moves, and what the piece walk
+            // will read the next time the rows are minted - so they are folded in whatever they say,
+            // and the walk never branches on them.
+            hash = PaintFold.Fold(
+                hash,
+                (widget.Visible ? 1 : 0) | (widget.Alpha > 0f ? 2 : 0) | (count << 2)
+            );
+            if (depth >= DeepCellDepth + 1)
+            {
+                return hash;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                hash = Painting(children[i], hash, depth + 1);
+            }
+
+            return hash;
         }
 
         /// <summary>The captions the sheet speaks when the player crosses into a column, read off a

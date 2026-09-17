@@ -39,10 +39,10 @@ belong in the files above.
   game's own bind signal and the panel refreshes on dirty, never per frame. Measured on a
   two-system save (the empire page declares 101 nodes there, not the 264 the shelved entry
   recorded): empire page 0.71 -> 0.40 ms per build, the load-game modal's 16-row table
-  1.17 -> 0.24 ms (stopwatch recipe, best of three). What the snapshot does NOT notice: a cell
-  repainted WITHOUT a rebind (`GuiTableLine.Refresh()` on its own - the systems panel does that
-  after a hero assignment) keeps the piece columns and the tooltip surfaces resolved at bind
-  time; a cell's TEXT is read when the cell is read and is unaffected.
+  1.17 -> 0.24 ms (stopwatch recipe, best of three). A repaint WITHOUT a rebind is noticed too
+  (`GuiTableLine.Refresh()` on its own - the systems panel does that after a hero assignment):
+  the rows carry a per-frame signature over what their cells are drawing - Visible, Alpha and
+  child count, folded - which costs 0.012 ms over a 16-row, 485-node table.
 - **Zoom bands and scan lenses — what the plan left open.** The plan itself shipped whole
   2026-09-01 (six stages; the spec is `scan-modes-design-proposal.md`, the pointer row is in
   Shipped). What is left:
