@@ -271,11 +271,10 @@ namespace ES2Access.Core.Speech
 
         // --- the Bookmarks tab, the window's last (owner ruling 2026-09-02) ---
 
-        /// <summary>What the tab is called, and what it says about itself. The tab holds no setting:
+        /// <summary>What the tab is called (it carries no sentence about itself, owner ruling 2026-09-17). The tab holds no setting:
         /// it says where this campaign's map bookmarks are kept and offers the two ways of reaching
         /// them, which is what a player needs when a save changes hands.</summary>
         public const string ModSettingsBookmarks = "mod-settings.bookmarks";
-        public const string ModSettingsBookmarksDescription = "mod-settings.bookmarks-description";
 
         /// <summary>The three sentences about where this campaign stands. A campaign nobody has
         /// saved has no identity to name a file after, so its bookmarks are held in memory until the
@@ -328,11 +327,10 @@ namespace ES2Access.Core.Speech
 
         // --- the Help tab, the window's last (owner ruling 2026-09-17) ---
 
-        /// <summary>What the tab is called and what it says about itself, and the three addresses it
+        /// <summary>What the tab is called (no sentence about itself, owner ruling 2026-09-17) and the three addresses it
         /// opens: where the mod documents itself, where its players talk, and where the work is paid
         /// for. None of the three is reachable from inside the game any other way.</summary>
         public const string ModSettingsHelp = "mod-settings.help";
-        public const string ModSettingsHelpDescription = "mod-settings.help-description";
         public const string ModSettingsHelpHomepage = "mod-settings.help.homepage";
         public const string ModSettingsHelpDiscord = "mod-settings.help.discord";
         public const string ModSettingsHelpPatreon = "mod-settings.help.patreon";
@@ -492,7 +490,6 @@ namespace ES2Access.Core.Speech
             { ModSettingsKeysScanner, "Scanner" },
             { ModSettingsKeysBookmarks, "Bookmarks" },
             { ModSettingsBookmarks, "Bookmarks" },
-            { ModSettingsBookmarksDescription, "Share this game's map bookmarks" },
             {
                 ModSettingsBookmarksUnsaved,
                 "Bookmarks are written to disk when this game is first saved."
@@ -529,10 +526,6 @@ namespace ES2Access.Core.Speech
                 "Imported {0} bookmarks. They will be used when that game is played."
             },
             { ModSettingsHelp, "Help" },
-            {
-                ModSettingsHelpDescription,
-                "Links to the mod's homepage, Discord server and Patreon"
-            },
             { ModSettingsHelpHomepage, "Mod homepage" },
             { ModSettingsHelpDiscord, "Join Discord server" },
             { ModSettingsHelpPatreon, "Support my work on Patreon" },

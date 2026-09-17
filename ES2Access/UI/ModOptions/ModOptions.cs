@@ -122,7 +122,8 @@ namespace ES2Access.UI.ModOptions
                             typeof(IModBookmarksService),
                             new ModBookmarksService(),
                             () => ModStrings.Get(ModStrings.ModSettingsBookmarks),
-                            () => ModStrings.Get(ModStrings.ModSettingsBookmarksDescription),
+                            // No tooltip (owner ruling 2026-09-17): null asks for none, see ModOptionsWindow.Relabel.
+                            null,
                             BookmarkRows.Fill
                         )
                     );
@@ -144,7 +145,8 @@ namespace ES2Access.UI.ModOptions
                             typeof(IModHelpService),
                             new ModHelpService(),
                             () => ModStrings.Get(ModStrings.ModSettingsHelp),
-                            () => ModStrings.Get(ModStrings.ModSettingsHelpDescription),
+                            // No tooltip (owner ruling 2026-09-17).
+                            null,
                             HelpRows.Fill
                         )
                     );
