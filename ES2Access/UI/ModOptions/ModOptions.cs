@@ -503,6 +503,13 @@ namespace ES2Access.UI.ModOptions
 
         private static void DestroyLeftovers()
         {
+            // Hide first. A modal destroyed while shown never runs its own hide, so the screens it
+            // hid and disabled behind itself (GuiModalWindow.OnEndShow) and the manager's "a modal is
+            // up" flag stay as they were: a hot reload with the window open blanked the main menu
+            // (measured 2026-09-17). An INSTANT hide runs the whole hide path now - GuiPanel.OnBeginHide
+            // goes straight to OnEndHide - which is where the modal shows and re-enables what is
+            // behind it and tells the manager it is gone.
+            HideStanding();
             GameObject standing = null;
             GameGui.GuiWindowsStack stack = StackOf(BootWindow());
             standing = Unregister(
@@ -527,6 +534,45 @@ namespace ES2Access.UI.ModOptions
             if (standing != null)
             {
                 UnityEngine.Object.DestroyImmediate(standing);
+            }
+        }
+
+        /// <summary>Hide the mod's window through the game, instantly, if it is shown - see
+        /// <see cref="DestroyLeftovers"/>. Found by NAME in the manager's own list, because after a
+        /// hot reload the standing window is the previous load's type.</summary>
+        private static void HideStanding()
+        {
+            try
+            {
+                GuiManager manager = Manager();
+                IList list = WindowList(
+                    typeof(GameGui.GuiManager),
+                    "guiWindowsFromBackToFront",
+                    manager
+                );
+                if (manager == null || list == null)
+                {
+                    return;
+                }
+
+                for (int i = 0; i < list.Count; i++)
+                {
+                    GameGui.GuiWindow entry = list[i] as GameGui.GuiWindow;
+                    if (
+                        entry == null
+                        || entry.name != ModOptionsWindow.WindowName
+                        || !entry.Shown
+                    )
+                    {
+                        continue;
+                    }
+
+                    manager.HideWindow(entry, true);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("mod options: hiding the window before destroying it threw: " + e);
             }
         }
 
