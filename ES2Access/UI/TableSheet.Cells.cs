@@ -4,6 +4,7 @@ using ES2Access.Core.Speech;
 using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
+using ES2Access.Localization;
 using ES2Access.UI.Input;
 
 namespace ES2Access.UI
@@ -25,13 +26,29 @@ namespace ES2Access.UI
             // elsewhere, or not at all, would otherwise get a table whose columns are nameless, and the
             // only symptom would be silent edges.
             Read(table);
+            // The per-cell memos are per FRAME, snapshot or no snapshot: they stand behind what a cell
+            // SAYS, which is read when the cell is read and must be this frame's answer.
             _supplied.Clear();
             _hovers.Clear();
             _answers.Clear();
             _answeredRefusal = null;
             List<GuiTableLine> lines = Lines(table);
             GraphSheet sheet = new GraphSheet(builder, _key);
-            sheet.Region(title, Columns(lines));
+            if (!Rebound(table, title, lines))
+            {
+                // Same rows, same bindings: hand back what the last build minted. Only the MINTING is
+                // skipped - every declaration is re-gated, and every word is still read when read.
+                sheet.Region(title, _kept.Columns);
+                sheet.Replay(_kept.Block);
+                sheet.Finish();
+                builder.LandStopOn(sheet.FirstRow);
+                return sheet;
+            }
+
+            Kept keep = new Kept(table, title, _headers, lines, _rowRef);
+            sheet.Records(keep.Block);
+            keep.Columns = Columns(lines);
+            sheet.Region(title, keep.Columns);
             for (int l = 0; l < lines.Count; l++)
             {
                 GuiTableLine line = lines[l];
@@ -101,11 +118,119 @@ namespace ES2Access.UI
             }
 
             sheet.Finish();
+            // Only a build that got all the way here is kept: one that threw part way through declared
+            // part of a table, and replaying that would hide the failure behind a shorter table.
+            _kept = keep;
 
             // Tab into the table lands on a ROW - the selected one where there is one - and not on the
             // heading band declared above it, whose sorted column reads "selected" too.
             builder.LandStopOn(sheet.FirstRow);
             return sheet;
+        }
+
+        /// <summary>
+        /// What one build of the rows declared, kept until the game rebinds the table.
+        ///
+        /// A row's STRUCTURE - how many cells, which column each is, what each of them is a control of
+        /// and which widget it stands on - is settled when the game binds the line
+        /// (<c>GuiTable.Refresh</c> makes a fresh wrapper per row and hands it to <c>GuiTableLine.Bind</c>,
+        /// which is what repaints the cells). Between two binds the mod was reading the same widgets
+        /// and minting the same keys, closures and edges sixty times a second, for a table whose shape
+        /// had not moved.
+        /// </summary>
+        private sealed class Kept
+        {
+            public readonly GraphSheet.Block Block = new GraphSheet.Block();
+            public string[] Columns;
+
+            public readonly GuiTable Table;
+            public readonly string Title;
+            public readonly string Language;
+            public readonly GuiTableHeader[] Headers;
+            public readonly GuiTableLine[] Lines;
+            public readonly object[] Bound;
+            public readonly object[] Refs;
+
+            public Kept(
+                GuiTable table,
+                string title,
+                List<GuiTableHeader> headers,
+                List<GuiTableLine> lines,
+                RowObject rowRef
+            )
+            {
+                Table = table;
+                Title = title;
+                Language = ModLocale.Language;
+                Headers = headers.ToArray();
+                Lines = lines.ToArray();
+                Bound = new object[lines.Count];
+                Refs = new object[lines.Count];
+                for (int i = 0; i < lines.Count; i++)
+                {
+                    Bound[i] = lines[i].Data;
+                    Refs[i] = rowRef(lines[i]);
+                }
+            }
+        }
+
+        private Kept _kept;
+
+        /// <summary>
+        /// Whether this frame's rows are a different table from the one <see cref="_kept"/> holds - in
+        /// which case they are read off the widgets again.
+        ///
+        /// Everything the declarations were minted from is asked: the table itself, the region's title
+        /// and the language its captions were written in, the heading widgets (which is what pairs a
+        /// caption to a column), the line widgets in the order they are drawn (a re-sort moves them),
+        /// each line's own object, and the thing each row STANDS FOR. A rebind replaces a line's Data
+        /// with a fresh wrapper, so it is the game's own signal that the row was repainted.
+        /// </summary>
+        private bool Rebound(GuiTable table, string title, List<GuiTableLine> lines)
+        {
+            Kept kept = _kept;
+            try
+            {
+                if (
+                    kept == null
+                    || !ReferenceEquals(kept.Table, table)
+                    || !string.Equals(kept.Title, title, StringComparison.Ordinal)
+                    || !string.Equals(kept.Language, ModLocale.Language, StringComparison.Ordinal)
+                    || kept.Headers.Length != _headers.Count
+                    || kept.Lines.Length != lines.Count
+                )
+                {
+                    return true;
+                }
+
+                for (int i = 0; i < kept.Headers.Length; i++)
+                {
+                    if (!ReferenceEquals(kept.Headers[i], _headers[i]))
+                    {
+                        return true;
+                    }
+                }
+
+                for (int i = 0; i < kept.Lines.Length; i++)
+                {
+                    GuiTableLine line = lines[i];
+                    if (
+                        !ReferenceEquals(kept.Lines[i], line)
+                        || !ReferenceEquals(kept.Bound[i], line.Data)
+                        || !ReferenceEquals(kept.Refs[i], _rowRef(line))
+                    )
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("table: comparing the kept rows threw: " + e);
+                return true;
+            }
         }
 
         /// <summary>The captions the sheet speaks when the player crosses into a column, read off a

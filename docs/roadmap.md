@@ -31,17 +31,18 @@ belong in the files above.
   no variant and a body beyond title and description. The generic arrival race it records (the
   popup screen pushes on the ready frame, before some popups' own labels exist) awaits an owner
   decision.
-- **Empire screen build cost (shelved 2026-09-14, owner ruling).** One production build of
-  the F1 page is ~6.4 ms first-in-frame (the systems table 4.7 ms of it; the stopwatch recipe's
-  back-to-back builds read ~2.1 ms because 199 of 200 hit the frame-keyed sweeps warm). The cost
-  is structural: 264 nodes rebuilt every frame at ~4 us and 1.5 KB each, spread over node
-  construction, the four edges per cell and the AGE reads. `GraphSheet.RowAt` is 0.9 ms / 310 KB
-  of it and its vertical wiring is quadratic in a row's cell count. Local cuts in `TableSheet`
-  were measured neutral (commit d49f804 kept only the allocation win). Meeting the bar needs a
-  Core change: a snapshot of the built rows keyed on the line list and each line's bound object,
-  re-emitted until the game rebinds; or a cheaper node (hoist the row key out of the per-cell
-  path, index the vertical wiring). Proof for either is the empire screen's dump byte for byte,
-  no full walk (owner ruling).
+- **Empire screen build cost (fixed 2026-09-17).** Two changes. The graph builds one render
+  per FRAME: a key press used to pay for two, its own and the one the screen tick builds a
+  moment later to seat the cursor, with nothing the game owns moving between them. And
+  `TableSheet` keeps the rows it declared until the game REBINDS the table - `GuiTable.Refresh`
+  makes a fresh wrapper per row and hands it to `GuiTableLine.Bind`, so `line.Data` is the
+  game's own bind signal and the panel refreshes on dirty, never per frame. Measured on a
+  two-system save (the empire page declares 101 nodes there, not the 264 the shelved entry
+  recorded): empire page 0.71 -> 0.40 ms per build, the load-game modal's 16-row table
+  1.17 -> 0.24 ms (stopwatch recipe, best of three). What the snapshot does NOT notice: a cell
+  repainted WITHOUT a rebind (`GuiTableLine.Refresh()` on its own - the systems panel does that
+  after a hero assignment) keeps the piece columns and the tooltip surfaces resolved at bind
+  time; a cell's TEXT is read when the cell is read and is unaffected.
 - **Zoom bands and scan lenses — what the plan left open.** The plan itself shipped whole
   2026-09-01 (six stages; the spec is `scan-modes-design-proposal.md`, the pointer row is in
   Shipped). What is left:
