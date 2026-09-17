@@ -40,6 +40,9 @@ namespace ES2Access.UI.ModOptions
             // Before anything is added, not after: the comparer runs from AgeTransform.Init inside
             // InstantiateChild, so a row it cannot sort throws on the way in.
             ModRows.Begin(panel);
+            // The rows of the page being rebuilt are the only ones whose capture may take a chord
+            // longer than the game allows; the ones this replaces are gone with their window.
+            LongChordCapture.Forget();
             List<Option> options = new List<Option>();
             int index = 0;
             KeybindLayout.Block[] blocks = KeybindLayout.Blocks;
@@ -110,6 +113,9 @@ namespace ES2Access.UI.ModOptions
                 {
                     item.TitleLabel.Text = ModBindings.Title(actionKey);
                 }
+
+                // Three keys at once on this row, where the game's own rows take two.
+                LongChordCapture.Watch(item);
 
                 if (item.Tooltip != null)
                 {

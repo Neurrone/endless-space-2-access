@@ -22,10 +22,12 @@ namespace ES2Access.UI.Input
     /// Ctrl). Writing it back drops the flag again, which keeps the round trip stable.
     ///
     /// The game's capture takes at most TWO keys (<c>AgeControlKeyBindingField.
-    /// MaximumNumberOfKeysByCombination</c>), so a three-key chord - the mod ships a few, such as
-    /// Control+Shift+Enter - reads out correctly and cannot be re-captured as itself. Anything past
-    /// the first non-modifier key is dropped on the way in, which is what the game's own binding
-    /// dispatch does with it too.
+    /// MaximumNumberOfKeysByCombination</c>), which would leave a three-key chord - the mod ships
+    /// several, such as Control+Shift+Enter and Control+Alt+Left - readable in its row and impossible
+    /// to put back after a change. On the MOD's own rows that cap is lifted to four
+    /// (<see cref="ES2Access.UI.ModOptions.LongChordCapture"/>); the game's Controls tab keeps its
+    /// two. Anything past the first non-modifier key is still dropped on the way in, which is what
+    /// the game's own binding dispatch does with it too.
     /// </summary>
     public static class KeyChords
     {

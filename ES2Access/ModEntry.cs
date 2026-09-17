@@ -303,6 +303,7 @@ namespace ES2Access
             // Every key-mapping commit, in either options window: a chord the mod and the game both
             // answer to is said out loud, both ways round, and nothing is taken from anybody.
             BindingOverlaps.Install();
+            ES2Access.UI.ModOptions.LongChordCapture.Install();
             // The one key that still reaches the game while it holds the keyboard for the chat box:
             // Escape, which the panel answers by shutting itself instead of letting go.
             ChatEscape.Install();
@@ -1221,6 +1222,7 @@ namespace ES2Access
                 ES2Access.UI.ModOptions.OptionTextFieldCommit.Remove
             );
             Step("binding overlap patch", BindingOverlaps.Remove);
+            Step("long chord capture patch", ES2Access.UI.ModOptions.LongChordCapture.Remove);
             // And the edit that patch was watching, so the next load's first keystroke has nothing
             // left over to speak about.
             Step("text field editor", TextFieldEditor.Stop);
