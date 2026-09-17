@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using Amplitude.Unity.Framework;
 using Amplitude.Unity.Options;
+using ES2Access.Core.Settings;
 using ES2Access.Core.Speech;
 using ES2Access.Core.Util;
+using ES2Access.ES2.Bookmarks;
 using ES2Access.UI.Bookmarks;
 
 namespace ES2Access.UI.ModOptions
@@ -26,14 +28,19 @@ namespace ES2Access.UI.ModOptions
     public sealed class ModBookmarksService : IModBookmarksService { }
 
     /// <summary>
-    /// THE BOOKMARKS TAB - where this game's map bookmarks are kept, and how to hand them to
-    /// somebody else.
+    /// THE BOOKMARKS TAB - where this game's map bookmarks are kept, how to hand them to somebody
+    /// else, and how to take somebody else's.
     ///
     /// It holds no setting. Map bookmarks are set on the map and written the moment they are set
-    /// (<see cref="MapBookmarkStore"/>); what a player cannot do from the map is find the file or
-    /// give it to the friend they just sent a save to. So this page is a sentence saying where the
-    /// bookmarks are and two ways of reaching them - the file's text on the clipboard, and the
-    /// folder itself.
+    /// (<see cref="MapBookmarkStore"/>); what a player cannot do from the map is find the file, give
+    /// it to the friend they just sent a save to, or put the one that friend sent back where it
+    /// belongs. So this page is a sentence saying where the bookmarks are and three buttons - the
+    /// file's text on the clipboard, the clipboard back into the file it names
+    /// (<see cref="Import"/>), and the folder itself.
+    ///
+    /// THE IMPORT ROW IS DRAWN ALWAYS, the main menu included, because the paste says which campaign
+    /// it belongs to and bookmarks usually arrive before the save they go with is ever loaded. The
+    /// other two rows are still gated on there being something for them to act on.
     ///
     /// FOUR STATES, and the page is built from whichever is true when the window OPENS
     /// (<see cref="Refill"/>, called from <c>ModOptionsWindow.OnBeginShow</c> before the game takes
@@ -44,9 +51,9 @@ namespace ES2Access.UI.ModOptions
     /// 2026-09-02): with a game open there is something to say about THIS campaign, and on the main
     /// menu there is not.
     ///
-    /// NOTHING HERE LIGHTS APPLY. Both rows are <c>ModRows.Button</c>, which carries an option
+    /// NOTHING HERE LIGHTS APPLY. Every row is a <c>ModRows.Button</c>, which carries an option
     /// nothing reads, so the window's own "has anything changed" scan finds nothing and Apply stays
-    /// unavailable however many times either button is pressed.
+    /// unavailable however many times any of them is pressed.
     /// </summary>
     public static class BookmarkRows
     {
@@ -86,6 +93,20 @@ namespace ES2Access.UI.ModOptions
                         )
                     );
                 }
+
+                // ALWAYS, the main menu included (owner ruling 2026-09-17): what is on the clipboard
+                // says which campaign the paste belongs to, so there is nothing about the game being
+                // played - or about there being one - that the row depends on.
+                Add(
+                    options,
+                    ModRows.Button(
+                        panel,
+                        panel.Parent,
+                        "bookmarksImport",
+                        ModStrings.Get(ModStrings.ModSettingsBookmarksImport),
+                        Import
+                    )
+                );
 
                 // Only where there is something in it: the folder is made by the first write, so
                 // sending a player to it before then would open an explorer on nothing - or on a
@@ -141,16 +162,35 @@ namespace ES2Access.UI.ModOptions
         /// say the same thing (<see cref="ModRows.Activate"/>).</summary>
         public static void Tick()
         {
+            // The page first, and only then the box: an import changes which rows the page has
+            // (a campaign with no file has one now), and rebuilding it from inside the press would
+            // destroy the very row that dispatched it.
+            if (_refill)
+            {
+                _refill = false;
+                Refill();
+            }
+
             string say = _say;
             _say = null;
             Voice.Say(say, false);
+
+            string box = _box;
+            _box = null;
+            if (box != null)
+            {
+                Box(box);
+            }
         }
 
-        /// <summary>Mod teardown: hold no panel and no unsaid line across a reload.</summary>
+        /// <summary>Mod teardown: hold no panel, no unsaid line and no unshown box across a reload.
+        /// </summary>
         public static void Forget()
         {
             _panel = null;
             _say = null;
+            _box = null;
+            _refill = false;
         }
 
         // ---- what the page says ----
@@ -183,20 +223,14 @@ namespace ES2Access.UI.ModOptions
         // ---- what the two buttons do ----
 
         /// <summary>
-        /// THE FILE, AS TEXT, ON THE CLIPBOARD - the whole point of the tab.
+        /// THE FILE, AS TEXT, ON THE CLIPBOARD - what a save that has changed hands needs, because
+        /// the bookmarks the sender made are in a file the receiver has no copy of and a file is not
+        /// something a chat window will carry.
         ///
-        /// The use case is a save that has changed hands: the bookmarks the sender made are in a
-        /// file the receiver has no copy of, and a file is not something a chat window will carry.
-        /// So the text is the file itself with one line in front of it saying what to do with it,
-        /// and that line names the FILE rather than the folder, because the name is what the
-        /// receiver cannot work out for themselves - it carries the campaign's GUID, which is what
-        /// binds the bookmarks to the save they came with.
-        ///
-        /// The line is a comment in the file's own format (<see cref="ES2Access.Core.Settings.SettingsFile"/>
-        /// ignores a line starting with <c>#</c>), so pasted text can be saved exactly as it is and
-        /// read back with the instruction still in it. Deliberately a plain <c>#</c> and not the
-        /// <c>#!</c> the mod stamps its own header with: that mark means "the mod wrote this line
-        /// and may rewrite it", and this line belongs to the person who pasted it.
+        /// The text is the file EXACTLY as it is on disk (owner ruling 2026-09-17), with nothing
+        /// added in front of it. Nothing needs to be: the file says which campaign and which faction
+        /// it belongs to in two keys of its own (<see cref="BookmarkFile"/>), so the receiver pastes
+        /// it into <see cref="Import"/> and the mod works out the name and the folder itself.
         /// </summary>
         private static void Copy()
         {
@@ -209,18 +243,159 @@ namespace ES2Access.UI.ModOptions
                     return;
                 }
 
-                string header = ModStrings.Format(
-                    ModStrings.ModSettingsBookmarksCopyHeader,
-                    System.IO.Path.GetFileName(path)
-                );
-                UnityEngine.GUIUtility.systemCopyBuffer =
-                    CommentMark + " " + header + Environment.NewLine + File.ReadAllText(path);
+                UnityEngine.GUIUtility.systemCopyBuffer = File.ReadAllText(path);
                 _say = ModStrings.Get(ModStrings.ModSettingsBookmarksCopied);
             }
             catch (Exception e)
             {
                 Log.Warn("bookmarks: copying " + path + " to the clipboard threw: " + e);
                 _say = ModStrings.Get(ModStrings.ModSettingsBookmarksCopyFailed);
+            }
+        }
+
+        /// <summary>
+        /// SOMEBODY ELSE'S BOOKMARKS, OFF THE CLIPBOARD AND INTO THE FILE THEY BELONG IN - the other
+        /// half of <see cref="Copy"/>, and what a save that has changed hands needs on the receiving
+        /// machine.
+        ///
+        /// Which file that is comes from the paste itself (<see cref="BookmarkImport"/>), never from
+        /// which campaign is being played: the whole point is that the bookmarks usually arrive
+        /// BEFORE the save they go with is ever loaded. So the row is drawn on the main menu too, and
+        /// the three landings it can have - this campaign, another campaign, no game at all - differ
+        /// only in what the player is told about when they will see them.
+        ///
+        /// Everything the player is told goes in the game's own message box rather than being
+        /// spoken, because a count is a fact they may want to read twice.
+        /// </summary>
+        private static void Import()
+        {
+            try
+            {
+                BookmarkImport import;
+                switch (BookmarkImport.Read(Clipboard(), out import))
+                {
+                    case BookmarkImportReading.Empty:
+                        _box = ModStrings.Get(ModStrings.ModSettingsBookmarksImportEmpty);
+                        return;
+                    case BookmarkImportReading.NotBookmarks:
+                        _box = ModStrings.Get(ModStrings.ModSettingsBookmarksImportNotBookmarks);
+                        return;
+                }
+
+                string folder = MapBookmarkStore.Folder;
+                string name = import.FileName;
+                if (folder == null || name == null)
+                {
+                    _box = ModStrings.Get(ModStrings.ModSettingsBookmarksImportFailed);
+                    return;
+                }
+
+                string path = System.IO.Path.Combine(folder, name);
+                SettingsFile target = SettingsFileOnDisk.Read(path, "bookmarks");
+                bool playing = import.Campaign == MapBookmarkStore.Campaign;
+                int imported;
+                if (playing)
+                {
+                    // The tile the player hears is measured from their own empire's home, so the
+                    // one-place-one-slot rule can only be asked in full for the campaign being
+                    // played (MapBookmarks.SetAloneExactly is what the other two landings get).
+                    GalaxyPosition origin = GalaxyCoordinates.Origin();
+                    imported = import.MergeInto(target, true, origin.X, origin.Y);
+                }
+                else
+                {
+                    imported = import.MergeInto(target, false, 0f, 0f);
+                }
+
+                if (!SettingsFileOnDisk.Write(path, target, "bookmarks"))
+                {
+                    _box = ModStrings.Get(ModStrings.ModSettingsBookmarksImportFailed);
+                    return;
+                }
+
+                if (playing)
+                {
+                    // The map's own digits read the store, not the file, so a campaign being played
+                    // takes its new slots now rather than on the next load.
+                    MapBookmarkStore.Reload();
+                }
+
+                _box = Landed(playing, imported);
+                _refill = true;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bookmarks: importing the clipboard threw: " + e);
+                _box = ModStrings.Get(ModStrings.ModSettingsBookmarksImportFailed);
+            }
+        }
+
+        /// <summary>What an import that landed is told the player, by where the bookmarks went.
+        /// </summary>
+        private static string Landed(bool playing, int imported)
+        {
+            if (playing)
+            {
+                return ModStrings.Plural(
+                    ModStrings.ModSettingsBookmarksImportedOne,
+                    ModStrings.ModSettingsBookmarksImportedMany,
+                    imported
+                );
+            }
+
+            if (InGame())
+            {
+                return ModStrings.Plural(
+                    ModStrings.ModSettingsBookmarksImportedOtherOne,
+                    ModStrings.ModSettingsBookmarksImportedOtherMany,
+                    imported
+                );
+            }
+
+            return ModStrings.Plural(
+                ModStrings.ModSettingsBookmarksImportedNoGameOne,
+                ModStrings.ModSettingsBookmarksImportedNoGameMany,
+                imported
+            );
+        }
+
+        /// <summary>Whatever is on the clipboard, or nothing at all where the desktop will not say.
+        /// </summary>
+        private static string Clipboard()
+        {
+            try
+            {
+                return UnityEngine.GUIUtility.systemCopyBuffer;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bookmarks: reading the clipboard threw: " + e);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The game's own message box, with one button on it - the same box the scanner's editor
+        /// says a name clash in (<see cref="ScannerEditor"/>), and for the same reason: the game has
+        /// no INFORMATIVE title of its own, so the box wears the confirmation heading and answers
+        /// with Ok alone, an empty cancel caption being how the window hides its second button.
+        /// </summary>
+        private static void Box(string message)
+        {
+            try
+            {
+                Gui.GuiService.ShowMessage(
+                    message,
+                    MessageBoxType.INFORMATIVE,
+                    null,
+                    "%MessageBoxConfirmationTitle",
+                    "%MessageBoxOkTitle",
+                    string.Empty
+                );
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bookmarks: the import's message box would not open: " + e);
             }
         }
 
@@ -248,11 +423,6 @@ namespace ES2Access.UI.ModOptions
 
         // ---- the machinery ----
 
-        /// <summary>What a comment looks like in the format the bookmarks file is written in. The
-        /// mark itself is <see cref="ES2Access.Core.Settings.SettingsFile"/>'s; it is spelled here
-        /// rather than borrowed because that class's own constant is its HEADER mark.</summary>
-        private const string CommentMark = "#";
-
         private static void Add(List<Option> options, Option option)
         {
             if (option != null)
@@ -278,5 +448,7 @@ namespace ES2Access.UI.ModOptions
 
         private static OptionsTabPanel _panel;
         private static string _say;
+        private static string _box;
+        private static bool _refill;
     }
 }

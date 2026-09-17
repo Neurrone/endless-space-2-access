@@ -284,12 +284,11 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsBookmarksNone = "mod-settings.bookmarks.none";
         public const string ModSettingsBookmarksSavedTo = "mod-settings.bookmarks.saved-to";
 
-        /// <summary>The two buttons, and what the copy leaves in front of the file's own text - the
-        /// name to save it under, which carries the campaign's GUID and is the one thing whoever
-        /// receives it cannot work out.</summary>
+        /// <summary>The buttons. The copy puts the file's own text on the clipboard with nothing
+        /// added to it: the file says which campaign it belongs to itself, which is what the import
+        /// on the receiving machine reads.</summary>
         public const string ModSettingsBookmarksCopy = "mod-settings.bookmarks.copy";
         public const string ModSettingsBookmarksOpenFolder = "mod-settings.bookmarks.open-folder";
-        public const string ModSettingsBookmarksCopyHeader = "mod-settings.bookmarks.copy-header";
 
         /// <summary>What the mod says after the copy. A clipboard changes nothing the player can
         /// see or hear, so the press has to say it landed.</summary>
@@ -297,6 +296,34 @@ namespace ES2Access.Core.Speech
         /// <summary>The copy could not read the file - gone or unreadable since the page was built.
         /// </summary>
         public const string ModSettingsBookmarksCopyFailed = "mod-settings.bookmarks.copy-failed";
+
+        /// <summary>The import button, and the two ways a paste is not a set of bookmarks at all:
+        /// nothing on the clipboard, and text that names no campaign (owner ruling 2026-09-17).
+        /// </summary>
+        public const string ModSettingsBookmarksImport = "mod-settings.bookmarks.import";
+        public const string ModSettingsBookmarksImportEmpty = "mod-settings.bookmarks.import-empty";
+        public const string ModSettingsBookmarksImportNotBookmarks =
+            "mod-settings.bookmarks.import-not-bookmarks";
+
+        /// <summary>The paste was read and the file it belongs in could not be written.</summary>
+        public const string ModSettingsBookmarksImportFailed =
+            "mod-settings.bookmarks.import-failed";
+
+        /// <summary>What an import that landed says, in the three situations it can land in: the
+        /// campaign being played, a different campaign while one is being played, and no game open
+        /// at all. The last two say when the bookmarks will be seen, because nothing on the map can
+        /// show them now and a player who heard only a count would go looking for them.</summary>
+        public const string ModSettingsBookmarksImportedOne = "mod-settings.bookmarks.imported-one";
+        public const string ModSettingsBookmarksImportedMany =
+            "mod-settings.bookmarks.imported-many";
+        public const string ModSettingsBookmarksImportedOtherOne =
+            "mod-settings.bookmarks.imported-other-one";
+        public const string ModSettingsBookmarksImportedOtherMany =
+            "mod-settings.bookmarks.imported-other-many";
+        public const string ModSettingsBookmarksImportedNoGameOne =
+            "mod-settings.bookmarks.imported-no-game-one";
+        public const string ModSettingsBookmarksImportedNoGameMany =
+            "mod-settings.bookmarks.imported-no-game-many";
 
         // --- the Help tab, the window's last (owner ruling 2026-09-17) ---
 
@@ -472,12 +499,33 @@ namespace ES2Access.Core.Speech
             { ModSettingsBookmarksSavedTo, "Bookmarks are saved to {0}" },
             { ModSettingsBookmarksCopy, "Copy bookmarks to clipboard" },
             { ModSettingsBookmarksOpenFolder, "Open bookmarks folder" },
-            {
-                ModSettingsBookmarksCopyHeader,
-                "Save this text as {0} in the mod's bookmarks folder"
-            },
             { ModSettingsBookmarksCopied, "Bookmarks copied to the clipboard" },
             { ModSettingsBookmarksCopyFailed, "The bookmarks file could not be read" },
+            { ModSettingsBookmarksImport, "Import bookmarks from clipboard" },
+            { ModSettingsBookmarksImportEmpty, "The clipboard is empty" },
+            {
+                ModSettingsBookmarksImportNotBookmarks,
+                "The clipboard does not hold a bookmarks file"
+            },
+            { ModSettingsBookmarksImportFailed, "The bookmarks file could not be written" },
+            { ModSettingsBookmarksImportedOne, "Imported {0} bookmark for this game." },
+            { ModSettingsBookmarksImportedMany, "Imported {0} bookmarks for this game." },
+            {
+                ModSettingsBookmarksImportedOtherOne,
+                "Imported {0} bookmark for another game. It will be used when that game is played."
+            },
+            {
+                ModSettingsBookmarksImportedOtherMany,
+                "Imported {0} bookmarks for another game. They will be used when that game is played."
+            },
+            {
+                ModSettingsBookmarksImportedNoGameOne,
+                "Imported {0} bookmark. It will be used when that game is played."
+            },
+            {
+                ModSettingsBookmarksImportedNoGameMany,
+                "Imported {0} bookmarks. They will be used when that game is played."
+            },
             { ModSettingsHelp, "Help" },
             {
                 ModSettingsHelpDescription,
