@@ -18,6 +18,15 @@ namespace ES2Access.UI.Input
         public const string RegionPrev = "ui.regionPrev";
         public const string RegionNext = "ui.regionNext";
 
+        /// <summary>The four corners of a table, reached from anywhere inside it: the row's first and
+        /// last column, and the table's first and last row. Home and End are about the PANEL and go on
+        /// answering for it; these four never leave the table the cursor is standing in, and do nothing
+        /// at all outside one.</summary>
+        public const string FirstColumn = "ui.firstColumn";
+        public const string LastColumn = "ui.lastColumn";
+        public const string FirstRow = "ui.firstRow";
+        public const string LastRow = "ui.lastRow";
+
         // The coarse half of a slider: the same move left and right make, in the step size the
         // control calls large.
         public const string CoarseIncrease = "ui.coarseIncrease";

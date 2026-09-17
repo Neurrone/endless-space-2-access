@@ -3,11 +3,11 @@ using ES2Access.Core.Speech;
 namespace ES2Access.UI.Input
 {
     /// <summary>
-    /// HOW THE CONTROLS TAB IS LAID OUT: six tables, each under a heading of its own.
+    /// HOW THE CONTROLS TAB IS LAID OUT: seven tables, each under a heading of its own.
     ///
-    /// Eighty-one rows in one table is a page whose only landmark is "row 47 of 81". Split into
-    /// six, every row counts inside the table it belongs to ("3 of 22"), the section jump walks the
-    /// page by six names, and stepping down across a boundary announces the block being entered
+    /// Eighty-odd rows in one table is a page whose only landmark is "row 47 of 81". Split up,
+    /// every row counts inside the table it belongs to ("3 of 22"), the section jump walks the
+    /// page by its headings, and stepping down across a boundary announces the block being entered
     /// (owner ruling 2026-09-02).
     ///
     /// This is a PRESENTATION table, not the registration order: the order the mod registers its
@@ -38,7 +38,7 @@ namespace ES2Access.UI.Input
             public readonly string[] Actions;
         }
 
-        /// <summary>The six tables, in the order they are drawn.</summary>
+        /// <summary>The seven tables, in the order they are drawn.</summary>
         public static readonly Block[] Blocks = new[]
         {
             new Block(
@@ -67,6 +67,16 @@ namespace ES2Access.UI.Input
                     UiActions.CoarseDecrease,
                     UiActions.PagePrev,
                     UiActions.PageNext,
+                }
+            ),
+            new Block(
+                ModStrings.ModSettingsKeysTables,
+                new[]
+                {
+                    UiActions.FirstColumn,
+                    UiActions.LastColumn,
+                    UiActions.FirstRow,
+                    UiActions.LastRow,
                 }
             ),
             new Block(

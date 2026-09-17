@@ -661,6 +661,24 @@ namespace ES2Access
             input.Register(UiActions.End).Bind(KeyCode.End);
             input.Register(UiActions.RegionPrev).Bind(KeyCode.UpArrow, alt: true).Repeating();
             input.Register(UiActions.RegionNext).Bind(KeyCode.DownArrow, alt: true).Repeating();
+            // The corners of a table, on the arrows with both modifiers on them. Home and End stay
+            // what they were - the panel's ends - because a table is not the only thing a panel holds
+            // and the player who wants the top of the list still asks for it the same way. Exact
+            // modifier matching keeps these four off the plain arrows and off the Alt ones the region
+            // jump uses. Repeating like the region keys: leaning on the key past the edge is silence,
+            // not a second jump.
+            input.Register(UiActions.FirstColumn)
+                .Bind(KeyCode.LeftArrow, ctrl: true, alt: true)
+                .Repeating();
+            input.Register(UiActions.LastColumn)
+                .Bind(KeyCode.RightArrow, ctrl: true, alt: true)
+                .Repeating();
+            input.Register(UiActions.FirstRow)
+                .Bind(KeyCode.UpArrow, ctrl: true, alt: true)
+                .Repeating();
+            input.Register(UiActions.LastRow)
+                .Bind(KeyCode.DownArrow, ctrl: true, alt: true)
+                .Repeating();
             // The coarse step is the same arrow with Shift on it, which is where a player already
             // expects "the bigger version of this move" to live. Exact-modifier matching is what
             // makes it safe: the plain arrow binding declares Shift off, so it stays silent while

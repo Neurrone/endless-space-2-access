@@ -734,6 +734,14 @@ namespace ES2Access.UI
                     return JumpEdge(true);
                 case UiActions.End:
                     return JumpEdge(false);
+                case UiActions.FirstColumn:
+                    return TableEdge(GraphDir.Left);
+                case UiActions.LastColumn:
+                    return TableEdge(GraphDir.Right);
+                case UiActions.FirstRow:
+                    return TableEdge(GraphDir.Up);
+                case UiActions.LastRow:
+                    return TableEdge(GraphDir.Down);
                 case UiActions.RegionPrev:
                     return InRegion() && Region(-1);
                 case UiActions.RegionNext:
@@ -1274,6 +1282,32 @@ namespace ES2Access.UI
         private bool Stop(int step)
         {
             MoveResult move = _graph.MoveStop(step, true);
+            if (move.Moved)
+            {
+                AnnounceMove(move);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// A corner of the table the cursor is standing in: the row's first or last column, the
+        /// table's first or last row.
+        ///
+        /// Not claimed at all outside a table - unlike Home and End, which always mean something on a
+        /// panel, these four have nothing to be about there, and a key that does nothing is better
+        /// given back to the game than swallowed. Inside a table the press is consumed even when the
+        /// cursor is already in the corner asked for, the same silence as Home on the first control.
+        /// </summary>
+        private bool TableEdge(GraphDir dir)
+        {
+            GraphNode node = _graph.CurrentNode;
+            if (node == null || node.Vtable == null || node.Vtable.Row == null)
+            {
+                return false;
+            }
+
+            MoveResult move = _graph.MoveToTableEdge(dir);
             if (move.Moved)
             {
                 AnnounceMove(move);

@@ -257,11 +257,12 @@ namespace ES2Access.Core.Speech
         // --- the Controls tab's six tables (owner ruling 2026-09-02) ---
 
         /// <summary>What each block of key-binding rows is called. The Controls tab is not one
-        /// table of eighty-one rows but six, each under its own heading, so "3 of 23" counts the
-        /// table the player is standing in and the section jump walks the page by its six names.
+        /// table of eighty-odd rows but several, each under its own heading, so "3 of 23" counts the
+        /// table the player is standing in and the section jump walks the page by their names.
         /// The layout itself - which action is in which table, and in what order - is
         /// <see cref="ES2Access.UI.Input.KeybindLayout"/>.</summary>
         public const string ModSettingsKeysCursor = "mod-settings.keys.cursor";
+        public const string ModSettingsKeysTables = "mod-settings.keys.tables";
         public const string ModSettingsKeysBuffers = "mod-settings.keys.buffers";
         public const string ModSettingsKeysHotkeys = "mod-settings.keys.hotkeys";
         public const string ModSettingsKeysInspect = "mod-settings.keys.inspect";
@@ -484,6 +485,7 @@ namespace ES2Access.Core.Speech
             },
             { ScannerEditClear, "Clear this custom category" },
             { ModSettingsKeysCursor, "Cursor and navigation" },
+            { ModSettingsKeysTables, "Tables" },
             { ModSettingsKeysBuffers, "Buffers" },
             { ModSettingsKeysHotkeys, "UI hotkeys" },
             { ModSettingsKeysInspect, "Inspect mode" },

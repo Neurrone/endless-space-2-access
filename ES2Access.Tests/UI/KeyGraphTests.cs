@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ES2Access.Core.UI;
 using ES2Access.Core.UI.Graph;
 using Xunit;
 using static ES2Access.Tests.UI.Graphs;
@@ -1465,6 +1466,104 @@ namespace ES2Access.Tests.UI
             // The caller navigates only when the control declines to adjust.
             g.Move(GraphDir.Right);
             Assert.False(g.TryAdjust(1, false));
+        }
+
+        // ---- the four corners of a table ----
+
+        private static readonly object RowA = new object();
+        private static readonly object RowB = new object();
+        private static readonly object RowC = new object();
+
+        /// <summary>A sort-header band, then a two-row table, then a second table of one row - the three
+        /// things a bounded walk has to tell apart, wired by the builder exactly as a screen wires them.
+        /// </summary>
+        private static KeyGraph Tables(GraphState state, out GraphSheet built)
+        {
+            GraphSheet sheet = null;
+            KeyGraph g = new KeyGraph(() =>
+            {
+                GraphBuilder b = new GraphBuilder();
+                b.StartRow()
+                    .AddItem(new SyntheticNode(Id("hName"), Vt("Sort by name")))
+                    .AddItem(new SyntheticNode(Id("hShips"), Vt("Sort by ships")))
+                    .AddItem(new SyntheticNode(Id("hMove"), Vt("Sort by move")))
+                    .EndRow();
+                GraphSheet s = new GraphSheet(b, "t:");
+                s.Region("Fleets", new[] { "Name", "Ships", "Move" });
+                s.Row(Vt("Alpha"), RowA, null, () => "3", () => "5");
+                s.Row(Vt("Beta"), RowB, null, () => "2", () => "4");
+                s.Region("Armies", new[] { "Name", "Ships", "Move" });
+                s.Row(Vt("Gamma"), RowC, null, () => "1", () => "9");
+                s.Finish();
+                sheet = s;
+                return b.Build();
+            }, state);
+            g.Rerender();
+            built = sheet;
+            return g;
+        }
+
+        [Fact]
+        public void AColumnJumpStopsAtTheEndOfItsOwnRow()
+        {
+            GraphState state = new GraphState();
+            GraphSheet sheet;
+            KeyGraph g = Tables(state, out sheet);
+            g.Move(GraphDir.Down); // Alpha
+            g.Move(GraphDir.Down); // Beta
+            g.Move(GraphDir.Right); // Beta's ships
+
+            MeasuredMove(g, GraphDir.Right, sheet.CellKey(RowB, 2), "4");
+            MeasuredMove(g, GraphDir.Left, sheet.CellKey(RowB, 0), "Beta");
+        }
+
+        [Fact]
+        public void AColumnJumpNamesTheColumnItLandsIn()
+        {
+            GraphState state = new GraphState();
+            GraphSheet sheet;
+            KeyGraph g = Tables(state, out sheet);
+            g.Move(GraphDir.Down); // Alpha
+
+            Assert.Equal("Move", g.MoveToTableEdge(GraphDir.Right).TransitionLabel);
+            Assert.Equal("Name", g.MoveToTableEdge(GraphDir.Left).TransitionLabel);
+        }
+
+        /// <summary>The bound the unbounded <see cref="KeyGraph.MoveToEdge"/> has not got: the sort
+        /// headers above the first row and the next section's rows below the last one are both one
+        /// ordinary edge away, and neither is part of this table.</summary>
+        [Fact]
+        public void ARowJumpStopsAtTheHeaderBandAndAtTheNextTable()
+        {
+            GraphState state = new GraphState();
+            GraphSheet sheet;
+            KeyGraph g = Tables(state, out sheet);
+            g.Move(GraphDir.Down); // Alpha
+            g.Move(GraphDir.Down); // Beta
+
+            MeasuredMove(g, GraphDir.Up, sheet.CellKey(RowA, 0), "Alpha");
+            MeasuredMove(g, GraphDir.Down, sheet.CellKey(RowB, 0), "Beta");
+        }
+
+        [Fact]
+        public void TheCornersOfATableDoNothingOutsideOne()
+        {
+            GraphState state = new GraphState();
+            GraphSheet sheet;
+            KeyGraph g = Tables(state, out sheet);
+
+            Assert.Equal("hName", Focused(g)); // a sort header: no row of its own
+            Assert.False(g.MoveToTableEdge(GraphDir.Right).Moved);
+            Assert.False(g.MoveToTableEdge(GraphDir.Down).Moved);
+            Assert.Equal("hName", Focused(g));
+        }
+
+        private static void MeasuredMove(KeyGraph g, GraphDir dir, string key, string label)
+        {
+            MoveResult move = g.MoveToTableEdge(dir);
+            Assert.True(move.Moved);
+            Assert.Equal(key, Focused(g));
+            Assert.Equal(label, Label(move.To));
         }
 
         [Fact]
