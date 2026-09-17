@@ -254,7 +254,7 @@ namespace ES2Access.Core.Speech
 
         public const string ScannerEditClear = "mod-settings.scanner.clear";
 
-        // --- the Controls tab's six tables (owner ruling 2026-09-02) ---
+        // --- the Controls tab's seven tables (six by owner ruling 2026-09-02, Tables added 2026-09-17) ---
 
         /// <summary>What each block of key-binding rows is called. The Controls tab is not one
         /// table of eighty-odd rows but several, each under its own heading, so "3 of 23" counts the

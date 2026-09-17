@@ -70,16 +70,6 @@ namespace ES2Access.UI.Input
                 }
             ),
             new Block(
-                ModStrings.ModSettingsKeysTables,
-                new[]
-                {
-                    UiActions.FirstColumn,
-                    UiActions.LastColumn,
-                    UiActions.FirstRow,
-                    UiActions.LastRow,
-                }
-            ),
-            new Block(
                 ModStrings.ModSettingsKeysBuffers,
                 new[]
                 {
@@ -89,6 +79,16 @@ namespace ES2Access.UI.Input
                     BufferActions.Next,
                     BufferActions.First,
                     BufferActions.Last,
+                }
+            ),
+            new Block(
+                ModStrings.ModSettingsKeysTables,
+                new[]
+                {
+                    UiActions.FirstColumn,
+                    UiActions.LastColumn,
+                    UiActions.FirstRow,
+                    UiActions.LastRow,
                 }
             ),
             new Block(

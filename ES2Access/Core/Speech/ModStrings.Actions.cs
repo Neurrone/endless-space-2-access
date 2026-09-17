@@ -77,25 +77,9 @@ namespace ES2Access.Core.Speech
             // The four corners of a table. Worded as what they reach rather than as "home" and
             // "end", because the panel keys already have those words and these are about the table.
             { "action.ui.firstColumn.title", "Move to first column of row" },
-            {
-                "action.ui.firstColumn.description",
-                "Move to the first column of the table row the cursor is in. Does nothing outside a table."
-            },
             { "action.ui.lastColumn.title", "Move to last column of row" },
-            {
-                "action.ui.lastColumn.description",
-                "Move to the last column of the table row the cursor is in. Does nothing outside a table."
-            },
             { "action.ui.firstRow.title", "Move to first row of table" },
-            {
-                "action.ui.firstRow.description",
-                "Move to the first row of the table the cursor is in. Does nothing outside a table."
-            },
             { "action.ui.lastRow.title", "Move to last row of table" },
-            {
-                "action.ui.lastRow.description",
-                "Move to the last row of the table the cursor is in. Does nothing outside a table."
-            },
             { "action.ui.regionPrev.title", "Move to previous section" },
             { "action.ui.regionPrev.description", "Move to the previous section of this panel." },
             { "action.ui.regionNext.title", "Move to next section" },

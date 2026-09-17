@@ -8,7 +8,7 @@ using ES2Access.UI.Input;
 namespace ES2Access.UI.ModOptions
 {
     /// <summary>
-    /// The Keybinds category's rows - SIX TABLES, each under a heading of its own, built out of the
+    /// The Keybinds category's rows - SEVEN TABLES, each under a heading of its own, built out of the
     /// game's own prefab and read by the mod's options screen with nothing written for it.
     ///
     /// The game builds a panel's rows by reflecting over ONE provider's properties, which cannot
@@ -22,7 +22,7 @@ namespace ES2Access.UI.ModOptions
     /// which key exists is the input layer's business and where its row is drawn is the page's, and
     /// they are kept apart so that moving a row cannot move a binding. Each heading is a
     /// <c>ModRows.Caption</c>, which the options screen turns into the name of a REGION - so
-    /// "3 of 22" counts the table the player is in and Alt+arrow walks the page by its six names.
+    /// "3 of 22" counts the table the player is in and Alt+arrow walks the page by its seven names.
     ///
     /// The table's priority comparer is dropped before the first row goes in, so nothing can
     /// re-sort rows that all carry the same priority into an order nobody chose.
