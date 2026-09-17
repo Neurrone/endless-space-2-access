@@ -16,29 +16,3 @@ backhome() { evq "$CS/menuhome.cs"; frame; frame; evq "$CS/menuhome.cs"; onscree
 # ensure_menu -- the main menu focused with nothing over it. Proceeds at once when it is.
 ensure_menu() { isonscreen screen.main-menu && return 0; backhome start; }
 
-# optiontabs <file prefix> <label> -- dump an options window one tab at a time and leave it on
-# the first. Both windows this folder opens are the game's options modal - the mod's own
-# settings are a subclass of it - so both are read the same way, by the tab keys the screen
-# declares rather than by counted arrows: a capture resets the cursor, and the tab a counted
-# step would land on depends on which stop the reset left it in.
-optiontabs() {
-  ot_pfx="$1"; ot_lbl="$2"
-  snap "$TMP/ot.txt"
-  # Counted the same way the rows are indexed, so the loop can never ask for a tab key_nth
-  # cannot answer: nkeys counts LINES, and key_nth indexes MATCHES.
-  ot_n=$(grep -oE '\[options:tab/[^]]*\]' "$TMP/ot.txt" | wc -l | tr -d ' ')
-  echo "   discovered: $ot_n tabs on $ot_lbl"
-  ot_i=1
-  while [ "$ot_i" -le "$ot_n" ]; do
-    ot_c=$(key_nth "$TMP/ot.txt" 'options:tab/[^]]*\]' "$ot_i" | sed 's|.*/||')
-    if tkey "$TMP/ot.txt" 'options:tab/[^]]*\]' "$ot_i"; then
-      inp ui.click; frame; frame
-      capture "$ot_pfx-$ot_c" "$ot_lbl, $ot_c"
-    else
-      skip "$ot_lbl tab $ot_c could not be landed on"
-    fi
-    ot_i=$((ot_i+1))
-  done
-  # left on the first tab: both windows remember the selected one across opens
-  if [ "$ot_n" -ge 1 ] && tkey "$TMP/ot.txt" 'options:tab/[^]]*\]' 1; then inp ui.click; frame; frame; fi
-}

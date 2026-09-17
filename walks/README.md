@@ -40,7 +40,7 @@ game pools also runs that surface's A-B-A rebind check (§9), so the check canno
 | `diplomacy/` | `screen` (a card tooltip; ring-wedge rebind by hover selection); `minor-civilization-modal` |
 | `heroes/` | `academy`; `hero-list-modal`; `hero-selection-modal` (only with a hero) |
 | `notifications/` | `popup` (only with a pending notification; parity probe; popup-body rebind); `turn-log` |
-| `game-menu/` | `pause-menu`; `mod-settings` (both tabs, through the menu entry); `game-options-modal`; `load-save-modal` |
+| `game-menu/` | `pause-menu`; `mod-settings` (every tab, through the menu entry); `game-options-modal`; `load-save-modal` |
 | `end-game/` | `defeat-and-score-screen` (an AI given the score victory; the defeat modal, then the score screen its button opens, read again with a second empire picked and a second figure plotted, then Empire Chronicles into the journal and the journal's Back to the main menu); `elimination` (the player's own empire put out of the game); `journal-modal` (every row, and a row's delete-entry confirmation opened and cancelled); `score-screen-from-journal` (the same page as a stored game, which draws its way back to the journal); `victory-and-cutscene` (the player given the score victory; the won page, whose third button replays the outro cutscene). The three that finish the game reload the save themselves — `endlib.sh` |
 | `dialogs/` | `rename-box`; `message-box-non-blocking` — windows shared by several screens |
 | `main-menu/` | out of game only, run against a freshly launched game at the menu: `menu`; `mod-settings`; `new-game` (the lobby, faction choice, custom-faction editor, advanced settings); `load-save`; `game-options`; `dlc`; `credits`; `disclaimer`. `menulib.sh` holds their drain helpers |
@@ -187,7 +187,7 @@ two halves of a pair must skip the *same* things.
 | The ship designer declares no hull combo | The hull drop list |
 | No minor empire with a system | The minor-civilization window |
 | The empire owns no hero | Hero selection |
-| The pause menu has no mod-settings entry | Both settings-tab dumps |
+| The pause menu has no mod-settings entry | Every settings-tab dump |
 | No pending notification; fewer than two | The popup; the popup-body rebind |
 | `hud:turn-log` is not declared | Nothing — recorded as a finding about the fixture |
 | No economy tab with two selectable marketplace sections | The marketplace scenario's rebind |
@@ -224,8 +224,8 @@ focused control and restores the tooltip delay.
 * **`HandleInput(Exit)` does not reliably hide every modal** (`LawsManagementModalWindow`,
   `GovernmentModalWindow`); `cs/drain.cs` sweeps a 39-name list as a backstop.
 * **The mod's settings window remembers its tab across opens**, and a cleared `StopMemory`
-  seats the cursor on the *selected* tab — so the route selects the first tab explicitly
-  before dumping it, and leaves it there.
+  seats the cursor on the *selected* tab — so `optiontabs` addresses each tab by the key
+  the screen declares rather than by a counted arrow, and leaves the window on the first one.
 * **`POST /eval` bodies that touch `List<GameType>` poison the REPL session** for good. Every
   eval here binds game collections as `System.Collections.IList` and indexes them.
 * **Right on an already-expanded map row steps into it and flies nowhere**; `map-tree`
