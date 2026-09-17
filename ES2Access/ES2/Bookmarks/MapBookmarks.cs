@@ -87,6 +87,34 @@ namespace ES2Access.ES2.Bookmarks
         /// </summary>
         public char SetAlone(char digit, MapBookmark bookmark, float originX, float originY)
         {
+            return SetAlone(digit, bookmark, true, originX, originY);
+        }
+
+        /// <summary>
+        /// One place, one slot, for a caller with NO HOME TO MEASURE FROM - the import writing a
+        /// campaign other than the one being played (owner ruling 2026-09-17), where the empire whose
+        /// home the tiles are counted from is not in the game and cannot be asked.
+        ///
+        /// Two systems are still the same place when they are the same system. Everything else is
+        /// judged on the exact position rather than on the tile, which is the strictest reading
+        /// available without an origin: it empties a slot that holds the very same point and leaves
+        /// alone two points that would merely READ the same to the campaign's owner. The looser
+        /// answer is unavailable rather than rejected - a tile measured from the wrong home would
+        /// delete somebody else's bookmark on a rounding coincidence.
+        /// </summary>
+        public char SetAloneExactly(char digit, MapBookmark bookmark)
+        {
+            return SetAlone(digit, bookmark, false, 0f, 0f);
+        }
+
+        private char SetAlone(
+            char digit,
+            MapBookmark bookmark,
+            bool tiles,
+            float originX,
+            float originY
+        )
+        {
             char emptied = '\0';
             for (int i = 0; i < Digits.Length; i++)
             {
@@ -97,7 +125,7 @@ namespace ES2Access.ES2.Bookmarks
                     continue;
                 }
 
-                if (!SamePlace(held, bookmark, originX, originY))
+                if (!SamePlace(held, bookmark, tiles, originX, originY))
                 {
                     continue;
                 }
@@ -118,6 +146,7 @@ namespace ES2Access.ES2.Bookmarks
         private static bool SamePlace(
             MapBookmark one,
             MapBookmark two,
+            bool tiles,
             float originX,
             float originY
         )
@@ -125,6 +154,11 @@ namespace ES2Access.ES2.Bookmarks
             if (one.IsSystem && two.IsSystem)
             {
                 return one.SystemGuid == two.SystemGuid;
+            }
+
+            if (!tiles)
+            {
+                return one.X == two.X && one.Y == two.Y;
             }
 
             return MapCoordinates.Round(one.X - originX) == MapCoordinates.Round(two.X - originX)

@@ -28,9 +28,12 @@ namespace ES2Access.UI.Bookmarks
     /// not fork one campaign's bookmarks into two files, and it is put through
     /// <see cref="FileNameText.Safe"/> because a custom faction's name is whatever the player typed
     /// into the editor. Where nothing survives that - a faction named entirely in punctuation, or no
-    /// faction at all yet - the file is the bare <c>&lt;guid&gt;.cfg</c> it always was. The file also
-    /// opens with a header comment naming the game in the player's own language
-    /// (<see cref="Stamp"/>), refreshed on every write.
+    /// faction at all yet - the file is the bare <c>&lt;guid&gt;.cfg</c> it always was. Working the
+    /// name out from those two parts is <see cref="BookmarkFile"/>'s, because the IMPORT has to work
+    /// out the same name for somebody else's campaign. The file also opens with a header comment
+    /// naming the game in the player's own language (<see cref="Stamp"/>), and carries the campaign
+    /// and the faction part as keys of its own (<see cref="Identify"/>), both refreshed on every
+    /// write - the keys are what lets a file that arrived as pasted text say where it belongs.
     ///
     /// Written on every set, because there is no moment a player would recognise as "saving my
     /// bookmarks"; the file is ten short lines and the write is the same one the settings file makes.
@@ -100,10 +103,13 @@ namespace ES2Access.UI.Bookmarks
                     return null;
                 }
 
-                return System.IO.Path.Combine(
-                    System.IO.Path.Combine(_directory, FolderName),
-                    (faction.Length == 0 ? _campaign : faction + "-" + _campaign) + ".cfg"
-                );
+                string name = BookmarkFile.NameOf(_campaign, faction);
+                return name == null
+                    ? null
+                    : System.IO.Path.Combine(
+                        System.IO.Path.Combine(_directory, FolderName),
+                        name
+                    );
             }
         }
 
@@ -151,11 +157,6 @@ namespace ES2Access.UI.Bookmarks
             }
         }
 
-        /// <summary>How much of the faction's internal name the file's own name may carry. Long
-        /// enough for any name a person would recognise it by, short enough that the whole path
-        /// stays comfortable beside a plugin directory that is already deep.</summary>
-        private const int FactionNameLimit = 48;
-
         /// <summary>
         /// The faction part of the file's name, and whether it can be answered at all.
         ///
@@ -177,7 +178,10 @@ namespace ES2Access.UI.Bookmarks
                 Faction faction = empire.Faction;
                 if (faction != null)
                 {
-                    part = FileNameText.Safe(faction.Name.ToString(), FactionNameLimit);
+                    part = FileNameText.Safe(
+                        faction.Name.ToString(),
+                        BookmarkFile.FactionNameLimit
+                    );
                 }
 
                 return true;
@@ -311,6 +315,22 @@ namespace ES2Access.UI.Bookmarks
             _frame = -1;
         }
 
+        /// <summary>Read this campaign's slots off the disk again, because something other than the
+        /// player's own gestures has changed the file - an import writing the campaign being played
+        /// (<c>BookmarkRows</c>). The polling in <see cref="Tick"/> is untouched: it watches which
+        /// campaign is being played, not what the file says.</summary>
+        public static void Reload()
+        {
+            try
+            {
+                Load();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bookmarks: re-reading the campaign's file threw: " + e);
+            }
+        }
+
         private static void Load()
         {
             string path = Path;
@@ -337,8 +357,29 @@ namespace ES2Access.UI.Bookmarks
             }
 
             Slots.WriteTo(_file);
+            Identify(_file);
             Stamp(_file);
             SettingsFileOnDisk.Write(path, _file, "bookmarks");
+        }
+
+        /// <summary>
+        /// Write into the file the two things its NAME says - the campaign and the faction part -
+        /// so that the text alone is enough to file it again on another machine
+        /// (<see cref="BookmarkFile"/>). Stamped on every write, beside the header comment.
+        ///
+        /// Unconditional where <see cref="Stamp"/> is not: the header is a sentence for a person and
+        /// half of one would be worse than none, while these two keys are what the IMPORT reads, and
+        /// the path is only answered at all once both of them can be.
+        /// </summary>
+        private static void Identify(SettingsFile file)
+        {
+            string faction;
+            if (_campaign == null || !FactionPart(out faction))
+            {
+                return;
+            }
+
+            BookmarkFile.Identify(file, _campaign, faction);
         }
 
         /// <summary>
