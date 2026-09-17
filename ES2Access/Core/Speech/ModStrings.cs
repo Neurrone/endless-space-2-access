@@ -298,6 +298,17 @@ namespace ES2Access.Core.Speech
         /// </summary>
         public const string ModSettingsBookmarksCopyFailed = "mod-settings.bookmarks.copy-failed";
 
+        // --- the Help tab, the window's last (owner ruling 2026-09-17) ---
+
+        /// <summary>What the tab is called and what it says about itself, and the three addresses it
+        /// opens: where the mod documents itself, where its players talk, and where the work is paid
+        /// for. None of the three is reachable from inside the game any other way.</summary>
+        public const string ModSettingsHelp = "mod-settings.help";
+        public const string ModSettingsHelpDescription = "mod-settings.help-description";
+        public const string ModSettingsHelpHomepage = "mod-settings.help.homepage";
+        public const string ModSettingsHelpDiscord = "mod-settings.help.discord";
+        public const string ModSettingsHelpPatreon = "mod-settings.help.patreon";
+
         public const string ScreenLoading = "screen.loading";
         public const string ScreenNotification = "screen.notification";
         public const string ScreenTutorial = "screen.tutorial";
@@ -467,6 +478,14 @@ namespace ES2Access.Core.Speech
             },
             { ModSettingsBookmarksCopied, "Bookmarks copied to the clipboard" },
             { ModSettingsBookmarksCopyFailed, "The bookmarks file could not be read" },
+            { ModSettingsHelp, "Help" },
+            {
+                ModSettingsHelpDescription,
+                "Links to the mod's homepage, Discord server and Patreon"
+            },
+            { ModSettingsHelpHomepage, "Mod homepage" },
+            { ModSettingsHelpDiscord, "Join Discord server" },
+            { ModSettingsHelpPatreon, "Support my work on Patreon" },
             { ScreenLoading, "Loading" },
             { ScreenNotification, "Notification" },
             { ScreenTutorial, "Tutorial" },

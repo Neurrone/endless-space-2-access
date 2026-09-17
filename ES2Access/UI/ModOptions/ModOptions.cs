@@ -57,14 +57,17 @@ namespace ES2Access.UI.ModOptions
         private static bool _stopped;
 
         /// <summary>
-        /// The window's four tabs, in the order they are drawn - General first, then the player's
-        /// own scanner categories, then Bookmarks, then the mod's key bindings. General is where a
-        /// setting that belongs to no other tab lives, and it is first because that is where a
-        /// player looks for one; being first also makes it the tab the window OPENS on
+        /// The window's five tabs, in the order they are drawn - General first, then the player's
+        /// own scanner categories, then Bookmarks, then the mod's key bindings, then Help. General
+        /// is where a setting that belongs to no other tab lives, and it is first because that is
+        /// where a player looks for one; being first also makes it the tab the window OPENS on
         /// (<see cref="ModOptionsWindow.Load"/> shows the first panel). Bookmarks holds no setting at
         /// all (<see cref="BookmarkRows"/>): it says where this campaign's map bookmarks are kept and
-        /// offers the two ways of reaching them; it sits ahead of the key bindings because the
-        /// bindings are the longest page and belong at the end (owner ruling 2026-09-02).
+        /// offers the ways of moving them between machines; it sits ahead of the key bindings because
+        /// the bindings are the longest page and belong at the end (owner ruling 2026-09-02). Help
+        /// holds no setting either (<see cref="HelpRows"/>) - three addresses to open - and is LAST
+        /// (owner ruling 2026-09-17), after the bindings, because it is what a player goes looking
+        /// for rather than something they pass through.
         ///
         /// ALL EXIST EVERYWHERE, main menu included (owner ruling 2026-08-24). The Scanner tab was
         /// in-game only for as long as its columns were a snapshot of the galaxy being played; they
@@ -134,6 +137,17 @@ namespace ES2Access.UI.ModOptions
                             KeybindRows.Fill
                         )
                     );
+
+                    _categories.Add(
+                        new ModCategory(
+                            HelpCategory,
+                            typeof(IModHelpService),
+                            new ModHelpService(),
+                            () => ModStrings.Get(ModStrings.ModSettingsHelp),
+                            () => ModStrings.Get(ModStrings.ModSettingsHelpDescription),
+                            HelpRows.Fill
+                        )
+                    );
                 }
 
                 return _categories;
@@ -152,6 +166,10 @@ namespace ES2Access.UI.ModOptions
         /// <summary>The Bookmarks tab's category key - an identifier, like
         /// <see cref="GeneralCategory"/>, never a spoken word.</summary>
         public const string BookmarksCategory = "Bookmarks";
+
+        /// <summary>The Help tab's category key - an identifier, like
+        /// <see cref="GeneralCategory"/>, never a spoken word.</summary>
+        public const string HelpCategory = "Help";
 
         /// <summary>What the game names that page in the player's language, and what its own options
         /// window says about it - the mod's key-binding tab is the game's Controls tab and reads as
