@@ -325,6 +325,21 @@ namespace ES2Access.Core.Speech
         public const string ModSettingsBookmarksImportedNoGameMany =
             "mod-settings.bookmarks.imported-no-game-many";
 
+        /// <summary>The QUESTION put before anything is written, with a Cancel on it (owner ruling
+        /// 2026-09-18): how many bookmarks the paste holds and where they would go, in the same
+        /// three situations the landing is told in.</summary>
+        public const string ModSettingsBookmarksImportAskOne = "mod-settings.bookmarks.import-ask-one";
+        public const string ModSettingsBookmarksImportAskMany =
+            "mod-settings.bookmarks.import-ask-many";
+        public const string ModSettingsBookmarksImportAskOtherOne =
+            "mod-settings.bookmarks.import-ask-other-one";
+        public const string ModSettingsBookmarksImportAskOtherMany =
+            "mod-settings.bookmarks.import-ask-other-many";
+        public const string ModSettingsBookmarksImportAskNoGameOne =
+            "mod-settings.bookmarks.import-ask-no-game-one";
+        public const string ModSettingsBookmarksImportAskNoGameMany =
+            "mod-settings.bookmarks.import-ask-no-game-many";
+
         // --- the Help tab, the window's last (owner ruling 2026-09-17) ---
 
         /// <summary>What the tab is called (no sentence about itself, owner ruling 2026-09-17) and the three addresses it
@@ -524,6 +539,24 @@ namespace ES2Access.Core.Speech
             {
                 ModSettingsBookmarksImportedNoGameMany,
                 "Imported {0} bookmarks. They will be used when that game is played."
+            },
+            { ModSettingsBookmarksImportAskOne, "Import {0} bookmark for this game?" },
+            { ModSettingsBookmarksImportAskMany, "Import {0} bookmarks for this game?" },
+            {
+                ModSettingsBookmarksImportAskOtherOne,
+                "Import {0} bookmark for another game? It will be used when that game is played."
+            },
+            {
+                ModSettingsBookmarksImportAskOtherMany,
+                "Import {0} bookmarks for another game? They will be used when that game is played."
+            },
+            {
+                ModSettingsBookmarksImportAskNoGameOne,
+                "Import {0} bookmark? It will be used when that game is played."
+            },
+            {
+                ModSettingsBookmarksImportAskNoGameMany,
+                "Import {0} bookmarks? They will be used when that game is played."
             },
             { ModSettingsHelp, "Help" },
             { ModSettingsHelpHomepage, "Mod homepage" },

@@ -163,6 +163,15 @@ namespace ES2Access.UI.ModOptions
         /// say the same thing (<see cref="ModRows.Activate"/>).</summary>
         public static void Tick()
         {
+            // A paste the player said Ok to is written here, from the pump, so that what it changes
+            // - the page, the box that reports it - follows in this same tick.
+            BookmarkImport confirmed = _confirmed;
+            _confirmed = null;
+            if (confirmed != null)
+            {
+                Write(confirmed);
+            }
+
             // The page first, and only then the box: an import changes which rows the page has
             // (a campaign with no file has one now), and rebuilding it from inside the press would
             // destroy the very row that dispatched it.
@@ -182,6 +191,13 @@ namespace ES2Access.UI.ModOptions
             {
                 Box(box);
             }
+
+            string ask = _ask;
+            _ask = null;
+            if (ask != null)
+            {
+                Ask(ask);
+            }
         }
 
         /// <summary>Mod teardown: hold no panel, no unsaid line and no unshown box across a reload.
@@ -191,6 +207,9 @@ namespace ES2Access.UI.ModOptions
             _panel = null;
             _say = null;
             _box = null;
+            _ask = null;
+            _pending = null;
+            _confirmed = null;
             _refill = false;
         }
 
@@ -267,6 +286,11 @@ namespace ES2Access.UI.ModOptions
         ///
         /// Everything the player is told goes in the game's own message box rather than being
         /// spoken, because a count is a fact they may want to read twice.
+        ///
+        /// TWO STEPS (owner ruling 2026-09-18): the paste is read and the player is ASKED - how many
+        /// bookmarks, and where they would go - in a box with a Cancel on it, and nothing touches
+        /// the disk until they say Ok. The write then runs from the pump (<see cref="Tick"/>), like
+        /// the page rebuild and for the same reason: not from inside the box's own button.
         /// </summary>
         private static void Import()
         {
@@ -283,6 +307,35 @@ namespace ES2Access.UI.ModOptions
                         return;
                 }
 
+                _pending = import;
+                _ask = Question(import.Campaign == MapBookmarkStore.Campaign, import.Count);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("bookmarks: reading the clipboard threw: " + e);
+                _box = ModStrings.Get(ModStrings.ModSettingsBookmarksImportFailed);
+            }
+        }
+
+        /// <summary>The player's answer to the question. Ok hands the paste to the pump to write;
+        /// anything else drops it, and nothing is said - a cancelled import has nothing to report.
+        /// </summary>
+        private static void Confirmed(object sender, MessageBoxResultEventArgs e)
+        {
+            BookmarkImport pending = _pending;
+            _pending = null;
+            if (pending != null && e != null && e.Result == MessageBoxResult.Ok)
+            {
+                _confirmed = pending;
+            }
+        }
+
+        /// <summary>Put a paste the player said Ok to where it belongs, and tell them where it
+        /// landed.</summary>
+        private static void Write(BookmarkImport import)
+        {
+            try
+            {
                 string folder = MapBookmarkStore.Folder;
                 string name = import.FileName;
                 if (folder == null || name == null)
@@ -360,6 +413,35 @@ namespace ES2Access.UI.ModOptions
             );
         }
 
+        /// <summary>What the player is asked before a paste is written, by where it would go - the
+        /// same three situations <see cref="Landed"/> tells, as a question.</summary>
+        private static string Question(bool playing, int count)
+        {
+            if (playing)
+            {
+                return ModStrings.Plural(
+                    ModStrings.ModSettingsBookmarksImportAskOne,
+                    ModStrings.ModSettingsBookmarksImportAskMany,
+                    count
+                );
+            }
+
+            if (InGame())
+            {
+                return ModStrings.Plural(
+                    ModStrings.ModSettingsBookmarksImportAskOtherOne,
+                    ModStrings.ModSettingsBookmarksImportAskOtherMany,
+                    count
+                );
+            }
+
+            return ModStrings.Plural(
+                ModStrings.ModSettingsBookmarksImportAskNoGameOne,
+                ModStrings.ModSettingsBookmarksImportAskNoGameMany,
+                count
+            );
+        }
+
         /// <summary>Whatever is on the clipboard, or nothing at all where the desktop will not say.
         /// </summary>
         private static string Clipboard()
@@ -397,6 +479,28 @@ namespace ES2Access.UI.ModOptions
             catch (Exception e)
             {
                 Log.Warn("bookmarks: the import's message box would not open: " + e);
+            }
+        }
+
+        /// <summary>The same box with BOTH buttons on it, for the question an import asks first:
+        /// Ok writes the paste, Cancel drops it (<see cref="Confirmed"/>).</summary>
+        private static void Ask(string question)
+        {
+            try
+            {
+                Gui.GuiService.ShowMessage(
+                    question,
+                    MessageBoxType.INFORMATIVE,
+                    Confirmed,
+                    "%MessageBoxConfirmationTitle",
+                    "%MessageBoxOkTitle",
+                    "%MessageBoxCancelTitle"
+                );
+            }
+            catch (Exception e)
+            {
+                _pending = null;
+                Log.Warn("bookmarks: the import's question box would not open: " + e);
             }
         }
 
@@ -451,5 +555,12 @@ namespace ES2Access.UI.ModOptions
         private static string _say;
         private static string _box;
         private static bool _refill;
+
+        /// <summary>The paste the question is about, held from the press to the answer; the answer,
+        /// held from the box's button to the pump; and the question itself, unasked until the pump.
+        /// </summary>
+        private static BookmarkImport _pending;
+        private static BookmarkImport _confirmed;
+        private static string _ask;
     }
 }
