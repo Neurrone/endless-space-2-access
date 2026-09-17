@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using ES2Access.Core.UI.Graph;
 using ES2Access.Core.Util;
 
@@ -29,21 +30,47 @@ namespace ES2Access.UI
             GuiTable owner = table;
             int[] columns = BandColumns(table);
             builder.StartRow(positions: false);
+            // The band is one ROW of the table for the table-edge keys: every heading and funnel shares
+            // this object, so Ctrl+Alt+Left/Right walk the band as they walk a row. Index and Count
+            // stay 0, which is what keeps the announcer from numbering it (GraphAnnouncer.RowPosition),
+            // and its region is not the rows', so the vertical edge keys stop at the first row.
+            TableRow band = new TableRow { Key = _key + "band" };
             for (int i = 0; i < _headers.Count; i++)
             {
                 GuiTableHeader header = _headers[i];
                 AgeTransform widget = header.AgeTransform;
                 string property = PropertyOf(header);
-                NodeVtable vtable = GraphNodes.Button(
-                    () => Caption(header),
-                    () => AgeWidgets.Press(widget),
-                    () => AgeWidgets.Operable(widget),
-                    header.Tooltip
-                );
-                vtable.Announcements.Insert(
-                    1,
-                    GraphNodes.SelectedPart(() => SortedBy(owner, property))
-                );
+                NodeVtable vtable;
+                if (SortingDisabled(header))
+                {
+                    // A column the table definition says cannot be sorted by is a heading the game
+                    // draws as a button it never enables (GuiTableHeader.Refresh :38 writes Enable from
+                    // DisableSorting and nothing else does), so it is TEXT: a button that is unavailable
+                    // for ever offers nothing (owner ruling 2026-09-17, the journal's Details column).
+                    vtable = new NodeVtable
+                    {
+                        Announcements = new List<NodeAnnouncement>
+                        {
+                            GraphNodes.LabelPart(() => Caption(header)),
+                        },
+                        Sections = GraphNodes.Sections(null, header.Tooltip),
+                    };
+                }
+                else
+                {
+                    vtable = GraphNodes.Button(
+                        () => Caption(header),
+                        () => AgeWidgets.Press(widget),
+                        () => AgeWidgets.Operable(widget),
+                        header.Tooltip
+                    );
+                    vtable.Announcements.Insert(
+                        1,
+                        GraphNodes.SelectedPart(() => SortedBy(owner, property))
+                    );
+                }
+
+                vtable.Row = band;
                 // Which column this heading stands over, so that Up out of a row lands on the heading
                 // of the column the player was in rather than on the first one
                 // (<c>GraphBuilder.StitchModeBoundaries</c> pairs the seam by this number).
@@ -57,7 +84,7 @@ namespace ES2Access.UI
                     vtable,
                     header
                 ));
-                Filter(builder, owner, header, i, columns[i]);
+                Filter(builder, owner, header, i, columns[i], band);
             }
 
             builder.EndRow();
@@ -77,12 +104,38 @@ namespace ES2Access.UI
         /// column's caption, and by nothing else - the prefab hangs no words on the funnel and the game
         /// has no name for the thing it does, so the alternative would be a word this mod invented.
         /// </summary>
+        /// <summary>Whether the column this heading stands over is one the table definition forbids
+        /// sorting by (<c>TableGuiElement.ColumnInfo.DisableSorting</c>), read off the heading's own
+        /// private copy of that definition - the one thing that decides whether its button is ever
+        /// enabled. A heading the field cannot be read from is treated as sortable, which is the
+        /// button it always was.</summary>
+        private static bool SortingDisabled(GuiTableHeader header)
+        {
+            try
+            {
+                TableGuiElement.ColumnInfo info = ColumnInfoField == null || header == null
+                    ? null
+                    : ColumnInfoField.GetValue(header) as TableGuiElement.ColumnInfo;
+                return info != null && info.DisableSorting;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static readonly FieldInfo ColumnInfoField = typeof(GuiTableHeader).GetField(
+            "columnInfo",
+            BindingFlags.Instance | BindingFlags.NonPublic
+        );
+
         private void Filter(
             GraphBuilder builder,
             GuiTable table,
             GuiTableHeader header,
             int index,
-            int column
+            int column,
+            TableRow band
         )
         {
             // Whether the game is drawing the funnel is the gate's question, asked of the same widget
@@ -109,6 +162,7 @@ namespace ES2Access.UI
             // own column's number would have cost every column its heading on the way up out of a row.
             vtable.Column = -(column + 1);
             vtable.SearchesAsItself = true;
+            vtable.Row = band;
             AgeWidgets.Point(vtable, funnel);
             builder.AddItem(Nodes.Drawn(
                 ControlId.For(funnel, _key + "filter/" + PropertyOf(header) + "/" + index),

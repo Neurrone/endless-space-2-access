@@ -419,7 +419,11 @@ namespace ES2Access.UI
                     },
                     Sections = GraphNodes.Sections(() => NameFacts(row, name), explains),
                 };
-                AgeWidgets.PointAt(vtable, widget);
+                // Aimed at the tooltip the node READS, not at the line: where the row's dossier hangs on
+                // the name cell rather than the line, pointing at the line drew nothing while the
+                // readout spoke the cell's words (measured on the journal 2026-09-17). The choosable
+                // branch above already aims this way.
+                AgeWidgets.PointAt(vtable, widget, explains);
             }
 
             ShowOnMap(row, vtable);
