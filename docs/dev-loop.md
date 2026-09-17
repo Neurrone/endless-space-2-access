@@ -150,7 +150,10 @@ the change is a shared helper), and the numbers in the commit body.
 ## 2. Verification patterns (screen-agnostic)
 
 **Stage hygiene** (cost scales with tool-call count — ~1.5–2k tokens and ~18 s per call):
-fewer, bigger calls. Scope every grep to a named subtree (unscoped greps over
+fewer, bigger calls. Never drive the game one `/input` per tool call: put a whole route (the
+focus key, the tab and arrow presses, the click, the `/speech` read) in a scratch `.sh` and run
+it once per case, after one `/gui/graph` dump has shown where the cursor really starts (a stage
+spent 60 of 234 calls pressing keys singly, 2026-09-17). Scope every grep to a named subtree (unscoped greps over
 `decompiled/` time out). Grep-before-read for any file > 800 lines; Read only the method
 bodies you need via offset. `/gui/age` or `/gui/graph` dump first — it answers layout and
 text; decompiled classes only for action paths; re-read the dump already in hand before
@@ -179,7 +182,10 @@ before a queued reload has run (`staleBuild:true`, old name) — poll again, don
 before a regression walk after a save load (`GraphState` survives the load) — but never when the
 behaviour under test is something a patch captures during the load, because the reload installs the
 patch after the moment it was watching for and the case reads as unfixed; there, reload first and
-leave the load alone. `POST /loadsave` as
+leave the load alone. Close the mod's options window (and any modal) before a reload: reloading
+with the cloned window shown leaves `GuiManager.IsAnyModalVisible` true, the menu screen never
+reactivates and the mod goes silent with no log line; if it happens, show and hide any game
+modal to recompute the flag (measured 2026-09-17). `POST /loadsave` as
 soon as a walk's state is suspect; time a transition with a boolean `/wait` predicate, never a
 logging probe. A build of another commit for a walk pair goes in a scratch worktree with
 `GamePaths.props` copied in and `touch -r vendor/prism/prism.dll` first — the game locks the
