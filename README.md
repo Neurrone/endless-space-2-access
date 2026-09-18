@@ -4,10 +4,22 @@ A screen reader accessibility mod for [Endless Space 2](https://store.steampower
 
 ## Features
 
-- Full narration of menus, text, tooltips and other game UI elements
+- Full narration of menus, text, tooltips and other game UI elements through any screen reader supported by Prism
 - Support for the Windows version of the game with a keyboard
 - Keyboard-based drag-and-drop
-- Buffer system for review of tooltips, lengthy text elements and event notifications
+- Buffer system for review of tooltips and lengthy text elements
+- Extensive support for the galactic map:
+  - a hierarchical tree describes the relationships between constellations, systems, planets and their associated contents and actions
+  - Traversal of star lanes and wormholes
+  - An inspect mode for exploring the geometry of the map
+  - A scanner tool finds systems, fleets, curiosities or other places of interest based on what you have already explored
+  - Bookmarks to efficiently move focus to systems of interest
+- Additional hotkeys for moving focus to frequently used controls
+- Rebinding for all keyboard commands
+- Support for multiple zoom levels and the game's scan overlay
+- A turn log raises notifications for events that the game does not notify for because they are obvious to sighted players. For example, sightings of enemy fleets and colonies or sieges
+- AI written descriptions for all 69 cut scene videos. Descriptions are read in the gaps between spoken dialog
+- AI written translations for other languages the game supports: French, German, Spanish - Spain, Korean, Polish, Portuguese - Brazil, Russian, Simplified Chinese and Traditional Chinese
 
 ## Documentation
 

@@ -2,14 +2,14 @@
 
 ## Screens
 
-Every screen is divided into stops
+Every screen is divided into tab stops
 
 A stop is one panel of the game. Use the arrow keys to explore the contents of a panel. Panels may be subdivided into regions for easier navigation. For instance, a region could be a list, table or a row of buttons.
 
 - `Tab`: next stop
 - `Shift+Tab`: previous stop
 - `Up` / `Down` / `Left` / `Right`: navigates items in a stop, `Left` and `Right` also collapses and expands grouped content or adjusts sliders
-- `Shift+Left` / `Shift+Right`: a larger adjustment on an adjustable item
+- `Shift+Left` / `Shift+Right`: a larger adjustment on an adjustable slider
 - `Home` / `End`: first and last item of the stop
 - `Alt+Up` / `Alt+Down`: previous and next region of a stop
 
@@ -17,7 +17,7 @@ A stop is one panel of the game. Use the arrow keys to explore the contents of a
 
 `Enter` is the left click or primary confirmation gesture. `Escape` cancels the current context or screen.
 
-The mod speaks usage hints when the additional commands below are relevant, so in practice, you shouldn't need to remember them.
+The mod speaks usage hints when the additional commands below are relevant, so in practice, you shouldn't need to remember them. These hints are also written to the bottom of the buffer.
 
 - `\`: right-click, used to set a selected fleet's destination
 - `Ctrl+Shift+Enter`: Alt-click, moves a construction or research to the head of the queue
@@ -44,6 +44,13 @@ The mod announces draggable items as "draggable". To drag an item:
 2. Move to the destination.
 3. Press `Enter` to drop.
 4. Press `Escape` to cancel the drag.
+
+## Tables
+
+- `Ctrl+Alt+Left`: move to first column of current row
+- `Ctrl+Alt+Right`: move to last column of current row
+- `Ctrl+Alt+Up`: move to first row of current column, `Home` also works
+- `Ctrl+Alt+Down`: move to lastt row of current column, `End` also works
 
 ## Editing text
 

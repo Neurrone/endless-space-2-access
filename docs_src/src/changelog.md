@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- The end-of-game scores and empire chronicles screens are now accessible
+- Improve performance of screens with tables to fix sluggishness when navigating on the empire systems tab
+- Tables now support `Ctrl+Alt` with the arrow keys to move to the first or last column of the current row, or to the first or last row in the column. This is mostly for the systems table as there are 20 keypresses required to move from the first to the last column
+- The bookmarks tab in mod settings now supports importing bookmarks from the clipboard
+- Added a help tab to mod settings with links to the mod homepage and Discord
+
 ## V0.2.1
 
 - Fix column positions being lost when moving down from column headers if the table has a column with multiple icons

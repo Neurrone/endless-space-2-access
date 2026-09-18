@@ -25,8 +25,7 @@ Endless Space 2 Access is a screen reader accessibility mod for Endless Space 2,
 
 The game is 95% playable with the United Empire faction. Any remaining gaps are due to me not having finished a complete playthrough. The following mechanics still need to be tested:
 
-- Trade companies
-- Victory / defeat screens
+- Trade companies and trade routes
 
 It will also take time to support all the 160+ notification types in the game.
 
