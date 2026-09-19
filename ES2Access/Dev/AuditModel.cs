@@ -206,9 +206,9 @@ namespace ES2Access.Dev
         {
             foreach (GraphNode from in render.Order)
             {
-                foreach (KeyValuePair<GraphDir, Transition> edge in from.Transitions)
+                for (int dir = 0; dir < GraphNode.DirectionCount; dir++)
                 {
-                    Transition crossing = edge.Value;
+                    Transition crossing = from.Edge((GraphDir)dir);
                     if (crossing == null || string.IsNullOrEmpty(crossing.Label))
                     {
                         continue;

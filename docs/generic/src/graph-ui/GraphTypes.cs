@@ -696,7 +696,40 @@ namespace ES2Access.Core.UI.Graph
             get { return Declared == null ? null : Declared.Vtable; }
         }
 
-        public readonly Dictionary<GraphDir, Transition> Transitions = new Dictionary<GraphDir, Transition>();
+        /// <summary>How many <see cref="GraphDir"/> values there are - the bound for a walk over a node's
+        /// four edges by index, which is how a caller that wants all of them gets them without an
+        /// enumerator or a boxed key.</summary>
+        public const int DirectionCount = 4;
+
+        /// <summary>This node's outgoing edges, one slot per <see cref="GraphDir"/>, null where nothing is
+        /// wired. An array rather than a dictionary because the graph is rebuilt EVERY FRAME (a few
+        /// hundred nodes and near a thousand edges on a busy screen): on the game's Mono an empty
+        /// <c>Dictionary&lt;GraphDir, Transition&gt;</c> measured 634 bytes and each keyed set boxed the
+        /// enum for ~36 more - some 195 KB of garbage per frame, and the second-long collection pauses
+        /// that came with it. Four slots are ~64 bytes and box nothing. Reached through
+        /// <see cref="Edge"/> / <see cref="Wire"/> / <see cref="HasEdge"/>, which collapse "wired to
+        /// null" into "not wired" - no caller ever wired a null edge, and every one of them treated the
+        /// two the same.</summary>
+        private readonly Transition[] _edges = new Transition[DirectionCount];
+
+        /// <summary>The edge in <paramref name="dir"/>, or null when nothing is wired that way.</summary>
+        public Transition Edge(GraphDir dir)
+        {
+            return _edges[(int)dir];
+        }
+
+        /// <summary>Wires <paramref name="dir"/>, replacing whatever edge was there.</summary>
+        public void Wire(GraphDir dir, Transition edge)
+        {
+            _edges[(int)dir] = edge;
+        }
+
+        /// <summary>Whether <paramref name="dir"/> is wired already - what the builder's fill-the-gaps
+        /// passes ask before they would overwrite an edge someone else declared.</summary>
+        public bool HasEdge(GraphDir dir)
+        {
+            return _edges[(int)dir] != null;
+        }
 
         /// <summary>The node's structural parent within THIS render, or null at screen level. The parent
         /// chain IS the presentation hierarchy: the announcer prefix-diffs old/new chains by identity, so

@@ -556,7 +556,7 @@ namespace ES2Access.Core.UI.Graph
             WireMenuEdges(stops, byStop);
             foreach (Edge e in _rawEdges)
                 if (render.Nodes.ContainsKey(e.From) && render.Nodes.ContainsKey(e.To))
-                    render.Nodes[e.From].Transitions[e.Dir] = new Transition(e.To, e.Label);
+                    render.Nodes[e.From].Wire(e.Dir, new Transition(e.To, e.Label));
             StitchModeBoundaries(stops, byStop);
 
             render.StartKey = _start != null && render.Nodes.ContainsKey(_start)
@@ -630,25 +630,23 @@ namespace ES2Access.Core.UI.Graph
 
                     if (prevMenu) // menu row above raw content: the run of raw nodes with no Up
                     {
-                        if (cur.Transitions.ContainsKey(GraphDir.Up)) continue;
+                        if (cur.HasEdge(GraphDir.Up)) continue;
                         Row row = _rowOf[prev];
                         List<GraphNode> run = new List<GraphNode>();
                         for (int j = i; j < nodes.Count && !_rowOf.ContainsKey(nodes[j]); j++)
                         {
-                            if (nodes[j].Transitions.ContainsKey(GraphDir.Up)) break;
+                            if (nodes[j].HasEdge(GraphDir.Up)) break;
                             run.Add(nodes[j]);
                         }
 
                         Dictionary<int, ControlId> band = ByColumn(row.Items);
                         Dictionary<int, ControlId> cells = ByColumn(run);
                         foreach (GraphNode node in run)
-                            node.Transitions[GraphDir.Up] =
-                                new Transition(Across(band, node, row.Items[0].Id));
+                            node.Wire(GraphDir.Up, new Transition(Across(band, node, row.Items[0].Id)));
 
                         foreach (GraphNode cell in row.Items)
-                            if (!cell.Transitions.ContainsKey(GraphDir.Down))
-                                cell.Transitions[GraphDir.Down] =
-                                    new Transition(Across(cells, cell, cur.Id));
+                            if (!cell.HasEdge(GraphDir.Down))
+                                cell.Wire(GraphDir.Down, new Transition(Across(cells, cell, cur.Id)));
                     }
                     else // raw content above a menu row: the trailing run of raw nodes with no Down
                     {
@@ -656,7 +654,7 @@ namespace ES2Access.Core.UI.Graph
                         int start = -1;
                         for (int j = i - 1; j >= 0 && !_rowOf.ContainsKey(nodes[j]); j--)
                         {
-                            if (nodes[j].Transitions.ContainsKey(GraphDir.Down)) break;
+                            if (nodes[j].HasEdge(GraphDir.Down)) break;
                             start = j;
                         }
 
@@ -665,12 +663,10 @@ namespace ES2Access.Core.UI.Graph
                         Dictionary<int, ControlId> band = ByColumn(row.Items);
                         Dictionary<int, ControlId> cells = ByColumn(run);
                         foreach (GraphNode node in run)
-                            node.Transitions[GraphDir.Down] =
-                                new Transition(Across(band, node, row.Items[0].Id));
+                            node.Wire(GraphDir.Down, new Transition(Across(band, node, row.Items[0].Id)));
                         foreach (GraphNode cell in row.Items)
-                            if (!cell.Transitions.ContainsKey(GraphDir.Up))
-                                cell.Transitions[GraphDir.Up] =
-                                    new Transition(Across(cells, cell, nodes[start].Id));
+                            if (!cell.HasEdge(GraphDir.Up))
+                                cell.Wire(GraphDir.Up, new Transition(Across(cells, cell, nodes[start].Id)));
                     }
                 }
             }
@@ -836,13 +832,13 @@ namespace ES2Access.Core.UI.Graph
                     {
                         GraphNode node = row.Items[pos];
                         if (r > 0)
-                            node.Transitions[GraphDir.Up] = new Transition(VerticalTarget(row, rows[r - 1], pos));
+                            node.Wire(GraphDir.Up, new Transition(VerticalTarget(row, rows[r - 1], pos)));
                         if (r < rows.Count - 1)
-                            node.Transitions[GraphDir.Down] = new Transition(VerticalTarget(row, rows[r + 1], pos));
+                            node.Wire(GraphDir.Down, new Transition(VerticalTarget(row, rows[r + 1], pos)));
                         if (pos > 0)
-                            node.Transitions[GraphDir.Left] = new Transition(row.Items[pos - 1].Id);
+                            node.Wire(GraphDir.Left, new Transition(row.Items[pos - 1].Id));
                         if (pos < row.Items.Count - 1)
-                            node.Transitions[GraphDir.Right] = new Transition(row.Items[pos + 1].Id);
+                            node.Wire(GraphDir.Right, new Transition(row.Items[pos + 1].Id));
                     }
                 }
             }

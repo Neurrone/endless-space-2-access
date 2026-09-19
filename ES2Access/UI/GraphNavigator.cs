@@ -1364,10 +1364,7 @@ namespace ES2Access.UI
 
         private static bool Wired(GraphNode node, GraphDir dir)
         {
-            Transition transition;
-            return node.Transitions != null
-                && node.Transitions.TryGetValue(dir, out transition)
-                && transition != null;
+            return node.HasEdge(dir);
         }
 
         private bool InRegion()

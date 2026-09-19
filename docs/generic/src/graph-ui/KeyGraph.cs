@@ -251,10 +251,10 @@ namespace ES2Access.Core.UI.Graph
                     GraphNode n;
                     if (!render.Nodes.TryGetValue(k, out n)) break;
 
-                    Transition d, t;
-                    if (n.Transitions.TryGetValue(GraphDir.Down, out d) && d != null)
-                        downFringe.Add(d.Destination);
-                    if (!n.Transitions.TryGetValue(GraphDir.Right, out t) || t == null) break;
+                    Transition d = n.Edge(GraphDir.Down);
+                    if (d != null) downFringe.Add(d.Destination);
+                    Transition t = n.Edge(GraphDir.Right);
+                    if (t == null) break;
                     k = t.Destination;
                 }
                 i++;
@@ -407,8 +407,7 @@ namespace ES2Access.Core.UI.Graph
             result.To = node;
             if (node == null) return result;
 
-            Transition t;
-            node.Transitions.TryGetValue(dir, out t);
+            Transition t = node.Edge(dir);
             GraphNode dest = t != null ? _current.NodeAt(t.Destination) : null;
             if (dest == null || dest == node) return result;
 
@@ -433,8 +432,8 @@ namespace ES2Access.Core.UI.Graph
             GraphNode cur = node;
             while (true)
             {
-                Transition t;
-                if (!cur.Transitions.TryGetValue(dir, out t) || t == null) break;
+                Transition t = cur.Edge(dir);
+                if (t == null) break;
                 GraphNode next = _current.NodeAt(t.Destination);
                 if (next == null || next == cur) break;
                 cur = next;
@@ -480,8 +479,8 @@ namespace ES2Access.Core.UI.Graph
             string label = null;
             while (true)
             {
-                Transition t;
-                if (!cur.Transitions.TryGetValue(dir, out t) || t == null) break;
+                Transition t = cur.Edge(dir);
+                if (t == null) break;
                 GraphNode next = _current.NodeAt(t.Destination);
                 if (next == null || next == cur) break;
                 if (!SameTable(node, next, sideways)) break;

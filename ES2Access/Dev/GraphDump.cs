@@ -326,8 +326,7 @@ namespace ES2Access.Dev
 
         private static string Edge(GraphRender render, GraphNode node, GraphDir dir)
         {
-            Transition wired;
-            node.Transitions.TryGetValue(dir, out wired);
+            Transition wired = node.Edge(dir);
             GraphNode destination = wired == null ? null : render.NodeAt(wired.Destination);
             bool horizontal = dir == GraphDir.Left || dir == GraphDir.Right;
 

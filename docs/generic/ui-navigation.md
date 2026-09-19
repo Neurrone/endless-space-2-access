@@ -58,7 +58,7 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
   whole screen silently declares nothing — so the first diagnostic for an unexpectedly
   empty screen is the log, not the model. And make the structural key a path whose head is
   the containing control, so ancestry survives the control not being declared.
-- **`GraphTypes`** — `GraphNode` (4-way `Transitions`, `Parent` chain, stop/region keys,
+- **`GraphTypes`** — `GraphNode` (four edge slots, one per direction, `Parent` chain, stop/region keys,
   expandability, auto position) and `NodeVtable`: **behaviors as data**. Announcement parts
   (`NodeAnnouncement`, each a `Func<string>` resolved at speak time — read live, never cache),
   `OnActivate`/`OnReturnToPrevious`/`OnAdjust` (adjust preempts Left/Right navigation),
