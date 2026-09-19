@@ -19,7 +19,9 @@ namespace ES2Access.UI.ModOptions
 
     /// <summary>
     /// THE SPEECH TAB, macOS only (<see cref="ModOptions.Categories"/> adds it nowhere else):
-    /// which backend the mod speaks through, and the system voice's voice, rate and volume.
+    /// which backend the mod speaks through - the system voice, the Macaw screen reader through
+    /// its Prism plugin, or Prism as it ships (VoiceOver) - and the system voice's voice, rate
+    /// and volume.
     ///
     /// Every row edits the settings file (<see cref="SpeechSettings"/>' keys) and the live
     /// backend in the same write, so a change is heard as it is made; Cancel writes the old
@@ -35,10 +37,11 @@ namespace ES2Access.UI.ModOptions
     /// The voice, rate and volume rows are the SYSTEM VOICE's, and a caption above them says so:
     /// with Prism as the live backend they still read and write the stored settings - heard when
     /// the system voice next stands up - but move no live lever (VoiceOver's own voice and rate
-    /// belong to VoiceOver). Choosing the Prism backend is validated as it applies: if Prism
-    /// cannot start, the stored preference is put back and a message box says so, because a
-    /// persisted backend that cannot speak would boot every later session silent
-    /// (<see cref="PrismSpeech.Initialize"/> guards those launches the same way).
+    /// belong to VoiceOver, and Macaw's to Macaw). Choosing Macaw or Prism is validated as it
+    /// applies: if that backend cannot start - Macaw not running, the dylib missing - the stored
+    /// preference is put back and a message box says so, because a persisted backend that cannot
+    /// speak would boot every later session silent (<see cref="PrismSpeech.Initialize"/> guards
+    /// those launches the same way).
     /// </summary>
     public static class SpeechRows
     {
@@ -60,10 +63,16 @@ namespace ES2Access.UI.ModOptions
                 panel,
                 "SpeechBackend",
                 ModStrings.Get(ModStrings.SpeechBackend),
-                new[] { PrismSpeech.MacBackendSystemVoice, PrismSpeech.MacBackendPrism },
+                new[]
+                {
+                    PrismSpeech.MacBackendSystemVoice,
+                    PrismSpeech.MacBackendMacaw,
+                    PrismSpeech.MacBackendPrism,
+                },
                 new[]
                 {
                     ModStrings.Get(ModStrings.SpeechBackendSystemVoice),
+                    ModStrings.Get(ModStrings.SpeechBackendMacaw),
                     ModStrings.Get(ModStrings.SpeechBackendPrism),
                 },
                 SpeechSettings.Backend,
@@ -230,15 +239,13 @@ namespace ES2Access.UI.ModOptions
             speech.Reinitialize();
             SpeechSettings.Apply(speech);
 
-            // Asking for Prism is a request that can fail - the dylib missing or quarantined -
-            // and Initialize then falls back to the system voice. The stored preference is put
-            // back so a Prism that cannot start is never persisted (a later launch would begin
-            // from a backend that cannot speak), the row snaps back to what is actually running,
-            // and a message box the mod reads says why nothing changed.
-            if (
-                value == PrismSpeech.MacBackendPrism
-                && (speech.Mac != null || !speech.Available)
-            )
+            // Asking for Macaw or Prism is a request that can fail - Macaw not running, the
+            // dylib missing or quarantined - and Initialize then falls back to the system voice.
+            // The stored preference is put back so a backend that cannot start is never
+            // persisted (a later launch would begin from a backend that cannot speak), the row
+            // snaps back to what is actually running, and a message box the mod reads says why
+            // nothing changed.
+            if (value != PrismSpeech.MacBackendSystemVoice && speech.MacLiveBackend != value)
             {
                 ModSettings.File.Set(
                     SpeechSettings.BackendKey,
@@ -251,7 +258,11 @@ namespace ES2Access.UI.ModOptions
                 }
 
                 Gui.GuiService.ShowMessage(
-                    ModStrings.Get(ModStrings.SpeechBackendPrismFailed),
+                    ModStrings.Get(
+                        value == PrismSpeech.MacBackendMacaw
+                            ? ModStrings.SpeechBackendMacawFailed
+                            : ModStrings.SpeechBackendPrismFailed
+                    ),
                     MessageBoxType.INFORMATIVE,
                     Dismissed,
                     "%MessageBoxConfirmationTitle",

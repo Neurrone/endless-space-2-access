@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using ES2Access.Core.Native;
 using ES2Access.Core.Speech.Mac;
 using ES2Access.Core.Util;
@@ -14,11 +15,13 @@ namespace ES2Access.Core.Speech
     /// (the plugin preloads it by full path via NativeLoader), otherwise the first P/Invoke
     /// throws DllNotFoundException.
     ///
-    /// On macOS the mod speaks the system voice itself (<see cref="MacSystemVoice"/>), because
-    /// VoiceOver's announcement API cannot queue and AVSpeech's own queue leaves a gap between
-    /// every line; Prism is the fallback there, taken only when the system voice cannot be
-    /// stood up at all. The chokepoint and its callers do not change; only what is behind
-    /// <see cref="Initialize"/> does.
+    /// On macOS the mod speaks the system voice itself (<see cref="MacSystemVoice"/>) by
+    /// default, because VoiceOver's announcement API cannot queue and AVSpeech's own queue
+    /// leaves a gap between every line; Prism is the fallback there, taken only when the system
+    /// voice cannot be stood up at all. The Macaw screen reader is the exception: it queues with
+    /// NVDA's priorities, so it is offered as a backend of its own, reached through the Prism
+    /// plugin Macaw links at <see cref="MacawPluginPath"/>. The chokepoint and its callers do
+    /// not change; only what is behind <see cref="Initialize"/> does.
     /// </summary>
     public sealed class PrismSpeech
     {
@@ -33,6 +36,7 @@ namespace ES2Access.Core.Speech
         private IntPtr _ctx;
         private IntPtr _backend;
         private bool _useOutput;
+        private bool _macawLive;
         private MacSystemVoice _mac;
 
         /// <summary>True once a backend was created and initialized successfully.</summary>
@@ -44,17 +48,65 @@ namespace ES2Access.Core.Speech
         /// <summary>Name of the chosen backend (e.g. "NVDA", "SAPI"), once available.</summary>
         public string BackendName { get; private set; }
 
-        /// <summary>The macOS backend setting's two values: the streamed system voice, and Prism
-        /// (which is VoiceOver when it is running).</summary>
+        /// <summary>The macOS backend setting's three values: the streamed system voice, Prism
+        /// as it ships (VoiceOver when it is running), and the Macaw screen reader through its
+        /// Prism plugin.</summary>
         public const string MacBackendSystemVoice = "system";
         public const string MacBackendPrism = "prism";
+        public const string MacBackendMacaw = "macaw";
+
+        /// <summary>The backend name Macaw's Prism plugin registers under.</summary>
+        public const string MacawBackendName = "Macaw";
 
         /// <summary>Which backend <see cref="Initialize"/> stands up on macOS. Anything but
-        /// <see cref="MacBackendPrism"/> means the system voice, with Prism kept as the
-        /// cannot-start fallback; <see cref="MacBackendPrism"/> means Prism, with the system
-        /// voice as ITS cannot-start fallback, because the preference persists across launches
-        /// and must never persist silence. Set before Initialize; meaningless off the Mac.</summary>
+        /// <see cref="MacBackendPrism"/> or <see cref="MacBackendMacaw"/> means the system
+        /// voice, with the best Prism backend (Macaw when it runs) kept as the cannot-start
+        /// fallback; the other two mean that backend, with the system voice as ITS cannot-start
+        /// fallback, because the preference persists across launches and must never persist
+        /// silence. Set before Initialize; meaningless off the Mac.</summary>
         public string MacBackendPreference = MacBackendSystemVoice;
+
+        /// <summary>Which of the three macOS values is actually speaking: the system voice, Macaw
+        /// through its plugin, or another Prism backend - null while speech is unavailable and
+        /// off the Mac. What a settings row compares its request against.</summary>
+        public string MacLiveBackend
+        {
+            get
+            {
+                if (!Available || !Platform.IsMacOS)
+                {
+                    return null;
+                }
+
+                if (_mac != null)
+                {
+                    return MacBackendSystemVoice;
+                }
+
+                return _macawLive ? MacBackendMacaw : MacBackendPrism;
+            }
+        }
+
+        /// <summary>Where a running Macaw links the Prism plugin that speaks through it: a fixed
+        /// path under the user's home, refreshed by Macaw at every launch; absent when Macaw is
+        /// not installed, which Prism's add_library reports as a clean failure. Read from HOME
+        /// first (what Macaw's own clients do), the profile folder when the launcher stripped it.</summary>
+        public static string MacawPluginPath
+        {
+            get
+            {
+                string home = Environment.GetEnvironmentVariable("HOME");
+                if (string.IsNullOrEmpty(home))
+                {
+                    home = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+                }
+
+                return Path.Combine(
+                    home,
+                    "Library/Application Support/Macaw/prism/libMacawPrismPlugin.dylib"
+                );
+            }
+        }
 
         /// <summary>The macOS system voice while it is the live backend (its voices and the
         /// voice, rate and volume levers), null anywhere else - Windows, Prism chosen, or
@@ -86,7 +138,8 @@ namespace ES2Access.Core.Speech
 
             if (Platform.IsMacOS)
             {
-                bool preferPrism = MacBackendPreference == MacBackendPrism;
+                bool preferMacaw = MacBackendPreference == MacBackendMacaw;
+                bool preferPrism = preferMacaw || MacBackendPreference == MacBackendPrism;
                 if (!preferPrism)
                 {
                     if (TryStartSystemVoice())
@@ -97,7 +150,11 @@ namespace ES2Access.Core.Speech
                     Log.Info("speech: system voice unavailable; falling back to Prism");
                 }
 
-                if (TryStartPrism())
+                // Macaw asked for: its plugin joins the registry and nothing else will do. Prism
+                // asked for: the registry as Prism ships it, so the row that says VoiceOver
+                // means VoiceOver even while Macaw runs. The system voice's fallback: the best
+                // reader there is, Macaw included.
+                if (TryStartPrism(!preferPrism || preferMacaw, preferMacaw))
                 {
                     return;
                 }
@@ -107,14 +164,17 @@ namespace ES2Access.Core.Speech
                     // The mirror of the fallback above. The preference PERSISTS in the settings
                     // file, so a Prism that cannot start must never mean silence on every launch
                     // from here on - the player could not hear the row to switch back.
-                    Log.Info("speech: Prism unavailable; falling back to the system voice");
+                    Log.Info(
+                        (preferMacaw ? "speech: Macaw unavailable" : "speech: Prism unavailable")
+                            + "; falling back to the system voice"
+                    );
                     TryStartSystemVoice();
                 }
 
                 return;
             }
 
-            TryStartPrism();
+            TryStartPrism(false, false);
         }
 
         private bool TryStartSystemVoice()
@@ -132,13 +192,17 @@ namespace ES2Access.Core.Speech
             return true;
         }
 
-        private bool TryStartPrism()
+        /// <summary>Stand up Prism. <paramref name="withMacawPlugin"/> adds Macaw's plugin to
+        /// the registry the context is bound to, so Macaw outranks VoiceOver whenever it runs;
+        /// <paramref name="requireMacaw"/> refuses anything else, for the setting that names
+        /// Macaw. Off the Mac both are false and the library's global registry serves.</summary>
+        private bool TryStartPrism(bool withMacawPlugin, bool requireMacaw)
         {
             if (Platform.IsMacOS && !NativeLoader.PrismLoaded)
             {
-                // Reached with Prism chosen, or as the system voice's fallback. Prism's macOS
-                // backends cannot queue the way the stream does (VoiceOver's announcement API
-                // replaces pending speech), but a cut-off queue beats silence.
+                // Reached with Prism or Macaw chosen, or as the system voice's fallback. Prism's
+                // own macOS backends cannot queue the way the stream does (VoiceOver's
+                // announcement API replaces pending speech), but a cut-off queue beats silence.
                 Log.Error("speech: the Prism library is not loaded; speech is unavailable");
                 return false;
             }
@@ -147,7 +211,17 @@ namespace ES2Access.Core.Speech
             {
                 Version = PrismNative.ConfigVersion,
             };
+            IntPtr registry = withMacawPlugin ? BuildRegistryWithMacaw() : IntPtr.Zero;
+            cfg.Registry = registry;
             _ctx = PrismNative.prism_init(ref cfg);
+            if (registry != IntPtr.Zero)
+            {
+                // The context holds its own reference (Prism's contract, and measured: the
+                // backends stay listed after this); ours is done once init has taken it or
+                // failed.
+                PrismNative.prism_registry_release(registry);
+            }
+
             if (_ctx == IntPtr.Zero)
             {
                 Log.Error("Prism: prism_init returned null context");
@@ -186,6 +260,23 @@ namespace ES2Access.Core.Speech
             _useOutput = (features & (ulong)PrismNative.PrismBackendFeature.SupportsOutput) != 0;
             BackendName =
                 PrismNative.FromUtf8(PrismNative.prism_backend_name(_backend)) ?? "unknown";
+            _macawLive = BackendName == MacawBackendName;
+            if (requireMacaw && !_macawLive)
+            {
+                // The plugin is in the registry but its backend was passed over, which its
+                // is_supported answers only when no Macaw is accepting connections.
+                Log.Info(
+                    "speech: Macaw is not running (Prism offered " + BackendName + " instead)"
+                );
+                PrismNative.prism_backend_free(_backend);
+                PrismNative.prism_shutdown(_ctx);
+                _backend = IntPtr.Zero;
+                _ctx = IntPtr.Zero;
+                BackendName = null;
+                _macawLive = false;
+                return false;
+            }
+
             Available = true;
             Log.Info(
                 "Prism speech ready, backend: "
@@ -193,6 +284,52 @@ namespace ES2Access.Core.Speech
                     + (_useOutput ? " (output)" : " (speak)")
             );
             return true;
+        }
+
+        /// <summary>A registry of Prism's compiled-in backends plus whatever Macaw's plugin
+        /// supplies; the compiled-in set alone when Macaw is not installed (add_library fails
+        /// cleanly on a missing file), and null when the builder itself cannot be had, which
+        /// hands Prism its global registry instead.</summary>
+        private static IntPtr BuildRegistryWithMacaw()
+        {
+            IntPtr builder = PrismNative.prism_registry_builder_new();
+            if (builder == IntPtr.Zero)
+            {
+                Log.Warn("Prism: no registry builder; Macaw's plugin cannot be offered");
+                return IntPtr.Zero;
+            }
+
+            string path = MacawPluginPath;
+            UIntPtr count;
+            PrismNative.PrismError err = PrismNative.prism_registry_builder_add_library(
+                builder,
+                PrismNative.ToUtf8(path),
+                -1,
+                out count
+            );
+            if (err == PrismNative.PrismError.Ok)
+            {
+                Log.Info("Prism: Macaw's plugin loaded from " + path);
+            }
+            else
+            {
+                Log.Info(
+                    "Prism: Macaw's plugin not loaded ("
+                        + PrismNative.ErrorString(err)
+                        + ") from "
+                        + path
+                );
+            }
+
+            IntPtr registry = PrismNative.prism_registry_freeze(builder);
+            // Freezing spends the builder; it is still ours to free.
+            PrismNative.prism_registry_builder_free(builder);
+            if (registry == IntPtr.Zero)
+            {
+                Log.Warn("Prism: the registry could not be frozen; using the global one");
+            }
+
+            return registry;
         }
 
         /// <summary>
@@ -243,6 +380,14 @@ namespace ES2Access.Core.Speech
             {
                 _mac.Speak(text, interrupt);
                 return;
+            }
+
+            if (interrupt && _macawLive)
+            {
+                // Macaw's "now" cuts the utterance in flight and lets the rest of its queue
+                // resume afterwards. The mod's interrupt means what it means on the system voice
+                // and on NVDA: everything pending goes too - so the queue is emptied first.
+                PrismNative.prism_backend_stop(_backend);
             }
 
             byte[] utf8 = PrismNative.ToUtf8(text);
@@ -315,6 +460,7 @@ namespace ES2Access.Core.Speech
             }
 
             Available = false;
+            _macawLive = false;
             // A dead instance must not keep the last backend's name: Reinitialize reports
             // whatever the NEXT Initialize stands up, and /status reads this between the two.
             BackendName = null;

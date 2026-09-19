@@ -35,10 +35,11 @@ namespace ES2Access.Core.Speech
         private const string Dll = "prism";
 
         /// <summary>
-        /// PrismConfig as of PRISM_CONFIG_VERSION 3. Only <see cref="Version"/> is ever set:
-        /// prism_config_init's own defaults are zero for every other field (measured against
-        /// 0.18.1), and a null availability_callback leaves the three polling fields inert, so a
-        /// zeroed struct is exactly what the library would have handed back.
+        /// PrismConfig as of PRISM_CONFIG_VERSION 3. Only <see cref="Version"/> and, on macOS,
+        /// <see cref="Registry"/> are ever set: prism_config_init's own defaults are zero for
+        /// every other field (measured against 0.18.1), and a null availability_callback leaves
+        /// the three polling fields inert, so a zeroed struct is exactly what the library would
+        /// have handed back. A null Registry means the library's global one.
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         public struct PrismConfig
@@ -109,6 +110,36 @@ namespace ES2Access.Core.Speech
         public static extern void prism_shutdown(IntPtr ctx);
 
         // --- Registry ---
+
+        // A registry built by the application: the compiled-in backends are already present
+        // in a new builder (Prism's docs: "seeded with the compiled-in backends"), so what
+        // add_library adds joins them - measured 0.18.1 on macOS: VoiceOver and AVSpeech, plus
+        // the plugin's Macaw. The builder is never consumed: freeze marks it spent, and it
+        // must still be released with prism_registry_builder_free. A context bound to the
+        // registry takes its own reference, so the application's may be released right after
+        // prism_init.
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr prism_registry_builder_new();
+
+        // priorityOverride: negative keeps the priority each plugin backend declares. outCount
+        // receives how many backends the library supplied (written only on Ok). On any error
+        // nothing is added and the library is unloaded, so a missing file is a clean no-op.
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern PrismError prism_registry_builder_add_library(
+            IntPtr builder,
+            byte[] utf8Path,
+            int priorityOverride,
+            out UIntPtr outCount
+        );
+
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr prism_registry_freeze(IntPtr builder);
+
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void prism_registry_builder_free(IntPtr builder);
+
+        [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void prism_registry_release(IntPtr registry);
 
         // Allocating constructor: the returned backend is owned by the caller and must be
         // released with prism_backend_free (unlike prism_registry_acquire_best, which is

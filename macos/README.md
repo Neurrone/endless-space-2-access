@@ -15,11 +15,19 @@ Windows build changes.
   queued line would cut off the one before it. You can leave VoiceOver running; the game window
   has no accessibility tree for it to read. If the system voice cannot be started at all, the
   mod falls back to the Prism speech library (`libprism.dylib` next to the .app), which speaks
-  through VoiceOver when it is running; the log (`BepInEx/LogOutput.log`) says which backend is
-  speaking.
+  through the best screen reader it finds - Macaw when it is running, else VoiceOver; the log
+  (`BepInEx/LogOutput.log`) says which backend is speaking.
+- **Macaw.** If you use the Macaw screen reader, pick "Macaw, through Prism" on the Speech tab
+  and the mod speaks through Macaw - its voice, rate, dictionary and speech history - with the
+  same gapless queue, because Macaw queues with NVDA's priorities. Nothing to install beyond
+  Macaw itself: the mod loads the Prism plugin Macaw links under
+  `~/Library/Application Support/Macaw/prism/`. If Macaw is not running when the game starts,
+  the mod says so in the log and speaks with the system voice for that session; the setting is
+  kept. As with any screen reader, a key press cuts Macaw's speech, the mod's and its own alike.
 - **The Speech tab in Mod settings.** The "Mod settings" entry (right after Options on the main
-  menu and the pause menu) has a macOS-only Speech tab: the backend (System voice, or VoiceOver
-  through Prism if you prefer VoiceOver's own speech and can live without the queue), the
+  menu and the pause menu) has a macOS-only Speech tab: the backend (System voice, Macaw through
+  Prism, or VoiceOver through Prism if you prefer VoiceOver's own speech and can live without
+  the queue), the
   voice — the list offers the voices for the game's language, with your Spoken Content voice
   as the default first entry — and the speaking rate and speech volume (70 is the voice's own
   loudness; the slider goes louder than that, at the cost of some clipping). Changes take effect as

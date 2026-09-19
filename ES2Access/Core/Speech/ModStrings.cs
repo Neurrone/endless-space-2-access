@@ -220,6 +220,7 @@ namespace ES2Access.Core.Speech
         public const string SpeechBackend = "mod-settings.speech.backend";
         public const string SpeechBackendSystemVoice = "mod-settings.speech.backend-system-voice";
         public const string SpeechBackendPrism = "mod-settings.speech.backend-prism";
+        public const string SpeechBackendMacaw = "mod-settings.speech.backend-macaw";
         public const string SpeechVoice = "mod-settings.speech.voice";
         public const string SpeechVoiceDefault = "mod-settings.speech.voice-default";
         public const string SpeechVoiceDefaultUnknown = "mod-settings.speech.voice-default-unknown";
@@ -229,6 +230,7 @@ namespace ES2Access.Core.Speech
         public const string SpeechFollowSpokenContent = "mod-settings.speech.follow-spoken-content";
         public const string SpeechSystemVoiceSection = "mod-settings.speech.system-voice-section";
         public const string SpeechBackendPrismFailed = "mod-settings.speech.backend-prism-failed";
+        public const string SpeechBackendMacawFailed = "mod-settings.speech.backend-macaw-failed";
 
         // --- the editor for the player's own three scanner categories (2026-08-23) ---
 
@@ -509,6 +511,7 @@ namespace ES2Access.Core.Speech
             { SpeechBackend, "Speech backend" },
             { SpeechBackendSystemVoice, "System voice" },
             { SpeechBackendPrism, "VoiceOver, through Prism" },
+            { SpeechBackendMacaw, "Macaw, through Prism" },
             { SpeechVoice, "Voice" },
             { SpeechVoiceDefault, "Spoken Content voice: {0}" },
             { SpeechVoiceDefaultUnknown, "Spoken Content voice" },
@@ -520,6 +523,10 @@ namespace ES2Access.Core.Speech
             {
                 SpeechBackendPrismFailed,
                 "VoiceOver through Prism could not be started; the system voice stays."
+            },
+            {
+                SpeechBackendMacawFailed,
+                "Macaw is not running or could not be reached through Prism; the system voice stays."
             },
             { ScannerEditSlotButton, "Custom category {0}: {1}" },
             { ScannerEditEmpty, "empty" },

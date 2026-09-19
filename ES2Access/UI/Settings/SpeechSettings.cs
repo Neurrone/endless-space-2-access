@@ -6,8 +6,9 @@ using ES2Access.Core.Util;
 namespace ES2Access.UI.Settings
 {
     /// <summary>
-    /// The speech half of the settings file, macOS only: which backend the mod speaks through,
-    /// and the system voice's voice, rate and volume. The KEYS and their meanings live here; the
+    /// The speech half of the settings file, macOS only: which backend the mod speaks through
+    /// (the system voice, Macaw through its Prism plugin, or Prism as it ships), and the system
+    /// voice's voice, rate and volume. The KEYS and their meanings live here; the
     /// rows that edit them are <see cref="ES2Access.UI.ModOptions.SpeechRows"/>.
     ///
     /// An absent voice or rate key means FOLLOW SPOKEN CONTENT - the OS settings stay the mod's
@@ -34,12 +35,14 @@ namespace ES2Access.UI.Settings
 
         public const int VolumeDefault = 80;
 
-        /// <summary>The stored backend: <see cref="PrismSpeech.MacBackendPrism"/> when the file
-        /// says so, else the system voice.</summary>
+        /// <summary>The stored backend: <see cref="PrismSpeech.MacBackendPrism"/> or
+        /// <see cref="PrismSpeech.MacBackendMacaw"/> when the file says so, else the system
+        /// voice.</summary>
         public static string Backend()
         {
-            return ModSettings.File.Get(BackendKey) == PrismSpeech.MacBackendPrism
-                ? PrismSpeech.MacBackendPrism
+            string stored = ModSettings.File.Get(BackendKey);
+            return stored == PrismSpeech.MacBackendPrism || stored == PrismSpeech.MacBackendMacaw
+                ? stored
                 : PrismSpeech.MacBackendSystemVoice;
         }
 
