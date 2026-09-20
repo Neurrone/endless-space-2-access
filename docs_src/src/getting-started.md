@@ -47,6 +47,7 @@ The mod announces draggable items as "draggable". To drag an item:
 
 ## Tables
 
+- Use the arrow keys to navigate
 - `Ctrl+Alt+Left`: move to first column of current row
 - `Ctrl+Alt+Right`: move to last column of current row
 - `Ctrl+Alt+Up`: move to first row of current column, `Home` also works

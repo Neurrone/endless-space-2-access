@@ -15,7 +15,7 @@ Endless Space 2 Access is a screen reader accessibility mod for Endless Space 2,
   - A scanner tool finds systems, fleets, curiosities or other places of interest based on what you have already explored
   - Bookmarks to efficiently move focus to systems of interest
 - Additional hotkeys for moving focus to frequently used controls
-- Rebinding for all keyboard commands
+- Support for remapping of all mod commands
 - Support for multiple zoom levels and the game's scan overlay
 - A turn log raises notifications for events that the game does not notify for because they are obvious to sighted players. For example, sightings of enemy fleets and colonies or sieges
 - AI written descriptions for all 69 cut scene videos. Descriptions are read in the gaps between spoken dialog
