@@ -161,7 +161,10 @@ identical before and after at the normal clock.
    Known exposure in either variant: key claims read the standing render (`DeclaresStop`,
    `TakesCarryKey`, the clear and go-to keys; the code says it is "never more than a frame old").
    Worst case is a key that does nothing or that the game also acts on, since acts re-check and
-   rebuild. The owner has not ruled on it. About fifteen doc lines assert the per-frame contract
+   rebuild. Owner ruling 2026-09-21: the 200 ms window is accepted, no code. (Refreshing inside the
+   claim is not an option anyway: the predicates are polled by the game's key scan several times a
+   frame, `ModEntry.BackKeyClaimed` / `GraphNavigator.TakesCarryKey` comments, so a build there
+   would run every frame.) About fifteen doc lines assert the per-frame contract
    (`docs/generic/ui-navigation.md`, `docs/generic/performance.md`, `docs/generic/buffers.md`,
    `docs/generic/dev-server.md`, `docs/dev-loop.md`, CLAUDE.md Performance, `docs/galaxy-map.md`,
    `docs/heroes-and-diplomacy.md`) and two comments in `walks/lib.sh` say "rendered on the next frame".
