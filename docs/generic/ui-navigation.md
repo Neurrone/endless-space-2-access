@@ -516,11 +516,13 @@ which no dump reveals. Key such lines on the game's *data* object, never the wid
 ### Seating the cursor deliberately
 
 - **A programmatic landing — a locate, a scanner jump, a deferred seat — must survive more
-  than one frame**: a collapsed branch declares no children, so the request opens one level
-  of ancestry per build, found from the id's own path, and dies two ways — at once when
-  nothing in the render leads to it, and on a budget when the branch never produces it. Size
-  the budget in frames-of-flight, not rebuilds: an auto-expanded level may run its own camera
-  move. And a landing announces once, so it waits not for the node to EXIST but to be
+  than one frame**: a collapsed branch declares no children, so the request opens its whole
+  path at once, found from the id's own path — the deepest declared ancestor through its own
+  expand hook, the undeclared levels below it by key — and when it ends it takes back any
+  level no node turned out to carry. It dies two ways — at once when nothing in the render
+  leads to it, and on a budget of real seconds when the branch never produces it. Opening a
+  level spends none of that budget: an auto-expanded level may run its own camera move. And
+  a landing announces once, so it waits not for the node to EXIST but to be
   FINISHED — in a camera-driven view the same node reads differently at two distances;
   "present" is not "settled". The player's next move cancels a pending landing; one that waits
   out a camera flight and then fires yanks them somewhere they no longer asked to go.
