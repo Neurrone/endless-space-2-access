@@ -548,10 +548,16 @@ namespace ES2Access.Screens
         ///
         /// Through the builder's persistent expansion set, which is the engine's own bookkeeping and
         /// the documented way for a screen to flip it, so the card stays open exactly as one the player
-        /// opened by hand.
+        /// opened by hand - for as long as its system is the one on the page. A card THIS opened is
+        /// handed back once the page has turned away from it: the key carries the planet's GUID, which
+        /// no other system has, so nothing on any later page could ever close it, and the set kept one
+        /// such entry for every system a turn had been seated into (measured 2026-09-21:
+        /// <c>system:planet/523</c> still in the set on the next system's page, carried by no node). A
+        /// card the player had already opened is not this method's to hand back and is never recorded.
         /// </summary>
         private void OpenCardBeingSeated(GraphBuilder builder)
         {
+            HandBackSeatedCards(builder);
             if (
                 _turnSeats <= 0
                 || _placeCard < 0
@@ -566,8 +572,48 @@ namespace ES2Access.Screens
             Planet planet = _planets[_placeCard].Planet;
             if (planet != null)
             {
-                builder.Expansion.Add(ControlId.Structural(PlanetKeyPrefix + planet.GUID));
+                ControlId card = ControlId.Structural(PlanetKeyPrefix + planet.GUID);
+                if (builder.Expansion.Add(card))
+                {
+                    _seatOpened.Add(new SeatedCard { Id = card, Planet = planet.GUID });
+                }
             }
         }
+
+        /// <summary>Take back out of the expansion set the cards a seat opened on a system the page is
+        /// no longer showing. Asked by the planet's number, not by key: the list is one entry long at
+        /// most times, comparing two numbers costs a build nothing, and a number keeps no finished game
+        /// alive the way a reference to its planet would.</summary>
+        private void HandBackSeatedCards(GraphBuilder builder)
+        {
+            if (_seatOpened.Count == 0 || builder.Expansion == null)
+            {
+                return;
+            }
+
+            for (int i = _seatOpened.Count - 1; i >= 0; i--)
+            {
+                bool drawn = false;
+                for (int p = 0; p < _planets.Count && !drawn; p++)
+                {
+                    Planet planet = _planets[p].Planet;
+                    drawn = planet != null && (ulong)planet.GUID == _seatOpened[i].Planet;
+                }
+
+                if (!drawn)
+                {
+                    builder.Expansion.Remove(_seatOpened[i].Id);
+                    _seatOpened.RemoveAt(i);
+                }
+            }
+        }
+
+        private struct SeatedCard
+        {
+            public ControlId Id;
+            public ulong Planet;
+        }
+
+        private readonly List<SeatedCard> _seatOpened = new List<SeatedCard>();
     }
 }
