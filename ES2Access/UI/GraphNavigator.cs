@@ -1158,6 +1158,23 @@ namespace ES2Access.UI
             _bufferReadout = null;
         }
 
+        /// <summary>Throw away the render this frame has already made, so the next pass builds afresh.
+        ///
+        /// For a screen that has just changed what the next build ought to CONTAIN by some route of its
+        /// own - an expansion queued as a keystroke was answered, a hold let go - rather than through
+        /// the graph, which invalidates for itself. Only one render is made per frame
+        /// (<c>KeyGraph.Rerender</c>), and nothing promises that the next one comes on the next frame, so
+        /// a screen that merely waits for a build to arrive is waiting on nothing it controls: the rule is to
+        /// invalidate at the moment the change is made and read the answer off the build that
+        /// follows.</summary>
+        public void InvalidateRender()
+        {
+            if (_graph != null)
+            {
+                _graph.Invalidate();
+            }
+        }
+
         private static bool Same(List<string> left, List<string> right)
         {
             if (left == null || right == null || left.Count != right.Count)

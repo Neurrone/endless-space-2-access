@@ -459,6 +459,7 @@ namespace ES2Access.Screens
             // map that is going away, and a landing answered on some later visit would move the
             // cursor for a reason nobody could remember.
             _bookmarkLanding = null;
+            _bookmarkLandingOpening = false;
             // A constellation name the mod was holding drawn belongs to the map that is going away.
             ConstellationLabelHold.Release();
             // Where the camera was sent goes with the page too: whatever replaced this one may have
@@ -1071,6 +1072,10 @@ namespace ES2Access.Screens
         /// build that follows, because the render they belong to is the next one.</summary>
         private void ApplyPendingExpansions(GraphBuilder builder)
         {
+            // First, and whatever there is to apply: this line IS the end of a bookmark landing's wait
+            // - the build its branches were queued for is the one running now, and what that build
+            // declares is the answer to "is there anything inside" (<see cref="FollowBookmarkLanding"/>).
+            _bookmarkLandingOpening = false;
             if (_pendingExpand.Count == 0 && _pendingCollapse.Count == 0)
             {
                 return;

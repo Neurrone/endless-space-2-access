@@ -1123,7 +1123,9 @@ namespace ES2Access.Screens
         /// so the child does not exist yet and its key is not something this page can compose: what a
         /// system's first child IS depends on what the map is drawing there
         /// (<see cref="AddInside"/>). The branch is asked to open and the landing waits for the build
-        /// that opens it (<see cref="FollowBookmarkLanding"/>).
+        /// that opens it - the ONE build that follows the press, which the standing render is dropped
+        /// for here so that it comes at once whatever the idle build rate is
+        /// (<see cref="FollowBookmarkLanding"/>).
         /// </summary>
         internal void LandInside(StarSystemNode node)
         {
@@ -1149,13 +1151,22 @@ namespace ES2Access.Screens
             EnsureBand(place, leaving);
             OpenPlace(node);
             _bookmarkLanding = SystemRow(node);
-            _bookmarkLandingFrames = BookmarkLandingFrames;
+            _bookmarkLandingOpening = true;
+            // The branches were asked for outside a build, so the render standing from this frame is
+            // one made before the request: dropped here, the next focus pass builds with both levels
+            // open and the landing is judged off THAT build rather than off whichever build the rate
+            // would have brought along (<see cref="GraphNavigator.InvalidateRender"/>).
+            GraphNavigator navigator = ModEntry.Navigator;
+            if (navigator != null)
+            {
+                navigator.InvalidateRender();
+            }
         }
 
         /// <summary>Put the cursor on the first thing inside the system a jump named, once the build
-        /// that opened the branch has declared it. A system with nothing in it - and a branch that
-        /// never opens, which is the budget running out - lands on the system's own row instead, which
-        /// is the honest answer to "go inside" where there is no inside.</summary>
+        /// the branch was asked for has run. A system with nothing in it - and a branch that build did
+        /// not open, which is a system the map is not declaring at all - lands on the system's own row
+        /// instead, which is the honest answer to "go inside" where there is no inside.</summary>
         private void FollowBookmarkLanding()
         {
             if (_bookmarkLanding == null)
@@ -1163,19 +1174,19 @@ namespace ES2Access.Screens
                 return;
             }
 
+            if (_bookmarkLandingOpening)
+            {
+                // The branch was asked for as the press was answered and opens on the build that
+                // follows: a system that is merely DECLARED is the shut row the jump was made from,
+                // and landing on it would be the jump giving up one frame before it could have gone
+                // inside (<see cref="ApplyPendingExpansions"/>, which is where the wait ends).
+                return;
+            }
+
             GraphNavigator navigator = ModEntry.Navigator;
             GraphRender render = navigator == null ? null : navigator.Render;
             GraphNode node = render == null ? null : render.NodeAt(_bookmarkLanding);
             bool open = node != null && node.Expanded;
-            bool spent = --_bookmarkLandingFrames <= 0;
-            if (!open && !spent)
-            {
-                // The branch was asked for on the press and opens on a later build: a system that is
-                // merely DECLARED is the shut row the jump was made from, and landing on it would be
-                // the jump giving up one frame before it could have gone inside.
-                return;
-            }
-
             ControlId landing = _bookmarkLanding;
             _bookmarkLanding = null;
             ControlId child = open ? FirstChild(render, node) : null;
@@ -1212,11 +1223,12 @@ namespace ES2Access.Screens
         }
 
         private ControlId _bookmarkLanding;
-        private int _bookmarkLandingFrames;
 
-        /// <summary>How long a bookmark landing waits for the branch it asked for. Two builds is
-        /// enough - the constellation on one, the system on the next - and twelve is the same generous
-        /// count every other wait on this page uses.</summary>
-        private const int BookmarkLandingFrames = 12;
+        /// <summary>Whether a bookmark landing is still waiting for the build its branches were queued
+        /// for. One build answers the whole path - the constellation and the system are asked for
+        /// together and applied together (<see cref="OpenPlace"/>,
+        /// <see cref="ApplyPendingExpansions"/>) - so this is the whole of the wait, and it is a
+        /// question about a build having run rather than about frames having passed.</summary>
+        private bool _bookmarkLandingOpening;
     }
 }
