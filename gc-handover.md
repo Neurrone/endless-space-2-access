@@ -1,8 +1,9 @@
 # GC pause handover
 
 State of the investigation into the second-long freezes, as of 2026-09-21. Written so a fresh
-session can resume without the conversation. Nothing in the mod's code has been changed yet; every
-experiment below was done from the dev server's REPL and is gone on a game restart.
+session can resume without the conversation. Work items 1-3 of section 5 were implemented on
+2026-09-21 (status there); the rate itself is unchanged. Every experiment below was done from the
+dev server's REPL and is gone on a game restart.
 
 Figures come from one machine and one mid-game save. They characterise the mechanism; the absolute
 numbers scale with how much live data the save holds. Line numbers drift, so sites are named by
@@ -104,48 +105,45 @@ Proof for each item: (a) the sequence still works with builds a full second apar
 (section 8) - record the failure before the fix where there is one; (b) the screen's targeted walk is
 identical before and after at the normal clock.
 
-1. **Bookmark landing** (`GalaxyHudScreen.Seats.cs`, `LandInside` / `FollowBookmarkLanding`,
-   `BookmarkLandingFrames = 12`). Measured failing: with builds further apart than the 12-frame
-   budget the jump lands on the system's own row instead of inside the system (3 of 3). It passed at
-   a plain 5 builds/s only because the map ran at about 33 fps, making 12 frames about 400 ms; at
-   60 fps it is a race. `OpenPlace` (`GalaxyHudScreen.Trail.cs`) already queues the constellation AND
-   the system in `_pendingExpand`, and `ApplyPendingExpansions` (`GalaxyHudScreen.cs`) applies both at
-   the start of the next build, so ONE build suffices; the "two builds" comment on the budget is out
-   of date. Fix: invalidate when the expansion is queued and land from that build. This path bypasses
-   `OnExpand`, so no camera flight starts. Outside `Core/`.
-2. **The engine's landing path** (`Core/UI/Graph/KeyGraph.cs` `Reach`, `Core/UI/Graph/FocusRequest.cs`
-   `Step`, `GraphNavigator.PendingOutcome`). Today `Reach` opens only the deepest DECLARED ancestor
-   per call, and `Step` spends the same 300-pass budget on "I just opened a level" and on "the level
-   is open and the game has not drawn the child".
-   - Part A: `Reach` also adds the ids of every undeclared ancestor to `GraphState.Expanded` in the
-     same call (`AncestorKeys` already yields them; `ControlId` equality is the structural key only).
-     The declared ancestor still opens through `SetExpanded`, so its `OnExpand` override runs. An
-     undeclared ancestor that turns out to be override-backed falls back to today's stepping; the four
-     overrides (`Galaxy/ConstellationRows.cs`, `OptionsScreen.Rows.cs`, `ResearchScreen.cs`,
-     `UI/BattleRosters.cs`) are top-level groups. Record what a request pre-added and, on landing,
-     remove entries no node carries, so the set and the walk's expansion count stay as today.
-   - Part B: Opened stops spending budget (capped by ancestor count); Waiting spends elapsed seconds
-     passed in by the navigator. Suspended frames still cost nothing.
-   - Not proposed: looping builds inside one frame. A constellation opened through the tree starts a
-     camera flight, and the map's `LandingSuspended` / `BetweenViews` flags refresh once per frame in
-     `OnUpdate`, so a same-frame landing would not see it.
-   - `FocusReachTests` and `KeyGraphTests` pin one level per call and a frame budget and need
-     rewriting; add tests for the override fallback and the clean-up. `docs/generic` source copies are
-     re-synced; any sentence there describing one level per build needs the owner's approval to edit.
-     Proof includes the full walk (ask first).
-3. **Notification popup seating** (`NotificationScreen.cs`, `Seat`, (sub) :438-468): it seats "on the
-   first frame the popup declares no more than it did the frame before" by comparing
-   `RenderedNodeCount` between calls; with no build between two calls the counts are trivially equal.
-   Compare across builds. **System-management page turn** (`SystemManagementScreen.PageTurn.cs`,
-   `TurnSeatFrames`, `Restore`, (sub)): its fallback can fire from a render never rebuilt after the
-   settle; invalidate on the frame the settle ends. Both walks passed at a plain 5 builds/s, but the
-   walk's waits are generous.
-4. **Smaller render-dependent waits** (all (sub)): the map's `_binding` hold release and the
-   navigator's provisional descend under `BetweenViews` (invalidate when the hold ends); the locate
-   landing (`GalaxyHudScreen.Landing.cs`, `LocateFrames`, reads a list only a build fills: invalidate
-   when a locate is taken); the centred-system check (`Seats.cs`, reads `navigator.Render`); the zoom
-   seat hand-off (`UI/ZoomLadder.cs`, `Claim` runs only in a build). `GalaxyTree.ReadBand` detects a
-   zoom band change per build.
+1. **Bookmark landing** - DONE (f182d85). Screens can now drop the standing render
+   (`GraphNavigator.InvalidateRender`); `LandInside` does so when it queues the expansion and the
+   wait ends where `ApplyPendingExpansions` runs. At 0.5 builds/s: 2 of 3 failed before, 5 of 5
+   landed after, near and far band. The map ran at about 13 fps in that session, so the old 12-frame
+   budget only failed once builds were 2 s apart.
+2. **The engine's landing path** - DONE (0764a43), full walk NOT yet run (ask first). `Reach` opens
+   the whole path on one build and the request takes back the levels no node carries; Opened spends a
+   capped count, Waiting spends real seconds; `FocusNode` invalidates and ignores a repeat of the
+   identical request in flight. Found live and fixed in the same commit: a request that ends while
+   another screen has the keyboard is cleaned out of its OWN screen's state. Still stale and needing
+   the owner's approval to edit: `docs/generic/ui-navigation.md`, "Seating the cursor deliberately",
+   the sentence "opens one level of ancestry per build ... Size the budget in frames-of-flight".
+   Type-ahead cannot start a deep landing (it searches declared nodes only), so no live route
+   exercised three levels through a shut constellation.
+3. **Notification popup seating** - DONE (6cacc9a): compared across builds by render identity, a
+   build asked for while the seat is owed. The defect was latent on the test save (no failure
+   reproduced); the recording showed the seat taken off a render built before the swap.
+   **System-management page turn** - measured, NOT changed: the restore to the same card index
+   passes identically at the normal clock and at 1 build/s. `_planets` is refreshed only by `Build`
+   (through `Whole()`/`Drawing()`, which is also the readable "window is bound to the new system"
+   condition), so the staleness is real but did not produce a failure. Open from that stage:
+   (a) PRE-EXISTING, normal clock: turning to a system with FEWER planets than the card index the
+   cursor was on announces nothing and leaves the cursor on the previous system's key with that
+   card's expansion orphaned - the fallback never fires; (b) at 1 build/s each successful restore
+   spoke one extra line first, the PREVIOUS page's tooltip text - unattributed (no old-assembly
+   slow-clock reference was taken), belongs with item 4/5.
+4. **Smaller render-dependent waits** - NOT started; design awaits the owner. Read on 2026-09-21
+   (code only, not live): the map's `_binding` / `_settling` holds and the notification `_seating`
+   hold end by letting `EnsureFocus` announce or land off the STANDING render, whose structure (leaf
+   or group, "2 of 10") can predate the end of the bind - proposed generic fix: `EnsureFocus`
+   invalidates on the frame a screen's `BetweenViews` or `LandingSuspended` turns false (outside
+   `Core/`). The locate landing (`GalaxyHudScreen.Landing.cs`, `LocateFrames`) reads `_systems`, which
+   only a build fills: invalidate when a locate is first seen. No fix needed: `GalaxyTree.ReadBand`
+   (detection and the reconcile it drives happen in the same build), `ZoomLadder.Claim` (re-asks every
+   build, arriving page builds at once), the centred-system seat (waits on the camera, ends in a
+   landing). Walk hazards met today: a notification popup re-raised between runs is not closed by
+   `walks/cs/drain.cs` and silently skips the galaxy leg; `galaxy/map-tree` self-diffs by 500-600
+   lines between two runs of one build depending on whether the camera has drawn the planet cards,
+   and inherits leftover expansions unless `walks/cs/reset.cs` runs first.
 5. **The rate change itself.** `KeyGraph.FrameCounter` is an injected clock (`ModEntry` wires
    `Time.frameCount`); a time-based clock in its place gives a global idle rate with no `Core/` edit.
    Design choice still open between two variants:
