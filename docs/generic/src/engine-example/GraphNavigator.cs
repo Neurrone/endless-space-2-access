@@ -311,6 +311,8 @@ namespace ES2Access.UI
             // again the moment its own screen is back (OwnPendingFocus), and cancelled only by that
             // screen's own navigation.
             _pendingStop = null;
+            _heldBetween = false;
+            _heldSuspended = false;
             // Nowhere to have moved FROM: the first commit on a page is a cursor being seated, not a
             // player going somewhere (see CursorMovedHere).
             _visualFrom = null;
@@ -868,6 +870,8 @@ namespace ES2Access.UI
                 return;
             }
 
+            NoteHoldEdge();
+
             // A landing another screen is holding is none of this screen's business: the page still
             // needs seating, and asking the question of OwnPendingFocus is what keeps a suspended
             // request from standing in for one.
@@ -1025,6 +1029,48 @@ namespace ES2Access.UI
             FillBuffer(node);
             WatchLive(node);
         }
+
+        /// <summary>
+        /// A hold of the focused screen has just gone up or come down, so the render this pass works
+        /// from is built now rather than inherited.
+        ///
+        /// Both edges, for opposite reasons. COMING DOWN: a hold delays an announcement or a landing
+        /// (<see cref="Screen.BetweenViews"/>, <see cref="Screen.LandingSuspended"/>) precisely because
+        /// the page is describing something that is still changing, so the pass that finally says it
+        /// must say it off a build that POSTDATES the hold - a standing render can still be the one
+        /// whose structure the hold was raised over ("2 of 10" counted before the system finished
+        /// binding, a leaf where a group now is). GOING UP: a page that answers a hold by declaring
+        /// nothing does so on this pass instead of whenever the next build happens to come; the system
+        /// page's turn is that shape, and the render it would otherwise keep standing is the old
+        /// system's, whose rows read from widgets the game is rebinding underneath them (measured
+        /// 2026-09-21 at one build a second: the old page's tooltip was spoken three frames into the
+        /// turn, off a render the turn predates).
+        ///
+        /// The EDGE and not the state: <see cref="Screen.LandingSuspended"/> is true for every camera
+        /// move on the galaxy map, and rebuilding on every pass of a camera flight would cost more than
+        /// a slower build rate saves.
+        /// </summary>
+        private void NoteHoldEdge()
+        {
+            bool between = _screen.BetweenViews;
+            bool suspended = _screen.LandingSuspended;
+            if (between == _heldBetween && suspended == _heldSuspended)
+            {
+                return;
+            }
+
+            _heldBetween = between;
+            _heldSuspended = suspended;
+            _graph.Invalidate();
+        }
+
+        /// <summary>What the focused screen's two holds said on the last pass
+        /// (<see cref="NoteHoldEdge"/>), forgotten with the screen: a page arrived at mid-hold is an
+        /// edge of its own, which is the reading that costs a build rather than one that skips it.
+        /// </summary>
+        private bool _heldBetween;
+
+        private bool _heldSuspended;
 
         /// <summary>
         /// Re-make the descend a Right into a group made provisionally, now that the page has stopped

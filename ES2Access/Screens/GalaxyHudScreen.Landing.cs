@@ -56,6 +56,15 @@ namespace ES2Access.Screens
                 _locating = wanted;
                 _locateFrames = LocateFrames;
                 _holdingAtRequest = SelectedFleet();
+                // The answer is read off the places this page has DECLARED (<see cref="Declaring"/>),
+                // and only a build fills them, so a request seen on a page whose last build is older
+                // than the request would be judged against places that predate it. Asked for here, at
+                // the moment the request is first seen, rather than waited for.
+                GraphNavigator navigator = ModEntry.Navigator;
+                if (navigator != null)
+                {
+                    navigator.InvalidateRender();
+                }
             }
 
             try
