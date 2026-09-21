@@ -1,9 +1,10 @@
 # GC pause handover
 
 State of the investigation into the second-long freezes, as of 2026-09-21. Written so a fresh
-session can resume without the conversation. Work items 1-3 of section 5 were implemented on
-2026-09-21 (status there); the rate itself is unchanged. Every experiment below was done from the
-dev server's REPL and is gone on a game restart.
+session can resume without the conversation. The preparations (work items 1-4 of section 5) were
+implemented on 2026-09-21; the rate itself is unchanged. RESUME AT "Where to resume" at the head of
+section 5. Every experiment below was done from the dev server's REPL and is gone on a game
+restart.
 
 Figures come from one machine and one mid-game save. They characterise the mechanism; the absolute
 numbers scale with how much live data the save holds. Line numbers drift, so sites are named by
@@ -86,14 +87,45 @@ What does exist: `GC.Collect()`, and the two heap-size exports above via `[DllIm
 - "Waiting a budget of N frames is an anti-pattern": fix such waits at the root. A landing whose
   target is known should open its whole path on the next build, not one level per build, and not by
   looping several builds inside one frame.
-- "Items 1-3 look good" (2026-09-20), meaning work items 1-3 in section 5, including the `Core/`
-  change described there. Re-confirm before editing `Core/`: CLAUDE.md requires explicit approval
-  for it, and the full walk needs approval each time.
+- Items 1-4 of section 5 were approved and are done, the `Core/` change and one full walk included.
+  Any further `Core/` edit and any further full walk need approval again.
+- 2026-09-21: the rate change is VARIANT 1 (slow only the build; the rest of `EnsureFocus` stays per
+  frame on the last render). The 200 ms staleness of key claims is accepted, no code. The slow-clock
+  checks skip battles (the save cannot raise one). The page-turn fallback's "no cards drawn when the
+  seat window runs out" caller stays as it is: the game does not take ninety frames to draw the
+  cards. The changed galaxy reading (Right into a collapsed system now lands on "group ...
+  collapsed", tooltip line after the landing) is correct.
 - HUD and scratch-allocation optimisations (section 7) are deferred; at 5 builds/s they are worth a
   few seconds of interval each.
 - Every new key binding still needs approval; none is proposed here.
 
 ## 5. Work plan, in order
+
+**Where to resume.** Items 1-4 are committed on `main` (f182d85, 6cacc9a, 0764a43, fe54b02,
+ac7a7c1, 2767e80; doc wording 2e7a04c). Next, in order:
+(a) the slow-clock live checks of what nobody has driven yet - the camera following the cursor
+through the galaxy tree, inspect mode, notifications arriving live, end turn, options key capture
+(not battles) - as speech transcripts at 1 build/s against the normal clock, plus a SWEEP rather
+than a sample: list every screen whose `Build`, `IsActive` or a gate they call reads screen-private
+state written outside the build (a settle counter, a guard, an armed flag) and check each either
+invalidates when it changes or sits under a hold whose edges `GraphNavigator.NoteHoldEdge` already
+covers (the shape is described under item 4); (b) item 5, variant 1, with a time-based clock;
+(c) item 6; (d) item 7. Follow-ups that block nothing: `walks/galaxy/fleet-panel.sh` clicks the
+notification strip when it finds no fleet, which opens the popup and ruins every later galaxy
+capture of the run; `walks/notifications/popup.sh` empties the turn log through
+`HideAllGuiNotifications()`, so the walk changes the fixture it measures; the 25 frame-counted
+waits that tick on game flags could become seconds.
+
+**The full walk (2026-09-21), pre-change build ecb10f3 against HEAD ac7a7c1, one game process:** no
+differing line attributable to the code. How it had to be read, because the raw total was 2698:
+the baseline's galaxy family was re-walked without `fleet-panel` (see the follow-up above), and
+`senate/screen` and `system-management/screen` were re-walked on both builds because the game's
+tutorial popup (one half) and the re-raised notification popup (the other) stood over a capture.
+With the turn-log stop, the players row (AI turn state) and notification instance numbers filtered
+from both sides, 60 lines remained in 3 files, all fixture: the end-game journal's scores and row
+count, "Next notification ... unavailable" (one pending notification instead of four once the turn
+log was emptied), and a focus marker on the absent turn-log stop. `galaxy/fleet-panel` is unproven
+in both halves.
 
 The rule behind items 1-4: code that changes what the next build should contain must invalidate the
 graph at that moment instead of counting on a build arriving next frame. The graph's own operations
@@ -110,7 +142,7 @@ identical before and after at the normal clock.
    wait ends where `ApplyPendingExpansions` runs. At 0.5 builds/s: 2 of 3 failed before, 5 of 5
    landed after, near and far band. The map ran at about 13 fps in that session, so the old 12-frame
    budget only failed once builds were 2 s apart.
-2. **The engine's landing path** - DONE (0764a43), full walk NOT yet run (ask first). `Reach` opens
+2. **The engine's landing path** - DONE (0764a43), full walk run (above). `Reach` opens
    the whole path on one build and the request takes back the levels no node carries; Opened spends a
    capped count, Waiting spends real seconds; `FocusNode` invalidates and ignores a repeat of the
    identical request in flight. Found live and fixed in the same commit: a request that ends while
@@ -122,31 +154,41 @@ identical before and after at the normal clock.
 3. **Notification popup seating** - DONE (6cacc9a): compared across builds by render identity, a
    build asked for while the seat is owed. The defect was latent on the test save (no failure
    reproduced); the recording showed the seat taken off a render built before the swap.
-   **System-management page turn** - measured, NOT changed: the restore to the same card index
-   passes identically at the normal clock and at 1 build/s. `_planets` is refreshed only by `Build`
-   (through `Whole()`/`Drawing()`, which is also the readable "window is bound to the new system"
-   condition), so the staleness is real but did not produce a failure. Open from that stage:
-   (a) PRE-EXISTING, normal clock: turning to a system with FEWER planets than the card index the
-   cursor was on announces nothing and leaves the cursor on the previous system's key with that
-   card's expansion orphaned - the fallback never fires; (b) at 1 build/s each successful restore
-   spoke one extra line first, the PREVIOUS page's tooltip text - unattributed (no old-assembly
-   slow-clock reference was taken), belongs with item 4/5.
-4. **Smaller render-dependent waits** - NOT started; design awaits the owner. Read on 2026-09-21
-   (code only, not live): the map's `_binding` / `_settling` holds and the notification `_seating`
-   hold end by letting `EnsureFocus` announce or land off the STANDING render, whose structure (leaf
-   or group, "2 of 10") can predate the end of the bind - proposed generic fix: `EnsureFocus`
-   invalidates on the frame a screen's `BetweenViews` or `LandingSuspended` turns false (outside
-   `Core/`). The locate landing (`GalaxyHudScreen.Landing.cs`, `LocateFrames`) reads `_systems`, which
-   only a build fills: invalidate when a locate is first seen. No fix needed: `GalaxyTree.ReadBand`
-   (detection and the reconcile it drives happen in the same build), `ZoomLadder.Claim` (re-asks every
-   build, arriving page builds at once), the centred-system seat (waits on the camera, ends in a
-   landing). Walk hazards met today: a notification popup re-raised between runs is not closed by
-   `walks/cs/drain.cs` and silently skips the galaxy leg; `galaxy/map-tree` self-diffs by 500-600
-   lines between two runs of one build depending on whether the camera has drawn the planet cards,
-   and inherits leftover expansions unless `walks/cs/reset.cs` runs first.
+   **System-management page turn** - the same-card restore needed no change (identical at the
+   normal clock and at 1 build/s). `_planets` is refreshed only by `Build` (through
+   `Whole()`/`Drawing()`, which is also the readable "window is bound to the new system" condition).
+   A PRE-EXISTING normal-clock defect found on the way is fixed (fe54b02): a turn to a system with
+   fewer worlds than the card the cursor was on went silent for the swap guard's ninety builds;
+   the fallback now counts as the restore being asked for and lands on the planets' first row.
+   A card the seat itself opened (`OpenCardBeingSeated`) is handed back once the page has turned
+   away from it (2767e80); cards the player opened by hand stay in the set across turns on purpose.
+4. **Hold edges and the locate** - DONE (ac7a7c1). `EnsureFocus` invalidates on the pass where the
+   focused screen's `BetweenViews` or `LandingSuspended` CHANGES, both edges; the locate landing
+   invalidates when a request is first seen. Falling edge: the held announcement is made off a build
+   that postdates the hold. Rising edge: a page that answers a hold by declaring nothing does so at
+   once - at 1 build/s the system page's old render stood three frames into a turn and `WatchLive`
+   spoke the old page's tooltip off it. Deliberately the edge, not the state: `LandingSuspended` is
+   true for every galaxy camera move (9 builds before, 11 after, over one flight at 1 build/s). One
+   normal-clock reading changed, as the binding hold always intended: Right into a collapsed system
+   at overview zoom now lands on the row as a "group ... collapsed" (it read as a leaf off the
+   pre-bind render) and the long tooltip line follows the landing instead of preceding it.
+   No fix needed (read, not live): `GalaxyTree.ReadBand` (detection and the reconcile it drives
+   happen in the same build), `ZoomLadder.Claim` (re-asks every build, arriving page builds at once),
+   the centred-system seat (waits on the camera, ends in a landing). The general shape to keep in
+   mind for item 5: `Rerender` answers TRUE off a memoized render, so everything after it in
+   `EnsureFocus` (`SyncVisual`, `FillBuffer`, `WatchLive`) runs against the old render until the next
+   build; any screen-private state that `Build` reads to declare less (a settle, a guard) only takes
+   effect on a build, so it must invalidate when it changes unless a hold edge already covers it.
+   Walk hazards met: `Gui.GuiNotificationService.HideAllGuiNotifications()` (used by
+   `walks/notifications/popup.sh` and by stages to clear a re-raised popup) also empties the turn
+   log, which shows up as `hud:turn-log` diffs in every later capture; a notification popup
+   re-raised between runs is not closed by `walks/cs/drain.cs` and silently skips the galaxy leg;
+   `galaxy/map-tree` inherits leftover expansions unless `walks/cs/reset.cs` runs first, and the
+   galaxy inspect cell re-arms itself after an overview view-level request, so a script's Right and
+   Down drive the cell unless it presses `ui.back` first.
 5. **The rate change itself.** `KeyGraph.FrameCounter` is an injected clock (`ModEntry` wires
    `Time.frameCount`); a time-based clock in its place gives a global idle rate with no `Core/` edit.
-   Design choice still open between two variants:
+   The owner chose the FIRST of the two variants below (2026-09-21):
    - slow only the build and keep the rest of `EnsureFocus` per frame on the last render (what every
      experiment did; live values stay current because parts are closures read when asked; the tooltip
      path is untouched because `PointerFocus.Tick`, `LateTick` and `WatchDrawn` are per frame and
