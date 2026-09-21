@@ -508,13 +508,30 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The place the player was is not on this page: the planets' own first row, and the
-        /// page's own landing stop where even that is not there.</summary>
+        /// page's own landing stop where even that is not there.
+        ///
+        /// TAKING THE FALLBACK IS THE SEAT BEING ASKED FOR, the same as aiming at a card is
+        /// (<see cref="Restore"/>): a landing needs a render to land in, and the page a restore still
+        /// owed keeps shut (<see cref="Drawing"/>) would hand this one an empty one. Both halves of the
+        /// ask are needed - the flag, and the reading <see cref="Whole"/> is holding for this frame,
+        /// which was computed from the flag as it was a moment ago.
+        ///
+        /// Measured 2026-09-21, which is what this answers: a turn to a system with fewer worlds than
+        /// the card the cursor was on announced only the system's name, left the cursor on the previous
+        /// system's planet key for the ninety builds the swap guard then spent, and ended on whichever
+        /// row the reconcile found - the fallback fired on the first frame after the settle and both its
+        /// stops answered false against the empty render.
+        ///
+        /// The window is closed by a landing, not by the attempt: where the page has nothing drawn to
+        /// stand on yet, the fallback is tried again on the next pass for as long as the seat window
+        /// lasts, the same patience the card seat is given.</summary>
         private void Fallback(GraphNavigator navigator)
         {
-            _turnSeats = 0;
-            if (!navigator.FocusStop(PlanetStop))
+            _placeAsked = true;
+            _wholeFrame = -1;
+            if (navigator.FocusStop(PlanetStop) || navigator.FocusStop(InitialFocusStop))
             {
-                navigator.FocusStop(InitialFocusStop);
+                _turnSeats = 0;
             }
         }
 
