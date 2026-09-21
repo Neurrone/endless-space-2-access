@@ -399,6 +399,7 @@ namespace ES2Access.Screens
         private bool _seating;
         private int _seatFrames;
         private int _seatNodes;
+        private GraphRender _seatRender;
         private bool _spoken;
         private NotificationWindow _holding;
 
@@ -413,6 +414,7 @@ namespace ES2Access.Screens
 
             _seating = true;
             _seatNodes = -1;
+            _seatRender = null;
             _spoken |= spoken;
         }
 
@@ -420,6 +422,7 @@ namespace ES2Access.Screens
         {
             _seating = false;
             _seatNodes = -1;
+            _seatRender = null;
             _spoken = false;
         }
 
@@ -432,8 +435,15 @@ namespace ES2Access.Screens
         /// at once: measured 2026-09-16 on the elimination popup arriving behind a deed report, its
         /// content came in over three frames - its title, then its sentence, then the one button it
         /// offers - so a landing aimed off the two-node frame put the cursor on the BUTTON. The cursor
-        /// is therefore seated on the first frame the popup declares no more than it did the frame
-        /// before, and the budget above is what stops a popup that never settles holding it for ever.
+        /// is therefore seated on the first BUILD that declares no more than the build before it, and
+        /// the budget above is what stops a popup that never settles holding it for ever.
+        ///
+        /// Builds, not frames: nothing promises one arrives per frame, and two counts read off the one
+        /// standing render are equal by construction - which would seat off whatever the popup happened
+        /// to declare first, or off the outgoing popup's render. A render is a new object per build, so
+        /// its identity is what says a build has happened since the last comparison; while the seat is
+        /// owed one is asked for, which keeps the seat as quick as a per-frame clock made it and reads
+        /// it off the popup as it is now.
         /// </summary>
         private void Seat()
         {
@@ -448,14 +458,25 @@ namespace ES2Access.Screens
                 return;
             }
 
-            int nodes = navigator.RenderedNodeCount;
-            if (nodes < 0 || nodes != _seatNodes)
+            GraphRender render = navigator.Render;
+            if (render == null || ReferenceEquals(render, _seatRender))
             {
-                _seatNodes = nodes;
+                // The render this comparison already used, or none at all: ask for a build and answer
+                // off the one that follows.
+                navigator.InvalidateRender();
                 return;
             }
 
-            ControlId seat = Landing(navigator.Render);
+            int nodes = navigator.RenderedNodeCount;
+            if (_seatRender == null || nodes != _seatNodes)
+            {
+                _seatRender = render;
+                _seatNodes = nodes;
+                navigator.InvalidateRender();
+                return;
+            }
+
+            ControlId seat = Landing(render);
             if (seat != null)
             {
                 // Announced where the player has just arrived - the words are what they came for - and
