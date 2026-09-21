@@ -47,7 +47,7 @@ namespace ES2Access.UI
         private const int SettleFrames = 30;
 
         /// <summary>How long the seat a page-changing step leaves for the next page stays open - about
-        /// five seconds, the same budget a landing itself gets (<see cref="ES2Access.Core.UI.Graph.FocusRequest.DefaultFrames"/>),
+        /// five seconds, the same budget a landing itself gets (<see cref="ES2Access.Core.UI.Graph.FocusRequest.DefaultSeconds"/>),
         /// because it is the same wait: the game flying between two view levels and drawing the page it
         /// arrives on. Short enough that a crossing the game never completed cannot seat some later,
         /// unrelated page the player opens by hand.</summary>

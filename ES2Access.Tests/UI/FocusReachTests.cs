@@ -7,7 +7,7 @@ namespace ES2Access.Tests.UI
 {
     /// <summary>
     /// Landing on a control that is not declared yet: finding what it hangs under from its id alone,
-    /// opening one level per build until it appears, and giving up on one that never will.
+    /// opening the whole path to it, and giving up on one that never appears.
     /// </summary>
     public class FocusReachTests
     {
@@ -126,7 +126,7 @@ namespace ES2Access.Tests.UI
             Assert.Null(KeyGraph.DeepestDeclaredAncestor(render, Id("b/c/d")));
         }
 
-        // ---- opening the way, one level per build ----
+        // ---- opening the way ----
 
         /// <summary>A two-level tree: a system holding planets, each planet holding actions - the shape
         /// the galaxy declares, and the shape a constellation layer adds a level above.</summary>
@@ -152,7 +152,7 @@ namespace ES2Access.Tests.UI
         }
 
         [Fact]
-        public void ReachOpensOneLevelPerBuildUntilTheControlIsThere()
+        public void ReachOpensTheWholePathSoOneBuildProducesTheControl()
         {
             GraphState state = new GraphState();
             KeyGraph g = Tree(state);
@@ -161,18 +161,28 @@ namespace ES2Access.Tests.UI
             g.Rerender();
             Assert.Equal(ReachStep.Opened, g.Reach(target));
             Assert.Contains(Id("c"), state.Expanded);
-
-            g.Rerender();
-            Assert.Equal(ReachStep.Opened, g.Reach(target));
             Assert.Contains(Id("c/system/1"), state.Expanded);
-
-            g.Rerender();
-            Assert.Equal(ReachStep.Opened, g.Reach(target));
             Assert.Contains(Id("c/system/1/planet/0"), state.Expanded);
 
             g.Rerender();
             Assert.Equal(ReachStep.Present, g.Reach(target));
             Assert.True(g.Focus(target));
+        }
+
+        /// <summary>The levels below the deepest declared ancestor are opened even when there is nothing
+        /// to open at that ancestor itself: they are shut groups the moment the game draws them, and the
+        /// answer is still "wait" for the ancestor's own child to appear.</summary>
+        [Fact]
+        public void TheLevelsBelowAnAlreadyOpenAncestorArePreOpenedToo()
+        {
+            GraphState state = new GraphState();
+            state.Expanded.Add(Id("c"));
+            KeyGraph g = Tree(state);
+
+            g.Rerender();
+            Assert.Equal(ReachStep.Waiting, g.Reach(Id("c/system/2/planet/0/action/0")));
+            Assert.Contains(Id("c/system/2"), state.Expanded);
+            Assert.Contains(Id("c/system/2/planet/0"), state.Expanded);
         }
 
         [Fact]
@@ -205,6 +215,103 @@ namespace ES2Access.Tests.UI
             Assert.Equal(1, opened);
             g.Rerender();
             Assert.Equal(ReachStep.Present, g.Reach(Id("s/planet/0")));
+        }
+
+        /// <summary>A level pre-opened by key that turns out not to consult the expansion set - it is
+        /// declared with a state of its own, or an expand hook - is simply opened the ordinary way once
+        /// the build declares it, and the landing still arrives.</summary>
+        [Fact]
+        public void AnUndeclaredLevelThatIgnoresTheSetIsOpenedThroughItsOwnHook()
+        {
+            GraphState state = new GraphState();
+            bool inner = false;
+            KeyGraph g = new KeyGraph(
+                () =>
+                {
+                    GraphBuilder b = new GraphBuilder(state.Expanded);
+                    b.BeginGroup(new SyntheticNode(Id("s"), Vt("System")));
+                    NodeVtable card = Vt("Card");
+                    card.OnExpand = () => inner = true;
+                    b.BeginGroup(new SyntheticNode(Id("s/card"), card), inner);
+                    b.AddItem(new SyntheticNode(Id("s/card/action/0"), Vt("Colonize")));
+                    b.EndGroup();
+                    b.EndGroup();
+                    return b.Build();
+                },
+                state
+            );
+            ControlId target = Id("s/card/action/0");
+
+            // The system is all the first build declares, so "s/card" is pre-opened by key - which the
+            // group ignores.
+            g.Rerender();
+            Assert.Equal(ReachStep.Opened, g.Reach(target));
+            Assert.False(inner);
+
+            g.Rerender();
+            Assert.Equal(ReachStep.Opened, g.Reach(target));
+            Assert.True(inner);
+
+            g.Rerender();
+            Assert.Equal(ReachStep.Present, g.Reach(target));
+        }
+
+        // ---- handing back what a landing opened by key alone ----
+
+        [Fact]
+        public void CleanUpTakesBackOnlyTheLevelsNoNodeCarries()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            FocusRequest request = new FocusRequest(Id("c/system/1/planet/0/action/0"), true);
+
+            g.Rerender();
+            Assert.Equal(ReachStep.Opened, g.Reach(request.Id, request));
+            g.Rerender();
+            Assert.Equal(ReachStep.Present, g.Reach(request.Id, request));
+
+            g.ReleaseOpenedPath(request);
+
+            // The real groups the landing opened stay open; the path heads nothing declares - "c/system",
+            // and the "action" level the actions hang under - are taken back out.
+            Assert.Contains(Id("c/system/1"), state.Expanded);
+            Assert.Contains(Id("c/system/1/planet/0"), state.Expanded);
+            Assert.DoesNotContain(Id("c/system"), state.Expanded);
+            Assert.DoesNotContain(Id("c/system/1/planet/0/action"), state.Expanded);
+            Assert.Null(request.OpenedPath);
+        }
+
+        [Fact]
+        public void CleanUpLeavesAloneALevelThatWasAlreadyExpanded()
+        {
+            GraphState state = new GraphState();
+            state.Expanded.Add(Id("c/system"));
+            KeyGraph g = Tree(state);
+            FocusRequest request = new FocusRequest(Id("c/system/1/planet/0/action/0"), true);
+
+            g.Rerender();
+            g.Reach(request.Id, request);
+            g.ReleaseOpenedPath(request);
+
+            Assert.Contains(Id("c/system"), state.Expanded);
+        }
+
+        /// <summary>A landing given up on - the budget ran out, or the player moved and cancelled it -
+        /// leaves nothing of its path behind.</summary>
+        [Fact]
+        public void GivingUpOnALandingTakesBackTheWholePath()
+        {
+            GraphState state = new GraphState();
+            KeyGraph g = Tree(state);
+            FocusRequest request = new FocusRequest(Id("c/system/1/planet/0/action/0"), true);
+
+            g.Rerender();
+            Assert.Equal(ReachStep.Opened, g.Reach(request.Id, request));
+            g.ReleaseOpenedPath(request);
+
+            // "c" opened as a group through the ordinary expansion and stays; nothing the request added
+            // by key does.
+            Assert.Equal(new[] { Id("c") }, state.Expanded);
         }
 
         [Fact]
@@ -247,32 +354,55 @@ namespace ES2Access.Tests.UI
         public void APresentControlIsLandedOnAtOnce()
         {
             FocusRequest request = new FocusRequest(Id("a"), true);
-            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present));
-            Assert.Equal(FocusRequest.DefaultFrames, request.FramesLeft);
+            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, 0.016));
+            Assert.Equal(FocusRequest.DefaultSeconds, request.SecondsLeft);
         }
 
         [Fact]
         public void AnUnreachableControlIsDroppedOnTheFirstFrame()
         {
             FocusRequest request = new FocusRequest(Id("a"), true);
-            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Unreachable));
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Unreachable, 0.016));
+        }
+
+        /// <summary>Opening is not waiting: how many builds a cascade takes is the mod's own business,
+        /// and at a few builds a second a cascade charged for them would never arrive.</summary>
+        [Fact]
+        public void OpeningSpendsNoWaitingTime()
+        {
+            FocusRequest request = new FocusRequest(Id("a/b/c"), true, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Opened, 0.4));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Opened, 0.4));
+            Assert.Equal(1.0, request.SecondsLeft);
+        }
+
+        /// <summary>A group that answers "opened" for ever - its hook declines, so the level never
+        /// opens - is given up on, because nothing else would stop it.</summary>
+        [Fact]
+        public void OpeningIsCappedByTheLevelsTheIdNames()
+        {
+            FocusRequest request = new FocusRequest(Id("a/b"), true);
+            Assert.Equal(3, request.OpensLeft);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Opened, 0.0));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Opened, 0.0));
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Opened, 0.0));
         }
 
         [Fact]
-        public void OpeningAndWaitingBothSpendTheBudgetAndItRunsOut()
+        public void WaitingSpendsSecondsAndTheyRunOut()
         {
-            FocusRequest request = new FocusRequest(Id("a"), true, 3);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Opened));
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting));
-            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Waiting));
+            FocusRequest request = new FocusRequest(Id("a"), true, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, 0.4));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, 0.4));
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Waiting, 0.4));
         }
 
         [Fact]
-        public void ALandingStillArrivesOnTheLastFrameOfTheBudget()
+        public void ALandingStillArrivesOnTheLastOfTheBudget()
         {
-            FocusRequest request = new FocusRequest(Id("a"), false, 2);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Opened));
-            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present));
+            FocusRequest request = new FocusRequest(Id("a"), false, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, 0.9));
+            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, 0.9));
             Assert.False(request.Announce);
         }
 
@@ -281,31 +411,31 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void ASuspendedFrameSpendsNothingOfTheBudget()
         {
-            FocusRequest request = new FocusRequest(Id("a"), true, 3);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
-            Assert.Equal(3, request.FramesLeft);
+            FocusRequest request = new FocusRequest(Id("a"), true, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true, 0.4));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true, 0.4));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true, 0.4));
+            Assert.Equal(1.0, request.SecondsLeft);
         }
 
         [Fact]
         public void ASuspendedRequestResumesWithTheBudgetItHad()
         {
-            FocusRequest request = new FocusRequest(Id("a"), true, 3);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting));
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true));
-            Assert.Equal(2, request.FramesLeft);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting));
-            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Waiting));
+            FocusRequest request = new FocusRequest(Id("a"), true, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, 0.4));
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, true, 0.4));
+            Assert.Equal(0.6, request.SecondsLeft, 3);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Waiting, 0.4));
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Waiting, 0.4));
         }
 
         [Fact]
         public void ASuspendedFrameDoesNotBelieveNothingLeadsThere()
         {
-            FocusRequest request = new FocusRequest(Id("a"), true, 3);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Unreachable, true));
-            Assert.Equal(3, request.FramesLeft);
-            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Unreachable));
+            FocusRequest request = new FocusRequest(Id("a"), true, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Unreachable, true, 0.4));
+            Assert.Equal(1.0, request.SecondsLeft);
+            Assert.Equal(FocusOutcome.Drop, request.Step(ReachStep.Unreachable, 0.4));
         }
 
         /// A landing announces itself once, and what a control SAYS depends on the view it is read
@@ -315,10 +445,10 @@ namespace ES2Access.Tests.UI
         [Fact]
         public void ASuspendedFrameHoldsEvenAControlThatIsThere()
         {
-            FocusRequest request = new FocusRequest(Id("a"), true, 3);
-            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Present, true));
-            Assert.Equal(3, request.FramesLeft);
-            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, false));
+            FocusRequest request = new FocusRequest(Id("a"), true, 1.0);
+            Assert.Equal(FocusOutcome.Wait, request.Step(ReachStep.Present, true, 0.4));
+            Assert.Equal(1.0, request.SecondsLeft);
+            Assert.Equal(FocusOutcome.Land, request.Step(ReachStep.Present, false, 0.4));
         }
 
         // ---- ownership: whose landing is it ----
@@ -329,14 +459,14 @@ namespace ES2Access.Tests.UI
             object screen = new object();
             FocusRequest request = new FocusRequest(Id("a"), true, screen);
             Assert.Same(screen, request.Owner);
-            Assert.Equal(FocusRequest.DefaultFrames, request.FramesLeft);
+            Assert.Equal(FocusRequest.DefaultSeconds, request.SecondsLeft);
         }
 
         [Fact]
         public void ARequestWithNoOwnerNamesNobody()
         {
             Assert.Null(new FocusRequest(Id("a"), true).Owner);
-            Assert.Null(new FocusRequest(Id("a"), true, 5).Owner);
+            Assert.Null(new FocusRequest(Id("a"), true, 5.0).Owner);
         }
     }
 }

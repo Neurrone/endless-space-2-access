@@ -589,15 +589,77 @@ namespace ES2Access.UI
         /// the next tick.
         ///
         /// The control does not have to be in the render: a landing aimed inside a COLLAPSED branch
-        /// opens that branch on the way, one level per build, for as deep as the branches go - and
-        /// waits out the frames the game takes to draw what the branch reads from. A control the
-        /// render leads nowhere near is dropped at once, and a branch that never produces the control
-        /// gives up on its own (<see cref="FocusRequest"/>), so nothing is left armed over the
-        /// player's own navigation.
+        /// opens that branch on the way - the whole path to the control on one build, for as deep as
+        /// the branches go - and then waits out the time the game takes to draw what the branch reads
+        /// from. A control the render leads nowhere near is dropped at once, and a branch that never
+        /// produces the control gives up on its own (<see cref="FocusRequest"/>), so nothing is left
+        /// armed over the player's own navigation.
+        ///
+        /// Asking INVALIDATES the render, because the pass that judges the new landing must judge it
+        /// against a build that knows about it: the memo holds one build per frame and the idle build
+        /// rate is not the frame rate, so the standing render can be a fifth of a second old. Asking
+        /// again for the landing already in flight is left alone instead - a zoom hand-off re-asks on
+        /// every build (<see cref="ZoomLadder"/>), and that must neither churn the memo nor keep
+        /// restarting the request's clock.
         /// </summary>
         public void FocusNode(ControlId id, bool announce = true)
         {
+            FocusRequest outstanding = _pendingFocus;
+            if (
+                id != null
+                && outstanding != null
+                && outstanding.Announce == announce
+                && ReferenceEquals(outstanding.Owner, _screen)
+                && id.Equals(outstanding.Id)
+            )
+            {
+                return;
+            }
+
+            ReleaseOpenedPath(outstanding);
             _pendingFocus = id == null ? null : new FocusRequest(id, announce, _screen);
+            if (id != null && _graph != null)
+            {
+                _graph.Invalidate();
+            }
+        }
+
+        /// <summary>Hand back the levels a finished landing opened by key alone
+        /// (<see cref="KeyGraph.ReleaseOpenedPath"/>).
+        ///
+        /// Where the request's owner is the screen the player is on, <c>_graph</c> is the graph whose
+        /// expansion set holds those ids and its render says which of them a node carries. A request
+        /// that outlived a screen change (<see cref="OwnPendingFocus"/>) and ends while another screen
+        /// has the keyboard is taken out of its OWN screen's state instead, and there every level it
+        /// opened goes: no render of that screen is at hand to say which became real, and a group an
+        /// abandoned landing opened being shut again is the lesser error - measured 2026-09-21, a
+        /// galaxy landing replaced from another page left two levels no node carries in the galaxy's
+        /// set for the rest of the session.</summary>
+        private void ReleaseOpenedPath(FocusRequest request)
+        {
+            if (request == null)
+            {
+                return;
+            }
+
+            if (_graph != null && ReferenceEquals(request.Owner, _screen))
+            {
+                _graph.ReleaseOpenedPath(request);
+                return;
+            }
+
+            IList<ControlId> opened = request.OpenedPath;
+            Screen owner = request.Owner as Screen;
+            GraphState state;
+            if (opened != null && owner != null && _states.TryGetValue(owner, out state))
+            {
+                for (int i = 0; i < opened.Count; i++)
+                {
+                    state.Expanded.Remove(opened[i]);
+                }
+            }
+
+            request.ForgetOpenedPath();
         }
 
         /// <summary>The outstanding landing, but only on a frame the screen that asked for it is the one
@@ -619,6 +681,7 @@ namespace ES2Access.UI
         /// is the one caller that is not a screen deciding about its own request.</summary>
         public void ForgetPendingLanding()
         {
+            ReleaseOpenedPath(_pendingFocus);
             _pendingFocus = null;
         }
 
@@ -851,6 +914,7 @@ namespace ES2Access.UI
 
                     if (outcome != FocusOutcome.Wait)
                     {
+                        ReleaseOpenedPath(pending);
                         _pendingFocus = null;
                     }
                 }
@@ -1006,6 +1070,13 @@ namespace ES2Access.UI
         /// What to do with the outstanding landing this frame: land on it, keep waiting for the branch
         /// it is in to open, or give up (<see cref="FocusRequest"/>).
         ///
+        /// The request's waiting budget is real SECONDS, which the engine cannot read for itself, so
+        /// this pass supplies them. Unscaled delta time, for two reasons: the game scales and stops its
+        /// own clock (a paused turn, a cutscene) while the player's patience runs on regardless, and
+        /// the elapsed time of the frames this pass actually judged the request on is what the budget
+        /// is about - frames spent loading or reloading, where no pass ran, are not held against a
+        /// landing the way subtracting two wall-clock readings would hold them.
+        ///
         /// With NO cursor on the page at all the request gets its old single attempt instead. An
         /// unseated cursor is a page still waiting to be seated, and waiting for a branch would leave
         /// the player on a screen with no focus and nothing said until the budget ran out - seating
@@ -1026,7 +1097,11 @@ namespace ES2Access.UI
                 return suspended ? FocusOutcome.Wait : FocusOutcome.Drop;
             }
 
-            return pending.Step(_graph.Reach(pending.Id), suspended);
+            return pending.Step(
+                _graph.Reach(pending.Id, pending),
+                suspended,
+                UnityEngine.Time.unscaledDeltaTime
+            );
         }
 
         /// <summary>
@@ -1045,6 +1120,7 @@ namespace ES2Access.UI
         {
             if (OwnPendingFocus != null)
             {
+                ReleaseOpenedPath(_pendingFocus);
                 _pendingFocus = null;
             }
 

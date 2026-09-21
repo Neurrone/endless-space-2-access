@@ -924,21 +924,33 @@ namespace ES2Access.Core.UI.Graph
         // ---- reaching a control that is not declared yet ----
 
         /// <summary>
-        /// How close the standing render is to being able to focus <paramref name="id"/>, opening one
-        /// level of ancestry towards it where that is what is missing.
+        /// How close the standing render is to being able to focus <paramref name="id"/>, opening the
+        /// WHOLE PATH towards it where that is what is missing.
         ///
         /// A collapsed group declares no children, so a landing aimed inside one is aimed at nothing:
         /// the id cannot be looked up, and the node it hangs under cannot be read off the render
         /// either. What CAN be read is the id itself - see <see cref="AncestorKeys"/> - so the deepest
-        /// declared ancestor is found by key and opened, one per call, because its children only exist
-        /// on the build that follows. Opening goes through <see cref="SetExpanded"/> like every other
+        /// declared ancestor is found by key and opened, and every level BETWEEN it and the target is
+        /// expanded in the same call, by key, without waiting to be declared. One build then produces
+        /// the target however deep it hangs: a landing's speed is the game's drawing, never the mod's
+        /// build rate, which is allowed to drop to a few builds a second.
+        ///
+        /// The declared ancestor still opens through <see cref="SetExpanded"/> like every other
         /// expansion, so a group whose <see cref="NodeVtable.OnExpand"/> is an override does its own
-        /// bookkeeping and its own side effects (a camera flying into the thing being opened).
+        /// bookkeeping and its own side effects (a camera flying into the thing being opened). The
+        /// undeclared levels can only go into the expansion set, which is what a group declared with an
+        /// explicit state or an override of its own ignores - so such a level, once the build declares
+        /// it, is simply the next call's deepest declared ancestor and opens through its own hook.
+        ///
+        /// Levels this call expanded that the render declares no control for are recorded on
+        /// <paramref name="request"/> and taken back out when the landing ends
+        /// (<see cref="ReleaseOpenedPath"/>): a key that is a path head and not a control would
+        /// otherwise sit in the expansion set for ever, since nothing can collapse what nothing draws.
         ///
         /// Asked of the render as it stands rather than re-rendering: the caller is the per-frame
         /// focus pass, which has just built one.
         /// </summary>
-        public ReachStep Reach(ControlId id)
+        public ReachStep Reach(ControlId id, FocusRequest request)
         {
             if (_current == null || id == null)
             {
@@ -950,15 +962,21 @@ namespace ES2Access.Core.UI.Graph
                 return ReachStep.Present;
             }
 
-            GraphNode ancestor = DeepestDeclaredAncestor(_current, id);
+            IList<object> keys = AncestorKeys(id.StructuralKey);
+            int declared;
+            GraphNode ancestor = DeclaredAncestor(_current, keys, out declared);
             if (ancestor == null)
             {
                 return ReachStep.Unreachable;
             }
 
+            OpenUndeclaredPath(keys, declared, request);
+
             // Already open, or not a group at all (a row that becomes a group only once the game draws
             // the control its children are: a planet's card). Either way there is nothing to open here
             // and the only question left is whether the game produces the child - the caller's budget.
+            // The levels below it were pre-opened all the same: they are shut groups the moment the
+            // game does draw them, and each would otherwise cost the landing another build.
             if (!ancestor.Expandable || ancestor.Expanded)
             {
                 return ReachStep.Waiting;
@@ -966,6 +984,82 @@ namespace ES2Access.Core.UI.Graph
 
             SetExpanded(ancestor, true);
             return ReachStep.Opened;
+        }
+
+        /// <summary>The same question with nothing recording what it opened - for a caller with no
+        /// request in hand, and for the tests.</summary>
+        public ReachStep Reach(ControlId id)
+        {
+            return Reach(id, null);
+        }
+
+        // Expand, by key alone, the levels between the deepest declared ancestor and the target: the
+        // entries of the ancestry deeper than the one that was found. Nothing here can be asked whether
+        // it is a group - it is not in the render - so the expansion set is simply told, and a level
+        // that turns out not to consult the set is opened later through its own hook.
+        private void OpenUndeclaredPath(IList<object> keys, int declared, FocusRequest request)
+        {
+            bool added = false;
+            for (int i = 0; i < declared; i++)
+            {
+                ControlId level = ControlId.Structural(keys[i]);
+                if (_state.Expanded.Contains(level))
+                {
+                    continue;
+                }
+
+                _state.Expanded.Add(level);
+                added = true;
+                if (request != null)
+                {
+                    request.RecordOpened(level);
+                }
+            }
+
+            if (added)
+            {
+                Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// Take back the levels a landing opened by key that the standing render declares no control
+        /// for, and forget the record - the landing is over (it arrived, it was given up on, or the
+        /// player cancelled it).
+        ///
+        /// A level that HAS become a control keeps its expansion: opening it is what the landing was
+        /// for, and one opened a level at a time was left open too. What must not survive is a key that
+        /// is only a path head - <c>a/b</c> in a tree declaring <c>a</c> and <c>a/b/c</c> - because
+        /// nothing draws it, so nothing can ever collapse it again.
+        ///
+        /// The caller owns the scoping: the ids belong to the <see cref="GraphState"/> of the graph
+        /// whose <see cref="Reach"/> added them, and asking any other graph would strip the wrong
+        /// screen's expansions.
+        /// </summary>
+        public void ReleaseOpenedPath(FocusRequest request)
+        {
+            IList<ControlId> opened = request == null ? null : request.OpenedPath;
+            if (opened == null)
+            {
+                return;
+            }
+
+            bool removed = false;
+            for (int i = 0; i < opened.Count; i++)
+            {
+                if (_current != null && _current.Nodes.ContainsKey(opened[i]))
+                {
+                    continue;
+                }
+
+                removed |= _state.Expanded.Remove(opened[i]);
+            }
+
+            request.ForgetOpenedPath();
+            if (removed)
+            {
+                Invalidate();
+            }
         }
 
         /// <summary>The deepest node in <paramref name="render"/> that <paramref name="id"/> hangs
@@ -977,16 +1071,29 @@ namespace ES2Access.Core.UI.Graph
                 return null;
             }
 
-            IList<object> keys = AncestorKeys(id.StructuralKey);
+            int declared;
+            return DeclaredAncestor(render, AncestorKeys(id.StructuralKey), out declared);
+        }
+
+        // The same, with WHERE in the ancestry it was found, which is what tells Reach which levels are
+        // below it and therefore its to open.
+        private static GraphNode DeclaredAncestor(
+            GraphRender render,
+            IList<object> keys,
+            out int declared
+        )
+        {
             for (int i = 0; i < keys.Count; i++)
             {
                 GraphNode node = render.NodeAt(ControlId.Structural(keys[i]));
                 if (node != null)
                 {
+                    declared = i;
                     return node;
                 }
             }
 
+            declared = -1;
             return null;
         }
 
@@ -1026,7 +1133,7 @@ namespace ES2Access.Core.UI.Graph
         ///
         /// The path rule above is what lets every programmatic landing - a lane hop, a scanner go-to, a
         /// bookmark jump, a type-ahead result, a leap restored - open the branches it is aimed inside,
-        /// one level per build. It fails for exactly one shape: a group whose members deliberately KEEP
+        /// the whole path on one build (<see cref="Reach"/>). It fails for exactly one shape: a group whose members deliberately KEEP
         /// the keys they have elsewhere, so that the cursor costs nothing when the page re-groups them
         /// (the scan lens's owner headings, whose stars are keyed as the ordinary map keys them). Such a
         /// heading is nowhere in its members' ancestry, so a landing inside a shut one is aimed at a
