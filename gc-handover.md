@@ -1,14 +1,19 @@
 # GC pause handover
 
-State of the investigation into the second-long freezes, as of 2026-09-21. Written so a fresh
+State of the investigation into the second-long freezes, as of 2026-09-23. Written so a fresh
 session can resume without the conversation. The preparations (work items 1-4 of section 5) were
-implemented on 2026-09-21; the rate itself is unchanged. RESUME AT "Where to resume" at the head of
-section 5. Every experiment below was done from the dev server's REPL and is gone on a game
-restart.
+implemented on 2026-09-21; on 2026-09-23 the owner took item 7 (section 7, per-build allocation)
+ahead of the rate change, and three of its commits landed. The rate itself is unchanged. RESUME AT
+"Where to resume" at the head of section 5. Every experiment below was done from the dev server's
+REPL and is gone on a game restart.
 
-Figures come from one machine and one mid-game save. They characterise the mechanism; the absolute
-numbers scale with how much live data the save holds. Line numbers drift, so sites are named by
-symbol first. Cites marked (sub) came from research subagents and were not re-verified.
+Figures come from one mid-game save and TWO machines. Sections 1-3 were measured on the owner's
+laptop, which runs the game at 60 fps; section 7's 2026-09-23 figures were measured on a machine
+that draws the empire screen at about 20 fps and the galaxy map at 11-12 fps. The mod builds once
+per frame, so builds per second, MB/s and the seconds between collections do not transfer between
+the two; bytes per build and milliseconds per build do. The absolute numbers also scale with how
+much live data the save holds. Line numbers drift, so sites are named by symbol first. Cites marked
+(sub) came from research subagents and were not re-verified.
 
 ## 1. What the problem is
 
@@ -46,6 +51,12 @@ Allocation and collection interval, fresh heap unless noted:
 | 5 builds/s + heap grown 400 MB, owner arrowing | about 6.3 MB/s | 54 s median (52-56 s, 10 samples) |
 
 Pause length did not change with the grown heap: median 785 ms fresh, 713 ms grown.
+
+On the 20 fps machine (2026-09-23), sitting on the empire screen with the start-of-day build:
+4.8 MB/s total, 53 s between collections, 250 MB of room per cycle, pauses about 400 ms; at 5
+builds/s the same screen allocated 1.6 MB/s, which puts the game's own share on that screen near
+0.5 MB/s - the mod was about 90% of allocation there, so per-build savings mapped almost one to
+one onto the interval. On the galaxy map the game's own share is larger (section 2's first row).
 
 Cost of one build (count-between-collections method): empire screen about 347-360 KB, military about
 275 KB, galaxy map HUD page about 585 KB, battle notification popup about 95 KB. A frame that really
@@ -95,14 +106,30 @@ What does exist: `GC.Collect()`, and the two heap-size exports above via `[DllIm
   seat window runs out" caller stays as it is: the game does not take ninety frames to draw the
   cards. The changed galaxy reading (Right into a collapsed system now lands on "group ...
   collapsed", tooltip line after the landing) is correct.
-- HUD and scratch-allocation optimisations (section 7) are deferred; at 5 builds/s they are worth a
-  few seconds of interval each.
+- 2026-09-23: the owner reversed the deferral of section 7 ("not great that the mod still allocates
+  so much even at 5 builds/s") and took it first. Approved and landed: the two mechanical `Core/`
+  edits (builder scratch reuse, edges as values; da8bc18), HUD declaration retention (cf4c9e3),
+  tutorial bar retention (2c98ce1). Declined for now: the notification strip and turn log (about
+  2% plus 1.6 KB per pending notification). Proposed and NOT yet approved: the two remaining
+  `Core/` wins in section 7. `NodeVtable` slimming was first rejected as too invasive, then
+  re-proposed in the form that changes no declaration site (properties over a lazily made
+  sub-object); no ruling yet.
+- 2026-09-23: measurement windows are one minute each ("do not use a 4 minute timer"); a full
+  collection-to-collection interval needs up to two of them back to back (section 8).
 - Every new key binding still needs approval; none is proposed here.
 
 ## 5. Work plan, in order
 
 **Where to resume.** Items 1-4 are committed on `main` (f182d85, 6cacc9a, 0764a43, fe54b02,
-ac7a7c1, 2767e80; doc wording 2e7a04c). Next, in order:
+ac7a7c1, 2767e80; doc wording 2e7a04c), and three commits of item 7 on top (da8bc18, cf4c9e3,
+2c98ce1; section 7 has their numbers). Owed on those three: the FULL WALK, since da8bc18 is a
+Core refactor claiming no spoken line changed and cf4c9e3 touches every HUD-bearing page; it runs
+only with the owner's approval, not yet asked for in a form that got an answer. Also unexercised:
+the events that drop a kept set (a save load, a turn end, a rebound resource row, the long-tooltip
+option flipping) and any physical-key path. Next, in order:
+(a0) the owner's ruling on the two remaining `Core/` wins in section 7 (contexts, vtable slimming);
+if approved, one stage, proven like the three commits (bytes per build through the navigator's own
+path, a full cycle on the same heap, the screen dump byte-identical); then
 (a) the slow-clock live checks of what nobody has driven yet - the camera following the cursor
 through the galaxy tree, inspect mode, notifications arriving live, end turn, options key capture
 (not battles) - as speech transcripts at 1 build/s against the normal clock, plus a SWEEP rather
@@ -209,7 +236,8 @@ identical before and after at the normal clock.
    `docs/generic/dev-server.md`, `docs/dev-loop.md`, CLAUDE.md Performance, `docs/galaxy-map.md`,
    `docs/heroes-and-diplomacy.md`) and two comments in `walks/lib.sh` say "rendered on the next frame".
 6. **Heap room check** (section 6), its own small feature.
-7. Then measure a normal session and decide on section 7.
+7. **Per-build allocation** (section 7) - taken first on 2026-09-23 at the owner's request; three
+   commits landed, two `Core/` wins await a ruling.
 
 Of 33 frame-counted waits classified, 25 tick in `OnUpdate` or the per-frame pump, wait on the game
 (a readable flag such as `CameraSettling` / `ChangingLevel`, a measured quiet period, or a deliberate
@@ -250,26 +278,90 @@ options key capture, multiplayer.
 - Untried idea: also call `GC.Collect()` when the player has been idle a couple of seconds or presses
   end turn, so the remaining pauses rarely land on a key press.
 
-## 7. Deferred optimisations, with what each would buy
+## 7. Per-build allocation: what landed on 2026-09-23 and what remains
 
-Of about 360 KB allocated per empire-screen build, about 238 KB is kept by the render and about
-122 KB is scratch.
+All figures below are bytes per build through the navigator's own render path (section 8,
+"count between collections"), on the 20 fps / 12 fps machine; the interval columns are that
+machine's and do not transfer. The empire screen built 101 nodes (about 30 of them HUD), the
+galaxy map 49 (most of them HUD). Pause length never moved: about 400-780 ms on the empire screen,
+480-650 ms on the map.
 
-- `GraphBuilder.Build()` allocates about 84 KB and keeps about 11 KB: per-build temporary
-  dictionaries and lists for wiring edges (nodes per stop, run lists, column map, sibling groups, row
-  segments). Reusing them across builds should recover most of about 73 KB, about 20% of a build on
-  every screen. `Core/`.
-- `NodeVtable` has 35 fields and costs 362 bytes bare; moving rarely used handlers into an object
-  allocated on demand saves about 200 bytes per node, about 15% of a build. `Core/`.
-- The framework floor for a button node is about 2.0 KB (vtable 362, `GraphNodes.Button` 454,
-  `AgeWidgets.Point` 270, `ControlId` with its key string 152, node + `Nodes.Drawn` + `AddItem` +
-  share of `Build` about 800). HUD nodes measure 2.5-4.2 KB each. Reusing the HUD's vtables keyed on
-  widget identity could take its 107 KB to roughly 35-40 KB (estimate, not prototyped).
-- At 5 builds/s each of these moves the interval by a few seconds (55 s to about 58-60 s), so the
-  owner deferred them. They also help the builds that key presses cause.
+| Commit | Empire screen, per build | Empire cycle | Galaxy map, per build | Galaxy cycle |
+|---|---|---|---|---|
+| start (9243b62) | 222 KB, 0.66 ms | 53 s | not measured | |
+| da8bc18 builder scratch reused, `Transition` a struct | 174 KB, 0.56 ms | 64 s | 199 KB, 0.51 ms | 89 s |
+| cf4c9e3 HUD declarations kept (`KeptCells`) | 118 KB, 0.47 ms | 86 s | 137 KB, 0.38 ms | 140 s |
+| 2c98ce1 tutorial bar kept | 112 KB, 0.46 ms | 92 s | | |
 
-The commit "A node keeps its four arrow-key edges in four slots" (9d83cd6) was an earlier step of the
-same kind: about 20% at the full rate.
+Each commit's message carries its numbers. Proof for each was the offline suite, the bytes-per-build
+loop, one full collection-to-collection cycle on the same heap as the previous build (da8bc18 was
+A/B'd by stashing and reloading the old build in the same session), and `GET
+/gui/graph?edges=1&buffers=1` byte-identical apart from the wall-clock readout.
+
+What the three commits are, so a reader can judge a regression against them:
+
+- **da8bc18 (`Core/`)**: `GraphBuilder.Rearm` clears the builder's collections instead of remaking
+  them, pools `Row` and parent-frame records by index, keeps `Build()`'s grouping/seam/position
+  scratch as cleared fields, and caches the auto stop-key strings in a copy-on-grow static array
+  (no lock on the per-frame path). Nothing a render holds is reused: `GraphRender`, its
+  dictionaries, every `GraphNode`, the caller-owned `Edge`s. `GraphNavigator.BuildRender` keeps one
+  builder with a re-entrancy flag; inspection and search builds still make fresh ones. `Transition`
+  is a readonly struct held inline in the node's four slots; "not wired" is a null destination.
+  Offline: a re-armed builder allocates 258 B/node against 537 fresh.
+- **cf4c9e3 (`Screens/GlobalHud.*`, `UI/KeptCells.cs` after 2c98ce1)**: each `GlobalHud`
+  instance keeps one set of cells per entry point, keyed on the widget by REFERENCE (Unity's
+  `Equals` makes an engine call and calls two destroyed objects equal). The rule: a retained object
+  is correct only if every closure captures session objects and reads live state when called, AND
+  everything the declaration read EAGERLY still answers the same - the widget's binding (a pooled
+  item's resource, a toggle's screen, the pinned quest), the tooltip it was declared with and that
+  tooltip's `Class` (which fix the section's mode and cost panel in `GraphNodes.TooltipSection`),
+  and the long-tooltip option. The set drops when the entry point reads from a different window,
+  panel or empire, and on `Forget()`. A retained vtable may be written per build only by an
+  assignment that runs on EVERY build from facts read that build: the players row assigns its
+  children (one closure, made once, reading the whisperers when it runs) and its group-or-leaf
+  type two-branched, and the turn loop's one-branch `ControlType = Group` write is gone. Each
+  construction sits in its own static `...Cell(...)` method so C# allocates the closure
+  environment only on a miss. Still per build there: the notification strip and turn log (rows
+  keyed per notification, one-branch go-to writes, a per-frame icon memo), the faction panels
+  (undrawn on the test save, so unmeasured).
+- **2c98ce1**: the collapsed tutorial bar's three records kept in a STATIC `KeptCells<Control>`
+  owned by the popup panel (the method is static and shared with the popup page, which keeps
+  making fresh records); nothing clears it on page leave, at most three entries.
+
+Where the remaining bytes go, measured per part on the empire screen after cf4c9e3 (loop with
+the frame-keyed sweeps warm, so sweep costs are excluded):
+
+- HUD, about 23 KB of 118: banner 10.7 KB (five contexts 4.2, eighteen node floors 3.5, the row
+  sort 1.3, toggle badges 0.8), tutorial bar 6.9 (now 1.6), notification strip 3.8 with one pending
+  notification (about 1.7 KB per row, 1 KB dismiss-all, a context), turn cluster 2.0 (mostly node
+  floors), quest and empty turn log under 0.1.
+- Unit costs: a pushed context level 836 B; one node's builder floor (`AddItem`) 197 B; `Build()`'s
+  fixed cost about 1.5 KB; a `GraphNodes.Button` vtable without tooltip 775 B; the banner's row sort
+  1326 B; chord labels, `ControlId` plus declaration wrapper, `Rearm` negligible. The empire screen
+  pushes 10 contexts per build, the galaxy map 9.
+- The screen's OWN content is the rest, about 95 KB for 71 nodes, 1.3 KB per node: a vtable, three
+  to five closures, an announcement list and a section list per node, remade every frame.
+
+What remains, ranked, with the empire-screen saving:
+
+1. **Contexts in `Core/`** (about 6-8 KB, 5-6%, on every screen): the builder keeps a context
+   node's vtable and label closure by label string across re-arms, and skips the edge array a
+   non-focusable node never uses; 836 B to roughly 200 B each. Needs approval.
+2. **`NodeVtable` slimming in `Core/`** (roughly 10-15 KB, 10%): keep the dozen common fields,
+   move the rare handlers behind properties into a sub-object allocated on first write, so every
+   `new NodeVtable { ... }` initializer still compiles. Needs approval; no ruling yet.
+3. Notification strip and turn log retention keyed per notification (2% plus 1.6 KB per pending
+   row): the prune that walks the standing list drops dead entries; the go-to handler and hint
+   become two-branched per build. Declined for now.
+4. Banner row sort memoized on the visible set (1.3 KB). Not worth doing alone.
+5. Faction panels: unmeasurable on the test save; about fifteen static sites, drawn for some
+   factions only.
+6. The screens' own tables - four fifths of the build - need the same per-site judgement as the
+   HUD, per screen or at the `GraphSheet` level. Not easy; not proposed.
+
+The rate remains the largest lever: at 60 builds/s every item above is a few percent, and item 5
+of section 5 removes eleven of every twelve builds. The commit "A node keeps its four arrow-key
+edges in four slots" (9d83cd6) was an earlier step of the same kind: about 20% at the full rate.
 
 ## 8. Measurement methods and traps
 
@@ -306,3 +398,30 @@ All via `POST /eval` (see `docs/dev-loop.md` for the REPL's own gotchas).
   as `docs/dev-loop.md` describes.
 - A REPL class with `[DllImport("mono")]` statics compiles and works, which is how the heap-size
   exports were verified.
+- Bytes per build through the REAL per-frame path (2026-09-23): reflect `GraphNavigator._graph`
+  off `ModEntry.Navigator`, then loop `g.Invalidate(); g.Rerender();` counting calls between two
+  collections and tracking the `GC.GetTotalMemory(false)` peak; bytes/build = (peak - floor after
+  the first collection) / calls. `InspectRender` is NOT that path (it makes a fresh builder). The
+  loop keeps every frame-keyed sweep warm, so it excludes sweep costs; the same loop before and
+  after a change is still a fair comparison. Confirm one build per frame by swapping the
+  `KeyGraph._renderCallback` field for a counting wrapper (`Func<GraphRender>` to a static method)
+  over 120 frames from a `/wait` predicate; it read 123 builds in 120 frames.
+- One HUD entry point alone: reflect `_hud` off the current screen, call the public entry point on
+  a builder re-armed each iteration (`GraphBuilder.Rearm(null, null)`), same counting. A private
+  helper taking the HUD's private `Cell` list is reached with `Activator.CreateInstance` over
+  `typeof(List<>).MakeGenericType(nestedType)` held as `object`/`IList`. Costs under about 600 B
+  per call need a cap of two to four million calls to force a collection; "no collection in N"
+  means under room/N, not zero.
+- A collection-to-collection interval is the only trustworthy rate figure. Mid-cycle
+  `GetTotalMemory` growth undercounts (a one-minute window read 3.1 MB/s where the full cycle gave
+  3.84), and a cycle that starts above the floor is shorter than a full one. Log with a per-frame
+  `/wait` predicate that appends only when `GC.CollectionCount(0)` changes (room = peak minus the
+  used figure right after the collection; pause = `Time.unscaledDeltaTime` on that frame); two
+  back-to-back 60 s waits catch one full cycle when cycles are under a minute, three when they run
+  longer. Compare builds on the SAME heap in one session: stash, build, `/reload`, measure, pop,
+  build, `/reload` (about three minutes; the REPL classes must be re-declared after each reload).
+- An `/eval` that outruns the 5 s reply window loses its result unless assigned: `var r = X();`
+  then `/wait` on `false` for the expected time, then `/eval r`.
+- From the Bash tool, `tasklist /FI ...` is mangled into a Git path ("C:/Program Files/Git/FI");
+  poll the process from the PowerShell tool (`Get-Process -Id`). `POST /quit` exited cleanly in
+  about 60 s this time.
