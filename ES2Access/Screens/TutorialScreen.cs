@@ -302,20 +302,22 @@ namespace ES2Access.Screens
             List<Control> controls = new List<Control>();
             Collect(
                 controls,
+                Prefix,
+                null,
                 panel.ShowLocationButton,
                 "show-location",
                 ModStrings.TutorialShowLocation,
                 null
             );
-            Rows(builder, controls, LocationStop, "tutorial:");
+            Rows(builder, controls, LocationStop);
 
             controls.Clear();
-            Collect(controls, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
-            Rows(builder, controls, MinimizeStop, "tutorial:");
+            Collect(controls, Prefix, null, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
+            Rows(builder, controls, MinimizeStop);
 
             controls.Clear();
-            Collect(controls, panel.CloseButton, "close", ModStrings.TutorialClose, null);
-            Rows(builder, controls, CloseStop, "tutorial:");
+            Collect(controls, Prefix, null, panel.CloseButton, "close", ModStrings.TutorialClose, null);
+            Rows(builder, controls, CloseStop);
         }
 
         /// <summary>One row per page the tutorial has, the row of the page on show being where focus
@@ -394,17 +396,22 @@ namespace ES2Access.Screens
                 return false;
             }
 
-            List<Control> bar = new List<Control>();
-            Collect(bar, panel.TitleLabel);
-            Collect(bar, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
-            Collect(bar, panel.CloseButton, "close", ModStrings.TutorialClose, null);
+            // The records are kept across builds (KeptCells): the bar is declared on every page on
+            // every frame while the tutorial is minimised. Everything in them reads from this panel.
+            BarKept.Own(panel, null);
+            List<Control> bar = Bar;
+            bar.Clear();
+            Collect(bar, BarPrefix, BarKept, panel.TitleLabel);
+            Collect(bar, BarPrefix, BarKept, panel.MinimizeToggle, "minimize", ModStrings.TutorialMinimize);
+            Collect(bar, BarPrefix, BarKept, panel.CloseButton, "close", ModStrings.TutorialClose, null);
             if (bar.Count == 0)
             {
                 return false;
             }
 
             builder.PushContext(ModStrings.Get(ModStrings.TutorialBar));
-            Rows(builder, bar, null, "hud:tutorial/");
+            Rows(builder, bar, null);
+            bar.Clear();
             builder.PopContext();
             return true;
         }
@@ -414,12 +421,7 @@ namespace ES2Access.Screens
         /// packed them. <paramref name="stop"/> begins a stop first where the caller has one to begin,
         /// and nothing is declared at all for an empty set - an empty stop is a Tab press that lands
         /// nowhere.</summary>
-        private static void Rows(
-            GraphBuilder builder,
-            List<Control> controls,
-            object stop,
-            string prefix
-        )
+        private static void Rows(GraphBuilder builder, List<Control> controls, object stop)
         {
             if (controls.Count == 0)
             {
@@ -431,14 +433,10 @@ namespace ES2Access.Screens
                 builder.BeginStop(stop);
             }
 
-            foreach (Control control in controls)
+            for (int i = 0; i < controls.Count; i++)
             {
-                Control it = control;
-                NodeVtable vtable = it.Vtable;
-                vtable.OnFocusVisual = () =>
-                    PointerFocus.MoveTo(it.Button, it.Widget.AgeTooltip, it.Widget);
-                vtable.OnBlurVisual = ReleasePointer;
-                builder.AddItem(Nodes.Drawn(ControlId.For(it.Widget, prefix + it.Key), vtable, it.Widget));
+                Control it = controls[i];
+                builder.AddItem(Nodes.Drawn(it.Id, it.Vtable, it.Widget));
             }
         }
 
@@ -529,17 +527,60 @@ namespace ES2Access.Screens
 
         /// <summary>One thing the popup draws in a strip: the rectangle it is drawn at - which is what
         /// decides where it is walked - the button under it when there is one to light up, and how it
-        /// reads and works.</summary>
-        private struct Control
+        /// reads and works. A class so the collapsed bar can keep one across builds.</summary>
+        private sealed class Control
         {
-            public string Key;
+            public ControlId Id;
             public AgeTransform Widget;
             public AgeControlButton Button;
             public NodeVtable Vtable;
         }
 
+        /// <summary>The key prefix of the popup's own controls.</summary>
+        private const string Prefix = "tutorial:";
+
+        /// <summary>The key prefix of the collapsed bar's controls, which are declared on other pages.
+        /// </summary>
+        private const string BarPrefix = "hud:tutorial/";
+
+        /// <summary>The collapsed bar's records, kept across builds (<see cref="KeptCells{T}"/>) and
+        /// owned by the popup panel they were read off. Static because the bar is declared by a static
+        /// method from every page; a hot reload starts it empty with the new assembly.</summary>
+        private static readonly KeptCells<Control> BarKept = new KeptCells<Control>();
+
+        /// <summary>The collapsed bar's rows for one build, reused: filled and emptied inside
+        /// <see cref="BuildCollapsedBar"/>.</summary>
+        private static readonly List<Control> Bar = new List<Control>(3);
+
+        /// <summary>A control's record, finished: its id, and the pointer visuals every one of them
+        /// carries. Kept in <paramref name="kept"/> when there is one, under the widget.</summary>
+        private static Control Finish(
+            string prefix,
+            KeptCells<Control> kept,
+            string key,
+            AgeTransform widget,
+            AgeControlButton button,
+            AgeTooltip tip,
+            NodeVtable vtable
+        )
+        {
+            Control it = new Control
+            {
+                Id = ControlId.For(widget, prefix + key),
+                Widget = widget,
+                Button = button,
+                Vtable = vtable,
+            };
+            vtable.OnFocusVisual = () =>
+                PointerFocus.MoveTo(it.Button, it.Widget.AgeTooltip, it.Widget);
+            vtable.OnBlurVisual = ReleasePointer;
+            return kept == null ? it : kept.Keep(widget, null, tip, it);
+        }
+
         private static void Collect(
             List<Control> controls,
+            string prefix,
+            KeptCells<Control> kept,
             AgeControlButton button,
             string key,
             string nameKey,
@@ -553,25 +594,34 @@ namespace ES2Access.Screens
             }
 
             AgeControlButton it = button;
-            Action press = activate ?? (() => AgeWidgets.Press(it));
-            controls.Add(
-                new Control
-                {
-                    Key = key,
-                    Widget = it.AgeTransform,
-                    Button = it,
-                    Vtable = GraphNodes.Button(
+            AgeTooltip tip = it.AgeTransform.AgeTooltip;
+            Control found = kept == null ? null : kept.Find(it.AgeTransform, null, tip);
+            if (found == null)
+            {
+                Action press = activate ?? (() => AgeWidgets.Press(it));
+                found = Finish(
+                    prefix,
+                    kept,
+                    key,
+                    it.AgeTransform,
+                    it,
+                    tip,
+                    GraphNodes.Button(
                         () => ModStrings.Get(nameKey),
                         press,
                         () => AgeWidgets.Operable(it.AgeTransform),
-                        it.AgeTransform.AgeTooltip
-                    ),
-                }
-            );
+                        tip
+                    )
+                );
+            }
+
+            controls.Add(found);
         }
 
         private static void Collect(
             List<Control> controls,
+            string prefix,
+            KeptCells<Control> kept,
             AgeControlToggle toggle,
             string key,
             string nameKey
@@ -584,47 +634,68 @@ namespace ES2Access.Screens
             }
 
             AgeControlToggle it = toggle;
-            controls.Add(
-                new Control
-                {
-                    Key = key,
-                    Widget = it.AgeTransform,
-                    Vtable = GraphNodes.Checkbox(
+            AgeTooltip tip = it.AgeTransform.AgeTooltip;
+            Control found = kept == null ? null : kept.Find(it.AgeTransform, null, tip);
+            if (found == null)
+            {
+                found = Finish(
+                    prefix,
+                    kept,
+                    key,
+                    it.AgeTransform,
+                    null,
+                    tip,
+                    GraphNodes.Checkbox(
                         () => ModStrings.Get(nameKey),
                         () => it.State,
                         () => AgeWidgets.Toggle(it),
                         () => AgeWidgets.Operable(it.AgeTransform),
-                        it.AgeTransform.AgeTooltip
-                    ),
-                }
-            );
+                        tip
+                    )
+                );
+            }
+
+            controls.Add(found);
         }
 
         /// <summary>A label the popup draws and the player cannot work - the title on the bar a
         /// collapsed tutorial leaves behind, which is the whole of what says which tutorial it is.
         /// </summary>
-        private static void Collect(List<Control> controls, AgePrimitiveLabel label)
+        private static void Collect(
+            List<Control> controls,
+            string prefix,
+            KeptCells<Control> kept,
+            AgePrimitiveLabel label
+        )
         {
             if (label == null || !AgeWidgets.Visible(label.AgeTransform))
             {
                 return;
             }
 
+            // No tooltip is read into the title's declaration, so none is its tip check.
             AgePrimitiveLabel it = label;
-            controls.Add(
-                new Control
-                {
-                    Key = "title",
-                    Widget = it.AgeTransform,
-                    Vtable = new NodeVtable
+            Control found = kept == null ? null : kept.Find(it.AgeTransform, null, null);
+            if (found == null)
+            {
+                found = Finish(
+                    prefix,
+                    kept,
+                    "title",
+                    it.AgeTransform,
+                    null,
+                    null,
+                    new NodeVtable
                     {
                         Announcements = new List<NodeAnnouncement>
                         {
                             GraphNodes.LabelPart(() => AgeText.Label(it)),
                         },
-                    },
-                }
-            );
+                    }
+                );
+            }
+
+            controls.Add(found);
         }
 
         private void Remember()
