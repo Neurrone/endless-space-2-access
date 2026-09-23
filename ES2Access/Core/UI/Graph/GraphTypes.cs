@@ -664,11 +664,13 @@ namespace ES2Access.Core.UI.Graph
 
     /// <summary>A directed edge to another node, with an optional spoken transition line (a "lane
     /// change" — e.g. crossing into a new column band). Kept as plain data; contextual announcements are
-    /// composed from node metadata by the announcer, not per-edge closures (GC discipline).</summary>
-    public sealed class Transition
+    /// composed from node metadata by the announcer, not per-edge closures (GC discipline). A value
+    /// held inline in the node's edge slot, so wiring an edge allocates nothing; the default value
+    /// (<see cref="Destination"/> null) is "not wired".</summary>
+    public readonly struct Transition
     {
-        public ControlId Destination;
-        public string Label; // spoken only while crossing this edge; null = silent edge
+        public readonly ControlId Destination;
+        public readonly string Label; // spoken only while crossing this edge; null = silent edge
 
         public Transition(ControlId destination, string label = null)
         {
@@ -701,18 +703,21 @@ namespace ES2Access.Core.UI.Graph
         /// enumerator or a boxed key.</summary>
         public const int DirectionCount = 4;
 
-        /// <summary>This node's outgoing edges, one slot per <see cref="GraphDir"/>, null where nothing is
-        /// wired. An array rather than a dictionary because the graph is rebuilt EVERY FRAME (a few
+        /// <summary>This node's outgoing edges, one slot per <see cref="GraphDir"/>, the default value
+        /// (null destination) where nothing is wired. An array rather than a dictionary because the graph is rebuilt EVERY FRAME (a few
         /// hundred nodes and near a thousand edges on a busy screen): on the game's Mono an empty
         /// <c>Dictionary&lt;GraphDir, Transition&gt;</c> measured 634 bytes and each keyed set boxed the
         /// enum for ~36 more - some 195 KB of garbage per frame, and the second-long collection pauses
-        /// that came with it. Four slots are ~64 bytes and box nothing. Reached through
-        /// <see cref="Edge"/> / <see cref="Wire"/> / <see cref="HasEdge"/>, which collapse "wired to
-        /// null" into "not wired" - no caller ever wired a null edge, and every one of them treated the
-        /// two the same.</summary>
+        /// that came with it. Four slots are ~64 bytes and box nothing. Each slot holds
+        /// the edge as a VALUE, not a reference to an edge object, so wiring an edge allocates nothing
+        /// (an edge object per wired edge was some 37 KB per build on a 1146-edge screen). Reached
+        /// through <see cref="Edge"/> / <see cref="Wire"/> / <see cref="HasEdge"/>; an edge wired to a
+        /// null destination is "not wired" - no caller ever wired one, and every one of them treated
+        /// the two the same.</summary>
         private readonly Transition[] _edges = new Transition[DirectionCount];
 
-        /// <summary>The edge in <paramref name="dir"/>, or null when nothing is wired that way.</summary>
+        /// <summary>The edge in <paramref name="dir"/>; its <see cref="Transition.Destination"/> is null
+        /// when nothing is wired that way.</summary>
         public Transition Edge(GraphDir dir)
         {
             return _edges[(int)dir];
@@ -728,7 +733,7 @@ namespace ES2Access.Core.UI.Graph
         /// passes ask before they would overwrite an edge someone else declared.</summary>
         public bool HasEdge(GraphDir dir)
         {
-            return _edges[(int)dir] != null;
+            return _edges[(int)dir].Destination != null;
         }
 
         /// <summary>The node's structural parent within THIS render, or null at screen level. The parent

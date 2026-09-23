@@ -1324,11 +1324,35 @@ namespace ES2Access.UI
             return NodeBuffer.Lines(node);
         }
 
+        // The per-frame build's builder, re-armed for every build so its bookkeeping is reused rather
+        // than made again (GraphBuilder.Rearm). _building is set while it is in use: a build that
+        // somehow starts inside another one's Render gets a fresh builder instead of clearing the
+        // outer build's state out from under it.
+        private GraphBuilder _builder;
+        private bool _building;
+
         private GraphRender BuildRender(Screen screen, GraphState state)
         {
+            bool shared = !_building;
             try
             {
-                GraphBuilder builder = new GraphBuilder(state.Expanded, NodeGate.For(screen.Key));
+                GraphBuilder builder;
+                if (shared)
+                {
+                    _building = true;
+                    if (_builder == null)
+                    {
+                        _builder = new GraphBuilder();
+                    }
+
+                    _builder.Rearm(state.Expanded, NodeGate.For(screen.Key));
+                    builder = _builder;
+                }
+                else
+                {
+                    builder = new GraphBuilder(state.Expanded, NodeGate.For(screen.Key));
+                }
+
                 screen.Render(builder);
                 return builder.Build();
             }
@@ -1336,6 +1360,13 @@ namespace ES2Access.UI
             {
                 Log.Warn("nav: " + screen.Key + ".Build threw: " + e);
                 return null;
+            }
+            finally
+            {
+                if (shared)
+                {
+                    _building = false;
+                }
             }
         }
 

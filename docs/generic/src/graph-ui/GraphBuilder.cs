@@ -28,10 +28,10 @@ namespace ES2Access.Core.UI.Graph
     /// </summary>
     public sealed class GraphBuilder
     {
-        private readonly HashSet<ControlId> _expansion; // persistent expanded-group set (null = all explicit)
+        private HashSet<ControlId> _expansion; // persistent expanded-group set (null = all explicit)
 
         // The existence gate — see the constructor.
-        private readonly Func<NodeDeclaration, bool> _drops;
+        private Func<NodeDeclaration, bool> _drops;
 
         /// <summary>Build every expandable group OPEN, whatever the expansion set or the caller says.
         ///
@@ -80,6 +80,44 @@ namespace ES2Access.Core.UI.Graph
             _drops = drops;
         }
 
+        /// <summary>
+        /// Make this builder ready for the next build, as if it had just been constructed with these
+        /// arguments.
+        ///
+        /// A navigator builds its page every frame, and the builder's own bookkeeping - the row and
+        /// parent-stack records, the id set, the per-stop groupings its wiring passes make - is dead
+        /// the moment <see cref="Build"/> returns. Re-arming clears those collections instead of making
+        /// new ones, so their storage is reused and a build's garbage is only what it hands out. What
+        /// it hands out is never reused: the render, its nodes and their edges belong to whoever holds
+        /// the render (a navigator keeps the previous one), and the <see cref="Edge"/> objects a caller
+        /// declared stay the caller's.
+        /// </summary>
+        public void Rearm(HashSet<ControlId> expansion = null, Func<NodeDeclaration, bool> drops = null)
+        {
+            _expansion = expansion;
+            _drops = drops;
+            ExpandAll = false;
+            SeatOnContainer = false;
+
+            for (int i = 0; i < _rowsRented; i++) _rowPool[i].Items.Clear();
+            _rowsRented = 0;
+            _rows.Clear();
+            _currentRow = null;
+            _rawNodes.Clear();
+            _rawEdges.Clear();
+            _declared.Clear();
+            _rowOf.Clear();
+            _ids.Clear();
+            _start = null;
+            _stopKey = AutoStopKey(0);
+            _stopAuto = 1;
+            _regionKey = null;
+            _stopKeys.Clear();
+            _stopLandings.Clear();
+            for (int i = 0; i < _parents.Count; i++) _parents[i].Node = null;
+            _parents.Clear();
+        }
+
         private sealed class Row
         {
             public readonly List<GraphNode> Items = new List<GraphNode>();
@@ -90,6 +128,53 @@ namespace ES2Access.Core.UI.Graph
             // The gate took at least one of this row's cells — so an empty row here is the gate's
             // doing, not a screen declaring nothing.
             public bool Dropped;
+        }
+
+        // Row records reused by index across builds (see Rearm): a row is builder bookkeeping, never
+        // part of a render.
+        private readonly List<Row> _rowPool = new List<Row>();
+        private int _rowsRented;
+
+        private Row RentRow(object key, object stopKey, bool positions)
+        {
+            Row row;
+            if (_rowsRented < _rowPool.Count)
+            {
+                row = _rowPool[_rowsRented];
+                row.Items.Clear();
+                row.Dropped = false;
+            }
+            else
+            {
+                row = new Row();
+                _rowPool.Add(row);
+            }
+
+            _rowsRented++;
+            row.Key = key;
+            row.StopKey = stopKey;
+            row.Positions = positions;
+            return row;
+        }
+
+        // A list from a pool reused by index within one pass: the first `used` entries are in use, the
+        // rest are cleared as they are handed out again.
+        private static List<T> Rent<T>(List<List<T>> pool, ref int used)
+        {
+            List<T> list;
+            if (used < pool.Count)
+            {
+                list = pool[used];
+                list.Clear();
+            }
+            else
+            {
+                list = new List<T>();
+                pool.Add(list);
+            }
+
+            used++;
+            return list;
         }
 
         /// <summary>One declared edge, kept as a value so that a caller which builds the same
@@ -155,6 +240,29 @@ namespace ES2Access.Core.UI.Graph
 
         private readonly List<ParentFrame> _parents = new List<ParentFrame>();
 
+        // Frames reused by stack depth: the frame at depth d is only ever _parents[d], so the one a
+        // push at that depth finds in the pool is free.
+        private readonly List<ParentFrame> _framePool = new List<ParentFrame>();
+
+        private void PushFrame(GraphNode node, bool suppressed)
+        {
+            int depth = _parents.Count;
+            ParentFrame frame;
+            if (depth < _framePool.Count)
+            {
+                frame = _framePool[depth];
+            }
+            else
+            {
+                frame = new ParentFrame();
+                _framePool.Add(frame);
+            }
+
+            frame.Node = node;
+            frame.Suppressed = suppressed;
+            _parents.Add(frame);
+        }
+
         private GraphNode CurrentParent
         {
             get { return _parents.Count > 0 ? _parents[_parents.Count - 1].Node : null; }
@@ -165,9 +273,24 @@ namespace ES2Access.Core.UI.Graph
             get { return _parents.Count > 0 && _parents[_parents.Count - 1].Suppressed; }
         }
 
+        // The auto stop keys, made once per index for the life of the assembly rather than once per
+        // stop per build. Equal-valued strings, so a stop's key is the same across builds either way.
+        // Grown by replacing the whole array, so a reader on another thread (the tests run classes in
+        // parallel) only ever sees a complete one and no lock sits on the per-frame path.
+        private static string[] _autoStopKeys = new string[0];
+
         private static object AutoStopKey(int index)
         {
-            return "stop#" + index;
+            string[] keys = _autoStopKeys;
+            if (index >= keys.Length)
+            {
+                string[] grown = new string[Math.Max(index + 1, keys.Length * 2)];
+                Array.Copy(keys, grown, keys.Length);
+                for (int i = keys.Length; i < grown.Length; i++) grown[i] = "stop#" + i;
+                _autoStopKeys = keys = grown;
+            }
+
+            return keys[index];
         }
 
         // ---- stops / regions ----
@@ -265,13 +388,14 @@ namespace ES2Access.Core.UI.Graph
                 Focusable = false,
                 SuppressChildPositions = !positions,
             };
-            _parents.Add(new ParentFrame { Node = node, Suppressed = Suppressed });
+            PushFrame(node, Suppressed);
             return this;
         }
 
         public GraphBuilder PopContext()
         {
             if (_parents.Count == 0) throw new InvalidOperationException("No context/group to pop");
+            _parents[_parents.Count - 1].Node = null;
             _parents.RemoveAt(_parents.Count - 1);
             return this;
         }
@@ -304,21 +428,20 @@ namespace ES2Access.Core.UI.Graph
                 {
                     header.Expandable = true;
                     header.Expanded = isExpanded;
-                    Row row = new Row { StopKey = _stopKey };
+                    Row row = RentRow(null, _stopKey, true);
                     row.Items.Add(header);
                     _rows.Add(row);
                     _rowOf[header] = row;
                 }
             }
-            _parents.Add(new ParentFrame
-            {
+            PushFrame(
                 // Suppressed subtree: keep chaining from the outer parent so the stack stays coherent.
-                Node = header ?? CurrentParent,
+                header ?? CurrentParent,
                 // A header the gate dropped takes its subtree with it: the section's own widget is not
                 // being drawn, so nothing hanging under it is either, and children left behind would
                 // hang off whatever parent happened to be outside.
-                Suppressed = Suppressed || dropped || !isExpanded,
-            });
+                Suppressed || dropped || !isExpanded
+            );
             return this;
         }
 
@@ -382,7 +505,7 @@ namespace ES2Access.Core.UI.Graph
         public GraphBuilder StartRow(object rowKey = null, bool positions = true)
         {
             if (_currentRow != null) throw new InvalidOperationException("Cannot start a row while another is open");
-            _currentRow = new Row { Key = rowKey, StopKey = _stopKey, Positions = positions };
+            _currentRow = RentRow(rowKey, _stopKey, positions);
             return this;
         }
 
@@ -417,7 +540,7 @@ namespace ES2Access.Core.UI.Graph
             }
             else
             {
-                Row row = new Row { StopKey = _stopKey };
+                Row row = RentRow(null, _stopKey, true);
                 row.Items.Add(node);
                 _rows.Add(row);
                 _rowOf[node] = row;
@@ -550,14 +673,13 @@ namespace ES2Access.Core.UI.Graph
 
             // Both wiring passes work stop by stop, and grouping the declared nodes is a pass over all of
             // them: they share the one grouping rather than each building (and throwing away) its own.
-            List<object> stops = new List<object>();
-            Dictionary<object, List<GraphNode>> byStop = GroupByStop(stops);
+            GroupByStop();
 
-            WireMenuEdges(stops, byStop);
+            WireMenuEdges();
             foreach (Edge e in _rawEdges)
                 if (render.Nodes.ContainsKey(e.From) && render.Nodes.ContainsKey(e.To))
                     render.Nodes[e.From].Wire(e.Dir, new Transition(e.To, e.Label));
-            StitchModeBoundaries(stops, byStop);
+            StitchModeBoundaries();
 
             render.StartKey = _start != null && render.Nodes.ContainsKey(_start)
                 ? _start
@@ -568,26 +690,42 @@ namespace ES2Access.Core.UI.Graph
             return render;
         }
 
-        // The declared nodes grouped by their Tab-stop — each stop's own nodes in declaration order,
-        // and <paramref name="stops"/> filled with the stops in first-appearance order. Both wiring
+        // Build()'s scratch: bookkeeping that is dead when Build returns, kept as fields and cleared
+        // per use so a re-armed builder reuses the storage (see Rearm).
+        private readonly List<object> _stops = new List<object>();
+        private readonly Dictionary<object, List<GraphNode>> _byStop = new Dictionary<object, List<GraphNode>>();
+        private readonly List<List<GraphNode>> _stopListPool = new List<List<GraphNode>>();
+        private int _stopListsRented;
+        private readonly List<GraphNode> _run = new List<GraphNode>();
+        private readonly Dictionary<int, ControlId> _band = new Dictionary<int, ControlId>();
+        private readonly Dictionary<int, ControlId> _cells = new Dictionary<int, ControlId>();
+        private readonly Dictionary<SiblingKey, List<GraphNode>> _siblings = new Dictionary<SiblingKey, List<GraphNode>>();
+        private readonly List<SiblingKey> _siblingKeys = new List<SiblingKey>();
+        private readonly List<List<GraphNode>> _siblingListPool = new List<List<GraphNode>>();
+        private int _siblingListsRented;
+        private readonly List<List<Row>> _segmentPool = new List<List<Row>>();
+        private int _segmentsRented;
+
+        // The declared nodes grouped by their Tab-stop (_byStop) — each stop's own nodes in
+        // declaration order, and _stops filled with the stops in first-appearance order. Both wiring
         // passes read it and neither writes it. A stop cannot begin inside an open row, so a row's
         // nodes never straddle two of these lists.
-        private Dictionary<object, List<GraphNode>> GroupByStop(List<object> stops)
+        private void GroupByStop()
         {
-            Dictionary<object, List<GraphNode>> byStop = new Dictionary<object, List<GraphNode>>();
+            _stops.Clear();
+            _byStop.Clear();
+            _stopListsRented = 0;
             foreach (GraphNode node in _declared)
             {
                 List<GraphNode> list;
-                if (!byStop.TryGetValue(node.StopKey, out list))
+                if (!_byStop.TryGetValue(node.StopKey, out list))
                 {
-                    list = new List<GraphNode>();
-                    byStop.Add(node.StopKey, list);
-                    stops.Add(node.StopKey);
+                    list = Rent(_stopListPool, ref _stopListsRented);
+                    _byStop.Add(node.StopKey, list);
+                    _stops.Add(node.StopKey);
                 }
                 list.Add(node);
             }
-
-            return byStop;
         }
 
         // Where a stop mixes MENU rows with RAW content (search/sort/filter controls above a sheet),
@@ -615,11 +753,11 @@ namespace ES2Access.Core.UI.Graph
         // columns (<see cref="NodeVtable.Column"/>, stamped by the sheet and by the band), the seam is
         // paired column by column, and only a column the other side does not have falls back to the
         // single target. A bar of ordinary controls stamps no columns and so keeps the old rule exactly.
-        private void StitchModeBoundaries(List<object> stops, Dictionary<object, List<GraphNode>> byStop)
+        private void StitchModeBoundaries()
         {
-            foreach (object stop in stops)
+            foreach (object stop in _stops)
             {
-                List<GraphNode> nodes = byStop[stop];
+                List<GraphNode> nodes = _byStop[stop];
                 for (int i = 1; i < nodes.Count; i++)
                 {
                     GraphNode prev = nodes[i - 1];
@@ -632,15 +770,16 @@ namespace ES2Access.Core.UI.Graph
                     {
                         if (cur.HasEdge(GraphDir.Up)) continue;
                         Row row = _rowOf[prev];
-                        List<GraphNode> run = new List<GraphNode>();
+                        List<GraphNode> run = _run;
+                        run.Clear();
                         for (int j = i; j < nodes.Count && !_rowOf.ContainsKey(nodes[j]); j++)
                         {
                             if (nodes[j].HasEdge(GraphDir.Up)) break;
                             run.Add(nodes[j]);
                         }
 
-                        Dictionary<int, ControlId> band = ByColumn(row.Items);
-                        Dictionary<int, ControlId> cells = ByColumn(run);
+                        Dictionary<int, ControlId> band = ByColumn(row.Items, _band);
+                        Dictionary<int, ControlId> cells = ByColumn(run, _cells);
                         foreach (GraphNode node in run)
                             node.Wire(GraphDir.Up, new Transition(Across(band, node, row.Items[0].Id)));
 
@@ -659,9 +798,11 @@ namespace ES2Access.Core.UI.Graph
                         }
 
                         if (start < 0) continue;
-                        List<GraphNode> run = nodes.GetRange(start, i - start);
-                        Dictionary<int, ControlId> band = ByColumn(row.Items);
-                        Dictionary<int, ControlId> cells = ByColumn(run);
+                        List<GraphNode> run = _run;
+                        run.Clear();
+                        for (int j = start; j < i; j++) run.Add(nodes[j]);
+                        Dictionary<int, ControlId> band = ByColumn(row.Items, _band);
+                        Dictionary<int, ControlId> cells = ByColumn(run, _cells);
                         foreach (GraphNode node in run)
                             node.Wire(GraphDir.Down, new Transition(Across(band, node, row.Items[0].Id)));
                         foreach (GraphNode cell in row.Items)
@@ -684,10 +825,10 @@ namespace ES2Access.Core.UI.Graph
         // side of the seam should land on the cell's own words, not on the last fragment of it. (A run
         // that returned null here instead sent every heading's Down edge to the run's first node — so a
         // systems table whose first row split its status cell into planet pieces answered every heading
-        // with the row's name.)
-        private static Dictionary<int, ControlId> ByColumn(List<GraphNode> nodes)
+        // with the row's name.) The map is the caller's, cleared and refilled here.
+        private static Dictionary<int, ControlId> ByColumn(List<GraphNode> nodes, Dictionary<int, ControlId> map)
         {
-            Dictionary<int, ControlId> map = new Dictionary<int, ControlId>(nodes.Count);
+            map.Clear();
             bool columned = false;
             foreach (GraphNode node in nodes)
             {
@@ -749,8 +890,11 @@ namespace ES2Access.Core.UI.Graph
         // it a one-entry flyout sounds indistinguishable from a step sideways.
         private void StampPositions()
         {
-            Dictionary<SiblingKey, List<GraphNode>> groups = new Dictionary<SiblingKey, List<GraphNode>>();
-            List<SiblingKey> keys = new List<SiblingKey>();
+            Dictionary<SiblingKey, List<GraphNode>> groups = _siblings;
+            List<SiblingKey> keys = _siblingKeys;
+            groups.Clear();
+            keys.Clear();
+            _siblingListsRented = 0;
             foreach (Row row in _rows)
             {
                 if (!row.Positions) continue;
@@ -765,7 +909,7 @@ namespace ES2Access.Core.UI.Graph
                 List<GraphNode> list;
                 if (!groups.TryGetValue(key, out list))
                 {
-                    list = new List<GraphNode>();
+                    list = Rent(_siblingListPool, ref _siblingListsRented);
                     groups.Add(key, list);
                     keys.Add(key);
                 }
@@ -793,17 +937,18 @@ namespace ES2Access.Core.UI.Graph
 
         // Left/right within a row; up/down between consecutive rows OF THE SAME STOP (arrows never cross a
         // Tab-stop). Shared non-null row keys preserve the column; otherwise vertical lands on first item.
-        private void WireMenuEdges(List<object> stops, Dictionary<object, List<GraphNode>> byStop)
+        private void WireMenuEdges()
         {
             // Segment rows in DECLARATION order within each stop: consecutive menu rows chain vertically
             // only when no raw node was declared between them. Interleaved raw content (a sheet between
             // menu controls) BREAKS the chain — StitchModeBoundaries wires the seams. Without the break,
             // menu edges would skip straight over the raw block; the stitcher (which only fills missing
             // edges) would find the gap already bridged, leaving the block an unreachable island.
-            List<List<Row>> segments = new List<List<Row>>();
-            for (int s = 0; s < stops.Count; s++)
+            // The segments are the first _segmentsRented lists of the pool, in the order they opened.
+            _segmentsRented = 0;
+            for (int s = 0; s < _stops.Count; s++)
             {
-                List<GraphNode> nodes = byStop[stops[s]];
+                List<GraphNode> nodes = _byStop[_stops[s]];
                 List<Row> open = null; // this stop's currently-open segment
                 for (int i = 0; i < nodes.Count; i++)
                 {
@@ -814,17 +959,14 @@ namespace ES2Access.Core.UI.Graph
                         continue;
                     }
 
-                    if (open == null)
-                    {
-                        open = new List<Row>();
-                        segments.Add(open);
-                    }
+                    if (open == null) open = Rent(_segmentPool, ref _segmentsRented);
                     if (open.Count == 0 || open[open.Count - 1] != row) open.Add(row);
                 }
             }
 
-            foreach (List<Row> rows in segments)
+            for (int g = 0; g < _segmentsRented; g++)
             {
+                List<Row> rows = _segmentPool[g];
                 for (int r = 0; r < rows.Count; r++)
                 {
                     Row row = rows[r];

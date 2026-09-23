@@ -252,9 +252,9 @@ namespace ES2Access.Core.UI.Graph
                     if (!render.Nodes.TryGetValue(k, out n)) break;
 
                     Transition d = n.Edge(GraphDir.Down);
-                    if (d != null) downFringe.Add(d.Destination);
+                    if (d.Destination != null) downFringe.Add(d.Destination);
                     Transition t = n.Edge(GraphDir.Right);
-                    if (t == null) break;
+                    if (t.Destination == null) break;
                     k = t.Destination;
                 }
                 i++;
@@ -408,7 +408,7 @@ namespace ES2Access.Core.UI.Graph
             if (node == null) return result;
 
             Transition t = node.Edge(dir);
-            GraphNode dest = t != null ? _current.NodeAt(t.Destination) : null;
+            GraphNode dest = t.Destination != null ? _current.NodeAt(t.Destination) : null;
             if (dest == null || dest == node) return result;
 
             SetCurrent(dest);
@@ -433,7 +433,7 @@ namespace ES2Access.Core.UI.Graph
             while (true)
             {
                 Transition t = cur.Edge(dir);
-                if (t == null) break;
+                if (t.Destination == null) break;
                 GraphNode next = _current.NodeAt(t.Destination);
                 if (next == null || next == cur) break;
                 cur = next;
@@ -480,7 +480,7 @@ namespace ES2Access.Core.UI.Graph
             while (true)
             {
                 Transition t = cur.Edge(dir);
-                if (t == null) break;
+                if (t.Destination == null) break;
                 GraphNode next = _current.NodeAt(t.Destination);
                 if (next == null || next == cur) break;
                 if (!SameTable(node, next, sideways)) break;

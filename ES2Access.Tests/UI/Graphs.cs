@@ -60,7 +60,7 @@ namespace ES2Access.Tests.UI
         public static ControlId Dest(GraphNode node, GraphDir dir)
         {
             Transition t = node.Edge(dir);
-            return t == null ? null : t.Destination;
+            return t.Destination;
         }
 
         public static string DestKey(GraphNode node, GraphDir dir)

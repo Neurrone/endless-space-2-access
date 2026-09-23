@@ -209,7 +209,7 @@ namespace ES2Access.Dev
                 for (int dir = 0; dir < GraphNode.DirectionCount; dir++)
                 {
                     Transition crossing = from.Edge((GraphDir)dir);
-                    if (crossing == null || string.IsNullOrEmpty(crossing.Label))
+                    if (crossing.Destination == null || string.IsNullOrEmpty(crossing.Label))
                     {
                         continue;
                     }
