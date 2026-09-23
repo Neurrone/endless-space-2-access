@@ -27,28 +27,17 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // Everything kept below was declared against this window's widgets.
+            _turnKept.Own(window, null);
             List<Cell> found = new List<Cell>();
-            EndTurnWindow it = window;
             AgeControlButton endTurn = window.EndTurnButton;
             // Banding input: AddCell appends without the gate's question, and the corner's controls are
             // worked into rows by where they are drawn.
             if (AgeWidgets.Visible(AgeWidgets.Transform(endTurn)))
             {
-                NodeVtable vtable = GraphNodes.Button(
-                    () => EndTurnLabel(it),
-                    () => AgeWidgets.Press(endTurn),
-                    () => CanEndTurn(it)
-                );
-                vtable.Announcements.Add(GraphNodes.ValuePart(() => TurnText(it)));
-                vtable.Sections = GraphNodes.Sections(() => EndTurnReason(it), null);
-                AgeWidgets.Point(vtable, endTurn);
                 found.Add(
-                    new Cell
-                    {
-                        Widget = AgeWidgets.Transform(endTurn),
-                        Id = ControlId.For(endTurn, "hud:end-turn"),
-                        Vtable = vtable,
-                    }
+                    _turnKept.Find(endTurn, null, null)
+                        ?? _turnKept.Keep(endTurn, null, null, EndTurnCell(window))
                 );
             }
 
@@ -90,7 +79,6 @@ namespace ES2Access.Screens
                     continue;
                 }
 
-                cell.Vtable.ControlType = ControlTypes.Group;
                 builder.BeginGroup(Nodes.Drawn(cell.Id, cell.Vtable, cell.Widget));
                 if (builder.IsExpanded(cell.Id))
                 {
@@ -124,6 +112,29 @@ namespace ES2Access.Screens
                 return;
             }
 
+            AgeTooltip tooltip = AgeWidgets.Raw(AgeWidgets.Transform(button));
+            found.Add(
+                _turnKept.Find(button, null, tooltip)
+                    ?? _turnKept.Keep(
+                        button,
+                        null,
+                        tooltip,
+                        TurnButtonCell(button, key, nameKey, value, activate, chordAction)
+                    )
+            );
+        }
+
+        /// <summary>The declaration <see cref="AddTurnButton"/> keeps. Its own method so the closures'
+        /// captures are allocated only when a cell is made, not on every build that finds one.</summary>
+        private static Cell TurnButtonCell(
+            AgeControlButton button,
+            string key,
+            string nameKey,
+            Func<string> value,
+            Action<AgeControlButton> activate,
+            string chordAction
+        )
+        {
             AgeControlButton it = button;
             Action<AgeControlButton> act = activate;
             string chord = chordAction;
@@ -151,14 +162,34 @@ namespace ES2Access.Screens
             }
 
             AgeWidgets.Point(vtable, it);
-            found.Add(
-                new Cell
-                {
-                    Widget = AgeWidgets.Transform(it),
-                    Id = ControlId.For(it, "hud:" + key),
-                    Vtable = vtable,
-                }
+            return new Cell
+            {
+                Widget = AgeWidgets.Transform(it),
+                Id = ControlId.For(it, "hud:" + key),
+                Vtable = vtable,
+            };
+        }
+
+        /// <summary>The End Turn button's declaration, kept by <see cref="Turn(GraphBuilder)"/>.
+        /// </summary>
+        private static Cell EndTurnCell(EndTurnWindow window)
+        {
+            EndTurnWindow it = window;
+            AgeControlButton endTurn = window.EndTurnButton;
+            NodeVtable vtable = GraphNodes.Button(
+                () => EndTurnLabel(it),
+                () => AgeWidgets.Press(endTurn),
+                () => CanEndTurn(it)
             );
+            vtable.Announcements.Add(GraphNodes.ValuePart(() => TurnText(it)));
+            vtable.Sections = GraphNodes.Sections(() => EndTurnReason(it), null);
+            AgeWidgets.Point(vtable, endTurn);
+            return new Cell
+            {
+                Widget = AgeWidgets.Transform(endTurn),
+                Id = ControlId.For(endTurn, "hud:end-turn"),
+                Vtable = vtable,
+            };
         }
 
         /// <summary>
@@ -192,6 +223,15 @@ namespace ES2Access.Screens
                 return;
             }
 
+            AgeTooltip tooltip = AgeWidgets.Raw(button);
+            found.Add(
+                _turnKept.Find(button, null, tooltip)
+                    ?? _turnKept.Keep(button, null, tooltip, PendingNotificationsCell(button))
+            );
+        }
+
+        private static Cell PendingNotificationsCell(AgeTransform button)
+        {
             AgeTransform at = button;
             NodeVtable vtable = GraphNodes.Button(
                 () => ModStrings.Get(ModStrings.GalaxyPendingNotifications),
@@ -200,14 +240,12 @@ namespace ES2Access.Screens
                 AgeWidgets.Readable(AgeWidgets.Raw(at))
             );
             AgeWidgets.PointAt(vtable, at);
-            found.Add(
-                new Cell
-                {
-                    Widget = at,
-                    Id = ControlId.For(at, "hud:pending-notifications"),
-                    Vtable = vtable,
-                }
-            );
+            return new Cell
+            {
+                Widget = at,
+                Id = ControlId.For(at, "hud:pending-notifications"),
+                Vtable = vtable,
+            };
         }
 
         /// <summary>
@@ -232,9 +270,21 @@ namespace ES2Access.Screens
                 return;
             }
 
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            found.Add(
+                _turnKept.Find(toggle, null, tooltip)
+                    ?? _turnKept.Keep(toggle, null, tooltip, RequestToggleCell(toggle, widget, tooltip))
+            );
+        }
+
+        private static Cell RequestToggleCell(
+            AgeControlToggle toggle,
+            AgeTransform widget,
+            AgeTooltip tooltip
+        )
+        {
             AgeControlToggle it = toggle;
             AgeTransform at = widget;
-            AgeTooltip tooltip = AgeWidgets.Raw(widget);
             Func<bool> enabled = () => AgeWidgets.Offered(at);
             NodeVtable vtable = GraphNodes.Checkbox(
                 () => ModStrings.Get(ModStrings.GalaxyAllianceRequests),
@@ -244,14 +294,12 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, widget);
-            found.Add(
-                new Cell
-                {
-                    Widget = widget,
-                    Id = ControlId.For(toggle, "hud:alliance-requests"),
-                    Vtable = vtable,
-                }
-            );
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.For(toggle, "hud:alliance-requests"),
+                Vtable = vtable,
+            };
         }
 
         // ---- the multiplayer half of the turn cluster ----
@@ -281,25 +329,34 @@ namespace ES2Access.Screens
                 return;
             }
 
-            EndTurnWindow it = window;
             // The sync state exists only as the words on the group's own tooltip, so the tooltip is
             // what the row declares and the readout says them by the ordinary rule - rather than the
             // row copying them into a value of its own and the buffer holding them twice.
-            NodeVtable vtable = GraphNodes.Readout(
-                () => ModStrings.Get(ModStrings.GalaxySyncState),
-                () => null,
-                null,
-                it.SyncTooltip
-            );
-            AgeWidgets.PointAt(vtable, group);
-            found.Add(
-                new Cell
-                {
-                    Widget = group,
-                    Id = ControlId.For(group, "hud:sync"),
-                    Vtable = vtable,
-                }
-            );
+            AgeTooltip tooltip = window.SyncTooltip;
+            Cell cell = _turnKept.Find(group, null, tooltip);
+            if (cell == null)
+            {
+                NodeVtable vtable = GraphNodes.Readout(
+                    () => ModStrings.Get(ModStrings.GalaxySyncState),
+                    () => null,
+                    null,
+                    tooltip
+                );
+                AgeWidgets.PointAt(vtable, group);
+                cell = _turnKept.Keep(
+                    group,
+                    null,
+                    tooltip,
+                    new Cell
+                    {
+                        Widget = group,
+                        Id = ControlId.For(group, "hud:sync"),
+                        Vtable = vtable,
+                    }
+                );
+            }
+
+            found.Add(cell);
 
             AddTurnButton(found, window.DesyncButton, "desync", ModStrings.GalaxyReturnToLobby, null);
         }
@@ -341,6 +398,24 @@ namespace ES2Access.Screens
                 return;
             }
 
+            Cell cell =
+                _turnKept.Find(panel.AgeTransform, null, null)
+                ?? _turnKept.Keep(panel.AgeTransform, null, null, PlayersCell(window, anchor, panel));
+            // Written on every build from this build's ring, both branches: a kept cell whose whisper
+            // buttons have gone must stop being a group, not keep the children it had.
+            cell.Children = PlayersList.Whisperers(window).Count > 0 ? cell.Whispers : null;
+            cell.Vtable.ControlType = cell.Children != null ? ControlTypes.Group : null;
+            found.Add(cell);
+        }
+
+        /// <summary>The players row <see cref="AddPlayers"/> keeps. <see cref="Cell.Whispers"/> reads the
+        /// ring when it runs, so the kept closure never holds one build's list of slots.</summary>
+        private static Cell PlayersCell(
+            EndTurnWindow window,
+            AgeTransform anchor,
+            PlayersListPanel panel
+        )
+        {
             EndTurnWindow it = window;
             // A name and then the lines: there is no VALUE here to hold. The game draws no count of
             // who is still playing - it draws a state icon per ring slot, a state word per scoreboard
@@ -365,22 +440,13 @@ namespace ES2Access.Screens
                 PlayersList.Hold(it);
             };
             vtable.OnBlurVisual = PlayersList.Release;
-            IList<CompetitorOrbitalSlot> whisper = PlayersList.Whisperers(window);
-            Action<GraphBuilder> children = null;
-            if (whisper.Count > 0)
+            return new Cell
             {
-                children = b => AddWhispers(b, whisper);
-            }
-
-            found.Add(
-                new Cell
-                {
-                    Widget = anchor,
-                    Id = ControlId.For(panel.AgeTransform, "hud:players"),
-                    Vtable = vtable,
-                    Children = children,
-                }
-            );
+                Widget = anchor,
+                Id = ControlId.For(panel.AgeTransform, "hud:players"),
+                Vtable = vtable,
+                Whispers = b => AddWhispers(b, PlayersList.Whisperers(it)),
+            };
         }
 
         /// <summary>
@@ -441,7 +507,6 @@ namespace ES2Access.Screens
         /// </summary>
         private void AddTimers(List<Cell> found, EndTurnWindow window)
         {
-            EndTurnWindow it = window;
             AgeTransform global = window.GlobalTimerLabel == null
                 ? null
                 : window.GlobalTimerLabel.AgeTransform;
@@ -449,20 +514,9 @@ namespace ES2Access.Screens
             // only in a game that runs one.
             if (AgeWidgets.Visible(global))
             {
-                NodeVtable vtable = GraphNodes.Readout(
-                    () => ModStrings.Get(ModStrings.GalaxyGlobalTimer),
-                    () => OneLine(AgeText.Label(it.GlobalTimerLabel)),
-                    null,
-                    null,
-                    false
-                );
                 found.Add(
-                    new Cell
-                    {
-                        Widget = global,
-                        Id = ControlId.For(global, "hud:global-timer"),
-                        Vtable = vtable,
-                    }
+                    _turnKept.Find(global, null, null)
+                        ?? _turnKept.Keep(global, null, null, GlobalTimerCell(window, global))
                 );
             }
 
@@ -474,6 +528,33 @@ namespace ES2Access.Screens
                 return;
             }
 
+            found.Add(
+                _turnKept.Find(arc, null, null)
+                    ?? _turnKept.Keep(arc, null, null, TurnTimerCell(window, arc))
+            );
+        }
+
+        private static Cell GlobalTimerCell(EndTurnWindow window, AgeTransform global)
+        {
+            EndTurnWindow it = window;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => ModStrings.Get(ModStrings.GalaxyGlobalTimer),
+                () => OneLine(AgeText.Label(it.GlobalTimerLabel)),
+                null,
+                null,
+                false
+            );
+            return new Cell
+            {
+                Widget = global,
+                Id = ControlId.For(global, "hud:global-timer"),
+                Vtable = vtable,
+            };
+        }
+
+        private static Cell TurnTimerCell(EndTurnWindow window, AgeTransform arc)
+        {
+            EndTurnWindow it = window;
             NodeVtable turnTimer = GraphNodes.Readout(
                 () => ModStrings.Get(TimerNameKey(it)),
                 () => ModStrings.Format(ModStrings.GalaxyTimerSeconds, TimerSeconds(it)),
@@ -481,14 +562,12 @@ namespace ES2Access.Screens
                 null,
                 false
             );
-            found.Add(
-                new Cell
-                {
-                    Widget = arc,
-                    Id = ControlId.For(arc, "hud:turn-timer"),
-                    Vtable = turnTimer,
-                }
-            );
+            return new Cell
+            {
+                Widget = arc,
+                Id = ControlId.For(arc, "hud:turn-timer"),
+                Vtable = turnTimer,
+            };
         }
 
         /// <summary>
@@ -515,6 +594,14 @@ namespace ES2Access.Screens
                 return;
             }
 
+            found.Add(
+                _turnKept.Find(clock, null, null)
+                    ?? _turnKept.Keep(clock, null, null, RealTimeClockCell(window, clock))
+            );
+        }
+
+        private static Cell RealTimeClockCell(EndTurnWindow window, AgeTransform clock)
+        {
             EndTurnWindow it = window;
             NodeVtable vtable = GraphNodes.Readout(
                 () => ModStrings.Get(ModStrings.GalaxyRealTimeClock),
@@ -523,14 +610,12 @@ namespace ES2Access.Screens
                 null,
                 false
             );
-            found.Add(
-                new Cell
-                {
-                    Widget = clock,
-                    Id = ControlId.For(clock, "hud:real-time-clock"),
-                    Vtable = vtable,
-                }
-            );
+            return new Cell
+            {
+                Widget = clock,
+                Id = ControlId.For(clock, "hud:real-time-clock"),
+                Vtable = vtable,
+            };
         }
 
         /// <summary>Whether the game is drawing the ready ring, which it does outside single player

@@ -54,8 +54,8 @@ ES2Access/Screens/GlobalHud.Notifications.cs | 1 | ? (NodeDeclaration)Nodes.Synt
 ES2Access/Screens/GlobalHud.Notifications.cs | 1 | Nodes.Synthetic(
 ES2Access/Screens/GlobalHud.Notifications.cs | 2 | builder.AddItem(Nodes.Synthetic(
 
-ES2Access/Screens/GlobalHud.Quest.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.For(panel.PinnedQuest, "hud:quest"), vtable));
-ES2Access/Screens/GlobalHud.Quest.cs | 1 | builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
+ES2Access/Screens/GlobalHud.Quest.cs | 1 | builder.AddItem(Nodes.Synthetic(cell.Id, cell.Vtable));
+ES2Access/Screens/GlobalHud.Quest.cs | 1 | builder.AddItem(Nodes.Synthetic(quest.Id, quest.Vtable));
 
 ES2Access/Screens/HeroInspectionScreen.SkillPage.cs | 1 | builder.AddItem(Nodes.Synthetic(
 ES2Access/Screens/HeroInspectionScreen.SkillPage.cs | 1 | builder.BeginGroup(Nodes.Synthetic(

@@ -36,8 +36,81 @@ namespace ES2Access.Screens
                 return;
             }
 
-            PinnedQuestPanel it = panel;
+            // The pinned quest is the row's binding: the node is keyed on it, so a newly pinned quest is
+            // a new declaration on the same panel.
+            _questKept.Own(panel, null);
             AgeTooltip hint = panel.QuestObjectiveTooltip;
+            Cell quest =
+                _questKept.Find(panel, panel.PinnedQuest, hint)
+                ?? _questKept.Keep(panel, panel.PinnedQuest, hint, QuestCell(panel, hint));
+
+            builder.BeginStop(QuestStop);
+            // The panel carries no caption of its own (below), so the word is the mod's: without it
+            // Tab lands on a quest title with nothing saying which corner of the screen it came from.
+            builder.PushContext(ModStrings.Get(ModStrings.HudQuestPanel));
+            // Synthetic: the row stands for the pinned QUEST, read off the panel's binding rather than
+            // off any one widget it draws.
+            builder.AddItem(Nodes.Synthetic(quest.Id, quest.Vtable));
+            AddQuestButton(
+                builder,
+                panel.ShowLocationButton,
+                ModStrings.HudQuestShowLocation,
+                "hud:quest/location"
+            );
+            AddQuestButton(builder, panel.UnpinButton, ModStrings.HudQuestUnpin, "hud:quest/unpin");
+            builder.PopContext();
+        }
+
+        /// <summary>One of the icons the panel draws on itself, where the game is drawing it. Drawn AND
+        /// enabled: the game hides the marker for a quest with nowhere to point at without ever
+        /// switching it off, so asking about enablement alone declares a control the player cannot see
+        /// and the game will not act on.</summary>
+        private void AddQuestButton(
+            GraphBuilder builder,
+            AgeControlButton button,
+            string nameKey,
+            string key
+        )
+        {
+            AgeTransform widget = AgeWidgets.Transform(button);
+            // Synthetic guard: the node declared below carries no widget, so this test is the whole of
+            // its existence check - nothing downstream will ask again.
+            if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
+            {
+                return;
+            }
+
+            AgeTooltip tooltip = AgeWidgets.Raw(widget);
+            Cell cell =
+                _questKept.Find(button, null, tooltip)
+                ?? _questKept.Keep(button, null, tooltip, QuestButtonCell(button, widget, nameKey, key));
+            // Synthetic: mod-authored - the quest strip's own button, which the HUD draws nothing
+            // separate for.
+            builder.AddItem(Nodes.Synthetic(cell.Id, cell.Vtable));
+        }
+
+        private static Cell QuestButtonCell(
+            AgeControlButton button,
+            AgeTransform widget,
+            string nameKey,
+            string key
+        )
+        {
+            AgeControlButton it = button;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ModStrings.Get(nameKey),
+                () => AgeWidgets.Press(it),
+                null,
+                AgeWidgets.Raw(widget)
+            );
+            AgeWidgets.PointAt(vtable, widget);
+            return new Cell { Id = ControlId.Structural(key), Vtable = vtable };
+        }
+
+        /// <summary>The pinned quest's row, kept by <see cref="Quest(GraphBuilder)"/>.</summary>
+        private static Cell QuestCell(PinnedQuestPanel panel, AgeTooltip hint)
+        {
+            PinnedQuestPanel it = panel;
             AgeControlButton open = AgeWidgets.Button(panel.AgeTransform);
             NodeVtable vtable = GraphNodes.Button(
                 () => AgeText.FullLabel(it.QuestTitleLabel),
@@ -66,54 +139,7 @@ namespace ES2Access.Screens
                 hint,
                 hint == null ? panel.AgeTransform : hint.AgeTransform
             );
-
-            builder.BeginStop(QuestStop);
-            // The panel carries no caption of its own (below), so the word is the mod's: without it
-            // Tab lands on a quest title with nothing saying which corner of the screen it came from.
-            builder.PushContext(ModStrings.Get(ModStrings.HudQuestPanel));
-            // Synthetic: the row stands for the pinned QUEST, read off the panel's binding rather than
-            // off any one widget it draws.
-            builder.AddItem(Nodes.Synthetic(ControlId.For(panel.PinnedQuest, "hud:quest"), vtable));
-            AddQuestButton(
-                builder,
-                panel.ShowLocationButton,
-                ModStrings.HudQuestShowLocation,
-                "hud:quest/location"
-            );
-            AddQuestButton(builder, panel.UnpinButton, ModStrings.HudQuestUnpin, "hud:quest/unpin");
-            builder.PopContext();
-        }
-
-        /// <summary>One of the icons the panel draws on itself, where the game is drawing it. Drawn AND
-        /// enabled: the game hides the marker for a quest with nowhere to point at without ever
-        /// switching it off, so asking about enablement alone declares a control the player cannot see
-        /// and the game will not act on.</summary>
-        private static void AddQuestButton(
-            GraphBuilder builder,
-            AgeControlButton button,
-            string nameKey,
-            string key
-        )
-        {
-            AgeTransform widget = AgeWidgets.Transform(button);
-            // Synthetic guard: the node declared below carries no widget, so this test is the whole of
-            // its existence check - nothing downstream will ask again.
-            if (widget == null || !AgeWidgets.Visible(widget) || !AgeWidgets.Operable(widget))
-            {
-                return;
-            }
-
-            AgeControlButton it = button;
-            NodeVtable vtable = GraphNodes.Button(
-                () => ModStrings.Get(nameKey),
-                () => AgeWidgets.Press(it),
-                null,
-                AgeWidgets.Raw(widget)
-            );
-            AgeWidgets.PointAt(vtable, widget);
-            // Synthetic: mod-authored - the quest strip's own button, which the HUD draws nothing
-            // separate for.
-            builder.AddItem(Nodes.Synthetic(ControlId.Structural(key), vtable));
+            return new Cell { Id = ControlId.For(panel.PinnedQuest, "hud:quest"), Vtable = vtable };
         }
 
         /// <summary>How the quest is going, in the game's own word for it - "Ongoing", or the count of

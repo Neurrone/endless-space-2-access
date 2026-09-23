@@ -58,6 +58,9 @@ namespace ES2Access.Screens
                 return;
             }
 
+            // The empire is part of what the kept cells were declared against: a save load brings a new
+            // one, and the totals and the research line read it.
+            _empireKept.Own(window, empire);
             List<Cell> cells = new List<Cell>();
             int from = cells.Count;
             AddScreenToggles(cells, window.ControlBanner);
@@ -128,15 +131,13 @@ namespace ES2Access.Screens
         /// (which is exactly what the four banner rows shipped with).</summary>
         private static void Name(List<Cell> cells, int from, string named, string region)
         {
-            if (string.IsNullOrEmpty(named))
-            {
-                return;
-            }
-
+            // Written on every call, word or no word: the cells are kept across builds (KeptCells),
+            // and a word missing this build must not leave last build's on them.
+            bool unnamed = string.IsNullOrEmpty(named);
             for (int i = from; i < cells.Count; i++)
             {
-                cells[i].Row = named;
-                cells[i].Region = region;
+                cells[i].Row = unnamed ? null : named;
+                cells[i].Region = unnamed ? null : region;
             }
         }
 
@@ -234,6 +235,7 @@ namespace ES2Access.Screens
                 return false;
             }
 
+            _titleKept.Own(panel, null);
             bool ladder = zoom != null && ZoomLadder.Rungs;
             if (!ladder && !ScanDrawn(panel))
             {
@@ -260,17 +262,26 @@ namespace ES2Access.Screens
         /// <summary>The lens toggle. The tooltip explaining it is hung on the GROUP around the label
         /// and the icon rather than on the button, which is what the game shows a tooltip for and so is
         /// what the pointer is aimed at.</summary>
-        private static void AddScanToggle(GraphBuilder builder, TopTitlePanel panel)
+        private void AddScanToggle(GraphBuilder builder, TopTitlePanel panel)
         {
             if (!ScanDrawn(panel))
             {
                 return;
             }
 
+            AgeControlButton button = panel.ScanButton;
+            AgeTooltip tooltip = AgeWidgets.Raw(panel.ScanGroup);
+            Cell cell =
+                _titleKept.Find(button, null, tooltip)
+                ?? _titleKept.Keep(button, null, tooltip, ScanToggleCell(panel, tooltip));
+            builder.AddItem(Nodes.Drawn(cell.Id, cell.Vtable, button));
+        }
+
+        private static Cell ScanToggleCell(TopTitlePanel panel, AgeTooltip tooltip)
+        {
             AgeTransform group = panel.ScanGroup;
             AgeControlButton button = panel.ScanButton;
             AgeControlButton it = button;
-            AgeTooltip tooltip = AgeWidgets.Raw(group);
             NodeVtable vtable = GraphNodes.Button(
                 () => AgeText.Label(panel.ScanLabel),
                 () => AgeWidgets.Press(it),
@@ -278,7 +289,7 @@ namespace ES2Access.Screens
                 tooltip
             );
             AgeWidgets.Point(vtable, it, tooltip, group);
-            builder.AddItem(Nodes.Drawn(ControlId.For(button, "hud:view-title/scan"), vtable, button));
+            return new Cell { Id = ControlId.For(button, "hud:view-title/scan"), Vtable = vtable };
         }
 
         /// <summary>Whether the page has a lens at all - asked before the stop is begun as well as
@@ -314,6 +325,16 @@ namespace ES2Access.Screens
             /// declared as an expandable group and this runs inside it while it is expanded. Null
             /// everywhere else, and the cell is the leaf it looks like.</summary>
             public Action<GraphBuilder> Children;
+
+            /// <summary>The children the players row offers while the ring has anybody to whisper to:
+            /// made once with the cell, reading the ring when it runs, and handed to
+            /// <see cref="Children"/> on the builds that have whisperers.</summary>
+            public Action<GraphBuilder> Whispers;
+
+            /// <summary>The sections the vtable was declared with, for a cell whose build may swap in
+            /// sections of its own (<see cref="AddScreenToggles"/>) and has to be able to put them back.
+            /// </summary>
+            public IList<NodeSection> Declared;
         }
 
         private static readonly Func<Cell, AgeTransform> CellWidget = cell => cell.Widget;
@@ -329,7 +350,7 @@ namespace ES2Access.Screens
         /// screen's call where the row is a control plus a badge, and what the button OPENS is the
         /// thing a player standing on it asked for (measured 2026-08-23: the badge's sentence had no
         /// surface at all).</summary>
-        private static void AddScreenToggles(List<Cell> cells, ControlBanner banner)
+        private void AddScreenToggles(List<Cell> cells, ControlBanner banner)
         {
             if (banner == null || banner.TogglesTable == null)
             {
@@ -352,40 +373,63 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    ControlBanner strip = banner;
+                    // The toggle's screen is its binding: a table re-bound in another order is a
+                    // different declaration on the same widget.
                     GuiScreen screen = toggle.Screen;
                     AgeTooltip tooltip = AgeWidgets.Raw(widget);
-                    NodeVtable vtable = GraphNodes.Button(
-                        () => ScreenTitle(screen),
-                        () => strip.OnControlBannerToggle(screen),
-                        () => AgeWidgets.Enabled(widget),
-                        tooltip
-                    );
-                    List<AgeTooltip> inside = new List<AgeTooltip>(2);
-                    AgeWidgets.Tooltips(widget, inside);
-                    if (inside.Count > 1)
-                    {
-                        vtable.Sections = ToggleSections(inside);
-                    }
-
-                    AgeWidgets.PointAt(vtable, widget);
-                    cells.Add(
-                        new Cell
-                        {
-                            Widget = widget,
-                            Id = ControlId.For(
-                                toggle,
-                                "hud:empire/screen/" + screen.GetType().Name
-                            ),
-                            Vtable = vtable,
-                        }
-                    );
+                    Cell cell =
+                        _empireKept.Find(toggle, screen, tooltip)
+                        ?? _empireKept.Keep(
+                            toggle,
+                            screen,
+                            tooltip,
+                            ScreenToggleCell(banner, toggle, widget, tooltip)
+                        );
+                    // The badges are asked every build, because which of them the resolver keeps is
+                    // decided by what each one says and whether it is drawn - and the sections are
+                    // assigned on every build, both ways, so a badge that has gone takes its section
+                    // with it.
+                    _toggleTooltips.Clear();
+                    AgeWidgets.Tooltips(widget, _toggleTooltips);
+                    cell.Vtable.Sections =
+                        _toggleTooltips.Count > 1 ? ToggleSections(_toggleTooltips) : cell.Declared;
+                    cells.Add(cell);
                 }
             }
             catch (Exception e)
             {
                 Log.Warn("hud: reading the screen icons threw: " + e);
             }
+        }
+
+        /// <summary>The scratch list the badges are gathered into, one toggle at a time; nothing keeps
+        /// it past the call that fills it.</summary>
+        private readonly List<AgeTooltip> _toggleTooltips = new List<AgeTooltip>(2);
+
+        private static Cell ScreenToggleCell(
+            ControlBanner banner,
+            ControlBannerToggle toggle,
+            AgeTransform widget,
+            AgeTooltip tooltip
+        )
+        {
+            ControlBanner strip = banner;
+            GuiScreen screen = toggle.Screen;
+            AgeTransform at = widget;
+            NodeVtable vtable = GraphNodes.Button(
+                () => ScreenTitle(screen),
+                () => strip.OnControlBannerToggle(screen),
+                () => AgeWidgets.Enabled(at),
+                tooltip
+            );
+            AgeWidgets.PointAt(vtable, widget);
+            return new Cell
+            {
+                Widget = widget,
+                Id = ControlId.For(toggle, "hud:empire/screen/" + screen.GetType().Name),
+                Vtable = vtable,
+                Declared = vtable.Sections,
+            };
         }
 
         /// <summary>One icon's explanations as sections: the FIRST is the icon's own and speaks; every
@@ -443,51 +487,57 @@ namespace ES2Access.Screens
         }
 
         /// <summary>The running totals the banner across the top carries.</summary>
-        private static void AddTotals(List<Cell> cells, EmpireBanner banner, Empire empire)
+        private void AddTotals(List<Cell> cells, EmpireBanner banner, Empire empire)
         {
             if (banner == null)
             {
                 return;
             }
 
-            Empire it = empire;
+            // The readers take the empire rather than capturing it, so a build that finds its cells
+            // kept allocates none of them; the kept cell's own closures hold the empire the set is
+            // owned under.
             AddTotal(
                 cells,
+                empire,
                 banner.MoneyLabel,
                 "dust",
                 SimulationProperties.Empire.NetEmpireMoney,
-                () => Value(it, SimulationProperties.Empire.BankAccount),
-                () => Value(it, SimulationProperties.Empire.NetEmpireMoney)
+                e => Value(e, SimulationProperties.Empire.BankAccount),
+                e => Value(e, SimulationProperties.Empire.NetEmpireMoney)
             );
             AddTotal(
                 cells,
+                empire,
                 banner.ManpowerLabel,
                 "manpower",
                 SimulationProperties.Empire.EmpireManpower,
-                () => Value(it, SimulationProperties.Empire.EmpireManpowerStock),
-                () =>
-                    Value(it, SimulationProperties.Empire.EmpireManpower)
-                    - Value(it, SimulationProperties.Empire.EmpireManpowerUpkeep)
+                e => Value(e, SimulationProperties.Empire.EmpireManpowerStock),
+                e =>
+                    Value(e, SimulationProperties.Empire.EmpireManpower)
+                    - Value(e, SimulationProperties.Empire.EmpireManpowerUpkeep)
             );
             AddTotal(
                 cells,
+                empire,
                 banner.EmpirePointLabel,
                 "influence",
                 SimulationProperties.Empire.NetEmpireEmpirePoint,
-                () => Value(it, SimulationProperties.Empire.EmpireEmpirePointStock),
-                () => Value(it, SimulationProperties.Empire.NetEmpireEmpirePoint)
+                e => Value(e, SimulationProperties.Empire.EmpireEmpirePointStock),
+                e => Value(e, SimulationProperties.Empire.NetEmpireEmpirePoint)
             );
         }
 
         /// <summary>One of the banner's running totals: what it is called, what there is of it, and
         /// what the next turn will add or take away.</summary>
-        private static void AddTotal(
+        private void AddTotal(
             List<Cell> cells,
+            Empire empire,
             AgePrimitiveLabel label,
             string key,
             StaticString property,
-            Func<float> stock,
-            Func<float> net
+            Func<Empire, float> stock,
+            Func<Empire, float> net
         )
         {
             // Banding input: AddCell appends without the gate's question, and the banner's readouts are
@@ -499,27 +549,48 @@ namespace ES2Access.Screens
 
             AgeTransform area = Area(label);
             AgeTooltip tooltip = AgeWidgets.Raw(area);
+            cells.Add(
+                _empireKept.Find(label, null, tooltip)
+                    ?? _empireKept.Keep(
+                        label,
+                        null,
+                        tooltip,
+                        TotalCell(empire, label, area, tooltip, key, property, stock, net)
+                    )
+            );
+        }
+
+        private static Cell TotalCell(
+            Empire empire,
+            AgePrimitiveLabel label,
+            AgeTransform area,
+            AgeTooltip tooltip,
+            string key,
+            StaticString property,
+            Func<Empire, float> stock,
+            Func<Empire, float> net
+        )
+        {
+            Empire it = empire;
             NodeVtable vtable = GraphNodes.Readout(
                 () => Gui.GetLocalizedTitle(property),
-                () => StockAndNet(stock(), net(), 0),
+                () => StockAndNet(stock(it), net(it), 0),
                 null,
                 tooltip
             );
             AgeWidgets.PointAt(vtable, area);
-            cells.Add(
-                new Cell
-                {
-                    Widget = area,
-                    Id = ControlId.For(label, "hud:empire/" + key),
-                    Vtable = vtable,
-                }
-            );
+            return new Cell
+            {
+                Widget = area,
+                Id = ControlId.For(label, "hud:empire/" + key),
+                Vtable = vtable,
+            };
         }
 
         /// <summary>What is being researched and how long is left, or the game's own words for having
         /// queued nothing. Opening it is the banner's own click, which is what knows whether the
         /// technology screen can be reached at all.</summary>
-        private static void AddResearch(List<Cell> cells, EmpireBanner banner, Empire empire)
+        private void AddResearch(List<Cell> cells, EmpireBanner banner, Empire empire)
         {
             AgeControlButton button = banner == null ? null : banner.ResearchButton;
             // The tutorial hides the whole research area until it has taught the rest, and the game
@@ -533,8 +604,6 @@ namespace ES2Access.Screens
                 return;
             }
 
-            AgeControlButton it = button;
-            Empire owner = empire;
             // The banner hangs the technology's tooltip on the line of text, not on the button - which
             // is stretched across the whole banner - so that is both what the game shows a tooltip for
             // and what it should be drawn under.
@@ -543,6 +612,22 @@ namespace ES2Access.Screens
                     ? AgeWidgets.Transform(button)
                     : banner.ResearchLabel.AgeTransform;
             AgeTooltip tooltip = AgeWidgets.Raw(line);
+            cells.Add(
+                _empireKept.Find(button, null, tooltip)
+                    ?? _empireKept.Keep(button, null, tooltip, ResearchCell(button, empire, line, tooltip))
+            );
+            AddResearchBuyout(cells, banner);
+        }
+
+        private static Cell ResearchCell(
+            AgeControlButton button,
+            Empire empire,
+            AgeTransform line,
+            AgeTooltip tooltip
+        )
+        {
+            AgeControlButton it = button;
+            Empire owner = empire;
             NodeVtable vtable = GraphNodes.Button(
                 () => ModStrings.Get(ModStrings.GalaxyResearch),
                 () => AgeWidgets.Press(it),
@@ -554,15 +639,12 @@ namespace ES2Access.Screens
             // panel would say that again.
             GraphNodes.TurnsDrawnOnTheRow(vtable);
             AgeWidgets.Point(vtable, it, tooltip, line);
-            cells.Add(
-                new Cell
-                {
-                    Widget = AgeWidgets.Transform(it),
-                    Id = ControlId.For(it, "hud:empire/research"),
-                    Vtable = vtable,
-                }
-            );
-            AddResearchBuyout(cells, banner);
+            return new Cell
+            {
+                Widget = AgeWidgets.Transform(it),
+                Id = ControlId.For(it, "hud:empire/research"),
+                Vtable = vtable,
+            };
         }
 
         /// <summary>
@@ -576,7 +658,7 @@ namespace ES2Access.Screens
         /// this could be bought with, and why the answer is no today, is exactly what the player asks
         /// the banner.
         /// </summary>
-        private static void AddResearchBuyout(List<Cell> cells, EmpireBanner banner)
+        private void AddResearchBuyout(List<Cell> cells, EmpireBanner banner)
         {
             BuyoutButton buyout = banner.BuyoutButton;
             if (buyout == null || !AgeWidgets.Visible(buyout.AgeTransform))
@@ -584,9 +666,17 @@ namespace ES2Access.Screens
                 return;
             }
 
+            AgeTooltip tooltip = AgeWidgets.Raw(buyout.AgeTransform);
+            cells.Add(
+                _empireKept.Find(buyout, null, tooltip)
+                    ?? _empireKept.Keep(buyout, null, tooltip, ResearchBuyoutCell(buyout, tooltip))
+            );
+        }
+
+        private static Cell ResearchBuyoutCell(BuyoutButton buyout, AgeTooltip tooltip)
+        {
             BuyoutButton it = buyout;
             AgeTransform at = buyout.AgeTransform;
-            AgeTooltip tooltip = AgeWidgets.Raw(at);
             NodeVtable vtable = GraphNodes.Button(
                 () =>
                     ModStrings.Format(
@@ -599,14 +689,31 @@ namespace ES2Access.Screens
             );
             vtable.Announcements.Add(GraphNodes.ValuePart(() => Buyouts.Cost(it)));
             AgeWidgets.PointAt(vtable, at);
-            cells.Add(
-                new Cell
-                {
-                    Widget = at,
-                    Id = ControlId.For(buyout, "hud:empire/research-buyout"),
-                    Vtable = vtable,
-                }
+            return new Cell
+            {
+                Widget = at,
+                Id = ControlId.For(buyout, "hud:empire/research-buyout"),
+                Vtable = vtable,
+            };
+        }
+
+        private static Cell StockpileCell(ResourceItem item, GuiLocatedResource resource)
+        {
+            GuiLocatedResource it = resource;
+            ResourceItem row = item;
+            NodeVtable vtable = GraphNodes.Readout(
+                () => AgeText.Clean(it.Title),
+                () => ResourceRows.Figures(row),
+                null,
+                item.Tooltip
             );
+            AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
+            return new Cell
+            {
+                Widget = item.AgeTransform,
+                Id = ControlId.For(item, "hud:empire/resource/" + resource.Name),
+                Vtable = vtable,
+            };
         }
 
         private static string ResearchText(Empire empire)
@@ -647,7 +754,7 @@ namespace ES2Access.Screens
         /// <summary>The strategic and luxury resources the empire holds, in the order the strip beside
         /// the banner shows them. A resource sitting at zero stays in the list - the strip dims it
         /// rather than dropping it, and "we have none of that" is the answer to the question.</summary>
-        private static void AddStockpiles(List<Cell> cells, ResourcesPanel panel)
+        private void AddStockpiles(List<Cell> cells, ResourcesPanel panel)
         {
             if (panel == null || panel.ResourceItemsTable == null)
             {
@@ -666,22 +773,11 @@ namespace ES2Access.Screens
                         continue;
                     }
 
-                    GuiLocatedResource it = resource;
-                    ResourceItem row = item;
-                    NodeVtable vtable = GraphNodes.Readout(
-                        () => AgeText.Clean(it.Title),
-                        () => ResourceRows.Figures(row),
-                        null,
-                        item.Tooltip
-                    );
-                    AgeWidgets.Point(vtable, item.Button, item.Tooltip, item.AgeTransform);
+                    // The resource is the item's binding: the strip is a pool, and an item re-bound
+                    // to another resource is a different declaration on the same widget.
                     cells.Add(
-                        new Cell
-                        {
-                            Widget = item.AgeTransform,
-                            Id = ControlId.For(item, "hud:empire/resource/" + resource.Name),
-                            Vtable = vtable,
-                        }
+                        _empireKept.Find(item, resource, item.Tooltip)
+                            ?? _empireKept.Keep(item, resource, item.Tooltip, StockpileCell(item, resource))
                     );
                 }
             }
