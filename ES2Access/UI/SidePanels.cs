@@ -236,7 +236,7 @@ namespace ES2Access.UI
             AgeTransform titled = title == null ? null : title.AgeTransform;
             if (titled != null && Explained(AgeWidgets.Raw(titled)))
             {
-                cells.Add(Cells.GatheredReadout(titled, keyPrefix + titled.name + "/title"));
+                cells.Add(Line(LineKind.Title, titled, null, null, keyPrefix, panel));
             }
 
             Collect(cells, panel.ContentGroup, keyPrefix, 0, panel, special, transparent, titled);
@@ -274,6 +274,9 @@ namespace ES2Access.UI
             }
 
             vtable.Sections = GraphNodes.SectionsFor(vtable, tooltip);
+            // The line now says a sentence its own reading did not give it, so it is not the line a
+            // later build would make from its widget: it is not handed back (KeptLines).
+            Kept.Forget(cells[first].Widget);
         }
 
         /// <summary>
@@ -412,22 +415,272 @@ namespace ES2Access.UI
                 // so the cell announces what the gate above measured: the reading is asked again every
                 // frame, and a leaf that passed on its one drawn piece would otherwise go on to speak
                 // the retired pieces beside it and to carry their tooltips.
-                string key = PathKey(keyPrefix, widget, panel);
-                AgeTransform at = widget;
                 cells.Add(
                     activatable
-                        ? Cells.PaintedControl(
-                            widget,
-                            button,
-                            () => AgeWidgets.PaintedPartsText(at),
-                            key
-                        )
-                        : Cells.PaintedReadout(widget, key)
+                        ? Line(LineKind.Control, widget, button, null, keyPrefix, panel)
+                        : Line(LineKind.Readout, widget, null, null, keyPrefix, panel)
                 );
             }
             catch (Exception e)
             {
                 Log.Warn("side panels: reading a panel threw: " + e);
+            }
+        }
+
+        /// <summary>Which reading made a line - the title, a clickable line, a readout off the drawn
+        /// pieces, or an effect line read with the tooltip it hangs.</summary>
+        private enum LineKind
+        {
+            Title,
+            Control,
+            Readout,
+            Effect,
+        }
+
+        /// <summary>
+        /// One line of a panel: the cell made on an earlier build for the same widget where nothing it
+        /// was made from has moved, a fresh one otherwise (<see cref="KeptLines"/>).
+        ///
+        /// <paramref name="tooltip"/> is the effect line's own; the other kinds gather theirs off the
+        /// pieces exactly as the reading does (<see cref="Cells.SoleTooltip"/>), and a line that
+        /// gathers more than one is made fresh on every build.
+        /// </summary>
+        private static Cell Line(
+            LineKind kind,
+            AgeTransform widget,
+            AgeControlButton button,
+            AgeTooltip tooltip,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            AgeTooltip tip = tooltip;
+            if (kind != LineKind.Effect)
+            {
+                bool several;
+                tip = Cells.SoleTooltip(widget, kind != LineKind.Title, out several);
+                if (several)
+                {
+                    return MakeLine(kind, widget, button, tooltip, keyPrefix, panel);
+                }
+            }
+
+            return Kept.Find(widget, kind, button, tip, keyPrefix, panel)
+                ?? Kept.Keep(
+                    widget,
+                    kind,
+                    button,
+                    tip,
+                    keyPrefix,
+                    panel,
+                    MakeLine(kind, widget, button, tooltip, keyPrefix, panel)
+                );
+        }
+
+        /// <summary>A line made afresh. Its own method, so the closure's environment is made only
+        /// here.</summary>
+        private static Cell MakeLine(
+            LineKind kind,
+            AgeTransform widget,
+            AgeControlButton button,
+            AgeTooltip tooltip,
+            string keyPrefix,
+            SidePanel panel
+        )
+        {
+            AgeTransform at = widget;
+            switch (kind)
+            {
+                case LineKind.Title:
+                    return Cells.GatheredReadout(widget, keyPrefix + widget.name + "/title");
+                case LineKind.Control:
+                    return Cells.PaintedControl(
+                        widget,
+                        button,
+                        () => AgeWidgets.PaintedPartsText(at),
+                        PathKey(keyPrefix, widget, panel)
+                    );
+                case LineKind.Readout:
+                    return Cells.PaintedReadout(widget, PathKey(keyPrefix, widget, panel));
+                default:
+                    return Cells.Readout(widget, tooltip, PathKey(keyPrefix, widget, panel));
+            }
+        }
+
+        private static readonly KeptLines Kept = new KeptLines();
+
+        /// <summary>
+        /// The lines made on earlier builds, keyed on the widget each was read off. Every page with a
+        /// left column reads these panels on every frame, and made each line's records afresh each
+        /// time: about 2.3 KB a line, measured on the empire summary.
+        ///
+        /// A kept line is correct because every word it says is read when it is spoken; what a line
+        /// read EAGERLY when it was made is what is compared before it is handed back: which reading
+        /// made it, the button it presses, the tooltip it announces and that tooltip's class (which
+        /// settle the section's mode in <c>GraphNodes.TooltipSection</c>), the long-tooltip option
+        /// (which settles whether the section has a late reader), and everything its key is made of -
+        /// the caller's prefix, the panel and the widget's index path inside it (<see cref="PathKey"/>).
+        /// The widget's NAME, the key's readable suffix, is taken to be fixed for the widget's life.
+        /// Whether the line exists at all is still decided by the walk, every build.
+        ///
+        /// Shared by every page because the panels are one window's; a page that reads a panel under
+        /// another prefix replaces the entries rather than sharing them.
+        /// </summary>
+        private sealed class KeptLines
+        {
+            /// <summary>More lines than every left column together draws: a strip that made fresh
+            /// children rather than pooling them would otherwise grow the set for the session.</summary>
+            private const int Limit = 512;
+
+            private struct Entry
+            {
+                public Cell Cell;
+                public LineKind Kind;
+                public AgeControlButton Button;
+                public AgeTooltip Tip;
+                public string TipClass;
+                public string Prefix;
+                public SidePanel Panel;
+                public int[] Path;
+            }
+
+            private readonly Dictionary<object, Entry> _entries = new Dictionary<object, Entry>(
+                ByReference.Instance
+            );
+
+            private bool _longTooltips;
+
+            public Cell Find(
+                AgeTransform widget,
+                LineKind kind,
+                AgeControlButton button,
+                AgeTooltip tip,
+                string prefix,
+                SidePanel panel
+            )
+            {
+                bool longTooltips = ES2Access.UI.Settings.LongTooltipSettings.Announced;
+                if (longTooltips != _longTooltips)
+                {
+                    _entries.Clear();
+                    _longTooltips = longTooltips;
+                }
+
+                Entry entry;
+                if (widget == null || !_entries.TryGetValue(widget, out entry))
+                {
+                    return null;
+                }
+
+                return entry.Kind == kind
+                    && ReferenceEquals(entry.Button, button)
+                    && ReferenceEquals(entry.Tip, tip)
+                    && string.Equals(entry.TipClass, ClassOf(tip))
+                    && string.Equals(entry.Prefix, prefix)
+                    && ReferenceEquals(entry.Panel, panel)
+                    && SamePath(entry.Path, widget, panel)
+                    ? entry.Cell
+                    : null;
+            }
+
+            public Cell Keep(
+                AgeTransform widget,
+                LineKind kind,
+                AgeControlButton button,
+                AgeTooltip tip,
+                string prefix,
+                SidePanel panel,
+                Cell cell
+            )
+            {
+                if (widget == null || cell == null)
+                {
+                    return cell;
+                }
+
+                if (_entries.Count >= Limit && !_entries.ContainsKey(widget))
+                {
+                    _entries.Clear();
+                }
+
+                _entries[widget] = new Entry
+                {
+                    Cell = cell,
+                    Kind = kind,
+                    Button = button,
+                    Tip = tip,
+                    TipClass = ClassOf(tip),
+                    Prefix = prefix,
+                    Panel = panel,
+                    Path = PathOf(widget, panel),
+                };
+                return cell;
+            }
+
+            public void Forget(AgeTransform widget)
+            {
+                if (widget != null)
+                {
+                    _entries.Remove(widget);
+                }
+            }
+
+            private static string ClassOf(AgeTooltip tip)
+            {
+                return tip == null ? null : tip.Class;
+            }
+
+            /// <summary>The widget's index path up to the panel's root, innermost first - the same
+            /// walk <see cref="PathKey"/> makes.</summary>
+            private static int[] PathOf(AgeTransform widget, SidePanel panel)
+            {
+                List<int> path = new List<int>();
+                AgeTransform root = panel == null ? null : panel.AgeTransform;
+                AgeTransform at = widget;
+                int guard = 0;
+                while (at != null && !ReferenceEquals(at, root) && guard++ < 16)
+                {
+                    path.Add(AgeWidgets.IndexInParent(at));
+                    at = at.Parent;
+                }
+
+                return path.ToArray();
+            }
+
+            private static bool SamePath(int[] path, AgeTransform widget, SidePanel panel)
+            {
+                AgeTransform root = panel == null ? null : panel.AgeTransform;
+                AgeTransform at = widget;
+                int step = 0;
+                while (at != null && !ReferenceEquals(at, root) && step < 16)
+                {
+                    if (step >= path.Length || path[step] != AgeWidgets.IndexInParent(at))
+                    {
+                        return false;
+                    }
+
+                    step++;
+                    at = at.Parent;
+                }
+
+                return step == path.Length;
+            }
+
+            /// <summary>Widgets compared as objects: Unity's own equality asks the engine whether each
+            /// side is still alive, on every lookup.</summary>
+            private sealed class ByReference : IEqualityComparer<object>
+            {
+                public static readonly ByReference Instance = new ByReference();
+
+                bool IEqualityComparer<object>.Equals(object a, object b)
+                {
+                    return ReferenceEquals(a, b);
+                }
+
+                public int GetHashCode(object value)
+                {
+                    return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value);
+                }
             }
         }
 
@@ -516,7 +769,7 @@ namespace ES2Access.UI
             if (caption != null)
             {
                 cells.Add(
-                    Cells.Readout(caption, AgeWidgets.Raw(caption), PathKey(keyPrefix, caption, panel))
+                    Line(LineKind.Effect, caption, null, AgeWidgets.Raw(caption), keyPrefix, panel)
                 );
             }
 
@@ -539,7 +792,7 @@ namespace ES2Access.UI
                     }
 
                     cells.Add(
-                        Cells.Readout(line, AgeWidgets.Raw(line), PathKey(keyPrefix, line, panel))
+                        Line(LineKind.Effect, line, null, AgeWidgets.Raw(line), keyPrefix, panel)
                     );
                 }
             }

@@ -665,6 +665,22 @@ namespace ES2Access.UI
         // capture the tooltips, never the list.
         private static readonly List<AgeTooltip> Scratch = new List<AgeTooltip>(4);
 
+        /// <summary>
+        /// The tooltip a line read by <see cref="PaintedReadout(AgeTransform,string)"/>,
+        /// <see cref="GatheredReadout"/> or the pooled
+        /// <see cref="PaintedControl(AgeTransform,AgeControlButton,Func{string},string)"/> would announce,
+        /// gathered the same way and without allocating, for a caller that keeps such lines between
+        /// builds. <paramref name="several"/> is true when the line gathers more than one: the others
+        /// become dossiers whose existence and names <see cref="TooltipChildren.Split"/> reads off the
+        /// tooltips' words when the line is declared, so that line cannot be kept.
+        /// </summary>
+        public static AgeTooltip SoleTooltip(AgeTransform widget, bool painted, out bool several)
+        {
+            List<AgeTooltip> tooltips = Gathered(widget, painted);
+            several = tooltips.Count > 1;
+            return tooltips.Count == 0 ? null : tooltips[tooltips.Count - 1];
+        }
+
         private static List<AgeTooltip> Gathered(AgeTransform widget, bool painted)
         {
             Scratch.Clear();
