@@ -667,7 +667,7 @@ namespace ES2Access.Core.UI.Graph
             if (_currentRow != null) throw new InvalidOperationException("Unclosed row - call EndRow()");
             if (_rawNodes.Count == 0 && _rows.Count == 0) return null;
 
-            GraphRender render = new GraphRender();
+            GraphRender render = new GraphRender(_declared.Count);
             render.SeatOnContainer = SeatOnContainer;
             foreach (GraphNode node in _declared) AddNodeTo(render, node);
 

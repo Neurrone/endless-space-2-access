@@ -784,10 +784,21 @@ namespace ES2Access.Core.UI.Graph
     public sealed class GraphRender
     {
         public ControlId StartKey;
-        public readonly Dictionary<ControlId, GraphNode> Nodes = new Dictionary<ControlId, GraphNode>();
+        public readonly Dictionary<ControlId, GraphNode> Nodes;
 
         /// <summary>Declaration order — drives stop/region cycling and type-ahead scan order.</summary>
-        public readonly List<GraphNode> Order = new List<GraphNode>();
+        public readonly List<GraphNode> Order;
+
+        public GraphRender() : this(0) { }
+
+        /// <summary>A render sized for <paramref name="capacity"/> nodes. The builder knows the count
+        /// before it fills a render, and on a runtime whose collector pauses the game a dictionary and
+        /// list grown from empty on every build are most of a render's own garbage.</summary>
+        public GraphRender(int capacity)
+        {
+            Nodes = new Dictionary<ControlId, GraphNode>(capacity);
+            Order = new List<GraphNode>(capacity);
+        }
 
         /// <summary>Where Tab lands in a stop that does not want its FIRST node - see
         /// <see cref="GraphBuilder.LandStopOn"/>. Keyed by stop key; a stop with no entry lands on its
