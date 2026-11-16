@@ -367,10 +367,28 @@ edges in four slots" (9d83cd6) was an earlier step of the same kind: about 20% a
 
 All via `POST /eval` (see `docs/dev-loop.md` for the REPL's own gotchas).
 
-- Slow the build clock without code changes:
-  `ES2Access.Core.UI.Graph.KeyGraph.FrameCounter = () => (int)(UnityEngine.Time.realtimeSinceStartup * 5f);`
-  Restore with `() => UnityEngine.Time.frameCount`. A hot reload restores it too. Dividing
-  `frameCount` instead ties the rate to the frame rate (the map runs at about 30 fps).
+- Slow the build clock without code changes. Never assign a lambda typed into the REPL: on
+  2026-11-16 both `() => (int)(UnityEngine.Time.realtimeSinceStartup * 5f)` and
+  `() => UnityEngine.Time.frameCount` threw NullReferenceException when called, `Rerender` threw
+  every frame, and the loader switched the mod's update off until `POST /reload`. Declare a REPL
+  class with a static method instead, bind it with `Delegate.CreateDelegate`, and call the delegate
+  once before assigning it:
+  ```
+  public static class SlowClock {
+    public static float Rate = 5f;
+    public static int Slow() { return (int)(UnityEngine.Time.realtimeSinceStartup * Rate); }
+    public static System.Func<int> Saved;
+    public static string Use() {
+      var d = (System.Func<int>)System.Delegate.CreateDelegate(typeof(System.Func<int>), typeof(SlowClock).GetMethod("Slow"));
+      d(); Saved = ES2Access.Core.UI.Graph.KeyGraph.FrameCounter; ES2Access.Core.UI.Graph.KeyGraph.FrameCounter = d; return "slow " + d();
+    }
+    public static string Restore() { ES2Access.Core.UI.Graph.KeyGraph.FrameCounter = Saved; return "restored " + Saved(); }
+  }
+  ```
+  then `SlowClock.Use()` and `SlowClock.Restore()`. If the clock was lost anyway, bind the
+  `UnityEngine.Time.frameCount` getter the same way, or `POST /reload`, which rewires it. Check
+  `GET /log?grep=threw` afterwards. Dividing `frameCount` instead ties the rate to the frame
+  rate (the map runs at about 30 fps).
 - Pause the mod's whole update: null `_modUpdate` on the `ES2Access.Loader.LoaderPlugin` instance by
   reflection, keep the delegate in a REPL variable, put it back. Harmony patches stay installed, so
   their cost is inside the "game alone" figure. To measure `Update` across REAL frames, pause it and
