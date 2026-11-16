@@ -21,7 +21,7 @@ of objects. Scans belong in exactly three places:
   (Unity object destroyed-check) instead of re-finding.
 - **A walk memoised for one frame and shared by every asker**
   ([`FrameSweep.cs`](src/engine-example/FrameSweep.cs)). An immediate-mode screen has no
-  lifecycle event to hang discovery on: its build runs every frame, and the same subtree is
+  lifecycle event to hang discovery on: it rebuilds as often as every frame, and the same subtree is
   asked several times in one frame — once by "is this page still mine", once by the build,
   again by whatever an announcement part resolves to. The sweep is keyed on (root, frame
   count) and nothing else, which is what makes it safe over pooled tables that add and
@@ -142,7 +142,7 @@ Two helpers every table runs per cell per frame deserve their own rules:
 
 The navigator and the graph builder run for every screen, so their silent frame — nothing
 pressed, nothing moved — is the floor every page pays. The audit found the ES2 engine making
-eight O(N) passes per frame with nothing comparing the render to the previous one. The
+eight O(N) passes per build with nothing comparing the render to the previous one. The
 fixes, in order of payoff, are generic:
 
 - Data a fallback needs only when a node has *died* (the previous traversal order, for

@@ -8,7 +8,8 @@ per-game adapter binds it to the game's widgets, input, and speech.
 
 ## The architecture: immediate mode
 
-Every frame, the active screen declares its **entire UI as a graph** by reading live game
+On every rebuild — as often as every frame, and at once after anything the player does — the
+active screen declares its **entire UI as a graph** by reading live game
 state — no retained tree, no widget diffing, no cache to invalidate. The declared
 `GraphRender` is thrown away on every rebuild; the only thing that survives is `GraphState`:
 the focus cursor, per-tab-stop remembered positions, and the set of expanded groups. This

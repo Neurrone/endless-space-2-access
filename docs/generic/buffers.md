@@ -94,7 +94,7 @@ to check the buffer on every control.)
 Cursor rules, all load-bearing:
 
 - Repopulate **only on a real focus change or when the element's spoken readout changed** —
-  an immediate-mode UI rebuilds every frame, and a mere rebuild must NOT reset the review
+  an immediate-mode UI rebuilds continuously, and a mere rebuild must NOT reset the review
   cursor (the player may be three lines deep).
 - Any repopulation snaps the selected buffer back to the UI buffer — after moving focus,
   Ctrl+Down always reviews the thing you're on.
