@@ -1297,6 +1297,7 @@ namespace ES2Access
             // Every bookmark a saved campaign has is already on disk (the set wrote it), so this only
             // lets go of the game the store was watching.
             Step("bookmarks", MapBookmarkStore.Reset);
+            Step("heap room", HeapRoom.Reset);
             Step("settings", ModSettings.Reset);
 
             Step("locale", ModLocale.Reset);
@@ -1418,6 +1419,10 @@ namespace ES2Access
         {
             KeepSimulatingUnfocused();
             ModLocale.Tick();
+
+            // Once per loaded game, and nothing on every other frame but a reference comparison:
+            // gives the game's collector room so its pauses come less often (HeapRoom).
+            HeapRoom.Tick();
 
             // Before the screens build: which campaign's bookmarks are in hand decides what the map's
             // rows say, and the answer changes on the frame a save is loaded or a new game begins.
