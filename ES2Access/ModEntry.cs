@@ -1072,9 +1072,24 @@ namespace ES2Access
             // (<c>GalaxyHudScreen.NoteGrouping</c>) and every landing opens it on the way in.
             KeyGraph.GroupingAncestor = GalaxyHudScreen.NoteGrouping;
 
-            // One render per frame: a key press asks for one where it acts and the screen tick asks
-            // for another as it seats the cursor, and nothing the game owns has moved between them.
-            KeyGraph.FrameCounter = () => UnityEngine.Time.frameCount;
+            // At most BuildsPerSecond renders a second, and one per frame when the game draws fewer
+            // frames than that: the clock ticks on real time, so a frame that lands in the same tick
+            // as the last build reuses it. Every build's garbage feeds the game's stop-the-world
+            // collector, which pauses for most of a second however little of it is garbage
+            // (gc-handover.md). A key press or anything else that acts through the graph asks for a
+            // fresh render where it acts (KeyGraph.Invalidate), whatever the clock says.
+            KeyGraph.FrameCounter = BuildClock;
+        }
+
+        /// <summary>How many times a second the focused screen is rebuilt at most (owner ruling
+        /// 2026-11-16: ten, or every frame below ten frames a second).</summary>
+        private const float BuildsPerSecond = 10f;
+
+        /// <summary>The build clock: the tenth of a second the game is in, on real time so a paused
+        /// or slowed simulation does not slow it.</summary>
+        private static int BuildClock()
+        {
+            return (int)(UnityEngine.Time.realtimeSinceStartup * BuildsPerSecond);
         }
 
         /// <summary>

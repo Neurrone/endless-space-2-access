@@ -54,7 +54,7 @@ waitfor() {
   grep -q '"satisfied":true' "$TMP/wait.out"
 }
 
-# frame -- let one frame pass (a graph-state change is rendered on the next frame).
+# frame -- let one frame pass (a graph-state change is applied on the next frame's pass).
 frame() { waitfor 'true' 2000; }
 
 # pause [ms] -- a fixed wait, scaled by WALK_PACE. Kept for the rare step with nothing to
@@ -220,7 +220,7 @@ ensure_system() {
 # ---------------------------------------------------------------- capture
 
 # reset -- clear the mod's graph state (expansions, cursor seats) so a dump does not depend
-# on what an earlier step left open; rendered on the next frame.
+# on what an earlier step left open; applied on the next frame's pass.
 reset() { evq "$CS/reset.cs"; frame; frame; }
 
 # snap <path> -- fetch the focused screen's dump WITHOUT recording it as an artifact.
