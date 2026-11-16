@@ -1,17 +1,20 @@
 # GC pause handover
 
-State of the investigation into the second-long freezes, as of 2026-09-23. Written so a fresh
+State of the investigation into the second-long freezes, as of 2026-11-16. Written so a fresh
 session can resume without the conversation. The preparations (work items 1-4 of section 5) were
 implemented on 2026-09-21; on 2026-09-23 the owner took item 7 (section 7, per-build allocation)
-ahead of the rate change, and three of its commits landed. The rate itself is unchanged. RESUME AT
-"Where to resume" at the head of section 5. Every experiment below was done from the dev server's
-REPL and is gone on a game restart.
+ahead of the rate change, and three of its commits landed. On 2026-11-16 two more item-7 commits
+landed, and so did the rate change (item 5, ten builds a second) and the heap room check (item 6).
+RESUME AT "Where to resume" at the head of section 5. Every experiment below was done from the dev
+server's REPL and is gone on a game restart.
 
 Figures come from one mid-game save and TWO machines. Sections 1-3 were measured on the owner's
 laptop, which runs the game at 60 fps; section 7's 2026-09-23 figures were measured on a machine
 that draws the empire screen at about 20 fps and the galaxy map at 11-12 fps. The mod builds once
 per frame, so builds per second, MB/s and the seconds between collections do not transfer between
-the two; bytes per build and milliseconds per build do. The absolute numbers also scale with how
+the two; bytes per build and milliseconds per build do. The 2026-11-16 figures were measured at
+about 58 fps on a save whose empire screen declares 261 nodes (the systems table alone 208), so
+its per-build bytes are larger than section 7's 101-node figures for the same code. The absolute numbers also scale with how
 much live data the save holds. Line numbers drift, so sites are named by symbol first. Cites marked
 (sub) came from research subagents and were not re-verified.
 
@@ -116,17 +119,42 @@ What does exist: `GC.Collect()`, and the two heap-size exports above via `[DllIm
   sub-object); no ruling yet.
 - 2026-09-23: measurement windows are one minute each ("do not use a 4 minute timer"); a full
   collection-to-collection interval needs up to two of them back to back (section 8).
+- 2026-11-16: approved and landed: table headings kept (799d171) and side-panel lines kept
+  (4491530), a time-based build clock at ten builds a second that falls back to every frame below
+  10 fps (3b52385), and the heap room check (dd9919f). No setting to turn the heap check off
+  ("don't add"). The per-frame wording in CLAUDE.md and docs/generic was updated with approval.
+  Not yet asked: the notification rows (section 7, item 3) and render-node pooling (item 7).
 - Every new key binding still needs approval; none is proposed here.
 
 ## 5. Work plan, in order
 
-**Where to resume.** Items 1-4 are committed on `main` (f182d85, 6cacc9a, 0764a43, fe54b02,
-ac7a7c1, 2767e80; doc wording 2e7a04c), and three commits of item 7 on top (da8bc18, cf4c9e3,
-2c98ce1; section 7 has their numbers). Owed on those three: the FULL WALK, since da8bc18 is a
-Core refactor claiming no spoken line changed and cf4c9e3 touches every HUD-bearing page; it runs
-only with the owner's approval, not yet asked for in a form that got an answer. Also unexercised:
-the events that drop a kept set (a save load, a turn end, a rebound resource row, the long-tooltip
-option flipping) and any physical-key path. Next, in order:
+**Where to resume (2026-11-16).** Items 1-6 are done. Item 7 has five commits (section 7).
+Owed:
+- The FULL WALK, which only the owner can approve. It covers da8bc18 (a `Core/` refactor
+  claiming no spoken line changed), cf4c9e3 (every HUD page), 799d171/4491530 (every table and
+  side-panel page) and 3b52385 (every screen's rate). Walk dumps build fresh through
+  `InspectRender`, so the walk guards against regressions but cannot show a rate defect. The
+  rate's evidence is speech transcripts: a fixed route on the empire screen and the galaxy tree
+  (camera position read after each move, a constellation opened, inspect in and out) was
+  identical to the per-frame build at 10/s and at 2/s.
+- Live checks nobody has driven yet:
+  - the four sites ed48abb fixed (hero inspection page change, a targeting mode dismissing
+    inspect, inspect exit with no row to restore, the scanner editor refill);
+  - notifications arriving live; end turn (advances the save, so it is the owner's to run);
+    options key capture (needs `/key` with the game in front);
+  - a real save load through HeapRoom, and HeapRoom's first growth in a fresh process (only the
+    reload path grew the heap: 385 MB free, +80 MB);
+  - the events that drop a kept set: a save load, a turn end, a rebound resource row, the
+    long-tooltip option flipping.
+- Not explained: with the mod paused, the game's own allocation on the empire screen read
+  3.4 MB/s at the start of the 2026-11-16 session and 7 MB/s at its end, after five hot reloads
+  and much REPL measurement. The mod's share at 10/s is about 1.2 MB/s, so the game now
+  dominates. Measure again in a fresh process before chasing more mod bytes.
+
+The rest of this paragraph is the 2026-09-23 plan, kept for its reasoning. Items (a) and (b)
+are done; the sweep in (a) was done by reading, and the four hazards it found are ed48abb.
+Items 1-4 are committed on `main` (f182d85, 6cacc9a, 0764a43, fe54b02, ac7a7c1, 2767e80; doc
+wording 2e7a04c). Next, in order:
 (a0) the owner's ruling on the two remaining `Core/` wins in section 7 (contexts, vtable slimming);
 if approved, one stage, proven like the three commits (bytes per build through the navigator's own
 path, a full cycle on the same heap, the screen dump byte-identical); then
@@ -213,7 +241,10 @@ identical before and after at the normal clock.
    `galaxy/map-tree` inherits leftover expansions unless `walks/cs/reset.cs` runs first, and the
    galaxy inspect cell re-arms itself after an overview view-level request, so a script's Right and
    Down drive the cell unless it presses `ui.back` first.
-5. **The rate change itself.** `KeyGraph.FrameCounter` is an injected clock (`ModEntry` wires
+5. **The rate change itself** - DONE (3b52385, with ed48abb before it): ten builds a second on
+   real time, every frame below 10 fps. On the empire screen, 100 renders in 591 frames;
+   collections every 22.6 s at the per-frame rate became every 39.5 s on the same heap.
+   `KeyGraph.FrameCounter` is an injected clock (`ModEntry` wires
    `Time.frameCount`); a time-based clock in its place gives a global idle rate with no `Core/` edit.
    The owner chose the FIRST of the two variants below (2026-09-21):
    - slow only the build and keep the rest of `EnsureFocus` per frame on the last render (what every
@@ -235,9 +266,8 @@ identical before and after at the normal clock.
    (`docs/generic/ui-navigation.md`, `docs/generic/performance.md`, `docs/generic/buffers.md`,
    `docs/generic/dev-server.md`, `docs/dev-loop.md`, CLAUDE.md Performance, `docs/galaxy-map.md`,
    `docs/heroes-and-diplomacy.md`) and two comments in `walks/lib.sh` say "rendered on the next frame".
-6. **Heap room check** (section 6), its own small feature.
-7. **Per-build allocation** (section 7) - taken first on 2026-09-23 at the owner's request; three
-   commits landed, two `Core/` wins await a ruling.
+6. **Heap room check** (section 6) - DONE (dd9919f, `UI/HeapRoom.cs`).
+7. **Per-build allocation** (section 7) - five commits landed; the rest is listed there.
 
 Of 33 frame-counted waits classified, 25 tick in `OnUpdate` or the per-frame pump, wait on the game
 (a readable flag such as `CameraSettling` / `ChangingLevel`, a measured quiet period, or a deliberate
@@ -260,6 +290,9 @@ Not tested: galaxy camera follow, inspect mode, battles, notifications arriving 
 options key capture, multiplayer.
 
 ## 6. Heap room check - agreed shape
+
+Implemented as below in dd9919f, with a fixed 450 MB target (not a fraction of live data) and no
+setting.
 
 - Measure, do not grow unconditionally: the mod hot-reloads often and the heap belongs to the
   process, so a second growth would only waste the player's memory.
@@ -292,6 +325,24 @@ galaxy map 49 (most of them HUD). Pause length never moved: about 400-780 ms on 
 | da8bc18 builder scratch reused, `Transition` a struct | 174 KB, 0.56 ms | 64 s | 199 KB, 0.51 ms | 89 s |
 | cf4c9e3 HUD declarations kept (`KeptCells`) | 118 KB, 0.47 ms | 86 s | 137 KB, 0.38 ms | 140 s |
 | 2c98ce1 tutorial bar kept | 112 KB, 0.46 ms | 92 s | | |
+
+On 2026-11-16 (58 fps, the 261-node empire screen; cycles on a heap with about 325 MB of room):
+
+| Commit | Empire screen, per build | Cycle at one build per frame |
+|---|---|---|
+| start (1df6434) | 216 KB, 0.97 ms | 20.2 s |
+| 799d171 headings kept + 4491530 side-panel lines kept | 132 KB, 0.67 ms | 22.6 s |
+
+Where the 216 KB went before those two commits, part by part through a re-armed builder:
+- side panels: 54 KB for 18 lines;
+- the systems table's 14 headings: 40 KB, against 37 KB for its 194 replayed cells;
+- notification strip: 14 KB for 7 nodes;
+- banner: 11 KB; tabs: 6 KB; turn controls: 2 KB;
+- `GraphBuilder.Build()` assembling the render: about 50 KB.
+
+A node whose records are made fresh costs 2-3 KB a build. A kept node costs about 0.2 KB,
+which is the builder's own bookkeeping. After the two commits the headings cost 6 KB and the
+side panels 20 KB.
 
 Each commit's message carries its numbers. Proof for each was the offline suite, the bytes-per-build
 loop, one full collection-to-collection cycle on the same heap as the previous build (da8bc18 was
@@ -352,15 +403,35 @@ What remains, ranked, with the empire-screen saving:
    `new NodeVtable { ... }` initializer still compiles. Needs approval; no ruling yet.
 3. Notification strip and turn log retention keyed per notification (2% plus 1.6 KB per pending
    row): the prune that walks the standing list drops dead entries; the go-to handler and hint
-   become two-branched per build. Declined for now.
+   become two-branched per build. Declined for now. Read-through on 2026-11-16 (not verified
+   live) found it small: 100-130 lines in `GlobalHud.Notifications.cs`, no `Core/` edit. Besides
+   tooltip and class, each entry must check three things that can change for the same
+   notification: its serial (`NotificationSerials.Of`, which changes when a notification leaves
+   and is raised again), `NotificationText.Failed` (it flips the first time a title throws), and
+   `DrawsShowLocation`. `KeptCells.Find` compares by reference only, so those checks go on the
+   cell. Still made per build regardless: the contexts, the icon sweep's array, the `Logged()`
+   and `turns` lists, and the per-turn strings. About 7-9 KB a build on the 261-node screen.
 4. Banner row sort memoized on the visible set (1.3 KB). Not worth doing alone.
 5. Faction panels: unmeasurable on the test save; about fifteen static sites, drawn for some
    factions only.
 6. The screens' own tables - four fifths of the build - need the same per-site judgement as the
-   HUD, per screen or at the `GraphSheet` level. Not easy; not proposed.
+   HUD, per screen or at the `GraphSheet` level. Not easy; not proposed. (The shared table's
+   rows were already replayed, and its headings and the shared side panels are now kept.)
+7. **Reusing render nodes** (`Core/`, about 50 KB of render assembly plus about 190 B per
+   replayed node). Read-through on 2026-11-16 (not verified live) found it large:
+   - Detecting "nothing changed" almost never matches: `PushContext` mints its records on every
+     push and most vtables are fresh. `GraphNode`s are made at declaration, before `Build()`.
+   - The workable shape is two arenas per `KeyGraph` (render, dictionaries, node pool), building
+     into the one that is neither `_current` nor `OrderSource`, with every node field reset on
+     rent.
+   - It needs a generation number on renders and nodes, because `NotificationScreen._seatRender`
+     detects a build by render identity and `GraphAnnouncer`'s parts memo keys on the node.
+   - `_lastSpokenNode`, `_visualNode` and `_searchOpened` would hold ids or vtables instead of
+     nodes.
+   - About 150-250 lines in `Core/` plus 30-60 outside, high risk, a full walk.
 
-The rate remains the largest lever: at 60 builds/s every item above is a few percent, and item 5
-of section 5 removes eleven of every twelve builds. The commit "A node keeps its four arrow-key
+At ten builds a second (since 3b52385) the mod's whole share on the empire screen is about
+1.2 MB/s, so every item above is now worth a fraction of that. The commit "A node keeps its four arrow-key
 edges in four slots" (9d83cd6) was an earlier step of the same kind: about 20% at the full rate.
 
 ## 8. Measurement methods and traps
