@@ -401,6 +401,9 @@ namespace ES2Access.UI
             _visualFrom = null;
             _placed = false;
             ClearVisual();
+            // The caller has changed what the page declares (a page the game turned): the seat has
+            // to be taken off a build that postdates it, not the render standing from before.
+            InvalidateRender();
         }
 
         /// <summary>
@@ -420,6 +423,10 @@ namespace ES2Access.UI
             // A newer instruction than any target already armed below, and it supersedes it: this one
             // means "read whatever is under the cursor next", which answers the same question.
             _announceLandingAt = null;
+            // Every caller has just changed what the page declares - a mode ended, rows refilled -
+            // so the reading is taken off a build that postdates the change rather than the render
+            // standing from before it, which the build clock may keep for a tenth of a second.
+            InvalidateRender();
         }
 
         /// <summary>
