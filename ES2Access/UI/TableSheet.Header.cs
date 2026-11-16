@@ -29,6 +29,8 @@ namespace ES2Access.UI
 
             GuiTable owner = table;
             int[] columns = BandColumns(table);
+            _keptHeadings.Own(table, null);
+            _keptFunnels.Own(table, null);
             builder.StartRow(positions: false);
             // The band is one ROW of the table for the table-edge keys: every heading and funnel shares
             // this object, so Ctrl+Alt+Left/Right walk the band as they walk a row. Index and Count
@@ -38,49 +40,23 @@ namespace ES2Access.UI
             for (int i = 0; i < _headers.Count; i++)
             {
                 GuiTableHeader header = _headers[i];
-                AgeTransform widget = header.AgeTransform;
-                string property = PropertyOf(header);
-                NodeVtable vtable;
-                if (SortingDisabled(header))
-                {
-                    // A column the table definition says cannot be sorted by is a heading the game
-                    // draws as a button it never enables (GuiTableHeader.Refresh :38 writes Enable from
-                    // DisableSorting and nothing else does), so it is TEXT: a button that is unavailable
-                    // for ever offers nothing (owner ruling 2026-09-17, the journal's Details column).
-                    vtable = new NodeVtable
-                    {
-                        Announcements = new List<NodeAnnouncement>
-                        {
-                            GraphNodes.LabelPart(() => Caption(header)),
-                        },
-                        Sections = GraphNodes.Sections(null, header.Tooltip),
-                    };
-                }
-                else
-                {
-                    vtable = GraphNodes.Button(
-                        () => Caption(header),
-                        () => AgeWidgets.Press(widget),
-                        () => AgeWidgets.Operable(widget),
-                        header.Tooltip
-                    );
-                    vtable.Announcements.Insert(
-                        1,
-                        GraphNodes.SelectedPart(() => SortedBy(owner, property))
-                    );
-                }
-
+                // What a heading is declared from is fixed by the column the game bound it to
+                // (GuiTableHeader.Refresh writes PropertyName and the sorting switch from it) and by
+                // the tooltip it carries; its words are read when spoken. So the vtable is kept while
+                // those stand, the way the rows beside it are.
+                object column = ColumnInfoOf(header);
+                NodeVtable vtable =
+                    _keptHeadings.Find(header, column, header.Tooltip)
+                    ?? _keptHeadings.Keep(header, column, header.Tooltip, Heading(header, owner));
+                // Written on every build: the band is this build's row object, and the column number
+                // is read off this build's layout.
                 vtable.Row = band;
                 // Which column this heading stands over, so that Up out of a row lands on the heading
                 // of the column the player was in rather than on the first one
                 // (<c>GraphBuilder.StitchModeBoundaries</c> pairs the seam by this number).
                 vtable.Column = columns[i];
-                // And searched by its own words: a heading is not a cell of the row below it, so the
-                // one-result-per-row filter would drop every heading past the first from type-ahead.
-                vtable.SearchesAsItself = true;
-                AgeWidgets.PointAt(vtable, widget);
                 builder.AddItem(Nodes.Drawn(
-                    ControlId.For(header, _key + "header/" + property + "/" + i),
+                    ControlId.For(header, _key + "header/" + PropertyOf(header) + "/" + i),
                     vtable,
                     header
                 ));
@@ -88,6 +64,56 @@ namespace ES2Access.UI
             }
 
             builder.EndRow();
+        }
+
+        /// <summary>The headings declared on earlier builds, keyed on the heading widget
+        /// (<see cref="KeptCells{T}"/>).</summary>
+        private readonly KeptCells<NodeVtable> _keptHeadings = new KeptCells<NodeVtable>();
+
+        /// <summary>The funnels declared on earlier builds, keyed on the funnel's toggle.</summary>
+        private readonly KeptCells<NodeVtable> _keptFunnels = new KeptCells<NodeVtable>();
+
+        /// <summary>One heading's vtable, in a method of its own so the closures' environment is made
+        /// only when a heading is declared afresh.</summary>
+        private NodeVtable Heading(GuiTableHeader header, GuiTable owner)
+        {
+            AgeTransform widget = header.AgeTransform;
+            string property = PropertyOf(header);
+            NodeVtable vtable;
+            if (SortingDisabled(header))
+            {
+                // A column the table definition says cannot be sorted by is a heading the game
+                // draws as a button it never enables (GuiTableHeader.Refresh :38 writes Enable from
+                // DisableSorting and nothing else does), so it is TEXT: a button that is unavailable
+                // for ever offers nothing (owner ruling 2026-09-17, the journal's Details column).
+                vtable = new NodeVtable
+                {
+                    Announcements = new List<NodeAnnouncement>
+                    {
+                        GraphNodes.LabelPart(() => Caption(header)),
+                    },
+                    Sections = GraphNodes.Sections(null, header.Tooltip),
+                };
+            }
+            else
+            {
+                vtable = GraphNodes.Button(
+                    () => Caption(header),
+                    () => AgeWidgets.Press(widget),
+                    () => AgeWidgets.Operable(widget),
+                    header.Tooltip
+                );
+                vtable.Announcements.Insert(
+                    1,
+                    GraphNodes.SelectedPart(() => SortedBy(owner, property))
+                );
+            }
+
+            // And searched by its own words: a heading is not a cell of the row below it, so the
+            // one-result-per-row filter would drop every heading past the first from type-ahead.
+            vtable.SearchesAsItself = true;
+            AgeWidgets.PointAt(vtable, widget);
+            return vtable;
         }
 
         /// <summary>
@@ -124,6 +150,22 @@ namespace ES2Access.UI
             }
         }
 
+        /// <summary>The column definition the game bound this heading to - what its property name and
+        /// its sorting switch come from - or null where it cannot be read.</summary>
+        private static object ColumnInfoOf(GuiTableHeader header)
+        {
+            try
+            {
+                return ColumnInfoField == null || header == null
+                    ? null
+                    : ColumnInfoField.GetValue(header);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private static readonly FieldInfo ColumnInfoField = typeof(GuiTableHeader).GetField(
             "columnInfo",
             BindingFlags.Instance | BindingFlags.NonPublic
@@ -146,9 +188,34 @@ namespace ES2Access.UI
                 return;
             }
 
+            AgeTooltip tooltip = AgeWidgets.Raw(funnel.AgeTransform);
+            object columnInfo = ColumnInfoOf(header);
+            NodeVtable vtable =
+                _keptFunnels.Find(funnel, columnInfo, tooltip)
+                ?? _keptFunnels.Keep(funnel, columnInfo, tooltip, Funnel(header, table, funnel, tooltip));
+            // A number no CELL has, and distinct per column. The band's seam with the rows below it is
+            // paired column by column, and that pairing is dropped wholesale the moment two nodes of
+            // the band claim one column (<c>GraphBuilder.ByColumn</c>) - so a funnel stamped with its
+            // own column's number would have cost every column its heading on the way up out of a row.
+            vtable.Column = -(column + 1);
+            vtable.Row = band;
+            builder.AddItem(Nodes.Drawn(
+                ControlId.For(funnel, _key + "filter/" + PropertyOf(header) + "/" + index),
+                vtable,
+                funnel
+            ));
+        }
+
+        /// <summary>One funnel's vtable, made only when the funnel is declared afresh.</summary>
+        private NodeVtable Funnel(
+            GuiTableHeader header,
+            GuiTable table,
+            AgeControlToggle funnel,
+            AgeTooltip tooltip
+        )
+        {
             GuiTableHeader it = header;
             GuiTable owner = table;
-            AgeTooltip tooltip = AgeWidgets.Raw(funnel.AgeTransform);
             NodeVtable vtable = GraphNodes.Checkbox(
                 () => Caption(it),
                 () => funnel.State,
@@ -156,19 +223,9 @@ namespace ES2Access.UI
                 () => AgeWidgets.Operable(funnel.AgeTransform),
                 tooltip
             );
-            // A number no CELL has, and distinct per column. The band's seam with the rows below it is
-            // paired column by column, and that pairing is dropped wholesale the moment two nodes of
-            // the band claim one column (<c>GraphBuilder.ByColumn</c>) - so a funnel stamped with its
-            // own column's number would have cost every column its heading on the way up out of a row.
-            vtable.Column = -(column + 1);
             vtable.SearchesAsItself = true;
-            vtable.Row = band;
             AgeWidgets.Point(vtable, funnel);
-            builder.AddItem(Nodes.Drawn(
-                ControlId.For(funnel, _key + "filter/" + PropertyOf(header) + "/" + index),
-                vtable,
-                funnel
-            ));
+            return vtable;
         }
 
         /// <summary>Tick or untick the funnel the way a click on it does, and tell the menu screen
